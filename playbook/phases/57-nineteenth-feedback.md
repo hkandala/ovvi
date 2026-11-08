@@ -255,6 +255,34 @@ runs and on-demand on the final head.
   red on the old code at its 20 s wait for the row to go (run 42527933646), green on the fix with the scenes, the
   picker's and Password Host's tests (run 42527936883).
 
+### Track B
+
+- **Built** (D111): one sidebar. Pinned tabs on top (a tab's hover pin before its ×, Pin Tab / Unpin Tab in its menu,
+  the pinned row's hover Unpin; kept by herdr's tab id in `tabPins`, following a tab moved to another workspace), the
+  workspace rows 6 pt apart, each with a chevron that unfolds its agents (one 28 pt line: tile, title, state box with
+  the working time; newest change first, held still under the pointer), the selected row's glass over its agents, a
+  border for an unfolded row not selected; Archived Sessions sticky at the foot. Track A's `EmptyState`/`Loader` for
+  "No Workspaces", "No matching workspaces" and Archived Sessions' states. Gone: the Agents view and its button, ⌘.,
+  View ▸ Show Agents, the ⌥ + swipe through agent rows, Settled and its setting, agent pins and pinned closed
+  sessions, the page dots. Migration: `agentPins`, the Settled and old Archived folds and (outside a test's config
+  folder) `settleAfter` are removed at launch.
+- **First prompt.** An untitled session's name is its first typed prompt, cut at 100 characters with "…", read by
+  the same title script only while there is no title (Claude Code's transcript, pi's file, Codex's `preview`); the
+  hover card shows the whole name. UI tests point it at the fixture home (`-archivedHome`).
+- **Finding.** herdr 0.9.5 ignores an `agent_session_path` (pi) reported from outside pi's own integration, also
+  with the `herdr:pi` source; a `herdr:claude` session id is taken. The e2e test uses a Claude Code transcript in
+  the fixture home.
+- **Tests.** The session dots' clicks became ⌥⌘1–9 (`showPage`) and their checks `pageList()` (a `sidebar.sessions`
+  test value). New `SidebarAgentsTests`; the Agents view's tests and the Agents panel's are gone or moved to the
+  unfolded rows.
+- **Runs.** Chosen tests on CI: run 42530659327, 45 of 46 green (every test the change touches but the stress test);
+  `testPanelsAndSwitchesReactAtOnce` now counts the ⌥⌘1 that shows page one, and run 42532170243 ran it with
+  `testHundredsOfPanesStayQuick`, both green. Pictures, before (main 3e817298) and after, dark and light, every mockup state:
+  `~/Downloads/ovvi-research/p57b/r2/index.html`.
+- **For the user.** Pin a tab and drag it to another workspace; unfold several workspaces and watch an agent change
+  under the pointer (it moves 1 s after the pointer leaves); an untitled Claude Code, Codex or pi session's first
+  prompt in its row and hover card; Archived Sessions open while the workspaces scroll.
+
 ### Track C
 
 - **Cause.** libghostty underlines a link and reports it (the pointing hand) only while ⌘ or ⌃ is down, and its
