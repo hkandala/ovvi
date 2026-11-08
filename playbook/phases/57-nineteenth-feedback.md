@@ -202,5 +202,8 @@ runs and on-demand on the final head.
 - **Decisions:** a message from another day shows its date too ("Nov 5, 8:18 AM"). "Not sent" keeps its time and drops
   its tick. Two overlapping `checkmark` symbols make the double tick (SF Symbols has none). VoiceOver reads the time
   with "Sent" or "Delivered".
+- **Runs:** the long-chat tests failed on CI once the row ids sat on the text, not the bubble: the run's width check
+  measured from the bubble, and a reply whose text sat just above the top left the "rows at the top" set while its stamp
+  still showed. Both checks now measure the text; the ten chat tests ran green on CI.
 - **For the user:** reopen an old Claude Code, Codex, pi or OpenCode chat and check the times match the agent's; send
   while pi works and see one tick turn into two when it takes the message.
