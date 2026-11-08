@@ -66,7 +66,7 @@ extension OvviUITests {
         }
         try await send("mkdir -p \(folder) && printf '<title>Hang</title><p>ovvi-hang</p><img "
             + "src=\"http://127.0.0.1:\(port)/x.png\">' >\(folder)/hang.html && clear && "
-            + "while :; do nc -l 127.0.0.1 \(port) >/dev/null; done\r", to: shell)
+            + "while nc -l 127.0.0.1 \(port) >/dev/null; do :; done\r", to: shell)
         let browser = try await split(shell)
         try await Self.call(one, "pane.rename", ["pane_id": browser,
                                                  "label": "ovvi:browser#e2etwc file://\(folder)/hang.html"])

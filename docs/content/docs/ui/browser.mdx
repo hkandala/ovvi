@@ -478,7 +478,9 @@ gets the same card.
   (`webViewWebContentProcessDidTerminate`), the card loads the page again by
   itself, once per load, and WebKit brings back its scroll. A page whose
   process ends again before it loaded shows "The page stopped working" with
-  **Reload**, so the card never stays blank, also in a card out of view.
+  **Reload**, so the card never stays blank, also in a card out of view. A
+  load counts until it finished: a page whose load never ends (an image that
+  never answers) shows the failure on its next ended process.
 - Plain `http` needs `NSAllowsArbitraryLoadsInWebContent` and
   `NSAllowsLocalNetworking` in `Info.plist`.
 
