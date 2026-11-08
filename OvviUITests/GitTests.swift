@@ -134,6 +134,7 @@ extension OvviUITests {
         XCTAssertTrue(page.staticTexts.matching(NSPredicate(format: "value CONTAINS 'live 200'")).firstMatch
             .exists(within: 10))
         try await holdsItsPlace(page, card: card, shell: left)
+        stepsByFile(page)
 
         // Row 2's Working Tree opens it too, from the home.
         element("pane.\(card).diff.home").click()
@@ -158,6 +159,16 @@ extension OvviUITests {
         XCTAssertTrue(page.staticTexts.matching(NSPredicate(format: "value == 'x250'")).firstMatch.exists(within: 10))
         XCTAssertEqual(header.frame.minY, top, accuracy: 2, "c.txt moved")
         list.click()
+    }
+
+    /// ⇧[ and ⇧] step to the previous and next file's top: from c.txt at the top, the file before it, then c.txt again.
+    private func stepsByFile(_ page: XCUIElement) {
+        let header = page.buttons["Open c.txt"], top = page.frame.minY + 50
+        XCTAssertLessThan(header.frame.minY, top, "c.txt is not at the top: \(header.frame), page \(page.frame)")
+        app.typeKey("[", modifierFlags: .shift)
+        XCTAssertTrue(until(3) { header.frame.minY > top }, "⇧[ left c.txt at \(header.frame)")
+        app.typeKey("]", modifierFlags: .shift)
+        XCTAssertTrue(until(3) { header.frame.minY < top }, "⇧] put c.txt at \(header.frame)")
     }
 
     /// Revert puts a.txt back after a question; Revert All then deletes the untracked c.txt and d.txt, which its

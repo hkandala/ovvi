@@ -586,6 +586,14 @@ export async function make(place: Page, root: string, source: string) {
     scrollToChange(changes[change])
   }
 
+  /** The next or previous file's top, of those the filter shows: ⇧] and ⇧[. */
+  function stepFile(by: 1 | -1) {
+    const tops = files.filter((file) => !boxes.get(file.name)!.node.hidden)
+      .map((file) => ({ id: file.name, at: top(boxes.get(file.name)!.node) }))
+    const to = by > 0 ? tops.find(({ at }) => at > main.scrollTop + 1) : tops.findLast(({ at }) => at < main.scrollTop - 1)
+    if (to) reveal(to.id)
+  }
+
   api.on("control", ({ id, value }) => {
     if (id === "diff.home") ovvi.card.go(home(root))
     else if (id === "diff.layout") {
@@ -631,12 +639,15 @@ export async function make(place: Page, root: string, source: string) {
     event.preventDefault()
   }
   find.querySelector("button")!.onclick = closeFind
-  // ] and [ step to the next and previous change, as Next and Previous Change; not while the filter has the keyboard.
-  // Esc closes the bar after Return left it.
+  // ] and [ step to the next and previous change, as Next and Previous Change, ⇧] and ⇧[ to the next and previous file
+  // (⇧⌘] and ⇧⌘[ are the app's Next and Previous Tab); not while the filter has the keyboard. Esc closes the bar after
+  // Return left it.
   const keys = (event: KeyboardEvent) => {
     if (!place.shown || event.metaKey || event.ctrlKey || event.target === field) return
     if (event.key === "]") step(1)
     else if (event.key === "[") step(-1)
+    else if (event.key === "}") stepFile(1)
+    else if (event.key === "{") stepFile(-1)
     else if (event.key === "Escape" && !find.hidden) closeFind()
     else return
     event.preventDefault()
