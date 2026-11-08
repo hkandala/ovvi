@@ -207,10 +207,10 @@ extension OvviUITests {
 
     /// ⌥ shows a link as ⌘ does (the card's title is the link libghostty reports): pressed with the pointer on one,
     /// and held while the pointer moves to another; none once it is up.
-    private func optionShowsLinks(_ terminal: XCUIElement, _ one: XCUICoordinate, _ first: String,
+    private func optionShowsLinks(_ terminal: XCUIElement, _ start: XCUICoordinate, _ first: String,
                                   _ other: XCUICoordinate, _ end: String)
     {
-        one.hover()
+        start.hover()
         XCTAssertTrue(until(3) { terminal.title.isEmpty }, terminal.title)
         XCUIElement.perform(withKeyModifiers: .option) {
             XCTAssertTrue(until(3) { terminal.title.hasPrefix(first) }, terminal.title)

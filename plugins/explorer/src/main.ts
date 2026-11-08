@@ -13,8 +13,8 @@ import { htmlPage, kind, open, type Place, type Reveal, trail } from "./place"
 type Kind = ReturnType<typeof kind>
 
 /** Each place's controls in row 2; the rest hide. A file's row is one row for every kind: its breadcrumbs at the
- *  left, Show in File Explorer (and Open in Browser for HTML) and Open With at the right. Preview shows its page and zoom itself, Markdown its
- *  outline's toggle. */
+ *  left, Show in File Explorer (and Open in Browser for HTML) and Open With at the right. Preview shows its page and
+ *  zoom itself, Markdown its outline's toggle. */
 const CONTROLS: Record<Kind, string[]> = {
   files: ["root", "filter", "collapse", "hidden-files"],
   file: ["jump", "spacer", "wrap", "reveal", "open-with"],
