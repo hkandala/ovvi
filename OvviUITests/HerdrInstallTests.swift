@@ -49,4 +49,28 @@ extension OvviUITests {
         button.click()
         XCTAssertTrue(element("detail.installing").exists(within: 3))
     }
+
+    /// The machine button's Add Remote Host, filled and added.
+    func addHost(_ name: String, _ target: String) {
+        element("titlebar.machine").click()
+        app.menuItems["Add Remote Host…"].click()
+        let field = element("host.name")
+        XCTAssertTrue(field.exists(within: 3))
+        field.click()
+        app.typeText(name)
+        element("host.target").click()
+        app.typeText(target)
+        element("host.save").click()
+    }
+
+    /// ovvi-pw's password (or another), in the hidden field of ssh's question; Return answers.
+    func typePassword(_ password: String = "ovvi-e2e-pw") {
+        let answer = element("ask.answer")
+        XCTAssertTrue(answer.exists(within: connect))
+        XCTAssertEqual(answer.elementType, .secureTextField)
+        answer.click()
+        app.typeText(password)
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(answer.vanishes(within: 3))
+    }
 }

@@ -113,6 +113,9 @@ extension OvviUITests {
         let terminal = element("terminal.w1:p2")
         XCTAssertTrue(terminal.exists(within: connect))
         try await waitForPrompt("w1:p2")
+        // Drawn first: a click while the card still loaded was lost, and the window then gave herdr's focused pane
+        // the keyboard (the CI recording).
+        XCTAssertTrue(drawn("w1:p2", within: connect), element("pane.w1:p2").stringValue)
         terminal.click()
         XCTAssertTrue(hasKeyboard(terminal))
         app.typeText("echo relay-$((40+2))")
@@ -165,6 +168,7 @@ extension OvviUITests {
         let last = element("terminal.\(panes[5])")
         XCTAssertTrue(last.exists)
         try await waitForPrompt(panes[5])
+        XCTAssertTrue(drawn(panes[5], within: connect), element("pane.\(panes[5])").stringValue)
         last.click()
         XCTAssertTrue(hasKeyboard(last))
         app.typeText("echo ovvi-$((40+5))")
@@ -356,30 +360,6 @@ extension OvviUITests {
         edit.hover()
         edit.menuItems[name].click()
         XCTAssertTrue(element("host.name").exists(within: 3))
-    }
-
-    /// The machine button's Add Remote Host, filled and added.
-    func addHost(_ name: String, _ target: String) {
-        element("titlebar.machine").click()
-        app.menuItems["Add Remote Host…"].click()
-        let field = element("host.name")
-        XCTAssertTrue(field.exists(within: 3))
-        field.click()
-        app.typeText(name)
-        element("host.target").click()
-        app.typeText(target)
-        element("host.save").click()
-    }
-
-    /// ovvi-pw's password (or another), in the hidden field of ssh's question; Return answers.
-    func typePassword(_ password: String = "ovvi-e2e-pw") {
-        let answer = element("ask.answer")
-        XCTAssertTrue(answer.exists(within: connect))
-        XCTAssertEqual(answer.elementType, .secureTextField)
-        answer.click()
-        app.typeText(password)
-        app.typeKey(.return, modifierFlags: [])
-        XCTAssertTrue(answer.vanishes(within: 3))
     }
 
     /// The window's machine, by name.
