@@ -65,9 +65,7 @@ struct Detail: View {
                        delay: .milliseconds(300))
             }
         case .failed(.notFound):
-            let place = store.machine.isRemote ? " on \(store.machine.name)" : ""
-            install(store, title: "herdr is not installed\(place)", symbol: "shippingbox", button: "Install herdr",
-                    text: HerdrInstall.command, code: true)
+            install(store)
         case let .failed(.disconnected(text)):
             // Retries stopped: only Connect may ask (machines#health-check).
             let title = "Disconnected from \(store.machine.name)"
@@ -76,9 +74,9 @@ struct Detail: View {
                     .accessibilityIdentifier("detail.connect")
             }
         case let .failed(.unsupported(text)):
-            // The client asks again every 2 s, so an updated herdr clears it.
-            install(store, title: "herdr is too old", symbol: "arrow.up.circle", button: "Update herdr",
-                    text: text + ".")
+            // The client asks again every 2 s, so an updated herdr clears it. No button: the running server's version
+            // counts, and only a restart, which ends every program in the session, would change it.
+            EmptyState(symbol: "arrow.up.circle", title: "herdr is too old", text: text + ".", id: "detail")
         case .failed where !store.isRunning:
             // Why a start failed, if one did.
             let title = "\(store.session) is not running"
@@ -181,25 +179,28 @@ struct Detail: View {
         .padding(.bottom, 30)
     }
 
-    /// A missing or too old herdr, and its Install or Update button: the installer's progress while it runs, its
-    /// output when it failed.
-    @ViewBuilder private func install(_ store: HostStore, title: String, symbol: String, button: String,
-                                      text: String, code: Bool = false) -> some View
-    {
-        let machine = store.machine
-        switch HerdrInstall.shared.steps[machine.id] {
+    /// A missing herdr, its install command and Install herdr; the installer's progress and Cancel while it runs, its
+    /// output and Try Again when it failed (talking-to-herdr#install-herdr).
+    @ViewBuilder private func install(_ store: HostStore) -> some View {
+        let machine = store.machine, installs = HerdrInstall.shared
+        let run = { _ = Task { await installs.install(on: machine, session: store.session) } }
+        switch installs.steps[machine.id] {
         case let .running(line):
-            Loader(symbol: symbol, text: "Installing herdr…", detail: line, id: "detail.installing")
+            VStack(spacing: 16) {
+                Loader(symbol: "shippingbox", text: "Installing herdr…", detail: line, id: "detail.installing")
+                Button("Cancel") { installs.cancel(on: machine) }.buttonStyle(.glass).controlSize(.large)
+                    .accessibilityIdentifier("detail.cancel")
+            }
         case let .failed(output):
             let failed = "herdr did not install"
             EmptyState(symbol: "exclamationmark.triangle", title: failed, text: output, code: true, id: "detail") {
-                Button("Try Again") { Task { await HerdrInstall.shared.install(on: machine, session: store.session) } }
-                    .buttonStyle(.glassProminent).accessibilityIdentifier("detail.install")
+                Button("Try Again") { run() }.buttonStyle(.glassProminent).accessibilityIdentifier("detail.install")
             }
         case nil:
-            EmptyState(symbol: symbol, title: title, text: text, code: code, id: "detail") {
-                Button(button) { Task { await HerdrInstall.shared.install(on: machine, session: store.session) } }
-                    .buttonStyle(.glassProminent).accessibilityIdentifier("detail.install")
+            let title = "herdr is not installed" + (machine.isRemote ? " on \(machine.name)" : "")
+            EmptyState(symbol: "shippingbox", title: title, text: HerdrInstall.command, code: true, id: "detail") {
+                Button("Install herdr") { run() }.buttonStyle(.glassProminent)
+                    .accessibilityIdentifier("detail.install")
             }
         }
     }

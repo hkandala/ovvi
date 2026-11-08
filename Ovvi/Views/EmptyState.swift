@@ -6,7 +6,7 @@ struct EmptyState<Actions: View>: View {
     let symbol: String
     let title: String
     var text: String?
-    /// The line is a command or a program's output: monospaced, selectable, a few lines.
+    /// The line is a command or a program's output: monospaced, selectable, up to 12 lines.
     var code = false
     var compact = false
     /// The title's identifier; the line's is `<id>.text`.
@@ -22,7 +22,7 @@ struct EmptyState<Actions: View>: View {
                     .identifier(id)
                 if let text, !text.isEmpty {
                     Text(text).font(code ? .system(size: 12).monospaced() : .system(size: compact ? 12 : 13))
-                        .foregroundStyle(.secondary).lineLimit(code ? 8 : 3).textSelection(.enabled)
+                        .foregroundStyle(.secondary).lineLimit(code ? 12 : 3).textSelection(.enabled)
                         .identifier(id.map { "\($0).text" })
                 }
             }

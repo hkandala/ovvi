@@ -39,6 +39,8 @@ struct SessionPicker: View {
         .windowChrome(look)
         .background(WindowReader(pages: pages, fullScreen: $fullScreen, lightsOff: $lightsOff))
         .navigationTitle("New Window")
+        // A field's Esc goes on to here: the window closes, as nothing else in it has Esc.
+        .onExitCommand { pages.window?.performClose(nil) }
     }
 
     private var machines: [Machine] {
@@ -72,21 +74,25 @@ struct SessionPicker: View {
             case nil:
                 return [row(machine, "reading", machine.icon, "", title: "Reading sessions…", busy: true) {}]
             case let .failure(error):
-                let why = (error as? HerdrError) == .notFound ? "herdr is not installed" : "Not connected"
+                // A throwaway run never picks a session it did not list: `default` there is the user's.
+                guard !Self.throwaway else { return [] }
+                let why = switch error as? HerdrError {
+                case .notFound: "herdr is not installed"
+                case .disconnected: "Not connected"
+                default: error.localizedDescription
+                }
                 return [row(machine, "default", machine.icon, why) { pick("default", on: machine) }]
             case let .success(sessions):
                 let shown = sessions.filter { !Self.throwaway || $0.name.hasPrefix("ovvi-") }
                     .map { ($0.name, $0.running) }
                 // A Mac or machine with no session yet: its `default`, made by the pick.
                 let listed = shown.isEmpty && !Self.throwaway ? [("default", false)] : shown
-                return (listed.filter(\.1) + listed.filter { !$0.1 }).filter { $0.0.matches(filter) }
-                    .map { name, running in
-                        row(machine, name, "rectangle.stack", running ? "Running" : "Stopped") {
-                            pick(name, on: machine)
-                        }
-                    }
+                return (listed.filter(\.1) + listed.filter { !$0.1 }).map { name, running in
+                    row(machine, name, "rectangle.stack", running ? "Running" : "Stopped") { pick(name, on: machine) }
+                }
             }
         }
+        .filter { $0.title.matches(filter) }
     }
 
     /// A row of the machine's group, `<machine id>.<name>`: a session's, or its spinner.
@@ -101,5 +107,7 @@ struct SessionPicker: View {
     private func pick(_ session: String, on machine: Machine) {
         pages.machine = machine
         pages.open(session, start: !machine.isRemote)
+        // Only now a window of the machine: floats, the Dock's New Tab and the machine menu find it once it has a page.
+        pages.opened()
     }
 }

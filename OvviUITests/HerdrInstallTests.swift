@@ -3,13 +3,10 @@ import XCTest
 /// Install herdr (ui/states), each time with a fake installer, never herdr.dev's: on This Mac under a login shell with
 /// no herdr, and over SSH on CI's ovvi-pw, which has none.
 extension OvviUITests {
-    /// The page shows the command and Install; the installer's lines while it runs; then the page connects. The fake
-    /// puts a herdr in the shell's own home that runs the real one at the real home, so the page reaches session one.
+    /// The page shows the command and Install; the installer's lines while it runs; then the page connects.
     func testInstallingHerdrOnThisMacShowsItsProgressAndConnects() throws {
-        let herdr = try env("OVVI_HERDR")
-        let install = #"echo "  > downloading v9.9.9..."; sleep 2; mkdir -p "$HOME/.local/bin" && "#
-            + #"printf '#!/bin/sh\nHOME=%s exec %s "$@"\n' "$(eval echo ~$(id -un))" "\#(herdr)" "#
-            + #"> "$HOME/.local/bin/herdr" && chmod +x "$HOME/.local/bin/herdr""#
+        let install = "\(Self.fixtures)/no-herdr/install"
+        app.launchEnvironment["OVVI_E2E_HERDR"] = try env("OVVI_HERDR")
         app.launchEnvironment["SHELL"] = "\(Self.fixtures)/no-herdr/login-shell"
         app.launchEnvironment["PATH"] = "/usr/bin:/bin"
         relaunch(one, ["-herdrInstall", install])

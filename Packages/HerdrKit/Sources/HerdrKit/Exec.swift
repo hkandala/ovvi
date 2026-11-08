@@ -175,7 +175,8 @@ public final class ProcessExec: Exec {
         }
         guard ask else { return nil }
         let path = await Self.loginShell(environment).herdr
-        lookup.withLock { $0 = Lookup(path: path, asked: .now) }
+        // An ask that ended late never drops a path found meanwhile (an install's ask); a stale one is checked above.
+        lookup.withLock { $0 = Lookup(path: path ?? $0.path, asked: .now) }
         return path
     }
 

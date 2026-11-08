@@ -109,12 +109,12 @@ struct ContentView: View {
         .task {
             let opening = WindowPages.opening
             WindowPages.opening = nil
-            // New Window: a session to pick, none opened by itself.
+            // New Window: a session to pick, none opened by itself; it joins the windows with its first page.
             if let opening, opening.machine == nil {
                 picking = true
-            } else {
-                await restore(opening?.machine)
+                return
             }
+            await restore(opening?.machine)
             // Closed while it restored: nothing of it may stay.
             if Task.isCancelled {
                 pages.closed()

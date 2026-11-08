@@ -210,14 +210,20 @@ runs and on-demand on the final head.
   the session on This Mac and reads every page of the machine again. ⌘N opens `SessionPicker`: each machine's
   sessions on the Open Session panel's glass; a pick opens the first page.
 - **Decisions.** The lookup also tries `$HOME/.local/bin/herdr`, where the installer puts it, since macOS's zsh and
-  many remote shells lack that folder on `PATH`. Update herdr (too old) is the same install. A machine whose sessions
+  many remote shells lack that folder on `PATH`. "herdr is too old" gets no Update button: the running server's
+  version counts, and only a restart that ends its programs changes it. The install has Cancel. A machine whose sessions
   cannot be read lists `default` with why; its page has the fix (Install, Connect). The first window still opens
   `default`; restored windows are kept. A `-session` run's picker lists only `ovvi-*` sessions. Settings' search keeps
   the system's `ContentUnavailableView.search`, as System Settings has it. The sidebar's and Archived Sessions'
   states are left to Track B, which reuses the two views.
 - **Runs.** BEFORE pictures: an on-demand `testStateScenes` on a tag of main (run 42439654506).
-- **For the user.** Click Install herdr on a Mac or host without herdr; ⌘N with remote machines in the list (a host
-  that needs a password lists `default` "Not connected").
+- **No picture.** "No tabs in ‹workspace›" (herdr 0.9.5 closes a workspace with its last tab), "No layout for this
+  tab" (no split tree herdr sends fails), "The terminal stopped" (a stream failure needs a herdr updated under a
+  running server), and the loaders that show for under a second (a plugin opening, an agent starting, an overview
+  tile, a chat's history): each is the one `EmptyState` or `Loader` the pictured states show.
+- **For the user.** Click Install herdr on a Mac or host without herdr (Cancel, an offline Mac's error). ⌘N with
+  remote machines in the list: it reads every machine at once under BatchMode, so a host that needs a password lists
+  `default` "Not connected" and one that hangs shows its spinner row up to 30 s; Esc closes the window.
 
 ### Track C
 

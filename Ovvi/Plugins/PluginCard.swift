@@ -178,11 +178,7 @@ struct MissingPlugin: View {
             code: problem != nil,
             id: "\(id).missing",
         ) {
-            if problem != nil {
-                Button("Show Log") { PluginLog.show(label.plugin) }.accessibilityIdentifier("\(id).show-log")
-            } else {
-                Button("Show Placeholder") { pane.placeholder = true }.accessibilityIdentifier("\(id).show-placeholder")
-            }
+            Button("Show Placeholder") { pane.placeholder = true }.accessibilityIdentifier("\(id).show-placeholder")
             Button("Close Pane") { page.closePane(pane) }.accessibilityIdentifier("\(id).close-missing")
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

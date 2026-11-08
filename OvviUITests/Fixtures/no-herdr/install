@@ -1,0 +1,9 @@
+#!/bin/sh
+# A fake herdr installer (`-herdrInstall`): prints as herdr.dev's does, then puts a herdr in the shell's home that runs
+# the real one ($OVVI_E2E_HERDR) at the real home, so the page reaches the e2e sessions. Never the real installer.
+echo "  > downloading v9.9.9..."
+sleep 2
+mkdir -p "$HOME/.local/bin"
+printf '#!/bin/sh\nHOME=%s exec %s "$@"\n' "$(eval echo ~"$(id -un)")" "$OVVI_E2E_HERDR" >"$HOME/.local/bin/herdr"
+chmod +x "$HOME/.local/bin/herdr"
+echo "  > installed herdr to $HOME/.local/bin/herdr"

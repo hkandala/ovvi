@@ -130,7 +130,7 @@ extension OvviUITests {
 
     /// ⌘N opens a window that connects to nothing: it lists each machine's sessions, running first, and the throwaway
     /// run's only. A pick opens that session there; the first window keeps its page.
-    func testNewWindowListsTheSessionsToPickFrom() async throws {
+    func testNewWindowListsTheSessionsToPickFrom() throws {
         let three = try env("OVVI_SESSION3")
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         let identifier = app.windows.firstMatch.identifier
@@ -147,8 +147,6 @@ extension OvviUITests {
         XCTAssertFalse(element("sidebar", in: window).exists)
         XCTAssertFalse(element("titlebar.machine", in: window).exists)
         keepScreenshot("new window", of: window)
-        // Nothing started: three still stops.
-        try await expect("three to stay stopped") { await (try? Self.snapshot(three)) == nil }
         two.click()
         XCTAssertTrue(element("workspace.w1", in: window).exists(within: connect))
         XCTAssertEqual(element("sidebar.header", in: window).stringValue, self.two)

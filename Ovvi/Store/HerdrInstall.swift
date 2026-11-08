@@ -17,6 +17,8 @@ final class HerdrInstall {
 
     /// By machine id.
     private(set) var steps: [String: Step] = [:]
+    /// The running installers' ends, for Cancel.
+    @ObservationIgnored private var runs: [String: Channel] = [:]
 
     /// herdr.dev's install command; `-herdrInstall` gives the e2e tests a fake installer, so no test installs herdr.
     static var command: String {
@@ -33,8 +35,12 @@ final class HerdrInstall {
         let exec = await machine.exec()
         var printed: [String] = []
         do {
-            // Its errors go to stderr: one stream, in order, for the failure's text.
-            let channel = try await exec.run(["sh", "-c", Self.command + " 2>&1"])
+            // Every command's stderr on stdout, in order, for the failure's text (curl's own errors too), and a
+            // failed curl fails the pipe where the shell has pipefail (a `sh` without it exits on a bare `set`).
+            let script = "(set -o pipefail) 2>/dev/null && set -o pipefail; exec 2>&1; " + Self.command
+            let channel = try await exec.run(["sh", "-c", script])
+            runs[machine.id] = channel
+            defer { runs[machine.id] = nil }
             channel.closeInput()
             for await line in channel.lines {
                 let text = line.replacing(/\u{1B}\[[0-9;]*m/, with: "").trimmingCharacters(in: .whitespaces)
@@ -47,17 +53,22 @@ final class HerdrInstall {
             guard status == 0 else { throw HerdrError.failed("The installer exited with status \(status).") }
             await exec.forgetHerdr()
             guard try await exec.herdr() != nil else {
-                throw HerdrError.failed("herdr is installed, but the login shell on \(machine.name) does not find it.")
+                throw HerdrError.failed("No herdr on \(machine.name) after the install.")
             }
         } catch {
             steps[machine.id] = .failed((printed.suffix(6) + [error.localizedDescription]).joined(separator: "\n"))
             return
         }
         steps[machine.id] = .running("Connecting…")
-        if !machine.isRemote {
-            try? await HostStore.start(session, on: machine)
-        }
         let stores = HostStore.all.filter { $0.machine.id == machine.id }
+        if !machine.isRemote {
+            do {
+                try await HostStore.start(session, on: machine)
+            } catch {
+                // The "not running" page says why.
+                stores.first { $0.session == session }?.notice = Notice(text: error.localizedDescription)
+            }
+        }
         for store in stores {
             await store.client?.refresh()
         }
@@ -66,5 +77,10 @@ final class HerdrInstall {
             try? await Task.sleep(for: .milliseconds(100))
         }
         steps[machine.id] = nil
+    }
+
+    /// Ends the machine's running installer: the page shows it failed, with Try Again.
+    func cancel(on machine: Machine) {
+        runs[machine.id]?.terminate()
     }
 }

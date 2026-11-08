@@ -98,22 +98,28 @@ and watch files and run git the same way
 
 ## Install herdr
 
-- **Install herdr** (and **Update herdr** on a herdr that is too old) runs
-  the command from herdr's docs, `curl -fsSL https://herdr.dev/install.sh | sh`,
-  as `sh -c '<command> 2>&1'`: on This Mac in the app's environment, on a
+- **Install herdr** runs the command from herdr's docs,
+  `curl -fsSL https://herdr.dev/install.sh | sh`, as
+  `sh -c '(set -o pipefail) 2>/dev/null && set -o pipefail; exec 2>&1; <command>'`
+  (every command's errors in one stream, and a failed `curl` fails the pipe
+  where the shell has `pipefail`): on This Mac in the app's environment, on a
   remote machine over its SSH connection ([Run and dial](#run-and-dial)). It
   installs to `~/.local/bin`.
 - While it runs, the page shows the loader "Installing herdr…" with the
-  installer's last line under it (its colors taken out).
+  installer's last line under it (its colors taken out), and **Cancel**, which
+  ends it.
 - When it exits 0, the app forgets the machine's herdr path and asks the login
   shell again. On This Mac it then starts the page's session (D47). Every page
-  of the machine reads again, and the loader shows "Connecting…" until they
+  of the machine reads again; the loader's line says "Connecting…" until they
   leave "not installed" (at most 10 s).
-- When it fails, or the login shell still finds no herdr, the page shows
-  "herdr did not install" over the installer's last 6 lines and the reason,
-  with **Try Again**.
+- When it fails, is canceled, or the login shell still finds no herdr, the
+  page shows "herdr did not install" over the installer's last 6 lines and
+  the reason, with **Try Again**.
+- A herdr that is too old gets no button: the running server's version counts,
+  and only a restart of the session, which ends its programs, changes it.
 - `-herdrInstall <command>` replaces the command; the e2e tests use it, so no
   test runs herdr's installer.
+
 ## Requests
 
 - `call(method, params)`: run `herdr --session S remote-api-bridge`, write
