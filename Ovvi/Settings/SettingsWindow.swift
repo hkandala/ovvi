@@ -88,6 +88,8 @@ struct SettingsWindow: View {
                     ContentUnavailableView.search(text: search)
                 }
             }
+            // A little room between the search field and the first row (the user's ask).
+            .contentMargins(.top, 6, for: .scrollContent)
             .searchable(text: $search, placement: .sidebar)
             // As System Settings: the sidebar always shows.
             .toolbar(removing: .sidebarToggle)

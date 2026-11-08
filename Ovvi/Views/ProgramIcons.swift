@@ -43,22 +43,28 @@ struct ProgramTile: View {
     }
 }
 
-/// A page's symbol on its tile, as System Settings draws its rows but grey for every page (the user's pick): the same
-/// tile gives symbols of different shapes (a gear, a rectangle, a hand) one outline. The colors are System Settings'
-/// General tile, measured (its icons are the same in light and dark), and stay as they are in a selected row: fixed
-/// colors drawn as one layer, which the sidebar's selection does not tint.
+/// A page's symbol on its tile, as Raycast draws its settings (the user's pick, option b): a lifted tile of the
+/// sidebar's own tone, lit from the top with a fine rim, and a filled two-tone symbol; dark tiles in dark, light tiles
+/// in light. Fixed colors drawn as one layer, which the sidebar's selection does not tint.
 struct SettingsIcon: View {
     let page: SettingsPage
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        // About 70 % of the tile, as System Settings' glyphs (70–80 %, measured); 11 pt read too small.
-        Image(systemName: page.symbol).font(.system(size: 14, weight: .semibold)).imageScale(.medium)
-            .foregroundStyle(Color.white)
+        let dark = colorScheme == .dark
+        let shape = RoundedRectangle(cornerRadius: 6, style: .continuous)
+        Image(systemName: page.symbol).font(.system(size: 13, weight: .medium)).imageScale(.medium)
+            .symbolVariant(.fill).symbolRenderingMode(.hierarchical)
+            .foregroundStyle(dark ? Color(white: 236 / 255) : Color(red: 72 / 255, green: 72 / 255, blue: 78 / 255))
             .frame(width: 22, height: 22)
-            .background(LinearGradient(colors: [Color(red: 156 / 255, green: 155 / 255, blue: 161 / 255),
-                                                Color(red: 139 / 255, green: 139 / 255, blue: 144 / 255)],
-                                       startPoint: .top, endPoint: .bottom),
-                        in: .rect(cornerRadius: 5.5, style: .continuous))
+            .background(LinearGradient(colors: dark ? [Color(red: 80 / 255, green: 80 / 255, blue: 86 / 255),
+                                                       Color(red: 54 / 255, green: 54 / 255, blue: 59 / 255)]
+                    : [.white, Color(red: 236 / 255, green: 236 / 255, blue: 240 / 255)],
+                startPoint: .top, endPoint: .bottom), in: shape)
+            .overlay(shape.strokeBorder(LinearGradient(colors: dark ? [.white.opacity(0.22), .white.opacity(0.05)]
+                    : [.black.opacity(0.10), .black.opacity(0.16)],
+                startPoint: .top, endPoint: .bottom), lineWidth: 0.5))
+            .shadow(color: .black.opacity(dark ? 0.35 : 0.08), radius: 0.5, y: 0.5)
             .compositingGroup()
     }
 }

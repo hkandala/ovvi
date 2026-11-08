@@ -195,6 +195,17 @@ runs and on-demand on the final head.
 
 - "and the image for different settings variations is lost as it was in /tmp folder and i restarted macbook, can you
   show that image again". The options are drawn again into `~/Downloads/ovvi-research/`; the pick lands in this phase.
+- Item 25, "for settings, let's try out option b, and also can we add some padding between search and first menu
+  option, only slight increase": option b of `~/Downloads/ovvi-research/settings-icons/options.png`.
+
+### Findings (Settings icons)
+
+- **Fix.** `SettingsIcon` draws option b: a 22 pt tile with 6 pt corners, lit from the top (dark: #505056 to
+  #36363B with a light rim; light: white to #ECECF0 with a fine dark rim), and a filled two-tone (hierarchical)
+  symbol at 13 pt medium, #ECECEC in dark and #48484E in light. It stays one layer, so a selected row does not tint
+  it. The sidebar gets 6 pt above its first row (`contentMargins`).
+- **Pictures.** Before and after, the sidebar and the pages, dark and light: `/tmp/ovvi-shots/p57s/` and
+  `~/Downloads/ovvi-research/p57s/r2/`.
 
 ## Findings
 
