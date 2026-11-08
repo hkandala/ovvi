@@ -219,7 +219,7 @@ runs and on-demand on the final head.
   states are left to Track B, which reuses the two views.
 - **Cause (found by the pictures).** A machine that failed its first connect showed a blank page, not Reconnecting:
   the overlay sat on a view that drew nothing. Its content is now a clear view.
-- **Runs.** BEFORE pictures: an on-demand `testStateScenes` on a tag of main (run 42439654506), its W8 blank.
+- **Runs.** BEFORE pictures: an on-demand `testStateScenes` on a tag of main (run 42439654506), its W8 blank. AFTER pictures and the 24 chosen tests (picker, install on This Mac and over SSH, windows, remote, the restyled cards and pages) green on CI (runs 42442658071, 42443827701).
 - **No picture.** A plugin's error card (it needs a broken plugin package), "No tabs in ‹workspace›" (herdr 0.9.5 closes a workspace with its last tab), "No layout for this
   tab" (no split tree herdr sends fails), "The terminal stopped" (a stream failure needs a herdr updated under a
   running server), and the loaders that show for under a second (a plugin opening, an agent starting, an overview
