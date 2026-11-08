@@ -258,3 +258,28 @@ runs and on-demand on the final head.
 - **For the user.** In a Git diff, ⇧] and ⇧[ jump by file (not ⇧⌘] ⇧⌘[, which switch tabs). Try ⌃- and ⌃⇧- in File
   Explorer and Git against your other apps. ⌘A in a locked Source view selects the source, also with its preview
   shown; ⌘C copies it.
+
+### Track F
+
+- **How it was looked at.** The user's devvm-aai master, read only: one per-app socket (phase 56's fix is in the
+  running app), master alive, no `-D` (no remote card open). WebKit's unified log holds only hours, so no failure was
+  caught live. Each way the forward can die was played against a throwaway sshd on 127.0.0.1 with the app's exact
+  ssh argv.
+- **Cause: a forward lost while its master's pid lives.** The proxy kept ssh's `-D` port per master pid and checked the
+  master with `kill(pid, 0)`. A dead master's pid comes back fast on this Mac (pids went 68431 to 98041 in two
+  minutes), and an `-O cancel` or lost listener leaves the pid alive. Either way every page was refused until the last
+  card closed, which is what closing the window and connecting again did.
+- **Cause: the front could kill itself.** Its listener's start handler stayed on for its life: a later `.waiting`
+  (Network's "waiting for a network") or `.failed` cancelled it for good, and the store kept the dead port. Not seen
+  live: this Mac's network cannot be turned off under the other agents.
+- **Not causes.** A master that dies (SIGKILL, a dead link after 15 s of ServerAlive, sleep) is started again on the
+  next page, which forwards again. A page in the first 15 s after a dead link waits, then fails once. WebKit applies a
+  changed proxy to existing web views and keeps it across a crash of its network process. A refused proxy never falls
+  back to a direct load.
+- **Fix.** A `-D` port that nothing answers on gets one new forward and one more try. The master is checked with
+  `ssh -O check` then, so a reused pid is caught. A front whose listener ends by itself listens again on its port; a
+  wait for the network after it served is no longer an end.
+- **Decisions.** No retry when ssh accepted and the machine refused: that is a real answer. No wake or network
+  observer: the next page does the check.
+- **For the user.** With a devvm-aai browser card open, sleep the Mac for a while, wake it, and reload: the page loads
+  without closing the window.

@@ -99,5 +99,23 @@ extension OvviUITests {
         // The field keeps the address that failed.
         let address = element("browser.\(browser).address", in: remote).value as? String ?? ""
         XCTAssertTrue(address.hasPrefix("http://localhost:\(port + 1)"), address)
+
+        try await reloadsAfterTheForwardEnds(browser, port, in: remote)
+    }
+
+    /// ssh's forward gone while its master lives (as when a new process has the master's pid): the next page forwards
+    /// again. Then its master gone (as after a sleep): a new master, and a new forward on it. Each time a new name:
+    /// WebKit keeps a spare connection to the last one.
+    private func reloadsAfterTheForwardEnds(_ browser: String, _ port: Int, in remote: XCUIElement) async throws {
+        let ports = try await Self.post("\(one)/ssh-unforward", Data("ovvi-key".utf8))
+        XCTAssertFalse(ports.isEmpty)
+        element("browser.\(browser).address", in: remote).click()
+        app.typeText("healed.localhost:\(port)\r")
+        XCTAssertTrue(whoText("via=sshd host=healed.localhost:\(port)", in: remote).exists(within: 10))
+        let pids = try await Self.post("\(one)/ssh-drop", Data("ovvi-key".utf8))
+        XCTAssertFalse(pids.isEmpty)
+        element("browser.\(browser).address", in: remote).click()
+        app.typeText("dropped.localhost:\(port)\r")
+        XCTAssertTrue(whoText("via=sshd host=dropped.localhost:\(port)", in: remote).exists(within: connect))
     }
 }

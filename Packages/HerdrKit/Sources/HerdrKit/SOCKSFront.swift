@@ -8,48 +8,80 @@ import Synchronization
 /// connection the machine cannot open gets a "refused" reply at once (ssh closes it without a reply, and WebKit then
 /// waits 60 s).
 final class SOCKSFront: Sendable {
-    private let listener: NWListener
-    /// ssh's `-D` port on the live master.
-    private let upstream: @Sendable () async throws -> UInt16
+    /// The listener, replaced by a new one on its port when it ends by itself: the cards' store keeps that port.
+    let current = Mutex<(listener: NWListener?, stopped: Bool)>((nil, false))
+    /// ssh's `-D` port on the live master; given the port that did not answer, a new forward's.
+    private let upstream: @Sendable (_ dead: UInt16?) async throws -> UInt16
 
-    private init(_ listener: NWListener, upstream: @escaping @Sendable () async throws -> UInt16) {
-        self.listener = listener
+    private init(upstream: @escaping @Sendable (_ dead: UInt16?) async throws -> UInt16) {
         self.upstream = upstream
     }
 
     /// Listens on a free loopback port.
-    static func start(upstream: @escaping @Sendable () async throws -> UInt16) async throws -> SOCKSFront {
+    static func start(upstream: @escaping @Sendable (_ dead: UInt16?) async throws -> UInt16) async throws
+        -> SOCKSFront
+    {
+        let front = SOCKSFront(upstream: upstream)
+        try await front.listen(on: .any)
+        return front
+    }
+
+    private func listen(on port: NWEndpoint.Port) async throws {
         let parameters = NWParameters.tcp
-        parameters.requiredLocalEndpoint = .hostPort(host: .ipv4(.loopback), port: .any)
-        let front = try SOCKSFront(NWListener(using: parameters), upstream: upstream)
-        front.listener.newConnectionHandler = { [weak front] client in
-            guard let front else { return client.cancel() }
-            Task { await front.serve(client) }
+        parameters.requiredLocalEndpoint = .hostPort(host: .ipv4(.loopback), port: port)
+        // The ended listener's pages still hold the port.
+        parameters.allowLocalEndpointReuse = true
+        let listener = try NWListener(using: parameters)
+        listener.newConnectionHandler = { [weak self] client in
+            guard let self else { return client.cancel() }
+            Task { await self.serve(client) }
         }
         let waiting = Mutex<CheckedContinuation<Void, Error>?>(nil)
+        // Its port once ready.
+        let served = Mutex<NWEndpoint.Port?>(nil)
         try await withCheckedThrowingContinuation { continuation in
             waiting.withLock { $0 = continuation }
-            front.listener.stateUpdateHandler = { [weak front] state in
+            listener.stateUpdateHandler = { [weak self] state in
                 switch state {
-                case .ready: waiting.withLock { $0.take() }?.resume()
-                case let .failed(error), let .waiting(error):
-                    front?.listener.cancel()
-                    waiting.withLock { $0.take() }?.resume(throwing: error)
+                case .ready:
+                    served.withLock { $0 = listener.port }
+                    waiting.withLock { $0.take() }?.resume()
+                // A wait for the network after it served is not an end: the listener goes on by itself after it.
+                case .waiting where served.withLock { $0 } != nil: break
+                case .waiting, .failed: listener.cancel()
+                case .cancelled:
+                    waiting.withLock { $0.take() }?
+                        .resume(throwing: HerdrError.failed("The browser proxy did not start"))
+                    // One that served and ended without `stop` listens again on its port.
+                    if let self, let port = served.withLock({ $0 }), !current.withLock({ $0.stopped }) {
+                        Task { try? await self.listen(on: port) }
+                    }
                 default: break
                 }
             }
-            front.listener.start(queue: queue)
+            // Not after `stop`: a new listener would outlive the proxy.
+            guard current.withLock({ state in
+                if !state.stopped {
+                    state.listener = listener
+                }
+                return !state.stopped
+            }) else {
+                return continuation.resume(throwing: HerdrError.failed("The browser proxy stopped"))
+            }
+            listener.start(queue: Self.queue)
         }
-        return front
     }
 
     /// Set once it is ready.
     var port: NWEndpoint.Port {
-        listener.port ?? .any
+        current.withLock { $0.listener?.port } ?? .any
     }
 
     func stop() {
-        listener.cancel()
+        current.withLock {
+            $0.stopped = true
+            $0.listener?.cancel()
+        }
     }
 
     private static let queue = DispatchQueue(label: "ovvi.socks")
@@ -69,14 +101,15 @@ final class SOCKSFront: Sendable {
         guard let head = await client.read(4), head[0] == 5, head[1] == 1, let address = await address(client, head[3]),
               let port = await client.read(2)
         else { return client.cancel() }
-        guard let local = try? await upstream(), let endpoint = NWEndpoint.Port(rawValue: local) else {
-            return Self.answer(client, Self.failed)
+        let request = Data([5, 1, 0]) + head + address + port
+        guard let local = try? await upstream(nil) else { return Self.answer(client, Self.failed) }
+        // ssh's `-D` port that does not answer is gone (its master ended, or lost the forward): forwarded again, once.
+        var dialed = await Self.dial(local, request)
+        if dialed == nil, let again = try? await upstream(local) {
+            dialed = await Self.dial(again, request)
         }
-        let ssh = NWConnection(host: .ipv4(.loopback), port: endpoint, using: .tcp)
-        Self.start(ssh)
-        ssh.send(content: Data([5, 1, 0]) + head + address + port, completion: .idempotent)
-        guard await ssh.read(2) == Data([5, 0]), let reply = await ssh.readSome() else {
-            ssh.cancel()
+        guard let ssh = dialed, let reply = await ssh.readSome() else {
+            dialed?.cancel()
             return Self.answer(client, Self.refused)
         }
         client.send(content: reply, completion: .idempotent)
@@ -89,6 +122,19 @@ final class SOCKSFront: Sendable {
         }
         Self.pump(client, ssh, done)
         Self.pump(ssh, client, done)
+    }
+
+    /// A connection to ssh's `-D` with the page's request sent, once ssh greeted it; nil when nothing answers there.
+    private static func dial(_ local: UInt16, _ request: Data) async -> NWConnection? {
+        guard let endpoint = NWEndpoint.Port(rawValue: local) else { return nil }
+        let ssh = NWConnection(host: .ipv4(.loopback), port: endpoint, using: .tcp)
+        start(ssh)
+        ssh.send(content: request, completion: .idempotent)
+        guard await ssh.read(2) == Data([5, 0]) else {
+            ssh.cancel()
+            return nil
+        }
+        return ssh
     }
 
     /// The request's address, a `<name>.localhost` made `localhost`.

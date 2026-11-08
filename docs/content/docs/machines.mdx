@@ -160,7 +160,7 @@ description: "What a machine is, its sessions, the SSH connection, the health ch
   the app's own front on a loopback port, then ssh's forward on the master,
   `ssh -F /dev/null -S <ctl> -O forward -D 127.0.0.1:<P> <target>`. It runs
   from the machine's first browser card to its last (`-O cancel -D`), and
-  forwards again on a new master
+  forwards again on a new master, or when its port stops answering
   ([Remote localhost](/docs/ui/browser#remote-localhost)).
 - **Plugin cards** of a remote machine read, save, list and watch files and
   run git over the relay. There is no Open With, a file over 4 MiB opens read

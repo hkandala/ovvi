@@ -321,9 +321,9 @@ extension SSHExec {
     /// machine that needs one fails the page until Connect.
     public func openProxy() async throws -> NWEndpoint.Port {
         if proxy == nil {
-            let front = try await SOCKSFront.start { [weak self] in
+            let front = try await SOCKSFront.start { [weak self] dead in
                 guard let self else { throw HerdrError.disconnected("Closed") }
-                return try await dynamicPort()
+                return try await dynamicPort(dead: dead)
             }
             // Another card's start may have won meanwhile.
             if proxy == nil {
@@ -354,8 +354,16 @@ extension SSHExec {
         _ = await control(["-O", "cancel", "-D", "127.0.0.1:\(dynamic.port)"])
     }
 
-    /// ssh's `-D` port on the live master, forwarded once per master (one at a time).
-    private func dynamicPort() async throws -> UInt16 {
+    /// ssh's `-D` port on the live master, forwarded once per master (one at a time), and again when the last one did
+    /// not answer: gone with a master whose pid another process has now (`kill` passes), or lost by it.
+    private func dynamicPort(dead: UInt16?) async throws -> UInt16 {
+        if let dead, let forwarded = dynamic?.pid, dynamic?.port == dead {
+            dynamic = nil
+            // Unless a new master started meanwhile.
+            if await pid() != forwarded, connection == forwarded {
+                connection = nil
+            }
+        }
         try await up(nil)
         if let dynamic, dynamic.pid == connection {
             return dynamic.port
