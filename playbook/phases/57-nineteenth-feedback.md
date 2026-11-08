@@ -291,6 +291,8 @@ runs and on-demand on the final head.
   ("Stop Editing"), the macOS idiom of one glyph lit while a mode is on. Options drawn side by side first: the lock,
   pencil.slash / pencil (the slash is hard to read at 11 pt), eye / pencil (two glyphs for one switch), square.and.pencil
   (reads as New Note), eyeglasses / pencil.line. Lock Editing (⌘E) keeps its lock: its checkmark means locked.
+- **Runs, round 2.** Chosen tests 42527697268 green (3 tests: Markdown, the header's floating row, the floated
+  browser).
 - **Runs.** Chosen tests 42440766856 red on the first fix (line numbers only: Source's divider still ended Select All
   outside the editor; the diff lost the keyboard to row 2's button), 42442867391 green (6 tests). The floating header
   check in testAPluginsHeaderDrawsItsManifestsControls is not reached on CI: that test fails before it on main since
