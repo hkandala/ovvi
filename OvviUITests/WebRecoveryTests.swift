@@ -12,9 +12,10 @@ extension OvviUITests {
         addTeardownBlock { [one] in
             _ = try? await Self.call(one, "pane.send_text", ["pane_id": shell, "text": "rm -rf \(folder)\r"])
         }
+        // Short Markdown lines: CI's narrow cards wrap long ones, and one wheel scroll must reach the end.
         try await send("mkdir -p \(folder) && cd \(folder) && { echo '<title>Long</title>'; for i in $(seq 200); do "
-            + "echo \"<p>Paragraph $i</p>\"; done; } >long.html && { echo '# Notes'; for i in $(seq 300); do "
-            + "echo \"- Line $i, **bold** and \\`code\\`\"; done; } >notes.md && clear && echo ready-$((6*7))\r",
+            + "echo \"<p>Paragraph $i</p>\"; done; } >long.html && { echo '# Notes'; for i in $(seq 120); do "
+            + "echo \"- Line $i, **b** \\`c\\`\"; done; } >notes.md && clear && echo ready-$((6*7))\r",
             to: shell)
         try await waitFor(shell) { $0.contains("ready-42") }
         let browser = try await split(shell), markdown = try await split(browser)
@@ -25,7 +26,7 @@ extension OvviUITests {
         try await show(tab)
         let notes = element("markdown.\(markdown).page")
         let heading = notes.staticTexts.matching(NSPredicate(format: "value == 'Notes'")).firstMatch
-        let last = notes.staticTexts.matching(NSPredicate(format: "value BEGINSWITH 'Line 300,'")).firstMatch
+        let last = notes.staticTexts.matching(NSPredicate(format: "value BEGINSWITH 'Line 120,'")).firstMatch
         XCTAssertTrue(pageText("Paragraph 1").exists(within: 15))
         XCTAssertTrue(heading.exists(within: 15))
         element("browser.\(browser)").scroll(byDeltaX: 0, deltaY: -10000)
