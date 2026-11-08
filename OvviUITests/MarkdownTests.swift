@@ -180,6 +180,7 @@ extension OvviUITests {
         let link = page.links["Other"].frame
         app.typeKey("e", modifierFlags: .command)
         XCTAssertTrue(element("pane.\(card).lock").has(\.isSelected, true, within: 3))
+        XCTAssertEqual(element("pane.\(card).lock").label, "Stop Editing")
         let editor = page.textViews.firstMatch
         XCTAssertTrue(until(5) { editor.exists && editor.stringValue.contains("## Second") }, editor.stringValue)
         XCTAssertTrue(editor.stringValue.contains("Some words."))

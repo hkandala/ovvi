@@ -93,7 +93,7 @@
       { "id": "markdown-lock", "type": "toggle", "title": "Lock Markdown for reading", "default": true }
     ],
     "commands": [
-      { "id": "lock-editing", "title": "Lock Editing", "menu": "view", "key": "cmd+e", "symbol": "pencil",
+      { "id": "lock-editing", "title": "Lock Editing", "menu": "view", "key": "cmd+e", "symbol": "lock",
         "keywords": ["markdown", "read", "edit", "unlock"] }
     ]
   }

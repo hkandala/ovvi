@@ -283,7 +283,14 @@ runs and on-demand on the final head.
 - **Decisions, item 15.** Every ⌘ pair of `[` `]` is Ovvi's: ⌘ panes, ⇧⌘ tabs, ⌃⌘ workspaces, ⌥⌘ sessions. So a
   diff steps by file on } and { (⇧] ⇧[), the shifted pair of ] [ (by change), which is what the user's "cmd + [ ]"
   means. A step into a folded (Viewed) file unfolds it, as a pick in the file list does.
-- **Decisions, item 16.** 6 pt above a floated browser's toolbar and a plugin's row 2; pane cards unchanged.
+- **Decisions, item 16.** 6 pt above a floated browser's toolbar and a plugin's row 2; pane cards unchanged (4 pt
+  since item 21).
+- **Decisions, item 21.** 4 pt above the row: its 22 pt buttons, centered in 36 pt, then sit 11 pt from the card's top
+  edge, as from its left. The tests compare Back's two insets.
+- **Decisions, item 26.** Markdown's lock is a pencil, gray while locked ("Edit") and in the accent while editing
+  ("Stop Editing"), the macOS idiom of one glyph lit while a mode is on. Options drawn side by side first: the lock,
+  pencil.slash / pencil (the slash is hard to read at 11 pt), eye / pencil (two glyphs for one switch), square.and.pencil
+  (reads as New Note), eyeglasses / pencil.line. Lock Editing (⌘E) keeps its lock: its checkmark means locked.
 - **Runs.** Chosen tests 42440766856 red on the first fix (line numbers only: Source's divider still ended Select All
   outside the editor; the diff lost the keyboard to row 2's button), 42442867391 green (6 tests). The floating header
   check in testAPluginsHeaderDrawsItsManifestsControls is not reached on CI: that test fails before it on main since
