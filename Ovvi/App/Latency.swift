@@ -19,8 +19,8 @@ func afterCommit(_ extra: CFRunLoopActivity = [], _ body: @escaping @MainActor (
 
 /// e2e (`-recordLatency YES`): for each key or click, the time from the event to the end of the run loop turn whose
 /// Core Animation commit drew a change of the key window (its page, workspace, tab, tabs, cards, panel or dialog),
-/// how many turns that took, and the time from the app taking the event to that end: "⌘T 12ms 0 9ms" (the
-/// last because an accessibility client's queries can hold the event back for seconds).
+/// how many turns that took, the time from the app taking the event to that end (an accessibility client's queries
+/// can hold the event back for seconds), and how many times a panel's list was made for it: "⌘T 12ms 0 9ms 0".
 @MainActor @Observable
 final class Latency {
     static let shared = Latency()
@@ -28,6 +28,13 @@ final class Latency {
     private(set) var recorded: [String] = []
     /// The window's open panel, as it was last drawn.
     @ObservationIgnored var panel = ""
+    /// A panel's filter as its list last read it: each typed key's rows. Each read counts: a list drawn again and
+    /// again for one key shows in the key's record.
+    @ObservationIgnored var filter = "" {
+        didSet { lists += 1 }
+    }
+
+    @ObservationIgnored private var lists = 0
     @ObservationIgnored private var pending: Pending?
     private struct Pending {
         let name: String, time: TimeInterval, state: String
@@ -114,6 +121,7 @@ final class Latency {
         let name = event.type == .keyDown
             ? Self.glyphs(event.modifierFlags) + (event.charactersIgnoringModifiers ?? "").uppercased() : "click"
         pending = Pending(name: name, time: event.timestamp, state: state)
+        lists = 0
     }
 
     private func turned(sleeps: Bool) {
@@ -125,7 +133,7 @@ final class Latency {
         if state != pending.state {
             self.pending = nil
             let work = ProcessInfo.processInfo.systemUptime - pending.taken
-            record("\(pending.name) \(Int(elapsed * 1000))ms \(pending.turns) \(Int(work * 1000))ms")
+            record("\(pending.name) \(Int(elapsed * 1000))ms \(pending.turns) \(Int(work * 1000))ms \(lists)")
         } else if elapsed > 3 {
             self.pending = nil
         } else {
@@ -140,7 +148,7 @@ final class Latency {
         let workspace = page.selectedWorkspace, tab = page.selectedTab
         return [page.id, workspace?.id ?? "", tab?.id ?? "", workspace?.tabs.map(\.id).joined(separator: ",") ?? "",
                 tab?.tree?.paneIDs.joined(separator: ",") ?? "", page.zoomedPaneID ?? "",
-                page.closing == nil ? "" : "closing", panel, pages.overview ? "overview" : ""]
+                page.closing == nil ? "" : "closing", panel, filter, pages.overview ? "overview" : ""]
             .joined(separator: " ")
     }
 

@@ -85,6 +85,7 @@ struct FilterList: View {
     var body: some View {
         let items = items(filter)
         let index = current(items)
+        let _ = Latency.shared.filter = filter // swiftlint:disable:this redundant_discardable_let
         VStack(alignment: .leading, spacing: 2) {
             FilterField(prompt: prompt, text: $filter, identifier: "\(name).filter", symbol: fieldSymbol,
                         autofocus: autofocus)
@@ -130,7 +131,11 @@ struct FilterList: View {
                             }
                         }
                         .padding(.bottom, inset)
-                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { rowsHeight = $0 }
+                        // Up to the most it shows: a lazy stack's height is a guess that changes as it measures rows,
+                        // and each change made the list again (45 times for one key at 130 rows, 300 ms).
+                        .onGeometryChange(for: CGFloat.self) { min($0.size.height, maxHeight) } action: {
+                            rowsHeight = $0
+                        }
                     }
                     .scrollIndicators(.never)
                     .frame(height: min(rowsHeight, maxHeight))
@@ -175,44 +180,46 @@ struct FilterList: View {
         .onChange(of: items.isEmpty ? nil : items[index].id, initial: true) { lit?.wrappedValue = $1 }
     }
 
-    /// A row, with a header or a divider above it where its section changes.
-    @ViewBuilder
+    /// A row, with a header or a divider above it where its section changes. One view: a header beside its row made
+    /// the lazy stack make 5 to 8 times as many rows.
     private func row(_ items: [Item], _ offset: Int, _ index: Int) -> some View {
         let item = items[offset]
-        if item.section != (offset > 0 ? items[offset - 1].section : nil) {
-            if let section = item.section, !section.isEmpty {
-                Text(section).font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 8).padding(.top, offset > 0 ? 6 : 0)
-                    .accessibilityIdentifier("\(name).section.\(section)")
-                    .accessibilityAddTraits(.isHeader)
-            } else {
-                Divider().padding(4)
+        return VStack(alignment: .leading, spacing: 2) {
+            if item.section != (offset > 0 ? items[offset - 1].section : nil) {
+                if let section = item.section, !section.isEmpty {
+                    Text(section).font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 8).padding(.top, offset > 0 ? 6 : 0)
+                        .accessibilityIdentifier("\(name).section.\(section)")
+                        .accessibilityAddTraits(.isHeader)
+                } else {
+                    Divider().padding(4)
+                }
             }
-        }
-        Button { act(item) } label: {
-            MenuRow(item: item, selected: offset == index, height: rowHeight)
-        }
-        .buttonStyle(ChromeStyle(selected: offset == index, tint: .accentColor))
-        .accessibilityIdentifier("\(name).\(item.id)")
-        .accessibilityValue(item.state?.word ?? item.note ?? "")
-        .accessibilityAddTraits(offset == index ? .isSelected : [])
-        // After the row's accessibility, which would name this button too.
-        .overlay(alignment: .trailing) {
-            // Not while its spinner shows.
-            if let button = item.button, offset == index, !item.busy {
-                Button(button.title, role: item.buttonRole, action: button.act)
-                    .buttonStyle(RowButtonStyle())
-                    .padding(.trailing, 4)
-                    .accessibilityIdentifier("\(name).\(item.id).\(button.title.lowercased())")
+            Button { act(item) } label: {
+                MenuRow(item: item, selected: offset == index, height: rowHeight)
             }
-        }
-        .modifier(MenuRowDrop(target: item.drop))
-        // The light follows the pointer, as in a menu.
-        .onContinuousHover { phase in
-            guard case .active = phase, NSEvent.mouseLocation != pointer else { return }
-            pointed = true
-            litID = item.id
+            .buttonStyle(ChromeStyle(selected: offset == index, tint: .accentColor))
+            .accessibilityIdentifier("\(name).\(item.id)")
+            .accessibilityValue(item.state?.word ?? item.note ?? "")
+            .accessibilityAddTraits(offset == index ? .isSelected : [])
+            // After the row's accessibility, which would name this button too.
+            .overlay(alignment: .trailing) {
+                // Not while its spinner shows.
+                if let button = item.button, offset == index, !item.busy {
+                    Button(button.title, role: item.buttonRole, action: button.act)
+                        .buttonStyle(RowButtonStyle())
+                        .padding(.trailing, 4)
+                        .accessibilityIdentifier("\(name).\(item.id).\(button.title.lowercased())")
+                }
+            }
+            .modifier(MenuRowDrop(target: item.drop))
+            // The light follows the pointer, as in a menu.
+            .onContinuousHover { phase in
+                guard case .active = phase, NSEvent.mouseLocation != pointer else { return }
+                pointed = true
+                litID = item.id
+            }
         }
     }
 

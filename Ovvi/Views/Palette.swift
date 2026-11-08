@@ -17,9 +17,19 @@ struct Palette: View {
     @State private var kept: String?
     /// The root's filter when it names a file or folder on the page's machine, and its path: an Open row first.
     @State private var pasted: (filter: String, path: String)?
+    /// The commands and the root's rows as the palette opened: made again on each body, the list followed every
+    /// change of a tab's title or panes while it was open.
+    @State private var made: Made?
+
+    private struct Made {
+        let list: [Command]
+        let commands: [(item: FilterList.Item, keywords: String)]
+        let places: [(item: FilterList.Item, keywords: String)]
+    }
 
     var body: some View {
-        let list = commands.all
+        let made = made ?? make()
+        let list = made.list
         let command = sub.flatMap { title in list.first { $0.title == title } }
         VStack(alignment: .leading, spacing: 2) {
             // A sub-page says where you are.
@@ -29,7 +39,7 @@ struct Palette: View {
                     .accessibilityIdentifier("palette.title")
                     .accessibilityAddTraits(.isHeader)
             }
-            palette(command, list)
+            palette(command, made)
         }
         .padding([.horizontal, .top], 10)
         .frame(width: 480)
@@ -42,15 +52,17 @@ struct Palette: View {
                   kept != nil else { return }
             command?.menu.first { lit == Self.choiceID($0) }?.action()
         }
+        // The first body's: later ones read no tab or agent.
+        .onAppear { self.made = made }
         .onDisappear { putBack() }
     }
 
-    private func palette(_ command: Command?, _ list: [Command]) -> some View {
+    private func palette(_ command: Command?, _ made: Made) -> some View {
         FilterList(
             prompt: command?.field?.prompt ?? (command?.name == nil ? "Search" : "Name"),
             fieldSymbol: command?.field != nil ? command?.symbol : command?.name == nil ? "magnifyingglass" : "pencil",
             name: "palette",
-            items: command.map(subItems) ?? { rootItems($0, list) },
+            items: command.map(subItems) ?? { rootItems($0, made) },
             // The root lights the selected tab: ↩ on a fresh palette stays put. A floating window's lists no tabs.
             start: command.map(start) ?? (commands.floating != nil ? 0
                 : page.selectedWorkspace?.tabs.firstIndex { $0.id == page.selectedTab?.id } ?? 0),
@@ -84,9 +96,8 @@ struct Palette: View {
     /// starts with the filter ("font size": Font Size › before Increase Font Size), then to commands before places,
     /// then to the earlier row (the menu's and the sidebar's order). A keyword match
     /// ranks under a title match.
-    private func rootItems(_ filter: String, _ list: [Command]) -> [FilterList.Item] {
-        // A floating window's palette lists only its commands (D50).
-        let commands = commandRows(list), places = self.commands.floating == nil ? placeRows() : []
+    private func rootItems(_ filter: String, _ made: Made) -> [FilterList.Item] {
+        let commands = made.commands, places = made.places
         guard !filter.trimmingCharacters(in: .whitespaces).isEmpty else {
             let rows = (places + commands).map(\.item)
             return Command.Group.allCases.flatMap { group in rows.filter { $0.section == group.rawValue } }
@@ -110,6 +121,12 @@ struct Palette: View {
             (item.note, item.section) = (item.section, nil)
             return item
         }
+    }
+
+    private func make() -> Made {
+        let list = commands.all
+        // A floating window's palette lists only its commands (D50).
+        return Made(list: list, commands: commandRows(list), places: commands.floating == nil ? placeRows() : [])
     }
 
     /// The enabled commands; a setting says what it does now ("Turn On Focus Follows Mouse").

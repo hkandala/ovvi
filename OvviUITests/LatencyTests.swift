@@ -14,6 +14,9 @@ extension OvviUITests {
         key("k", .command) { palette.exists }
         key(escape, []) { !palette.exists }
         key("k", .command) { palette.exists }
+        // The first letter and the last ⌫ change every row (the groups' headers go or come back).
+        key("s", []) { palette.value as? String == "s" }
+        key(XCUIKeyboardKey.delete.rawValue, []) { self.element("palette.section.Tabs").exists }
         key(escape, []) { !palette.exists }
         key("t", [.command, .option]) { openSession.exists }
         // Its first draw lists the sessions the page read as it connected, not an empty list that fills a moment later.
@@ -33,6 +36,14 @@ extension OvviUITests {
         try await Task.sleep(for: .seconds(1))
         try await swipe(sidebar, by: sidebar.frame.width / 2, until: name, \.stringValue, one)
         try await Task.sleep(for: .seconds(1))
+        // A typed filter's rows made once or twice, not again for each height the lazy list guessed (60 times for
+        // the first letter at 110 rows).
+        let typed = recorded().filter { ["S", "\u{7F}"].contains($0.name) }
+        XCTAssertEqual(typed.map(\.name), ["S", "\u{7F}"])
+        for entry in typed {
+            XCTAssertEqual(entry.turns, 0, entry.name)
+            XCTAssertLessThanOrEqual(entry.lists, 3, entry.name)
+        }
         // Each drawn in the key's own turn.
         let keys = recorded().filter { ["⌘", "⌃", "⇧", "⌥"].contains($0.name.first.map(String.init)) }
         // ⌥⌘1 first: `showPage` above.
@@ -294,15 +305,17 @@ extension OvviUITests {
         Thread.sleep(forTimeInterval: 0.5)
     }
 
-    /// "⌘T 12ms 0 9ms": the key, the time to its frame, the turns, the app's own time; "swipe 230ms 0:145.0,…".
+    /// "⌘T 12ms 0 9ms 0": the key, the time to its frame, the turns, the app's own time, the lists made;
+    /// "swipe 230ms 0:145.0,…".
     struct Entry {
-        let name: String, turns: Int
+        let name: String, turns: Int, lists: Int
     }
 
     func recorded() -> [Entry] {
         element("app.latency").stringValue.split(separator: "; ").map { entry in
             let words = entry.split(separator: " ").map(String.init)
-            return Entry(name: words.first ?? "", turns: Int(words.count > 2 ? words[2] : "") ?? -1)
+            return Entry(name: words.first ?? "", turns: Int(words.count > 2 ? words[2] : "") ?? -1,
+                         lists: Int(words.count > 4 ? words[4] : "") ?? -1)
         }
     }
 }
