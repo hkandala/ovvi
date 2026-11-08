@@ -33,11 +33,14 @@ export const choose = (ovvi: Ovvi, change: Own) => ovvi.state.set({ ...ovvi.stat
 /** A file's extension, lowercased; "" for none, also for a dotfile's name (as `NSString.pathExtension`). */
 export const extension = (path: string) => (/[^/]\.([^./]+)$/.exec(path)?.[1] ?? "").toLowerCase()
 
+/** A path's `file:` address. */
+export const fileURL = (path: string) => `file://${path.split("/").map(encodeURIComponent).join("/")}`
+
 /** An HTML file's `file:` page, which opens in the browser: on This Mac only, as a remote card never shows a file over
  *  `file:`. None for another path or a web address. */
 export const htmlPage = (ovvi: Ovvi, path: string) =>
   !ovvi.card.machine.remote && path.startsWith("/") && ["html", "htm"].includes(extension(path))
-    ? `file://${path.split("/").map(encodeURIComponent).join("/")}` : undefined
+    ? fileURL(path) : undefined
 
 /** What Preview draws of a file, by its extension: the kinds in places.json, "" for the info view. */
 export const drawn = (path: string) => {
@@ -69,9 +72,9 @@ export const open = (ovvi: Ovvi, arg: string, how: How, plugin?: string) =>
   void ovvi.open(arg, { plugin, how, background: how !== "card" }).catch((error) => console.error(error))
 
 /** A row's or a link's menu at the pointer: Open (Open as Root for a folder), Open in New Tab, Open to the Side;
- *  Rename when the row can be renamed; a link's Copy Link, as WebKit's own menu had. */
+ *  Rename when the row can be renamed; a link's Copy Link (of `link`, its path or address), as WebKit's own menu had. */
 export async function menu(ovvi: Ovvi, event: MouseEvent, arg: string,
-  more: { rename?: () => void; link?: boolean; plugin?: string } = {}) {
+  more: { rename?: () => void; link?: string; plugin?: string } = {}) {
   event.preventDefault()
   const picked = await ovvi.menu.show([
     // A web address that ends in `/` is no folder.
@@ -82,7 +85,7 @@ export async function menu(ovvi: Ovvi, event: MouseEvent, arg: string,
     ...(more.link ? ["-" as const, { value: "copy", title: "Copy Link" }] : []),
   ])
   if (picked === "rename") more.rename?.()
-  else if (picked === "copy") ovvi.clipboard.write(arg).catch(console.error)
+  else if (picked === "copy" && more.link) ovvi.clipboard.write(more.link).catch(console.error)
   else if (picked) open(ovvi, arg, picked as How, more.plugin)
 }
 

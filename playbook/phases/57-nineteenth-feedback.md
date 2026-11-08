@@ -147,3 +147,26 @@ runs and on-demand on the final head.
 
 - "and the image for different settings variations is lost as it was in /tmp folder and i restarted macbook, can you
   show that image again". The options are drawn again into `~/Downloads/ovvi-research/`; the pick lands in this phase.
+
+## Findings
+
+### Track C
+
+- **Cause.** libghostty underlines a link and reports it (the pointing hand) only while ⌘ or ⌃ is down, and its
+  link rules are not in its config. The app now gives libghostty ⌘ in place of ⌥ alone: with plain pointer moves,
+  and on any modifier change with the pointer still over the terminal and no button down (off the view first, since
+  libghostty looks again only on a new cell). Drags keep their own modifiers, so ⌥-drag still makes a rectangle.
+- **Fix.** Every other card already looked the same with ⌘, ⌥ or neither. Unlocked Markdown drew no hover on its
+  live links: links off the caret's line now underline and show the pointing hand, as locked.
+- **Decisions.** A link to an HTML file on This Mac opens its page in a browser pane everywhere a link is (the
+  terminal, Markdown, with the link's query and fragment); File Explorer's tree and Git diffs open HTML as text, and
+  a file card on HTML has Open in Browser (`globe`, before Open With), which opens the page in a new tab, selected.
+  On a remote machine HTML opens as a file. Copy Link on such a link still copies the path.
+- **Decisions.** The terminal's accessibility title is the link under the pointer while ⌘ or ⌥ is down: VoiceOver
+  reads it, and the UI test checks ⌥ through it.
+- **Runs.** testCommandClickOnALinkOpensIt (⌥ pressed over a link, moved to another, released) and the new
+  testHtmlOpensInTheBrowserFromLinksAndTheFileCard (⌘- and ⌥-click on a Markdown link to HTML, the button, no
+  button on a `.txt`) green locally.
+- **For the user.** Hold ⌥ over a terminal link with the pointer still, then move it: the underline and the
+  pointing hand show as with ⌘. A ⌥-drag still selects a rectangle. Open an `.html` from File Explorer: it shows as
+  text with the globe button.

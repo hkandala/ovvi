@@ -12,7 +12,7 @@ import { Compartment, EditorState, Prec } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
 import { code, type Editor, editor, selected } from "./editor"
 import { containers, editing, live, referenceField, ticked } from "./live"
-import { choose, how, htmlPage, menu, open, own, type Place, type Reveal, symbols } from "./place"
+import { choose, fileURL, how, htmlPage, menu, open, own, type Place, type Reveal, symbols } from "./place"
 import { sideBySide } from "./split"
 
 type Mode = "rich" | "source"
@@ -206,8 +206,13 @@ export async function show(place: Place): Promise<Reveal> {
     const target = link.getAttribute("href") ?? ""
     if (/^https?:/i.test(target)) return target
     if (!target || target.startsWith("#") || /^[a-z][a-z\d+.-]*:/i.test(target)) return undefined
-    const base = `file://${arg.split("/").map(encodeURIComponent).join("/")}`
-    return decodeURIComponent(new URL(target, base).pathname)
+    return decodeURIComponent(new URL(target, fileURL(arg)).pathname)
+  }
+
+  /** A link's HTML file's page (`htmlPage`), with the link's query and fragment. */
+  function html(link: Element, to: string) {
+    const page = htmlPage(ovvi, to)
+    return page && page + (/[?#].*$/.exec(link.getAttribute("href") ?? "")?.[0] ?? "")
   }
 
   /** The link draws as one: locked, and unlocked off the caret's lines. On a caret's line it shows its source,
@@ -246,8 +251,8 @@ export async function show(place: Place): Promise<Reveal> {
       })
       if (heading) view.dispatch({ effects: EditorView.scrollIntoView(heading.from, { y: "start" }) })
     } else {
-      const to = address(link), html = to ? htmlPage(ovvi, to) : undefined
-      if (to) open(ovvi, html ?? to, how(event), html ? "browser" : undefined)
+      const to = address(link), page = to ? html(link, to) : undefined
+      if (to) open(ovvi, page ?? to, how(event), page ? "browser" : undefined)
     }
     return true
   }
@@ -274,8 +279,8 @@ export async function show(place: Place): Promise<Reveal> {
     contextmenu: (event) => {
       const link = (event.target as Element).closest("a"), to = link && address(link)
       if (!to) return false
-      const html = htmlPage(ovvi, to)
-      void menu(ovvi, event, html ?? to, { link: true, plugin: html ? "browser" : undefined })
+      const page = html(link, to)
+      void menu(ovvi, event, page ?? to, { link: to, plugin: page ? "browser" : undefined })
       return true
     },
   })

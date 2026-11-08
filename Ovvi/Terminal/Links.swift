@@ -95,37 +95,35 @@ extension PaneSurfaceView {
         linkSurface?.sendMousePos(x: -1, y: -1, modifiers: .super_)
         hoveredLink = nil
         linkSurface?.sendMousePos(x: point.x, y: top, modifiers: .super_)
-        let found = hoveredLink
-        linkSurface?.sendMousePos(x: point.x, y: top, modifiers: Self.linkModifiers(event.modifierFlags))
-        return found
+        return hoveredLink
     }
 
-    /// ⌥ alone: a ⌥-click opens a link to the side (`mouseDown`).
+    /// ⌥ alone (Caps Lock aside): a ⌥-click opens a link to the side (`mouseDown`), and a link under ⌥ shows as under
+    /// ⌘.
     static func sideKey(_ flags: NSEvent.ModifierFlags) -> Bool {
-        flags.intersection(.deviceIndependentFlagsMask) == .option
+        flags.intersection([.command, .control, .option, .shift]) == .option
     }
 
-    /// What libghostty gets with the pointer: ⌘ for ⌥ alone, so a link under ⌥ shows its underline and pointing hand
-    /// as under ⌘ (libghostty draws them only with ⌘ or ⌃).
-    static func linkModifiers(_ flags: NSEvent.ModifierFlags) -> TerminalInputModifiers {
-        sideKey(flags) ? .super_ : TerminalInputModifiers(from: flags)
-    }
-
-    /// A plain move only: a drag keeps its own modifiers (⌥ makes libghostty's selection a rectangle).
+    /// Under ⌥ alone libghostty gets ⌘, so a link shows its underline and pointing hand as under ⌘ (libghostty draws
+    /// them only with ⌘ or ⌃). A plain move only: libghostty's drags call mouseMoved, and they keep their own
+    /// modifiers (⌥ makes a selection a rectangle).
     override func mouseMoved(with event: NSEvent) {
         guard event.type == .mouseMoved, Self.sideKey(event.modifierFlags) else { return super.mouseMoved(with: event) }
         let point = convert(event.locationInWindow, from: nil)
         linkSurface?.sendMousePos(x: point.x, y: bounds.height - point.y, modifiers: .super_)
     }
 
-    /// ⌥ down or up with the pointer still: the link under it shows or goes, as when ⌘ goes down or up. libghostty
-    /// reports a link again only on another cell, so the pointer leaves the view first.
+    /// A modifier down or up with the pointer still over the view and no button down: the link under it shows or
+    /// goes, as when ⌘ goes down or up (also ⌥ left alone by ⇧ going up). libghostty reports a link again only on
+    /// another cell, so the pointer leaves the view first.
     override func flagsChanged(with event: NSEvent) {
         super.flagsChanged(with: event)
-        guard [58, 61].contains(event.keyCode), let window else { return }
-        let point = convert(window.mouseLocationOutsideOfEventStream, from: nil)
-        guard bounds.contains(point) else { return }
-        let modifiers = Self.linkModifiers(event.modifierFlags)
+        guard NSEvent.pressedMouseButtons == 0, let window,
+              NSWindow.windowNumber(at: NSEvent.mouseLocation, belowWindowWithWindowNumber: 0) == window.windowNumber,
+              window.contentView?.hitTest(window.mouseLocationOutsideOfEventStream)?.isDescendant(of: self) == true
+        else { return }
+        let point = convert(window.mouseLocationOutsideOfEventStream, from: nil), flags = event.modifierFlags
+        let modifiers: TerminalInputModifiers = Self.sideKey(flags) ? .super_ : .init(from: flags)
         linkSurface?.sendMousePos(x: -1, y: -1, modifiers: modifiers)
         linkSurface?.sendMousePos(x: point.x, y: bounds.height - point.y, modifiers: modifiers)
     }

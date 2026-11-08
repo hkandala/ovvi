@@ -1,8 +1,8 @@
 import XCTest
 
-/// HTML (ui/window#opening-links-and-files): a Markdown link to an HTML file opens its page in the browser (⌥-click: to
-/// the side); File Explorer shows the file as text, and its header's Open in Browser opens the page in a new tab,
-/// selected. A file of another kind has no Open in Browser.
+/// HTML (ui/window#opening-links-and-files): a Markdown link to an HTML file opens its page in the browser
+/// (⌘-click: in a new tab behind, ⌥-click: to the side); File Explorer shows the file as text, and its header's Open
+/// in Browser opens the page in a new tab, selected. A file of another kind has no Open in Browser.
 extension OvviUITests {
     func testHtmlOpensInTheBrowserFromLinksAndTheFileCard() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
@@ -21,6 +21,12 @@ extension OvviUITests {
         let (tab, notes) = try await explorerCard("\(folder)/notes.md", "e2eht1")
         let link = element("markdown.\(notes).page").links["Page"]
         XCTAssertTrue(link.exists(within: 10))
+        let tabs = try await tabIDs()
+        XCUIElement.perform(withKeyModifiers: .command) { link.click() }
+        let behind = try await newTabID(after: tabs)
+        closeAfter("tab", behind)
+        try await browserLabel(pane(of: behind), html)
+        XCTAssertTrue(element("tab.\(tab)").isSelected)
         XCUIElement.perform(withKeyModifiers: .option) { link.click() }
         let side = try await poll("a pane beside the card") { () async throws -> String? in
             try await (snapshot()["panes"] as? [[String: Any]] ?? []).first {
