@@ -58,6 +58,9 @@ extension OvviUITests {
         let newer = try await split(older)
         try await report(newer, "working")
         app.typeKey(".", modifierFlags: .command)
+        // Off the list (newTab clicked a workspace row, where the rows now are): rows hold still under the pointer, and
+        // the newer agent's report can come after the list showed.
+        element("sidebar.header").hover()
         let rows = [older, newer].map { app.buttons["agent.\($0)"] }
         try await expectOrder([rows[1], rows[0]], "newest first")
 
