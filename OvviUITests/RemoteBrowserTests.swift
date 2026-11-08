@@ -110,13 +110,23 @@ extension OvviUITests {
         let ports = try await Self.post("\(one)/ssh-unforward", Data("ovvi-key".utf8))
         XCTAssertFalse(ports.isEmpty)
         open("healed.localhost:\(port)", in: browser, remote)
-        XCTAssertTrue(whoText("via=sshd host=healed.localhost:\(port)", in: remote).exists(within: connect),
-                      shown(browser, remote))
+        XCTAssertTrue(
+            page(from: "healed.localhost:\(port)", in: remote).exists(within: connect),
+            shown(browser, remote),
+        )
         let pids = try await Self.post("\(one)/ssh-drop", Data("ovvi-key".utf8))
         XCTAssertFalse(pids.isEmpty)
         open("dropped.localhost:\(port)", in: browser, remote)
-        XCTAssertTrue(whoText("via=sshd host=dropped.localhost:\(port)", in: remote).exists(within: connect),
-                      shown(browser, remote))
+        XCTAssertTrue(
+            page(from: "dropped.localhost:\(port)", in: remote).exists(within: connect),
+            shown(browser, remote),
+        )
+    }
+
+    /// The who page through the machine for `host` (sshd's process may be `sshd-session`).
+    private func page(from host: String, in window: XCUIElement) -> XCUIElement {
+        let format = "value BEGINSWITH 'via=sshd' AND value ENDSWITH %@"
+        return window.webViews.staticTexts.matching(NSPredicate(format: format, "host=\(host)")).firstMatch
     }
 
     /// The card's failure, for a page that did not come.
