@@ -28,11 +28,10 @@ How CI runs, how to run part of it, and how to keep it green and fast.
   and after a change to what they measure.
 - **Results.** Each test job uploads `e2e-xcresult-<shard>`: the xcresult with screen recordings, also of
   green runs.
-- **Time.** A full run takes 16–21 minutes: 3–6 minutes of setup, build and upload per job plus a fifth of about
-  4000 s of UI tests. A test job stops at 25 minutes (`timeout-minutes`): at 20, a balanced shard of 873 s (the
-  slowest run's own times) plus a slow runner's 370 s around it crossed the limit after every test passed. Each
-  test stops at 120 s, so the limit costs a green run nothing. Refresh the test times when tests are added, or the
-  shards stop balancing.
+- **Time.** A full run takes 20–28 minutes: 3–6 minutes of setup, build and upload per job plus a fifth of about
+  4600 s of UI tests. A test job stops at 30 minutes (`timeout-minutes`): at 25, a shard of 1171 s on a slow runner
+  (phase 56) crossed the limit after every test passed, as one of 873 s had at 20. Each test stops at 120 s, so the
+  limit costs a green run nothing. Refresh the test times when tests are added, or the shards stop balancing.
 
 ## Running part of it
 
