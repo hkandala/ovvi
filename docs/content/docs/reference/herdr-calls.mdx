@@ -57,7 +57,8 @@ Not herdr. A remote machine's commands (the SSH master, the relay and its login 
 [Drag and drop](/docs/ui/drag-and-drop#files-and-images). This Mac's:
 
 ```sh
-$SHELL -lic '…; /usr/bin/env; …; command -v herdr'  # This Mac, at launch and at most every 30 s while herdr is not found: the login shell's environment and herdr's path
+$SHELL -lic '…; /usr/bin/env; …; command -v herdr || command -v "$HOME/.local/bin/herdr"'  # This Mac, at launch and at most every 30 s while herdr is not found: the login shell's environment and herdr's path
+sh -c 'curl -fsSL https://herdr.dev/install.sh | sh 2>&1'  # Install herdr, on This Mac or over SSH
 env -0                                              # This Mac: the user's keys for the server's launchd job
 launchctl bootout gui/<uid>/<label>                 # This Mac: start a server (D47)
 launchctl bootstrap gui/<uid> <plist>

@@ -56,14 +56,15 @@ every workspace, tab and pane from herdr.
   macOS hands a restored window its scene storage a moment after the window
   first shows, so the window waits for it (at most 1 s) before it opens a
   page.
-- With `-session` on the command line, every window opens only that session
+- With `-session` on the command line, every window restores only that session
   (a run against a throwaway session never reopens another), with its saved
-  selection.
-- With none left, or in a new window, the first page is the session named by
+  selection, and a new window (⌘N) lists only `ovvi-*` sessions.
+- With none left, or in the first window, the first page is the session named by
   the `-session` launch argument, else `default`. On This Mac the app starts
   it when it is stopped (a launchd job, D47). It never opens another session
   by itself.
-- A new window opened for a machine (the machine menu, Add Remote Host, ⌘N
-  in a window of that machine) is on that machine.
+- A new window opened for a machine (the machine menu, Add Remote Host) is on
+  that machine. File ▸ New Window (⌘N) opens no page: the user picks a
+  machine's session ([Windows](/docs/ui/window#windows)).
 - Nothing writes a session name to `UserDefaults`. `-session` is read from
   the argument domain only.

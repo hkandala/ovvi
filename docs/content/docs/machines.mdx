@@ -14,8 +14,9 @@ description: "What a machine is, its sessions, the SSH connection, the health ch
   and state folder.
 - A window shows one machine. Sessions open as pages: its sidebar has one
   page per session the user opened in that window
-  ([Sidebar](/docs/ui/window#sidebar)). A new window opens one page, the
-  `default` session.
+  ([Sidebar](/docs/ui/window#sidebar)). The first window opens one page, the
+  `default` session; a new window (⌘N) lets the user pick a machine's session
+  ([Windows](/docs/ui/window#windows)).
 
 ## The machine list
 
@@ -148,9 +149,11 @@ description: "What a machine is, its sessions, the SSH connection, the health ch
     the window that asked, follows the app's look, and an e2e test can answer
     it.
 - **herdr on the machine:** the remote login shell gives its path, one run
-  over the master, `"$SHELL" -lic 'echo <marker>; command -v herdr'`, once per
-  master; a missing herdr is asked again at most every 30 s. The page then
-  shows "herdr is not installed on ‹machine›" with the install command.
+  over the master, `"$SHELL" -lic 'echo <marker>; command -v herdr || command -v "$HOME/.local/bin/herdr"'`,
+  once per master; a missing herdr is asked again at most every 30 s. The page
+  then shows "herdr is not installed on ‹machine›" with the install command
+  and **Install herdr**, which installs it over the connection
+  ([Install herdr](/docs/talking-to-herdr#install-herdr)).
 - **New tabs and workspaces** pass `cwd` `~`, which herdr reads as the
   machine's home, so the app never sends This Mac's home to a remote machine.
 - **Dropped files** (and Insert Path's file) are copied to the machine over the

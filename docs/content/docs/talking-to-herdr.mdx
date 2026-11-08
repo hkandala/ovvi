@@ -68,14 +68,17 @@ and watch files and run git the same way
 
 - herdr installs to `~/.local/bin`, which only the user's shell config puts
   on `PATH`. So the app asks the machine's login shell once,
-  `$SHELL -lic 'command -v herdr'`, and takes the last line if it is an
-  absolute path (an rc file may print first). Every herdr call on that machine
+  `$SHELL -lic 'command -v herdr || command -v "$HOME/.local/bin/herdr"'`, and
+  takes the last line if it is an absolute path (an rc file may print first).
+  The second lookup finds a herdr that its installer put in `~/.local/bin`
+  when the shell's `PATH` lacks that folder (macOS's zsh has not got it, nor
+  has many a remote machine's). Every herdr call on that machine
   runs that path; `PATH` stays the login shell's own. On This Mac the same
   shell run reads the environment, at launch
   ([Running commands](#running-commands)). On a remote machine it is one run over SSH
   on connect, and the path goes inside the envelope.
 - No path (herdr missing, or the shell failed or took over 3 s): the app shows
-  the install command and asks the shell again, at most every 30 s while
+  the install command with **Install herdr** ([Install herdr](#install-herdr)) and asks the shell again, at most every 30 s while
   missing and one run at a time, so a herdr installed since is found. A path
   that is gone since (herdr moved or reinstalled elsewhere) is asked for again
   the same way. herdr older than 0.9.1 has no
@@ -92,6 +95,25 @@ and watch files and run git the same way
 - Every herdr argv carries `--session <name>` (also `--session default`), so
   no inherited variable can point a command at another session.
 
+
+## Install herdr
+
+- **Install herdr** (and **Update herdr** on a herdr that is too old) runs
+  the command from herdr's docs, `curl -fsSL https://herdr.dev/install.sh | sh`,
+  as `sh -c '<command> 2>&1'`: on This Mac in the app's environment, on a
+  remote machine over its SSH connection ([Run and dial](#run-and-dial)). It
+  installs to `~/.local/bin`.
+- While it runs, the page shows the loader "Installing herdr…" with the
+  installer's last line under it (its colors taken out).
+- When it exits 0, the app forgets the machine's herdr path and asks the login
+  shell again. On This Mac it then starts the page's session (D47). Every page
+  of the machine reads again, and the loader shows "Connecting…" until they
+  leave "not installed" (at most 10 s).
+- When it fails, or the login shell still finds no herdr, the page shows
+  "herdr did not install" over the installer's last 6 lines and the reason,
+  with **Try Again**.
+- `-herdrInstall <command>` replaces the command; the e2e tests use it, so no
+  test runs herdr's installer.
 ## Requests
 
 - `call(method, params)`: run `herdr --session S remote-api-bridge`, write

@@ -7,8 +7,15 @@ description: "Windows, the title row, tab bar, Agents button, sidebar pages, Age
 
 - Each window shows one machine
   ([What a machine is](/docs/machines#what-a-machine-is)). File ▸ New Window
-  (⌘N) opens another window on the same machine (D34). Two windows can show
-  different machines or the same machine.
+  (⌘N) opens another window (D34) that connects to nothing by itself: it shows
+  "Open a Session" over a glass list (the Open Session panel's, 420 pt wide):
+  one group per machine, This Mac first, each with its running then its
+  stopped sessions ("Running", "Stopped"), a spinner row while the machine
+  answers. A machine with no session lists `default`; one that does not answer
+  (no herdr, a password to type) lists `default` with why. A pick opens that
+  session as the window's first page; on This Mac a stopped one starts. A run
+  with `-session` lists only `ovvi-*` sessions. Two windows can show different
+  machines or the same machine.
 - Two windows on the same machine share the live data of each session. Each
   window keeps its own selection: page, workspace, tab, keyboard card, zoom,
   sidebar view and sidebar width.
@@ -74,7 +81,7 @@ Window menu and Mission Control show it.
 - Picking another machine brings its window forward (the one used last, when
   there are several); with none open, a new window on it opens with its
   `default` session. This window and its pages stay. Picking the window's own machine
-  does nothing (⌘N opens another window on it).
+  does nothing.
 - macOS 27 draws no images in these menu rows, so there only the names show.
 
 ## Workspace button
@@ -241,8 +248,8 @@ session open in this window (D43).
   each with its selected workspace and tabs. A session that no longer runs is
   skipped, and a workspace or tab that is gone falls back to herdr's focus. A
   window never comes back in full screen: one that macOS restores in full
-  screen leaves it. A new window (⌘N) opens with `default` only
-  ([Data](/docs/data#which-pages-a-window-opens)).
+  screen leaves it. A new window (⌘N) opens with no page, for the user to pick
+  one ([Windows](#windows)).
 - **Pages.** A sideways swipe on the sidebar moves to the next or previous
   open page ([Swiping](/docs/ui/swiping)).
 - **Page dots.** At the bottom of the page, above the footer: one 6 pt dot per

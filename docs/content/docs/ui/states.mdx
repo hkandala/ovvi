@@ -3,31 +3,37 @@ title: "States"
 description: "What the user sees in every connection, pane and error state"
 ---
 
-Connecting and reconnecting states show at most one line of words and one
-button. Empty states show only the button: no tabs, and no workspaces on the
-sidebar's page; the window's content for a session with no workspaces says
-only that it is empty.
+Every empty, failed and not-installed place has one look (`EmptyState`): an
+SF Symbol (32 pt, light, secondary), a title (15 pt semibold), at most one
+line under it (13 pt secondary; a command or a program's output in 12 pt
+monospaced, selectable, up to 8 lines), and at most two buttons, the first
+one prominent glass, the second glass. In a list or a small panel the same
+look is compact (20 pt symbol, 13 pt title). Every connecting and loading
+place has one loader (`Loader`): an icon over a small spinner and one line,
+and under it at most one line of what the work is doing.
 
 | State | What the user sees |
 |---|---|
-| herdr not installed on This Mac (macOS) | how to install herdr, in a window on This Mac; remote machines work without it |
-| Connecting | "Connecting to ‹machine›" with a spinner, after 0.3 s, so a fast connect shows nothing. Also from a click on **Connect** (or Add Remote Host) until the session answers; ssh's question replaces it while it is up, and it shows again 0.3 s after the answer |
-| herdr missing on a remote machine | "herdr is not installed on ‹machine›" and the install command |
-| herdr older than 0.9.3 | "herdr is too old" over "herdr ‹version› is too old; 0.9.3 or newer needed." The app asks herdr again every 2 s, so the page clears by itself after an update. Before 0.9.1 (no `remote-api-bridge`) the first call fails: "‹session› is not running" with **Start**, or Reconnecting |
-| A card's terminal stream failed (for example herdr updated but not restarted: the API works, terminal streams fail) | herdr's error text and **Retry** in the card |
-| herdr server not running on This Mac | "‹session› is not running" and a **Start** button (a launchd job, D47; a second start of the same session joins the one that runs), no other text, per page: the page stays open and its other pages are not touched; a new window starts `default` by itself |
+| herdr not installed on This Mac (macOS) | a box symbol, "herdr is not installed" over the install command, and **Install herdr** ([Install herdr](/docs/talking-to-herdr#install-herdr)); remote machines work without it |
+| Installing herdr | the loader "Installing herdr…" with the installer's last line under it, then "Connecting…"; a failure: "herdr did not install" over the installer's last lines and **Try Again** |
+| Connecting | the machine's icon over "Connecting to ‹machine›…" with a spinner, after 0.3 s, so a fast connect shows nothing. Also from a click on **Connect** (or Add Remote Host) until the session answers; ssh's question replaces it while it is up, and it shows again 0.3 s after the answer |
+| herdr missing on a remote machine | "herdr is not installed on ‹machine›" over the install command, and **Install herdr**, which installs it over SSH |
+| herdr older than 0.9.3 | "herdr is too old" over "herdr ‹version› is too old; 0.9.3 or newer needed.", and **Update herdr** (the same install). The app asks herdr again every 2 s, so the page clears by itself after an update. Before 0.9.1 (no `remote-api-bridge`) the first call fails: "‹session› is not running" with **Start**, or Reconnecting |
+| A card's terminal stream failed (for example herdr updated but not restarted: the API works, terminal streams fail) | over the card's fill, compact: "The terminal stopped" over herdr's error text, and **Retry** |
+| herdr server not running on This Mac | a power symbol, "‹session› is not running" (over why a start failed, if one did) and **Start ‹session›** (a launchd job, D47; a second start of the same session joins the one that runs), per page: the page stays open and its other pages are not touched; the first window starts `default` by itself |
 | herdr server not running on a remote machine | "‹session› is not running" and **Start ‹session›**, which starts it with nohup over SSH |
-| SSH auth failed | Disconnected, with ssh's message and **Connect** |
+| A new window (⌘N) | "Open a Session" over each machine's sessions, connecting to nothing by itself ([Windows](/docs/ui/window#windows)) |
+| SSH auth failed | Disconnected: "Disconnected from ‹machine›" over ssh's message, and **Connect** |
 | Host key changed | Disconnected: ssh's warning with the new fingerprint, and **Connect**, which fails the same way until the user fixes `known_hosts` |
-| Connection lost (Reconnecting) | "Reconnecting to ‹machine›" with a spinner over the cards, dimmed to 0.5, and herdr's or ssh's reason under it when the failure gives one (for example "Ovvi needs Perl on ‹target›"); the app retries every 2 s without prompts (a remote machine's SSH connection backs off from 2 s to 30 s), then reads a fresh snapshot ([Health check](/docs/machines#health-check)). Also when a page's first connect fails while its server runs |
+| Connection lost (Reconnecting) | the machine's icon over "Reconnecting to ‹machine›…" with a spinner over the cards, dimmed to 0.5, and herdr's or ssh's reason under it when the failure gives one (for example "Ovvi needs Perl on ‹target›"); the app retries every 2 s without prompts (a remote machine's SSH connection backs off from 2 s to 30 s), then reads a fresh snapshot ([Health check](/docs/machines#health-check)). Also when a page's first connect fails while its server runs |
 | Reconnecting needs a password, a code or a host key answer | "Disconnected from ‹machine›" over ssh's text, and **Connect**; the app stops retrying, and only this button may prompt ([The SSH connection](/docs/machines#the-ssh-connection)) |
 | Request timed out (10 s) | A write shows the notice "herdr did not answer", with no Retry. A read shows Reconnecting |
 | Pane in use on another device | the content (watching) and "In use elsewhere · Take Back" |
 | Session controlled in another window | cards dim a little; a bottom capsule "Controlled in another window" with **Take Back** ([Control capsule](/docs/ui/window#control-capsule)) |
 | Close a pane that runs a program | "Close “‹pane label, else its folder›”?" over "‹program› is running in it and will end, here and in every herdr client. This cannot be undone." (a pane that runs only its shell closes at once) |
 | Close a tab, other tabs, tabs to the right or a workspace | asks only when a pane of them runs a program besides its shell: "‹programs› is (are) running in it (them)." then the pane count and the same warning |
-| No workspaces | a **New Workspace** button on the sidebar's page; in the window's content an icon and "This session is empty", no button |
-| A workspace with no tabs | a **New Tab** button with its shortcut, no text |
+| No workspaces | a **New Workspace** button on the sidebar's page; in the window's content "This session is empty" and **New Workspace** with its shortcut |
+| A workspace with no tabs | "No tabs in ‹workspace›" and **New Tab** with its shortcut (herdr closes a workspace with its last tab, so it shows only for a moment) |
 | Move refused by herdr | herdr's reason in words, in the notice |
 | A drop step failed | the pane stays where it got to; the notice says so |
 | Open Session: the name is not a valid herdr name | no Create row |
@@ -41,7 +47,7 @@ only that it is empty.
 | A write failed | the notice: a capsule with a red symbol and the error, no Retry (a write that timed out may have happened). A notice's buttons are round, as the toast's |
 | A write while another write of the session runs | it waits for that one, then runs |
 | Go to Directory on a pane that runs a program | the warning notice "A program is running in the pane"; nothing is sent |
-| A filter hides every row | "No matching workspaces" (sidebar), "No matches" (the palette and the other filter lists) |
+| A filter hides every row | "No matching workspaces" (sidebar), "No matches" with a magnifying glass, compact (the palette and the other filter lists) |
 | A tab whose split tree the app cannot build | "No layout for this tab" |
 | A card's terminal is not settled at the card's size yet (a pane opened for the first time, while herdr resizes its PTY and the program redraws) | the card shows only its fill (a small spinner after 0.5 s); the terminal fades in over 0.06 s once herdr's frames stop for 0.1 s, or 0.4 s after the first frame (at once with Reduce Motion). A watching card shows its first frame |
 | A card visited before comes back (one of the 25 most recently shown, D46) | at once, with what its program printed meanwhile; no fade, no wait |

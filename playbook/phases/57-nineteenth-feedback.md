@@ -198,6 +198,27 @@ runs and on-demand on the final head.
 
 ## Findings
 
+### Track A
+
+- **Cause.** Each state drew its own look: `ContentUnavailableView` in the window, hand-made stacks of 28–44 pt symbols
+  in the cards, a caption and a button at a terminal card's foot, three spinners (`Waiting`, `Loading`,
+  `PluginLoader`). A missing herdr showed only a command to copy. ⌘N opened the machine's `default` by itself.
+- **Fix.** One `EmptyState` (symbol, title, one line, at most two buttons, a compact size for lists) and one `Loader`
+  (icon, spinner and line, an optional line of progress) replace them in the window, the cards, the filter lists and
+  the chat. Install herdr runs herdr.dev's `curl -fsSL https://herdr.dev/install.sh | sh` on This Mac or over the
+  machine's SSH connection, shows its last line, its output on a failure, then forgets the cached herdr path, starts
+  the session on This Mac and reads every page of the machine again. ⌘N opens `SessionPicker`: each machine's
+  sessions on the Open Session panel's glass; a pick opens the first page.
+- **Decisions.** The lookup also tries `$HOME/.local/bin/herdr`, where the installer puts it, since macOS's zsh and
+  many remote shells lack that folder on `PATH`. Update herdr (too old) is the same install. A machine whose sessions
+  cannot be read lists `default` with why; its page has the fix (Install, Connect). The first window still opens
+  `default`; restored windows are kept. A `-session` run's picker lists only `ovvi-*` sessions. Settings' search keeps
+  the system's `ContentUnavailableView.search`, as System Settings has it. The sidebar's and Archived Sessions'
+  states are left to Track B, which reuses the two views.
+- **Runs.** BEFORE pictures: an on-demand `testStateScenes` on a tag of main (run 42439654506).
+- **For the user.** Click Install herdr on a Mac or host without herdr; ⌘N with remote machines in the list (a host
+  that needs a password lists `default` "Not connected").
+
 ### Track C
 
 - **Cause.** libghostty underlines a link and reports it (the pointing hand) only while ⌘ or ⌃ is down, and its

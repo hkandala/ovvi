@@ -50,6 +50,9 @@ extension OvviUITests {
                 await stateShot(look, "C8 browser, load failed")
             }
             _ = try? await Self.call(one, "pane.rename", ["pane_id": left, "label": "ovvi:ovvi-e2e-gone#e2e1 x"])
+            // A rename sends no event: a metadata token makes the app read the layout again.
+            _ = try? await Self.call(one, "pane.report_metadata", ["pane_id": left, "source": "ovvi-panes",
+                                                                   "tokens": ["ovvi-label": "1"], "ttl_ms": 1000])
             try? await Task.sleep(for: .seconds(1.5))
             await stateShot(look, "C6 plugin not on this Mac")
         }
@@ -85,9 +88,18 @@ extension OvviUITests {
     private func herdrScenes(_ look: String, _ base: [String]) async {
         app.launchEnvironment["SHELL"] = "\(Self.fixtures)/no-herdr/login-shell"
         app.launchEnvironment["PATH"] = "/usr/bin:/bin"
-        relaunch(one, base)
-        _ = app.staticTexts["herdr is not installed"].exists(within: connect)
+        relaunch(one, base + ["-herdrInstall", #"echo "  > downloading v0.9.5..."; sleep 30"#])
+        _ = element("detail.install").exists(within: connect)
         await stateShot(look, "W3 herdr not installed")
+        element("detail.install").click()
+        _ = element("detail.installing").exists(within: 3)
+        await stateShot(look, "W3b installing herdr")
+        relaunch(one, base + ["-herdrInstall", #"echo "  > fetching latest release manifest..."; "#
+                + #"echo "  x cannot reach https://herdr.dev/latest.json" >&2; exit 1"#])
+        _ = element("detail.install").exists(within: connect)
+        element("detail.install").click()
+        _ = app.staticTexts["herdr did not install"].exists(within: 5)
+        await stateShot(look, "W3c herdr install failed")
         app.launchEnvironment["PATH"] = "\(Self.fixtures)/slow-herdr:/usr/bin:/bin"
         relaunch(one, base)
         _ = element("detail.connecting").exists(within: 5)
@@ -130,7 +142,7 @@ extension OvviUITests {
         app.typeKey(",", modifierFlags: .command)
         let settings = settingsWindow
         guard settings.exists(within: 5) else { return }
-        app.typeKey("f", modifierFlags: .command)
+        settings.searchFields.firstMatch.click()
         app.typeText("zzzzqq")
         try? await Task.sleep(for: .seconds(0.6))
         settings.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1.3)).hover()

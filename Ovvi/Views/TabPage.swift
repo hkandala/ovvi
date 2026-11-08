@@ -17,7 +17,7 @@ struct TabPage: View {
                 SplitLayout(tree: tree, zoomed: zoomed, page: page, tabID: tab.id)
                     .padding(Self.inset)
             } else {
-                Text("No layout for this tab").foregroundStyle(.secondary)
+                EmptyState(symbol: "rectangle.split.2x1", title: "No layout for this tab")
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
