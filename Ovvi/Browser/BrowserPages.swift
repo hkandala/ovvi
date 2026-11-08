@@ -39,10 +39,16 @@ extension Browser: WKNavigationDelegate {
         }
     }
 
-    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
-        guard !reloaded else { return }
+    /// The system ends a page's process (memory pressure, a long sleep): the page loads again by itself, once per load;
+    /// one that ends it again before it loaded says so, with Reload, instead of a blank card.
+    func webViewWebContentProcessDidTerminate(_: WKWebView) {
+        guard !reloaded else {
+            ready = true
+            failure = ("The page stopped working", nil)
+            return
+        }
         reloaded = true
-        webView.reload()
+        reload()
     }
 
     /// A `mailto:` or an app's link clicked in the page goes to its app; the page stays. Never from script or a frame.

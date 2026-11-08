@@ -471,8 +471,11 @@ gets the same card.
 
 - The web view's user agent ends with `Version/18.0 Safari/605.1.15`
   (`applicationNameForUserAgent`), so sites that sniff for Safari work.
-- When the page's process ends (`webViewWebContentProcessDidTerminate`), the
-  card loads the page again, once per load.
+- When the system ends the page's process
+  (`webViewWebContentProcessDidTerminate`), the card loads the page again by
+  itself, once per load, and WebKit brings back its scroll. A page whose
+  process ends again before it loaded shows "The page stopped working" with
+  **Reload**, so the card never stays blank.
 - Plain `http` needs `NSAllowsArbitraryLoadsInWebContent` and
   `NSAllowsLocalNetworking` in `Info.plist`.
 

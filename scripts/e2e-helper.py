@@ -27,6 +27,8 @@ POST /<session>/ssh-drop with an SSH target as the body kills the app's ControlM
 would), and gives back the pids it killed, one per line.
 POST /<session>/ssh-unforward with an SSH target as the body cancels the dynamic forwards (the browser proxy's `-D`)
 of the app's ControlMaster to it, on CI only, as a master that lost them; the ports come back, one per line.
+POST /<session>/web-kill kills the app's WebKit page processes (SIGKILL, as the system ends one), and gives back the
+pids it killed, one per line.
 POST /<session>/ssh-forget with an SSH target as the body removes its host key from ~/.ssh/known_hosts, on CI only, so
 ssh asks for it again.
 POST /<session>/swipe with "x y step steps [pause [vertical [option]]]" as the body posts a two-finger trackpad swipe there (scripts/swipe.swift).
@@ -45,6 +47,7 @@ POST /<session>/ssh-connections gives back how many connections the CI sshd (scr
 Any session not named on the command line is refused.
 """
 
+import ctypes
 import http.server
 import os
 import re
@@ -115,7 +118,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif action not in ("", "control", "takeover", "children", "stop", "start", "open-folder", "open-url",
                             "file-drag", "temporary-file-drag", "usage", "ssh-drop", "ssh-forget", "ssh-unforward",
                             "ssh-connections",
-                            "swipe", "drag", "stress", "sample", "heap", "press", "release", "pause", "resume"):
+                            "swipe", "drag", "stress", "sample", "heap", "press", "release", "pause", "resume",
+                            "web-kill"):
             status, reply = 404, f"no action '{action}'".encode()
         elif action in ("control", "takeover") and not re.fullmatch(rb"\w[\w-]*", body):
             status, reply = 400, b"the body must be a terminal id"
@@ -197,6 +201,17 @@ class Handler(http.server.BaseHTTPRequestHandler):
                                     "--", target], capture_output=True)
                     ports.append(port)
             status, reply = 200, "\n".join(ports).encode()
+        elif action == "web-kill":
+            # The tests' app, the one built here (never the user's own Ovvi): WebKit's page processes it is
+            # responsible for.
+            built = "/Build/Products/[^/]*/Ovvi.app/Contents/MacOS/Ovvi( |$)"
+            app = int(subprocess.run(["pgrep", "-n", "-f", built], capture_output=True, text=True).stdout.strip() or 0)
+            responsible = ctypes.CDLL(None).responsibility_get_pid_responsible_for_pid
+            found = subprocess.run(["pgrep", "-f", "com.apple.WebKit.WebContent"], capture_output=True, text=True)
+            pids = [pid for pid in map(int, found.stdout.split()) if app and responsible(pid) == app]
+            for pid in pids:
+                os.kill(pid, 9)
+            status, reply = 200, "".join(f"{pid}\n" for pid in pids).encode()
         elif action == "ssh-forget" and os.environ.get("CI") != "true":
             status, reply = 403, b"CI only: it writes ~/.ssh/known_hosts"
         elif action == "ssh-forget":

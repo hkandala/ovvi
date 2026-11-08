@@ -31,8 +31,10 @@ The card shows the plugin's icon, a title, the details in 12 pt monospace
 - **A failed Reload Plugin** keeps the running page. Its toast says the
   title and the first line, with **Try Again**
   ([Reload](/docs/plugins/building#reload)).
-- **A crashed page** (WebKit's process ended) loads again, once per load.
-  Unsaved edits are lost then.
+- **A crashed page** (the system ended WebKit's process for it, for example
+  under memory pressure) loads again by itself, once per load. Unsaved edits
+  are lost then. A page whose process ends again before it loaded shows
+  "The page stopped working" with **Reload**, so it never stays blank.
 - **The Plugins page** in Settings shows a failed install, update or remove on a red
   notice: "package.json: ‹field› ‹what is wrong›", or the first of the
   command's last lines, with **Retry** when running it again can help.
