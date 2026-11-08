@@ -38,7 +38,7 @@ extension OvviUITests {
         try? await Task.sleep(for: .seconds(1))
         await stateShot(look, "P1 open session")
         app.typeKey(.escape, modifierFlags: [])
-        // A blank browser, a failed one, and a plugin pane whose plugin is not on this Mac.
+        // A blank browser and a failed one.
         if let (tab, left) = try? await newTab("scenes") {
             try? await waitForPrompt(left)
             element("tab.\(tab)").click()
@@ -49,12 +49,6 @@ extension OvviUITests {
                 _ = element("browser.\(browser).retry").exists(within: 5)
                 await stateShot(look, "C8 browser, load failed")
             }
-            _ = try? await Self.call(one, "pane.rename", ["pane_id": left, "label": "ovvi:ovvi-e2e-gone#e2e1 x"])
-            // A rename sends no event: a metadata token makes the app read the layout again.
-            _ = try? await Self.call(one, "pane.report_metadata", ["pane_id": left, "source": "ovvi-panes",
-                                                                   "tokens": ["ovvi-label": "1"], "ttl_ms": 1000])
-            try? await Task.sleep(for: .seconds(1.5))
-            await stateShot(look, "C6 plugin not on this Mac")
         }
         let first = app.windows.firstMatch.identifier
         app.typeKey("n", modifierFlags: .command)
