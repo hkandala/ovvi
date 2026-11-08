@@ -58,7 +58,9 @@ const theme = EditorView.theme({
   ".cm-content": { caretColor: "var(--text)" },
   // CodeMirror draws its own caret, black unless a theme says dark.
   ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--text)" },
-  ".cm-gutters": { background: "transparent", color: "var(--dim)", border: "none" },
+  // Not selectable: a locked page's Select All (WebKit's, the page's) would start in the line numbers, and CodeMirror
+  // takes a selection only when it starts in its text.
+  ".cm-gutters": { background: "transparent", color: "var(--dim)", border: "none", WebkitUserSelect: "none" },
   ".cm-activeLine, .cm-activeLineGutter": { background: "color-mix(in srgb, var(--text) 6%, transparent)" },
   ".cm-searchMatch": { background: "color-mix(in srgb, var(--finished) 35%, transparent)" },
   // The find bar floats at the top right over the text, as the terminal's (find.css); a match scrolls below it.

@@ -16,6 +16,8 @@ body {
    on the right with the class `end`. */
 .ovvi-sidebar {
   flex: none;
+  /* As the system's: its rows are no text to select, and Select All starts in the content beside it. */
+  -webkit-user-select: none;
   box-sizing: border-box;
   width: var(--sidebar-width);
   transition: margin 0.25s ease, visibility 0.25s;

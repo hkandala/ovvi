@@ -87,12 +87,18 @@ extension OvviUITests {
         XCTAssertFalse(box.exists)
         page.click()
         app.typeText("q")
+        // ⌘A selects all while locked too (not from the line numbers): unlocked, a q replaces the whole file.
+        app.typeKey("a", modifierFlags: .command)
         app.typeKey("e", modifierFlags: .command)
         XCTAssertTrue(lock.has(\.isSelected, true, within: 3))
         let source = page.textViews.firstMatch
         XCTAssertTrue(until(5) { source.exists && source.stringValue.contains("Some *words*.") }, source.stringValue)
         // The file has no q.
         XCTAssertFalse(source.stringValue.contains("q") || dirty.exists, source.stringValue)
+        app.typeText("q")
+        XCTAssertTrue(until(3) { source.stringValue == "q" }, source.stringValue)
+        app.typeKey("z", modifierFlags: .command)
+        XCTAssertTrue(dirty.vanishes(within: 3))
         page.buttons["Show Preview"].click()
         XCTAssertTrue(box.exists(within: 5))
         keepScreenshot("markdown card, source")
