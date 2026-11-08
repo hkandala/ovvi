@@ -52,7 +52,16 @@ extension OvviUITests {
 
     /// The machine button's Add Remote Host, filled and added.
     func addHost(_ name: String, _ target: String) {
-        element("titlebar.machine").click()
+        // At rest first, as newTab's capsule: right after a launch the title row lays out again, and a click on an
+        // earlier frame opened no menu (on CI).
+        let button = element("titlebar.machine")
+        var frame = CGRect.null
+        XCTAssertTrue(until(5) {
+            let now = button.frame
+            defer { frame = now }
+            return button.isHittable && now == frame
+        }, "\(button.frame)")
+        button.click()
         app.menuItems["Add Remote Host…"].click()
         let field = element("host.name")
         XCTAssertTrue(field.exists(within: 3))
