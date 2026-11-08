@@ -136,6 +136,9 @@ struct Detail: View {
                 .buttonStyle(.glassProminent)
                 .accessibilityIdentifier("detail.new-workspace")
             }
+        } else {
+            // Room for the Reconnecting overlay: on no view it never drew (a machine that failed its first connect).
+            Color.clear
         }
     }
 

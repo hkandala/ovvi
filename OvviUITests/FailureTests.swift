@@ -48,6 +48,18 @@ extension OvviUITests {
         try await Self.snapshot(five)
     }
 
+    /// A machine that never answers its first connect: Connecting, then Reconnecting with ssh's reason, on a page that
+    /// has drawn nothing yet.
+    func testAnUnreachableMachineShowsConnectingThenReconnecting() {
+        let down = #"[{"id":"e2e-down","name":"devbox","target":"ovvi-e2e@192.0.2.1","icon":"server.rack"}]"#
+        relaunch(one, ["-machines", down, "-machine", "e2e-down"])
+        XCTAssertTrue(element("detail.connecting").exists(within: connect))
+        let reconnecting = element("detail.reconnecting")
+        XCTAssertTrue(reconnecting.exists(within: connect))
+        XCTAssertFalse(element("detail.reconnecting.detail").stringValue.isEmpty)
+        keepScreenshot("reconnecting")
+    }
+
     func testPaneClosedInHerdrDropsItsCardAndStream() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, first) = try await newTab("gone")

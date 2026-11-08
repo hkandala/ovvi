@@ -217,7 +217,9 @@ runs and on-demand on the final head.
   `default`; restored windows are kept. A `-session` run's picker lists only `ovvi-*` sessions. Settings' search keeps
   the system's `ContentUnavailableView.search`, as System Settings has it. The sidebar's and Archived Sessions'
   states are left to Track B, which reuses the two views.
-- **Runs.** BEFORE pictures: an on-demand `testStateScenes` on a tag of main (run 42439654506).
+- **Cause (found by the pictures).** A machine that failed its first connect showed a blank page, not Reconnecting:
+  the overlay sat on a view that drew nothing. Its content is now a clear view.
+- **Runs.** BEFORE pictures: an on-demand `testStateScenes` on a tag of main (run 42439654506), its W8 blank.
 - **No picture.** A plugin's error card (it needs a broken plugin package), "No tabs in ‹workspace›" (herdr 0.9.5 closes a workspace with its last tab), "No layout for this
   tab" (no split tree herdr sends fails), "The terminal stopped" (a stream failure needs a herdr updated under a
   running server), and the loaders that show for under a second (a plugin opening, an agent starting, an overview
