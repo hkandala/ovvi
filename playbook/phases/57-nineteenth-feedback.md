@@ -284,9 +284,13 @@ runs and on-demand on the final head.
   every 2 s until it can. Reload starts a proxy that did not start.
 - **Decisions.** No retry when ssh accepted and the machine refused: that is a real answer. Only a port that takes
   no TCP connection counts as a lost forward: ssh's `-D` holds even its greeting reply until the machine opened the
-  connection, and closes without it when it cannot (the first CI run, red, read that as a lost forward). No wake or
+  connection, and closes without it when it cannot (a local run with real ssh and WebKit caught the first version
+  reading that as a lost forward). No wake or
   network observer: the next page does the check. No time limit on ssh's greeting: a stopped master (SIGSTOP) still
   holds a page for WebKit's 60 s. A master that does not answer `-O forward` in 5 s is left behind for a new one, as
   the relay does. The user's symptom (an error or a spinner) is worth asking.
+- **Runs.** The remote browser test now cancels the master's `-D` and kills the master, and loads a page after each.
+  Red: 42442213887 and 42442741517 (its text check missed CI's `sshd-session`; the who server's log showed the healed
+  page came). Green: 42443261958 (2 tests).
 - **For the user.** With a devvm-aai browser card open, sleep the Mac for a while, wake it, and reload: the page loads
   without closing the window.
