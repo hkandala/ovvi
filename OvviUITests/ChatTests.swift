@@ -53,6 +53,8 @@ extension OvviUITests {
         try await say("mute", in: pane)
         app.typeText("lost\r")
         XCTAssertTrue(element("chat.\(pane).not-sent").exists(within: 8))
+        // Not sent: no tick.
+        XCTAssertEqual(stamps(pane, ", Sent").count, 0)
         XCTAssertEqual(element("chat.\(pane).composer").stringValue, "lost")
         app.typeKey("a", modifierFlags: .command)
         app.typeKey(.delete, modifierFlags: [])

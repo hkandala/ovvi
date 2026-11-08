@@ -228,8 +228,9 @@ struct ChatMessages: View, Equatable {
     /// tall card, can show the block's top with room above it; take the budget from the scroll view's height if so.
     private static func lines(_ row: ChatRow) -> Int {
         switch row {
+        // With the stamp's line.
         case let .user(_, text, _), let .reply(_, text, _):
-            1 + text.utf8.count / 90 + text.utf8.count { $0 == UInt8(ascii: "\n") }
+            2 + text.utf8.count / 90 + text.utf8.count { $0 == UInt8(ascii: "\n") }
         case let .todos(_, todos): todos.count + 1
         default: 2
         }

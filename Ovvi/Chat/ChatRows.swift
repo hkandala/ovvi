@@ -112,18 +112,20 @@ private struct Stamp: View {
                 Text(text)
             }
             // Two checkmarks overlapping, as in WhatsApp: SF Symbols has no double one.
-            HStack(spacing: -5) {
-                ForEach(0 ..< ticks, id: \.self) { _ in
-                    Image(systemName: "checkmark")
+            if ticks > 0 {
+                HStack(spacing: -5) {
+                    ForEach(0 ..< ticks, id: \.self) { _ in
+                        Image(systemName: "checkmark")
+                    }
                 }
+                .font(.system(size: 8, weight: .bold))
             }
-            .font(.system(size: 8, weight: .bold))
         }
         .font(.system(size: 10).monospacedDigit())
         .foregroundStyle(.secondary)
         .accessibilityElement(children: .ignore)
         .accessibilityAddTraits(.isStaticText)
-        .accessibilityValue([text, ["", "Sent", "Delivered"][min(ticks, 2)]].compactMap(\.self).filter { !$0.isEmpty }
+        .accessibilityValue([text, ticks == 1 ? "Sent" : ticks > 1 ? "Delivered" : nil].compactMap(\.self)
             .joined(separator: ", "))
         .accessibilityIdentifier("chat.\(paneID).time")
     }

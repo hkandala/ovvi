@@ -68,6 +68,8 @@ private extension ChatRow {
         default: true
         }
     })
+    guard case let .user(_, _, time) = rows[0] else { Issue.record("no user row"); return }
+    #expect(time == ChatHistory.date("2026-10-28T10:58:56.506Z"))
     // Every reply, not only a turn's last one.
     #expect(rows.count { $0.kind == "reply" } == history.entries.count { $0.row?.kind == "reply" })
     // The edit turn: its runs and the replies between them, then how long it worked.
