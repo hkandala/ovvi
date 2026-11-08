@@ -125,6 +125,32 @@ runs and on-demand on the final head.
    to happen before, do we have a timeout or something added recently that's causing the issue, fix it either
    increase timeout or fix the underlying issue"
 
+### Track G findings
+
+- **No new timeout.** The quit wait (`HostStore.quit`, 10 s from its ⌃C) is unchanged since phase 40; no commit since
+  October touches the quit path, `program`/`isShell` or the per-call `herdr remote-api-bridge`.
+- **herdr is right.** Spiked with a real Meta `claude` (2.1.312, isolated `CLAUDE_CONFIG_DIR`, herdr's session hook)
+  and `codex` (isolated `CODEX_HOME`) in `ovvi-dev-p57g`: after the quit the shell is in front and `pane.get` has no
+  agent, also with a reported session.
+- **Cause: the 10 s ran out.** It held a fixed 2 s wait, each herdr call (one process each: about 1 s apiece at a load
+  of 300, 0.1 s at a calm one) and the agent's own exit. Meta's Claude Code is now a launcher with the native binary
+  as its child; on `/exit` the launcher's preset plugins run their SessionEnd hooks (`meta-trajectory` has an 8 s
+  timeout) and the launcher ends after its child. The dev app with a trace saw the shell 9.4 s into the 10 for a
+  two-line session at load 300 (4.3 s before the quit command went in, then 5 s for the exit): a real session ran
+  over and got "did not quit".
+- **Codex** exits on ⌃C: the dev app relaunched it in 2.3 s at load 107. Its "did not quit" was not seen here; with
+  the user's own config (hooks, MCP servers) and a starved Mac its exit and the calls take longer, which the same
+  budget covers.
+- **Fix:** 30 s. A real agent's exit is bounded by its hooks' timeouts, so this is a bound, not a moved break. The
+  `ovvi chat` advice goes from `--timeout 20` to 40.
+- A relaunch types the agent's line into the shell: a `CLAUDE_CONFIG_DIR=… claude` typed by hand is not kept, so a
+  by-hand spike exports the isolated config in the pane's shell first.
+- **Runs:** the slow-exit test on the old 10 s, run 42443296822: red (`testEnableChatStartsAnAgentAgainInItsSession`,
+  the composer never came). With 30 s, run 42443299852: green, executed 1 test (38.7 s). `make lint build test` and
+  the docs build green on the rebased tree.
+- Not done: the polls while the shell is back but herdr still reports the agent sleep 2 s, not 0.3 s (fine for
+  correctness).
+
 ## Track H: redraw a terminal's TUI (item 8)
 
 8. "one more feature i wanted, is to have a shortcut to refresh tui, what i mean is sometimes agent inputs will become
