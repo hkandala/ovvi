@@ -1,0 +1,4 @@
+#!/bin/sh
+# A login shell on a Mac without herdr: its script (`-lic <script>`) runs with the PATH it gets, no profile, and a home
+# of its own, where an install puts herdr (`$HOME/.local/bin`, as herdr's installer does).
+HOME=/tmp/ovvi-e2e-no-herdr exec /bin/sh -c "$2"

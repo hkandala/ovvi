@@ -1,0 +1,3 @@
+#!/bin/sh
+# A herdr that never answers: the page stays Connecting.
+exec sleep 60
