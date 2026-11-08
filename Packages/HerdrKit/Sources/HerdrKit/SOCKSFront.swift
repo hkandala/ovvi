@@ -130,16 +130,19 @@ final class SOCKSFront: Sendable {
         guard let head = await client.read(4), head[0] == 5, head[1] == 1, let address = await address(client, head[3]),
               let port = await client.read(2)
         else { return client.cancel() }
-        let request = Data([5, 1, 0]) + head + address + port
         guard let local = try? await upstream(nil) else { return Self.answer(client, Self.failed) }
-        // ssh's `-D` port that does not answer is gone (its master ended, or lost the forward): forwarded again, once.
-        var dialed = await Self.dial(local, request)
-        if dialed == nil, let again = try? await upstream(local) {
-            Self.log.error("ssh's forward on \(local) did not answer: forwarded again on \(again)")
-            dialed = await Self.dial(again, request)
+        // Nothing listens on ssh's `-D` port: the forward is gone (its master ended, or lost it). Forwarded again,
+        // once.
+        var connected = await Self.connect(local)
+        if connected == nil, let again = try? await upstream(local) {
+            Self.log.error("ssh's forward on \(local) was gone: forwarded again on \(again)")
+            connected = await Self.connect(again)
         }
-        guard let ssh = dialed, let reply = await ssh.readSome() else {
-            dialed?.cancel()
+        guard let ssh = connected else { return Self.answer(client, Self.refused) }
+        // ssh holds its greeting until the machine opened the connection, and closes without it when it cannot.
+        ssh.send(content: Data([5, 1, 0]) + head + address + port, completion: .idempotent)
+        guard await ssh.read(2) == Data([5, 0]), let reply = await ssh.readSome() else {
+            ssh.cancel()
             return Self.answer(client, Self.refused)
         }
         client.send(content: reply, completion: .idempotent)
@@ -154,17 +157,23 @@ final class SOCKSFront: Sendable {
         Self.pump(ssh, client, done)
     }
 
-    /// A connection to ssh's `-D` with the page's request sent, once ssh greeted it; nil when nothing answers there.
-    private static func dial(_ local: UInt16, _ request: Data) async -> NWConnection? {
-        guard let endpoint = NWEndpoint.Port(rawValue: local) else { return nil }
-        let ssh = NWConnection(host: .ipv4(.loopback), port: endpoint, using: .tcp)
-        start(ssh)
-        ssh.send(content: request, completion: .idempotent)
-        guard await ssh.read(2) == Data([5, 0]) else {
-            ssh.cancel()
-            return nil
+    /// A connection to ssh's `-D` port, once open; nil when nothing listens there.
+    private static func connect(_ local: UInt16) async -> NWConnection? {
+        guard let port = NWEndpoint.Port(rawValue: local) else { return nil }
+        let ssh = NWConnection(host: .ipv4(.loopback), port: port, using: .tcp)
+        let opened = await withCheckedContinuation { continuation in
+            let waiting = Mutex<CheckedContinuation<Bool, Never>?>(continuation)
+            ssh.stateUpdateHandler = { state in
+                switch state {
+                case .ready: waiting.withLock { $0.take() }?.resume(returning: true)
+                case .waiting, .failed: ssh.cancel()
+                case .cancelled: waiting.withLock { $0.take() }?.resume(returning: false)
+                default: break
+                }
+            }
+            ssh.start(queue: queue)
         }
-        return ssh
+        return opened ? ssh : nil
     }
 
     /// The request's address, a `<name>.localhost` made `localhost`.

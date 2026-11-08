@@ -11,7 +11,13 @@ import Testing
     let ssh = try await standIn { host in asked.withLock { $0.append(host) } }
     defer { ssh.cancel() }
     let upstream = try #require(ssh.port?.rawValue)
-    let front = try await SOCKSFront.start { _ in upstream }
+    let dead = Mutex<[UInt16]>([])
+    let front = try await SOCKSFront.start { port in
+        if let port {
+            dead.withLock { $0.append(port) }
+        }
+        return upstream
+    }
     defer { front.stop() }
 
     let (open, page) = await connect(front, "Devbox.localhost.", 7)
@@ -24,6 +30,8 @@ import Testing
     let (other, _) = await connect(front, "db.internal", 7)
     #expect(other == 5)
     #expect(asked.withLock { $0 } == ["localhost", "localhost", "db.internal"])
+    // ssh's close is the machine's answer, not a lost forward.
+    #expect(dead.withLock { $0 }.isEmpty)
 }
 
 /// ssh's `-D` port that nothing answers on (its master gone, or the forward lost): the front asks for a new one, once.
@@ -80,15 +88,15 @@ private func standIn(_ asked: @escaping @Sendable (String) -> Void = { _ in }) a
     ssh.newConnectionHandler = { connection in
         connection.start(queue: .global())
         Task {
-            guard await connection.read(3) == Data([5, 1, 0]) else { return connection.cancel() }
-            connection.send(content: Data([5, 0]), completion: .idempotent)
-            guard let head = await connection.read(5), let name = await connection.read(Int(head[4])),
+            // ssh holds its greeting until the machine opened the connection, and closes without it when it cannot.
+            guard await connection.read(3) == Data([5, 1, 0]), let head = await connection.read(5),
+                  let name = await connection.read(Int(head[4])),
                   let port = await connection.read(2)
             else { return connection.cancel() }
             let host = String(decoding: name, as: UTF8.self)
             asked(host)
             guard host == "localhost", port == Data([0, 7]) else { return connection.cancel() }
-            connection.send(content: Data([5, 0, 0, 1, 127, 0, 0, 1, 0, 7]), completion: .idempotent)
+            connection.send(content: Data([5, 0, 5, 0, 0, 1, 127, 0, 0, 1, 0, 7]), completion: .idempotent)
             while let data = await connection.readSome() {
                 connection.send(content: data, completion: .idempotent)
             }

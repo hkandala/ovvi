@@ -282,7 +282,9 @@ runs and on-demand on the final head.
 - **Fix.** A `-D` port that nothing answers on gets one new forward and one more try. A forward that fails checks the
   master with `ssh -O check` and starts a new one if it is gone. A front whose listener ends listens again on its port
   every 2 s until it can. Reload starts a proxy that did not start.
-- **Decisions.** No retry when ssh accepted and the machine refused: that is a real answer. No wake or network
+- **Decisions.** No retry when ssh accepted and the machine refused: that is a real answer. Only a port that takes
+  no TCP connection counts as a lost forward: ssh's `-D` holds even its greeting reply until the machine opened the
+  connection, and closes without it when it cannot (the first CI run, red, read that as a lost forward). No wake or network
   observer: the next page does the check. No time limit on ssh's greeting: a stopped master (SIGSTOP) still holds a
   page for WebKit's 60 s. Not seen from the user, so the symptom (error text or a spinner) is worth asking.
 - **For the user.** With a devvm-aai browser card open, sleep the Mac for a while, wake it, and reload: the page loads
