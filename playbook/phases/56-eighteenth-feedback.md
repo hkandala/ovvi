@@ -950,3 +950,61 @@ The user's words, item by item, with the track that takes each:
 - CI chosen tests on the final head 6d98baae (run 42185606318): Executed 2 tests, 0 failures, none skipped, so the
   resume step ran with CI's stand-in. The review's checks fail on the old code: the row's vanish and return around a
   resume (5337b816), and the 1 MB transcript's title (the whole-file read gives "Not read").
+
+## The phase's end
+
+### Findings (finish)
+
+- **Docs pass.** Archived had no design page: it got `ui/window#archived`, its setting, its keys in Data, D110, a glossary
+  row, and Resume in the herdr calls. Stale lines went (four Markdown modes, group labels, Read, the tree's Return,
+  ⌘F's cards); Track A's pages are "kept tab pages" (a plugin card's places stay "kept pages").
+- **Final review** (0 blockers, 19 shoulds, 32 nits; all shoulds fixed but item 29, which moved to phase 57): a popup
+  in a kept tab page took drops and the keyboard; kept pages stacked in the shown order, which drops change; the status
+  bar's git errors showed one line; Markdown's settings overrode a fresh pick; UI tests could read the user's agent
+  stores (`-archivedHome` is now in `noConfig`).
+- **Cause, the palette's and a new card's keys (CI).** WebKit makes a web view first responder itself when its page
+  focuses an element (`PageClientImpl::makeFirstResponder`, found with a throwaway probe), and `makeFirstResponder`
+  never asks `acceptsFirstResponder`. A Markdown card loading under the palette, and a Google page beside a new
+  browser card, took their keys. **Fix:** a web view becomes first responder only for the app's ask or a click; WebKit's
+  own call gives the keys back to the panel's field or the keyboard card (a lesson).
+- **Cause, five red tests (CI).** Distances and room that held only at the old 240 pt sidebar (Track P's 300 pt): the
+  header's filter field, three session swipes 6 pt short of half a page, and a fourth tab capsule out of view. Two
+  read pane text that herdr wraps at the pane's width (`recent_unwrapped` now). Three raced the app: a header read
+  mid-slide, the Agents list under the pointer, the machine button clicked as the title row laid out again. One drag
+  whose release AppKit never saw now releases on the highlight it waits for (no root cause found).
+- **CI.** Shards ran past the 25 min job limit on slow runners with phase 55's times: the times are refreshed and a
+  job now stops at 30 minutes (ci.md).
+
+### Runs (finish)
+
+- The full runs ran on tags of dca13ee4 plus phase 56's CI fixes only (cherry-picked, all on main too), so phase 57's
+  commits on main stayed out. On main's head, run 42444762131 had two red tests from phase 57 (the ⌘N picker's new
+  window, a remote terminal's keyboard): sent to the orchestrator.
+- Red, each fixed before the next: full runs 42438772183 and on-demand 42438777213 (p56-final), 42447228173
+  (p56-final3), 42449455226 (p56-final4), 42455121834 and on-demand 42452937729 (p56-final5). The palette's keys:
+  a guard on the app's own claims, then on `acceptsFirstResponder`, then a refusal without giving the keys back each
+  stayed red in some chosen-tests runs (42441653255, 42442329279, 42443626094); with the keys given back, four runs
+  green (42444274332 to 42444280973), and the rule for every page's own focus two runs of 16 tests green (42451992968,
+  42452000941).
+- Green on p56-final6 (5cb91adb), the final head: full run 42457061657 (Executed 52, 52, 53, 53 and 53 tests, 0
+  failures, one skip: the agent-start test without `claude`), full run 42459677789 right after it (the same counts, 0
+  failures), and on-demand run 42457063940 (Executed 1, 4, 4 and 5 tests, 0 failures).
+- `scripts/test-times.tsv` from full runs 42452935509, 42457061657 and 42459677789 and on-demand runs 42449463672 and
+  42457063940.
+
+### For the user
+
+- Install a build of main (`make app`): File Explorer 1.10.8 and Git 1.10.2 (or later) replace your copies.
+- Switch among a chat, a long Markdown file and a Git diff: switches are at once, and the chat keeps its place and its
+  Show Earlier rows.
+- ⌘-click three files fast in a tree, in a tab among many: each new tab shows right after it, with no jump. Drag tabs
+  and workspace rows half way and let go: they glide in, with no hovering image.
+- Drop a file from Finder on a terminal in a tab that is not the last one visited.
+- In File Explorer: the status bar (Fetch turns on its middle, Pull and Push when there is something), sticky folders
+  with no band, ⌃⌘← ⌃⌘→ for Back and Forward while ⌘[ ⌘] still select panes; Markdown's Rich Text and Source with the
+  lock.
+- ⌘K: paste a path, Open File, Open Working Tree, Open Commit; then ⌘K again at once: the field keeps the keys.
+- In a terminal, ⌘-click and ⌥-click `notes.md.` and a web address: Markdown opens in File Explorer, the dot dropped.
+- The Agents view: pin one, quit and relaunch; Settled after 3 hours; Archived on This Mac and devvm-aai, resume a
+  Claude Code and a pi session. Pins and shelves kept before Track L2 reset once.
+- A browser card through devvm-aai loads pages and `localhost` ports again.

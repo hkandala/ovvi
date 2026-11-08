@@ -139,6 +139,9 @@ Problems that came back across phases, and the rule that stops each. How we work
   never showed). Read them into `let`s in the body and use those inside; observed models are tracked inside.
 - **Hover state is unreliable.** A view removed under the pointer gets no hover end, and a busy app runs
   hover late. Decide from the pointer's location when it matters.
+- **A web page takes the keyboard by itself.** WebKit makes its web view first responder when the page focuses an
+  element (`PageClientImpl::makeFirstResponder`), and `NSWindow.makeFirstResponder` never asks `acceptsFirstResponder`:
+  refuse in `becomeFirstResponder`, and give the keys back, since the old responder has resigned by then.
 - **Every key has three possible owners: the menu, SwiftUI and libghostty.** libghostty takes every key it
   gets and `NSMenu` swallows a disabled item's key. Log the menu action and `keyDown` in the first run
   before guessing.
