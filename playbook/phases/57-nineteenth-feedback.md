@@ -208,6 +208,11 @@ runs and on-demand on the final head.
 - **Pictures.** Before and after, the sidebar and the pages, dark and light: `/tmp/ovvi-shots/p57s/` and
   `~/Downloads/ovvi-research/p57s/r2/`.
 
+### Runs (Settings icons)
+
+- `testSettingsPagesSearchAndLook` green locally before and after (it takes the pictures), and in chosen-tests run
+  42528799814 on 1b1565e3.
+
 ## Findings
 
 ### Track A
