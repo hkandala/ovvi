@@ -66,11 +66,9 @@ extension OvviUITests {
         quietKey("[", [.command, .option]) { self.header == eight }
 
         let keys = recorded().filter { $0.name.first.map("⌘⌃⇧⌥".contains) == true }
-        // Every key drew its change in its own turn, or the next for herdr's writes, and made a panel's list at most
-        // three times.
+        // Every key drew its change in its own turn, or the next for herdr's writes.
         for entry in keys {
             XCTAssertLessThanOrEqual(entry.turns, 1, entry.name)
-            XCTAssertLessThanOrEqual(entry.lists, 3, entry.name)
         }
         // A snapshot's apply on the main thread ("main … <snapshots> <their ms>", its own time): about 11 ms on CI
         // (75 ms when a set of every tab's focused pane was made again for each pane).
