@@ -188,7 +188,15 @@ extension OvviUITests {
         openPage(two)
         element("sidebar.dot.\(one)").click()
         XCTAssertTrue(until(3) { header == one })
-        let sidebar = element("sidebar"), name = element("sidebar.header"), place = name.frame.minX
+        // The header at rest: the window shows the session at the click, its pages arrive 0.2 s later (read mid-slide,
+        // 1 pt short, on CI).
+        let sidebar = element("sidebar"), name = element("sidebar.header")
+        var place = CGFloat.nan
+        XCTAssertTrue(until(3) {
+            let now = name.frame.minX
+            defer { place = now }
+            return now == place
+        })
         let center = "\(sidebar.frame.midX) \(sidebar.frame.midY)"
         // The other way if natural scrolling is off.
         for sign in [-1.0, 1.0] {
