@@ -235,7 +235,8 @@ runs and on-demand on the final head.
   (a structured timeout would hang too: the wait on the other start ignores cancellation). A remote machine's failure
   rows and the Disconnected page use `network.slash` (23); a missing herdr keeps the box.
 - **Round 2, runs.** testNewWindowRowsResolveWhileAnotherConnectAsks (Password Host's Connect left asking, then ⌘N):
-  red on the old code, green on the fix.
+  red on the old code at its 20 s wait for the row to go (run 42527933646), green on the fix with the scenes, the
+  picker's and Password Host's tests (run 42527936883).
 
 ### Track C
 
