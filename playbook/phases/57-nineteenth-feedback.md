@@ -192,3 +192,15 @@ runs and on-demand on the final head.
 - **For the user.** Hold ⌥ over a terminal link with the pointer still, then move it: the underline and the
   pointing hand show as with ⌘. A ⌥-drag still selects a rectangle. Open an `.html` from File Explorer: it shows as
   text with the globe button.
+
+### Track I
+
+- **Cause:** every adapter already read each entry's time from the agent's transcript; the rows dropped it, and a
+  message on its way showed only as a dimmed bubble.
+- **Fix:** user and reply rows carry their entry's time. Each bubble shows it under its text at the right; the user's
+  add one tick once `agent.prompt` took the message and two once the history has it. The dimming is gone.
+- **Decisions:** a message from another day shows its date too ("Nov 5, 8:18 AM"). "Not sent" keeps its time and drops
+  its tick. Two overlapping `checkmark` symbols make the double tick (SF Symbols has none). VoiceOver reads the time
+  with "Sent" or "Delivered".
+- **For the user:** reopen an old Claude Code, Codex, pi or OpenCode chat and check the times match the agent's; send
+  while pi works and see one tick turn into two when it takes the message.
