@@ -226,5 +226,5 @@ runs and on-demand on the final head.
   means. A step into a folded (Viewed) file unfolds it, as a pick in the file list does.
 - **Decisions, item 16.** 6 pt above a floated browser's toolbar and a plugin's row 2; pane cards unchanged.
 - **For the user.** In a Git diff, ⇧] and ⇧[ jump by file (not ⇧⌘] ⇧⌘[, which switch tabs). Try ⌃- and ⌃⇧- in File
-  Explorer and Git against your other apps. ⌘A in a locked Source view with its preview shown selects the preview too;
-  ⌘C still copies the source.
+  Explorer and Git against your other apps. ⌘A in a locked Source view selects the source, also with its preview
+  shown; ⌘C copies it.
