@@ -168,8 +168,9 @@ extension OvviUITests {
 
         // Slowly past half a page, a rest, a lift: the spring from rest is logically complete still about 1.4 % of its
         // way short (1.3–1.6 pt here). The session shows only once the pages are on their place: shown before, its
-        // 100 ms of main thread held them short, then they jumped. The last frame recorded started the show.
-        try await Self.post("\(one)/swipe", Data("\(center) \(-2 * forward) 70 200".utf8))
+        // 100 ms of main thread held them short, then they jumped. The last frame recorded started the show. 10 pt past
+        // half the sidebar's width: a fixed 140 pt fell short of a 300 pt sidebar's half page.
+        try await Self.post("\(one)/swipe", Data("\(center) \(-2 * forward) \(Int(width / 4) + 5) 200".utf8))
         try await Task.sleep(for: .seconds(1.5))
         XCTAssertEqual(header, one)
         let (slow, slowPath, slowShown) = try XCTUnwrap(swipes().last, "no swipe moved")

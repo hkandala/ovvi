@@ -52,7 +52,11 @@ extension OvviUITests {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         var records: [String] = []
         for (name, byTile) in [("capsule after the overview", false), ("tile after the overview", true)] {
-            let (tab, pane) = try await newTab(name, in: "w1")
+            // The second's capsule, w1's fourth, is out of the row's view beside CI's 300 pt sidebar: never hittable.
+            let (tab, pane) = try await byTile ? createTab(in: "w1", label: name) : newTab(name, in: "w1")
+            if byTile {
+                closeAfter("tab", tab)
+            }
             try await fill(pane)
             // Its tile streams until it drew, then lets go and shows the snapshot it took.
             app.typeKey("o", modifierFlags: [.command, .control])
