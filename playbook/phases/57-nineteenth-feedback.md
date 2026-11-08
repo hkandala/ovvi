@@ -225,6 +225,10 @@ runs and on-demand on the final head.
   diff steps by file on } and { (⇧] ⇧[), the shifted pair of ] [ (by change), which is what the user's "cmd + [ ]"
   means. A step into a folded (Viewed) file unfolds it, as a pick in the file list does.
 - **Decisions, item 16.** 6 pt above a floated browser's toolbar and a plugin's row 2; pane cards unchanged.
+- **Runs.** Chosen tests 42440766856 red on the first fix (line numbers only: Source's divider still ended Select All
+  outside the editor; the diff lost the keyboard to row 2's button), 42442867391 green (6 tests). The floating header
+  check in testAPluginsHeaderDrawsItsManifestsControls is not reached on CI: that test fails before it on main since
+  phase 56 (its filter field 55 pt wide); the row's 6 pt checked locally.
 - **For the user.** In a Git diff, ⇧] and ⇧[ jump by file (not ⇧⌘] ⇧⌘[, which switch tabs). Try ⌃- and ⌃⇧- in File
   Explorer and Git against your other apps. ⌘A in a locked Source view selects the source, also with its preview
   shown; ⌘C copies it.
