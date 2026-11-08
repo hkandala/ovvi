@@ -322,5 +322,9 @@ runs and on-demand on the final head.
 - **Runs.** The remote browser test now cancels the master's `-D` and kills the master, and loads a page after each.
   Red: 42442213887 and 42442741517 (its text check missed CI's `sshd-session`; the who server's log showed the healed
   page came). Green: 42443261958 (2 tests).
+- **A lost click (after the push).** A full run failed the remote relay test: it clicked a card still loading, and
+  the window gave herdr's focused pane the keyboard. The click had hit the card's spinner, which took it: the loader
+  overlay now lets clicks through to the terminal. A new test clicks a card whose stream waits on a stopped server;
+  it failed on the old code here, and the remote tests now also wait for the card to draw before they click.
 - **For the user.** With a devvm-aai browser card open, sleep the Mac for a while, wake it, and reload: the page loads
   without closing the window.

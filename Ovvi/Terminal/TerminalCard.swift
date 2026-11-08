@@ -81,8 +81,9 @@ struct TerminalCard: View {
             // The card's fill (after a grid change, its old picture) until herdr drew it at its size; a spinner
             // only when that takes over 0.5 s.
             .overlay {
+                // A click on the spinner is the card's: it takes the keyboard before the card drew.
                 if !terminal.ready, !terminal.state.isFailed, alpha > 0 {
-                    Loader(delay: .milliseconds(500))
+                    Loader(delay: .milliseconds(500)).allowsHitTesting(false)
                 }
             }
     }

@@ -89,4 +89,23 @@ extension OvviUITests {
         try await Self.call(one, "pane.send_keys", ["pane_id": pane, "keys": ["enter"]])
         try await waitFor(pane) { $0.components(separatedBy: "ovvi-e2e-dropped").count == 3 }
     }
+
+    /// A click on a card that has not drawn yet (its stream waits on a stopped server) keeps the keyboard once the
+    /// cards draw: the user's click wins over the tab's first pick, herdr's focused pane.
+    func testAClickBeforeACardDrewKeepsTheKeyboard() async throws {
+        let (tab, first) = try await newTab("early click")
+        let second = try await split(first)
+        try await waitForPrompt(second)
+        addTeardownBlock { [one] in _ = try? await Self.post("\(one)/resume") }
+        _ = try await Self.post("\(one)/pause")
+        element("tab.\(tab)").click()
+        let card = element("terminal.\(second)")
+        XCTAssertTrue(card.has(\.isHittable, true, within: 5))
+        XCTAssertEqual(element("pane.\(second)").stringValue, "loading")
+        card.click()
+        _ = try await Self.post("\(one)/resume")
+        XCTAssertTrue(drawn(first, within: 10) && drawn(second, within: 10))
+        XCTAssertTrue(hasKeyboard(card), "the keyboard is on \(keyboardOwner())")
+        XCTAssertFalse(until(1) { !NSPredicate(format: "hasKeyboardFocus == true").evaluate(with: card) })
+    }
 }
