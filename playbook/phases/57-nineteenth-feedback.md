@@ -326,6 +326,10 @@ runs and on-demand on the final head.
   the window gave herdr's focused pane the keyboard. The click had hit the card's spinner, which took it: the loader
   overlay now lets clicks through to the terminal. A new test clicks a card whose stream waits on a stopped server;
   it failed on the old code here, and the remote tests now also wait for the card to draw before they click.
+- **A page that never came (a later full run).** Not the proxy: the page after the dropped master was never asked
+  for (the who server got no request). The drop shows Reconnecting over the page for 0.8 s, which takes no clicks;
+  the test's click on the address field fell in it, and the typed address went to the page. The test now clicks
+  until the field has the keyboard. A stopped master still holds a page until WebKit's 60 s, then it fails.
 - **For the user.** With a devvm-aai browser card open, sleep the Mac for a while, wake it, and reload: the page loads
   without closing the window.
 

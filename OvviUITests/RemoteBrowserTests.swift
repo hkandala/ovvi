@@ -136,8 +136,14 @@ extension OvviUITests {
     }
 
     /// The address in place of the field's (which keeps the keyboard after a failed load, so a click selects nothing).
+    /// Clicked until it has the keyboard: right after a dropped master the page shows Reconnecting for a moment, and
+    /// takes no clicks (a CI recording: the address went to the page).
     private func open(_ address: String, in browser: String, _ window: XCUIElement) {
-        element("browser.\(browser).address", in: window).click()
+        let field = element("browser.\(browser).address", in: window)
+        XCTAssertTrue(until(connect) {
+            field.click()
+            return hasKeyboard(field)
+        }, "the keyboard is on \(keyboardOwner())")
         app.typeKey("a", modifierFlags: .command)
         app.typeText("\(address)\r")
     }
