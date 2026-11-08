@@ -135,6 +135,28 @@ runs and on-demand on the final head.
    there in cmd+k as well"
    - Also find what writes the `kq_dispatch` lines into the pane.
 
+### Track H findings
+
+- **Who writes `kq_dispatch`.** Meta's launcher binaries, not herdr (clean), libghostty or the agents' own code:
+  `/usr/local/bin/pi_cli/pi`, `codex_cli/codex`, `claude_code/claude` (and `launcher_sensitive`, `fast_mux`, `meta`,
+  `x2pagentd`, about 80 binaries) link xplat's `libevent-1.4.14b-stable` with a patched `kqueue.c` that warns
+  `%s: skipping fd=%lu errno=%lu` when kqueue reports EBADF (9) for an fd that was closed while watched (after sleep).
+  `event_warn` adds `strerror(errno)` of a stale errno, hence "errno=9: Operation now in progress". The launcher
+  stays the agent's parent and its stderr is the pane's tty, so the lines land on the TUI's screen. Neither Ovvi nor
+  herdr can stop it: they are the program's own output. The fix is the launcher's (its oncall:
+  devinfra_3p_ai); a stopgap on the user's side is `EVENT_NOKQUEUE=1` in the environment (the launchers' libevent
+  then uses poll; not tried for side effects, Ovvi does not set it).
+- **Redraw Terminal (⌥⌘R).** herdr has no redraw call. Over the control stream the PTY goes one column narrower, then
+  back to the card's grid once the program drew at the narrow width (frames quiet 150 ms, from 250 ms, at most 1 s):
+  two SIGWINCHes, and a TUI repaints all at a new width. A width change only once both landed would be no change
+  to a Node TUI (it compares sizes), hence the wait. The card keeps its old picture until the frames at its grid
+  settle. Spiked on herdr with pi, Claude Code and Codex (stray lines gone after; still there without the nudge);
+  zsh redraws only its prompt. ⌥⌘R is Terminal's Soft Reset and free in Ovvi on terminal cards; on plugin cards it
+  stays Reload Plugin (the two never meet). ⌃L stays the program's.
+- **Runs.** CI chosen tests: 42440812804 (the test waited for text `clear` had wiped), 42441450383 (a long prompt
+  wrapped the trap's line; the palette listed the test's tab "redraw" first; the redraw itself and PackageTests'
+  ⌥⌘R and Replace Pane's palette test passed), 42442000714 green: testRedrawTerminalMakesTheProgramRepaint.
+
 ## Track I: chat times and ticks (item 10)
 
 10. "one more improvement to chat view, to have timestamps and single tick and double ticks: <screenshot 6.01.48>,
