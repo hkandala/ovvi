@@ -4,11 +4,23 @@ import WebKit
 
 /// How a card's pages load, fail and follow links.
 extension Browser: WKNavigationDelegate {
-    func webView(_: WKWebView, didCommit _: WKNavigation!) {
+    /// The card shows the page once its document is parsed and drew, not when it finished: an image or a script that
+    /// never answers (a stalled server, a dead connection after a sleep) kept the loader over a page that was there,
+    /// and Reload kept it too. In a world of the app's own, so the page's scripts see nothing.
+    func webView(_ webView: WKWebView, didCommit _: WKNavigation!) {
         failure = nil
         loaded = true
         showAddress()
+        Task {
+            _ = try? await webView.callAsyncJavaScript(Self.drawnScript, contentWorld: .defaultClient)
+            ready = true
+        }
     }
+
+    private static let drawnScript = """
+    if (document.readyState === 'loading') await new Promise(r => addEventListener('DOMContentLoaded', r))
+    await new Promise(requestAnimationFrame)
+    """
 
     func webView(_: WKWebView, didFinish _: WKNavigation!) {
         ready = true

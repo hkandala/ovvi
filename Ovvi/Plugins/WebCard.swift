@@ -19,7 +19,7 @@ final class WebCard {
     /// The page's calls and events.
     var bridge: Bridge?
     /// A linked open's landing, for the first load only (`ovvi.card.at`).
-    @ObservationIgnored private(set) var place: String?
+    @ObservationIgnored var place: String?
     /// Opens a link from the page, in the card or beside it (`Page.open(_:arg:at:from:how:)`).
     @ObservationIgnored var open: ((PluginManifest, String, String?, Opening, Bool) -> Void)?
     var dirty = false
@@ -147,17 +147,17 @@ private final class Relay: NSObject, WKScriptMessageHandlerWithReply, WKNavigati
     /// The system ends a page's process (memory pressure, a long sleep): the page loads again with its state now, once
     /// per load; one that ends it again before it loaded says so, with Reload, instead of a blank card.
     func webViewWebContentProcessDidTerminate(_: WKWebView) {
-        guard let card else { return }
+        guard let card, let bridge = card.bridge, let manifest = bridge.plugin?.manifest else { return }
         card.dirty = false
         guard !reloaded else {
             card.ready = true
-            card.bridge?.failure = PluginProblem(
-                title: "The page stopped working",
-                text: "It stopped again as it loaded.",
-            )
+            bridge.failure = .noted(manifest, PluginProblem(title: "The page stopped working",
+                                                            text: "It stopped again as it loaded."))
             return
         }
         reloaded = true
+        // Where the user left it (the page's kept scroll), not a linked open's landing.
+        card.place = nil
         card.reload()
     }
 }

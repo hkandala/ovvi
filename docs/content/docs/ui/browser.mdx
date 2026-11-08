@@ -127,7 +127,10 @@ server's terminal.
   13 pt secondary. It fades out over 0.15 s (at once with Reduce Motion). A
   typed address shows the progress line alone. A card made again after it
   was dropped ([What stays in memory](#what-stays-in-memory)) shows its last
-  picture in place of the loader, with no fade, until its page draws.
+  picture in place of the loader, with no fade, until its page draws. A page
+  draws once its document is parsed and painted (`DOMContentLoaded` and one
+  frame), not when every image and script finished: one that never answers
+  would keep the loader over the page.
 - **Error.** A page that fails shows, in the middle of the card, a warning
   symbol, the app's words in 14 pt, a line in secondary text for a refused
   local port, and **Reload**:
@@ -475,7 +478,7 @@ gets the same card.
   (`webViewWebContentProcessDidTerminate`), the card loads the page again by
   itself, once per load, and WebKit brings back its scroll. A page whose
   process ends again before it loaded shows "The page stopped working" with
-  **Reload**, so the card never stays blank.
+  **Reload**, so the card never stays blank, also in a card out of view.
 - Plain `http` needs `NSAllowsArbitraryLoadsInWebContent` and
   `NSAllowsLocalNetworking` in `Info.plist`.
 

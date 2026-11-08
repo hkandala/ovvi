@@ -118,6 +118,8 @@ export async function show(place: Place): Promise<Reveal> {
   let outlined = false
   /** The file has a heading: the outline's toggle shows only then. */
   let titled = false
+  /** The first look drew: before it, the page's own landing or kept top line is still to scroll. */
+  let presented = false
   const editable = new Compartment(), look = new Compartment()
   /** Source's page, while Source shows. */
   let split: ReturnType<typeof sideBySide> | undefined
@@ -135,7 +137,7 @@ export async function show(place: Place): Promise<Reveal> {
       effects.push(look.reconfigure(next.mode === "source" ? source : rendered))
       // A new look keeps the line at the top in place.
       const top = view.lineBlockAtHeight(view.scrollDOM.scrollTop - view.documentPadding.top).from
-      effects.push(EditorView.scrollIntoView(top, { y: "start" }))
+      if (presented) effects.push(EditorView.scrollIntoView(top, { y: "start" }))
     }
     const selection = next.locked ? { anchor: view.state.selection.main.head } : undefined
     if (effects.length) view.dispatch({ selection, effects })
@@ -144,6 +146,7 @@ export async function show(place: Place): Promise<Reveal> {
       split = next.mode === "source" ? sideBySide(view, pane, page, next.preview, folded) : undefined
     }
     now = cardLook = next
+    presented = true
     outlined = nowOutlined && titled
     outline.hidden = false
     outline.toggleAttribute("data-closed", !outlined)
