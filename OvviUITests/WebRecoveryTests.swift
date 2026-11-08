@@ -29,8 +29,15 @@ extension OvviUITests {
         let last = notes.staticTexts.matching(NSPredicate(format: "value BEGINSWITH 'Line 120,'")).firstMatch
         XCTAssertTrue(pageText("Paragraph 1").exists(within: 15))
         XCTAssertTrue(heading.exists(within: 15))
-        element("browser.\(browser)").scroll(byDeltaX: 0, deltaY: -10000)
-        notes.scroll(byDeltaX: 0, deltaY: -10000)
+        // To their ends, again while a card still shows its loader over the page (which takes the wheel).
+        XCTAssertTrue(until(20) {
+            element("browser.\(browser)").scroll(byDeltaX: 0, deltaY: -10000)
+            return pageText("Paragraph 200").isHittable
+        })
+        XCTAssertTrue(until(20) {
+            notes.scroll(byDeltaX: 0, deltaY: -10000)
+            return last.exists
+        })
         // Both pages drawn at their ends, the Markdown file rendered.
         func atTheirEnds(_ what: String) {
             XCTAssertTrue(until(15) { pageText("Paragraph 200").isHittable }, "the browser's page, \(what)")
@@ -91,10 +98,11 @@ extension OvviUITests {
     private func survivesHelperProcesses(_ browser: String, notes: XCUIElement, heading: XCUIElement,
                                          shell: String) async throws
     {
-        let gpu = try await end("GPU")
-        XCTAssertFalse(gpu.isEmpty, "no GPU process of the app")
-        notes.scroll(byDeltaX: 0, deltaY: 10000)
-        XCTAssertTrue(heading.exists(within: 10), "the Markdown page drew after the GPU process ended")
+        // CI's virtual Mac runs WebKit with no GPU process.
+        if try await !end("GPU").isEmpty {
+            notes.scroll(byDeltaX: 0, deltaY: 10000)
+            XCTAssertTrue(heading.exists(within: 10), "the Markdown page drew after the GPU process ended")
+        }
         let network = try await end("Networking")
         XCTAssertFalse(network.isEmpty, "no network process of the app")
         element("browser.\(browser).reload").click()
