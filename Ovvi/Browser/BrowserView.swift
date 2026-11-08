@@ -47,9 +47,14 @@ class BrowserView: WKWebView {
             // Not in a kept page out of view (the overview's): it takes it as the page shows (`viewDidUnhide`).
             guard let self, wantsKeyboard, !inTile, let window, !isHiddenOrHasHiddenAncestor else { return }
             wantsKeyboard = false
+            asking = true
             window.makeFirstResponder(self)
+            asking = false
         }
     }
+
+    /// The app's own ask (`takeKeyboard`), which `becomeFirstResponder` lets through.
+    private var asking = false
 
     /// With no page (a card that asks "Open this page?", or is empty), the menu first: WebKit sends the key to a page
     /// that is not there, which drops it (⌘1–⌘9).
@@ -170,13 +175,20 @@ class BrowserView: WKWebView {
         !inTile && super.acceptsFirstResponder
     }
 
-    /// Not under an open panel (the palette), but for a click: WebKit makes the view first responder itself when its
-    /// page focuses an element (a Markdown card loading in Open File's new tab), and took the palette's keys. By then
-    /// the panel's field resigned: it takes them back (`FilterField`). The panel's close gives them to the keyboard
-    /// card.
+    /// Only for the app's ask or a click. WebKit makes the view first responder itself when its page focuses an
+    /// element (a page or a Markdown card that loads), which took the keys of the palette and of the keyboard card
+    /// (a new browser card's address). By then they resigned: the panel's field takes them back (`FilterField`), else
+    /// the keyboard card, which is this card when it is the keyboard card. A floating window's card has its window.
     override func becomeFirstResponder() -> Bool {
-        guard window?.panelOpen != true || NSApp.currentEvent?.type == .leftMouseDown else {
-            NotificationCenter.default.post(name: .panelKeysTaken, object: nil)
+        let click = [.leftMouseDown, .rightMouseDown, .otherMouseDown].contains(NSApp.currentEvent?.type)
+        if !asking, !click, let window, let pages = WindowPages.windows.first(where: { $0.window === window }) {
+            DispatchQueue.main.async {
+                if pages.panelOpen {
+                    NotificationCenter.default.post(name: .panelKeysTaken, object: nil)
+                } else {
+                    pages.current?.focusKeyboardCard()
+                }
+            }
             return false
         }
         let became = super.becomeFirstResponder()
@@ -188,7 +200,7 @@ class BrowserView: WKWebView {
 }
 
 extension Notification.Name {
-    /// A web view refused the keys of an open panel, which its field had given up.
+    /// A web view's page asked for the keys of an open panel, which its field had given up.
     static let panelKeysTaken = Notification.Name("dev.ovvi.panelKeysTaken")
 }
 
