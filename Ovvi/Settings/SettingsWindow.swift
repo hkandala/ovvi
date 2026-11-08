@@ -8,7 +8,7 @@ enum SettingsPage: String, CaseIterable, Hashable {
         rawValue.capitalized
     }
 
-    /// Its sidebar row's SF Symbol, drawn white on a grey tile (`SettingsIcon`).
+    /// Its sidebar row's SF Symbol, drawn filled on its tile (`SettingsIcon`).
     var symbol: String {
         switch self {
         case .general: "gearshape"
@@ -88,8 +88,9 @@ struct SettingsWindow: View {
                     ContentUnavailableView.search(text: search)
                 }
             }
-            // A little room between the search field and the first row (the user's ask).
-            .contentMargins(.top, 6, for: .scrollContent)
+            // A little room between the search field and the first row (the user's ask); the list's content margins
+            // drew no gap.
+            .safeAreaPadding(.top, 6)
             .searchable(text: $search, placement: .sidebar)
             // As System Settings: the sidebar always shows.
             .toolbar(removing: .sidebarToggle)
