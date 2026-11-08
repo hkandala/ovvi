@@ -35,7 +35,8 @@ extension OvviUITests {
         try await Task.sleep(for: .seconds(1))
         // Each drawn in the key's own turn.
         let keys = recorded().filter { ["⌘", "⌃", "⇧", "⌥"].contains($0.name.first.map(String.init)) }
-        XCTAssertEqual(keys.map(\.name), ["⌘K", "⌘K", "⌥⌘T", "⌘2", "⌘1", "⌃⌘]", "⌃⌘[", "⌥⌘]", "⌥⌘["])
+        // ⌥⌘1 first: `showPage` above.
+        XCTAssertEqual(keys.map(\.name), ["⌥⌘1", "⌘K", "⌘K", "⌥⌘T", "⌘2", "⌘1", "⌃⌘]", "⌃⌘[", "⌥⌘]", "⌥⌘["])
         for entry in keys {
             XCTAssertEqual(entry.turns, 0, entry.name)
         }
