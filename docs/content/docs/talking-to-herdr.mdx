@@ -106,13 +106,14 @@ and watch files and run git the same way
   remote machine over its SSH connection ([Run and dial](#run-and-dial)). It
   installs to `~/.local/bin`.
 - While it runs, the page shows the loader "Installing herdr…" with the
-  installer's last line under it (its colors taken out), and **Cancel**, which
-  ends it.
+  installer's last line under it (its colors taken out). It has no Cancel: a
+  kill reaches only the `sh`, never the pipe's `curl` and `sh` (the app never
+  signals a process group).
 - When it exits 0, the app forgets the machine's herdr path and asks the login
   shell again. On This Mac it then starts the page's session (D47). Every page
   of the machine reads again; the loader's line says "Connecting…" until they
   leave "not installed" (at most 10 s).
-- When it fails, is canceled, or the login shell still finds no herdr, the
+- When it fails, or the login shell still finds no herdr, the
   page shows "herdr did not install" over the installer's last 6 lines and
   the reason, with **Try Again**.
 - A herdr that is too old gets no button: the running server's version counts,

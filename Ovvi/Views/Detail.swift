@@ -179,18 +179,14 @@ struct Detail: View {
         .padding(.bottom, 30)
     }
 
-    /// A missing herdr, its install command and Install herdr; the installer's progress and Cancel while it runs, its
+    /// A missing herdr, its install command and Install herdr; the installer's progress while it runs, its
     /// output and Try Again when it failed (talking-to-herdr#install-herdr).
     @ViewBuilder private func install(_ store: HostStore) -> some View {
         let machine = store.machine, installs = HerdrInstall.shared
         let run = { _ = Task { await installs.install(on: machine, session: store.session) } }
         switch installs.steps[machine.id] {
         case let .running(line):
-            VStack(spacing: 16) {
-                Loader(symbol: "shippingbox", text: "Installing herdr…", detail: line, id: "detail.installing")
-                Button("Cancel") { installs.cancel(on: machine) }.buttonStyle(.glass).controlSize(.large)
-                    .accessibilityIdentifier("detail.cancel")
-            }
+            Loader(symbol: "shippingbox", text: "Installing herdr…", detail: line, id: "detail.installing")
         case let .failed(output):
             let failed = "herdr did not install"
             EmptyState(symbol: "exclamationmark.triangle", title: failed, text: output, code: true, id: "detail") {

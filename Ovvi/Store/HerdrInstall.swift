@@ -17,8 +17,6 @@ final class HerdrInstall {
 
     /// By machine id.
     private(set) var steps: [String: Step] = [:]
-    /// The running installers' ends, for Cancel.
-    @ObservationIgnored private var runs: [String: Channel] = [:]
 
     /// herdr.dev's install command; `-herdrInstall` gives the e2e tests a fake installer, so no test installs herdr.
     static var command: String {
@@ -39,8 +37,6 @@ final class HerdrInstall {
             // failed curl fails the pipe where the shell has pipefail (a `sh` without it exits on a bare `set`).
             let script = "(set -o pipefail) 2>/dev/null && set -o pipefail; exec 2>&1; " + Self.command
             let channel = try await exec.run(["sh", "-c", script])
-            runs[machine.id] = channel
-            defer { runs[machine.id] = nil }
             channel.closeInput()
             for await line in channel.lines {
                 let text = line.replacing(/\u{1B}\[[0-9;]*m/, with: "").trimmingCharacters(in: .whitespaces)
@@ -77,10 +73,5 @@ final class HerdrInstall {
             try? await Task.sleep(for: .milliseconds(100))
         }
         steps[machine.id] = nil
-    }
-
-    /// Ends the machine's running installer: the page shows it failed, with Try Again.
-    func cancel(on machine: Machine) {
-        runs[machine.id]?.terminate()
     }
 }
