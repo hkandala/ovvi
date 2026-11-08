@@ -373,10 +373,10 @@ extension OvviUITests {
         XCTAssertTrue(window.webViews.staticTexts.matching(NSPredicate(format: "value == 'ovvi-page-two'")).firstMatch
             .exists(within: 3))
         keepScreenshot("floated browser", of: window)
-        // 6 pt down from the card's top edge, the toolbar's 36 pt row.
+        // 6 pt down from the card's top edge, the toolbar's 36 pt row, its field's middle 19.5 pt into it.
         let surface = element("float.\(pane)", in: window).frame
         let address = element("browser.\(pane).address", in: window).frame
-        XCTAssertEqual(address.midY - surface.minY, 6 + 18, accuracy: 1, "\(address) in \(surface)")
+        XCTAssertEqual(address.midY - surface.minY, 6 + 19.5, accuracy: 1, "\(address) in \(surface)")
         XCTAssertFalse(element("float.\(pane).place", in: window).exists)
         element("float.\(pane).detach").click()
         XCTAssertTrue(window.vanishes(within: 3))

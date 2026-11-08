@@ -329,6 +329,16 @@ export async function show(place: Place): Promise<Reveal> {
   }
   document.addEventListener("copy", copy)
   keep(() => document.removeEventListener("copy", copy))
+  // Select All while locked selects the file, as unlocked. WebKit's, of the whole page (its `selectstart` on the body),
+  // would start at the line numbers or the outline and end in Source's page: CodeMirror took none of it.
+  const selectAll = (event: Event) => {
+    if (!now.locked || !place.shown() || event.target !== document.body) return
+    if (!view.scrollDOM.contains(document.activeElement)) return
+    event.preventDefault()
+    view.dispatch({ selection: { anchor: 0, head: view.state.doc.length } })
+  }
+  document.addEventListener("selectstart", selectAll)
+  keep(() => document.removeEventListener("selectstart", selectAll))
   ovvi.on("control", ({ id, value }) => {
     if (id === "outline") present(view, now, value === true)
     if (id === "mode" && mode(value)) change(view, { mode: mode(value) })

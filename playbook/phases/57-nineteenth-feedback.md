@@ -210,12 +210,13 @@ runs and on-demand on the final head.
 
 ### Track E
 
-- **Cause, item 5.** A locked view's keyboard is on its scroller, so ⌘A is WebKit's Select All of the page. It starts
-  at the page's first selectable text: in Source the line numbers, in Rich Text with the outline open its rows.
-  CodeMirror takes a page selection only when it starts in its own text, so its selection stayed and nothing drew.
-  Shown with an offscreen web view before the fix.
-- **Fix, item 5.** Line numbers and `.ovvi-sidebar` are not selectable (`-webkit-user-select`; WebKit ignores the
-  unprefixed one). No ⌘A handler.
+- **Cause, item 5.** A locked view's keyboard is on its scroller, so ⌘A is WebKit's Select All of the whole page. It
+  starts at the page's first selectable text (Source's line numbers, Rich Text's open outline) and ends past the
+  editor (Source's divider button, its shown page). CodeMirror takes a page selection only when both ends are in its
+  text, so its selection stayed, or collapsed, and nothing drew. Shown with an offscreen web view; making the line
+  numbers unselectable was not enough (CI: the divider still ended it outside).
+- **Fix, item 5.** The Markdown page takes Select All's `selectstart` on the body while locked and selects the file
+  in CodeMirror, as unlocked.
 - **Decisions, item 13.** Back and Forward are ⌃- and ⌃⇧- (VS Code's and Sublime Text's Go Back and Go Forward). No
   Ovvi key (⌘- is the text size), no macOS key binding, no CodeMirror default, and no common launcher, browser or
   Xcode key uses them. A terminal reads ⌃- as undo, but the keys act only over a plugin card. ⌘← ⌘→ stay outside

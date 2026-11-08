@@ -165,6 +165,8 @@ extension OvviUITests {
     private func stepsByFile(_ page: XCUIElement) {
         let header = page.buttons["Open c.txt"], top = page.frame.minY + 50
         XCTAssertLessThan(header.frame.minY, top, "c.txt is not at the top: \(header.frame), page \(page.frame)")
+        // The keyboard to the page: row 2's file list button last had the click.
+        page.staticTexts.matching(NSPredicate(format: "value == 'new 3'")).firstMatch.click()
         app.typeKey("[", modifierFlags: .shift)
         XCTAssertTrue(until(3) { header.frame.minY > top }, "⇧[ left c.txt at \(header.frame)")
         app.typeKey("]", modifierFlags: .shift)
