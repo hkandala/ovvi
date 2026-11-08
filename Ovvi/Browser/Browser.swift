@@ -244,6 +244,8 @@ final class Browser: NSObject {
             // Not on a network the card switched away from meanwhile.
             guard proxy == self.proxy else { return }
             guard ssh != nil else {
+                // Reload asks again: a listener that could not start then (no network) may start now.
+                startProxy()
                 failure = ("Ovvi could not start the proxy to \(store?.machine.name ?? "")", nil)
                 ready = true
                 return
@@ -310,6 +312,10 @@ extension Browser {
         view.onKey = { [weak self] in self?.key($0) ?? false }
         view.setAccessibilityIdentifier("browser.\(paneID)")
         watches = watch()
+        startProxy()
+    }
+
+    private func startProxy() {
         if alias != nil, let machine = store?.machine {
             let data = view.configuration.websiteDataStore, content = view.configuration.userContentController
             proxy = Task { await Self.proxy(machine, data, content) }

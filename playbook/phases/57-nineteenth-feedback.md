@@ -265,21 +265,25 @@ runs and on-demand on the final head.
   running app), master alive, no `-D` (no remote card open). WebKit's unified log holds only hours, so no failure was
   caught live. Each way the forward can die was played against a throwaway sshd on 127.0.0.1 with the app's exact
   ssh argv.
-- **Cause: a forward lost while its master's pid lives.** The proxy kept ssh's `-D` port per master pid and checked the
-  master with `kill(pid, 0)`. A dead master's pid comes back fast on this Mac (pids went 68431 to 98041 in two
-  minutes), and an `-O cancel` or lost listener leaves the pid alive. Either way every page was refused until the last
-  card closed, which is what closing the window and connecting again did.
-- **Cause: the front could kill itself.** Its listener's start handler stayed on for its life: a later `.waiting`
-  (Network's "waiting for a network") or `.failed` cancelled it for good, and the store kept the dead port. Not seen
-  live: this Mac's network cannot be turned off under the other agents.
+- **Likely cause: the front could kill itself.** Its listener's start handler stayed on for its life: a later
+  `.waiting` (Network's "waiting for a network") or `.failed` cancelled it for good, and the store kept the dead port.
+  That matches "browser only, until the window closes": only the last card's close makes a new front. Not seen live:
+  this Mac's network cannot be turned off under the other agents, and WebKit's log keeps only hours. The proxy now
+  logs (`dev.ovvi.app`, category `proxy`, error level, kept for days) when its listener ends, listens again, or
+  forwards again, so the next report names the path.
+- **Smaller causes.** A card whose proxy did not start (its listener waited at start) said so until the window
+  closed: Reload never asked again. A forward made on a master whose pid a new process has (pids went 68431 to 98041
+  in two minutes on this Mac) failed every page until a herdr run noticed; with a session's window open that came
+  soon, so it was short.
 - **Not causes.** A master that dies (SIGKILL, a dead link after 15 s of ServerAlive, sleep) is started again on the
   next page, which forwards again. A page in the first 15 s after a dead link waits, then fails once. WebKit applies a
   changed proxy to existing web views and keeps it across a crash of its network process. A refused proxy never falls
   back to a direct load.
-- **Fix.** A `-D` port that nothing answers on gets one new forward and one more try. The master is checked with
-  `ssh -O check` then, so a reused pid is caught. A front whose listener ends by itself listens again on its port; a
-  wait for the network after it served is no longer an end.
+- **Fix.** A `-D` port that nothing answers on gets one new forward and one more try. A forward that fails checks the
+  master with `ssh -O check` and starts a new one if it is gone. A front whose listener ends listens again on its port
+  every 2 s until it can. Reload starts a proxy that did not start.
 - **Decisions.** No retry when ssh accepted and the machine refused: that is a real answer. No wake or network
-  observer: the next page does the check.
+  observer: the next page does the check. No time limit on ssh's greeting: a stopped master (SIGSTOP) still holds a
+  page for WebKit's 60 s. Not seen from the user, so the symptom (error text or a spinner) is worth asking.
 - **For the user.** With a devvm-aai browser card open, sleep the Mac for a while, wake it, and reload: the page loads
   without closing the window.

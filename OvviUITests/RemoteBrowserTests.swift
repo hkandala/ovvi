@@ -103,19 +103,33 @@ extension OvviUITests {
         try await reloadsAfterTheForwardEnds(browser, port, in: remote)
     }
 
-    /// ssh's forward gone while its master lives (as when a new process has the master's pid): the next page forwards
-    /// again. Then its master gone (as after a sleep): a new master, and a new forward on it. Each time a new name:
-    /// WebKit keeps a spare connection to the last one.
+    /// ssh's forward gone while its master lives (as when it lost its `-D`): the next page forwards again. Then its
+    /// master gone (as after a sleep): a new master, and a new forward on it. Each time a new name: WebKit keeps a
+    /// spare
+    /// connection to the last one.
     private func reloadsAfterTheForwardEnds(_ browser: String, _ port: Int, in remote: XCUIElement) async throws {
         let ports = try await Self.post("\(one)/ssh-unforward", Data("ovvi-key".utf8))
         XCTAssertFalse(ports.isEmpty)
-        element("browser.\(browser).address", in: remote).click()
-        app.typeText("healed.localhost:\(port)\r")
-        XCTAssertTrue(whoText("via=sshd host=healed.localhost:\(port)", in: remote).exists(within: 10))
+        open("healed.localhost:\(port)", in: browser, remote)
+        XCTAssertTrue(whoText("via=sshd host=healed.localhost:\(port)", in: remote).exists(within: connect),
+                      shown(browser, remote))
         let pids = try await Self.post("\(one)/ssh-drop", Data("ovvi-key".utf8))
         XCTAssertFalse(pids.isEmpty)
-        element("browser.\(browser).address", in: remote).click()
-        app.typeText("dropped.localhost:\(port)\r")
-        XCTAssertTrue(whoText("via=sshd host=dropped.localhost:\(port)", in: remote).exists(within: connect))
+        open("dropped.localhost:\(port)", in: browser, remote)
+        XCTAssertTrue(whoText("via=sshd host=dropped.localhost:\(port)", in: remote).exists(within: connect),
+                      shown(browser, remote))
+    }
+
+    /// The card's failure, for a page that did not come.
+    private func shown(_ browser: String, _ window: XCUIElement) -> String {
+        let message = element("browser.\(browser).message", in: window)
+        return message.exists ? "\(message.value ?? "")" : "no failure shown"
+    }
+
+    /// The address in place of the field's (which keeps the keyboard after a failed load, so a click selects nothing).
+    private func open(_ address: String, in browser: String, _ window: XCUIElement) {
+        element("browser.\(browser).address", in: window).click()
+        app.typeKey("a", modifierFlags: .command)
+        app.typeText("\(address)\r")
     }
 }

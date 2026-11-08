@@ -360,11 +360,11 @@ connection. Nothing is installed on the machine.
 - The proxy starts with the machine's first browser card and ends with its
   last (`ssh -O cancel`). The `-D` ends with its master, and the next page
   connection forwards again on the new master. When nothing answers on the
-  `-D` port, the front asks for a new forward once and tries again. The master
-  is checked with `ssh -O check` then: a dead master's pid can belong to a new
-  process. A front whose listener ends by itself listens again on its port,
-  which the store keeps. So a page that failed loads again on Reload, without a
-  new connection. A connection the front already
+  `-D` port, the front asks for a new forward once and tries again. A front
+  whose listener ends by itself listens again on the same port, every 2 s until
+  it can. A card whose proxy did not start tries again on Reload. So a page
+  that failed loads again on Reload, without closing the window. A connection
+  the front already
   carries (a dev server's live-reload websocket) lives on after the last card
   until WebKit drops it. Two machines with one SSH target share one proxy.
 - The forward uses no [SSH session](/docs/machines#ssh-sessions). It needs

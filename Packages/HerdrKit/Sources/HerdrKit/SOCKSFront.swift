@@ -1,5 +1,6 @@
 import Foundation
 import Network
+import os
 import Synchronization
 
 /// A remote machine's proxy for its browser cards (ui/browser#remote-localhost): SOCKS5 on a loopback port of
@@ -8,8 +9,15 @@ import Synchronization
 /// connection the machine cannot open gets a "refused" reply at once (ssh closes it without a reply, and WebKit then
 /// waits 60 s).
 final class SOCKSFront: Sendable {
-    /// The listener, replaced by a new one on its port when it ends by itself: the cards' store keeps that port.
-    let current = Mutex<(listener: NWListener?, stopped: Bool)>((nil, false))
+    /// The listener, replaced by a new one on the front's port when it ends by itself: the cards' store keeps that
+    /// port.
+    let current = Mutex(Current())
+    struct Current {
+        var listener: NWListener?
+        var port: NWEndpoint.Port?
+        var stopped = false
+    }
+
     /// ssh's `-D` port on the live master; given the port that did not answer, a new forward's.
     private let upstream: @Sendable (_ dead: UInt16?) async throws -> UInt16
 
@@ -26,6 +34,20 @@ final class SOCKSFront: Sendable {
         return front
     }
 
+    /// The front's port for its life.
+    var port: NWEndpoint.Port {
+        current.withLock { $0.port } ?? .any
+    }
+
+    func stop() {
+        current.withLock {
+            $0.stopped = true
+            $0.listener?.cancel()
+        }
+    }
+
+    private static let log = Logger(subsystem: "dev.ovvi.app", category: "proxy")
+
     private func listen(on port: NWEndpoint.Port) async throws {
         let parameters = NWParameters.tcp
         parameters.requiredLocalEndpoint = .hostPort(host: .ipv4(.loopback), port: port)
@@ -37,50 +59,57 @@ final class SOCKSFront: Sendable {
             Task { await self.serve(client) }
         }
         let waiting = Mutex<CheckedContinuation<Void, Error>?>(nil)
-        // Its port once ready.
-        let served = Mutex<NWEndpoint.Port?>(nil)
+        let served = Atomic(false)
         try await withCheckedThrowingContinuation { continuation in
             waiting.withLock { $0 = continuation }
             listener.stateUpdateHandler = { [weak self] state in
                 switch state {
                 case .ready:
-                    served.withLock { $0 = listener.port }
+                    served.store(true, ordering: .relaxed)
+                    self?.current.withLock { $0.port = $0.port ?? listener.port }
                     waiting.withLock { $0.take() }?.resume()
-                // A wait for the network after it served is not an end: the listener goes on by itself after it.
-                case .waiting where served.withLock { $0 } != nil: break
-                case .waiting, .failed: listener.cancel()
+                case let .waiting(error), let .failed(error):
+                    if served.load(ordering: .relaxed) {
+                        Self.log.error("The browser proxy's listener ended: \(error, privacy: .public)")
+                    }
+                    listener.cancel()
                 case .cancelled:
+                    listener.stateUpdateHandler = nil
+                    listener.newConnectionHandler = nil
                     waiting.withLock { $0.take() }?
                         .resume(throwing: HerdrError.failed("The browser proxy did not start"))
-                    // One that served and ended without `stop` listens again on its port.
-                    if let self, let port = served.withLock({ $0 }), !current.withLock({ $0.stopped }) {
-                        Task { try? await self.listen(on: port) }
+                    if served.load(ordering: .relaxed) {
+                        self?.relisten()
                     }
                 default: break
                 }
             }
-            // Not after `stop`: a new listener would outlive the proxy.
-            guard current.withLock({ state in
+            // Started under the lock: a `stop` after it cancels this one, and none starts after a `stop`.
+            let started = current.withLock { state in
                 if !state.stopped {
                     state.listener = listener
+                    listener.start(queue: Self.queue)
                 }
                 return !state.stopped
-            }) else {
-                return continuation.resume(throwing: HerdrError.failed("The browser proxy stopped"))
             }
-            listener.start(queue: Self.queue)
+            if !started {
+                continuation.resume(throwing: HerdrError.failed("The browser proxy stopped"))
+            }
         }
     }
 
-    /// Set once it is ready.
-    var port: NWEndpoint.Port {
-        current.withLock { $0.listener?.port } ?? .any
-    }
-
-    func stop() {
-        current.withLock {
-            $0.stopped = true
-            $0.listener?.cancel()
+    /// A listener that served and ended without `stop` comes back on the front's port, every 2 s until one listens
+    /// (the network back after a sleep) or the proxy stops.
+    private func relisten() {
+        Task {
+            while let port = current.withLock({ $0.stopped ? nil : $0.port }) {
+                do {
+                    try await listen(on: port)
+                    return Self.log.error("The browser proxy listens again on \(port.rawValue)")
+                } catch {
+                    try? await Task.sleep(for: .seconds(2))
+                }
+            }
         }
     }
 
@@ -106,6 +135,7 @@ final class SOCKSFront: Sendable {
         // ssh's `-D` port that does not answer is gone (its master ended, or lost the forward): forwarded again, once.
         var dialed = await Self.dial(local, request)
         if dialed == nil, let again = try? await upstream(local) {
+            Self.log.error("ssh's forward on \(local) did not answer: forwarded again on \(again)")
             dialed = await Self.dial(again, request)
         }
         guard let ssh = dialed, let reply = await ssh.readSome() else {

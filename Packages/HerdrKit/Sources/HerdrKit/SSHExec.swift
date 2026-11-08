@@ -354,15 +354,10 @@ extension SSHExec {
         _ = await control(["-O", "cancel", "-D", "127.0.0.1:\(dynamic.port)"])
     }
 
-    /// ssh's `-D` port on the live master, forwarded once per master (one at a time), and again when the last one did
-    /// not answer: gone with a master whose pid another process has now (`kill` passes), or lost by it.
+    /// ssh's `-D` port on the live master, forwarded once per master (one at a time), and again after `dead`.
     private func dynamicPort(dead: UInt16?) async throws -> UInt16 {
-        if let dead, let forwarded = dynamic?.pid, dynamic?.port == dead {
+        if let dead, dynamic?.port == dead {
             dynamic = nil
-            // Unless a new master started meanwhile.
-            if await pid() != forwarded, connection == forwarded {
-                connection = nil
-            }
         }
         try await up(nil)
         if let dynamic, dynamic.pid == connection {
@@ -381,11 +376,18 @@ extension SSHExec {
         return try await task.value
     }
 
-    /// A port ssh found taken meanwhile is tried again with another.
+    /// A port ssh found taken meanwhile is tried again with another. A master that does not answer is gone, though
+    /// `kill` passes for its pid when a new process has it: a new master then.
     private func forward() async throws -> UInt16 {
         for _ in 0 ..< 3 {
             guard let pid = connection, let port = SOCKSFront.freePort() else { break }
-            guard await control(["-O", "forward", "-D", "127.0.0.1:\(port)"])?.status == 0 else { continue }
+            guard await control(["-O", "forward", "-D", "127.0.0.1:\(port)"])?.status == 0 else {
+                if await self.pid() != pid, connection == pid {
+                    connection = nil
+                    try await up(nil)
+                }
+                continue
+            }
             dynamic = (port, pid)
             // The last card went while ssh forwarded.
             if proxy == nil {
