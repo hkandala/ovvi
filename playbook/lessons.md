@@ -117,13 +117,12 @@ Problems that came back across phases, and the rule that stops each. How we work
 - **A new or lazy scroll view's first layout lies.** The first scroll position gets dropped,
   `containerRelativeFrame` resolves to the window, `.task` in a lazy stack is cancelled, and overlays get
   clipped. Use `defaultScrollAnchor(_:for: .initialOffset)`, a GeometryReader, or `onAppear` plus a Task.
-- **A lazy stack's guessed height must not feed its own frame.** The guess changes as it measures rows: a list sized
-  from `onGeometryChange` of its stack was made 45 times in one turn for one typed key (the palette, 300 ms, phase 57).
-  Clamp the read to the most the frame shows. Give each `ForEach` element one view (a header beside its row made the
-  stack make 5 to 8 times as many rows). Count bodies per key before you guess.
-- **A lazy stack anchored at the bottom guesses its height** from the rows it built, often 2–3× off: a resize jumps
-  to the end, or past it to a blank view. Lay out a short plain stack instead (the chat, D95). Test a one-step resize
-  too (Reduce Motion).
+- **A lazy stack's height is a guess** from the rows it built, often 2–3× off, and it changes as it measures more.
+  Anchored at the bottom, a resize jumps to the end, or past it to a blank view: lay out a short plain stack instead
+  (the chat, D95), and test a one-step resize too (Reduce Motion). Fed back into its own frame (`onGeometryChange` into
+  the list's height), it made the palette's list 45 times in one turn for one typed key (300 ms, phase 57): clamp the
+  read to the most the frame shows. Give each `ForEach` element one view: a header beside its row made the stack make
+  5 to 8 times as many rows. Count bodies per key before you guess.
 - **An environment change alone does not call `updateNSView`.** A representable that reads a value from
   `context.environment` there misses its changes (kept pages' hosts never hid or showed again). Pass the value as a
   stored property, read in a view's body.

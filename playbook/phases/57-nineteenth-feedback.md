@@ -436,6 +436,30 @@ runs and on-demand on the final head.
   by itself where it was. If a browser card still goes blank after a long idle, check whether its "Ovvi Web Content"
   process shows in Activity Monitor and tell us what the card showed (blank white, the loader, or an old picture).
 
+### Track K
+
+- **Measure.** A Release build on a throwaway session of 30 workspaces, 120 tabs and 40 working agents, the palette's
+  ~130 rows. Keys were posted inside the app (no accessibility client), and once more through XCUITest (with one).
+  `-recordLatency` gave each key's time to its drawn frame, Time Profiler the main thread, and temporary counters the
+  bodies made per key. The Mac's load was 60–85 throughout, so the numbers are high for an idle Mac.
+- **Cause.** The list fed the lazy stack's guessed height back into its own frame (`onGeometryChange` into
+  `rowsHeight`). The guess changes as rows get measured, so a key that changes every row (the first letter, the last
+  ⌫ back to the groups) made the list 45 times in one turn: 320–440 ms. A section header beside its row (two views per
+  `ForEach` element) made the stack make 5–8 times as many rows. Fuzzy scoring is about 1 ms a key: not a cause.
+- **Fix.** The height read is clamped to the most the list shows; each row is one view; the palette reads its
+  commands, places and lit row once as it opens. No accessibility client: ⌘K 74–105 ms → 36–79 ms; the first letter
+  320–440 → 70–110 ms (later keys 10–55 ms); the last ⌫ 190–270 → 30–58 ms; the list made 45 → 1–2 times a key.
+  With XCUITest attached: first letter 400–440 → 215–330 ms, last ⌫ 210–270 → 155–205 ms.
+- **Decisions.** Rows are read at open (docs: Rows at open): a title that changes while the palette is open stays old,
+  and a tab or workspace closed meanwhile does nothing when chosen. Typing no longer pays for every tab and agent.
+- **Left.** With an accessibility client attached (XCUITest, VoiceOver, or an app that reads other apps' windows),
+  SwiftUI walks every responder of the window on each update (`AccessibilityNode.updateFocus`): about half of a key's
+  time at this size. Not fixed: it is SwiftUI's, and it shrank with the number of updates.
+- **Tests.** `-recordLatency` records how many times a list was made for each key; testPanelsAndSwitchesReactAtOnce
+  types a letter and ⌫ and allows 3 (red on the old code: 21), and the stress test types "split" and takes it back. They
+  guard the height loop only: two views per row again, or rows made per body again, would stay green.
+- **For the user.** Open ⌘K while agents work and type a first letter, then ⌫ back: each should draw at once.
+
 ## Round 2 (items 18–27)
 
 Screenshots in `.build/fb57/`: `r2-4.02.42.png` (the ⌘N picker stuck on "Reading sessions…" for This Mac and

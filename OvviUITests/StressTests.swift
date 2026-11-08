@@ -65,8 +65,9 @@ extension OvviUITests {
         quietKey("]", [.command, .option]) { self.header == self.one }
         quietKey("[", [.command, .option]) { self.header == eight }
 
-        let keys = recorded().filter { $0.name.first.map("⌘⌃⇧⌥SPLIT\u{7F}".contains) == true }
-        // Every key drew its change in its own turn, or the next for herdr's writes; a palette filter's in its own.
+        let keys = recorded().filter { $0.name.first.map("⌘⌃⇧⌥".contains) == true }
+        // Every key drew its change in its own turn, or the next for herdr's writes, and made a panel's list at most
+        // three times.
         for entry in keys {
             XCTAssertLessThanOrEqual(entry.turns, 1, entry.name)
             XCTAssertLessThanOrEqual(entry.lists, 3, entry.name)
@@ -98,6 +99,12 @@ extension OvviUITests {
             }
         }
         quietKey(XCUIKeyboardKey.escape.rawValue, []) { !palette.exists }
+        let keys = recorded().filter { ["S", "P", "L", "I", "T", "\u{7F}"].contains($0.name) }
+        XCTAssertEqual(keys.count, 10)
+        for entry in keys {
+            XCTAssertLessThanOrEqual(entry.turns, 1, entry.name)
+            XCTAssertLessThanOrEqual(entry.lists, 3, entry.name)
+        }
     }
 
     /// ⌘T, a quiet tab of its own (measured while 100 agents work in others), ⌘D, ⌘W and ⇧⌘W.

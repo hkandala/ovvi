@@ -36,8 +36,8 @@ extension OvviUITests {
         try await Task.sleep(for: .seconds(1))
         try await swipe(sidebar, by: sidebar.frame.width / 2, until: name, \.stringValue, one)
         try await Task.sleep(for: .seconds(1))
-        // A typed filter's rows made once or twice, not again for each height the lazy list guessed (60 times for
-        // the first letter at 110 rows).
+        // A typed filter's rows made once or twice, not again for each height the lazy list guessed (21 times for
+        // the first letter here).
         let typed = recorded().filter { ["S", "\u{7F}"].contains($0.name) }
         XCTAssertEqual(typed.map(\.name), ["S", "\u{7F}"])
         for entry in typed {

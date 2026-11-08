@@ -11,26 +11,25 @@ struct Palette: View {
     /// The window's height: the list takes what is left under the field, as in Rex.
     let height: CGFloat
     /// The command whose sub-page shows; nil on the root. Sub-pages hold no sub-pages, so one level is the stack.
-    @State private var sub: String?
+    @State private var sub: Command?
     @State private var lit: String?
     /// The choice a preview page opened on: it keeps the checkmark, and leaving without Enter picks it again.
     @State private var kept: String?
     /// The root's filter when it names a file or folder on the page's machine, and its path: an Open row first.
     @State private var pasted: (filter: String, path: String)?
-    /// The commands and the root's rows as the palette opened: made again on each body, the list followed every
+    /// The root's rows and its lit row as the palette opened: made again on each body, the list followed every
     /// change of a tab's title or panes while it was open.
     @State private var made: Made?
 
     private struct Made {
-        let list: [Command]
         let commands: [(item: FilterList.Item, keywords: String)]
         let places: [(item: FilterList.Item, keywords: String)]
+        let start: Int
     }
 
     var body: some View {
         let made = made ?? make()
-        let list = made.list
-        let command = sub.flatMap { title in list.first { $0.title == title } }
+        let command = sub
         VStack(alignment: .leading, spacing: 2) {
             // A sub-page says where you are.
             if let command {
@@ -52,7 +51,7 @@ struct Palette: View {
                   kept != nil else { return }
             command?.menu.first { lit == Self.choiceID($0) }?.action()
         }
-        // The first body's: later ones read no tab or agent.
+        // The first body's: later ones read no tab or pane.
         .onAppear { self.made = made }
         .onDisappear { putBack() }
     }
@@ -63,9 +62,7 @@ struct Palette: View {
             fieldSymbol: command?.field != nil ? command?.symbol : command?.name == nil ? "magnifyingglass" : "pencil",
             name: "palette",
             items: command.map(subItems) ?? { rootItems($0, made) },
-            // The root lights the selected tab: ↩ on a fresh palette stays put. A floating window's lists no tabs.
-            start: command.map(start) ?? (commands.floating != nil ? 0
-                : page.selectedWorkspace?.tabs.firstIndex { $0.id == page.selectedTab?.id } ?? 0),
+            start: command.map(start) ?? made.start,
             maxHeight: min(460, max(84, height - 154)),
             // Only a preview page reads it: on the others each new light drew the whole palette again.
             lit: command?.previews == true ? $lit : nil,
@@ -78,7 +75,7 @@ struct Palette: View {
         ) { open = false }
             .controlSize(.large)
             // A new page starts with a new field and list.
-            .id(sub)
+            .id(sub?.title)
     }
 
     static func choiceID(_ choice: Command) -> String {
@@ -124,9 +121,11 @@ struct Palette: View {
     }
 
     private func make() -> Made {
-        let list = commands.all
         // A floating window's palette lists only its commands (D50).
-        return Made(list: list, commands: commandRows(list), places: commands.floating == nil ? placeRows() : [])
+        let floating = commands.floating != nil
+        // The root lights the selected tab: ↩ on a fresh palette stays put.
+        let start = floating ? 0 : page.selectedWorkspace?.tabs.firstIndex { $0.id == page.selectedTab?.id } ?? 0
+        return Made(commands: commandRows(commands.all), places: floating ? [] : placeRows(), start: start)
     }
 
     /// The enabled commands; a setting says what it does now ("Turn On Focus Follows Mouse").
@@ -145,7 +144,7 @@ struct Palette: View {
                                            section: (command.group ?? command.section.group).rawValue, opens: opens,
                                            act: {
                                                if opens {
-                                                   sub = command.title
+                                                   sub = command
                                                    kept = command.previews
                                                        ? command.menu.first { $0.checked == true }?.title : nil
                                                } else {
@@ -161,7 +160,10 @@ struct Palette: View {
         let tabs = (page.selectedWorkspace?.tabs ?? []).map { tab in
             FilterList.Item(id: "tab.\(tab.id)", pane: page.stack(tab).first, title: page.titleText(tab),
                             section: Command.Group.tabs.rawValue, act: {
-                                if let workspace = page.selectedWorkspace {
+                                // Not a tab closed since the palette opened.
+                                if let workspace = page.selectedWorkspace,
+                                   workspace.tabs.contains(where: { $0.id == tab.id })
+                                {
                                     page.select(workspace, tab: tab.id)
                                 }
                             })
@@ -171,8 +173,10 @@ struct Palette: View {
                 FilterList.Item(id: "workspace.\(other.id).\(workspace.id)", symbol: "folder",
                                 title: workspace.label, detail: other.id,
                                 section: Command.Group.workspaces.rawValue, act: {
-                                    pages.show(other)
-                                    other.select(workspace)
+                                    if other.store.workspaces.contains(where: { $0.id == workspace.id }) {
+                                        pages.show(other)
+                                        other.select(workspace)
+                                    }
                                 })
             }
         }
@@ -224,8 +228,8 @@ struct Palette: View {
     }
 
     private func putBack() {
-        if let kept, let command = commands.all.first(where: { $0.title == sub }) {
-            command.menu.first { $0.title == kept }?.action()
+        if let kept {
+            sub?.menu.first { $0.title == kept }?.action()
         }
         kept = nil
     }

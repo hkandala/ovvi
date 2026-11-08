@@ -28,8 +28,8 @@ final class Latency {
     private(set) var recorded: [String] = []
     /// The window's open panel, as it was last drawn.
     @ObservationIgnored var panel = ""
-    /// A panel's filter as its list last read it: each typed key's rows. Each read counts: a list drawn again and
-    /// again for one key shows in the key's record.
+    /// The filter of the list made last: a typed key changes what the window shows. Each list made counts, so one
+    /// made many times for one key shows in the key's record.
     @ObservationIgnored var filter = "" {
         didSet { lists += 1 }
     }
