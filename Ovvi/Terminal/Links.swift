@@ -4,7 +4,7 @@ import HerdrKit
 import SwiftUI
 
 /// A terminal's links (ui/window#opening-links-and-files): addresses and paths libghostty finds in the text, and OSC 8
-/// links. libghostty opens one on ⌘-click; ⌥-click over one opens it to the side.
+/// links. libghostty opens one on ⌘-click; ⌥-click over one opens it to the side. ⌥ shows one as ⌘ does.
 enum Links {
     struct Target {
         let plugin: PluginManifest, arg: String, line: String?
@@ -96,8 +96,38 @@ extension PaneSurfaceView {
         hoveredLink = nil
         linkSurface?.sendMousePos(x: point.x, y: top, modifiers: .super_)
         let found = hoveredLink
-        linkSurface?.sendMousePos(x: point.x, y: top, modifiers: TerminalInputModifiers(from: event.modifierFlags))
+        linkSurface?.sendMousePos(x: point.x, y: top, modifiers: Self.linkModifiers(event.modifierFlags))
         return found
+    }
+
+    /// ⌥ alone: a ⌥-click opens a link to the side (`mouseDown`).
+    static func sideKey(_ flags: NSEvent.ModifierFlags) -> Bool {
+        flags.intersection(.deviceIndependentFlagsMask) == .option
+    }
+
+    /// What libghostty gets with the pointer: ⌘ for ⌥ alone, so a link under ⌥ shows its underline and pointing hand
+    /// as under ⌘ (libghostty draws them only with ⌘ or ⌃).
+    static func linkModifiers(_ flags: NSEvent.ModifierFlags) -> TerminalInputModifiers {
+        sideKey(flags) ? .super_ : TerminalInputModifiers(from: flags)
+    }
+
+    /// A plain move only: a drag keeps its own modifiers (⌥ makes libghostty's selection a rectangle).
+    override func mouseMoved(with event: NSEvent) {
+        guard event.type == .mouseMoved, Self.sideKey(event.modifierFlags) else { return super.mouseMoved(with: event) }
+        let point = convert(event.locationInWindow, from: nil)
+        linkSurface?.sendMousePos(x: point.x, y: bounds.height - point.y, modifiers: .super_)
+    }
+
+    /// ⌥ down or up with the pointer still: the link under it shows or goes, as when ⌘ goes down or up. libghostty
+    /// reports a link again only on another cell, so the pointer leaves the view first.
+    override func flagsChanged(with event: NSEvent) {
+        super.flagsChanged(with: event)
+        guard [58, 61].contains(event.keyCode), let window else { return }
+        let point = convert(window.mouseLocationOutsideOfEventStream, from: nil)
+        guard bounds.contains(point) else { return }
+        let modifiers = Self.linkModifiers(event.modifierFlags)
+        linkSurface?.sendMousePos(x: -1, y: -1, modifiers: modifiers)
+        linkSurface?.sendMousePos(x: point.x, y: bounds.height - point.y, modifiers: modifiers)
     }
 }
 
@@ -107,9 +137,14 @@ extension PaneSurfaceView: TerminalSurfaceOpenURLDelegate, TerminalSurfaceHoverL
         _ = openLink?(url, .tab)
     }
 
-    /// A pointing hand while ⌘ is down over a link.
+    /// A pointing hand while ⌘ or ⌥ is down over a link.
     func terminalDidUpdateHoverLink(_ url: String?) {
         hoveredLink = url
         (url == nil ? NSCursor.arrow : .pointingHand).set()
+    }
+
+    /// The link under the pointer while ⌘ or ⌥ is down, as a title: VoiceOver reads it with the card, tests check it.
+    override func accessibilityTitle() -> String? {
+        hoveredLink
     }
 }

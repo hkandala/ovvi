@@ -33,6 +33,12 @@ export const choose = (ovvi: Ovvi, change: Own) => ovvi.state.set({ ...ovvi.stat
 /** A file's extension, lowercased; "" for none, also for a dotfile's name (as `NSString.pathExtension`). */
 export const extension = (path: string) => (/[^/]\.([^./]+)$/.exec(path)?.[1] ?? "").toLowerCase()
 
+/** An HTML file's `file:` page, which opens in the browser: on This Mac only, as a remote card never shows a file over
+ *  `file:`. None for another path or a web address. */
+export const htmlPage = (ovvi: Ovvi, path: string) =>
+  !ovvi.card.machine.remote && path.startsWith("/") && ["html", "htm"].includes(extension(path))
+    ? `file://${path.split("/").map(encodeURIComponent).join("/")}` : undefined
+
 /** What Preview draws of a file, by its extension: the kinds in places.json, "" for the info view. */
 export const drawn = (path: string) => {
   const ext = extension(path)

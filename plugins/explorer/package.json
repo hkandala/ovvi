@@ -1,6 +1,6 @@
 {
   "name": "@ovvi/explorer",
-  "version": "1.10.8",
+  "version": "1.10.9",
   "private": true,
   "description": "Files and folders",
   "keywords": ["files", "tree", "folder", "finder"],
@@ -77,6 +77,7 @@
       { "type": "toggle", "id": "wrap", "symbol": "text.wrap", "title": "Word Wrap", "value": true, "hidden": true },
       { "type": "button", "id": "reveal", "symbol": "list.bullet.indent", "title": "Show in File Explorer",
         "hidden": true },
+      { "type": "button", "id": "browser", "symbol": "globe", "title": "Open in Browser", "hidden": true },
       { "type": "segmented", "id": "mode", "value": "rich", "hidden": true,
         "options": [{ "value": "rich", "title": "Rich Text", "symbol": "doc.richtext" },
           { "value": "source", "title": "Source", "symbol": "chevron.left.forwardslash.chevron.right" }] },

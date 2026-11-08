@@ -8,12 +8,12 @@ import "./files.css"
 import "./find.css"
 import "./markdown.css"
 import "./preview.css"
-import { kind, type Place, type Reveal, trail } from "./place"
+import { htmlPage, kind, open, type Place, type Reveal, trail } from "./place"
 
 type Kind = ReturnType<typeof kind>
 
 /** Each place's controls in row 2; the rest hide. A file's row is one row for every kind: its breadcrumbs at the
- *  left, Show in File Explorer and Open With at the right. Preview shows its page and zoom itself, Markdown its
+ *  left, Show in File Explorer (and Open in Browser for HTML) and Open With at the right. Preview shows its page and zoom itself, Markdown its
  *  outline's toggle. */
 const CONTROLS: Record<Kind, string[]> = {
   files: ["root", "filter", "collapse", "hidden-files"],
@@ -32,11 +32,12 @@ const load = (kind: Kind): Promise<{ show(place: Place): Promise<Reveal> }> =>
     : import("./preview")
 
 export default async function main(ovvi: Ovvi) {
-  // Show in File Explorer: the tree of the file's folder, the file selected.
+  // Show in File Explorer: the tree of the file's folder, the file selected. Open in Browser: an HTML file's page in
+  // a browser pane in a new tab.
   ovvi.on("control", ({ id }) => {
-    if (id !== "reveal") return
-    const file = ovvi.card.arg
-    ovvi.card.go(file.slice(0, file.lastIndexOf("/") + 1), { at: file })
+    const file = ovvi.card.arg, html = htmlPage(ovvi, file)
+    if (id === "reveal") ovvi.card.go(file.slice(0, file.lastIndexOf("/") + 1), { at: file })
+    else if (id === "browser" && html) open(ovvi, html, "card", "browser")
   })
   // Each place in a page of its own, which the card keeps: Back and Forward show it as it was.
   await ovvi.pages.route(async (page) => {
@@ -47,6 +48,7 @@ export default async function main(ovvi: Ovvi) {
       scoped.controls.set(id, id === "filter" ? { hidden, value: false } : { hidden })
     }
     scoped.controls.set("open-with", { value: place === "files" ? "" : arg })
+    scoped.controls.set("browser", { hidden: place !== "file" || !htmlPage(scoped, arg) })
     if (place !== "markdown") scoped.controls.set("lock-editing", { enabled: false, checked: false })
     root.dataset.place = place
     // A text file's read starts while its place's code loads.

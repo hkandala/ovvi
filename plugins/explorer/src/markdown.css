@@ -64,7 +64,9 @@ nav button:hover {
   color: var(--accent);
   text-decoration: none;
 }
-.cm-reading a:hover {
+/* A drawn link: locked, and unlocked off the caret's line (on it a link shows its source and a click edits). */
+.cm-reading a:hover,
+.cm-content > :not(.cm-activeLine) a:hover {
   text-decoration: underline;
   cursor: pointer;
 }

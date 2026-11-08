@@ -680,6 +680,18 @@ terminal.
   its diffs (a change, a commit, a parent). The browser shows web pages. So
   a web link in Markdown or in a chat reply, and a file from a Git diff, open
   in a new tab on a click.
+- **HTML.** A link to an HTML file (`.html`, `.htm`) on This Mac, in the
+  terminal or in Markdown, opens the file's page in a browser pane (a
+  `file:` page). File Explorer's tree and a Git diff open the file as text,
+  and a file card on HTML has **Open in Browser** (`globe`) in its header,
+  which opens the page in a browser pane in a new tab, selected
+  ([A file's row 2](/docs/plugins/default-plugins#a-files-row-2)). On a
+  remote machine HTML opens as a file, since a remote card never shows a
+  file over `file:`.
+- **The look.** A link under the pointer shows the pointing hand, the same
+  with ⌘ or ⌥ down as with neither; Markdown and the terminal also
+  underline it. The terminal, where only ⌘- and ⌥-click open a link, shows
+  both only while ⌘ or ⌥ is down, the same for either.
 - **In the background** means that the selected tab and the keyboard stay
   where they are: a ⌘-click on one link after another opens each one. The
   menu's Open in New Tab and Open to the Side open in the background too.
@@ -689,9 +701,9 @@ terminal.
 - **Lists select first.** In File Explorer's tree and Git's commit list a
   click selects a row and a double-click opens it (in the tree also ⌘O, in
   Git's list Return), as in the Finder. ⌘-click and ⌥-click open at once.
-- **Markdown, unlocked,** opens a link on a click too, as locked. On
-  the caret's line a link shows its source, and a click there puts the caret
-  in it. A Markdown link's menu ends with **Copy Link** (the file's path or
+- **Markdown, unlocked,** opens a link on a click too, as locked, and
+  shows it under the pointer the same way. On the caret's line a link shows
+  its source, and a click there puts the caret in it. A Markdown link's menu ends with **Copy Link** (the file's path or
   the address).
 - **The browser's menu** on a link is WebKit's **Open Link**, then **Open
   Link in New Tab** and **Open Link to the Side**. A `target=_blank` link
@@ -714,18 +726,18 @@ terminal.
   - A web address opens a browser pane. A file path (absolute, `file:`, `~`,
     or from the card's folder) opens only when a file or folder is there on
     the card's machine, so text that only looks like a path (`/reload your
-    open pi`) opens nothing. libghostty still underlines it while ⌘ is down:
-    the app cannot veto its highlight. A `:line` after the path lands on
-    that line. Other schemes (`ftp:`) open nothing.
-  - Markdown opens in File Explorer's Markdown, other files with their
-    default plugin. HTML on This Mac opens in a browser pane (a `file:`
-    page); on a remote machine it opens as a file, since a remote card never
-    shows a file over `file:`.
-  - libghostty reports a link only while ⌘ is down, so for a ⌥-click the
-    app moves libghostty's pointer to the click with ⌘ for a moment (first
-    off the view: libghostty looks again only on a new cell) and reads the
-    link it reports. On a remote machine a ⌥-click on any path is taken,
-    and the open checks the path there.
+    open pi`) opens nothing. libghostty still underlines it while ⌘ or ⌥ is
+    down: the app cannot veto its highlight. A `:line` after the path lands
+    on that line. Other schemes (`ftp:`) open nothing.
+  - Markdown opens in File Explorer's Markdown, HTML as above, other files
+    with their default plugin.
+  - libghostty underlines a link and reports it only while ⌘ is down, so the
+    app gives libghostty ⌘ in ⌥'s place: with the pointer's moves while ⌥
+    alone is down, and when ⌥ goes down or up with the pointer still (first
+    off the view: libghostty looks again only on a new cell). A ⌥-click
+    reads the link libghostty reports there the same way. On a remote
+    machine a ⌥-click on any path is taken, and the open checks the path
+    there. The card's accessibility title is the link under the pointer.
 - A `mailto:` or an app's link in a page or a chat reply opens its app.
 
 ## Find bar

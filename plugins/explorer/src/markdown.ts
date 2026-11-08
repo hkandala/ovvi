@@ -12,7 +12,7 @@ import { Compartment, EditorState, Prec } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
 import { code, type Editor, editor, selected } from "./editor"
 import { containers, editing, live, referenceField, ticked } from "./live"
-import { choose, how, menu, open, own, type Place, type Reveal, symbols } from "./place"
+import { choose, how, htmlPage, menu, open, own, type Place, type Reveal, symbols } from "./place"
 import { sideBySide } from "./split"
 
 type Mode = "rich" | "source"
@@ -220,7 +220,8 @@ export async function show(place: Place): Promise<Reveal> {
   }
 
   /** A click on a link: `#` scrolls to its heading, else it opens as every link does (ui/window#opening-links-and-
-   *  files): in the card for a file, a new tab for a web page, ⌘ a new tab behind, ⌥ to the side. */
+   *  files): in the card for a file, a new tab for a web page or an HTML file (`htmlPage`), ⌘ a new tab behind, ⌥ to the
+   *  side. */
   function follow(view: EditorView, event: MouseEvent) {
     const link = (event.target as Element).closest("a")
     if (!link) return false
@@ -245,8 +246,8 @@ export async function show(place: Place): Promise<Reveal> {
       })
       if (heading) view.dispatch({ effects: EditorView.scrollIntoView(heading.from, { y: "start" }) })
     } else {
-      const to = address(link)
-      if (to) open(ovvi, to, how(event))
+      const to = address(link), html = to ? htmlPage(ovvi, to) : undefined
+      if (to) open(ovvi, html ?? to, how(event), html ? "browser" : undefined)
     }
     return true
   }
@@ -273,7 +274,8 @@ export async function show(place: Place): Promise<Reveal> {
     contextmenu: (event) => {
       const link = (event.target as Element).closest("a"), to = link && address(link)
       if (!to) return false
-      void menu(ovvi, event, to, { link: true })
+      const html = htmlPage(ovvi, to)
+      void menu(ovvi, event, html ?? to, { link: true, plugin: html ? "browser" : undefined })
       return true
     },
   })

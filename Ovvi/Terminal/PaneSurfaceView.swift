@@ -171,7 +171,7 @@ final class PaneSurfaceView: AppTerminalView {
     override func mouseDown(with event: NSEvent) {
         // ⌥-click on a link: to the side (libghostty opens one only with ⌘). Elsewhere it is the program's (a shell
         // moves its cursor).
-        sideClick = event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .option
+        sideClick = Self.sideKey(event.modifierFlags)
             && link(at: event).map { openLink?($0, .side) == true } == true
         guard !sideClick else { return }
         super.mouseDown(with: event)

@@ -149,9 +149,9 @@ extension OvviUITests {
         }
     }
 
-    /// A terminal's links open as every link does, behind the card: ⌘-click in a new tab, ⌥-click to the side. A
-    /// link ends before the punctuation after it; an `ftp:` link and a path that is not there open nothing; Markdown
-    /// opens in File Explorer, HTML in the browser. The card's menu has no link items.
+    /// A terminal's links open as every link does, behind the card: ⌘-click in a new tab, ⌥-click to the side; ⌥
+    /// shows a link as ⌘ does. A link ends before the punctuation after it; an `ftp:` link and a path that is not
+    /// there open nothing; Markdown opens in File Explorer, HTML in the browser. The card's menu has no link items.
     func testCommandClickOnALinkOpensIt() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("link")
@@ -187,6 +187,8 @@ extension OvviUITests {
         XCUIElement.perform(withKeyModifiers: .command) { link(4).click() }
         try await expectLabel(newTabID(after: tabs), "\(folder)/page.html", "ovvi:browser#")
 
+        optionShowsLinks(terminal, link(1), address, link(4), "page.html")
+
         // ⌥-click: Markdown beside the card, without the period.
         XCUIElement.perform(withKeyModifiers: .option) { link(3).click() }
         let side = try await poll("a pane beside the card") { () async throws -> String? in
@@ -201,6 +203,21 @@ extension OvviUITests {
         XCTAssertFalse(app.windows.menuItems["Open to the Side"].exists)
         keepScreenshot("terminal menu over a link")
         app.typeKey(.escape, modifierFlags: [])
+    }
+
+    /// ⌥ shows a link as ⌘ does (the card's title is the link libghostty reports): pressed with the pointer on one,
+    /// and held while the pointer moves to another; none once it is up.
+    private func optionShowsLinks(_ terminal: XCUIElement, _ one: XCUICoordinate, _ first: String,
+                                  _ other: XCUICoordinate, _ end: String)
+    {
+        one.hover()
+        XCTAssertTrue(until(3) { terminal.title.isEmpty }, terminal.title)
+        XCUIElement.perform(withKeyModifiers: .option) {
+            XCTAssertTrue(until(3) { terminal.title.hasPrefix(first) }, terminal.title)
+            other.hover()
+            XCTAssertTrue(until(3) { terminal.title.hasSuffix(end) }, terminal.title)
+        }
+        XCTAssertTrue(until(3) { terminal.title.isEmpty }, terminal.title)
     }
 
     /// The new tab's pane's label: its kind and its end.
