@@ -227,7 +227,7 @@ extension OvviUITests {
         app.typeKey(.return, modifierFlags: [])
     }
 
-    /// "open session" opens the Open Session panel; "new window" opens a second window on the window's first session
+    /// "open session" opens the Open Session panel; "new window" opens a second window, whose pick opens that session
     /// only.
     func testPaletteOpensThePanelAndANewWindow() throws {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
@@ -243,6 +243,9 @@ extension OvviUITests {
         openPalette()
         app.typeText("new window")
         app.typeKey(.return, modifierFlags: [])
+        let pick = element("picker.local.\(one)")
+        XCTAssertTrue(pick.exists(within: connect))
+        pick.click()
         let window = try otherWindow(than: identifier)
         XCTAssertTrue(element("sidebar.header", in: window).has(\.stringValue, one, within: 3))
         XCTAssertFalse(element("sidebar.dot.\(two)", in: window).exists)
