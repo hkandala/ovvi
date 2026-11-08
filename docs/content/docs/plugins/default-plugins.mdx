@@ -214,7 +214,7 @@ the click.
 - **The card's menu** adds **Reload Plugin** (⌥⌘R), **Show Web Inspector**
   and **Show Log** ([Build a plugin](/docs/plugins/building#debug-it)).
 - **A floated plugin pane** keeps row 2 under the floating window's title
-  row, from its left edge, 6 pt down from the card's top edge. The title row shows "‹name› ‹title›" and the
+  row, from its left edge, 4 pt down from the card's top edge (Back 11 pt from both edges). The title row shows "‹name› ‹title›" and the
   Edited dot ([Floating pane](/docs/ui/window#floating-pane)).
 - **Overview tile.** The tile shows the card's last picture
   ([Overview](/docs/ui/window#overview)). A tile watches no file. The card
@@ -486,8 +486,8 @@ An editable text view (CodeMirror 6).
   segments, **Rich Text** (`doc.richtext`) and **Source**
   (`chevron.left.forwardslash.chevron.right`), with their names as the
   tooltips; the segment not picked is gray, as Show in File Explorer. The
-  lock is `lock.fill` in gray while locked ("Unlock") and `lock.open` in
-  the accent while the page edits ("Lock").
+  lock is a pencil (`pencil`): gray while locked ("Edit"), in the accent
+  while the page edits ("Stop Editing").
 - **Two modes, each locked or not:**
 
   | Mode | Locked | Unlocked |

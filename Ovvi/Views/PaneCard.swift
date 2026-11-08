@@ -7,8 +7,9 @@ struct PaneCard: View {
     static let header: CGFloat = 36
     /// A browser's or an agent's second header row.
     static let row: CGFloat = 32
-    /// A floating window's browser or plugin card: room above its row, which sits right under the title row.
-    static let floatingTop: CGFloat = 6
+    /// A floating window's browser or plugin card: room above its row, which sits right under the title row. Its 22 pt
+    /// buttons, centered in the 36 pt row, then sit as far from the card's top edge as from its left (11 pt).
+    static let floatingTop: CGFloat = 4
     static let inset: CGFloat = 10
     let id: String
     let page: Page

@@ -62,8 +62,8 @@ extension OvviUITests {
         try await send("rm -rf \(config) /tmp/notes.md\r", to: shell)
     }
 
-    /// The floating window draws the same row with the same values, 6 pt down from the card's top edge (only there:
-    /// in a pane it sits under row 1).
+    /// The floating window draws the same row with the same values, Back as far from the card's top edge as from its
+    /// left (only there: in a pane the row sits under row 1).
     private func floatsTheSameRow(_ card: String) throws {
         let window = try float(card)
         let floating = { (id: String) in self.element("pane.\(card).\(id)", in: window) }
@@ -72,8 +72,9 @@ extension OvviUITests {
         let content = element("fixture.\(card).card", in: window).frame
         XCTAssertEqual(floating("go-back").frame.minX - content.minX, 1, accuracy: 1, "\(content)")
         let surface = element("float.\(card)", in: window).frame
-        XCTAssertEqual(floating("go-back").frame.midY - surface.minY, 6 + 18, accuracy: 1, "\(surface)")
-        XCTAssertEqual(content.minY - surface.minY, 6 + 36, accuracy: 1, "\(content) in \(surface)")
+        let back = floating("go-back").frame
+        XCTAssertEqual(back.minY - surface.minY, back.minX - surface.minX, accuracy: 0.5, "\(back) in \(surface)")
+        XCTAssertEqual(content.minY - surface.minY, 4 + 36, accuracy: 1, "\(content) in \(surface)")
         keepScreen("plugin header floating")
         window.buttons[XCUIIdentifierCloseWindow].click()
         XCTAssertTrue(window.vanishes(within: 3))
