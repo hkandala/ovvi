@@ -227,6 +227,15 @@ runs and on-demand on the final head.
 - **For the user.** Click Install herdr on a Mac or host without herdr (and an offline Mac's error). ⌘N with
   remote machines in the list: it reads every machine at once under BatchMode, so a host that needs a password lists
   `default` "Not connected" and one that hangs shows its spinner row up to 30 s; Esc closes the window.
+- **Round 2, cause (18).** A remote machine's read waits in `SSHExec.up` behind any start in flight; a Connect whose
+  ssh question is still open never ends, so that machine's row spun for good. This Mac's row has no such path (a
+  login-shell lookup of at most 3 s, then herdr's 10 s output limit), and old code with a slow This Mac and an
+  unreachable host resolved both rows in a test, so This Mac's stuck row is not reproduced.
+- **Round 2, fix.** Each machine reads in its own task, and a row still unread after 15 s says "No answer within 15 s"
+  (a structured timeout would hang too: the wait on the other start ignores cancellation). A remote machine's failure
+  rows and the Disconnected page use `network.slash` (23); a missing herdr keeps the box.
+- **Round 2, runs.** testNewWindowRowsResolveWhileAnotherConnectAsks (Password Host's Connect left asking, then ⌘N):
+  red on the old code, green on the fix.
 
 ### Track C
 

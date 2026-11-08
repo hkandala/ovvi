@@ -47,23 +47,31 @@ struct SessionPicker: View {
         [.thisMac] + MachineList.shared.list
     }
 
-    /// Every machine at once; each shows as soon as it answers.
+    /// Every machine at once; each shows as soon as it answers, and within 15 s whatever the others do: a read can wait
+    /// on another window's ssh question (`SSHExec.up`) or a slow login, and then says so instead of spinning.
     private func readAll() async {
-        await withTaskGroup(of: (String, Result<[Session], Error>).self) { group in
-            for machine in machines {
-                let exec = await machine.exec()
-                group.addTask {
-                    let client = HerdrClient(session: "default", exec: exec)
-                    do {
-                        return try await (machine.id, .success(client.sessions()))
-                    } catch {
-                        return (machine.id, .failure(error))
-                    }
+        let reads = machines.map { machine in
+            Task {
+                let result = await Self.sessions(on: machine)
+                if read[machine.id] == nil {
+                    read[machine.id] = result
                 }
             }
-            for await (id, result) in group {
-                read[id] = result
-            }
+        }
+        let closed = await (try? Task.sleep(for: .seconds(15))) == nil
+        reads.forEach { $0.cancel() }
+        guard !closed else { return }
+        for machine in machines where read[machine.id] == nil {
+            read[machine.id] = .failure(HerdrError.failed("No answer within 15 s"))
+        }
+    }
+
+    private static func sessions(on machine: Machine) async -> Result<[Session], Error> {
+        let client = await HerdrClient(session: "default", exec: machine.exec())
+        do {
+            return try await .success(client.sessions())
+        } catch {
+            return .failure(error)
         }
     }
 
@@ -76,12 +84,12 @@ struct SessionPicker: View {
             case let .failure(error):
                 // A throwaway run never picks a session it did not list: `default` there is the user's.
                 guard !Self.throwaway else { return [] }
-                let why = switch error as? HerdrError {
-                case .notFound: "herdr is not installed"
-                case .disconnected: "Not connected"
-                default: error.localizedDescription
+                let (symbol, why) = switch error as? HerdrError {
+                case .notFound: ("shippingbox", "herdr is not installed")
+                case .disconnected: ("network.slash", "Not connected")
+                default: (machine.isRemote ? "network.slash" : "exclamationmark.triangle", error.localizedDescription)
                 }
-                return [row(machine, "default", machine.icon, why) { pick("default", on: machine) }]
+                return [row(machine, "default", symbol, why) { pick("default", on: machine) }]
             case let .success(sessions):
                 let shown = sessions.filter { !Self.throwaway || $0.name.hasPrefix("ovvi-") }
                     .map { ($0.name, $0.running) }

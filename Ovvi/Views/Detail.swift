@@ -69,7 +69,7 @@ struct Detail: View {
         case let .failed(.disconnected(text)):
             // Retries stopped: only Connect may ask (machines#health-check).
             let title = "Disconnected from \(store.machine.name)"
-            EmptyState(symbol: "bolt.horizontal.circle", title: title, text: text, id: "detail") {
+            EmptyState(symbol: "network.slash", title: title, text: text, id: "detail") {
                 Button("Connect") { Task { await store.connect(in: pages) } }.buttonStyle(.glassProminent)
                     .accessibilityIdentifier("detail.connect")
             }

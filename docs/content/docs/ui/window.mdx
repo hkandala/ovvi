@@ -11,8 +11,12 @@ description: "Windows, the title row, tab bar, Agents button, sidebar pages, Age
   "Open a Session" over a glass list (the Open Session panel's, 420 pt wide):
   one group per machine, This Mac first, each with its running then its
   stopped sessions ("Running", "Stopped"), a spinner row while the machine
-  answers. A machine with no session lists `default`; one that does not answer
-  (no herdr, a password to type) lists `default` with why. A pick opens that
+  answers. Each machine reads on its own and answers within 15 s, whatever
+  the others do; then its row says "No answer within 15 s". A machine with no
+  session lists `default`; one whose sessions cannot be read lists `default`
+  with why and its symbol (no herdr: a box; a remote machine that is not
+  connected, needs a password or does not answer: `network.slash`; This Mac's
+  other errors: a warning triangle). A pick opens that
   session as the window's first page; on This Mac a stopped one starts. A run
   with `-session` lists only `ovvi-*` sessions. Two windows can show different
   machines or the same machine.
