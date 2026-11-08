@@ -30,8 +30,10 @@ extension OvviUITests {
         // Over the page's left edge (11 pt into the card, the page 10 pt), in the pane and floating.
         let page = element("fixture.\(card).card").frame
         XCTAssertEqual(control("go-back").frame.minX - page.minX, 1, accuracy: 1, "\(page)")
-        // Past its prompt's own width (about 70 pt).
-        XCTAssertGreaterThan(control("filter").frame.width, 100)
+        // Past its prompt's own width (about 70 pt), with the room of a card on CI's 1024 pt screen without the
+        // sidebar: beside a 300 pt sidebar the row's other controls leave the field about 55 pt.
+        element("titlebar.sidebar").click()
+        XCTAssertTrue(until(2) { control("filter").frame.width > 100 }, "\(control("filter").frame)")
         // 6 pt apart by default; `gap` 0 joins Push to Outline.
         // The segments' first sits 2 pt into their track.
         XCTAssertEqual(control("mode.read").frame.minX - control("rows").frame.maxX, 6 + 2, accuracy: 1)
@@ -61,11 +63,10 @@ extension OvviUITests {
         window.buttons[XCUIIdentifierCloseWindow].click()
         XCTAssertTrue(window.vanishes(within: 3))
 
-        // The page starts right under row 1.
+        // The page starts right under row 1: one row of 36 pt, not two.
         let bare = try await pluginTab("ovvi:bare#e2ebar /tmp")
         XCTAssertTrue(element("bare.\(bare).card").exists(within: 5))
-        let top = element("bare.\(bare).card").frame.minY - element("pane.\(bare)").frame.minY
-        XCTAssertLessThan(top, 50, "one row of 36 pt, not two")
+        XCTAssertLessThan(element("bare.\(bare).card").frame.minY - element("pane.\(bare)").frame.minY, 50)
         try await send("rm -rf \(config) /tmp/notes.md\r", to: shell)
     }
 

@@ -75,6 +75,8 @@ final class PaneSurfaceView: AppTerminalView {
                 wantsKeyboard = true
                 return
             }
+            // Not over a panel (as a web card's, `BrowserView.takeKeyboard`).
+            guard !window.panelOpen else { return }
             window.makeFirstResponder(self)
             // Also when it already was the first responder (no becomeFirstResponder then).
             terminal?.hasKeyboard = window.firstResponder === self

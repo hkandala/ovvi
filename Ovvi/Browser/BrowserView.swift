@@ -47,6 +47,9 @@ class BrowserView: WKWebView {
             // Not in a kept page out of view (the overview's): it takes it as the page shows (`viewDidUnhide`).
             guard let self, wantsKeyboard, !inTile, let window, !isHiddenOrHasHiddenAncestor else { return }
             wantsKeyboard = false
+            // Not over a panel: a card made while the palette is open (its Open File's) took the palette's keys. Its
+            // close gives them to the keyboard card.
+            guard !window.panelOpen else { return }
             window.makeFirstResponder(self)
         }
     }
@@ -176,5 +179,12 @@ class BrowserView: WKWebView {
             onKeyboard?()
         }
         return became
+    }
+}
+
+extension NSWindow {
+    /// A panel of the window's (the palette, Open Session) has its keys: no card takes them.
+    var panelOpen: Bool {
+        WindowPages.windows.first { $0.window === self }?.panelOpen == true
     }
 }
