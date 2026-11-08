@@ -2,8 +2,9 @@ import XCTest
 
 /// The tests' herdr side: calls through the e2e helper, ids from its replies, cleanups after a test.
 extension OvviUITests {
-    func read(_ pane: String, in session: String? = nil) async throws -> String {
-        let read = try await Self.call(session ?? one, "pane.read", ["pane_id": pane, "source": "visible"])["read"]
+    /// The pane's text; `recent_unwrapped` joins the lines the pane's width wrapped (CI's panes and prompts vary).
+    func read(_ pane: String, in session: String? = nil, _ source: String = "visible") async throws -> String {
+        let read = try await Self.call(session ?? one, "pane.read", ["pane_id": pane, "source": source])["read"]
         return try field((read as? [String: Any])?["text"], "pane.read's text")
     }
 

@@ -249,7 +249,8 @@ extension OvviUITests {
         }
         // At once: the redraw at the card's grid was in before the card showed.
         let grid = try XCTUnwrap(element("terminal.\(pane)").value as? String)
-        let screen = try await read(pane)
+        // Unwrapped: the line after CI's long prompt wraps.
+        let screen = try await read(pane, "recent_unwrapped")
         XCTAssertTrue(screen.contains("resized \(grid)"), "card \(grid), screen:\n\(screen)")
     }
 
