@@ -72,3 +72,4 @@ run and test it is in the root `README.md`.
 | 54 | The name Ovvi everywhere, its website ovvi.dev | [54-rename.md](phases/54-rename.md) |
 | 55 | A Settings window like System Settings, and settings that plugins declare | [55-settings-window.md](phases/55-settings-window.md) |
 | 56 | Eighteenth feedback: instant switches, a File Explorer status bar, two Markdown modes, one way to open links | [56-eighteenth-feedback.md](phases/56-eighteenth-feedback.md) |
+| 57 | Nineteenth feedback: empty states, a simpler sidebar, cards that survive idle | [57-nineteenth-feedback.md](phases/57-nineteenth-feedback.md) |
