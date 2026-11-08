@@ -49,7 +49,7 @@ extension OvviUITests {
         // ⌥⌘W detaches it: the window shows the other.
         app.typeKey("w", modifierFlags: [.command, .option])
         XCTAssertTrue(header.has(\.stringValue, one, within: 3))
-        XCTAssertTrue(element("sidebar.dot.\(two)").vanishes(within: 2))
+        XCTAssertTrue(until(2) { !pageList().contains(two) })
     }
 
     /// The menu bar acts on the key window: two floating windows of one session each detach their own pane with ⌘W

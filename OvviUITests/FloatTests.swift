@@ -228,7 +228,7 @@ extension OvviUITests {
         let window = try await floatByURL(two, pane)
         XCTAssertTrue(until(3) { element("float.\(pane).place", in: window).stringValue.hasPrefix("\(two) › gamma › ")
         })
-        XCTAssertFalse(element("sidebar.dot.\(two)").exists)
+        XCTAssertFalse(pageList().contains(two))
         app.typeText("echo url-$((6*7))")
         app.typeKey(.return, modifierFlags: [])
         try await expect("the keys in two's pane") { try await read(pane, in: two).contains("\nurl-42") }
@@ -250,7 +250,7 @@ extension OvviUITests {
         try await openFloatURL("session=ovvi-e2e-none&pane=\(pane)")
         let none = NSPredicate(format: "value BEGINSWITH %@", "Can't float pane \(pane) of ovvi-e2e-none: ")
         XCTAssertTrue(notice.staticTexts.matching(none).firstMatch.exists(within: connect))
-        XCTAssertFalse(element("sidebar.dot.ovvi-e2e-none").exists)
+        XCTAssertFalse(pageList().contains("ovvi-e2e-none"))
         let after = try await workspaceIDs()
         XCTAssertEqual(after, workspaces)
 
@@ -288,7 +288,7 @@ extension OvviUITests {
         openSessionPanel()
         app.typeText(two)
         element("open-session.session.\(two)").click()
-        XCTAssertTrue(element("sidebar.dot.\(two)").exists(within: 3))
+        XCTAssertTrue(until(3) { pageList().contains(two) })
         XCTAssertTrue(window.exists)
         _ = try await floatByURL(two, pane)
         element("float.\(pane).detach", in: window).click()
@@ -304,7 +304,7 @@ extension OvviUITests {
     func testShownPanesAreMarkedAndAFloatRequestFloats() async throws {
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
         try await markAndFloat()
-        XCTAssertFalse(element("sidebar.dot.\(two)").exists)
+        XCTAssertFalse(pageList().contains(two))
         // Within the 1 s the quit waits, not the mark's 30 s.
         try await expectShown(one, "w1:p1")
         app.typeKey("q", modifierFlags: .command)

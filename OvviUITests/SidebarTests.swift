@@ -1,6 +1,6 @@
 import XCTest
 
-/// The sidebar: one page per session open in the window, page dots, workspace rows (their git line in
+/// The sidebar: one page per session open in the window, workspace rows (their git line in
 /// `WorkspaceGitTests`), the footer and the Open Session panel. Session one: w1 "alpha", w2 "beta"; session two: w1
 /// "gamma"; three is stopped; four is made by a test; five is stopped and started by tests; seven is stopped and
 /// deleted by a test.
@@ -8,7 +8,7 @@ extension OvviUITests {
     func testLaunchOpensOnePageAndNoOtherSession() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         XCTAssertEqual(header, one)
-        XCTAssertFalse(element("sidebar.dot.\(one)").exists)
+        XCTAssertEqual(pageList(), [one])
         // The other sessions cost nothing: no bridge, no stream.
         let runs = try await runs(two)
         XCTAssertEqual(runs, [])
@@ -57,7 +57,7 @@ extension OvviUITests {
     func testOptionSwipesMoveBetweenSessionsAndWorkspaces() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         openPage(two)
-        element("sidebar.dot.\(one)").click()
+        showPage(one)
         XCTAssertTrue(until(3) { header == one })
         let card = element("terminal.w1:p1").frame, center = "\(card.midX) \(card.midY)"
         // 14 steps of 10 pt (625 pt/s) with ⌥; the other way if natural scrolling is off.
@@ -97,7 +97,7 @@ extension OvviUITests {
     func testSwipesPageTheSidebarAndNotTheTabs() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         openPage(two)
-        element("sidebar.dot.\(one)").click()
+        showPage(one)
         let sidebar = element("sidebar"), header = element("sidebar.header")
         XCTAssertTrue(header.has(\.stringValue, one, within: 3))
         try await swipe(sidebar, until: header, \.stringValue, two)
@@ -114,11 +114,6 @@ extension OvviUITests {
         }
         XCTAssertEqual(header.stringValue, one)
 
-        let place = header.frame.origin
-        app.typeKey(".", modifierFlags: .command)
-        XCTAssertTrue(element("titlebar.agents").has(\.isSelected, true, within: 2))
-        // The name stays where it is: the rows' names and the tiles share its edge.
-        XCTAssertEqual(header.frame.origin, place)
         try await swipe(sidebar, until: header, \.stringValue, two)
     }
 
@@ -129,7 +124,7 @@ extension OvviUITests {
         try await running(five)
         openPage(two)
         openPage(five)
-        element("sidebar.dot.\(one)").click()
+        showPage(one)
         let sidebar = element("sidebar"), header = element("sidebar.header")
         XCTAssertTrue(header.has(\.stringValue, one, within: 3))
         let rows = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'workspace.'"))
@@ -173,9 +168,9 @@ extension OvviUITests {
         app.launchArguments = ["-defaultSession", one, "-machines", "[]"] + Self.noConfig
         app.launch()
         XCTAssertTrue(until(connect) { header == two })
-        XCTAssertTrue(element("sidebar.dot.\(one)").exists)
-        XCTAssertFalse(element("sidebar.dot.\(five)").exists)
-        element("sidebar.dot.\(one)").click()
+        XCTAssertTrue(pageList().contains(one))
+        XCTAssertFalse(pageList().contains(five))
+        showPage(one)
         XCTAssertTrue(element("workspace.w2").has(\.isSelected, true, within: connect))
     }
 
@@ -293,14 +288,14 @@ extension OvviUITests {
     }
 
     /// In a long list the selected workspace's row scrolls into view, just enough and clear of the fade, however it
-    /// was selected; in the Agents view the lit agent's row does, also when the view opens.
+    /// was selected.
     func testTheSelectedRowScrollsIntoView() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        var rows: [String] = [], panes: [String] = []
+        var rows: [String] = []
         for index in 0 ..< 24 {
             let (tab, pane) = try await createWorkspace("long\(index)")
             try await report(pane, "working")
-            (rows, panes) = (rows + ["workspace.\(workspace(of: tab))"], panes + [pane])
+            rows.append("workspace.\(workspace(of: tab))")
         }
         let header = element("sidebar.header"), filter = element("sidebar.filter")
         let first = element("workspace.w1"), long0 = element(rows[0]), last = element(rows[23])
@@ -312,7 +307,7 @@ extension OvviUITests {
         // Round the end to the last row.
         app.typeKey("[", modifierFlags: [.command, .control])
         XCTAssertTrue(until(2) { last.isSelected && inView(last) }, "\(last.frame), filter \(filter.frame)")
-        // Just enough: at the list's end, over its bottom inset, the page dots and the footer's padding.
+        // Just enough: at the list's end, over its bottom inset, Archived Sessions and the footer's padding.
         XCTAssertGreaterThan(last.frame.maxY, filter.frame.minY - 60, "\(last.frame), filter \(filter.frame)")
         XCTAssertFalse(inView(first))
         // ⌃⌘3 (after alpha and beta): up to long0, with the 18 pt fade's room above it (the list starts 3 pt under the
@@ -321,28 +316,6 @@ extension OvviUITests {
         XCTAssertTrue(until(2) { long0.isSelected && long0.frame.minY >= header.frame.maxY + 17 }, "\(long0.frame)")
         app.typeKey("1", modifierFlags: [.command, .control])
         XCTAssertTrue(until(2) { first.isSelected && inView(first) }, "\(first.frame)")
-
-        // The newest change on top: long23's agent first, long0's last.
-        app.typeKey(".", modifierFlags: .command)
-        let agents = panes.map { element("agent.\($0)") }
-        XCTAssertTrue(agents[23].exists(within: 2))
-        XCTAssertFalse(inView(agents[0]))
-        app.typeKey("3", modifierFlags: [.command, .control])
-        XCTAssertTrue(until(2) { agents[0].isSelected && inView(agents[0]) }, "\(agents[0].frame)")
-        XCTAssertFalse(inView(agents[23]))
-        // A view opened anew on a lit row far down shows it.
-        app.typeKey(".", modifierFlags: .command)
-        XCTAssertTrue(long0.exists(within: 2))
-        app.typeKey(".", modifierFlags: .command)
-        XCTAssertTrue(until(2) { inView(agents[0]) }, "\(agents[0].frame)")
-        // Round the end from alpha to long23, at the top.
-        app.typeKey("1", modifierFlags: [.command, .control])
-        app.typeKey("[", modifierFlags: [.command, .control])
-        XCTAssertTrue(until(2) { agents[23].isSelected && inView(agents[23]) }, "\(agents[23].frame)")
-        app.typeKey("3", modifierFlags: [.command, .control])
-        // And the workspaces again, on long0's row.
-        app.typeKey(".", modifierFlags: .command)
-        XCTAssertTrue(until(2) { inView(long0) }, "\(long0.frame)")
     }
 
     func workspaceIDs() async throws -> [String] {

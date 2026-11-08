@@ -14,7 +14,7 @@ extension OvviUITests {
         }
         openPage(two)
         // Keys for the tabs: right after a session change a click went beside the capsule (CI).
-        for (act, panes) in [(click("sidebar.dot.\(one)"), ["w1:p1"]), (key("2"), ["w1:p4"]),
+        for (act, panes) in [(key("1", [.command, .option]), ["w1:p1"]), (key("2"), ["w1:p4"]),
                              (click("workspace.w2"), ["w2:p1"]), (click("workspace.w1"), ["w1:p4"]),
                              (key("1"), ["w1:p1", "w1:p2", "w1:p3"])]
         {
@@ -89,7 +89,7 @@ extension OvviUITests {
         for (name, act) in [
             ("tab click", click("tab.w1:t2")), ("tab click back", click("tab.w1:t1")), ("tab key", key("2")),
             ("workspace", click("workspace.w2")), ("workspace back", click("workspace.w1")),
-            ("session dot", click("sidebar.dot.\(two)")), ("session dot back", click("sidebar.dot.\(one)")),
+            ("session key", key("2", option)), ("session key back", key("1", option)),
             ("next session key", key("]", option)), ("previous session key", key("[", option)),
         ] {
             try await records.append(frames(name, act))
@@ -102,7 +102,7 @@ extension OvviUITests {
             })
         }
         XCTAssertTrue(records.suffix(2).contains { $0.contains("/") }, "no swipe changed the session: \(records)")
-        element("sidebar.dot.\(one)").click()
+        showPage(one)
         try await Task.sleep(for: .seconds(2))
         try await records.append(frames("tab key back", key("1")))
         for name in ["overview tile of another tab", "overview tile of the shown tab"] {

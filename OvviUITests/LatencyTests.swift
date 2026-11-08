@@ -7,7 +7,7 @@ extension OvviUITests {
         // The session slide's spring, as on a Mac without Reduce Motion.
         try launchRecordingLatency(["-forceMotion", "YES"])
         openPage(two)
-        element("sidebar.dot.\(one)").click()
+        showPage(one)
         XCTAssertTrue(until(3) { header == one })
         let palette = element("palette.filter"), openSession = element("open-session.filter")
         let escape = XCUIKeyboardKey.escape.rawValue
@@ -116,7 +116,7 @@ extension OvviUITests {
     func testSessionSwipeFollowsTheFingersAndSlidesOnFromTheirSpeed() async throws {
         try launchRecordingLatency(["-forceMotion", "YES"])
         openPage(two)
-        element("sidebar.dot.\(one)").click()
+        showPage(one)
         XCTAssertTrue(until(3) { header == one })
         let sidebar = element("sidebar"), width = sidebar.frame.width
         let center = "\(sidebar.frame.midX) \(sidebar.frame.midY)"
@@ -186,7 +186,7 @@ extension OvviUITests {
     func testQuickSessionFlickLandsOnTheNextPageInStep() async throws {
         try launchRecordingLatency(["-forceMotion", "YES"])
         openPage(two)
-        element("sidebar.dot.\(one)").click()
+        showPage(one)
         XCTAssertTrue(until(3) { header == one })
         // The header at rest: the window shows the session at the click, its pages arrive 0.2 s later (read mid-slide,
         // 1 pt short, on CI).

@@ -1,6 +1,6 @@
 import XCTest
 
-/// Agents: states in tabs and workspace rows, the Agents button, its popover and the Agents view. Every
+/// Agents: states in tabs, workspace rows and the rows of their agents. Every
 /// status comes from `pane.report_agent` on a throwaway tab, closed after the test (its agent goes with it).
 extension OvviUITests {
     func testWorkingAgentShowsInItsTabAndWorkspace() async throws {
@@ -13,14 +13,15 @@ extension OvviUITests {
         try await waitForValue("tab.\(tab)", containing: "codex, working")
         try await waitForValue("workspace.w1", containing: "working")
         keepScreenshot("working icon")
-        // The state's icon (12 pt; its frame is the drawn circle's, 11 pt) at the end of the name's line, 8 pt in; no
-        // word, no time. The page header's text on the names' edge, 8 pt into the row.
+        // The state's icon (12 pt; its frame is the drawn circle's, 11 pt) at the end of the name's line, before the
+        // chevron (12 pt, 6 pt apart, 8 pt in); no word, no time. The page header's text on the names' edge, 8 pt into
+        // the row.
         let state = element("workspace.w1.state")
         XCTAssertTrue(state.exists(within: 2))
         XCTAssertEqual(state.stringValue, "Working")
         let row = element("workspace.w1").frame
         XCTAssertEqual(state.frame.width, 11, accuracy: 0.5, "\(state.frame)")
-        XCTAssertEqual(state.frame.midX, row.maxX - 8 - 6, accuracy: 0.5, "\(state.frame) \(row)")
+        XCTAssertEqual(state.frame.midX, row.maxX - 8 - 12 - 6 - 6, accuracy: 0.5, "\(state.frame) \(row)")
         XCTAssertEqual(state.frame.midY, row.minY + 15, accuracy: 0.5, "\(state.frame) \(row)")
         XCTAssertEqual(element("sidebar.header").frame.minX, row.minX + 8, accuracy: 0.5)
 
@@ -47,93 +48,31 @@ extension OvviUITests {
         XCTAssertTrue(icon.has(\.stringValue, "Working", within: 3))
     }
 
-    func testBlockedAgentNeedsYouAndThePopoverGoesToIt() async throws {
-        let button = element("titlebar.agents")
-        XCTAssertTrue(button.exists(within: connect))
-        // Nobody needs you: no panel.
-        button.hover()
-        XCTAssertFalse(element("agents.popover").exists(within: 1))
-        element("workspace.w1").hover()
-
+    func testBlockedAgentNeedsYouAndItsRowGoesToIt() async throws {
+        XCTAssertTrue(element("workspace.w1").exists(within: connect))
         let (tab, pane) = try await newTab("deploy")
         try await report(pane, "blocked", agent: "claude")
         try await waitForValue("tab.\(tab)", containing: "claude, needs you")
         try await waitForValue("workspace.w2", containing: "needs you")
-        try await waitForValue("titlebar.agents", containing: "1 need you")
-        keepScreenshot("needs you badge")
-
-        button.hover()
-        let row = element("agents.popover").descendants(matching: .any)["agent.\(pane)"]
-        XCTAssertTrue(row.exists(within: 2))
-        XCTAssertTrue(element("agents.popover.header").exists)
-        keepScreenshot("needs-you popover")
-        // Answered while it shows: the panel goes, and does not come back under the still pointer.
-        try await report(pane, "working", agent: "claude")
-        XCTAssertTrue(element("agents.popover").vanishes(within: 2))
-        try await report(pane, "blocked", agent: "claude")
-        try await waitForValue("titlebar.agents", containing: "1 need you")
-        XCTAssertFalse(element("agents.popover").exists(within: 1))
-        element("workspace.w1").hover()
-        button.hover()
-        XCTAssertTrue(row.exists(within: 2))
+        keepScreenshot("needs you")
+        element("workspace.w1").click()
+        unfold("w2")
+        let row = element("agent.\(pane)")
+        try await waitForValue("agent.\(pane)", containing: "Needs you")
         row.click()
         XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, true, within: 2))
         XCTAssertTrue(hasKeyboard("terminal.\(pane)"))
-        XCTAssertTrue(element("agents.popover").vanishes(within: 2))
-        XCTAssertEqual(element("sidebar.header").value as? String, one)
+        XCTAssertTrue(row.has(\.isSelected, true, within: 2))
     }
 
-    /// The panel also lists unseen finishes, under the Agents view's labels, after needs you.
-    func testTheAgentsPanelListsDoneAgentsAfterNeedsYou() async throws {
-        let button = element("titlebar.agents"), panel = element("agents.popover")
-        XCTAssertTrue(button.exists(within: connect))
-        let docs = try await newTab("docs")
-        let done = try await finish(docs)
-        try await waitForValue("tab.\(docs.tab)", containing: "codex, finished")
-        // Done alone opens the panel; the badge counts only needs you.
-        XCTAssertEqual(button.value as? String, "0 need you")
-        button.hover()
-        let row = { (pane: String) in panel.descendants(matching: .any)["agent.\(pane)"] }
-        let group = { (name: String) in panel.descendants(matching: .any)["agents.popover.group.\(name)"] }
-        XCTAssertTrue(row(done).exists(within: 2))
-        XCTAssertEqual(group("Done").stringValue, "Done · 1")
-        XCTAssertFalse(group("Needs you").exists)
-        element("workspace.w1").hover()
-        XCTAssertTrue(panel.vanishes(within: 2))
-
-        let blocked = try await newTab("deploy").pane
-        try await report(blocked, "blocked", agent: "claude")
-        try await waitForValue("titlebar.agents", containing: "1 need you")
-        button.hover()
-        XCTAssertTrue(row(blocked).exists(within: 2))
-        XCTAssertEqual(group("Needs you").stringValue, "Needs you · 1")
-        let tops = [group("Needs you"), row(blocked), group("Done"), row(done)].map(\.frame.minY)
-        XCTAssertEqual(tops, tops.sorted())
-        XCTAssertEqual(element("agents.popover.header").stringValue, "Agents · \(one)")
-        keepScreenshot("agents panel, needs you and done")
-
-        // A click shows the done agent's tab; leaving it clears it.
-        row(done).click()
-        XCTAssertTrue(element("tab.\(docs.tab)").has(\.isSelected, true, within: 2))
-        XCTAssertTrue(panel.vanishes(within: 2))
-        XCTAssertTrue(element("tab.\(docs.tab)").stringValue.contains("finished"))
-        app.typeKey("1", modifierFlags: .command)
-        try await expect("the finish seen") { !element("tab.\(docs.tab)").stringValue.contains("finished") }
-        element("workspace.w1").hover()
-        button.hover()
-        XCTAssertTrue(row(blocked).exists(within: 2))
-        XCTAssertFalse(group("Done").exists)
-        XCTAssertFalse(row(done).exists)
-    }
-
-    /// The shown tab's keyboard card lights its agent's row, as the selected workspace row.
-    func testTheKeyboardCardsAgentIsLitInTheAgentsView() async throws {
+    /// The shown tab's keyboard card lights its agent's row, inside the selected workspace row's glass.
+    func testTheKeyboardCardsAgentIsLitInItsWorkspace() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let first = try await newTab("deploy").pane
         try await report(first, "blocked", agent: "claude")
         let second = try await split(first)
         try await report(second, "working")
-        app.typeKey(".", modifierFlags: .command)
+        unfold("w2")
         let rows = [first, second].map { element("agent.\($0)") }
         XCTAssertTrue(rows[1].exists(within: 2))
         rows[1].click()
@@ -164,11 +103,7 @@ extension OvviUITests {
         keepScreenshot("finished badge")
         XCTAssertTrue(until(5) { !capsule.label.contains("codex finished") }, capsule.label)
 
-        // From a collapsed sidebar, the button opens it in the Agents view.
-        element("titlebar.sidebar").click()
-        XCTAssertTrue(element("sidebar").vanishes(within: 2))
-        element("titlebar.agents").click()
-        XCTAssertTrue(element("titlebar.agents").has(\.isSelected, true, within: 2))
+        unfold("w2")
         let row = element("agent.\(pane)")
         try await waitForValue("agent.\(pane)", containing: "Done")
         // Opened, it stays Done while the user looks at it, also with the app in the background.
@@ -186,11 +121,6 @@ extension OvviUITests {
         // Off the list, past the 1 s hold and the 0.2 s slide: a move would show.
         element("sidebar.header").hover()
         XCTAssertFalse(until(2.5) { row.frame != place }, "\(row.frame) \(place)")
-        // View ▸ Show Agents turns it off; the sidebar stays.
-        app.menuBars.menuBarItems["View"].click()
-        app.menuItems["Show Agents"].click()
-        XCTAssertTrue(element("workspace.w2").exists(within: 2))
-        XCTAssertTrue(element("sidebar").exists)
     }
 
     func testRelaunchCountsAnOldFinishAsSeen() async throws {

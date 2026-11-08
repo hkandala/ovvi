@@ -100,7 +100,7 @@ extension OvviUITests {
         openPage(two, in: second)
         // The capsule shows only while the page in view is watched.
         XCTAssertTrue(element("notice.controlled", in: second).vanishes(within: 3))
-        element("sidebar.dot.\(one)", in: second).click()
+        showPage(one, in: second)
         XCTAssertTrue(element("notice.controlled", in: second).exists(within: 3))
         closePage(one, in: second)
 

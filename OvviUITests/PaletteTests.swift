@@ -237,7 +237,7 @@ extension OvviUITests {
         let panel = element("open-session.filter")
         XCTAssertTrue(panel.exists(within: 2))
         element("open-session.session.\(two)").click()
-        XCTAssertTrue(element("sidebar.dot.\(two)").exists(within: connect))
+        XCTAssertTrue(until(connect) { pageList().contains(two) })
 
         let identifier = app.windows.firstMatch.identifier
         openPalette()
@@ -248,14 +248,14 @@ extension OvviUITests {
         pick.click()
         let window = try otherWindow(than: identifier)
         XCTAssertTrue(element("sidebar.header", in: window).has(\.stringValue, one, within: 3))
-        XCTAssertFalse(element("sidebar.dot.\(two)", in: window).exists)
+        XCTAssertFalse(pageList(in: window).contains(two))
     }
 
     /// The Sessions section lists the window's pages; Enter shows that page.
     func testPaletteShowsAnotherOpenPage() {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         openPage(two)
-        element("sidebar.dot.\(one)").click()
+        showPage(one)
         XCTAssertTrue(element("sidebar.header").has(\.stringValue, one, within: 3))
         openPalette()
         app.typeText(two)

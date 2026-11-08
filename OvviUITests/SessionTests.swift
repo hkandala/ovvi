@@ -21,17 +21,16 @@ extension OvviUITests {
 
         XCTAssertTrue(element("open-session.filter").vanishes(within: 2))
         XCTAssertTrue(until(3) { header == two })
-        XCTAssertTrue(element("sidebar.dot.\(one)").exists)
-        XCTAssertTrue(element("sidebar.dot.\(two)").isSelected)
+        XCTAssertTrue(pageList().contains(one))
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "identifier == 'workspace.w1' AND label == 'gamma'"))
             .firstMatch.exists(within: connect))
         keepScreenshot("two pages")
-        element("sidebar.dot.\(one)").click()
+        showPage(one)
         XCTAssertTrue(until(3) { header == one })
         XCTAssertTrue(element("workspace.w2").exists(within: 2))
 
         // The workspace menu has a group per page; another page's workspace shows that page.
-        element("sidebar.dot.\(two)").click()
+        showPage(two)
         XCTAssertTrue(until(3) { header == two })
         app.typeKey("s", modifierFlags: [.command, .control])
         let button = element("titlebar.workspace")
@@ -45,14 +44,14 @@ extension OvviUITests {
         XCTAssertTrue(until(3) { header == one })
 
         // Enter on a page open in this window shows it; no page opens or closes.
-        element("sidebar.dot.\(two)").click()
+        showPage(two)
         XCTAssertTrue(until(3) { header == two })
         openSessionPanel()
         app.typeText(one)
         XCTAssertTrue(element("open-session.open.\(one)").has(\.isSelected, true, within: 2))
         app.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(until(3) { header == one })
-        XCTAssertTrue(element("sidebar.dot.\(two)").exists)
+        XCTAssertTrue(pageList().contains(two))
     }
 
     func testOptionCommandTCreatesASessionAsANewPage() async throws {
@@ -69,7 +68,7 @@ extension OvviUITests {
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
         let snapshot = try await Self.snapshot(four)
         XCTAssertEqual((snapshot["workspaces"] as? [Any])?.count, 1)
-        XCTAssertTrue(element("sidebar.dot.\(one)").exists)
+        XCTAssertTrue(pageList().contains(one))
     }
 
     func testOpenSessionStartsAStoppedSession() async throws {
@@ -144,7 +143,7 @@ extension OvviUITests {
         XCTAssertFalse(isRed(detach))
         keepScreenshot("detach on the lit open row")
         detach.click()
-        XCTAssertTrue(element("sidebar.dot.\(two)").vanishes(within: 3))
+        XCTAssertTrue(until(3) { !pageList().contains(two) })
         XCTAssertTrue(until(3) { header == one })
         // Still running, and the panel stays open.
         XCTAssertTrue(element("open-session.session.\(two)").exists(within: 2))
@@ -158,22 +157,18 @@ extension OvviUITests {
         try await running(five)
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         openPage(two)
-        element("sidebar.dot.\(one)").click()
+        showPage(one)
         XCTAssertTrue(until(3) { header == one })
         openPage(five)
-        let dots = [one, two, five].map { element("sidebar.dot.\($0)").frame.midX }
-        XCTAssertEqual(dots, dots.sorted())
+        XCTAssertEqual(pageList(), [one, two, five])
     }
 
     func testDetachSessionKeepsTheSessionRunning() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         openPage(two)
-        // From the dot's menu (closePage uses the header's).
-        element("sidebar.dot.\(two)").rightClick()
-        app.windows.firstMatch.menuItems["Detach Session"].click()
+        closePage(two)
         XCTAssertTrue(until(3) { header == one })
-        XCTAssertFalse(element("sidebar.dot.\(two)").exists)
-        XCTAssertFalse(element("sidebar.dot.\(one)").exists)
+        XCTAssertEqual(pageList(), [one])
         // The session still runs (testClosingAPageAndQuittingLeaveNoStreams checks its runs end).
         try await Self.snapshot(two)
 
@@ -224,18 +219,34 @@ extension OvviUITests {
     func openPage(_ session: String, in window: XCUIElement? = nil) {
         openSessionPanel(in: window)
         element("open-session.session.\(session)", in: window).click()
-        XCTAssertTrue(element("sidebar.dot.\(session)", in: window).exists(within: connect))
+        XCTAssertTrue(until(connect) { pageList(in: window).contains(session) })
     }
 
     /// Shows the session's page and closes it from its header's context menu (in the window, not the menu bar's File ▸
     /// Detach Session).
     func closePage(_ session: String, in window: XCUIElement? = nil) {
-        let dot = element("sidebar.dot.\(session)", in: window)
-        dot.click()
+        showPage(session, in: window)
+        XCTAssertTrue(element("sidebar.header", in: window).has(\.stringValue, session, within: 3))
         // At its center: the page that slid away may leave it unhittable for a moment.
         element("sidebar.header", in: window).coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).rightClick()
         (window ?? app.windows.firstMatch).menuItems["Detach Session"].click()
-        XCTAssertTrue(dot.vanishes(within: 3))
+        XCTAssertTrue(until(3) { !pageList(in: window).contains(session) })
+    }
+
+    /// The window's open sessions in page order (`sidebar.sessions`).
+    func pageList(in window: XCUIElement? = nil) -> [String] {
+        element("sidebar.sessions", in: window).stringValue.split(separator: " ").map(String.init)
+    }
+
+    /// Shows the session's page with its ⌥⌘1–9, in this window when there are several.
+    func showPage(_ session: String, in window: XCUIElement? = nil) {
+        if let window {
+            raise(window)
+        }
+        guard let index = pageList(in: window).firstIndex(of: session) else {
+            return XCTFail("no page \(session) in \(pageList(in: window))")
+        }
+        app.typeKey("\(index + 1)", modifierFlags: [.command, .option])
     }
 
     /// The footer's Open Session; the panel's field has the keyboard.
@@ -266,7 +277,7 @@ extension OvviUITests {
     func testAnotherSessionsAgentCountsInTheDockBadgeOnly() async throws {
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
         openPage(two)
-        element("sidebar.dot.\(one)").click()
+        showPage(one)
         XCTAssertTrue(element("workspace.w2").exists(within: 2))
 
         addTeardownBlock { [two] in
@@ -275,12 +286,11 @@ extension OvviUITests {
         }
         try await report("w1:p1", "blocked", session: two)
         try await expect("the badge to count the other page") { element("app.badge").value as? String == "1" }
-        XCTAssertEqual(element("titlebar.agents").value as? String, "0 need you")
-        element("sidebar.dot.\(two)").click()
-        try await waitForValue("titlebar.agents", containing: "1 need you")
-        app.typeKey(".", modifierFlags: .command)
-        XCTAssertTrue(element("titlebar.agents").has(\.isSelected, true, within: 2))
+        XCTAssertFalse(element("workspace.w1").stringValue.contains("needs you"))
+        showPage(two)
         XCTAssertEqual(element("sidebar.header").value as? String, two)
+        try await waitForValue("workspace.w1", containing: "needs you")
+        unfold("w1")
         try await waitForValue("agent.w1:p1", containing: "Needs you")
     }
 }

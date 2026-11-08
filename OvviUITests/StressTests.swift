@@ -35,11 +35,13 @@ extension OvviUITests {
         quietKey("[", [.command, .control]) { self.element("workspace.w1").isSelected }
         quietKey("s", [.command, .control]) { !self.element("sidebar").exists }
         quietKey("s", [.command, .control]) { self.element("sidebar").exists }
-        quietKey(".", .command) { self.element("titlebar.agents").isSelected }
 
-        // Frames while lists scroll: the Agents view's 100 rows, the sidebar's 30, the tab bar's 10 capsules.
+        // Frames while lists scroll: the sidebar's 30 rows with w1's agents unfolded, then folded; the tab bar's 10
+        // capsules.
+        unfold("w1")
         try await scroll(over: element("sidebar").frame, vertical: true)
-        quietKey(".", .command) { !self.element("titlebar.agents").isSelected }
+        element("fold.w1").click()
+        XCTAssertTrue(element("fold.w1").has(\.stringValue, "collapsed", within: 2))
         try await scroll(over: element("sidebar").frame, vertical: true)
         try await scroll(over: element("tab.w1:t1").frame, vertical: false)
 

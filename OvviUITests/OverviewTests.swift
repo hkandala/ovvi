@@ -123,7 +123,7 @@ extension OvviUITests {
     /// The title row has the traffic lights and one × only; the grid (its first row's two tiles) is centered with wide
     /// margins all round: 8 % of the width, at least 48 pt, and 40 pt above.
     private func expectOverviewChrome(first: CGRect, second: CGRect) {
-        for id in ["titlebar.sidebar", "titlebar.machine", "titlebar.agents", "titlebar.overview", "titlebar.palette",
+        for id in ["titlebar.sidebar", "titlebar.machine", "titlebar.overview", "titlebar.palette",
                    "titlebar.new-tab"]
         {
             XCTAssertFalse(element(id).exists, id)

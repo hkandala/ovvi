@@ -1,6 +1,7 @@
 import XCTest
 
-/// The Agents view's Archived shelf (ui/window#archived): the closed sessions in the agents' stores of a fixture home
+/// The sidebar's Archived Sessions (ui/window#archived-sessions): the closed sessions in the agents' stores of a
+/// fixture home
 /// (`OvviUITests.archivedHome`), never the user's.
 extension OvviUITests {
     /// The home folder whose agents' stores the Archived shelf reads (`-archivedHome`).
@@ -17,7 +18,7 @@ extension OvviUITests {
         let (_, shell) = try await newTab("archived")
         try await waitForPrompt(shell)
         try await writeSessions(id, in: folder, shell)
-        let shelf = openArchived()
+        openArchived()
         let first = element("agents.archived.claude.\(id)"), second = element("agents.archived.pi.2026_\(id).jsonl")
         XCTAssertTrue(first.exists(within: 5))
         XCTAssertTrue(second.exists(within: 2))
@@ -27,7 +28,6 @@ extension OvviUITests {
         keepScreenshot("archived shelf")
 
         filters(first, second)
-        pins(first, id, below: shelf)
         try await resumes(first, id, in: folder, shell)
     }
 
@@ -59,14 +59,19 @@ extension OvviUITests {
         }, "the 55th session never came")
     }
 
-    /// Opens the Agents view and its Archived shelf, which shows all agents; back to the workspaces after the test.
+    /// Opens Archived Sessions at the sidebar's foot, showing all agents; folded again after the test.
+    @discardableResult
     private func openArchived() -> XCUIElement {
-        app.typeKey(".", modifierFlags: .command)
-        addTeardownBlock { [app] in app.typeKey(".", modifierFlags: .command) }
-        let shelf = element("agents.shelf.Archived")
+        let shelf = element("agents.shelf.Archived Sessions")
         XCTAssertTrue(shelf.exists(within: 3))
         if shelf.value as? String == "collapsed" {
             shelf.click()
+        }
+        addTeardownBlock { @MainActor [self] in
+            let shelf = element("agents.shelf.Archived Sessions")
+            if shelf.exists, shelf.value as? String == "expanded" {
+                shelf.click()
+            }
         }
         XCTAssertTrue(shelf.has(\.stringValue, "expanded", within: 2))
         // A run that stopped in the middle left another agent picked.
@@ -89,29 +94,6 @@ extension OvviUITests {
         menu.click()
         menu.menuItems["All Agents"].click()
         XCTAssertTrue(claude.exists(within: 2))
-    }
-
-    /// Pinned, it leaves Archived for the top of the list, with Resume; unpinned, it comes back.
-    private func pins(_ row: XCUIElement, _ id: String, below shelf: XCUIElement) {
-        row.rightClick()
-        app.menus.menuItems["Pin"].firstMatch.click()
-        let pinned = element("agents.pinned.claude.\(id)")
-        // A failure below must leave no pin: the tests' domain keeps it for every later run.
-        addTeardownBlock { @MainActor [self] in
-            if pinned.exists {
-                pinned.hover()
-                element("agents.pinned.claude.\(id).pin").click()
-            }
-        }
-        XCTAssertTrue(pinned.exists(within: 2))
-        XCTAssertTrue(row.vanishes(within: 2))
-        XCTAssertLessThan(pinned.frame.maxY, shelf.frame.minY)
-        pinned.hover()
-        XCTAssertTrue(element("agents.pinned.claude.\(id).resume").exists(within: 2))
-        keepScreenshot("pinned closed session")
-        element("agents.pinned.claude.\(id).pin").click()
-        XCTAssertTrue(pinned.vanishes(within: 2))
-        XCTAssertTrue(row.exists(within: 2))
     }
 
     /// A Claude Code session two hours old and a pi session two days old, in the folder, written by the shell (the

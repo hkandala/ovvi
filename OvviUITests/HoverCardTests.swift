@@ -58,7 +58,7 @@ extension OvviUITests {
         try await split(pane)
         element("workspace.w1").click()
         try await report(pane, "working")
-        app.typeKey(".", modifierFlags: .command)
+        unfold("w2")
         let row = element("agent.\(pane)")
         XCTAssertTrue(row.exists(within: 3))
 
@@ -74,7 +74,6 @@ extension OvviUITests {
         element("hovercard.title").click()
         XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, true, within: 2))
         XCTAssertTrue(card.vanishes(within: 2))
-        app.typeKey(".", modifierFlags: .command)
         XCTAssertTrue(element("workspace.w2").has(\.isSelected, true, within: 2))
     }
 

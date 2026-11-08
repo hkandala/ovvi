@@ -234,11 +234,9 @@ extension OvviUITests {
     func testPaletteEnterTakesTheMovedRowAndKeysFollow() async throws {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         openPalette()
-        // "show": Show Agents, Show Overview, then Show Previous Tab (the menu's order); ↓ moves down to it, and t1
-        // steps round to t2.
+        // "show": Show Overview, then Show Previous Tab (the menu's order); ↓ moves down to it, and t1 steps round to
+        // t2.
         app.typeText("show")
-        XCTAssertTrue(element("palette.command.Show Agents").has(\.isSelected, true, within: 2))
-        app.typeKey(.downArrow, modifierFlags: [])
         XCTAssertTrue(element("palette.command.Show Overview").has(\.isSelected, true, within: 2))
         app.typeKey(.downArrow, modifierFlags: [])
         XCTAssertTrue(element("palette.command.Show Previous Tab").has(\.isSelected, true, within: 2))

@@ -167,7 +167,7 @@ extension OvviUITests {
     func testHoldingADraggedTabAtTheRowsEndScrollsTheRow() async throws {
         let tabs = try await newWorkspace("far", tabs: 8).tabs
         let first = element("tab.\(tabs[0])")
-        let rowEnd = element("titlebar.agents").frame.minX - 8
+        let rowEnd = element("titlebar.overview").frame.minX - 8
         // The row overflows: faded at its end.
         XCTAssertTrue(element("tabs.fades").has(\.stringValue, "trailing", within: 2))
         let from = first.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
@@ -196,7 +196,7 @@ extension OvviUITests {
         openSessionPanel()
         element("open-session.session.\(two)").click()
         XCTAssertTrue(element("pane.w1:p1").has(\.isHittable, true, within: connect), "the other session")
-        element("sidebar.dot.\(one)").click()
+        showPage(one)
         try await expectShown(shown[0].tab, "back from the other session")
     }
 
@@ -248,7 +248,7 @@ extension OvviUITests {
         openPage(two)
         element("tab.\(tab)").click()
         XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, true, within: 2))
-        element("sidebar.dot.\(one)").click()
+        showPage(one)
         element("tab.w1:t2").click()
         XCTAssertTrue(element("tab.w1:t2").has(\.isSelected, true, within: 2))
 
@@ -256,7 +256,7 @@ extension OvviUITests {
         let capsule = element("tab.w1:t1")
         XCTAssertTrue(until(3) { capsule.label.contains("claude needs you") }, capsule.label)
         // Within its 3 s.
-        element("sidebar.dot.\(two)").click()
+        showPage(two)
         XCTAssertTrue(element("sidebar.header").has(\.stringValue, two, within: 2))
         XCTAssertFalse(capsule.label.contains("needs you"), capsule.label)
     }
@@ -270,7 +270,7 @@ extension OvviUITests {
         relaunch(one, ["-recordMotion", "YES"])
         let tabs = try await newWorkspace("many", tabs: 24).tabs
         let first = element("tab.\(tabs[0])"), beta = element("workspace.w2"), made = element("tabs.made")
-        let fit = Int((element("titlebar.agents").frame.minX - 8 - first.frame.minX) / (220 + 1)) + 1
+        let fit = Int((element("titlebar.overview").frame.minX - 8 - first.frame.minX) / (220 + 1)) + 1
         beta.click()
         XCTAssertTrue(beta.has(\.isSelected, true, within: 3))
         let before = Int(made.stringValue) ?? 0

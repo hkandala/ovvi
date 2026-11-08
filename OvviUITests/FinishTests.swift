@@ -13,12 +13,12 @@ extension OvviUITests {
         let start = element("detail.start")
         XCTAssertTrue(start.exists(within: 10))
         // The first page is not touched: its cards and streams stay.
-        element("sidebar.dot.\(one)").click()
+        showPage(one)
         XCTAssertTrue(element("terminal.w1:p1").exists(within: 3))
         XCTAssertFalse(start.exists)
         try await expect("one's three streams") { try await streams(one).count == 3 }
 
-        element("sidebar.dot.\(five)").click()
+        showPage(five)
         XCTAssertTrue(start.exists(within: 3))
         start.click()
         XCTAssertTrue(element("terminal.\(pane)").exists(within: connect))
