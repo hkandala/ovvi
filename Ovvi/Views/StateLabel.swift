@@ -75,7 +75,7 @@ struct StateLabel: View {
     }
 }
 
-/// An Agents view row's state: its icon, and for Working how long it has worked ("<1m", "3m", "1h 5m"), in the state's
+/// An agent row's state: its icon, and for Working how long it has worked ("<1m", "3m", "1h 5m"), in the state's
 /// color, on a 14 % tint with a 1 pt border at 45 % and 6 pt corners.
 struct StateBox: View {
     let state: AgentState

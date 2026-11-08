@@ -244,7 +244,7 @@ struct TerminalPage: View {
     }
 }
 
-/// Settings ▸ Agents: the first view of new agents, the Agents view, the agents in New Pane, and the notifications.
+/// Settings ▸ Agents: the first view of new agents, Archived Sessions, the agents in New Pane, and the notifications.
 struct AgentsPage: View {
     private var settings = AppSettings()
 
@@ -260,21 +260,10 @@ struct AgentsPage: View {
                 }
                 .accessibilityIdentifier("settings.agents.view").settingsRow("agents.view")
             }
-            Section("Agents view") {
-                Picker(selection: settings.$settleAfter) {
-                    Text("1 hour").tag(3600.0)
-                    Text("3 hours").tag(3 * 3600.0)
-                    Text("8 hours").tag(8 * 3600.0)
-                    Text("1 day").tag(24 * 3600.0)
-                    Text("Never").tag(0.0)
-                } label: {
-                    Text("Settle idle agents after")
-                    Text("An idle agent you have seen moves to Settled.")
-                }
-                .accessibilityIdentifier("settings.agents.settle").settingsRow("agents.settle")
+            Section("Sidebar") {
                 Toggle(isOn: settings.$showClosed) {
                     Text("Show closed sessions")
-                    Text("Archived lists the sessions of Claude Code, Codex, Pi and OpenCode that no pane runs.")
+                    Text("Archived Sessions lists the Claude Code, Codex, Pi and OpenCode sessions no pane runs.")
                 }
                 .accessibilityIdentifier("settings.agents.closed").settingsRow("agents.closed")
             }

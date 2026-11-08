@@ -7,16 +7,16 @@ struct PanelPlace {
     let panel: UnitPoint
     let offset: CGSize
 
-    /// Under the Agents button, the trailing edges lined up.
-    static let underTrailing = PanelPlace(trigger: .bottomTrailing, panel: .topTrailing,
-                                          offset: CGSize(width: 0, height: 4))
     /// Centered under a tab capsule, 6 pt below the title row.
     static let under = PanelPlace(trigger: .bottom, panel: .top,
                                   offset: CGSize(width: 0, height: (TitleBar.height - TabBar.height) / 2 + 6))
-    /// Right of an Agents view row, 6 pt past the sidebar's edge (over the first card): the rows' inset and the
-    /// 8 pt handle lie between.
+    /// Right of a sidebar row (a pinned tab), 6 pt past the sidebar's edge (over the first card): the rows' inset and
+    /// the 8 pt handle lie between.
     static let beside = PanelPlace(trigger: .topTrailing, panel: .topLeading,
                                    offset: CGSize(width: Sidebar.rowInsets.trailing + gap + 6, height: 0))
+    /// The same for an agent row, 4 pt inside its workspace row.
+    static let besideAgent = PanelPlace(trigger: .topTrailing, panel: .topLeading,
+                                        offset: CGSize(width: Sidebar.rowInsets.trailing + 4 + gap + 6, height: 0))
 }
 
 extension View {
@@ -293,6 +293,11 @@ struct HoverCard: View {
                 }
                 // The state icon's room.
                 .padding(.trailing, state == nil ? 0 : 18)
+                // An agent's whole title: the sidebar's row cuts it at its width (an untitled one's first prompt).
+                if let title = pane.agentTitle {
+                    Text(title).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(3)
+                        .padding(.trailing, state == nil ? 0 : 18)
+                }
                 ForEach(shown.indices, id: \.self) { index in
                     Text(shown[index]).font(.system(size: 10, design: .monospaced)).foregroundStyle(.secondary)
                         .lineLimit(1)

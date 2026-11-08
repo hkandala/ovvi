@@ -7,7 +7,6 @@ struct CommandList {
     var pages: WindowPages?
     var palette: Binding<Bool>?
     var sidebar: Binding<Bool>?
-    var agents: Binding<Bool>?
     var openSession: Binding<Bool>?
     var shortcuts: Binding<Bool>?
     let settings: AppSettings
@@ -138,15 +137,6 @@ struct CommandList {
                     enabled: palette != nil) { palette?.wrappedValue.toggle() },
             Command(section: .help, title: "Keyboard Shortcuts", key: .init("/"), symbol: "keyboard",
                     keywords: "keys help", enabled: shortcuts != nil) { shortcuts?.wrappedValue.toggle() },
-            Command(section: .view, title: "Show Agents", key: .init("."), symbol: "list.bullet.rectangle",
-                    keywords: "needs you", enabled: agents != nil && sidebar != nil,
-                    checked: agents?.wrappedValue == true && sidebar?.wrappedValue == true, action: {
-                        if let agents, let sidebar {
-                            // Out of the overview first, which hides the sidebar.
-                            pages?.closeOverview()
-                            toggleAgents(agents, sidebar)
-                        }
-                    }),
             Command(section: .view, title: "Toggle Sidebar", key: .toggleSidebar, symbol: "sidebar.left",
                     enabled: sidebar != nil && pages?.overview != true) { sidebar?.wrappedValue.toggle() },
             Command(section: .view, title: "Show Overview", key: .overview, symbol: "square.grid.2x2",

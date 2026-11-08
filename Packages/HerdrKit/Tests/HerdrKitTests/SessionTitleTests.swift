@@ -37,3 +37,21 @@ import Testing
     #expect(await localExec.sessionTitle(agent: "opencode", session: "/x' union select sqlite_version() --") == nil)
     #expect(await localExec.sessionTitle(agent: "gemini", session: file.path) == nil)
 }
+
+/// No title yet: the first typed prompt, cut at 100 characters with "…" (ui/window#agent-rows).
+@Test func `an untitled session's first prompt`() {
+    let long = String(repeating: "word ", count: 30)
+    let claude = #"""
+    {"type":"user","message":{"role":"user","content":"<command-name>/clear</command-name>"}}
+    {"type":"user","isMeta":true,"message":{"role":"user","content":"Caveat: local commands"}}
+    {"type":"user","message":{"role":"user","content":[{"type":"text","text":"fix the\nflaky test"}]}}
+    """#
+    #expect(SessionTitle.parse(agent: "claude", claude) == "fix the flaky test")
+    let titled = #"{"type":"ai-title","aiTitle":"Flaky test"}"# + "\n" + claude
+    #expect(SessionTitle.parse(agent: "claude", titled) == "Flaky test")
+    let piLine = #"{"type":"message","message":{"role":"user","content":[{"type":"text","text":"\#(long)"}]}}"#
+    let cut = SessionTitle.parse(agent: "pi", piLine)
+    #expect(cut == String(long.prefix(100)).trimmingCharacters(in: .whitespaces) + "…")
+    #expect(SessionTitle.parse(agent: "codex", #"{"prompt":"rename the CLI"}"#) == "rename the CLI")
+    #expect(SessionTitle.parse(agent: "codex", #"{"prompt":""}"#) == nil)
+}

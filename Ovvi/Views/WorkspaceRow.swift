@@ -1,11 +1,15 @@
 import HerdrKit
 import SwiftUI
 
-/// A workspace: its name, and its branch with ahead and behind on a second line in a repository; its state's icon at
-/// the end. A linked worktree sits indented under its repository's row, on a guide line.
+/// A workspace: its name, and its branch with ahead and behind on a second line in a repository; its state's icon and,
+/// when it runs agents, a chevron at the end. Unfolded, its agents follow, one line each, inside the row's glass
+/// (selected) or a border (ui/window#workspace-rows). A linked worktree sits indented under its repository's row, on a
+/// guide line.
 struct WorkspaceRow: View {
     /// The text's inset in a row; the page header's text lines up.
     static let textInset: CGFloat = 8
+    /// Between two rows.
+    static let gap: CGFloat = 6
 
     let workspace: HostStore.Workspace
     let parent: HostStore.Workspace?
@@ -16,17 +20,57 @@ struct WorkspaceRow: View {
     let ends: (first: String?, last: String?)
     /// 1…9 while ⌃⌘ is held: "⌃⌘1" at the end of the name's line.
     let keycap: Int?
+    /// Its agent panes as shown, newest change first; empty: no chevron.
+    var agents: [HostStore.Pane] = []
+    /// Unfolded: its agents show.
+    var open = false
+    var fold: () -> Void = {}
     @State private var renaming = false
     @Environment(\.look) private var look
 
     var body: some View {
         let selected = workspace.id == page.selectedWorkspaceID
-        let git = workspace.git
         let state = workspace.state
         // The icon: not while idle, nor under the keycap or the rename field.
         let shown = state == .idle || keycap != nil || renaming ? nil : state
-        let height: CGFloat = git == nil ? 30 : 44
-        Button {
+        let height: CGFloat = workspace.git == nil ? 30 : 44
+        let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
+        VStack(spacing: 0) {
+            header(selected: selected, shown: shown, height: height)
+            if open {
+                VStack(spacing: 0) {
+                    ForEach(agents) { AgentLine(pane: $0, page: page) }
+                }
+                .padding([.horizontal, .bottom], 4)
+            }
+        }
+        // The selected row's glass, over its agents too; an unfolded one not selected has a border and no glass.
+        .background {
+            if selected {
+                Pill(shape: shape)
+            } else if open {
+                shape.strokeBorder(.primary.opacity(0.14))
+            }
+        }
+        .padding(.leading, parent == nil ? 0 : 14)
+        // From under the repository's row, 15 pt in, down along its worktrees; a repository's starts under its agents.
+        .background(alignment: .topLeading) {
+            if parent != nil || guideBelow {
+                GeometryReader { geometry in
+                    let total = geometry.size.height
+                    let top = parent == nil ? total : 0
+                    Rectangle().fill(.separator).frame(width: 1)
+                        .frame(height: (guideBelow ? total + Self.gap : height / 2) - top)
+                        .offset(x: 15, y: top)
+                }
+            }
+        }
+    }
+
+    private func header(selected: Bool, shown: AgentState?, height: CGFloat) -> some View {
+        let git = workspace.git
+        let state = workspace.state
+        return Button {
             page.select(workspace)
             // AppKit's double-click, counted from the events' times: SwiftUI's TapGesture(count: 2) missed one
             // while the app was busy drawing the first click's selection.
@@ -34,43 +78,21 @@ struct WorkspaceRow: View {
                 startRenaming()
             }
         } label: {
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(workspace.label).font(.system(size: 13, weight: state?.calls == true ? .medium : .regular))
-                        .lineLimit(1).opacity(renaming ? 0 : 1)
-                        .foregroundStyle(selected ? look.selected : look.chrome)
-                    Spacer(minLength: 0)
-                    // The keycap's room: the name gives way to it.
-                    if let keycap {
-                        Keycap(text: "⌃⌘\(keycap)").hidden()
-                    }
-                }
-                if let git {
-                    HStack(spacing: 4) {
-                        Image(symbol: "source.branch").font(.system(size: 10))
-                        Text(git.branch).lineLimit(1).truncationMode(.middle)
-                        if git.ahead > 0 {
-                            Text("↑\(git.ahead)").foregroundStyle(look.finished)
-                        }
-                        if git.behind > 0 {
-                            Text("↓\(git.behind)").foregroundStyle(look.error)
-                        }
-                    }
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                }
-            }
-            // The state icon's room (`stateIcon`).
-            .padding(.leading, Self.textInset).padding(.trailing, shown == nil ? 8 : 8 + 12 + 8)
-            .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .leading)
+            label(selected: selected, state: state, git: git)
+                // The state icon's and the chevron's room (`stateIcon`, `chevron`).
+                .padding(.leading, Self.textInset)
+                .padding(.trailing, 8 + (shown == nil ? 0 : 12 + 8) + (agents.isEmpty ? 0 : Self.chevron + 6))
+                .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .leading)
         }
-        .buttonStyle(ChromeStyle(selected: selected, radius: 10))
+        // The row's glass is the whole row's (`body`); under the pointer only an unselected one fills.
+        .buttonStyle(ChromeStyle(radius: 10, hovered: selected ? false : nil))
         .dragSource(.workspace(workspace.id), page: page)
         .accessibilityIdentifier("workspace.\(workspace.id)")
         .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityValue([state?.word, git.map { "\($0.branch) ahead \($0.ahead) behind \($0.behind)" },
                              parent.map { "worktree of \($0.label)" }].compactMap(\.self).joined(separator: ", "))
-        .overlay(alignment: .topTrailing) { stateIcon(shown) }
+        .overlay(alignment: .topTrailing) { stateIcon(shown).padding(.trailing, agents.isEmpty ? 0 : Self.chevron + 6) }
+        .overlay(alignment: .topTrailing) { chevron }
         // At the end of the name's line, never over the name. Over the button, so a test sees it.
         .overlay(alignment: .topTrailing) {
             if let keycap, !renaming {
@@ -95,15 +117,58 @@ struct WorkspaceRow: View {
         }
         // Writes only while the session runs: a stopped one keeps its last rows.
         .contextMenu { menu.disabled(page.store.state != .live) }
-        .padding(.leading, parent == nil ? 0 : 14)
-        // From under the repository's row, 15 pt in, down along its worktrees.
-        .background(alignment: .topLeading) {
-            if parent != nil || guideBelow {
-                Rectangle().fill(.separator).frame(width: 1)
-                    .padding(.top, parent == nil ? height : 0)
-                    .padding(.bottom, guideBelow ? -2 : height / 2)
-                    .padding(.leading, 15)
+    }
+
+    /// The name, and the branch line in a repository.
+    private func label(selected: Bool, state: AgentState?, git: GitStatus?) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 6) {
+                Text(workspace.label).font(.system(size: 13, weight: state?.calls == true ? .medium : .regular))
+                    .lineLimit(1).opacity(renaming ? 0 : 1)
+                    .foregroundStyle(selected ? look.selected : look.chrome)
+                Spacer(minLength: 0)
+                // The keycap's room: the name gives way to it.
+                if let keycap {
+                    Keycap(text: "⌃⌘\(keycap)").hidden()
+                }
             }
+            if let git {
+                HStack(spacing: 4) {
+                    Image(symbol: "source.branch").font(.system(size: 10))
+                    Text(git.branch).lineLimit(1).truncationMode(.middle)
+                    if git.ahead > 0 {
+                        Text("↑\(git.ahead)").foregroundStyle(look.finished)
+                    }
+                    if git.behind > 0 {
+                        Text("↓\(git.behind)").foregroundStyle(look.error)
+                    }
+                }
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    /// The chevron's width.
+    private static let chevron: CGFloat = 12
+
+    /// Folds or unfolds the agents, at the end of the name's line; none without agents. Its own button: a click on the
+    /// row selects it.
+    @ViewBuilder private var chevron: some View {
+        if !agents.isEmpty, keycap == nil, !renaming {
+            Button(action: fold) {
+                Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(open ? 90 : 0))
+                    .frame(width: Self.chevron + 8, height: 22).contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .frame(height: 30)
+            .padding(.trailing, 4)
+            .help(open ? "Hide Agents" : "Show Agents")
+            .accessibilityLabel(open ? "Hide Agents" : "Show Agents")
+            .accessibilityValue(open ? "expanded" : "collapsed")
+            .accessibilityIdentifier("fold.\(workspace.id)")
         }
     }
 
@@ -150,5 +215,39 @@ struct WorkspaceRow: View {
         guard renaming else { return }
         renaming = false
         page.focusKeyboardCard()
+    }
+}
+
+/// An agent in its workspace's unfolded row (ui/window#agent-rows), one line: its program tile, its title (an
+/// untitled session's first prompt, cut at the row's width), then its state box with the working time. A click goes to
+/// its tab and pane; lit while it is the shown tab's keyboard card.
+struct AgentLine: View {
+    let pane: HostStore.Pane
+    let page: Page
+    @Environment(\.look) private var look
+
+    var body: some View {
+        let state = pane.state ?? .idle
+        let lit = page.keyboardCard(page.selectedTab?.id) === pane
+        let title = pane.agentTitle ?? "agent"
+        Button { page.go(to: pane) } label: {
+            HStack(spacing: 8) {
+                ProgramTile(icon: pane.iconID, letter: pane.letter)
+                Text(title).font(.system(size: 13, weight: state.calls ? .medium : .regular)).lineLimit(1)
+                    .foregroundStyle(lit ? look.selected : look.chrome)
+                Spacer(minLength: 0)
+                if state != .idle {
+                    StateBox(state: state, since: state == .working ? pane.since : nil)
+                }
+            }
+            .padding(.horizontal, 4)
+            .frame(height: 28)
+        }
+        .buttonStyle(ChromeStyle(selected: lit, radius: 7, tint: .primary.opacity(0.08)))
+        .accessibilityIdentifier("agent.\(pane.id)")
+        .accessibilityLabel("\(title), \(page.place(pane))")
+        .accessibilityValue(pane.state?.title ?? "")
+        .accessibilityAddTraits(lit ? .isSelected : [])
+        .hoverPanel(place: .besideAgent) { close in HoverCard(tabID: pane.tabID, page: page, close: close) }
     }
 }

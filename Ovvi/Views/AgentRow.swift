@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// An Agents view row, a 48 pt button: the program tile on line 1, then the name, then `trailing` (the state box, an
-/// age); line 2 full width. Under the pointer `hover` (Pin, Resume) shows before `trailing`, as buttons of their own
+/// An Archived Sessions row, a 48 pt button: the program tile on line 1, then the name, then `trailing` (its age); line
+/// 2 full width. Under the pointer `hover` (Resume) shows before `trailing`, as buttons of their own
 /// over the row: inside the row's label, they would be part of its one accessibility element.
 struct AgentRow<Hover: View, Trailing: View>: View {
     let icon: String

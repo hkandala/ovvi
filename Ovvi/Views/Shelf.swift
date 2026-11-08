@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// A folded shelf at the foot of the Agents view (Settled, Archived), as T3 Code's: a quiet header with the count at
-/// its end and a chevron, folded at first; open, at most five rows tall, then its rows scroll inside.
+/// A folded shelf at the foot of the sidebar (Archived Sessions), as T3 Code's: a quiet header with the count at its
+/// end
+/// and a chevron, folded at first; open, at most five rows tall, then its rows scroll inside.
 struct Shelf<Accessory: View, Content: View>: View {
     let label: String
     /// None while unknown (Archived reads lazily).
@@ -98,16 +99,11 @@ extension Shelf where Accessory == EmptyView {
 }
 
 extension Page {
-    /// The defaults key of the open shelves, a line each (`shelfKey`).
+    /// The defaults key of the open shelves and the unfolded workspaces, a line each (`shelfKey`).
     static let openShelves = "agentsOpen"
 
     /// "‹machine› ‹session› ‹label›".
     func shelfKey(_ label: String) -> String {
         "\(store.machine.id) \(id) \(label)"
-    }
-
-    func opens(_ label: String) -> Bool {
-        let lines = UserDefaults.agents.string(forKey: Self.openShelves) ?? ""
-        return lines.split(separator: "\n").contains { $0 == shelfKey(label) }
     }
 }

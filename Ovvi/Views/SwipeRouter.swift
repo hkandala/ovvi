@@ -13,25 +13,19 @@ enum SwipeRouter {
         }
     }
 
-    /// `row`: the sidebar's next (1) or previous (-1) workspace, or agent in the Agents view.
+    /// `row`: the sidebar's next (1) or previous (-1) workspace.
     private enum Step {
         case session(Int), row(Int)
     }
 
-    /// The event's window shows its next (1) or previous (-1) session, as ⌥⌘[ ]; or the sidebar's row: the
-    /// Agents view's agent, else the workspace (⌃⌘[ ]). Not under a panel, as the sidebar's pages.
+    /// The event's window shows its next (1) or previous (-1) session, as ⌥⌘[ ]; or the sidebar's next or previous
+    /// workspace (⌃⌘[ ]). Not under a panel, as the sidebar's pages.
     private static func take(_ step: Step, _ event: NSEvent) {
         guard let pages = WindowPages.windows.first(where: { $0.window === event.window }), !pages.panelOpen
         else { return }
         switch step {
         case let .session(offset): pages.step(offset)
-        case let .row(offset):
-            let sidebar = anchors.allObjects.first { $0.window === event.window && $0.marks.agent != nil }
-            if let agent = sidebar?.marks.agent {
-                agent(offset)
-            } else {
-                pages.current?.stepWorkspace(offset)
-            }
+        case let .row(offset): pages.current?.stepWorkspace(offset)
         }
     }
 
@@ -155,13 +149,11 @@ enum SwipeRouter {
 
 /// Marks the sidebar's pages for the router: they take a sideways swipe's moves (`drag`, the first one of a gesture
 /// marked) and lift (with the fingers' speed), and a wheel's turn (`step`), within `area` (in the window, from its
-/// top left) and down to the window's bottom (the dots and the filter too).
+/// top left) and down to the window's bottom (the filter too).
 struct PagesAnchor: NSViewRepresentable {
     var step: ((Int) -> Void)?
     var drag: ((Double, Bool) -> Void)?
     var lift: ((Double) -> Void)?
-    /// The Agents view's step for a ⌥ + swipe up or down, while it shows.
-    var agent: ((Int) -> Void)?
     var area = CGRect.zero
 
     func makeNSView(context _: Context) -> Anchor {

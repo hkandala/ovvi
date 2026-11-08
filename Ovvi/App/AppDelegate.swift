@@ -44,6 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             "NSQuitAlwaysKeepsWindows": true, "startTimeout": 10,
             Notifications.needsYou: true, Notifications.finished: true, Notifications.fromAgents: true,
         ])
+        UserDefaults.dropAgentsView()
         let center = UNUserNotificationCenter.current()
         center.delegate = self
         // macOS asks the user once; later calls answer at once. The Dock badge shows only with `.badge` allowed.

@@ -1,6 +1,6 @@
 import Foundation
 
-/// A session of an agent, from the agent's own store on its machine: what the Agents view's Archived shelf lists and
+/// A session of an agent, from the agent's own store on its machine: what the sidebar's Archived Sessions lists and
 /// resumes.
 public struct ClosedSession: Sendable, Hashable, Identifiable {
     /// herdr's agent name, the chooser's command (`claude`).

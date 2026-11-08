@@ -12,7 +12,7 @@ extension AgentState {
         }
     }
 
-    /// Its word in a `StateLabel` and the Agents panel's group labels.
+    /// Its word in a `StateLabel`.
     var title: String {
         switch self {
         case .needsYou: "Needs you"
@@ -39,55 +39,6 @@ extension AgentState {
         case .finishedUnseen: look.finished
         case .idle: .secondary
         }
-    }
-}
-
-/// An agent pane in the Agents view and the Agents button's panel. A click selects its workspace and tab and gives
-/// it the keyboard. Lit like the selected workspace row while it is the shown tab's keyboard card.
-struct AgentButton: View {
-    let pane: HostStore.Pane
-    let page: Page
-    /// In Settled: its age where the box goes.
-    var age: Date?
-    /// Pin or Unpin under the pointer (the Agents view's rows).
-    var pinned = false
-    var pin: (() -> Void)?
-    var picked: () -> Void = {}
-
-    var body: some View {
-        let state = pane.state ?? .idle
-        AgentRow(icon: pane.iconID, letter: pane.letter, title: title, line2: page.place(pane), medium: state.calls,
-                 lit: lit, id: "agent.\(pane.id)", value: pane.state?.title ?? "", action: go, hover: { pinButton },
-                 trailing: { trailing(state) })
-    }
-
-    private func go() {
-        page.go(to: pane)
-        picked()
-    }
-
-    private var title: String {
-        pane.agentTitle ?? "agent"
-    }
-
-    @ViewBuilder private var pinButton: some View {
-        if let pin {
-            IconButton(symbol: pinned ? "pin.slash" : "pin", help: pinned ? "Unpin" : "Pin", size: 18, action: pin)
-                .accessibilityIdentifier("agent.\(pane.id).pin")
-        }
-    }
-
-    /// The state's box, none while idle; in Settled the age instead.
-    @ViewBuilder private func trailing(_ state: AgentState) -> some View {
-        if state != .idle {
-            StateBox(state: state, since: state == .working ? pane.since : nil)
-        } else if let age {
-            AgeText(date: age)
-        }
-    }
-
-    private var lit: Bool {
-        page.keyboardCard(page.selectedTab?.id) === pane
     }
 }
 

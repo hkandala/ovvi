@@ -90,8 +90,6 @@ struct ContentView: View {
     @SceneStorage("selection") private var savedSelection = ""
     @SceneStorage("sidebar") private var sidebar = true
     @SceneStorage("sidebarWidth") private var sidebarWidth = 300.0
-    /// The sidebar shows the Agents view instead of the workspaces.
-    @SceneStorage("agents") private var agents = false
     /// A new window (⌘N) shows the sessions to pick from until a pick opens its first page.
     @State private var picking = false
     @Environment(\.scenePhase) private var scenePhase
@@ -100,7 +98,7 @@ struct ContentView: View {
     var body: some View {
         Group {
             if let page = pages.current {
-                WindowContent(pages: pages, page: page, sidebar: $sidebar, agents: $agents,
+                WindowContent(pages: pages, page: page, sidebar: $sidebar,
                               sidebarWidth: $sidebarWidth)
             } else if picking {
                 SessionPicker(pages: pages)
@@ -235,7 +233,6 @@ private struct WindowContent: View {
     let pages: WindowPages
     let page: Page
     @Binding var sidebar: Bool
-    @Binding var agents: Bool
     @Binding var sidebarWidth: Double
     /// The one floating panel open: the workspace menu, the palette, Open Session or Keyboard Shortcuts.
     @State private var panel: Panel?
@@ -252,7 +249,7 @@ private struct WindowContent: View {
     var body: some View {
         let style = settings.style, appearance = settings.appearance
         let look = Look(style: style, dark: colorScheme == .dark, contrast: colorSchemeContrast == .increased)
-        let commands = CommandList(pages: pages, palette: open(.palette), sidebar: $sidebar, agents: $agents,
+        let commands = CommandList(pages: pages, palette: open(.palette), sidebar: $sidebar,
                                    openSession: open(.openSession), shortcuts: open(.shortcuts), settings: settings)
         // The page's and the sidebar's 4 pt top room (for the cards' strokes) lies under the title row, so the
         // cards start at its bottom edge, as in Rex; the row stays on top for its clicks and window drags.
@@ -263,7 +260,6 @@ private struct WindowContent: View {
                 fullScreen: fullScreen,
                 sidebar: $sidebar,
                 sidebarWidth: sidebarWidth,
-                agents: $agents,
                 palette: open(.palette),
                 workspaceMenu: open(.workspaces),
                 openSession: open(.openSession),
@@ -273,7 +269,7 @@ private struct WindowContent: View {
             HStack(spacing: 0) {
                 if sidebar {
                     // As in Rex, the cards start at the sidebar's width: its handle lies over the page's 8 pt gap.
-                    Sidebar(pages: pages, agents: agents, width: $sidebarWidth) { panel = .openSession }
+                    Sidebar(pages: pages, width: $sidebarWidth) { panel = .openSession }
                         .padding(.bottom, gap)
                         // Rex's page header and first row sit 3 pt lower than the page's 4 pt room.
                         .padding(.top, 7)
@@ -285,7 +281,7 @@ private struct WindowContent: View {
                 // Also under the overview, hidden, so its kept pages stay (ui/window#tab-page).
                 Detail(pages: pages, page: page).frame(maxWidth: .infinity, maxHeight: .infinity)
                     .opacity(pages.overview ? 0 : 1)
-                    // At once, also in the sidebar's animation (⌘. from the overview).
+                    // At once, also in the sidebar's animation.
                     .animation(nil, value: pages.overview)
                     .allowsHitTesting(!pages.overview)
                     // Not `accessibilityHidden(false)`, which overrides the hidden ones inside.
@@ -294,7 +290,7 @@ private struct WindowContent: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .overlay {
                 if pages.overview {
-                    // Gone at once, also when the sidebar moves in the same update (⌘. from the overview).
+                    // Gone at once, also when the sidebar moves in the same update.
                     Overview(pages: pages, leading: sidebar ? sidebarWidth - gap : 0)
                         .transition(.identity)
                 }
@@ -349,8 +345,8 @@ private struct WindowContent: View {
                 page.focusKeyboardCard()
             }
         }
-        // The sidebar and the Agents view count as drawn changes too.
-        .onChange(of: "\(panel.map { "\($0)" } ?? "") \(sidebar) \(agents)", initial: true) {
+        // The sidebar counts as a drawn change too.
+        .onChange(of: "\(panel.map { "\($0)" } ?? "") \(sidebar)", initial: true) {
             Latency.shared.panel = $1
         }
         .modifier(AgentsWatch(pages: pages, page: page))

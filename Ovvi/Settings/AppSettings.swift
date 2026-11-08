@@ -20,12 +20,8 @@ struct AppSettings: DynamicProperty {
     @AppStorage("copyOnSelect") var copyOnSelect = false
     /// What a new agent's card shows first.
     @AppStorage("agentView") var agentView = AgentView.terminal
-    /// Seconds an idle agent the user has seen waits before it moves to Settled; 0: never.
-    @AppStorage("settleAfter") var settleAfter = 3 * 3600.0
-    /// The Agents view's Archived shelf; off, it reads nothing.
+    /// The sidebar's Archived Sessions; off, it reads nothing.
     @AppStorage("showClosedSessions") var showClosed = true
-    /// The Agents view's pins (`AgentPin`) in pin order, a JSON list.
-    @AppStorage(AgentPin.key, store: .agents) var pins = ""
 
     /// What the terminals take from the settings (`PaneTerminal.configure`): a change configures them again.
     var terminal: [String] {

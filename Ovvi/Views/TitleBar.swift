@@ -3,7 +3,7 @@ import IOKit.ps
 import SwiftUI
 
 /// The title row (D45): sidebar toggle, machine button, workspace button while the sidebar is collapsed, the tab
-/// bar, then Agents, the overview, ⌘ and +; in the overview only its ×.
+/// bar, then the overview, ⌘ and +; in the overview only its ×.
 struct TitleBar: View {
     /// Rex's bar; `WindowReader` centers the traffic lights on it.
     static let height: CGFloat = 46
@@ -20,8 +20,6 @@ struct TitleBar: View {
     @Binding var sidebar: Bool
     /// While the sidebar is open, the tabs start where the cards do, at its width.
     let sidebarWidth: CGFloat
-    /// The sidebar shows the Agents view.
-    @Binding var agents: Bool
     @Binding var palette: Bool
     @Binding var workspaceMenu: Bool
     @Binding var openSession: Bool
@@ -90,14 +88,6 @@ struct TitleBar: View {
         } else {
             Spacer(minLength: 0)
         }
-        // ⌘. is the menu's.
-        AgentsButton(page: page, showing: sidebar && agents) {
-            toggleAgents($agents, $sidebar)
-            // A click takes the keyboard from the card.
-            page.focusKeyboardCard()
-        }
-        // Made anew per session, as the tab bar: its open panel holds the session it opened on.
-        .id(page.id)
         // ⌃⌘O is the menu's.
         IconButton(symbol: "square.grid.2x2", help: "Show Overview", key: .overview) { pages.toggleOverview() }
             .accessibilityIdentifier("titlebar.overview")
@@ -118,87 +108,6 @@ struct TitleBar: View {
                 page: page, target: .move(.newTab(workspaceID: page.selectedWorkspaceID ?? "")), over: $plus,
             ))
             .clearsDrop(page) { plus = false }
-    }
-}
-
-/// The Agents button and ⌘.: the Agents view on (opening a collapsed sidebar), or back to the Workspaces view.
-func toggleAgents(_ agents: Binding<Bool>, _ sidebar: Binding<Bool>) {
-    if agents.wrappedValue, sidebar.wrappedValue {
-        agents.wrappedValue = false
-    } else {
-        agents.wrappedValue = true
-        sidebar.wrappedValue = true
-    }
-}
-
-/// A list of statuses, filled while the Agents view is on; an amber dot while an agent of the page in view needs
-/// you. Its hover lists them and the unseen finishes (no tooltip).
-private struct AgentsButton: View {
-    let page: Page
-    /// The Agents view is on.
-    let showing: Bool
-    let toggle: () -> Void
-    @Environment(\.look) private var look
-
-    var body: some View {
-        let waiting = page.store.waiting
-        Button(action: toggle) {
-            Image(systemName: showing ? "list.bullet.rectangle.fill" : "list.bullet.rectangle")
-                .fontWeight(.medium)
-                .overlay(alignment: .topTrailing) {
-                    if waiting > 0 {
-                        Circle().fill(look.needsYou).frame(width: 7, height: 7).offset(x: 3, y: -2)
-                    }
-                }
-                .frame(width: 28, height: 28)
-        }
-        .buttonStyle(ChromeStyle(radius: 7))
-        .accessibilityLabel("Agents")
-        .accessibilityIdentifier("titlebar.agents")
-        .accessibilityValue("\(waiting) need you")
-        .accessibilityAddTraits(showing ? .isSelected : [])
-        .hoverPanel(place: .underTrailing, enabled: waiting > 0 || page.store.done > 0) { close in
-            AgentsPanel(page: page, close: close)
-        }
-    }
-}
-
-/// The Agents button's panel: the page's agents that need you, then those whose finish is not seen yet, under group
-/// labels. A click on a done row shows its tab, which clears it.
-private struct AgentsPanel: View {
-    let page: Page
-    let close: () -> Void
-
-    var body: some View {
-        let agents = page.store.agentPanes
-        VStack(alignment: .leading, spacing: 2) {
-            Text("Agents · \(page.store.title)").font(.system(size: 11)).foregroundStyle(.secondary)
-                .padding(.horizontal, 8)
-                .accessibilityIdentifier("agents.popover.header")
-            ScrollView {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach([AgentState.needsYou, .finishedUnseen], id: \.self) { state in
-                        let group = agents.filter { $0.state == state }
-                        if !group.isEmpty {
-                            // The group: its state and count.
-                            Text("\(state.title) · \(group.count)")
-                                .font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
-                                .accessibilityIdentifier("agents.popover.group.\(state.title)")
-                                .padding(.horizontal, 8).padding(.top, 8)
-                            ForEach(group) { AgentButton(pane: $0, page: page, picked: close) }
-                        }
-                    }
-                }
-            }
-            .scrollBounceBehavior(.basedOnSize)
-            .frame(maxHeight: 440)
-            .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(8)
-        .frame(width: 320, alignment: .leading)
-        .floatingGlass(in: .rect(cornerRadius: 12))
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("agents.popover")
     }
 }
 
