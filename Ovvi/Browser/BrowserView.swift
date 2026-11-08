@@ -47,9 +47,6 @@ class BrowserView: WKWebView {
             // Not in a kept page out of view (the overview's): it takes it as the page shows (`viewDidUnhide`).
             guard let self, wantsKeyboard, !inTile, let window, !isHiddenOrHasHiddenAncestor else { return }
             wantsKeyboard = false
-            // Not over a panel: a card made while the palette is open (its Open File's) took the palette's keys. Its
-            // close gives them to the keyboard card.
-            guard !window.panelOpen else { return }
             window.makeFirstResponder(self)
         }
     }
@@ -173,13 +170,26 @@ class BrowserView: WKWebView {
         !inTile && super.acceptsFirstResponder
     }
 
+    /// Not under an open panel (the palette), but for a click: WebKit makes the view first responder itself when its
+    /// page focuses an element (a Markdown card loading in Open File's new tab), and took the palette's keys. By then
+    /// the panel's field resigned: it takes them back (`FilterField`). The panel's close gives them to the keyboard
+    /// card.
     override func becomeFirstResponder() -> Bool {
+        guard window?.panelOpen != true || NSApp.currentEvent?.type == .leftMouseDown else {
+            NotificationCenter.default.post(name: .panelKeysTaken, object: nil)
+            return false
+        }
         let became = super.becomeFirstResponder()
         if became {
             onKeyboard?()
         }
         return became
     }
+}
+
+extension Notification.Name {
+    /// A web view refused the keys of an open panel, which its field had given up.
+    static let panelKeysTaken = Notification.Name("dev.ovvi.panelKeysTaken")
 }
 
 extension NSWindow {

@@ -283,6 +283,13 @@ struct FilterField: View {
             // A first responder set during an update is undone.
             DispatchQueue.main.async { focused = true }
         }
+        // A panel's field takes back the keys a web view's page took (`BrowserView.becomeFirstResponder`).
+        .task(id: autofocus) {
+            guard autofocus else { return }
+            for await _ in NotificationCenter.default.notifications(named: .panelKeysTaken).map({ _ in () }) {
+                focused = true
+            }
+        }
     }
 }
 
