@@ -328,3 +328,37 @@ runs and on-demand on the final head.
   it failed on the old code here, and the remote tests now also wait for the card to draw before they click.
 - **For the user.** With a devvm-aai browser card open, sleep the Mac for a while, wake it, and reload: the page loads
   without closing the window.
+
+### Track D
+
+- **Cause (Markdown raw).** CodeMirror parses a file past its first screen in idle time, on a budget of the wall clock
+  (3 s in every 30 s), and starts a new budget only while the editor has focus. A Rich Text card is locked, so its
+  editor never has focus. A page that macOS paused in the middle of a parse (a hidden card's process, a sleeping Mac)
+  spent the budget at once, and the lines past the parse stayed raw until the card loaded again. Forced on the old
+  code: a 14 MB file whose page process was stopped (SIGSTOP) 1 s at a time while it parsed showed `## Part 72698` and
+  `[a link](…)` raw; the same file unpaused rendered.
+- **Cause (browser).** Not proven for the user's card. Forced on the old code: a page whose image never answers (a
+  stalled server, a dead connection) kept "Opening Browser…" over a page that had loaded, for good, and Reload kept
+  it; the card showed its page only when the load finished. Ending the page process once came back (scroll too);
+  ending it again before the page loaded left the card blank. Ending the GPU or the network process changed nothing:
+  WebKit starts them again. The user's unified log (24 h, a night's sleep) shows no ended process at all, but many
+  "process was suspended"; a suspended process that never wakes stays possible and was not forced.
+- **Fix.** The browser shows its page once the document is parsed and drew (`DOMContentLoaded` and a frame, asked in
+  the app's own script world, held weakly: a hidden page draws no frame), not when every resource finished. A page whose process ends loads again by itself
+  through the card's own Reload; one that ends again before it loaded shows "The page stopped working" with Reload.
+  File Explorer parses the lines in view itself, 50 ms at a time, whatever has focus.
+- **Fix (state).** The browser comes back at its address and scroll (WebKit's history item). File and Markdown keep
+  each file's top line in the page's `sessionStorage`, which WebKit keeps across an ended process; on the old code
+  Markdown came back at its top. A linked open's line no longer wins after an ended process.
+- **Decisions.** A hidden card loads again at once, not when shown: WebKit loads a hidden page fine, and the
+  once-per-load rule stops a loop; a hidden card ended twice shows the failure when shown. Git's diff and File
+  Explorer's tree come back at their place, not their scroll. No UI test for the paused parse: whether a pause lands
+  inside a parse slice is timing, so it failed only some runs.
+- **Runs.** Local, old code: the kill test red only on Markdown's scroll (both cards came back); the page ended twice
+  red (the loader, never the page); the paused 14 MB file raw in one run of four. New code: both new tests,
+  testMarkdownCardReadsEditsSavesAndLinks, testADroppedBrowserKeepsItsPictureAndComesBack and two other browser
+  tests green. A card closed right after its process ended frees its new page process. CI: CIRUN.
+- **For the user.** Leave a Rich Text card beside a terminal while an agent rewrites its file, then scroll it: every
+  line renders. Force Quit an "Ovvi Web Content" process in Activity Monitor: the browser or Markdown card comes back
+  by itself where it was. If a browser card still goes blank after a long idle, check whether its "Ovvi Web Content"
+  process shows in Activity Monitor and tell us what the card showed (blank white, the loader, or an old picture).
