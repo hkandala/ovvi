@@ -120,6 +120,8 @@ extension OvviUITests {
             to: pane,
         )
         try await waitFor(pane) { $0.contains("ready-42") }
+        // Before the tab closes (teardown blocks run last first).
+        addTeardownBlock { @MainActor [self] in try? await send("rm -rf \(dir)\r", to: pane) }
         // The state before the session: herdr takes no state report after it.
         try await report(pane, "working", agent: "claude")
         try await Self.call(one, "pane.report_agent_session", ["pane_id": pane, "source": "herdr:claude",
@@ -129,7 +131,6 @@ extension OvviUITests {
         let cut = String(prompt.prefix(100)).trimmingCharacters(in: .whitespaces) + "…"
         try await expect("the first prompt as the title") { row.label.hasPrefix("\(cut), beta · ") }
         keepScreenshot("untitled agent's first prompt")
-        try await send("rm -rf \(dir)\r", to: pane)
     }
 
     /// Unfolds the workspace's agents; folds them back after the test (the tests' defaults keep the folds).

@@ -18,9 +18,8 @@ enum SessionTitle {
             + #"if [ -n "$t" ]; then printf '%s\n' "$t"; else d=$(ls -t "$HOME"/.codex/state_*.sqlite | head -n 1); "#
             + #"[ -n "$d" ] && sqlite3 -readonly -cmd '.timeout 1000' "$d" "#
             + #""select json_object('prompt', substr(preview, 1, 300)) from threads where id = '$1'"; fi"#,
-        "pi": #"t=$(grep -a '"type":"session_info"' "$1" | tail -n 1); "#
-            +
-            #"if [ -n "$t" ]; then printf '%s\n' "$t"; else head -n 40 "$1" | grep -a '"role":"user"' | head -n 1; fi"#,
+        "pi": #"t=$(grep -a '"type":"session_info"' "$1" | tail -n 1); if [ -n "$t" ]; then printf '%s\n' "$t"; "#
+            + #"else head -n 40 "$1" | grep -a '"role":"user"' | head -n 1; fi"#,
         "opencode": #"sqlite3 -readonly -cmd '.timeout 1000' "${XDG_DATA_HOME:-$HOME/.local/share}/opencode/"#
             + #"opencode.db" "select title from session where id = '$1'""#,
     ]
