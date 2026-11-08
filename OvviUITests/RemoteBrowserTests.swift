@@ -105,8 +105,7 @@ extension OvviUITests {
 
     /// ssh's forward gone while its master lives (as when it lost its `-D`): the next page forwards again. Then its
     /// master gone (as after a sleep): a new master, and a new forward on it. Each time a new name: WebKit keeps a
-    /// spare
-    /// connection to the last one.
+    /// spare connection to the last one.
     private func reloadsAfterTheForwardEnds(_ browser: String, _ port: Int, in remote: XCUIElement) async throws {
         let ports = try await Self.post("\(one)/ssh-unforward", Data("ovvi-key".utf8))
         XCTAssertFalse(ports.isEmpty)
