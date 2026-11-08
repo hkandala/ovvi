@@ -458,6 +458,10 @@ runs and on-demand on the final head.
 - **Tests.** `-recordLatency` records how many times a list was made for each key; testPanelsAndSwitchesReactAtOnce
   types a letter and ⌫ and allows 3 (red on the old code: 21), and the stress test types "split" and takes it back. They
   guard the height loop only: two views per row again, or rows made per body again, would stay green.
+- **Runs.** Local: testPanelsAndSwitchesReactAtOnce red on the old code (the first letter's list made 21 times), green
+  on the new with testPaletteSplitsTheKeyboardCardRight. CI 42534541505: 28 palette, panel, menu and drag tests and the
+  stress test, all green. On CI's Debug build with XCUITest attached the stress session's first letter still took 422 ms
+  and a tab switch 478 ms: the accessibility walk.
 - **For the user.** Open ⌘K while agents work and type a first letter, then ⌫ back: each should draw at once.
 
 ## Round 2 (items 18–27)
