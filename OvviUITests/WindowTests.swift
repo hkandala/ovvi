@@ -141,6 +141,18 @@ extension OvviUITests {
     }
 
     /// The window that is not this one, once there are two; it shows session one.
+    /// A click once the element is hittable and at rest, as newTab's capsule: right after a launch the title row lays
+    /// out again, and a click on the machine button's earlier frame opened no menu (on CI).
+    func clickAtRest(_ element: XCUIElement) {
+        var frame = CGRect.null
+        XCTAssertTrue(until(5) {
+            let now = element.frame
+            defer { frame = now }
+            return element.isHittable && now == frame
+        }, "\(element.frame)")
+        element.click()
+    }
+
     func otherWindow(than identifier: String) throws -> XCUIElement {
         XCTAssertTrue(app.windows.element(boundBy: 1).exists(within: 3))
         XCTAssertEqual(app.windows.count, 2)

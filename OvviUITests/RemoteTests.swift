@@ -358,7 +358,7 @@ extension OvviUITests {
 
     /// The machine button's Add Remote Host, filled and added.
     private func addHost(_ name: String, _ target: String) {
-        element("titlebar.machine").click()
+        clickAtRest(element("titlebar.machine"))
         app.menuItems["Add Remote Host…"].click()
         let field = element("host.name")
         XCTAssertTrue(field.exists(within: 3))
