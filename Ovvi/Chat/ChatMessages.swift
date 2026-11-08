@@ -286,17 +286,14 @@ struct ChatMessages: View, Equatable {
         .padding(.top, floats ? 28 : 16)
     }
 
-    /// On its way, with one tick once sent; or "Not sent" with Show TUI.
+    /// On its way, with one tick once sent; or "Not sent" (the header's switch shows the TUI).
     private func outgoing(_ message: Chat.Outgoing, error: Color) -> some View {
         VStack(alignment: .trailing, spacing: 4) {
             UserBubble(text: message.text, paneID: chat.paneID, sending: true, time: message.time,
                        ticks: message.sent && !message.notSent ? 1 : 0)
             if message.notSent {
-                HStack(spacing: 8) {
-                    Text("Not sent").font(.system(size: 11)).foregroundStyle(error)
-                        .accessibilityIdentifier("chat.\(chat.paneID).not-sent")
-                    Button("Show TUI") { chat.showsChat = false }.buttonStyle(.glass).controlSize(.small)
-                }
+                Text("Not sent").font(.system(size: 11)).foregroundStyle(error)
+                    .accessibilityIdentifier("chat.\(chat.paneID).not-sent")
             }
         }
         .frame(maxWidth: .infinity, alignment: .trailing)

@@ -145,7 +145,7 @@ extension View {
         if time == nil, ticks == 0 {
             self
         } else {
-            Grid(alignment: .leading, verticalSpacing: 2) {
+            Grid(alignment: .leading, verticalSpacing: 6) {
                 self
                 Stamp(time: time, ticks: ticks, paneID: paneID).gridCellAnchor(.trailing)
             }

@@ -279,7 +279,7 @@ line with the new leaf and `at`, the transcript's size at the move.
 - **Ticks.** A message on its way gets one tick once `agent.prompt` took it.
   It gets two once the agent took it: the user entry showed up in the
   history, matched by its text. After 5 s, and once the agent no
-  longer works or waits, it shows "Not sent" with **Show TUI**, and the
+  longer works or waits, it shows "Not sent" under it in red, and the
   bubble loses its tick. The draft comes back when the reply box is empty.
   A late entry still clears it.
 - Text that starts with `/` is not sent. The card flips to its terminal, and
@@ -405,8 +405,8 @@ A run is one quiet line with no card: its summary and a chevron.
   the bubble's other side. Both are Markdown, drawn the same way. The
   user's keeps its own line breaks, and its links are white. The summary
   line, tool rows, Working and Worked stay outside the bubbles.
-- **Times.** Each bubble shows its time in its bottom right corner, under its
-  text, at 10 pt in the bubble's secondary text color: the time the agent
+- **Times.** Each bubble shows its time in its bottom right corner, 6 pt
+  under its text, at 10 pt in the bubble's secondary text color: the time the agent
   wrote in its transcript (Claude Code, Codex and pi's `timestamp`,
   OpenCode's part `time.start`, else its message's `time.created`), so a
   reopened chat shows the real times. A message on its way shows the time it
