@@ -106,12 +106,12 @@ extension OvviUITests {
     }
 
     /// Types the command in the pane, then `echo ‹marker›-$?`: waits for the marker with the exit code, and checks the
-    /// lines the command printed, each by its start: a line wider than the pane wraps (CI's are about 50 columns).
+    /// lines the command printed, each by its start, unwrapped: CI's panes are about 40 columns.
     func run(_ command: String, in pane: String, _ marker: String, _ code: Int, _ lines: String...) async throws {
         try await send("\(command); echo \(marker)-$((6*7))-$?\r", to: pane)
         // Exit 3 comes after the 3 s the command waits for a take.
         try await waitFor(pane, times: 100) { $0.contains("\n\(marker)-42-") }
-        let text = try await read(pane)
+        let text = try await read(pane, "recent_unwrapped")
         XCTAssertTrue(text.contains("\n\(marker)-42-\(code)"), text)
         for line in lines {
             XCTAssertTrue(text.contains("\n\(line)"), "\(line) in:\n\(text)")
