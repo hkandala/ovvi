@@ -263,6 +263,9 @@ runs and on-demand on the final head.
   still showed. Both checks now measure the text; the ten chat tests ran green on CI.
 - **For the user:** reopen an old Claude Code, Codex, pi or OpenCode chat and check the times match the agent's; send
   while pi works and see one tick turn into two when it takes the message.
+- **Round 2 (item 24):** the time sits 6 pt under a bubble's text (was 2), code blocks included, and "Not sent" stands
+  alone: its Show TUI button is gone (the header's switch shows the TUI). The red "cannot read this session" card keeps
+  its Show TUI, the only way out of that error in the chat.
 
 ### Track E
 

@@ -210,8 +210,8 @@ extension OvviUITests {
     }
 
     /// The values of the replies' blocks and the user's messages along the top 100 pt of the chat, from one snapshot. A
-    /// message whose text ends up to 40 pt above the top still shows its time there (the stamp's line, the bubble's
-    /// padding and the rows' spacing): the view holds that row.
+    /// message whose text ends up to 40 pt above the top still shows its time there (the 6 pt gap, the stamp's
+    /// line, the bubble's padding and the rows' spacing): the view holds that row.
     func atTop(of chat: XCUIElement, _ pane: String) -> Set<String> {
         guard let found = try? nodes(of: chat) else { return [] }
         let kinds = ["chat.\(pane).reply", "chat.\(pane).user"], top = found[0].frame.minY
