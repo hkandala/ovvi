@@ -22,11 +22,12 @@ extension OvviUITests {
         XCTAssertTrue(element("files.\(plugin).page").descendants(matching: .any)
             .matching(NSPredicate(format: "label == %@", "one.html")).firstMatch.exists(within: 10))
 
-        // Through the helper's drag, which leaves XCUITest free to read the highlight while it holds.
+        // Through the helper's press, which leaves XCUITest free to read the highlight while it holds, and lets go
+        // once the test saw it: drag.swift's release 4 s into a timed hold left a session that never ended (CI).
         let from = card(first, 0, 0).withOffset(CGVector(dx: 60, dy: 17)).screenPoint
         let over = [browser, plugin].map { card($0, 0.9, 0.6).screenPoint }
-        let path = "\(from.x) \(from.y) \(over[0].x) \(over[0].y) 4 \(over[1].x) \(over[1].y) 4"
-        let drag = Task.detached { [one] in try await Self.post("\(one)/drag", Data(path.utf8)) }
+        let path = "\(from.x) \(from.y) \(over[0].x) \(over[0].y) 4 \(over[1].x) \(over[1].y)"
+        let drag = Task.detached { [one] in try await Self.post("\(one)/press", Data(path.utf8)) }
         let indicator = element("drop.indicator")
         for pane in [browser, plugin] {
             let frame = element("pane.\(pane)").frame
@@ -41,6 +42,7 @@ extension OvviUITests {
             }, "the highlight over \(pane)'s right half \(right): \(seen)")
         }
         _ = try await drag.value
+        try await release()
         try await expect("the pane right of the plugin card") { try await order(tab) == [browser, plugin, first] }
         XCTAssertTrue(indicator.vanishes(within: 2))
     }

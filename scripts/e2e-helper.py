@@ -30,8 +30,8 @@ ssh asks for it again.
 POST /<session>/swipe with "x y step steps [pause [vertical [option]]]" as the body posts a two-finger trackpad swipe there (scripts/swipe.swift).
 POST /<session>/drag with "x y (x y hold)..." as the body drags the mouse from the first point through the others,
 holding at each (scripts/drag.swift).
-POST /<session>/press with "x y tx ty" as the body drags from x y to tx ty and replies once it holds there;
-/<session>/release lets go.
+POST /<session>/press with "x y (x y hold)... tx ty" as the body drags from x y through the others to tx ty and
+replies once it holds there; /<session>/release lets go.
 POST /<session>/stress with "tabs workspaces panes agents" as the body starts the session afresh and fills it with
 scripts/stress.py; its summary comes back. With an empty body it removes the session, so the next tests do not run
 beside its shells.
@@ -152,9 +152,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 status, reply = 500, f"{action} took over {limit} s".encode()
         elif action == "drag" and not re.fullmatch(rb"-?[\d.]+ -?[\d.]+( -?[\d.]+ -?[\d.]+ [\d.]+)+", body):
             status, reply = 400, b"the body must be x y (x y hold)..."
-        elif action in ("file-drag", "temporary-file-drag", "press") and not re.fullmatch(
-                rb"-?[\d.]+( -?[\d.]+){3}", body):
+        elif action in ("file-drag", "temporary-file-drag") and not re.fullmatch(rb"-?[\d.]+( -?[\d.]+){3}", body):
             status, reply = 400, b"the body must be x y tx ty"
+        elif action == "press" and not re.fullmatch(rb"-?[\d.]+ -?[\d.]+( -?[\d.]+ -?[\d.]+ [\d.]+)* -?[\d.]+ -?[\d.]+",
+                                                    body):
+            status, reply = 400, b"the body must be x y (x y hold)... tx ty"
         elif action == "release" and session not in held:
             status, reply = 400, b"no drag held"
         elif action in (*builds, "press") and any([build.wait() for build in builds.values()]):
