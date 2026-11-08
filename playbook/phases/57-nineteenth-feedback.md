@@ -359,7 +359,7 @@ runs and on-demand on the final head.
   testMarkdownCardReadsEditsSavesAndLinks, testADroppedBrowserKeepsItsPictureAndComesBack and two other browser
   tests green. A card closed right after its process ended frees its new page process. CI: 42447003583 (the kill test's Markdown lines wrapped in
   CI's narrow card; the remote browser test missed its dropped master's page once, green on the next run),
-  42447943897 (all green but the kill test: CI's virtual Mac has no WebKit GPU process), then LASTRUN.
+  42447943897 (all green but the kill test: CI's virtual Mac has no WebKit GPU process), then 42449897996 green (2 tests).
 - **For the user.** Leave a Rich Text card beside a terminal while an agent rewrites its file, then scroll it: every
   line renders. Force Quit an "Ovvi Web Content" process in Activity Monitor: the browser or Markdown card comes back
   by itself where it was. If a browser card still goes blank after a long idle, check whether its "Ovvi Web Content"
