@@ -53,21 +53,30 @@ extension OvviUITests {
         XCTAssertTrue(control("root").menuItems["tmp"].vanishes(within: 2))
         XCTAssertEqual(control("root").value as? String, "ovvi")
 
-        let window = try float(card)
-        let floating = { (id: String) in self.element("pane.\(card).\(id)", in: window) }
-        XCTAssertTrue(floating("mode.edit").has(\.isSelected, true, within: 3))
-        XCTAssertFalse(floating("outline").isSelected)
-        let content = element("fixture.\(card).card", in: window).frame
-        XCTAssertEqual(floating("go-back").frame.minX - content.minX, 1, accuracy: 1, "\(content)")
-        keepScreen("plugin header floating")
-        window.buttons[XCUIIdentifierCloseWindow].click()
-        XCTAssertTrue(window.vanishes(within: 3))
+        try floatsTheSameRow(card)
 
         // The page starts right under row 1: one row of 36 pt, not two.
         let bare = try await pluginTab("ovvi:bare#e2ebar /tmp")
         XCTAssertTrue(element("bare.\(bare).card").exists(within: 5))
         XCTAssertLessThan(element("bare.\(bare).card").frame.minY - element("pane.\(bare)").frame.minY, 50)
         try await send("rm -rf \(config) /tmp/notes.md\r", to: shell)
+    }
+
+    /// The floating window draws the same row with the same values, 6 pt down from the card's top edge (only there:
+    /// in a pane it sits under row 1).
+    private func floatsTheSameRow(_ card: String) throws {
+        let window = try float(card)
+        let floating = { (id: String) in self.element("pane.\(card).\(id)", in: window) }
+        XCTAssertTrue(floating("mode.edit").has(\.isSelected, true, within: 3))
+        XCTAssertFalse(floating("outline").isSelected)
+        let content = element("fixture.\(card).card", in: window).frame
+        XCTAssertEqual(floating("go-back").frame.minX - content.minX, 1, accuracy: 1, "\(content)")
+        let surface = element("float.\(card)", in: window).frame
+        XCTAssertEqual(floating("go-back").frame.midY - surface.minY, 6 + 18, accuracy: 1, "\(surface)")
+        XCTAssertEqual(content.minY - surface.minY, 6 + 36, accuracy: 1, "\(content) in \(surface)")
+        keepScreen("plugin header floating")
+        window.buttons[XCUIIdentifierCloseWindow].click()
+        XCTAssertTrue(window.vanishes(within: 3))
     }
 
     /// A new tab whose pane has this label, shown; its pane.

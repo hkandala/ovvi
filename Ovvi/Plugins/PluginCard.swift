@@ -237,6 +237,7 @@ struct FloatingPlugin: View {
             // A plugin with no header and no Back and Forward has no row, as in a pane.
             if plugin.manifest.hasRow {
                 PluginHeader(plugin: plugin, page: page).padding(.horizontal, 11).frame(height: PaneCard.header)
+                    .padding(.top, PaneCard.floatingTop)
             }
             PluginCard(plugin: plugin, page: page)
         }

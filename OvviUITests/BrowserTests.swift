@@ -304,17 +304,6 @@ extension OvviUITests {
         XCTAssertTrue(pageText("ovvi-page-two").exists(within: 15))
     }
 
-    /// Floated and back, the same page. The window's title row has no place: the tab's title is the shell's.
-    func floatAndBack(_ pane: String) throws {
-        let window = try float(pane)
-        XCTAssertTrue(window.webViews.staticTexts.matching(NSPredicate(format: "value == 'ovvi-page-two'")).firstMatch
-            .exists(within: 3))
-        keepScreenshot("floated browser", of: window)
-        XCTAssertFalse(element("float.\(pane).place", in: window).exists)
-        element("float.\(pane).detach").click()
-        XCTAssertTrue(window.vanishes(within: 3))
-    }
-
     /// A browser's or an agent's header: row 1's title (any when nil), and row 2's `control` under it.
     func twoRows(_ pane: String, title: String? = nil, above control: String) -> Bool {
         let row1 = element("pane.\(pane).title")
