@@ -81,7 +81,8 @@ extension OvviUITests {
     }
 
     /// A click on no row, or on row 2's Collapse All, leaves nothing selected: ⌘O opens nothing. A click selects `..`
-    /// as any row, and ⌘O on it goes up; Back comes to the root, so neither ⌘O before opened src.
+    /// as any row, and ⌘O on it goes up; Back (⌃-) comes to the root, so neither ⌘O before opened src, and Forward
+    /// (⌃⇧-) goes up again.
     private func selection(_ card: String, _ tree: XCUIElement, _ root: String) async throws {
         row("src", in: tree).click()
         tree.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9)).click()
@@ -92,7 +93,12 @@ extension OvviUITests {
         row("..", in: tree).click()
         app.typeKey("o", modifierFlags: .command)
         try await labelEnds(card, " /private/tmp/")
-        app.typeKey(.leftArrow, modifierFlags: [.command, .control])
+        XCTAssertEqual(element("pane.\(card).go-back").label, "Back ⌃-")
+        app.typeKey("-", modifierFlags: .control)
+        try await labelEnds(card, " \(root)/")
+        app.typeKey("-", modifierFlags: [.control, .shift])
+        try await labelEnds(card, " /private/tmp/")
+        app.typeKey("-", modifierFlags: .control)
         try await labelEnds(card, " \(root)/")
         XCTAssertTrue(row("a.txt", in: tree).exists(within: 10))
     }

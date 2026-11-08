@@ -159,18 +159,16 @@ final class WebCardView: BrowserView {
     var handed: NSEvent?
     /// A plugin page's `keyboard`.
     var keyboard: ((Bool) -> Void)?
-    /// Back (true) or Forward, ⌃⌘← and ⌃⌘→ over the card, as Xcode's Go Back and Go Forward (⌘[ and ⌘] select a pane).
-    /// The card takes them also with no place that way: a text view's binding would flip its writing direction.
+    /// Back (true) or Forward, ⌃- and ⌃⇧- over the card, as VS Code's Go Back and Go Forward (⌘[ and ⌘] select a
+    /// pane). The card takes them also with no place that way.
     var step: ((Bool) -> Void)?
 
     /// WebKit gives the page every ⌘ key first, and CodeMirror takes some of the app's: the menu goes first, as over a
     /// native text view.
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         guard window?.firstResponder === self else { return super.performKeyEquivalent(with: event) }
-        if let step, event.modifierFlags.intersection([.command, .control, .option, .shift]) == [.command, .control],
-           let key = event.specialKey, key == .leftArrow || key == .rightArrow
-        {
-            step(key == .leftArrow)
+        if let step, KeyboardShortcut.back.matches(event) || KeyboardShortcut.forward.matches(event) {
+            step(KeyboardShortcut.back.matches(event))
             return true
         }
         return NSApp.mainMenu?.performKeyEquivalent(with: event) == true || super.performKeyEquivalent(with: event)
