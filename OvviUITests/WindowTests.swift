@@ -153,6 +153,25 @@ extension OvviUITests {
         XCTAssertTrue(element("terminal.w1:p1", in: app.windows[identifier]).exists)
     }
 
+    /// Each machine's row resolves within 15 s on its own: Password Host's read waits behind this window's Connect,
+    /// whose ssh question nobody answers, and gives up while This Mac's sessions show (CI's sshd).
+    func testNewWindowRowsResolveWhileAnotherConnectAsks() async throws {
+        try await skipWithoutSSH()
+        try await Self.post("\(one)/ssh-drop", Data("ovvi-pw".utf8))
+        try await Self.post("\(one)/ssh-forget", Data("ovvi-pw".utf8))
+        let host = #"[{"id":"e2e-pw","name":"Password Host","target":"ovvi-pw","icon":"cpu"}]"#
+        relaunch(one, ["-machines", host, "-machine", "e2e-pw"])
+        let connectButton = element("detail.connect")
+        XCTAssertTrue(connectButton.exists(within: connect))
+        connectButton.click()
+        XCTAssertTrue(element("ask.ok").exists(within: connect))
+        app.typeKey("n", modifierFlags: .command)
+        XCTAssertTrue(element("picker.local.\(one)").exists(within: connect))
+        let waiting = element("picker.e2e-pw.reading")
+        XCTAssertTrue(waiting.exists)
+        XCTAssertTrue(waiting.vanishes(within: 20))
+    }
+
     /// ⌘N opens a big window in the middle of the screen: 90 % of it, 1200 × 760 at least, the
     /// screen at most.
     func testNewWindowFillsMostOfTheScreen() throws {
