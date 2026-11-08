@@ -61,23 +61,31 @@ struct Detail: View {
         case .connecting:
             // After 0.3 s, so a fast connect shows nothing; ssh's question replaces it while it is up.
             if pages.question == nil {
-                Waiting(text: "Connecting to \(machine)", delay: .milliseconds(300))
-                    .accessibilityIdentifier("detail.connecting")
+                Loader(symbol: store.machine.icon, text: "Connecting to \(machine)…", id: "detail.connecting",
+                       delay: .milliseconds(300))
             }
         case .failed(.notFound):
-            message(store.machine.isRemote ? "herdr is not installed on \(store.machine.name)"
-                : "herdr is not installed", "Install it in a terminal:",
-                "curl -fsSL https://herdr.dev/install.sh | sh")
+            let place = store.machine.isRemote ? " on \(store.machine.name)" : ""
+            install(store, title: "herdr is not installed\(place)", symbol: "shippingbox", button: "Install herdr",
+                    text: HerdrInstall.command, code: true)
         case let .failed(.disconnected(text)):
             // Retries stopped: only Connect may ask (machines#health-check).
-            message("Disconnected from \(store.machine.name)", text,
-                    button: ("Connect", "connect", { await store.connect(in: pages) }))
+            let title = "Disconnected from \(store.machine.name)"
+            EmptyState(symbol: "bolt.horizontal.circle", title: title, text: text, id: "detail") {
+                Button("Connect") { Task { await store.connect(in: pages) } }.buttonStyle(.glassProminent)
+                    .accessibilityIdentifier("detail.connect")
+            }
         case let .failed(.unsupported(text)):
             // The client asks again every 2 s, so an updated herdr clears it.
-            message("herdr is too old", text + ".")
+            install(store, title: "herdr is too old", symbol: "arrow.up.circle", button: "Update herdr",
+                    text: text + ".")
         case .failed where !store.isRunning:
-            message("\(store.session) is not running",
-                    button: ("Start \(store.session)", "start", { await store.start() }))
+            // Why a start failed, if one did.
+            let title = "\(store.session) is not running"
+            EmptyState(symbol: "power.circle", title: title, text: store.notice?.text, id: "detail") {
+                Button("Start \(store.session)") { Task { await store.start() } }.buttonStyle(.glassProminent)
+                    .accessibilityIdentifier("detail.start")
+            }
         case .live, .failed:
             // Reconnecting (the server runs, the bridge fails) in one branch, so the page keeps its state through
             // it; the notices stay clickable.
@@ -87,14 +95,14 @@ struct Detail: View {
                 .allowsHitTesting(!reconnecting)
                 .overlay {
                     if reconnecting {
-                        VStack(spacing: gap) {
-                            Waiting(text: "Reconnecting to \(machine)")
-                                .accessibilityIdentifier("detail.reconnecting")
-                            // Why, when it says (a remote with no Perl fails every try).
-                            if case let .failed(.failed(why)) = store.state {
-                                Text(why).foregroundStyle(.secondary).accessibilityIdentifier("detail.text")
-                            }
+                        // Why, when it says (a remote with no Perl fails every try).
+                        let why = if case let .failed(.failed(why)) = store.state {
+                            why
+                        } else {
+                            ""
                         }
+                        Loader(symbol: store.machine.icon, text: "Reconnecting to \(machine)…", detail: why,
+                               id: "detail.reconnecting")
                     }
                 }
                 .overlay(alignment: .bottom) { notices(store) }
@@ -106,11 +114,14 @@ struct Detail: View {
     @ViewBuilder private func tabs() -> some View {
         if let workspace = page.selectedWorkspace {
             if workspace.tabs.isEmpty {
-                Button { Task { await page.newTab() } } label: {
-                    Label("New Tab", systemImage: "plus")
-                    Text(KeyboardShortcut.newTab.glyphs).foregroundStyle(.secondary)
+                EmptyState(symbol: "macwindow", title: "No tabs in \(workspace.label)") {
+                    Button { Task { await page.newTab() } } label: {
+                        Text("New Tab")
+                        Text(KeyboardShortcut.newTab.glyphs).foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.glassProminent)
+                    .accessibilityIdentifier("new-tab")
                 }
-                .accessibilityIdentifier("new-tab")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 // As the tab bar's marker: the first tab until a snapshot settles the selection.
@@ -119,8 +130,14 @@ struct Detail: View {
             }
         } else if page.store.state == .live {
             // Not while it reconnects before its first snapshot.
-            ContentUnavailableView("This session is empty", systemImage: "square.dashed")
-                .accessibilityIdentifier("detail.empty")
+            EmptyState(symbol: "square.dashed", title: "This session is empty", id: "detail.empty") {
+                Button { Task { await page.newWorkspace() } } label: {
+                    Text("New Workspace")
+                    Text(KeyboardShortcut.newWorkspace.glyphs).foregroundStyle(.secondary)
+                }
+                .buttonStyle(.glassProminent)
+                .accessibilityIdentifier("detail.new-workspace")
+            }
         }
     }
 
@@ -164,29 +181,25 @@ struct Detail: View {
         .padding(.bottom, 30)
     }
 
-    // swiftlint:disable large_tuple
-    /// What is wrong and the command that fixes it, or the button that does: Start for a stopped session (design
-    /// D47), Connect for a machine that needs an answer.
-    private func message(_ title: String, _ text: String? = nil, _ command: String? = nil,
-                         button: (title: String, id: String, act: () async -> Void)? = nil) -> some View
-    { // swiftlint:enable large_tuple
-        ContentUnavailableView {
-            Label(title, systemImage: "terminal")
-        } description: {
-            if let text {
-                Text(text).accessibilityIdentifier("detail.text")
+    /// A missing or too old herdr, and its Install or Update button: the installer's progress while it runs, its
+    /// output when it failed.
+    @ViewBuilder private func install(_ store: HostStore, title: String, symbol: String, button: String,
+                                      text: String, code: Bool = false) -> some View
+    {
+        let machine = store.machine
+        switch HerdrInstall.shared.steps[machine.id] {
+        case let .running(line):
+            Loader(symbol: symbol, text: "Installing herdr…", detail: line, id: "detail.installing")
+        case let .failed(output):
+            let failed = "herdr did not install"
+            EmptyState(symbol: "exclamationmark.triangle", title: failed, text: output, code: true, id: "detail") {
+                Button("Try Again") { Task { await HerdrInstall.shared.install(on: machine, session: store.session) } }
+                    .buttonStyle(.glassProminent).accessibilityIdentifier("detail.install")
             }
-            // Why a start failed.
-            if let notice = page.store.notice {
-                Text(notice.text).accessibilityIdentifier("detail.notice")
-            }
-            if let command {
-                Text(command).monospaced().textSelection(.enabled)
-            }
-        } actions: {
-            if let button {
-                Button(button.title) { Task { await button.act() } }
-                    .accessibilityIdentifier("detail.\(button.id)")
+        case nil:
+            EmptyState(symbol: symbol, title: title, text: text, code: code, id: "detail") {
+                Button(button) { Task { await HerdrInstall.shared.install(on: machine, session: store.session) } }
+                    .buttonStyle(.glassProminent).accessibilityIdentifier("detail.install")
             }
         }
     }
@@ -247,20 +260,5 @@ private struct BlurWhenHidden: ViewModifier {
                 focus.wrappedValue = false
             }
         }
-    }
-}
-
-/// A spinner and one line, after `delay`.
-struct Waiting: View {
-    var text = ""
-    var delay = Duration.zero
-    @State private var shown = false
-
-    var body: some View {
-        ProgressView(text).controlSize(text.isEmpty ? .small : .regular).opacity(shown ? 1 : 0)
-            .task {
-                try? await Task.sleep(for: delay)
-                shown = true
-            }
     }
 }

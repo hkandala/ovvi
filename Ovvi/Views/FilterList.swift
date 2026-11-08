@@ -125,7 +125,8 @@ struct FilterList: View {
                                 row(items, offset, index)
                             }
                             if items.isEmpty {
-                                Text("No matches").foregroundStyle(.secondary).padding(8)
+                                EmptyState(symbol: "magnifyingglass", title: "No matches", compact: true)
+                                    .frame(maxWidth: .infinity)
                             }
                         }
                         .padding(.bottom, inset)

@@ -115,13 +115,44 @@ extension OvviUITests {
 
     // MARK: Helpers
 
-    /// ⌘N once the first window shows session one: the first window and the new one.
+    /// ⌘N once the first window shows session one, and session one picked in the new one: the first window and the
+    /// new one.
     func newWindow() throws -> (XCUIElement, XCUIElement) {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         let first = app.windows.firstMatch
         let identifier = first.identifier
         app.typeKey("n", modifierFlags: .command)
+        let pick = element("picker.local.\(one)")
+        XCTAssertTrue(pick.exists(within: connect))
+        pick.click()
         return try (app.windows[identifier], otherWindow(than: identifier))
+    }
+
+    /// ⌘N opens a window that connects to nothing: it lists each machine's sessions, running first, and the throwaway
+    /// run's only. A pick opens that session there; the first window keeps its page.
+    func testNewWindowListsTheSessionsToPickFrom() async throws {
+        let three = try env("OVVI_SESSION3")
+        XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
+        let identifier = app.windows.firstMatch.identifier
+        app.typeKey("n", modifierFlags: .command)
+        XCTAssertTrue(app.windows.element(boundBy: 1).exists(within: 3))
+        let window = try XCTUnwrap(app.windows.allElementsBoundByIndex.map(\.identifier).first { $0 != identifier })
+            .map { app.windows[$0] }
+        let two = element("picker.local.\(two)", in: window)
+        XCTAssertTrue(two.exists(within: connect))
+        XCTAssertTrue(two.label.contains("Running"), two.label)
+        let stopped = element("picker.local.\(three)", in: window).label
+        XCTAssertTrue(stopped.contains("Stopped"), stopped)
+        XCTAssertFalse(element("picker.local.default", in: window).exists)
+        XCTAssertFalse(element("sidebar", in: window).exists)
+        XCTAssertFalse(element("titlebar.machine", in: window).exists)
+        keepScreenshot("new window", of: window)
+        // Nothing started: three still stops.
+        try await expect("three to stay stopped") { await (try? Self.snapshot(three)) == nil }
+        two.click()
+        XCTAssertTrue(element("workspace.w1", in: window).exists(within: connect))
+        XCTAssertEqual(element("sidebar.header", in: window).stringValue, self.two)
+        XCTAssertTrue(element("terminal.w1:p1", in: app.windows[identifier]).exists)
     }
 
     /// ⌘N opens a big window in the middle of the screen: 90 % of it, 1200 × 760 at least, the

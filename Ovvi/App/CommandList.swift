@@ -40,11 +40,11 @@ struct CommandList {
                     keywords: "install update remove packages npm git settings",
                     action: { SettingsRoute.shared.open(.plugins) }),
             Command(section: .file, title: "New Window", key: .init("n"), symbol: "macwindow.badge.plus") {
-                WindowPages.open(machine: pages?.machine ?? .thisMac)
+                WindowPages.open(machine: nil)
             },
             Command(section: .file, title: "New Tab", key: .newTab, group: .tabs, symbol: "plus.square",
                     enabled: workspace != nil) { Task { await page?.newTab() } },
-            Command(section: .file, title: "New Workspace", key: .init("t", modifiers: [.command, .control]),
+            Command(section: .file, title: "New Workspace", key: .newWorkspace,
                     group: .workspaces, symbol: "folder.badge.plus",
                     enabled: live) { Task { await page?.newWorkspace() } },
             Command(section: .file, title: "Open Session…", key: .openSession, group: .sessions,

@@ -102,17 +102,15 @@ struct BrowserCard: View {
     }
 
     private func failed(_ text: String, hint: String?) -> some View {
-        VStack(spacing: 8) {
-            Image(systemName: "exclamationmark.triangle").font(.system(size: 28)).foregroundStyle(.secondary)
-            Text(text).font(.system(size: 14)).multilineTextAlignment(.center).lineLimit(3)
-                .accessibilityIdentifier("browser.\(browser.paneID).message")
-            if let hint {
-                Text(hint).foregroundStyle(.secondary)
-            }
-            Button("Reload", action: browser.reload).buttonStyle(.glassProminent).padding(.top, 4)
+        EmptyState(
+            symbol: "exclamationmark.triangle",
+            title: text,
+            text: hint,
+            id: "browser.\(browser.paneID).message",
+        ) {
+            Button("Reload", action: browser.reload).buttonStyle(.glassProminent)
                 .accessibilityIdentifier("browser.\(browser.paneID).retry")
         }
-        .padding(24)
     }
 }
 
@@ -124,7 +122,7 @@ private struct Asking: View {
     var body: some View {
         let id = "browser.\(browser.paneID)"
         VStack(spacing: 10) {
-            Image(systemName: "globe").font(.system(size: 36, weight: .light)).foregroundStyle(.secondary)
+            Image(systemName: "globe").font(.system(size: 32, weight: .light)).foregroundStyle(.secondary)
             Text("Open this page?").font(.system(size: 15, weight: .semibold))
             addressText(url.absoluteString)
                 .font(.system(size: 13)).lineLimit(2).truncationMode(.middle).multilineTextAlignment(.center)

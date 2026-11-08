@@ -25,7 +25,9 @@ eight=ovvi-e2e-$id-h
 # A session joins the cleanup only once it is up: a failed `up` must not remove a session it did not make.
 made=("$four" "$six" "$eight")
 # Browser panes' state files (plugins/api#state) go with their sessions.
-trap 'for s in "${made[@]}"; do scripts/herdr-session.sh down "$s" || true; rm -rf "$HOME/.local/state/ovvi/$s"; done' EXIT
+# The homes of the tests' login shell without herdr (OvviUITests/Fixtures/no-herdr) go too.
+trap 'for s in "${made[@]}"; do scripts/herdr-session.sh down "$s" || true; rm -rf "$HOME/.local/state/ovvi/$s"; done
+    rm -rf /tmp/ovvi-e2e-no-herdr-*' EXIT
 for s in "$one" "$two" "$three" "$five" "$seven"; do
     scripts/herdr-session.sh up "$s"
     made+=("$s")

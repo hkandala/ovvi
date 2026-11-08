@@ -92,7 +92,7 @@ struct ChatMessages: View, Equatable {
     private var empty: some View {
         ZStack {
             if chat.loading {
-                ProgressView().controlSize(.small)
+                Loader()
             } else if let pane = page.store.pane(chat.paneID) {
                 ProgramGlyph(icon: pane.iconID, letter: pane.letter, size: 64).opacity(0.5)
                     .accessibilityElement(children: .ignore)

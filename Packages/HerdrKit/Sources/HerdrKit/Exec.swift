@@ -8,11 +8,16 @@ public protocol Exec: Sendable {
     /// 30 s while missing or gone, so a herdr installed or moved since is found
     /// (talking-to-herdr#herdr-on-each-machine). Throws when the machine cannot be reached.
     func herdr() async throws -> String?
+    /// Drops the herdr path it knows (or that it has none): the next `herdr()` asks the login shell again, as after
+    /// an install.
+    func forgetHerdr() async
     /// A file under the home folder, trimmed, or nil when it is missing, unreadable or empty.
     func read(home path: String) async -> String?
 }
 
 public extension Exec {
+    func forgetHerdr() async {}
+
     func read(home path: String) async -> String? {
         let text = try? await output(["sh", "-c", #"cat "$HOME/$1" 2>/dev/null"#, "sh", path], timeout: .seconds(5))
         return text?.isEmpty == false ? text : nil
@@ -152,6 +157,10 @@ public final class ProcessExec: Exec {
         return text?.isEmpty == false ? text : nil
     }
 
+    public func forgetHerdr() async {
+        lookup.withLock { $0 = Lookup(path: nil, asked: .now - .seconds(60)) }
+    }
+
     public func herdr() async -> String? {
         if let path = lookup.withLock({ $0.path }), FileManager.default.isExecutableFile(atPath: path) {
             return path
@@ -176,7 +185,7 @@ public final class ProcessExec: Exec {
         let marker = "ovvi-env-\(UUID().uuidString)"
         guard let channel = try? spawn(
             [env["SHELL"] ?? "/bin/zsh", "-lic",
-             "echo \(marker); /usr/bin/env; echo \(marker); command -v herdr; echo \(marker)"],
+             "echo \(marker); /usr/bin/env; echo \(marker); \(Self.herdrLookup); echo \(marker)"],
             env,
         ) else { return ([:], nil) }
         // Closed stdin reads like /dev/null.
@@ -202,6 +211,10 @@ public final class ProcessExec: Exec {
             return (vars, herdr)
         }) ?? ([:], nil)
     }
+
+    /// herdr's path in a login shell: on its PATH, else where herdr's installer puts it (`$HOME/.local/bin`), which a
+    /// shell's PATH may not have (macOS's zsh has not).
+    public static let herdrLookup = #"command -v herdr || command -v "$HOME/.local/bin/herdr""#
 
     /// The keys taken from the login shell and given to This Mac's server. The rest of the app's environment
     /// (`__CFBundleIdentifier`, `XPC_*`, `DYLD_*`) must not reach a pane (design D47).

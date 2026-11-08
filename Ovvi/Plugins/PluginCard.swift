@@ -38,7 +38,7 @@ struct PluginCard: View {
                     PluginLoader(plugin: plugin.manifest, verb: "Installing")
                         .accessibilityIdentifier("pane.\(plugin.paneID).installing")
                 } else if !plugin.web.ready {
-                    Loading().accessibilityIdentifier("pane.\(plugin.paneID).loading")
+                    Loader(id: "pane.\(plugin.paneID).loading", delay: .milliseconds(150))
                 }
             }
             .overlay(alignment: .top) {
@@ -106,25 +106,21 @@ private struct PluginFailure: View {
 
     var body: some View {
         let id = "pane.\(plugin.paneID)"
-        VStack(spacing: 10) {
-            Image(symbol: plugin.manifest.icon).font(.system(size: 28)).foregroundStyle(.secondary)
-            Text(problem.title).font(.system(size: 13, weight: .semibold)).accessibilityIdentifier("\(id).failure")
-            Text(problem.text).font(.system(size: 12).monospaced()).foregroundStyle(.secondary).lineLimit(12)
-                .multilineTextAlignment(.center).textSelection(.enabled).accessibilityIdentifier("\(id).failure.text")
-            HStack(spacing: 8) {
-                Button("Show Log") { PluginLog.show(plugin.manifest.id) }.buttonStyle(.glass)
-                    .accessibilityIdentifier("\(id).show-log")
-                if building {
-                    ProgressView().controlSize(.small).accessibilityIdentifier("\(id).building")
-                } else if let button = problem.button {
-                    Button(button) { fix() }.buttonStyle(.glassProminent)
-                        .accessibilityIdentifier(problem.builds ? "\(id).build" : "\(id).reload")
-                }
+        EmptyState(
+            symbol: plugin.manifest.icon,
+            title: problem.title,
+            text: problem.text,
+            code: true,
+            id: "\(id).failure",
+        ) {
+            if building {
+                ProgressView().controlSize(.small).accessibilityIdentifier("\(id).building")
+            } else if let button = problem.button {
+                Button(button) { fix() }.buttonStyle(.glassProminent)
+                    .accessibilityIdentifier(problem.builds ? "\(id).build" : "\(id).reload")
             }
-            .controlSize(.small)
-            .padding(.top, 4)
+            Button("Show Log") { PluginLog.show(plugin.manifest.id) }.accessibilityIdentifier("\(id).show-log")
         }
-        .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         // Over what the page drew before it stopped.
         .background(look.cardSolid(keyboard: lit))
@@ -145,35 +141,13 @@ private struct PluginFailure: View {
     }
 }
 
-/// The app's spinner, once a load takes long enough to see.
-private struct Loading: View {
-    @State private var shown = false
-
-    var body: some View {
-        ProgressView().controlSize(.small).opacity(shown ? 1 : 0)
-            .task {
-                try? await Task.sleep(for: .milliseconds(150))
-                shown = true
-            }
-    }
-}
-
 /// While a browser or a plugin pane takes the chooser's place, or a browser card is built.
 struct PluginLoader: View {
     let plugin: PluginManifest
     var verb = "Opening"
 
     var body: some View {
-        VStack(spacing: 12) {
-            Image(symbol: plugin.icon).font(.system(size: 28)).foregroundStyle(.secondary)
-            HStack(spacing: 8) {
-                ProgressView().controlSize(.small)
-                Text("\(verb) \(plugin.name)…").font(.system(size: 13)).foregroundStyle(.secondary).lineLimit(1)
-            }
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityAddTraits(.isStaticText)
-        .accessibilityLabel("\(verb) \(plugin.name)")
+        Loader(symbol: plugin.icon, text: "\(verb) \(plugin.name)…")
     }
 }
 
@@ -192,37 +166,25 @@ struct MissingPlugin: View {
         }
     }
 
+    /// A package with the id whose manifest is wrong says what is wrong.
     private var missing: some View {
-        VStack(spacing: 12) {
-            Image(systemName: Registry.missing).font(.system(size: 28)).foregroundStyle(.secondary)
-            VStack(spacing: 4) {
-                // A package with the id whose manifest is wrong says what is wrong.
-                let problem = Registry.problem(label.plugin)
-                Text(problem == nil ? "\(label.plugin) is not on this Mac" : "\(label.plugin) did not load")
-                    .font(.system(size: 13, weight: .semibold))
-                    .accessibilityIdentifier("pane.\(pane.id).missing")
-                if let problem {
-                    Text(problem).font(.system(size: 12).monospaced()).foregroundStyle(.secondary).lineLimit(4)
-                        .textSelection(.enabled).accessibilityIdentifier("pane.\(pane.id).missing.text")
-                    Button("Show Log") { PluginLog.show(label.plugin) }.buttonStyle(.glass).controlSize(.small)
-                        .padding(.top, 4).accessibilityIdentifier("pane.\(pane.id).show-log")
-                } else if !label.arg.isEmpty {
-                    Text(label.arg).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(2)
-                        .truncationMode(.middle).textSelection(.enabled)
-                }
+        let problem = Registry.problem(label.plugin), id = "pane.\(pane.id)"
+        let title = problem == nil ? "\(label.plugin) is not on this Mac" : "\(label.plugin) did not load"
+        let text = problem ?? label.arg
+        return EmptyState(
+            symbol: Registry.missing,
+            title: title,
+            text: text,
+            code: problem != nil,
+            id: "\(id).missing",
+        ) {
+            if problem != nil {
+                Button("Show Log") { PluginLog.show(label.plugin) }.accessibilityIdentifier("\(id).show-log")
+            } else {
+                Button("Show Placeholder") { pane.placeholder = true }.accessibilityIdentifier("\(id).show-placeholder")
             }
-            .multilineTextAlignment(.center)
-            HStack(spacing: 8) {
-                Button("Show Placeholder") { pane.placeholder = true }
-                    .accessibilityIdentifier("pane.\(pane.id).show-placeholder")
-                Button("Close Pane") { page.closePane(pane) }
-                    .accessibilityIdentifier("pane.\(pane.id).close-missing")
-            }
-            .buttonStyle(.glass)
-            .controlSize(.small)
-            .padding(.top, 4)
+            Button("Close Pane") { page.closePane(pane) }.accessibilityIdentifier("\(id).close-missing")
         }
-        .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

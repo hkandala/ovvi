@@ -120,6 +120,10 @@ public actor SSHExec: Exec {
         }
     }
 
+    public func forgetHerdr() async {
+        lookup = nil
+    }
+
     /// Starts the master if none lives, asking the user what ssh asks: the Connect button and a new machine.
     public func connect(ask: @escaping Ask) async throws {
         try await up(ask)
@@ -266,7 +270,7 @@ public actor SSHExec: Exec {
     private func findHerdr() async throws -> String? {
         let marker = "ovvi-herdr"
         let shell = #"exec "${SHELL:-sh}" -lic "$0" </dev/null 2>/dev/null"#
-        let text = try await output(["sh", "-c", shell, "echo \(marker); command -v herdr"])
+        let text = try await output(["sh", "-c", shell, "echo \(marker); \(ProcessExec.herdrLookup)"])
         let path = text.components(separatedBy: marker).last?
             .split(separator: "\n").last.map(String.init) ?? ""
         return path.hasPrefix("/") ? path : nil

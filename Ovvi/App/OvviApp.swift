@@ -92,6 +92,8 @@ struct ContentView: View {
     @SceneStorage("sidebarWidth") private var sidebarWidth = 300.0
     /// The sidebar shows the Agents view instead of the workspaces.
     @SceneStorage("agents") private var agents = false
+    /// A new window (⌘N) shows the sessions to pick from until a pick opens its first page.
+    @State private var picking = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openWindow) private var openWindow
 
@@ -100,12 +102,19 @@ struct ContentView: View {
             if let page = pages.current {
                 WindowContent(pages: pages, page: page, sidebar: $sidebar, agents: $agents,
                               sidebarWidth: $sidebarWidth)
+            } else if picking {
+                SessionPicker(pages: pages)
             }
         }
         .task {
             let opening = WindowPages.opening
             WindowPages.opening = nil
-            await restore(opening?.machine)
+            // New Window: a session to pick, none opened by itself.
+            if let opening, opening.machine == nil {
+                picking = true
+            } else {
+                await restore(opening?.machine)
+            }
             // Closed while it restored: nothing of it may stay.
             if Task.isCancelled {
                 pages.closed()

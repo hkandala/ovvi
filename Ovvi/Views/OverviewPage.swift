@@ -130,7 +130,7 @@ private struct Tile: View, Equatable {
                 // A card with no picture yet (never drawn, or its snapshot gone): it loads in turn (`overviewCards`).
                 .overlay {
                     if loading {
-                        Waiting().accessibilityIdentifier("overview.tab.\(tab.id).loading")
+                        Loader(id: "overview.tab.\(tab.id).loading")
                             // e2e (`-recordLatency`): it showed, however briefly.
                             .onAppear { Latency.shared.note("loader \(tab.id)") }
                     }

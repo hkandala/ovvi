@@ -32,10 +32,12 @@ extension OvviUITests {
         XCTAssertTrue(until(3) { app.windows.firstMatch.identifier == remote.identifier })
         XCTAssertFalse(app.windows.element(boundBy: 2).exists)
         XCTAssertEqual(machine(of: first), "This Mac")
-        // ⌘N in a Key Host window stays on Key Host.
+        // ⌘N lists Key Host's sessions after This Mac's: a pick opens one there.
         app.typeKey("n", modifierFlags: .command)
-        XCTAssertTrue(app.windows.element(boundBy: 2).exists(within: 3))
-        XCTAssertTrue(until(3) { machine(of: app.windows.firstMatch) == "Key Host" })
+        let pick = app.buttons.matching(NSPredicate(format: "identifier LIKE 'picker.*.\(one)'")).element(boundBy: 1)
+        XCTAssertTrue(pick.exists(within: connect))
+        pick.click()
+        XCTAssertTrue(until(connect) { machine(of: app.windows.firstMatch) == "Key Host" })
         XCTAssertEqual(app.windows.count, 3)
         // It went through the host's ControlMaster.
         let dropped = try await Self.post("\(one)/ssh-drop", Data("ovvi-key".utf8))
@@ -357,7 +359,7 @@ extension OvviUITests {
     }
 
     /// The machine button's Add Remote Host, filled and added.
-    private func addHost(_ name: String, _ target: String) {
+    func addHost(_ name: String, _ target: String) {
         element("titlebar.machine").click()
         app.menuItems["Add Remote Host…"].click()
         let field = element("host.name")
@@ -366,16 +368,14 @@ extension OvviUITests {
         app.typeText(name)
         element("host.target").click()
         app.typeText(target)
-        keepScreenshot("add remote host")
         element("host.save").click()
     }
 
     /// ovvi-pw's password (or another), in the hidden field of ssh's question; Return answers.
-    private func typePassword(_ password: String = "ovvi-e2e-pw") {
+    func typePassword(_ password: String = "ovvi-e2e-pw") {
         let answer = element("ask.answer")
         XCTAssertTrue(answer.exists(within: connect))
         XCTAssertEqual(answer.elementType, .secureTextField)
-        keepScreenshot("password")
         answer.click()
         app.typeText(password)
         app.typeKey(.return, modifierFlags: [])

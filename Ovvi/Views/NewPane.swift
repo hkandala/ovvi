@@ -158,17 +158,9 @@ struct NewPane: View {
     }
 
     private func loader(_ agent: Chooser.Agent) -> some View {
-        VStack(spacing: 12) {
+        Loader(text: "Starting \(agent.name)…", id: "pane.\(cardID).loader") {
             ProgramTile(icon: agent.command).scaleEffect(2).frame(width: 44, height: 36)
-            HStack(spacing: 8) {
-                ProgressView().controlSize(.small)
-                Text("Starting \(agent.name)…").font(.system(size: 13)).foregroundStyle(.secondary).lineLimit(1)
-            }
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityAddTraits(.isStaticText)
-        .accessibilityLabel("Starting \(agent.name)")
-        .accessibilityIdentifier("pane.\(cardID).loader")
     }
 }
 

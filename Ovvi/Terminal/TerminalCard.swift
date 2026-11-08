@@ -50,6 +50,8 @@ struct TerminalCard: View {
     /// The content's opacity: the watching dim (D66); 0 under a new pane's chooser, with no spinner.
     let alpha: CGFloat
     @Environment(\.pageHidden) private var hidden
+    @Environment(\.look) private var look
+    @Environment(\.litCard) private var lit
 
     var body: some View {
         TerminalHost(terminal: terminal, alpha: alpha, hidden: hidden)
@@ -65,13 +67,13 @@ struct TerminalCard: View {
                         .accessibilityIdentifier("pane.\(terminal.paneID).take-back")
                         .padding(gap)
                 case let .failed(text):
-                    // herdr's reason; Retry opens the stream again.
-                    VStack {
-                        Text(text).font(.caption).foregroundStyle(.secondary)
-                        Button("Retry", action: terminal.show).buttonStyle(.glass)
+                    // herdr's reason, over the card's fill; Retry opens the stream again.
+                    EmptyState(symbol: "terminal", title: "The terminal stopped", text: text, compact: true) {
+                        Button("Retry", action: terminal.show).buttonStyle(.glassProminent)
                             .accessibilityIdentifier("pane.\(terminal.paneID).retry")
                     }
-                    .padding(gap)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(look.cardSolid(keyboard: lit))
                 case .idle, .live, .watching:
                     EmptyView()
                 }
@@ -80,7 +82,7 @@ struct TerminalCard: View {
             // only when that takes over 0.5 s.
             .overlay {
                 if !terminal.ready, !terminal.state.isFailed, alpha > 0 {
-                    Waiting(delay: .milliseconds(500))
+                    Loader(delay: .milliseconds(500))
                 }
             }
     }

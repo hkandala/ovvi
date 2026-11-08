@@ -204,14 +204,15 @@ final class WindowPages {
         question?.answer(nil)
     }
 
-    /// A new window on the machine (D43); the others stay. `connect`: it connects at once, asking what ssh asks.
-    static func open(machine: Machine, connect: Bool = false) {
+    /// A new window on the machine (D43); the others stay. `connect`: it connects at once, asking what ssh asks. With
+    /// no machine (New Window) it shows the machines and their sessions to pick from (`SessionPicker`).
+    static func open(machine: Machine?, connect: Bool = false) {
         opening = openWindow == nil ? nil : (machine, connect)
         openWindow?(id: "main")
     }
 
     /// `open(machine:)`'s, for the new window. ponytail: one; a queue if two quick opens ever clash.
-    static var opening: (machine: Machine, connect: Bool)?
+    static var opening: (machine: Machine?, connect: Bool)?
 
     private func leaveAll() {
         let pages = withFloats

@@ -1,0 +1,55 @@
+import XCTest
+
+/// Install herdr (ui/states), each time with a fake installer, never herdr.dev's: on This Mac under a login shell with
+/// no herdr, and over SSH on CI's ovvi-pw, which has none.
+extension OvviUITests {
+    /// The page shows the command and Install; the installer's lines while it runs; then the page connects. The fake
+    /// puts a herdr in the shell's own home that runs the real one at the real home, so the page reaches session one.
+    func testInstallingHerdrOnThisMacShowsItsProgressAndConnects() throws {
+        let herdr = try env("OVVI_HERDR")
+        let install = #"echo "  > downloading v9.9.9..."; sleep 2; mkdir -p "$HOME/.local/bin" && "#
+            + #"printf '#!/bin/sh\nHOME=%s exec %s "$@"\n' "$(eval echo ~$(id -un))" "\#(herdr)" "#
+            + #"> "$HOME/.local/bin/herdr" && chmod +x "$HOME/.local/bin/herdr""#
+        app.launchEnvironment["SHELL"] = "\(Self.fixtures)/no-herdr/login-shell"
+        app.launchEnvironment["PATH"] = "/usr/bin:/bin"
+        relaunch(one, ["-herdrInstall", install])
+        let button = element("detail.install")
+        XCTAssertTrue(button.exists(within: connect))
+        XCTAssertTrue(app.staticTexts["herdr is not installed"].exists)
+        XCTAssertEqual(element("detail.text").stringValue, install)
+        keepScreenshot("not installed")
+        button.click()
+        XCTAssertTrue(element("detail.installing.detail").has(\.stringValue, "> downloading v9.9.9...", within: 3))
+        keepScreenshot("installing")
+        XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
+    }
+
+    /// A failed install says what the installer printed, and Try Again runs it again.
+    func testAFailedInstallOnARemoteMachineSaysWhy() async throws {
+        try await skipWithoutSSH()
+        try await Self.post("\(one)/ssh-drop", Data("ovvi-pw".utf8))
+        try await Self.post("\(one)/ssh-forget", Data("ovvi-pw".utf8))
+        let install = #"echo "  > fetching latest release manifest..."; sleep 1; "#
+            + #"echo "  x cannot reach herdr.dev" >&2; exit 1"#
+        let host = #"[{"id":"e2e-pw","name":"Password Host","target":"ovvi-pw","icon":"cpu"}]"#
+        relaunch(one, ["-machines", host, "-machine", "e2e-pw", "-herdrInstall", install])
+        let connectButton = element("detail.connect")
+        XCTAssertTrue(connectButton.exists(within: connect))
+        connectButton.click()
+        XCTAssertTrue(element("ask.ok").exists(within: connect))
+        element("ask.ok").click()
+        typePassword()
+        let button = element("detail.install")
+        XCTAssertTrue(button.exists(within: connect))
+        XCTAssertTrue(app.staticTexts["herdr is not installed on Password Host"].exists)
+        button.click()
+        XCTAssertTrue(element("detail.installing").exists(within: 3))
+        let text = element("detail.text")
+        XCTAssertTrue(text.has(\.stringValue, "> fetching latest release manifest...\nx cannot reach herdr.dev\n"
+                + "The installer exited with status 1.", within: connect), text.stringValue)
+        keepScreenshot("install failed")
+        XCTAssertTrue(app.staticTexts["herdr did not install"].exists)
+        button.click()
+        XCTAssertTrue(element("detail.installing").exists(within: 3))
+    }
+}
