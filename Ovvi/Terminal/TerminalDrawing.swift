@@ -70,11 +70,36 @@ extension PaneTerminal {
         }
     }
 
+    /// Redraw Terminal: the program paints its screen again, over text others wrote into it (a launcher's warnings
+    /// after sleep). herdr has no call for it: the PTY one column narrower, then the card's grid back, two SIGWINCHes;
+    /// TUIs repaint all at a new width. The old picture shows until the frames at the card's grid settle. Not while
+    /// watching: observe cannot resize.
+    func redraw() {
+        guard state == .live, redrawing == nil, let grid, grid.columns > 1 else { return }
+        hold()
+        resize(columns: Int(grid.columns) - 1, rows: Int(grid.rows))
+        redrawing = Task { [generation] in
+            // The program has read the narrow size and drawn at it: frames paused for 150 ms, from 250 ms on (a
+            // program that reads the size only after both changes sees none), at most 1 s.
+            let start = ContinuousClock.now
+            while start.duration(to: .now) < .seconds(1), start.duration(to: .now) < .milliseconds(250)
+                || lastFrame.duration(to: .now) < .milliseconds(150)
+            {
+                try? await Task.sleep(for: .milliseconds(50))
+            }
+            redrawing = nil
+            guard generation == self.generation, state == .live, let grid = self.grid else { return }
+            resize(columns: Int(grid.columns), rows: Int(grid.rows))
+            settle()
+        }
+    }
+
     /// Drawing resumes: the new picture at once. The first fades in from 0: a fade that never ran leaves it shown.
     private func reveal() {
         settling?.cancel()
         deadline?.cancel()
         deadline = nil
+        guard redrawing == nil else { return }
         ready = true
         draw()
         let first = !revealed

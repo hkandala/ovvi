@@ -40,11 +40,14 @@ final class PaneTerminal {
     @ObservationIgnored private var tasks: [Task<Void, Never>] = []
     @ObservationIgnored private var run: Task<Void, Never>?
     @ObservationIgnored private var resizing: Task<Void, Never>?
+    /// Redraw Terminal's size change under way: its frames never show (`reveal`).
+    @ObservationIgnored var redrawing: Task<Void, Never>?
+    @ObservationIgnored private(set) var lastFrame = ContinuousClock.now
     @ObservationIgnored private var stream: TerminalStream?
     @ObservationIgnored private(set) var observing = false
     @ObservationIgnored private var shown = false
     /// Counts streams, so a stream that is ending cannot change the state of the next one.
-    @ObservationIgnored private var generation = 0
+    @ObservationIgnored private(set) var generation = 0
     /// Another window controls the session (D66): a new stream watches.
     @ObservationIgnored var watches: () -> Bool = { false }
     /// A key press, paste or click in the card (D8's triggers), before it is handled.
@@ -193,6 +196,7 @@ final class PaneTerminal {
                         settle()
                     }
                     session.receive(frame.bytes)
+                    lastFrame = .now
                     onFrame?()
                 case let .closed(reason):
                     self.stream = nil
@@ -280,9 +284,7 @@ final class PaneTerminal {
                 // observe cannot resize: watch again at the new size.
                 open(observe: true)
             } else if state == .live {
-                stream?.resize(cols: Int(size.columns), rows: Int(size.rows),
-                               cellWidth: Int(view.metrics?.cellWidthPixels ?? 0),
-                               cellHeight: Int(view.metrics?.cellHeightPixels ?? 0))
+                resize(columns: Int(size.columns), rows: Int(size.rows))
             }
         }
     }
@@ -344,6 +346,11 @@ final class PaneTerminal {
 }
 
 extension PaneTerminal {
+    func resize(columns: Int, rows: Int) {
+        stream?.resize(cols: columns, rows: rows, cellWidth: Int(view.metrics?.cellWidthPixels ?? 0),
+                       cellHeight: Int(view.metrics?.cellHeightPixels ?? 0))
+    }
+
     func keys(_ keys: [String]) {
         enqueue(.keys(keys))
     }

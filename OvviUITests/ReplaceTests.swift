@@ -138,3 +138,38 @@ extension OvviUITests {
         try await typeAndRead(new)
     }
 }
+
+extension OvviUITests {
+    /// Redraw Terminal (⌥⌘R, and the palette): the program hears the PTY one column narrower, then the card's grid
+    /// again, so a TUI paints its whole screen again.
+    func testRedrawTerminalMakesTheProgramRepaint() async throws {
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        // Not "redraw": the palette would list the tab first.
+        let (tab, pane) = try await newTab("nudge")
+        try await settle([tab])
+        element("tab.\(tab)").click()
+        try await expectPTYSize(pane)
+        let grid = try XCTUnwrap(element("terminal.\(pane)").value as? String)
+        let size = grid.split(separator: " ").compactMap { Int($0) }
+        XCTAssertEqual(size.count, 2, grid)
+        let redraw = ["resized \(size[0]) \(size[1] - 1)", "resized \(grid)"]
+        func heard(_ screen: String) -> [String] {
+            screen.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { $0.hasPrefix("resized") }
+        }
+        // `clear` wipes the typed line: an answer only the shell prints says the trap is set. Each size on a line of
+        // its own: after a long prompt (CI's) it wrapped.
+        try await send("trap 'echo; echo resized $(stty size)' WINCH; clear; echo armed-$((6*7))\r", to: pane)
+        try await waitFor(pane) { $0.contains("armed-42") }
+        element("terminal.\(pane)").click()
+        XCTAssertTrue(hasKeyboard("terminal.\(pane)"))
+
+        app.typeKey("r", modifierFlags: [.command, .option])
+        try await waitFor(pane) { heard($0) == redraw }
+        openPalette()
+        app.typeText("redraw")
+        XCTAssertTrue(element("palette.command.Redraw Terminal").has(\.isSelected, true, within: 2))
+        app.typeKey(.return, modifierFlags: [])
+        try await waitFor(pane) { heard($0) == redraw + redraw }
+    }
+}

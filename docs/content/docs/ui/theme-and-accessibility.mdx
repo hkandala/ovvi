@@ -174,6 +174,7 @@ one row with one keycap for the keys: "Select Pane ⌥ ⌘ ←→↑↓", "Show 
 | ⇧⌘G | Go to Directory (in a card that runs only its shell); over a File, Markdown or tree page or a Git diff, Find Previous | File, Edit |
 | ⌘S | Save, on a File or Markdown page | File |
 | ⌘R | Reload Page, on a browser card | View |
+| ⌥⌘R | Redraw Terminal: the program in a terminal pane paints its screen again (a one-column size change and back); over a plugin card, Reload Plugin. Terminal's Soft Reset key | File |
 | ⇧⌘R | Replace Pane: a fresh shell in the pane's place, size and folder, with the keyboard (asks first unless the pane runs only its shell); on an agent, browser or plugin pane the new shell shows the [New pane](/docs/ui/new-pane) chooser | File |
 | ⌘W | close the pane (asks first unless the pane runs only its shell) | File |
 | ⇧⌘W | close the tab (asks first when a program runs in it) | File |
@@ -228,7 +229,8 @@ Rex shortcuts not taken, and why:
   sessions open with Open Session (⌥⌘T). ⇧⌘P also opens it (Rex's key).
 - ⌘/ (sidebar) is Keyboard Shortcuts instead: ⌃⌘S is the macOS sidebar key.
 - ⌘R reloads only a browser card's page: the snapshot is live, so nothing else needs a refresh. Replace Pane
-  is ⇧⌘R.
+  is ⇧⌘R, Redraw Terminal ⌥⌘R: no card has both Redraw Terminal and Reload Plugin, and ⌃L stays the program's
+  own (a shell clears its screen with it).
 - Find Previous has a shortcut only over a File or Markdown page: elsewhere
   ⇧⌘G is Go to Directory. ⌘S and ⌘E have their key only over the cards that
   use them, because a disabled menu item swallows its key

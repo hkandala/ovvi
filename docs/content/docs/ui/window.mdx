@@ -621,12 +621,13 @@ How it works: [Layout and sizing](/docs/layout).
     tab of the session but the pane's own, grouped by workspace: each
     workspace's name as a section header, in the sidebar's order), Rename
     Pane…, Reset Pane Name.
-  - Replace Pane (⇧⌘R), Open Terminal Here, Start Agent Here ▸, Open Browser
+  - Redraw Terminal (⌥⌘R, not on a browser or plugin pane), Replace Pane (⇧⌘R), Open Terminal Here, Start Agent
+    Here ▸, Open Browser
     Here, Open File Explorer Here, Open Git Here
     ([New pane](/docs/ui/new-pane#commands-that-change-a-panes-kind)),
     Close Pane (⌘W).
 - The same items are in View ▸ Pane in the menu bar, for the keyboard card
-  (the zoomed card of the selected tab, when there is one). Replace Pane and
+  (the zoomed card of the selected tab, when there is one). Redraw Terminal, Replace Pane and
   Close Pane stay in the File menu. In View ▸ Pane, Move Pane to Tab ▸ has New Tab and New
   Workspace only: AppKit searches the whole menu bar for a shortcut at every
   key (about 30 ms at 300 tabs). The card's menu and the palette list the
@@ -650,6 +651,16 @@ How it works: [Layout and sizing](/docs/layout).
   a floated pane's new pane floats in a window at the same place, with its
   Stay on Top. ⌘W while a replace runs does nothing: the old pane is closing
   already.
+- **Redraw Terminal** (⌥⌘R, also in the palette) makes the program in a
+  terminal pane paint its screen again, for when other text got drawn over
+  it (a TUI's input box under warning lines after the Mac slept). herdr has no
+  call for it, so the app makes the pane one column narrower and then its
+  own size again: the program gets two size changes (SIGWINCH), and pi, Claude
+  Code and Codex draw their whole screen at a new width. The card shows its
+  old picture until the program has drawn at the card's size again, so the
+  narrow frames never show. A plain shell draws only its prompt again. Not on
+  a pane that another window controls (a watcher cannot resize), nor on a
+  pane whose card shows the chat view.
 - Close and Replace Pane ask first unless the pane runs only its shell or a
   browser or plugin pane's placeholder (Return confirms, Esc cancels). Replace Pane's dialog says "Replace
   “‹name›”?" and has a Replace Pane button.
@@ -914,7 +925,7 @@ clients see it there.
   and Focus Follows Mouse skip it.
 - **Keys and ⌘K.** In the floating window the menu bar and the palette offer
   only what applies to it: Detach Pane (⌘W, as the red light: a window's
-  close puts the pane back, nothing stops), Replace Pane (⇧⌘R), Open Terminal
+  close puts the pane back, nothing stops), Redraw Terminal (⌥⌘R), Replace Pane (⇧⌘R), Open Terminal
   Here, Start Agent Here, Open Browser Here, Open File Explorer Here, Open
   Git Here, Close Pane (⇧⌘W), Stay on Top, Find, Find Next and Find Previous, the
   font size items, Copy and Paste, on a browser pane Reload Page (⌘R), Open

@@ -71,6 +71,23 @@ extension CommandList {
         let replace = Command(section: .close, title: "Replace Pane", key: .replacePane, group: .panes,
                               symbol: "arrow.clockwise.square", keywords: "pane restart new shell respawn reset",
                               enabled: pane != nil) { page?.replacePane(target()) }
+        // The program paints its screen again; not on a plugin card, whose ⌥⌘R is Reload Plugin.
+        let redraw = pane?.plugin != nil ? [] : [
+            Command(
+                section: .close,
+                title: "Redraw Terminal",
+                key: .redraw,
+                group: .panes,
+                symbol: "arrow.trianglehead.2.clockwise",
+                keywords: "pane refresh repaint rerender tui garbled",
+                enabled: pane.map { page?.shownChat($0) == nil } == true,
+                action: {
+                    if let page, let pane = target(), pane.plugin == nil {
+                        page.terminal(pane)?.redraw()
+                    }
+                },
+            ),
+        ]
         // Only on an agent or plugin pane: on a terminal it is Replace Pane.
         let terminal = pane?.agent == nil && pane?.plugin == nil ? [] : [
             Command(section: .close, title: "Open Terminal Here", group: .panes, symbol: "terminal",
@@ -96,7 +113,7 @@ extension CommandList {
                                     }
                                 }
                             })
-        return [replace] + terminal + [agent] + plugins + [
+        return redraw + [replace] + terminal + [agent] + plugins + [
             Command(section: .close, title: "Close Pane", key: .closePane, group: .panes, symbol: "xmark.square",
                     keywords: "pane", enabled: pane != nil || page?.standIn != nil) { page?.closePane(target()) },
         ]

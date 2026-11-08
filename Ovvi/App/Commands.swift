@@ -15,6 +15,8 @@ extension KeyboardShortcut {
     static let closePane = KeyboardShortcut("w")
     /// ⇧⌘R: ⌘R reloads a browser card.
     static let replacePane = KeyboardShortcut("r", modifiers: [.command, .shift])
+    /// Redraw Terminal on a terminal card, Reload Plugin on a plugin card: never both. Terminal's Soft Reset key.
+    static let redraw = KeyboardShortcut("r", modifiers: [.command, .option])
     /// Close Tab; in a floating window Close Pane.
     static let closeTab = KeyboardShortcut("w", modifiers: [.command, .shift])
     static let previousTab = KeyboardShortcut("[", modifiers: [.command, .shift])
