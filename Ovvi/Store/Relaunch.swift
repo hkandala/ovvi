@@ -61,7 +61,9 @@ extension HostStore {
 
     /// Quits the agent as its user would: a turn or a dialog stopped first, the prompt cleared (⌃C, which alone ends
     /// OpenCode with an empty prompt), then its quit command. True once only the shell runs and herdr let go of the
-    /// agent, within 10 s, while its chooser is there (its pane did not close).
+    /// agent, within 30 s, while its chooser is there (its pane did not close). 30 s, not 10: an agent runs its exit
+    /// hooks first (Claude Code's SessionEnd ones, up to 8 s each in a company setup), and on a busy Mac each herdr
+    /// call here can take a second.
     private func quit(_ paneID: String, _ agent: Chooser.Agent, _ chooser: Chooser) async -> Bool {
         guard let client, let adapter = ChatAdapters.adapter(agent.command) else { return false }
         if pane(paneID)?.state.map({ $0 == .working || $0 == .needsYou }) == true {
@@ -71,7 +73,7 @@ extension HostStore {
         try? await client.sendKeys(["ctrl+c"], pane: paneID)
         var typed = false
         let clock = ContinuousClock(), begun = clock.now
-        while clock.now - begun < .seconds(10), choosers.contains(where: { $0 === chooser }) {
+        while clock.now - begun < .seconds(30), choosers.contains(where: { $0 === chooser }) {
             // OpenCode stops its server first: the quit command would land in the shell.
             try? await Task.sleep(for: .seconds(typed ? 0.3 : 2))
             guard await (try? client.program(paneID))?.isShell == true else {

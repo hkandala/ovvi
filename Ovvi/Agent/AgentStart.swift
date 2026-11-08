@@ -75,7 +75,7 @@ extension AgentCommand {
         name: "chat", usage: "chat <pane>", summary: "Starts an idle agent again with the chat view",
         help: """
         Relaunch with Chat: the agent quits and starts again in the same session, with Ovvi's flags. It answers when \
-        the line is typed, which can take over 10 s: pass --timeout 20. An agent that works or waits for the user is \
+        the line is typed, which can take up to 30 s: pass --timeout 40. An agent that works or waits for the user is \
         busy; this pane is self.
         """,
     ) { call in

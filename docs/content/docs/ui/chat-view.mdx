@@ -70,8 +70,11 @@ which never asks: it refuses a working or waiting agent with `busy`
    command (`/exit` for Claude Code and OpenCode, `/quit` for Codex and Pi)
    while the agent still runs.
 4. When the shell is in front again and herdr no longer reports the agent,
-   within 10 s, the app types the launch line. Otherwise the notice
+   within 30 s, the app types the launch line. Otherwise the notice
    "‹agent› did not quit" shows.
+   The wait is long because an agent runs its exit hooks before it ends
+   (Claude Code's SessionEnd hooks), and each herdr call can take a second on
+   a busy Mac.
 5. The loader waits for the agent as for a new one
    ([New pane](/docs/ui/new-pane#agent)). There is no bare-command fallback:
    a plain command would start a new session.

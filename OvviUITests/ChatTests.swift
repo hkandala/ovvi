@@ -253,9 +253,11 @@ extension OvviUITests {
     }
 
     /// Claude Code started by hand has no chat: Relaunch with Chat starts it again with the flags, in the same session
-    /// (its reply from before shows in the chat). Its tab shows the session's title, none yet.
+    /// (its reply from before shows in the chat). Its tab shows the session's title, none yet. It quits 12 s after
+    /// `/exit`, as Claude Code with slow SessionEnd hooks: the wait for it is longer than that.
     func testEnableChatStartsAnAgentAgainInItsSession() async throws {
-        let (tab, pane) = try await startChat(["-appearance", "dark"], chat: false, plain: true)
+        let (tab, pane) = try await startChat(["-appearance", "dark"], environment: "OVVI_STAND_IN_EXIT_HOOKS=12 ",
+                                              chat: false, plain: true)
         let enable = element("pane.\(pane).enable-chat")
         XCTAssertTrue(enable.exists(within: 10))
         XCTAssertEqual(enable.label, "Relaunch with Chat")
@@ -268,7 +270,7 @@ extension OvviUITests {
         keepScreenshot("enable-chat")
         enable.click()
         // Asked for, the chat shows first.
-        XCTAssertTrue(element("chat.\(pane).composer").exists(within: 20))
+        XCTAssertTrue(element("chat.\(pane).composer").exists(within: 35))
         XCTAssertTrue(row(pane, "reply", "Echo: **hello**").exists(within: 5))
         // The reply's model and effort, from the transcript.
         XCTAssertEqual(element("chat.\(pane).model").stringValue, "claude-stand-in · high")

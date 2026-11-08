@@ -8,7 +8,7 @@ shows a dialog until 1 is typed, "ask" asks a question through the PermissionReq
 skips (as a real session's API records), "steps" gets a reply, a command, a reply, two commands and a reply, "many"
 writes 150 more turns (a long session; "many 25" that many, "many 10 30" 10 with 30 more paragraphs each), anything
 else gets one command and the reply "Echo: <prompt>". Ctrl-C clears the line, and on an empty one asks for another;
-"/exit" quits. Started without flags it reports its session to herdr (as herdr's Claude Code integration does) and keeps
+"/exit" quits, after OVVI_STAND_IN_EXIT_HOOKS seconds when set (as Claude Code runs its SessionEnd hooks). Started without flags it reports its session to herdr (as herdr's Claude Code integration does) and keeps
 its transcript, which `--resume <session>` goes on with.
 """
 import json
@@ -193,6 +193,7 @@ def main():
             text, line = line.split("\r", 1)
             say("")
             if text.strip() == "/exit":
+                time.sleep(float(os.environ.get("OVVI_STAND_IN_EXIT_HOOKS", "0")))
                 break
             if mute:
                 mute = False

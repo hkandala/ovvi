@@ -427,7 +427,7 @@ $ ovvi notify "Review ready" --pane w2:p1
 $ ovvi agent claude --json             # beside me, with the chat view
 {"agent":"claude","pane":"w1:p9"}
 $ ovvi agent pi --tab
-$ ovvi --timeout 20 chat w1:p4         # Relaunch with Chat, for an idle agent
+$ ovvi --timeout 40 chat w1:p4         # Relaunch with Chat, for an idle agent
 $ ovvi view w1:p4 tui                  # the card's Chat | TUI switch
 ```
 
@@ -447,8 +447,8 @@ $ ovvi view w1:p4 tui                  # the card's Chat | TUI switch
     agent session herdr does not know is `bad_argument`.
   - A relaunch that already runs, or an agent that works or needs you, is
     `busy`.
-- An agent that does not quit fails only after Relaunch with Chat's 10 s
-  wait, so pass `--timeout 20` to `chat`. With the default, the script exits
+- An agent that does not quit fails only after Relaunch with Chat's 30 s
+  wait, so pass `--timeout 40` to `chat`. With the default, the script exits
   4 first.
 - `chat` clears a draft that the user types into the agent (⌃C, then the
   quit command), and the loader takes the keys until the agent is back.
