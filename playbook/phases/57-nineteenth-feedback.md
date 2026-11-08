@@ -447,9 +447,9 @@ runs and on-demand on the final head.
   ⌫ back to the groups) made the list 45 times in one turn: 320–440 ms. A section header beside its row (two views per
   `ForEach` element) made the stack make 5–8 times as many rows. Fuzzy scoring is about 1 ms a key: not a cause.
 - **Fix.** The height read is clamped to the most the list shows; each row is one view; the palette reads its
-  commands, places and lit row once as it opens. No accessibility client: ⌘K 74–105 ms → 36–79 ms; the first letter
-  320–440 → 70–110 ms (later keys 10–55 ms); the last ⌫ 190–270 → 30–58 ms; the list made 45 → 1–2 times a key.
-  With XCUITest attached: first letter 400–440 → 215–330 ms, last ⌫ 210–270 → 155–205 ms.
+  commands, places and lit row once as it opens. No accessibility client: ⌘K 74–105 → 36–79 ms; the first letter
+  320–440 → 69–158 ms (later keys 8–55 ms); the last ⌫ 190–250 → 54–58 ms; the list made 45 → 1–2 times a key.
+  With XCUITest attached the gain is small (first letter 184–440 → 215–330 ms): the walk below dominates.
 - **Decisions.** Rows are read at open (docs: Rows at open): a title that changes while the palette is open stays old,
   and a tab or workspace closed meanwhile does nothing when chosen. Typing no longer pays for every tab and agent.
 - **Left.** With an accessibility client attached (XCUITest, VoiceOver, or an app that reads other apps' windows),
