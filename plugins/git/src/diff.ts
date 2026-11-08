@@ -588,8 +588,9 @@ export async function make(place: Page, root: string, source: string) {
 
   /** The next or previous file's top, of those the filter shows: ⇧] and ⇧[. */
   function stepFile(by: 1 | -1) {
-    const tops = files.filter((file) => !boxes.get(file.name)!.node.hidden)
-      .map((file) => ({ id: file.name, at: top(boxes.get(file.name)!.node) }))
+    // At the end: the files left all show, and a reveal could not move the view.
+    if (by > 0 && main.scrollTop >= main.scrollHeight - main.clientHeight - 1) return
+    const tops = [...boxes].filter(([, box]) => !box.node.hidden).map(([id, box]) => ({ id, at: top(box.node) }))
     const to = by > 0 ? tops.find(({ at }) => at > main.scrollTop + 1) : tops.findLast(({ at }) => at < main.scrollTop - 1)
     if (to) reveal(to.id)
   }

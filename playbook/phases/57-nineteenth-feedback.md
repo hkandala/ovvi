@@ -207,3 +207,23 @@ runs and on-demand on the final head.
   still showed. Both checks now measure the text; the ten chat tests ran green on CI.
 - **For the user:** reopen an old Claude Code, Codex, pi or OpenCode chat and check the times match the agent's; send
   while pi works and see one tick turn into two when it takes the message.
+
+### Track E
+
+- **Cause, item 5.** A locked view's keyboard is on its scroller, so ⌘A is WebKit's Select All of the page. It starts
+  at the page's first selectable text: in Source the line numbers, in Rich Text with the outline open its rows.
+  CodeMirror takes a page selection only when it starts in its own text, so its selection stayed and nothing drew.
+  Shown with an offscreen web view before the fix.
+- **Fix, item 5.** Line numbers and `.ovvi-sidebar` are not selectable (`-webkit-user-select`; WebKit ignores the
+  unprefixed one). No ⌘A handler.
+- **Decisions, item 13.** Back and Forward are ⌃- and ⌃⇧- (VS Code's and Sublime Text's Go Back and Go Forward). No
+  Ovvi key (⌘- is the text size), no macOS key binding, no CodeMirror default, and no common launcher, browser or
+  Xcode key uses them. A terminal reads ⌃- as undo, but the keys act only over a plugin card. ⌘← ⌘→ stay outside
+  text fields.
+- **Decisions, item 15.** Every ⌘ pair of `[` `]` is Ovvi's: ⌘ panes, ⇧⌘ tabs, ⌃⌘ workspaces, ⌥⌘ sessions. So a
+  diff steps by file on } and { (⇧] ⇧[), the shifted pair of ] [ (by change), which is what the user's "cmd + [ ]"
+  means. A step into a folded (Viewed) file unfolds it, as a pick in the file list does.
+- **Decisions, item 16.** 6 pt above a floated browser's toolbar and a plugin's row 2; pane cards unchanged.
+- **For the user.** In a Git diff, ⇧] and ⇧[ jump by file (not ⇧⌘] ⇧⌘[, which switch tabs). Try ⌃- and ⌃⇧- in File
+  Explorer and Git against your other apps. ⌘A in a locked Source view with its preview shown selects the preview too;
+  ⌘C still copies the source.

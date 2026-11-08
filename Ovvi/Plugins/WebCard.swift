@@ -167,8 +167,9 @@ final class WebCardView: BrowserView {
     /// native text view.
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         guard window?.firstResponder === self else { return super.performKeyEquivalent(with: event) }
-        if let step, KeyboardShortcut.back.matches(event) || KeyboardShortcut.forward.matches(event) {
-            step(KeyboardShortcut.back.matches(event))
+        let back = KeyboardShortcut.back.matches(event)
+        if let step, back || KeyboardShortcut.forward.matches(event) {
+            step(back)
             return true
         }
         return NSApp.mainMenu?.performKeyEquivalent(with: event) == true || super.performKeyEquivalent(with: event)
