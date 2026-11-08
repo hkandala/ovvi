@@ -236,11 +236,13 @@ extension OvviUITests {
         openPage(one)
         XCTAssertTrue(until(3) { header == one })
         let sidebar = element("sidebar"), center = "\(sidebar.frame.midX) \(sidebar.frame.midY)"
-        // There, back, there again: which sign goes back follows natural scrolling.
+        // There, back, there again: which sign goes back follows natural scrolling. Steps of 10 pt, 10 pt past half the
+        // sidebar's width: a lift CI posts over 100 ms late counts as a rest, and short of half the pages spring back.
+        let moves = Int(sidebar.frame.width / 20) + 1
         var back = 10.0
         for target in [eight, one, eight] {
             for _ in 0 ..< 2 {
-                try await Self.post("\(one)/swipe", Data("\(center) \(back) 14".utf8))
+                try await Self.post("\(one)/swipe", Data("\(center) \(back) \(moves)".utf8))
                 // No accessibility query until the window drew it: XCUITest's take the main thread.
                 try await Task.sleep(for: .seconds(1.5))
                 if header == target {
