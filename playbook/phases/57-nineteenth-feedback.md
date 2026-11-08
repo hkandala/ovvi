@@ -368,3 +368,38 @@ runs and on-demand on the final head.
   line renders. Force Quit an "Ovvi Web Content" process in Activity Monitor: the browser or Markdown card comes back
   by itself where it was. If a browser card still goes blank after a long idle, check whether its "Ovvi Web Content"
   process shows in Activity Monitor and tell us what the card showed (blank white, the loader, or an old picture).
+
+## Round 2 (items 18–27)
+
+Screenshots in `.build/fb57/`: `r2-4.02.42.png` (the ⌘N picker stuck on "Reading sessions…" for This Mac and
+devvm-aai), `r2-1.09.55.png` (a floating card's Back button: more space above than to its left), `r2-1.16.42.png` (a
+chat bubble's time close to its text).
+
+18. "cmd+n window stuck at reading sessions" (Track A).
+19. "can we improve cmd+d splits animaiton, i see there are frame drops sometimes especially when full screen tui or
+    any plugin is there, do a full stress testing and measure cmd+d and cmd+shift+d splits and profile where actually
+    it is getting slow and see if we can make it as smooth as posssible" (Track J, new).
+20. "and this ctrl+ - and ctrl+shift+- for going back and forward is not intuitive at all, what does vs code generally
+    uses to jump back and forward, can we use something that, we need some intuitive shortcuts, not a bit random ones"
+    (Track E).
+    - VS Code on macOS uses exactly ⌃- / ⇧⌃- (Alt+← / Alt+→ elsewhere). The Mac-native pairs are ⌘[ ⌘] (Finder,
+      Safari, Chrome; Ovvi's pane selection, which the user asked back in phase 56) and ⌘← ⌘→ (Safari, Chrome).
+      Decision: ⌘← ⌘→ are Back and Forward over File Explorer and Git, the editor included while it is locked or
+      read-only; only where the caret edits text do they move the caret. ⌃- / ⇧⌃- go. Mouse back/forward buttons
+      and the swipe keep working.
+21. "so on the slight increase in padding we did in floating panels, we might need to reduce a bit, basically left
+    and top padding should be equivalent so it looks symmetric you know. right now i see slightly more top padding
+    than left padding when i hover on the back button" (Track E).
+22. "cmd+k search has become quite laggy with i think many options now, can we make it more snappy, stress test,
+    maeasure and improve" (Track K, new).
+23. "empty states are good now, one thing is when remote machine is disconnected, we see some icon right, idk what
+    that icon means, can we use a relevant disconnected icon instead" (Track A).
+24. "spacing can be improved for the timestamp thing in messages, its bit too close to message, same for assistant
+    message as well, also don't show that show tui button on error, that's weird" (Track I).
+25. "for settings, let's try out option b, and also can we add some padding between search and first menu option,
+    only slight increase" (Settings icons).
+26. "in markdown for the lock, can we have better icon? like the lock is not intuitive on what it means" (Track E).
+27. "for the sidebar, your design is good, increase gap between workspaces a bit, and show time as well for statuses,
+    no need of new agent button on top, let's skip that, for the unselected workpsaces, expanded one should have a
+    border without glass effect, one selected should have glass  effect, rest go with your recommendations"
+    (Track B: build).
