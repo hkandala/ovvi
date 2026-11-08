@@ -294,7 +294,7 @@ struct HoverCard: View {
                 // The state icon's room.
                 .padding(.trailing, state == nil ? 0 : 18)
                 // An agent's whole title: the sidebar's row cuts it at its width (an untitled one's first prompt).
-                if let title = pane.agentTitle {
+                if let title = pane.label ?? pane.sessionTitle, pane.agent != nil {
                     Text(title).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(3)
                         .padding(.trailing, state == nil ? 0 : 18)
                 }

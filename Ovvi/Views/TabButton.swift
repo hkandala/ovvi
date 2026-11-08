@@ -2,8 +2,7 @@ import HerdrKit
 import SwiftUI
 
 /// One tab's capsule: its program icons and title, Pin and × while hovered. Its own view, so a status change redraws
-/// this
-/// tab only (design D6).
+/// this tab only (design D6).
 struct TabButton: View {
     let tab: HostStore.Tab
     let workspace: HostStore.Workspace

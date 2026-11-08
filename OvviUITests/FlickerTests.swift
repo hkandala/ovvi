@@ -89,7 +89,7 @@ extension OvviUITests {
         for (name, act) in [
             ("tab click", click("tab.w1:t2")), ("tab click back", click("tab.w1:t1")), ("tab key", key("2")),
             ("workspace", click("workspace.w2")), ("workspace back", click("workspace.w1")),
-            ("session key", key("2", option)), ("session key back", key("1", option)),
+            ("session jump key", key("2", option)), ("session jump key back", key("1", option)),
             ("next session key", key("]", option)), ("previous session key", key("[", option)),
         ] {
             try await records.append(frames(name, act))

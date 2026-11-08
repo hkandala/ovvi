@@ -1,8 +1,7 @@
 import XCTest
 
 /// The sidebar's Archived Sessions (ui/window#archived-sessions): the closed sessions in the agents' stores of a
-/// fixture home
-/// (`OvviUITests.archivedHome`), never the user's.
+/// fixture home (`OvviUITests.archivedHome`), never the user's.
 extension OvviUITests {
     /// The home folder whose agents' stores the Archived shelf reads (`-archivedHome`).
     static let archivedHome = "/tmp/ovvi-e2e-archived"

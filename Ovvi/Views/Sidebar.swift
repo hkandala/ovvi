@@ -2,9 +2,8 @@ import HerdrKit
 import SwiftUI
 
 /// Arc-style pages, one per session open in the window (D43), paged sideways; the filter and Open Session at the
-/// bottom.
-/// Each page lists its session's pinned tabs, its workspaces like herdr's Spaces panel, each unfolding to its agents,
-/// and its Archived Sessions (ui/window#sidebar).
+/// bottom. Each page lists its session's pinned tabs, its workspaces like herdr's Spaces panel, each unfolding to its
+/// agents, and its Archived Sessions (ui/window#sidebar).
 struct Sidebar: View {
     static let widths: ClosedRange<Double> = 227 ... 480
     /// Rex's rows: 10 pt in from the window's edge.

@@ -34,7 +34,6 @@
 32	testGoToDirectoryAndInsertPath
 31	testOverviewShowsEveryTabLiveAndOpensOne
 30	testAChatSendsStopsAndFoldsItsToolCalls
-30	testAgentGroupsFoldAndStayFoldedAfterARelaunch
 30	testFloatingWindowInEachLook
 30	testPluginPanesOpenFromTheChooserThePaletteAndLinks
 30	testTheRemoteHostDialogInEveryLook
@@ -79,7 +78,6 @@
 22	testSwitchingTabsShowsOnlyTheirPage
 21	testAFloatingWindowShowsTheChat
 21	testAWorkspaceUnfoldsToItsAgentsByTheirNewestChange
-21	testAgentsViewListsEveryAgentByPriorityOrWorkspaceOrder
 21	testControlTabStepsFromChatAndBrowserCards
 21	testPaletteOpensPathsWorkingTreeAndCommits
 21	testResizeNeverBlanksTheText

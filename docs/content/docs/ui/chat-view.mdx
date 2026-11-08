@@ -578,7 +578,8 @@ snapshot does not start every run at once.
 With no title yet, the same run reads the first typed prompt: Claude Code's first `user` message in the
 transcript's first 100 lines that is not a meta line or a command's wrapper (text that starts with `<`), Pi's first
 user message in the session file's first 40 lines, and Codex's `preview` in its newest `state_*.sqlite`. OpenCode
-titles its sessions itself. The prompt is cut at 100 characters, then "…".
+titles its sessions itself. The prompt is read only while there is no title, and cut at 100 characters, then "…".
+UI tests point the reads at a fixture home (`-archivedHome`), as Archived Sessions'.
 
 - An id goes into the script only when it holds letters, digits, `-` and `_`
   only. A file must be an absolute path.

@@ -165,6 +165,11 @@ extension HostStore {
               tab.tree?.paneIDs.contains(where: Ahead.isStandIn) == false else { return [] }
         let label = tab.label.allSatisfy(\.isNumber) ? nil : tab.label
         var moved: [(old: String, new: HerdrKit.Pane)] = []
+        movingTabs.insert(tabID)
+        defer {
+            movingTabs.remove(tabID)
+            repin(tab: tabID, to: moved.first?.new.tabID)
+        }
         await write { client in
             guard let tree = try await client.snapshot().trees[tabID]
             else { throw HerdrError.failed("herdr has no such tab") }

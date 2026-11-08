@@ -57,8 +57,8 @@ extension OvviUITests {
         XCTAssertTrue(rows[0].exists)
     }
 
-    /// Pin from the tab's hover button or its menu: the tab's row goes on top of the sidebar, stays over a relaunch,
-    /// and shows its tab; Unpin from the row's hover button or the tab's menu.
+    /// Pin from the tab's hover button or its menu: the tab's row goes on top of the sidebar, stays over a relaunch and
+    /// a move to another workspace, and shows its tab; Unpin from the row's hover button or the tab's menu.
     func testAPinnedTabStaysOnTop() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, _) = try await newTab("deploy")
@@ -85,35 +85,51 @@ extension OvviUITests {
         element("tab.\(tab)").rightClick()
         app.menus.menuItems["Pin Tab"].firstMatch.click()
         XCTAssertTrue(pinned.exists(within: 2))
-        element("tab.\(tab)").rightClick()
+        // Dragged onto alpha's row: herdr gives it a new id, and the pin follows it.
+        let before = try await tabIDs()
+        during(element("tab.\(tab)").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
+               to: element("workspace.w1").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
+        var moved = ""
+        try await expect("the tab in alpha") {
+            moved = try await tabIDs().first { !before.contains($0) && $0.hasPrefix("w1:") } ?? ""
+            return !moved.isEmpty
+        }
+        closeAfter("tab", moved)
+        let movedPin = element("pinned.\(moved)")
+        XCTAssertTrue(movedPin.exists(within: 3))
+        XCTAssertEqual(movedPin.label, "deploy, alpha")
+        XCTAssertFalse(pinned.exists)
+        element("tab.\(moved)").rightClick()
         app.menus.menuItems["Unpin Tab"].firstMatch.click()
-        XCTAssertTrue(pinned.vanishes(within: 2))
+        XCTAssertTrue(movedPin.vanishes(within: 2))
     }
 
-    /// An untitled pi session: its row shows its first prompt, cut at 100 characters with "…"; the hover card has it
-    /// whole.
+    /// An untitled Claude Code session (its transcript in the tests' fixture home, `-archivedHome`): its row shows its
+    /// first prompt, cut at 100 characters with "…".
     func testAnUntitledAgentShowsItsFirstPrompt() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, pane) = try await newTab("prompt")
         try await waitForPrompt(pane)
         let prompt = "find why the drop indicator lands one slot to the right when a tab comes in from another "
             + "workspace and waits over the gap"
-        // In the tests' config folder, which the next run removes.
-        let file = "/tmp/ovvi-e2e-no-config/prompt-\(UUID().uuidString.prefix(8)).jsonl"
-        let lines = [#"{"type":"session","version":3,"cwd":"/tmp"}"#,
-                     #"{"type":"message","message":{"role":"user","content":[{"type":"text","text":"\#(prompt)"}]}}"#]
-        try await send("echo \(Data(lines.joined(separator: "\n").utf8).base64EncodedString()) | base64 -d >\(file) && "
-            + "clear && echo ready-$((6*7))\r", to: pane)
+        let id = UUID().uuidString.lowercased(), dir = "\(Self.archivedHome)/.claude/projects/prompt"
+        let line = #"{"type":"user","message":{"role":"user","content":"\#(prompt)"},"sessionId":"\#(id)"}"#
+        try await send(
+            "mkdir -p \(dir) && echo \(Data(line.utf8).base64EncodedString()) | base64 -d >\(dir)/\(id).jsonl "
+                + "&& clear && echo ready-$((6*7))\r",
+            to: pane,
+        )
         try await waitFor(pane) { $0.contains("ready-42") }
-        try await report(pane, "idle", agent: "pi")
-        try await Self.call(one, "pane.report_agent_session", ["pane_id": pane, "source": "ovvi-e2e", "agent": "pi",
-                                                               "agent_session_path": file])
-        try await report(pane, "working", agent: "pi")
+        // The state before the session: herdr takes no state report after it.
+        try await report(pane, "working", agent: "claude")
+        try await Self.call(one, "pane.report_agent_session", ["pane_id": pane, "source": "herdr:claude",
+                                                               "agent": "claude", "agent_session_id": id])
         unfold("w2")
         let row = element("agent.\(pane)")
         let cut = String(prompt.prefix(100)).trimmingCharacters(in: .whitespaces) + "…"
         try await expect("the first prompt as the title") { row.label.hasPrefix("\(cut), beta · ") }
         keepScreenshot("untitled agent's first prompt")
+        try await send("rm -rf \(dir)\r", to: pane)
     }
 
     /// Unfolds the workspace's agents; folds them back after the test (the tests' defaults keep the folds).

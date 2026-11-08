@@ -1,12 +1,9 @@
 import SwiftUI
 
-/// A folded shelf at the foot of the sidebar (Archived Sessions), as T3 Code's: a quiet header with the count at its
-/// end
-/// and a chevron, folded at first; open, at most five rows tall, then its rows scroll inside.
+/// A folded shelf at the foot of the sidebar (Archived Sessions), as T3 Code's: a quiet header with a chevron at its
+/// end, folded at first; open, at most five rows tall, then its rows scroll inside.
 struct Shelf<Accessory: View, Content: View>: View {
     let label: String
-    /// None while unknown (Archived reads lazily).
-    let count: Int?
     let page: Page
     @ViewBuilder var accessory: () -> Accessory
     @ViewBuilder var content: () -> Content
@@ -60,7 +57,7 @@ struct Shelf<Accessory: View, Content: View>: View {
             }
         }
         .buttonStyle(ChromeStyle(radius: 7))
-        .accessibilityLabel(count.map { "\(label) \($0)" } ?? label)
+        .accessibilityLabel(label)
         .accessibilityAddTraits(.isHeader)
         .accessibilityValue(open ? "expanded" : "collapsed")
         .accessibilityIdentifier("agents.shelf.\(label)")
@@ -72,19 +69,14 @@ struct Shelf<Accessory: View, Content: View>: View {
         }
     }
 
-    /// The header's line: `lead`, then the count and the chevron (only their room without `tail`).
+    /// The header's line: `lead`, then the chevron (only its room without `tail`).
     private func line(open: Bool, tail: Bool = true, @ViewBuilder _ lead: () -> some View) -> some View {
         HStack(spacing: 6) {
             lead()
-            HStack(spacing: 6) {
-                if let count {
-                    Text("\(count)").monospacedDigit().foregroundStyle(.tertiary)
-                }
-                Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
-                    .rotationEffect(.degrees(open ? 90 : 0))
-            }
-            .opacity(tail ? 1 : 0)
-            .accessibilityHidden(!tail)
+            Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
+                .rotationEffect(.degrees(open ? 90 : 0))
+                .opacity(tail ? 1 : 0)
+                .accessibilityHidden(!tail)
         }
         .font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
         .padding(.horizontal, 8)
@@ -92,14 +84,9 @@ struct Shelf<Accessory: View, Content: View>: View {
     }
 }
 
-extension Shelf where Accessory == EmptyView {
-    init(label: String, count: Int?, page: Page, @ViewBuilder content: @escaping () -> Content) {
-        self.init(label: label, count: count, page: page, accessory: { EmptyView() }, content: content)
-    }
-}
-
 extension Page {
-    /// The defaults key of the open shelves and the unfolded workspaces, a line each (`shelfKey`).
+    /// The defaults key of the open shelf and the unfolded workspaces, a line each (`shelfKey`).
+    /// ponytail: folds are never pruned, so a workspace herdr makes again with a folded-open id starts unfolded.
     static let openShelves = "agentsOpen"
 
     /// "‹machine› ‹session› ‹label›".

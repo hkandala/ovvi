@@ -22,9 +22,12 @@ struct WorkspaceRow: View {
     let keycap: Int?
     /// Its agent panes as shown, newest change first; empty: no chevron.
     var agents: [HostStore.Pane] = []
+    /// It runs agents: a chevron.
+    var hasAgents = false
     /// Unfolded: its agents show.
     var open = false
-    var fold: () -> Void = {}
+    /// Nil while the filter holds it open.
+    var fold: (() -> Void)?
     @State private var renaming = false
     @Environment(\.look) private var look
 
@@ -53,14 +56,15 @@ struct WorkspaceRow: View {
             }
         }
         .padding(.leading, parent == nil ? 0 : 14)
-        // From under the repository's row, 15 pt in, down along its worktrees; a repository's starts under its agents.
+        // From under the repository's row, 15 pt in, down along its worktrees; past an unfolded row, whose border or
+        // glass is there, only in the gaps.
         .background(alignment: .topLeading) {
             if parent != nil || guideBelow {
                 GeometryReader { geometry in
                     let total = geometry.size.height
-                    let top = parent == nil ? total : 0
-                    Rectangle().fill(.separator).frame(width: 1)
-                        .frame(height: (guideBelow ? total + Self.gap : height / 2) - top)
+                    let top = parent == nil || open ? total : 0
+                    let bottom = guideBelow ? total + Self.gap : open ? total : height / 2
+                    Rectangle().fill(.separator).frame(width: 1, height: max(bottom - top, 0))
                         .offset(x: 15, y: top)
                 }
             }
@@ -81,7 +85,7 @@ struct WorkspaceRow: View {
             label(selected: selected, state: state, git: git)
                 // The state icon's and the chevron's room (`stateIcon`, `chevron`).
                 .padding(.leading, Self.textInset)
-                .padding(.trailing, 8 + (shown == nil ? 0 : 12 + 8) + (agents.isEmpty ? 0 : Self.chevron + 6))
+                .padding(.trailing, 8 + (shown == nil ? 0 : 12 + 8) + (hasAgents ? Self.chevron + 6 : 0))
                 .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .leading)
         }
         // The row's glass is the whole row's (`body`); under the pointer only an unselected one fills.
@@ -91,7 +95,7 @@ struct WorkspaceRow: View {
         .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityValue([state?.word, git.map { "\($0.branch) ahead \($0.ahead) behind \($0.behind)" },
                              parent.map { "worktree of \($0.label)" }].compactMap(\.self).joined(separator: ", "))
-        .overlay(alignment: .topTrailing) { stateIcon(shown).padding(.trailing, agents.isEmpty ? 0 : Self.chevron + 6) }
+        .overlay(alignment: .topTrailing) { stateIcon(shown).padding(.trailing, hasAgents ? Self.chevron + 6 : 0) }
         .overlay(alignment: .topTrailing) { chevron }
         // At the end of the name's line, never over the name. Over the button, so a test sees it.
         .overlay(alignment: .topTrailing) {
@@ -155,14 +159,15 @@ struct WorkspaceRow: View {
     /// Folds or unfolds the agents, at the end of the name's line; none without agents. Its own button: a click on the
     /// row selects it.
     @ViewBuilder private var chevron: some View {
-        if !agents.isEmpty, keycap == nil, !renaming {
-            Button(action: fold) {
+        if hasAgents, keycap == nil, !renaming {
+            Button { fold?() } label: {
                 Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(.secondary)
                     .rotationEffect(.degrees(open ? 90 : 0))
                     .frame(width: Self.chevron + 8, height: 22).contentShape(.rect)
             }
             .buttonStyle(.plain)
+            .disabled(fold == nil)
             .frame(height: 30)
             .padding(.trailing, 4)
             .help(open ? "Hide Agents" : "Show Agents")

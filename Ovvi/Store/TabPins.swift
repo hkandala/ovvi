@@ -42,12 +42,24 @@ extension Page {
 }
 
 extension HostStore {
-    /// Drops this session's pins whose tab is gone, after each snapshot; another session's stay.
+    /// Drops this session's pins whose tab is gone, after each snapshot, but a moving tab's; another session's stay.
     func keepTabPins() {
         guard last != nil, let text = UserDefaults.agents.string(forKey: TabPin.key) else { return }
-        let tabs = Set(workspaces.flatMap(\.tabs).map(\.id))
+        let tabs = Set(workspaces.flatMap(\.tabs).map(\.id)).union(movingTabs)
         let pins = [TabPin](json: text)
             .filter { $0.machine != machine.id || $0.session != session || tabs.contains($0.tab) }
+        if pins.json != text {
+            UserDefaults.agents.set(pins.json, forKey: TabPin.key)
+        }
+    }
+
+    /// A pinned tab moved to another workspace keeps its pin, in its place, under its new tab's id.
+    func repin(tab old: String, to new: String?) {
+        guard let new, let text = UserDefaults.agents.string(forKey: TabPin.key) else { return }
+        let pins = [TabPin](json: text).map { pin in
+            pin.machine == machine.id && pin.session == session && pin.tab == old
+                ? TabPin(machine: pin.machine, session: pin.session, tab: new) : pin
+        }
         if pins.json != text {
             UserDefaults.agents.set(pins.json, forKey: TabPin.key)
         }
@@ -58,9 +70,8 @@ extension HostStore {
 extension UserDefaults {
     /// The sidebar's own state: tab pins, open folds and shelves, and the agents' times, in a defaults domain of the
     /// config folder's (`dev.ovvi.app.agents.‹folder, / as _›`), so a test's `-configFolder` keeps its writes out of
-    /// the
-    /// user's. Not a suite at a path: once its file exists, a new process's writes read back the old value and notify
-    /// no view.
+    /// the user's. Not a suite at a path: once its file exists, a new process's writes read back the old value and
+    /// notify no view.
     static let agents = UserDefaults(suiteName: "dev.ovvi.app.agents." + Registry.config.path.replacing("/", with: "_"))
         ?? .standard
 
@@ -68,8 +79,9 @@ extension UserDefaults {
     /// old name. The app's own defaults only outside a test's config folder: those are the user's.
     static func dropAgentsView() {
         agents.removeObject(forKey: "agentPins")
-        if let open = agents.string(forKey: Page.openShelves) {
-            let kept = open.split(separator: "\n").filter { !$0.hasSuffix(" Settled") && !$0.hasSuffix(" Archived") }
+        let open = agents.string(forKey: Page.openShelves)?.split(separator: "\n") ?? []
+        let kept = open.filter { !$0.hasSuffix(" Settled") && !$0.hasSuffix(" Archived") }
+        if kept.count != open.count {
             agents.set(kept.joined(separator: "\n"), forKey: Page.openShelves)
         }
         if standard.string(forKey: "configFolder") == nil {

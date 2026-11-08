@@ -92,8 +92,7 @@ extension OvviUITests {
     }
 
     /// A sideways swipe over the sidebar pages it and never changes the tab; a sideways wheel over a card changes
-    /// neither the tab nor the session. In the Agents view, with its header in the same place, a swipe shows the other
-    /// page's agents.
+    /// neither the tab nor the session.
     func testSwipesPageTheSidebarAndNotTheTabs() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         openPage(two)

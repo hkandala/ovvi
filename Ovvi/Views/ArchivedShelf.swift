@@ -2,10 +2,8 @@ import HerdrKit
 import SwiftUI
 
 /// The sidebar's Archived Sessions (ui/window#archived-sessions): the sessions of Claude Code, Codex, Pi and OpenCode
-/// on
-/// the page's machine that no pane runs, from the agents' own stores, newest first. Read each time it opens; the next
-/// page
-/// of an agent as the list's end scrolls into view. A menu in its header shows one agent.
+/// on the page's machine that no pane runs, from the agents' own stores, newest first. Read each time it opens; the
+/// next page of an agent as the list's end scrolls into view. A menu in its header shows one agent.
 struct ArchivedShelf: View {
     let page: Page
     /// The footer's filter: by title and folder.
@@ -21,15 +19,15 @@ struct ArchivedShelf: View {
     @State private var generation = 0
     @State private var attempt = 0
 
-    /// UI tests' stores (`-archivedHome`), never the user's.
-    private static let home = UserDefaults.standard.string(forKey: "archivedHome")
+    /// UI tests' stores (`-archivedHome`), never the user's; the agents' session titles too.
+    static let home = UserDefaults.standard.string(forKey: "archivedHome")
 
     var body: some View {
         let open = opened.split(separator: "\n").contains { $0 == page.shelfKey(Self.label) }
         let shown = agent.isEmpty ? Chooser.agents.map(\.command) : [agent]
         let rows = open ? rows(shown) : []
         let next = list.next(of: shown).filter { !failed.contains($0) }
-        Shelf(label: Self.label, count: nil, page: page) {
+        Shelf(label: Self.label, page: page) {
             menu
         } content: {
             ForEach(rows) { row($0) }
@@ -129,7 +127,8 @@ struct ArchivedShelf: View {
         return AgentRow(icon: session.agent, title: session.title, line2: page.short(session.folder), id: id,
                         action: { page.resume(session) },
                         hover: {
-                            IconButton(symbol: "arrow.uturn.backward", help: "Resume", size: 18) { page.resume(session)
+                            IconButton(symbol: "arrow.uturn.backward", help: "Resume", size: 18) {
+                                page.resume(session)
                             }
                             .accessibilityIdentifier(id + ".resume")
                         },

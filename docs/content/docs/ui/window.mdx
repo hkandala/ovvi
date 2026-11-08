@@ -249,7 +249,7 @@ the [workspace rows](#workspace-rows) with their [agents](#agent-rows) (the only
 - **Footer.** The filter field and one button, **Open Session** (⌥⌘T), which
   opens the [Open Session](#open-session) panel. The filter keeps the rows
   whose name or branch matches, and the rows with an agent whose name, agent or tab matches, unfolded to those
-  agents. A matching worktree also keeps its repository's row. With none, the compact empty state says "No matching
+  agents (a row kept by its name or branch alone stays folded). A matching worktree also keeps its repository's row. With none, the compact empty state says "No matching
   workspaces" (`magnifyingglass`). It also filters Pinned (by the tab's title or its workspace's name) and
   Archived Sessions. The footer has no New Workspace and no Add Remote Host:
   the page header has `+`, and the machine menu has Add Remote Host.
@@ -272,8 +272,8 @@ is no Pinned part while no tab of the page is pinned.
   workspace's name (11 pt, secondary), and at the end the state icon of its strongest agent, none while idle.
   Pin order. Lit like the selected workspace row while it is the tab in view. A click shows the tab and gives its
   keyboard card the keys; rest the pointer to see its [hover card](#hover-card).
-- **Kept** per machine and session, by herdr's tab id, across relaunches (`tabPins`). A pin goes once a snapshot
-  no longer has its tab.
+- **Kept** per machine and session, by herdr's tab id, across relaunches (`tabPins`). A tab moved to another
+  workspace keeps its pin under its new id. A pin goes once a snapshot no longer has its tab.
 
 ## Workspace rows
 
@@ -288,7 +288,8 @@ Spaces panel.
   the name's line, 8 pt in; it turns down while the row is unfolded. A click on it folds or unfolds the row's
   [agents](#agent-rows) and does not select the row; "Show Agents" or "Hide Agents" is its tooltip and VoiceOver
   label, "collapsed" or "expanded" its value. Rows are folded at first; each one's fold is kept per machine and
-  session across relaunches (`agentsOpen`). The keycap hint and the rename field hide it.
+  session across relaunches (`agentsOpen`). The keycap hint and the rename field hide it. While the footer filter
+  holds rows open, the chevron does nothing.
 - **State icon.** At the end of the name's line, 8 pt in (6 pt before the chevron) and centered on
   that line: the state icon (12 pt, as a tab's) of the workspace's strongest agent, with no word and
   no time ([Status](/docs/ui/theme-and-accessibility#status)). An idle agent,
@@ -766,7 +767,7 @@ agents at once.
   back after a relaunch.
 - **What it hides.** The sidebar, the tab bar and every title-row button: the
   row keeps only the traffic lights and, at its end, one × (Close Overview,
-  ⌃⌘O) that leaves the overview. ⌘K and ⌘. still work. The overview covers
+  ⌃⌘O) that leaves the overview. ⌘K still works. The overview covers
   the window below the title row. It appears and goes at once, with no fade
   or zoom.
 - **Canvas.** The session in view, scrolled vertically. ⌥ + swipe sideways,

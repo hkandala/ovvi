@@ -3,7 +3,8 @@ import XCTest
 /// The whole UI at scale: a session of 30 workspaces, 300 tabs and 400 panes (600 took CI two
 /// minutes to make; a Mac gives all its programs 511 terminals), 100 of them agents that print, retitle and change
 /// state, and half the others printing (`scripts/stress.py`). It records the main keys' time to their frame, the
-/// frames while the sidebar, the tab bar and the Agents view scroll, the app's CPU and memory, and the main thread's
+/// frames while the sidebar (with a workspace's agents unfolded) and the tab bar scroll, the app's CPU and memory, and
+/// the main thread's
 /// work every 5 s: all in the result bundle ("stress", "usage, …", "sample").
 extension OvviUITests {
     func testHundredsOfPanesStayQuick() async throws {

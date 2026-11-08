@@ -1,19 +1,14 @@
 import SwiftUI
 
 /// An Archived Sessions row, a 48 pt button: the program tile on line 1, then the name, then `trailing` (its age); line
-/// 2 full width. Under the pointer `hover` (Resume) shows before `trailing`, as buttons of their own
-/// over the row: inside the row's label, they would be part of its one accessibility element.
+/// 2 full width. Under the pointer `hover` (Resume) shows before `trailing`, as buttons of their own over the row:
+/// inside the row's label, they would be part of its one accessibility element.
 struct AgentRow<Hover: View, Trailing: View>: View {
     let icon: String
-    var letter: String?
     let title: String
     let line2: String
-    /// Needs you or an unseen finish: the name is medium; the others recede.
-    var medium = false
-    var lit = false
-    /// The row's accessibility identifier and value.
+    /// The row's accessibility identifier.
     let id: String
-    var value = ""
     let action: () -> Void
     @ViewBuilder var hover: () -> Hover
     @ViewBuilder var trailing: () -> Trailing
@@ -23,10 +18,9 @@ struct AgentRow<Hover: View, Trailing: View>: View {
     var body: some View {
         Button(action: action) {
             HStack(alignment: .top, spacing: 8) {
-                ProgramTile(icon: icon, letter: letter)
+                ProgramTile(icon: icon)
                 lines {
-                    Text(title).font(.system(size: 13, weight: medium ? .medium : .regular)).lineLimit(1)
-                        .foregroundStyle(lit ? look.selected : look.chrome)
+                    Text(title).font(.system(size: 13)).lineLimit(1).foregroundStyle(look.chrome)
                     Spacer(minLength: 0)
                     // Room for the hover buttons, so the name shortens before them.
                     if hovering {
@@ -38,11 +32,9 @@ struct AgentRow<Hover: View, Trailing: View>: View {
             .padding(.horizontal, 8)
             .frame(height: 48)
         }
-        .buttonStyle(ChromeStyle(selected: lit, radius: 10))
+        .buttonStyle(ChromeStyle(radius: 10))
         .accessibilityIdentifier(id)
         .accessibilityLabel("\(title), \(line2)")
-        .accessibilityValue(value)
-        .accessibilityAddTraits(lit ? .isSelected : [])
         // The same two lines, with only the hover buttons drawn, right before where `trailing` is.
         .overlay {
             if hovering {

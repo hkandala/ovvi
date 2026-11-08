@@ -348,7 +348,7 @@ extension HostStore {
             await asks.enter()
             defer { asks.leave() }
             guard pane.titleKey == key else { return }
-            let title = await machine.exec().sessionTitle(agent: agent, session: session)
+            let title = await machine.exec().sessionTitle(agent: agent, session: session, home: ArchivedShelf.home)
             if pane.titleKey == key, pane.sessionTitle != title {
                 pane.sessionTitle = title
             }

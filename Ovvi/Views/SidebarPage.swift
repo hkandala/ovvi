@@ -88,15 +88,16 @@ struct SidebarPage: View {
                     VStack(alignment: .leading, spacing: WorkspaceRow.gap) {
                         let rows = rows, groups = store.groups
                         ForEach(Array(rows.enumerated()), id: \.element.workspace.id) { index, row in
-                            let id = row.workspace.id, agents = agents(of: row.workspace)
+                            let id = row.workspace.id, hasAgents = runsAgents(row.workspace)
+                            let shown = hasAgents && (opens(id) || !filter.isEmpty) ? agents(of: row.workspace) : []
                             WorkspaceRow(workspace: row.workspace, parent: row.parent, page: page,
                                          guideBelow: rows.indices.contains(index + 1)
                                              && rows[index + 1].parent != nil,
                                          ends: (groups.first?.first?.id, groups.last?.first?.id),
                                          keycap: hints ? page.sidebarWorkspaces.prefix(9)
                                              .firstIndex { $0.id == id }.map { $0 + 1 } : nil,
-                                         agents: agents, open: !agents.isEmpty && (opens(id) || !filter.isEmpty),
-                                         fold: { fold(id) })
+                                         agents: shown, hasAgents: hasAgents, open: !shown.isEmpty,
+                                         fold: filter.isEmpty ? { fold(id) } : nil)
                                 .overlay {
                                     if drop.over == id, page.dragging != nil {
                                         DropIndicator()
@@ -183,6 +184,11 @@ struct SidebarPage: View {
             filter.isEmpty || [pane.agentTitle, pane.agentName, page.place(pane)].compactMap(\.self)
                 .contains { $0.matches(filter) }
         }
+    }
+
+    /// By herdr's agent kind, which changes far less than the states: a folded row draws again for no state change.
+    private func runsAgents(_ workspace: HostStore.Workspace) -> Bool {
+        workspace.tabs.contains { page.store.panes(in: $0.id).contains { $0.agent != nil } }
     }
 
     private func order(_ workspace: HostStore.Workspace) -> [String] {
