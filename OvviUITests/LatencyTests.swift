@@ -120,12 +120,13 @@ extension OvviUITests {
         XCTAssertTrue(until(3) { header == one })
         let sidebar = element("sidebar"), width = sidebar.frame.width
         let center = "\(sidebar.frame.midX) \(sidebar.frame.midY)"
-        // 14 steps of 10 pt, 16 ms apart (625 pt/s), past half a page, then momentum; the other way if natural
-        // scrolling is off.
+        // Steps of 10 pt, 16 ms apart (625 pt/s), 10 pt past half the sidebar's width, then momentum; the other way if
+        // natural scrolling is off. Past half a page: a lift CI posts over 100 ms late counts as a rest.
+        let moves = Int(width / 20) + 1
         var forward = -1.0
         for sign in [-1.0, 1.0] {
             forward = sign
-            try await Self.post("\(one)/swipe", Data("\(center) \(10 * sign) 14".utf8))
+            try await Self.post("\(one)/swipe", Data("\(center) \(10 * sign) \(moves)".utf8))
             // No accessibility query during the slide: XCUITest's snapshots take the main thread (a 240 ms stall).
             try await Task.sleep(for: .seconds(1))
             if header == two {
@@ -136,8 +137,8 @@ extension OvviUITests {
         let (swipe, path, shown) = try XCTUnwrap(swipes().last, "no swipe moved")
         let speed = 10 / 0.016
         let times = path.map { $0[0] }, offsets = path.map { $0[1] }
-        // The page went 140 pt with the fingers, give or take the system's own pace.
-        XCTAssertEqual(offsets[0], 140, accuracy: 40, "\(swipe)")
+        // The page went with the fingers, give or take the system's own pace.
+        XCTAssertEqual(offsets[0], Double(10 * moves), accuracy: 40, "\(swipe)")
         // The next page, one page width over (the sidebar's minus its 8 pt handle), never past it, never back.
         let target = offsets.last ?? 0
         XCTAssertEqual(target, width - 8, accuracy: 2, "\(swipe)")
@@ -169,7 +170,7 @@ extension OvviUITests {
         // Slowly past half a page, a rest, a lift: the spring from rest is logically complete still about 1.4 % of its
         // way short (1.3–1.6 pt here). The session shows only once the pages are on their place: shown before, its
         // 100 ms of main thread held them short, then they jumped. The last frame recorded started the show. 10 pt past
-        // half the sidebar's width: a fixed 140 pt fell short of a 300 pt sidebar's half page.
+        // half the sidebar's width.
         try await Self.post("\(one)/swipe", Data("\(center) \(-2 * forward) \(Int(width / 4) + 5) 200".utf8))
         try await Task.sleep(for: .seconds(1.5))
         XCTAssertEqual(header, one)
