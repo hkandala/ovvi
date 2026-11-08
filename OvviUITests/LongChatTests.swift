@@ -164,14 +164,14 @@ extension OvviUITests {
             XCTAssertEqual(moved, CGFloat(direction * upward * steps * 2), accuracy: 6, "\(direction) × \(steps)")
         }
         // A run and its open rows take a reply bubble's left edge and widest width: 18 pt left of the replies' text,
-        // and 48 pt short of the messages' right edge, 18 pt in from the user's bubble's.
+        // and 48 pt short of the messages' right edge, where the user's text ends.
         let stacks = app.descendants(matching: .any).matching(identifier: "chat.\(pane).stack")
         let stack = stacks.element(boundBy: stacks.count - 1), user = row(pane, "user", "Question 25")
         stack.click()
         let tool = app.descendants(matching: .any).matching(identifier: "chat.\(pane).tool").firstMatch
         XCTAssertTrue(tool.exists(within: 3))
         XCTAssertEqual(stack.frame.minX, last.frame.minX - 18, accuracy: 1, "\(stack.frame) \(last.frame)")
-        XCTAssertEqual(stack.frame.maxX, user.frame.maxX - 18 - 48, accuracy: 1, "\(stack.frame) \(user.frame)")
+        XCTAssertEqual(stack.frame.maxX, user.frame.maxX - 48, accuracy: 1, "\(stack.frame) \(user.frame)")
         XCTAssertEqual(tool.frame.maxX, stack.frame.maxX, accuracy: 1, "\(tool.frame) \(stack.frame)")
 
         // Scrolled up a little, a new turn comes below without moving what is in view: no row leaves the top.
@@ -209,12 +209,14 @@ extension OvviUITests {
         XCTAssertTrue(first.exists)
     }
 
-    /// The values of the replies' blocks and the user's messages along the top 100 pt of the chat, from one snapshot.
+    /// The values of the replies' blocks and the user's messages along the top 100 pt of the chat, from one snapshot. A
+    /// message whose text ends up to 34 pt above the top still shows its time there (the stamp's line, the bubble's
+    /// padding and the rows' spacing): the view holds that row.
     func atTop(of chat: XCUIElement, _ pane: String) -> Set<String> {
         guard let found = try? nodes(of: chat) else { return [] }
         let kinds = ["chat.\(pane).reply", "chat.\(pane).user"], top = found[0].frame.minY
         return Set(found.compactMap { node in
-            kinds.contains(node.identifier) && node.frame.maxY > top && node.frame.minY < top + 100
+            kinds.contains(node.identifier) && node.frame.maxY > top - 34 && node.frame.minY < top + 100
                 ? node.value as? String : nil
         })
     }
