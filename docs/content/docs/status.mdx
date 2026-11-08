@@ -1,11 +1,11 @@
 ---
 title: "Status and notifications"
-description: "The Agents button and view, notifications and the Dock"
+description: "Agent states in the sidebar and tabs, notifications and the Dock"
 ---
 
 ## Agents and notifications
 
-- Tab capsules, workspace rows, the Agents button and view, the hover card, notifications and the
+- Tab capsules, workspace rows and their agent rows, pinned tabs, the hover card, notifications and the
   Dock all read `agent_status` and `completion_seq` from the
   snapshot. No extra calls.
 - Status comes only from the multiplexer's API (D55), never from
@@ -23,26 +23,20 @@ description: "The Agents button and view, notifications and the Dock"
   finish counts as seen when the user leaves the pane: another pane, tab,
   workspace or session gets the keyboard. Until then it stays Done.
 - Each change carries the time the app saw it, kept across relaunches while
-  herdr's `state_change_seq` of the agent stays the same. The Agents view
-  shows a Working agent's time from that time, and settles idle agents by it.
+  herdr's `state_change_seq` of the agent stays the same. An agent row
+  shows a Working agent's time from that time.
 
 ### Agents
 
-The Agents button (D61) covers the session of the page in view.
-- **The dot.** The button shows an orange dot while an agent of that session
-  needs you.
-- **Hover.** Resting the pointer on the button for 0.25 s lists the agents of
-  that session that need you, then those whose finish you have not seen. A click on one selects its workspace, tab and
-  pane; the sidebar does not change.
-- **Agents view.** A click, ⌘. or View ▸ Show Agents turns the sidebar page into the list of every
-  agent pane of that session: pinned agents on top, then one list with the newest change of state
-  first, then a Settled shelf of agents idle for hours and an Archived shelf of the closed sessions
-  of Claude Code, Codex, Pi and OpenCode, which a click resumes. A click on a row selects that
-  workspace, tab and pane and gives the pane the keyboard. Its unread check stays until the user
-  leaves the pane; the row does not move for it.
+One sidebar (D111): each workspace row shows its strongest agent's state, and its chevron unfolds its agent panes,
+one line each with its state box and working time, newest change of state first. A click on an agent row selects
+that workspace, tab and pane and gives the pane the keyboard. Its unread check stays until the user leaves the pane;
+the row does not move for it. Pinned tabs on top show their state too, and Archived Sessions at the foot lists the
+closed sessions of Claude Code, Codex, Pi and OpenCode, which a click resumes. The Dock badge counts the agents that
+need you, over every open session.
 
-The look is in [Main window: Agents button](/docs/ui/window#agents-button)
-and [Agents view](/docs/ui/window#agents-view).
+The look is in [Main window: Workspace rows](/docs/ui/window#workspace-rows),
+[Agent rows](/docs/ui/window#agent-rows) and [Pinned](/docs/ui/window#pinned).
 
 ### Notifications
 

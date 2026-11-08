@@ -1,6 +1,6 @@
 ---
 title: "Main window"
-description: "Windows, the title row, tab bar, Agents button, sidebar pages, Agents view, Open Session, hover card, tab page, pane cards, zoom, overview, floating panes, find bar, notices and the palette"
+description: "Windows, the title row, tab bar, sidebar pages with pinned tabs, workspaces and their agents and Archived Sessions, Open Session, hover card, tab page, pane cards, zoom, overview, floating panes, find bar, notices and the palette"
 ---
 
 ## Windows
@@ -58,14 +58,13 @@ start, also during a resize. From left to right:
 5. The [tab bar](#tab-bar): the selected workspace's tabs, whether the sidebar
    is open or collapsed.
 6. A spacer.
-7. The [Agents button](#agents-button).
-8. The [overview](#overview) button (⌃⌘O).
-9. ⌘ (the command palette, ⌘K) and `+` (new tab, ⌘T).
+7. The [overview](#overview) button (⌃⌘O).
+8. ⌘ (the command palette, ⌘K) and `+` (new tab, ⌘T).
 
 While the overview is open the row shows only the traffic lights and one ×
 that leaves it ([Overview](#overview)).
 
-Each title-row button except the Agents button shows the system tooltip with
+Each title-row button shows the system tooltip with
 the action's name and its shortcut, for example "New Tab ⌘T". So do the page
 header's `+`, the footer's Open Session button and each card header button.
 
@@ -171,9 +170,9 @@ One capsule per herdr tab of the selected workspace (D42).
   the window title, a close dialog, the floating window's title and the
   accessibility labels built from them. The tab capsule, the hover card and
   the overview keep the dimmed part.
-- **Status slot.** × only on the hovered tab (a 22 pt hit area over the
-  capsule's end, so the tab's width never changes); the title then fades out
-  before it, never under it. Otherwise the state icon (12 pt) of the tab's
+- **Status slot.** Pin Tab (`pin`; Unpin Tab, `pin.slash`, on a pinned tab) and × only on the hovered tab: two 22
+  pt hit areas, 2 pt apart, over the capsule's end, so the tab's width never changes; the title then fades out
+  before them, never under them. A pinned tab shows in the sidebar's [Pinned](#pinned). Otherwise the state icon (12 pt) of the tab's
   strongest agent, centered where the × shows, on every tab with an agent that
   is not idle, the selected one too; the title fades out before it too. The
   icon never moves. An idle agent shows nothing
@@ -183,7 +182,7 @@ One capsule per herdr tab of the selected workspace (D42).
   finished, its icons bounce once (1 → 1.15 → 1, a spring) and its title shows
   "‹agent› needs you" or "‹agent› finished" for 3 s. A long text fades at its
   end like any title. Reduce Motion turns the bounce off.
-- **Context menu** on a capsule: Rename Tab, Move Tab Left, Move Tab Right,
+- **Context menu** on a capsule: Rename Tab, Pin Tab (Unpin Tab on a pinned tab), Move Tab Left, Move Tab Right,
   Close Tab, Close Other Tabs, Close Tabs to the Right. The last two are also in
   the File menu and the palette, for the selected tab. Each asks once, with
   what runs and the total pane count, only when a program besides the shell
@@ -191,53 +190,24 @@ One capsule per herdr tab of the selected workspace (D42).
   text field in place of the title: Enter saves, Esc cancels.
 - **Keycap hints.** If the user holds ⌘ for 0.7 s while the window is key,
   each of the first nine capsules shows a keycap "⌘1"… at its end, where the
-  state icon sits, or left of the × while hovered; the title fades out before
+  state icon sits, or left of the pin while hovered; the title fades out before
   it, and never runs under it. The workspace rows show theirs at the same
   time. The keycaps fade in over 0.13 s and out over 0.1 s when ⌘ is released.
 - Drag a capsule to reorder the tabs ([Drag and drop](/docs/ui/drag-and-drop)).
 - Rest the pointer on a capsule to see the [hover card](#hover-card).
 
-## Agents button
-
-- A list of statuses (`list.bullet.rectangle`), after the tab bar. While the
-  [Agents view](#agents-view) is on, it is filled
-  (`list.bullet.rectangle.fill`); the button has no highlight and no tooltip.
-- A 7 pt orange dot shows when an agent of the page in view needs you.
-- A click, ⌘. or View ▸ Show Agents (checked while on) turns the Agents view
-  on and off (D61). Turning it on with the sidebar collapsed opens the
-  sidebar in the Agents view. Turning it off shows the workspaces; the
-  sidebar stays open. A click gives the keyboard back to the keyboard card.
-- **Hover.** When the pointer rests on the button for 0.25 s, a glass panel
-  hangs under it: 320 pt wide, at most about 480 pt tall. Under the header
-  "Agents · ‹page title›" (11 pt, secondary; the title as in the
-  [page header](#sidebar)) it lists the agents of the page in view in two
-  groups: those that need you, then those that finished since you last
-  left them (Done), each under a group label with its count (11 pt semibold,
-  secondary: "Needs you · 1", "Done · 2"; the groups do not fold). The rows are the
-  same as in the Agents view. A click on a row selects that workspace and tab
-  and gives the pane the keyboard; a Done clears once the user leaves that
-  pane. The sidebar does not change. With both groups empty it does not show at all. The orange dot
-  and the Dock badge count only agents that need you. There is no footer. A
-  click on the button is not a rest: the panel opens only after the pointer
-  leaves the button and comes back.
-- The panel stays while the pointer moves into it (0.15 s grace). It closes
-  when the pointer leaves both, on a click or a scroll outside it, or with
-  Esc. It does not open while a mouse button is down. It fades and grows in
-  from 0.97 over 0.13 s.
-- The panel is drawn inside the window, not as a popover window, so the
-  terminal keeps the keyboard. It is drawn over the whole window, so no
-  scroll view clips it. The hover card uses the same panel.
-
 ## Sidebar
 
 Flat on the window background, with no panel (D44). Arc-style pages, one per
-session open in this window (D43).
+session open in this window (D43). One view (D111): from top to bottom the page header, [Pinned](#pinned) (sticky),
+the [workspace rows](#workspace-rows) with their [agents](#agent-rows) (the only part that scrolls),
+[Archived Sessions](#archived-sessions) (sticky) and the footer.
 - **Open sessions, not all sessions.** A window starts with one page: the
   machine's `default` session, started if it is stopped. It never loads the
   other sessions by itself. The user adds pages with
   [Open Session](#open-session), as many as they like. Only open pages have a
   `HostStore`, snapshot reads and an event stream.
-- **Detach Session.** The context menu of the page header and of its page dot
+- **Detach Session.** The context menu of the page header
   has Detach Session (also in the File menu). It removes the page from this
   window. Its store disconnects, so its event stream and its terminal streams
   end. The herdr session keeps running and stays in the Open Session list.
@@ -255,55 +225,71 @@ session open in this window (D43).
   screen leaves it. A new window (⌘N) opens with no page, for the user to pick
   one ([Windows](#windows)).
 - **Pages.** A sideways swipe on the sidebar moves to the next or previous
-  open page ([Swiping](/docs/ui/swiping)).
-- **Page dots.** At the bottom of the page, above the footer: one 6 pt dot per
-  open page, 6 pt apart. The current page's dot is in primary text color, the
-  others tertiary. A click on a dot shows its page. Hidden while one page is
-  open. VoiceOver reads each dot as its page's title (the page header's).
+  open page ([Swiping](/docs/ui/swiping)); so do ⌥⌘[ ], and ⌥⌘1–9 show a page by its place (Window menu). There
+  are no page dots: the page header names the page in view.
 - **Page header.** The session's name, the page's title (13 pt bold, the
-  rows' size, primary, as in the Agents view); for a machine's `default`
+  rows' size, primary); for a machine's `default`
   session, the machine's name instead: This Mac's own name (System Settings,
   "Hari's MacBook Pro") or the remote machine's name from the list. The Open
   Session panel and the palette keep the real names. Its text starts where
   everything under it starts: 18 pt in from the window's edge, on the
-  workspace rows' names and branch lines, and on the Agents view's header
-  and program tiles. It stays in the same place in both views. It
+  workspace rows' names and branch lines, the pinned tabs' and agents' icons and the shelf's label. It
   sits 3 pt above the first
   row, and, at the trailing
   end, a `+` that makes a new workspace in that session, in `$HOME`. The
   snapshot after it selects the new workspace.
-- **Middle.** The [workspace rows](#workspace-rows), or the
-  [Agents view](#agents-view) while it is on. 18 pt fades show at the top and
+- **Middle.** The [workspace rows](#workspace-rows), 6 pt apart. 18 pt fades show at the top and
   bottom of the workspace list when content is under them. When the selected workspace
   changes, however it changes (a click, the overview, ⌃⌘[ ], ⌃⌘1–9, a
   ⌥ + swipe, the palette, a notification), the list scrolls just
   enough to show its row, clear of the fade, without motion.
-- **Empty session.** A session with no workspace shows a New Workspace
-  button on its page. The window's content shows no button, only an icon and
+- **Empty session.** A session with no workspace shows the compact empty state on its page
+  ([States](/docs/ui/states)): `square.dashed`, "No Workspaces" and a New Workspace button. The window's content shows no button, only an icon and
   "This session is empty".
 - **Footer.** The filter field and one button, **Open Session** (⌥⌘T), which
   opens the [Open Session](#open-session) panel. The filter keeps the rows
-  whose name or branch matches. A matching worktree also keeps its
-  repository's row. The footer has no New Workspace and no Add Remote Host:
+  whose name or branch matches, and the rows with an agent whose name, agent or tab matches, unfolded to those
+  agents. A matching worktree also keeps its repository's row. With none, the compact empty state says "No matching
+  workspaces" (`magnifyingglass`). It also filters Pinned (by the tab's title or its workspace's name) and
+  Archived Sessions. The footer has no New Workspace and no Add Remote Host:
   the page header has `+`, and the machine menu has Add Remote Host.
-- **Width.** 300 pt in a new window, from the window's edge to the cards,
-  room for the Agents view's rows: the rows sit 10 pt in from the window's
+- **Width.** 300 pt in a new window, from the window's edge to the cards: the rows sit 10 pt in from the window's
   edge, and the 8 pt handle lies over the gap before the cards. Drag the
   handle to resize it between 227 and 480 pt. Each window keeps its own
   width, also after a relaunch.
 
-The sidebar never shows tabs, and its bottom never shows agent activity.
+The sidebar shows tabs only in Pinned, and its bottom never shows agent activity.
+
+## Pinned
+
+The page's pinned tabs, on top of the sidebar under the page header; they never scroll with the workspaces. There
+is no Pinned part while no tab of the page is pinned.
+- **Pin.** Pin Tab under the pointer on a tab's capsule (before its ×) or in its context menu; Unpin Tab in the
+  same places, and under the pointer on the pinned row (`pin.slash`, in the state icon's place) or in its menu.
+- **Label.** "Pinned" (11 pt semibold, secondary), 8 pt into the rows, then the rows 2 pt apart, at most five
+  (150 pt; more scroll inside), then a divider 8 pt in from the rows' edges.
+- **Rows.** 28 pt, one line: the tab's program icons, its title (13 pt, the tab bar's title as plain text), its
+  workspace's name (11 pt, secondary), and at the end the state icon of its strongest agent, none while idle.
+  Pin order. Lit like the selected workspace row while it is the tab in view. A click shows the tab and gives its
+  keyboard card the keys; rest the pointer to see its [hover card](#hover-card).
+- **Kept** per machine and session, by herdr's tab id, across relaunches (`tabPins`). A pin goes once a snapshot
+  no longer has its tab.
 
 ## Workspace rows
 
 One row per herdr workspace of the session, in herdr's order, like herdr's
 Spaces panel.
 - **Line 1.** The name (13 pt), 8 pt into the row, so the names, the branch
-  lines and the page header's text start on one edge. So do the drag ghost
-  "New Workspace" and "No matching workspaces". Nothing comes before the
+  lines and the page header's text start on one edge. So does the drag ghost
+  "New Workspace". Nothing comes before the
   name. The name is medium weight while the row calls for the user (needs you
   or done).
-- **State icon.** At the end of the name's line, 8 pt in and centered on
+- **Chevron.** A workspace that runs agents has a chevron (`chevron.right`, 10 pt semibold, secondary) at the end of
+  the name's line, 8 pt in; it turns down while the row is unfolded. A click on it folds or unfolds the row's
+  [agents](#agent-rows) and does not select the row; "Show Agents" or "Hide Agents" is its tooltip and VoiceOver
+  label, "collapsed" or "expanded" its value. Rows are folded at first; each one's fold is kept per machine and
+  session across relaunches (`agentsOpen`). The keycap hint and the rename field hide it.
+- **State icon.** At the end of the name's line, 8 pt in (6 pt before the chevron) and centered on
   that line: the state icon (12 pt, as a tab's) of the workspace's strongest agent, with no word and
   no time ([Status](/docs/ui/theme-and-accessibility#status)). An idle agent,
   or no agent, shows nothing. The keycap hint and the rename field take its
@@ -313,13 +299,14 @@ Spaces panel.
   not zero. All 11 pt, secondary. There is no changed-file count. A workspace
   that is not a git repository has one line and no text about git (D67,
   [Git status](/docs/talking-to-herdr#git-status)).
-- **Size.** 44 pt with two lines, 30 pt with one, 2 pt apart. The selected
-  workspace is a raised pill, radius 10.
+- **Size.** 44 pt with two lines, 30 pt with one, 6 pt apart. The selected
+  workspace is a raised pill (Liquid Glass in Glass), radius 10; unfolded, the pill covers its agents too. An unfolded
+  row that is not selected has a 1 pt border (primary at 14 %) round it and its agents, and no glass.
 - **Worktrees.** A workspace that herdr marks as a linked git worktree
   (`worktree.is_linked_worktree`) sits right after the workspace with the same
   `repo_key` that is not a linked worktree. It is indented 14 pt, with a 1 pt
   guide line in the separator color, 15 pt in, from under its repository's
-  row down.
+  row (under its agents when unfolded) down.
   With no such workspace in the session, it is a normal row.
 - **Keycap hints.** If the user holds ⌘ (with the tabs' keycaps) or ⌃⌘ for 0.7 s while the window is key,
   each of the first nine rows (in the order ⌃⌘1–9 jumps) shows a keycap
@@ -353,89 +340,50 @@ Spaces panel.
 - Drag a row to reorder the workspaces
   ([Drag and drop](/docs/ui/drag-and-drop)).
 
-## Agents view
+## Agent rows
 
-The Agents button turns the sidebar page into a list of the agents of that
-session only (D61). A sideways swipe or a page dot shows the next open
-session's agents; a ⌥ + swipe up or down goes to the agent row above
-or below ([Swiping](/docs/ui/swiping)). The page dots and the footer stay.
-- **Header.** The page's title only (the session's name, the machine's name for `default`, as in the
-  page header; a long name shortens in its middle). It sits where it sits in the workspaces view: on the
-  `+`'s 28 pt row, 18 pt in, on the edge of the program tiles. 13 pt bold, primary. There is no sort
-  menu and no line under the header.
-- **Parts.** From top to bottom (D109):
-  - **Pinned**, only when an agent of the session is pinned: the pinned rows in the order they were
-    pinned, with no label, then a hairline 8 pt in from the rows' edges.
-  - **The list**, with no label: every other live agent pane of the session. The newest change of
-    state is on top (herdr's `state_change_seq`). Settled agents are not in it.
-  - **Settled**, a folded shelf at the foot of the sidebar: idle agents the user has seen, idle for
-    longer than **Settle idle agents after** in [Settings ▸ Agents](/docs/ui/settings) (3 hours by
-    default; Never turns it off), and agents settled by hand. Newest change first. It shows only
-    when an agent is settled.
-  - **Archived**, a second folded shelf under Settled: the closed sessions of Claude Code, Codex, Pi
-    and OpenCode on the page's machine ([Archived](#archived)). Settings ▸ Agents ▸ **Show closed
-    sessions** (on by default) hides it, and then nothing is read.
-- **Order and calm.** A state box, a time and a name change at once. A row moves only when the pointer
-  is not over the list, and 1 s after the last change; then it slides in 0.2 s (no motion with Reduce
-  Motion). Until then a new row waits at the end of its part. ⌥ + swipe steps through the rows as
-  they are on screen. A pin, a settle by hand or a new filter moves rows at once, with the slide. A finish the
-  user sees changes no order: it is no change of state for herdr.
-- **Rows.** One row per agent pane, even when several share a tab. 48 pt, two
-  lines, 3 pt apart. Line 1: the program tile (with no badge), then the
-  pane's name (its label, else its session's title, else "Untitled":
-  [Session titles](/docs/ui/chat-view#session-titles)), then at the line's
-  end the state box: the state icon (12 pt) in the state's color, on a 14 %
-  tint of it with a 1 pt border at 45 % and 6 pt corners. Only a Working box
-  adds a time after the icon: how long since the agent started working, 11 pt semibold in the
-  state's color with tabular digits. It shows "&lt;1m" for the first
-  minute, then "1m", "2m", … and "1h 5m", and changes once a minute. Needs you shows its icon
-  alone; a finish the user has not seen shows the green check (the unread mark) until the user
-  leaves that pane. An idle agent shows no box and no time. The name is medium weight
-  for needs you and an unseen finish; the others recede. Line 2, under the name and the box, full width:
-  "‹workspace› · ‹tab title›" in secondary text (the tab bar's title, D65).
-- **Pin.** Under the pointer a row shows an 18 pt pin button before its box: **Pin**, or **Unpin**
-  on a pinned row. The row's context menu has the same **Pin** or **Unpin**. A pin holds the agent's
-  session (herdr's `agent_session`) when herdr reports one, else its terminal, so a pinned agent
-  stays pinned across relaunches. A pinned agent never settles. A pinned session that no pane runs
-  stays in Pinned, first, as an Archived row without its age, with **Resume** and **Unpin** (under the pointer and in
-  its menu); Unpin lets it go back to Archived.
-- **Settle.** The row's context menu has **Settle** for an idle agent (off for the others) and
-  **Unsettle** in the shelf. Either holds until the agent's next change of state, for the app's run:
-  an agent that works or needs you again comes back to the top of the list, and an unsettled agent
-  settles again only after its next change.
-- **The shelf.** A header 28 pt tall, 8 pt in: "Settled" (12 pt medium, secondary), then at its end
-  the count (tertiary, tabular digits) and a chevron that always shows: right while folded, down while
-  open. Under the pointer it fills, as the header buttons do. A click folds or opens it; it is folded
-  at first, and the folds are kept per machine and session across relaunches. Open, it is at most 5
-  rows tall (256 pt) and scrolls inside, with an 18 pt fade at an edge that has more rows. Its rows are
-  the list's rows; where the box goes an idle agent shows its age instead: the time since its last
-  change ("5h", "2d", "1w"; 11 pt, secondary, tabular digits). While the list is short the shelf sits at
-  the sidebar's foot; under a long list it follows the list.
+An unfolded [workspace row](#workspace-rows) lists its agent panes under its name, inside its glass or border,
+4 pt in from its edges.
+- **Order.** Newest change of state first (herdr's `state_change_seq`; herdr's order of tabs and panes among equals).
+  While the pointer is over the workspace rows they hold still: a state, a time and a title change at once, and the
+  rows move 1 s after the pointer leaves, sliding in 0.2 s (no motion with Reduce Motion). A new agent waits at the
+  end until then.
+- **One line**, 28 pt, one per agent pane, even when several share a tab: the program tile (8 pt into the
+  workspace row, on the names' edge), then the pane's name (13 pt; its label, else its session's title, else its
+  session's first typed prompt cut at 100 characters with "…", else "Untitled":
+  [Session titles](/docs/ui/chat-view#session-titles)); the row's width cuts it further, and the
+  [hover card](#hover-card) shows it whole. Then at the line's end the state box: the state icon (12 pt) in the
+  state's color, on a 14 % tint of it with a 1 pt border at 45 % and 6 pt corners. Only a Working box adds a time
+  after the icon: how long since the agent started working, 11 pt semibold in the state's color with tabular
+  digits. It shows "&lt;1m" for the first minute, then "1m", "2m", … and "1h 5m", and changes once a minute. Needs
+  you shows its icon alone; a finish the user has not seen shows the green check (the unread mark) until the user
+  leaves that pane. An idle agent shows no box. The name is medium weight for needs you and an unseen finish.
 - **Times.** herdr gives no times. The app records when it saw each agent's state change, with its
-  `state_change_seq`, per machine and session, across relaunches: an agent whose number did not
-  change keeps its time. An agent first seen after a launch counts from then.
-- The row of the shown tab's keyboard card is lit like the selected
-  workspace row. When another row lights, and when the view opens, the list scrolls just enough to
-  show it, without motion.
-- With no agents the list is empty, with no text.
-- The footer filter keeps the rows, in every part, whose pane, agent, workspace or tab name
-  matches.
-- A click goes to that workspace, tab and pane and gives the pane the
-  keyboard. Its finish counts as seen when the user leaves the pane.
-- Rest the pointer on a row to see the [hover card](#hover-card) of its tab.
+  `state_change_seq`, per machine and session, across relaunches: an agent whose number did not change keeps its
+  time. An agent first seen after a launch counts from then.
+- **Lit.** The row of the shown tab's keyboard card has a soft fill (primary at 8 %, 7 pt corners).
+- A click goes to that workspace, tab and pane and gives the pane the keyboard. Its finish counts as seen when the
+  user leaves the pane. Rest the pointer on a row to see the [hover card](#hover-card) of its tab.
+- VoiceOver reads "‹name›, ‹workspace› · ‹tab title›" and the state word as the value.
 
 How it works: [Agents and notifications](/docs/status#agents-and-notifications).
 
-### Archived
+## Archived Sessions
 
-The Archived shelf's header has no count (it is not known without reading every store). At
-its end, before the chevron, a filter button (`line.3.horizontal.decrease.circle`, filled while it
+A folded shelf at the sidebar's foot, above the footer: it stays there while the workspaces scroll (D110). Settings ▸
+Agents ▸ **Show closed sessions** (on by default) hides it, and then nothing is read.
+- **The shelf.** A header 28 pt tall, 8 pt in: "Archived Sessions" (12 pt medium, secondary), then at its end a
+  chevron that always shows: right while folded, down while open. Under the pointer it fills, as the header buttons
+  do. A click folds or opens it; it is folded at first, and the fold is kept per machine and session across
+  relaunches. Open, it is at most 5 rows tall (256 pt) and scrolls inside, with an 18 pt fade at an edge that has
+  more rows; the workspaces above get the rest. It has no count (it is not known without reading every store).
+- **Filter.** At the header's end,
+  before the chevron, a filter button (`line.3.horizontal.decrease.circle`, filled while it
 shows one agent, "Show Agent") opens a menu: **All Agents**, then the four agents. The choice is
 kept across relaunches.
-- **Rows.** The list's rows: the agent's tile, the session's title, its folder on line 2 (`~` for
-  the home folder), and its age where the box goes. Newest first, over the four agents. Left out:
-  the sessions a pane of any open session of the machine runs, the pinned ones, and one being
-  resumed. The footer filter matches the title and the folder.
+- **Rows.** 48 pt, two lines, 3 pt apart: the agent's tile, the session's title, its folder on line 2 (`~` for
+  the home folder), and its age at the end of line 1 ("5h", "2d", "1w"; 11 pt, secondary). Newest first, over the
+  four agents. Left out: the sessions a pane of any open session of the machine runs, and one being resumed. The footer filter matches the title and the folder.
 - **Reading.** The shelf reads each time it opens, 50 sessions an agent a page, and the next page
   when the list's end scrolls into view. One shell script an agent runs once a page on the machine
   (never a process per file), and nothing writes to the stores. Pi and Claude Code keep a JSONL file a
@@ -444,16 +392,18 @@ kept across relaunches.
   index, read with `sqlite3 -readonly`; without sqlite3 Codex reads its rollout files, and
   OpenCode's line says "OpenCode needs sqlite3 on ‹machine›." Left out: subagents and child sessions,
   `codex exec` runs and Claude Code's Agent SDK sessions, archived ones, and sessions with no prompt.
-- **Lines.** While a page takes over 0.3 s: "Reading sessions…". With no row: "No closed sessions on
-  ‹machine›.", "No ‹Agent› sessions." or "No matching sessions.". A machine that did not answer in
-  10 s: "Could not read ‹machine›'s sessions." with **Retry**.
-- **Resume.** A click, or the hover **Resume** (`arrow.uturn.backward`) after the hover **Pin**,
+- **States** ([States](/docs/ui/states)). While a page takes over 0.3 s: the loader, "Reading sessions…". With no
+  row, the compact empty state: "No closed sessions on ‹machine›." or "No ‹Agent› sessions." (`archivebox`), or "No
+  matching sessions." (`magnifyingglass`). A machine that did not answer in 10 s: "Could not read ‹machine›'s
+  sessions." (`exclamationmark.triangle`) with **Retry**; so does a store the machine cannot read ("OpenCode needs
+  sqlite3 on ‹machine›.").
+- **Resume.** A click, or the hover **Resume** (`arrow.uturn.backward`, before the age),
   starts the agent with that session (the flags of [Relaunch with
   Chat](/docs/ui/chat-view#relaunch-with-chat)'s table) in a new pane in the session's
   folder: a new tab after the selected tab of the workspace whose folder holds it (the deepest; a
   folder two levels deep or less, as `/` or `/Users/me`, holds only itself), else a new workspace
   there. ⌥-click, and the menu's **Resume to the Side**, split to the right of the keyboard card
-  instead. The menu has **Resume**, **Resume to the Side** and **Pin**. A row resumes once: it
+  instead. The menu has **Resume** and **Resume to the Side**. A row resumes once: it
   leaves the shelf until its start ends. A folder that is gone says "‹folder› is gone" in a notice
   (Pi resumes in the home folder: it keeps its own folder), and an agent the machine does not have
   says "‹Agent› is not on ‹machine›".
@@ -514,12 +464,12 @@ How it works: [Checks on connect](/docs/machines#checks-on-connect).
 
 A peek at what runs in a tab (D63). The [overview](#overview) shows every
 tab at once.
-- **When.** The pointer rests 0.25 s on a title-bar capsule or an Agents
+- **When.** The pointer rests 0.25 s on a title-bar capsule, a pinned tab or an agent
   row. The card stays while the pointer moves into it (0.15 s
   grace). It goes when the pointer leaves, on a click elsewhere, on a scroll,
   and with Esc. One card at a time, and none during a drag.
 - **Where.** Centered under a capsule, 6 pt below the title row, or 6 pt right
-  of the sidebar edge for an Agents row. It stays inside the window.
+  of the sidebar edge for a pinned tab or an agent row. It stays inside the window.
 - **Look.** A glass panel (floating glass, see
   [Theme](/docs/ui/theme-and-accessibility)), radius 12, 280 pt wide. It fades and grows
   in from 0.97 over 0.13 s.
@@ -528,14 +478,14 @@ tab at once.
   - One row per pane, at most 6 and then "+N more": the program glyph, the
     program or agent name, the folder in secondary text, and, for an agent
     that is not idle, its state icon (12 pt) on the right, with no word.
-    Other panes show nothing there.
+    Other panes show nothing there. Under an agent's name, its whole title (11 pt, secondary, up to 3 lines):
+    the first prompt the sidebar's row cuts at its width.
   - For a pane that needs you: the last 3 non-empty lines of its screen, in
     secondary monospaced text. The app reads them with `pane.read` when the
     card opens, one call per such pane, and shows nothing if the read fails.
 - A click on a pane row selects the workspace and tab and gives that pane the
   keyboard. A click on the title selects the tab.
-- VoiceOver: the card is a panel in the window (the Agents button's hover
-  panel) with the rows as buttons. A tab's action
+- VoiceOver: the card is a panel in the window with the rows as buttons. A tab's action
   "Show Panes" opens it.
 
 ## Tab page
@@ -810,8 +760,8 @@ How it works: [Scrolling, queries and links](/docs/talking-to-herdr#scrolling-qu
 
 Every tab of the session at a glance, as pictures (D70): for watching many
 agents at once.
-- **Open and close.** The title-row button (`square.grid.2x2`, between the
-  Agents button and ⌘), View ▸ Show Overview, the palette, and ⌃⌘O toggle it;
+- **Open and close.** The title-row button (`square.grid.2x2`, after the
+  tab bar, before ⌘), View ▸ Show Overview, the palette, and ⌃⌘O toggle it;
   Esc and the title row's × leave it. Each window has its own; it does not come
   back after a relaunch.
 - **What it hides.** The sidebar, the tab bar and every title-row button: the
@@ -848,8 +798,7 @@ agents at once.
   overview: the tab's page shows at once. The sidebar and the title row stay
   laid out under the overview, hidden, and show with it, so they come at
   once in a big session too. Esc, the title row's × and ⌃⌘O leave the same
-  way, on the selected tab. ⌘. (Show Agents in the menu or palette) leaves it
-  and opens the Agents view; a notification or Dock click leaves it and shows
+  way, on the selected tab. A notification or Dock click leaves it and shows
   its pane. Other keys
   and the palette act as usual and the overview stays: ⌘T adds a tile, a tab
   key moves the selected tile.

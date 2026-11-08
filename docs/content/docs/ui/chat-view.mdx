@@ -556,9 +556,9 @@ A run is one quiet line with no card: its summary and a chevron.
 ## Session titles
 
 An agent pane's name is the user's herdr label, else its session's title,
-else "Untitled". It shows in the card's row 1, the floating window's
-title row, the tab ("Claude Code" then the name in secondary text) and the
-Agents view's rows. It works for every agent pane, with or without a chat.
+else its session's first typed prompt, else "Untitled". It shows in the card's row 1, the floating window's
+title row, the tab ("Claude Code" then the name in secondary text), the sidebar's
+[agent rows](/docs/ui/window#agent-rows) and the hover card. It works for every agent pane, with or without a chat.
 
 herdr's `agent_session` on each pane names the agent's session: an id for
 Claude Code, Codex and OpenCode, the file for Pi. The app uses it only when
@@ -575,9 +575,15 @@ snapshot does not start every run at once.
 | Pi | the last `session_info` line (from `/name`) in the session file. pi names no session by itself |
 | OpenCode | `session.title` in its database, read with `sqlite3 -readonly`. Its placeholder "New session - …" counts as none |
 
+With no title yet, the same run reads the first typed prompt: Claude Code's first `user` message in the
+transcript's first 100 lines that is not a meta line or a command's wrapper (text that starts with `<`), Pi's first
+user message in the session file's first 40 lines, and Codex's `preview` in its newest `state_*.sqlite`. OpenCode
+titles its sessions itself. The prompt is cut at 100 characters, then "…".
+
 - An id goes into the script only when it holds letters, digits, `-` and `_`
   only. A file must be an absolute path.
-- A title loses its control characters and is cut at 200 characters.
+- A title or prompt goes on one line (line breaks become spaces), loses its control characters and is cut at 200
+  characters.
 
 ## VoiceOver and identifiers
 
@@ -663,7 +669,7 @@ on This Mac and on a remote machine, in light mode and in Classic.
 - **Relaunch with Chat:** each agent started by hand, idle and working (the alert),
   comes back in the same session with its chat. Codex keeps its hook after
   `resume`.
-- **Titles:** real sessions' titles in the tab and the Agents view, after
+- **Titles:** real sessions' titles in the tab and the sidebar's agent rows, after
   `/rename` (Claude Code) and `/name` (Pi).
 - The company launchers rewrite `~/.claude/settings.json` and reinstall a
   plugin into `~/.codex` on each start, as they always do.

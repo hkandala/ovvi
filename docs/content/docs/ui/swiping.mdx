@@ -6,9 +6,8 @@ description: "Session pages in the sidebar, and ⌥ + swipe"
 - Two-finger swipe on a trackpad. Pages snap.
 - **Sidebar.** A sideways swipe on the sidebar moves to the next or previous
   session page open in the window ([Sidebar](/docs/ui/window#sidebar)). The
-  page dots show where you are, and a click on a dot switches. At the first
-  or last page the swipe does nothing. In the Agents view the same swipe
-  shows the next session's agents.
+  page header names the page in view. At the first
+  or last page the swipe does nothing.
 - **Everywhere else.** A sideways swipe goes to the content under the
   pointer, as any scroll does: a card's own sideways scroll (over a browser
   card, WebKit's back and forward), the tab bar when its tabs do not fit, or
@@ -20,10 +19,7 @@ description: "Session pages in the sidebar, and ⌥ + swipe"
   the sidebar's rows up or down. Sideways it moves the sidebar's pages as a
   swipe over them does; with the sidebar hidden, or in the overview, it
   steps one session, as ⌥⌘[ ] do. Up or down it steps one row: the
-  workspace above or below, as ⌃⌘[ ] do, or in the Agents view the agent row
-  above or below the lit one, going to its pane as a click on the row does (a
-  rows of a folded Settled shelf, Archived's rows, pinned closed sessions and
-  floated panes are skipped). Fingers up go to the
+  workspace above or below, as ⌃⌘[ ] do. Fingers up go to the
   row above, down to the one below, whatever the scroll direction. One step a
   gesture; a mouse wheel's burst of clicks with ⌥ steps once too. A swipe
   begun with ⌥ held never scrolls what is under the pointer, its momentum
@@ -31,7 +27,7 @@ description: "Session pages in the sidebar, and ⌥ + swipe"
   a sheet or under a panel a ⌥ + swipe steps nothing. ⌃ + scroll is the
   system's zoom and ⇧ + scroll scrolls sideways, so neither is used.
 - **One target.** The app's scroll monitor locks a gesture to one axis (D35).
-  It gives a sideways gesture over the sidebar (its pages, the dots and the
+  It gives a sideways gesture over the sidebar (its pages and the
   filter) to the sidebar's pages; any other gesture goes to the view under
   the pointer. Under a panel (the palette, Open Session) the sidebar's pages
   do not move.

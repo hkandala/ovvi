@@ -20,7 +20,7 @@ API bridge, a `terminal session` per streamed pane, and the event stream.
 | `PaneViewRegistry` | owns terminal, browser and plugin views by terminal id, so scrolling never destroys them |
 | Plugin cards | `Registry` (the browser's manifest and every package's), `Plugin` and its `WebCard` (one web view and the `ovvi-plugin://` scheme), `Bridge` (the plugin API, one per card), `Header`, and the installs, builds, defaults and confirmations; the API's runtime and types in `web/ovvi/`, the default plugins and the template in `plugins/` ([Plugins](/docs/plugins)) |
 | Agent commands | `AgentCommands` in `Ovvi/Agent/`: the one parser and every command that the `ovvi` command asks for, run against the asking session's `HostStore`; the script itself, `ovvi.sh` ([Agent control](/docs/agent-control)) |
-| Views | title row, sidebar pages, Agents view, tab bar, tab page, cards, overview, floating panes, panels and dialogs |
+| Views | title row, sidebar pages (pinned tabs, workspace and agent rows, Archived Sessions), tab bar, tab page, cards, overview, floating panes, panels and dialogs |
 
 `Exec` and `Multiplexer` are the only protocols. `HerdrKit` is a separate
 package, so its single test target runs with `swift test`.

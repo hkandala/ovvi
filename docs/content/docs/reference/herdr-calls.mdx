@@ -114,9 +114,9 @@ git -C <root> show -s --no-show-signature --format=%H%x1f%P%x1f%an%x1f%ae%x1f%at
 git -C <root> rev-parse --verify --quiet <ref>^{commit}   # the palette's Open Commit and `ovvi open git`: the hash a ref names
 ```
 
-The palette, a terminal's links and the Agents view's Archived shelf, on the
+The palette, a terminal's links and the sidebar's Archived Sessions, on the
 page's machine ([Opening links and files](/docs/ui/window#opening-links-and-files),
-[Archived](/docs/ui/window#archived)):
+[Archived Sessions](/docs/ui/window#archived-sessions)):
 
 ```sh
 sh -c 'case $1 in "~"|"~/"*) p=$HOME${1#"~"} ;; /*) p=$1 ;; *) p=${2:-$HOME}/$1 ;; esac; if [ -d "$p" ] …' sh <path> <folder>   # a terminal link's path and the palette's Open File: what is there

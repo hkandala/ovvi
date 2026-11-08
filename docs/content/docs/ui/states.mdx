@@ -56,10 +56,10 @@ and under it at most one line of what the work is doing.
 | Find with no match | "0 of 0", nothing highlighted, no scroll |
 | A folder dropped on the Dock icon with no window | a window opens, and the workspace opens in it once its page is live |
 | A folder dropped on the Dock icon while the page in view is not live | the folders wait for a live page in view |
-| Nobody needs you (Agents button hover) | no panel |
-| A done agent the user opens | it stays Done (the green check on its Agents view row, its icon on the tab and the workspace) while its pane has the keyboard, also with the app in the background; once another pane, tab, workspace or session gets the keyboard, it is Idle; its row stays in place |
-| An agent idle and seen for longer than Settle idle agents after (Agents view) | its row moves to the Settled shelf at the sidebar's foot, which shows only then, folded at first |
-| A session with no agents (Agents view) | an empty list, no text |
+| A done agent the user opens | it stays Done (the green check on its agent row, its icon on the tab and the workspace) while its pane has the keyboard, also with the app in the background; once another pane, tab, workspace or session gets the keyboard, it is Idle; its row stays in place |
+| A workspace with no agents | no chevron: nothing to unfold |
+| No tab pinned | no Pinned part at all |
+| A filter that keeps no workspace | the compact empty state "No matching workspaces" (`magnifyingglass`) |
 
 How it works: [Checks on connect](/docs/machines#checks-on-connect),
 [How a stream ends](/docs/talking-to-herdr#how-a-stream-ends).
