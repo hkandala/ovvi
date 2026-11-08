@@ -1,6 +1,6 @@
 {
   "name": "@ovvi/explorer",
-  "version": "1.10.10",
+  "version": "1.10.11",
   "private": true,
   "description": "Files and folders",
   "keywords": ["files", "tree", "folder", "finder"],

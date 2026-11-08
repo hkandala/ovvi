@@ -900,7 +900,16 @@ the machine. The limits:
   `git.<pane>.page`) and which places take ⌘S and ⌘F from it.
 - **Keys.** The card's view takes and drops the keyboard as a browser card
   does, and sends ⌘ keys to the menu first ([Keys](#keys)).
-- **A crashed page** loads again, once per load. Unsaved edits are lost then.
+- **A crashed page** loads again by itself, once per load (see
+  [Errors](/docs/plugins/errors)). Unsaved edits are lost then. File and
+  Markdown keep their top line in the page's session (`sessionStorage`), which
+  WebKit keeps, so the page loaded again shows the same lines.
+- **Parsing.** CodeMirror parses the lines in view in slices of 50 ms until
+  they are parsed, whatever has focus. Its own parser in idle time runs on a
+  budget of the wall clock (3 s in 30 s) and starts a new budget only while
+  the editor has focus. A page that the system paused in the middle of a
+  parse spent the budget at once, and a card without focus showed its
+  Markdown raw.
   Every card is inspectable: Show Web Inspector in the card's menu, or
   Safari's Develop menu.
 

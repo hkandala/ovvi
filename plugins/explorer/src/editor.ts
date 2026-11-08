@@ -2,7 +2,15 @@
 // ⌘S saved by the hash it was read with, ⌘F from the app's menu and ⌥⌘F (find.ts), and the file again after a change
 // on disk.
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands"
-import { bracketMatching, HighlightStyle, indentOnInput, syntaxHighlighting } from "@codemirror/language"
+import {
+  bracketMatching,
+  ensureSyntaxTree,
+  HighlightStyle,
+  indentOnInput,
+  language,
+  syntaxHighlighting,
+  syntaxTreeAvailable,
+} from "@codemirror/language"
 import { findNext, findPrevious, highlightSelectionMatches, search, searchKeymap } from "@codemirror/search"
 import { EditorState, type Extension, type Text } from "@codemirror/state"
 import {
@@ -13,12 +21,45 @@ import {
   highlightSpecialChars,
   keymap,
   lineNumbers,
+  ViewPlugin,
 } from "@codemirror/view"
 import { tags } from "@lezer/highlight"
 import type { OvviError } from "@ovvi/plugin-api"
 import { finder } from "./find"
 import { failed, info } from "./info"
 import { name, type Place } from "./place"
+
+/** CodeMirror parses past the first screen in idle time, on a budget of the wall clock (3 s in 30 s), and starts a new
+ *  budget only while the editor has focus. A page the system paused mid-parse (a hidden card's, a sleeping Mac's)
+ *  spent it all at once, and a card that never takes focus (locked, or read beside a terminal) kept the lines in view
+ *  unparsed: Markdown raw, code plain. The lines in view are parsed here, 50 ms at a time, whatever the focus. */
+const parsed = ViewPlugin.fromClass(
+  class {
+    pending = 0
+
+    constructor(readonly view: EditorView) {
+      this.update()
+    }
+
+    update() {
+      const { state, viewport } = this.view
+      if (!this.pending && state.facet(language) && !syntaxTreeAvailable(state, viewport.to)) this.parse()
+    }
+
+    parse() {
+      this.pending = window.setTimeout(() => {
+        if (!ensureSyntaxTree(this.view.state, this.view.viewport.to, 50)) return this.parse()
+        this.pending = 0
+        // The state takes the tree.
+        this.view.dispatch({})
+      })
+    }
+
+    destroy() {
+      clearTimeout(this.pending)
+    }
+  },
+)
 
 /** One color per look: the card's `color-scheme` picks the side. */
 const color = (light: string, dark: string) => `light-dark(${light}, ${dark})`
@@ -115,6 +156,7 @@ export async function editor(place: Place, extensions: Extension[], parent: HTML
         file.text.includes("\r\n") ? EditorState.lineSeparator.of("\r\n") : [],
         EditorState.readOnly.of(!file.writable),
         highlightSpecialChars(),
+        parsed,
         history(),
         drawSelection(),
         indentOnInput(),
@@ -239,6 +281,21 @@ export async function editor(place: Place, extensions: Extension[], parent: HTML
     view.dispatch({ selection: { anchor: pos }, effects: EditorView.scrollIntoView(pos, { y: "center" }) })
   }
   land(place.at)
+  // The top line in the page's session, which WebKit keeps when the system ends the page's process: the page loaded
+  // again shows the same lines. A landing wins.
+  const top = `top ${path}`, kept = Number(sessionStorage.getItem(top))
+  if (!place.at && kept > 1 && kept <= view.state.doc.lines) {
+    view.dispatch({ effects: EditorView.scrollIntoView(view.state.doc.line(kept).from, { y: "start" }) })
+  }
+  let noting = 0
+  view.scrollDOM.addEventListener("scroll", () => {
+    clearTimeout(noting)
+    noting = window.setTimeout(() => {
+      const line = view.lineBlockAtHeight(view.scrollDOM.scrollTop - view.documentPadding.top).from
+      sessionStorage.setItem(top, String(view.state.doc.lineAt(line).number))
+    }, 200)
+  })
+  keep(() => clearTimeout(noting))
 
   ovvi.on("save", () => void save())
   ovvi.on("find", () => find.open(view, false))
