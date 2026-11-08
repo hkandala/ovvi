@@ -61,12 +61,19 @@ private extension ChatRow {
     let history = try history()
     let rows = history.rows(working: false)
     #expect(rows.count { $0.kind == "user" } == 6 && Set(rows.map(\.id)).count == rows.count)
+    // Each message at the time the transcript gives it, which a reopened chat shows.
+    #expect(rows.allSatisfy {
+        switch $0 {
+        case let .user(_, _, time), let .reply(_, _, time): time != nil
+        default: true
+        }
+    })
     // Every reply, not only a turn's last one.
     #expect(rows.count { $0.kind == "reply" } == history.entries.count { $0.row?.kind == "reply" })
     // The edit turn: its runs and the replies between them, then how long it worked.
     let turn = try #require(rows
         .firstIndex {
-            if case let .user(_, text) = $0 {
+            if case let .user(_, text, _) = $0 {
                 text.hasPrefix("Think")
             } else {
                 false

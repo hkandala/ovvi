@@ -14,6 +14,9 @@ final class Chat {
     struct Outgoing: Identifiable, Equatable {
         let id = UUID()
         let text: String
+        let time = Date()
+        /// `agent.prompt` took it.
+        var sent = false
         var notSent = false
     }
 
@@ -136,6 +139,9 @@ final class Chat {
             if !sent {
                 notSent(message.id)
                 return
+            }
+            if let index = outgoing.firstIndex(where: { $0.id == message.id }) {
+                outgoing[index].sent = true
             }
             // Sent means the history has it (Claude Code's company hooks can take a few seconds). pi steers: a message
             // sent while it works shows in its history when it takes it, after the running tool (or its dialog).

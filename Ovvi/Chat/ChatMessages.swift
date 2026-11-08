@@ -228,7 +228,7 @@ struct ChatMessages: View, Equatable {
     /// tall card, can show the block's top with room above it; take the budget from the scroll view's height if so.
     private static func lines(_ row: ChatRow) -> Int {
         switch row {
-        case let .user(_, text), let .reply(_, text):
+        case let .user(_, text, _), let .reply(_, text, _):
             1 + text.utf8.count / 90 + text.utf8.count { $0 == UInt8(ascii: "\n") }
         case let .todos(_, todos): todos.count + 1
         default: 2
@@ -285,10 +285,11 @@ struct ChatMessages: View, Equatable {
         .padding(.top, floats ? 28 : 16)
     }
 
-    /// Sending, dimmed; or "Not sent" with Show TUI.
+    /// On its way, with one tick once sent; or "Not sent" with Show TUI.
     private func outgoing(_ message: Chat.Outgoing, error: Color) -> some View {
         VStack(alignment: .trailing, spacing: 4) {
-            UserBubble(text: message.text, paneID: chat.paneID, sending: true).opacity(message.notSent ? 0.5 : 0.7)
+            UserBubble(text: message.text, paneID: chat.paneID, sending: true, time: message.time,
+                       ticks: message.sent && !message.notSent ? 1 : 0)
             if message.notSent {
                 HStack(spacing: 8) {
                     Text("Not sent").font(.system(size: 11)).foregroundStyle(error)

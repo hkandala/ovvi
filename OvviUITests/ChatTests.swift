@@ -322,6 +322,13 @@ extension OvviUITests {
         XCTAssertTrue(row(pane, "user", text).exists(within: 5))
     }
 
+    /// The bubbles' times whose value ends with `end` (", Sent", ", Delivered"); all with none (`ENDSWITH ""` matches
+    /// nothing).
+    func stamps(_ pane: String, _ end: String = "") -> XCUIElementQuery {
+        let stamps = app.descendants(matching: .any).matching(identifier: "chat.\(pane).time")
+        return end.isEmpty ? stamps : stamps.matching(NSPredicate(format: "value ENDSWITH %@", end))
+    }
+
     /// The chat's row of this kind with this text.
     func row(_ pane: String, _ kind: String, _ value: String) -> XCUIElement {
         app.descendants(matching: .any)

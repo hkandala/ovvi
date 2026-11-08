@@ -24,7 +24,8 @@ struct ChatRowView: View, Equatable {
     var body: some View {
         switch row {
         // More room between a turn and the user's messages than between a turn's rows.
-        case let .user(_, text): UserBubble(text: text, paneID: paneID).padding(.vertical, 8)
+        case let .user(_, text, time):
+            UserBubble(text: text, paneID: paneID, time: time, ticks: 2).padding(.vertical, 8)
         case .stack:
             ToolStack(counts: counts, steps: steps, paneID: paneID, toggle: toggle, opened: opened,
                       toggleTool: toggleTool)
@@ -35,8 +36,9 @@ struct ChatRowView: View, Equatable {
                 .accessibilityAddTraits(.isStaticText)
                 .accessibilityValue(text)
                 .accessibilityIdentifier("chat.\(paneID).worked")
-        case let .reply(_, text):
+        case let .reply(_, text, time):
             Markdown(text: text).accessibilityIdentifier("chat.\(paneID).reply")
+                .stamped(time, paneID: paneID)
                 .bubble(look.receivedBubble).replyPlace()
                 .frame(maxWidth: .infinity, alignment: .leading)
         case let .todos(_, todos): Plan(todos: todos)
@@ -73,11 +75,17 @@ struct UserBubble: View {
     let paneID: String
     /// On its way: not in the history yet.
     var sending = false
+    let time: Date?
+    /// One once sent, two once the agent took it (its history has it); none before, or when not sent.
+    let ticks: Int
     @Environment(\.look) private var look
 
     var body: some View {
         // Its own line breaks kept: Markdown joins a paragraph's lines.
         Markdown(text: text.replacingOccurrences(of: "\n", with: "  \n"))
+            .accessibilityValue(text)
+            .accessibilityIdentifier("chat.\(paneID).\(sending ? "sending" : "user")")
+            .stamped(time, ticks: ticks, paneID: paneID)
             .foregroundStyle(Look.onAccent)
             // Its links in its own text color, not the accent it sits on.
             .tint(Look.onAccent)
@@ -85,8 +93,39 @@ struct UserBubble: View {
             .padding(.trailing, -Composer.inset)
             .padding(.leading, ChatView.gutter)
             .frame(maxWidth: .infinity, alignment: .trailing)
-            .accessibilityValue(text)
-            .accessibilityIdentifier("chat.\(paneID).\(sending ? "sending" : "user")")
+    }
+}
+
+/// A message's time in its bubble's bottom right corner, and the user's ticks after it.
+private struct Stamp: View {
+    let time: Date?
+    let ticks: Int
+    let paneID: String
+
+    var body: some View {
+        let text = time.map {
+            Calendar.current.isDateInToday($0) ? $0.formatted(date: .omitted, time: .shortened)
+                : $0.formatted(.dateTime.month(.abbreviated).day().hour().minute())
+        }
+        HStack(spacing: 3) {
+            if let text {
+                Text(text)
+            }
+            // Two checkmarks overlapping, as in WhatsApp: SF Symbols has no double one.
+            HStack(spacing: -5) {
+                ForEach(0 ..< ticks, id: \.self) { _ in
+                    Image(systemName: "checkmark")
+                }
+            }
+            .font(.system(size: 8, weight: .bold))
+        }
+        .font(.system(size: 10).monospacedDigit())
+        .foregroundStyle(.secondary)
+        .accessibilityElement(children: .ignore)
+        .accessibilityAddTraits(.isStaticText)
+        .accessibilityValue([text, ["", "Sent", "Delivered"][min(ticks, 2)]].compactMap(\.self).filter { !$0.isEmpty }
+            .joined(separator: ", "))
+        .accessibilityIdentifier("chat.\(paneID).time")
     }
 }
 
@@ -96,6 +135,19 @@ extension View {
     /// text keeps the messages' edge.
     func bubble(_ color: Color) -> some View {
         padding(.horizontal, Composer.inset).padding(.vertical, 8).background(color, in: .rect(cornerRadius: 18))
+    }
+
+    /// The message with its `Stamp` under it, at the right; the text keeps the left of a bubble the stamp widens.
+    @ViewBuilder
+    func stamped(_ time: Date?, ticks: Int = 0, paneID: String) -> some View {
+        if time == nil, ticks == 0 {
+            self
+        } else {
+            Grid(alignment: .leading, verticalSpacing: 2) {
+                self
+                Stamp(time: time, ticks: ticks, paneID: paneID).gridCellAnchor(.trailing)
+            }
+        }
     }
 
     /// A reply bubble's place and widest width, for a reply and a run of tool calls.
