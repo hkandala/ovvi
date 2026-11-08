@@ -1,6 +1,6 @@
 {
   "name": "@ovvi/explorer",
-  "version": "1.10.11",
+  "version": "1.10.12",
   "private": true,
   "description": "Files and folders",
   "keywords": ["files", "tree", "folder", "finder"],
@@ -81,7 +81,7 @@
       { "type": "segmented", "id": "mode", "value": "rich", "hidden": true,
         "options": [{ "value": "rich", "title": "Rich Text", "symbol": "doc.richtext" },
           { "value": "source", "title": "Source", "symbol": "chevron.left.forwardslash.chevron.right" }] },
-      { "type": "toggle", "id": "lock", "symbol": "lock.fill", "title": "Unlock", "value": false, "hidden": true },
+      { "type": "toggle", "id": "lock", "symbol": "pencil", "title": "Edit", "value": false, "hidden": true },
       { "type": "openWith", "id": "open-with", "hidden": true }
     ],
     "settings": [
@@ -93,7 +93,7 @@
       { "id": "markdown-lock", "type": "toggle", "title": "Lock Markdown for reading", "default": true }
     ],
     "commands": [
-      { "id": "lock-editing", "title": "Lock Editing", "menu": "view", "key": "cmd+e", "symbol": "lock",
+      { "id": "lock-editing", "title": "Lock Editing", "menu": "view", "key": "cmd+e", "symbol": "pencil",
         "keywords": ["markdown", "read", "edit", "unlock"] }
     ]
   }

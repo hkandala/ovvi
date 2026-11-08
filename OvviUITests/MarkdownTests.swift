@@ -28,6 +28,7 @@ extension OvviUITests {
         XCTAssertTrue(page.staticTexts.matching(NSPredicate(format: "value == 'Second'")).firstMatch.exists(within: 10))
         XCTAssertTrue(element("pane.\(card).mode.rich text").isSelected)
         XCTAssertFalse(element("pane.\(card).lock").isSelected)
+        XCTAssertEqual(element("pane.\(card).lock").label, "Edit")
         XCTAssertTrue(page.staticTexts.matching(NSPredicate(format: "value == 'B'")).firstMatch.exists)
         XCTAssertFalse(page.textViews.firstMatch.exists)
         element("pane.\(card).outline").click()

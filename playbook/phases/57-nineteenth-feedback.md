@@ -390,6 +390,8 @@ chat bubble's time close to its text).
       Decision: ⌘← ⌘→ are Back and Forward over File Explorer and Git, the editor included while it is locked or
       read-only; only where the caret edits text do they move the caret. ⌃- / ⇧⌃- go. Mouse back/forward buttons
       and the swipe keep working.
+    - Then the user: "okay let's stick to the vs code one itself then". ⌃- / ⇧⌃- stay Back and Forward; nothing
+      changes for item 20.
 21. "so on the slight increase in padding we did in floating panels, we might need to reduce a bit, basically left
     and top padding should be equivalent so it looks symmetric you know. right now i see slightly more top padding
     than left padding when i hover on the back button" (Track E).

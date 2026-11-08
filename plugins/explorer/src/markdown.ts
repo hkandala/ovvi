@@ -153,10 +153,8 @@ export async function show(place: Place): Promise<Reveal> {
     if (outlined) list(view, all(view.state))
     focus(view)
     ovvi.controls.set("mode", { value: next.mode })
-    // Lit while the page edits; its help says what a click does.
-    ovvi.controls.set("lock", {
-      value: !next.locked, symbol: next.locked ? "lock.fill" : "lock.open", title: next.locked ? "Unlock" : "Lock",
-    })
+    // A pencil, lit while the page edits; its help says what a click does.
+    ovvi.controls.set("lock", { value: !next.locked, title: next.locked ? "Edit" : "Stop Editing" })
     ovvi.controls.set("outline", { value: outlined })
     ovvi.controls.set("lock-editing", { enabled: true, checked: next.locked })
   }
