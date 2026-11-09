@@ -622,3 +622,18 @@ deleted; ⌘-click and ⌥-click on it opened nothing.
   commands and Keyboard Shortcuts rows).
 - **For the user.** Look over the sidebar's right-click menu, File ▸ New Space / Close Space, ⌘K "space", and the close
   sheet of a space with worktrees.
+
+### Track M (item 29)
+
+- **Cause:** the sync's notice was a plain information notice that went the moment git ended, often under a second.
+- **Fix:** the one notice capsule has two more tones: `progress` (a small spinner) and `success` (a green
+  `checkmark.circle.fill`). "Pulling ‹name›…" shows the spinner while git runs. When git ends, the git line is read
+  again, then "Pulled ‹name›" with the check shows for 2 s, or git's message in the error tone for 4 s.
+- **Decisions:** after × or a newer notice, the check does not show, but an error still does. File Explorer's status
+  bar is left as it is: its buttons show their own busy state, and it uses the plugin card's toast only for errors.
+- **For the user:** right-click a repository's row and pick Pull: the spinner, then the check for about 2 s.
+
+### Runs (Track M)
+
+- The test slows upload-pack by 3 s to see the spinner. It was red on the old code ("Information" is not "In
+  progress"), and green on the new code.
