@@ -122,7 +122,9 @@ struct FilterList: View {
                     ScrollView {
                         // Lazy: the palette's 100 rows took 230 ms to build and lay out on CI as it opened. By place,
                         // not by row: a typed key changes what the rows in view show, instead of making them anew with
-                        // their accessibility (100 ms a key at 130 rows with an accessibility client).
+                        // their accessibility (100 ms a key at 130 rows with an accessibility client). A row's own
+                        // state (hover, a drop's light) stays with its place; an Int id inside a row would catch
+                        // `scrollTo`.
                         LazyVStack(alignment: .leading, spacing: 2) {
                             ForEach(Array(items.enumerated().dropLast(pinned)), id: \.offset) { offset, _ in
                                 row(items, offset, index)

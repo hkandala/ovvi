@@ -332,7 +332,7 @@ struct MenuRow: View {
             }
             if !item.keys.isEmpty {
                 HStack(spacing: 3) {
-                    ForEach(Array(item.keys.enumerated()), id: \.offset) { Keycap(text: $1) }
+                    ForEach(item.keys, id: \.self) { Keycap(text: $0) }
                 }
                 .accessibilityElement(children: .ignore).accessibilityLabel(item.keys.joined())
             }

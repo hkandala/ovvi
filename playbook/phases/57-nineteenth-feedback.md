@@ -462,6 +462,16 @@ runs and on-demand on the final head.
   on the new with testPaletteSplitsTheKeyboardCardRight. CI 42534541505: 28 palette, panel, menu and drag tests and the
   stress test, all green. On CI's Debug build with XCUITest attached the stress session's first letter still took 422 ms
   and a tab switch 478 ms: the accessibility walk.
+- **Accessibility (round 2).** With a client attached, SwiftUI walks the window's focus responders
+  (`AccessibilityNode.updateFocus`) a few times per update, about 30 ms each at this size. lldb showed what starts a
+  walk: the accessibility nodes of rows made anew. Keyed by place, the rows in view stay and change what they show:
+  the first letter 266 → 160 ms, the last ⌫ 190 → 95 ms, ⌘K 60–90 ms either way (XCUITest attached, same session).
+  Tried and no gain: one kept page instead of 8, the sidebar hidden from accessibility or from hits while the
+  palette is open, a typed list cut to 30 rows, a list height known without a measure. Hiding the sidebar itself
+  took a further 35–40 % off (its rows' responders are walked too); that is Track B's sidebar, left as it is.
+- **Left (round 2).** A list that grows past the panel's height ("spl" → "sp", ⌫ from 12 rows to 45) still costs
+  about 200 ms with a client and 70 ms without; the other keys cost 25–160 ms and 20–110 ms. Without a client the
+  Mac's load (60–85) and the 40 agents' redraws set a floor of 20–30 ms even for a one-row change.
 - **For the user.** Open ⌘K while agents work and type a first letter, then ⌫ back: each should draw at once.
 
 ## Round 2 (items 18–27)
