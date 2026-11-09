@@ -5,7 +5,7 @@ description: "Agent states in the sidebar and tabs, notifications and the Dock"
 
 ## Agents and notifications
 
-- Tab capsules, space rows and their agent rows, pinned tabs, the hover card, notifications and the
+- Tab capsules, space rows and their agent rows, the hover card, notifications and the
   Dock all read `agent_status` and `completion_seq` from the
   snapshot. No extra calls.
 - Status comes only from the multiplexer's API (D55), never from
@@ -28,15 +28,15 @@ description: "Agent states in the sidebar and tabs, notifications and the Dock"
 
 ### Agents
 
-One sidebar (D111): each space row shows its strongest agent's state, and its chevron unfolds its agent panes,
-one line each with its state box and working time, newest change of state first. A click on an agent row selects
+One sidebar (D111): each space row shows its strongest agent's state and, unless folded, its agent panes, one line
+each with its state box and working time, newest change of state first. A click on an agent row selects
 that space, tab and pane and gives the pane the keyboard. Its unread check stays until the user leaves the pane;
-the row does not move for it. Pinned tabs on top show their state too, and Archived Sessions at the foot lists the
+the row does not move for it. Archived Sessions at the foot lists the
 closed sessions of Claude Code, Codex, Pi and OpenCode, which a click resumes. The Dock badge counts the agents that
 need you, over every open session.
 
-The look is in [Main window: Space rows](/docs/ui/window#space-rows),
-[Agent rows](/docs/ui/window#agent-rows) and [Pinned](/docs/ui/window#pinned).
+The look is in [Main window: Space rows](/docs/ui/window#space-rows) and
+[Agent rows](/docs/ui/window#agent-rows).
 
 ### Notifications
 
