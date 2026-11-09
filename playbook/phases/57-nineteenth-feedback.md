@@ -1280,3 +1280,38 @@ you did, no need of reverting them".
   ticks; Settings ▸ New panes open.
 - **Speed and look.** ⌘D and ⇧⌘D beside a busy agent (Glass and Classic); ⌘K's first letter and ⌫ with Raycast
   running; Classic dark's borders; floating panes' even top and bottom room.
+
+## Round 7 (items 60–68)
+
+60. "my browser and other plugins are kinda blank and stuck now ... i basically left the app open for quite some time
+    and went and browsed different things ... its just even when i focus on them they are not restoring, i have to
+    close the pane and open a fresh pane ... its not just browser btw, i see file explorer, git, basically all plugin
+    panes are just stuck like blank" (Track W).
+61. "archvied sessions not loading for remote machines, they are stuck at reading sessions forever, figure out and fix
+    it" (Track B).
+62. "cmd+d is still pretty jagged and its very off putting in terms of experience. figure out properly why the
+    jaggedness, measure and profile where the heavy load when opening the pane, why can't it be fully smooth when
+    opening panes" (Track J).
+63. "before when ovvi is closed with multiple sessions or windows open, and i quit and open ovvi back, those windows
+    with corresponding sessions will be opened. now that's gone after the recent change in cmd+n flow. this is how the
+    flow should be, if no windows are previously opened, then open empty window saying connect to session, if
+    previously user had some windows open, restore them, on normal cmd+n show the connect to session options"
+    (Track A).
+64. "remove the new space button on the sidebar, we already have new space button in the center. also show good empty
+    state when no spaces are open. ... something simialr to what you worked in the onboarding flow, like we can show
+    some repos to open, etc, show ovvi logo at top though, don't copy this exactly, but something like that"
+    (`.build/fb57/r7-11.32.49.png`, `r7-12.19.26.png`; Track A).
+65. "enable right click on sidebar, like right now if i right click on empty sidebar, nothing shows, probably we can
+    show options like new space, detach session etc" (Track B).
+66. "https://x.com/adilrc/status/2118715595633951190 - check this tweet, there is something about liquid glass
+    improvement, see if we can improve that" (Track T).
+67. "once all these are done invoke this skill https://github.com/caldoai/skills/blob/main/skills/untangle-codebase/SKILL.md
+    and improve and clean" (Track O, after the rest of round 7).
+68. "let's also plan on onboarding flow ... start with very brief intro of what ovvi is, how it works etc, then start
+    with empty pane and split panes, then show about tabs and then show spaces, basically incrementally adding things
+    ... mention about agent integrations and chat view, and after that show the default plugins like file explorer,
+    git and browser, and give overview on custom plugins, and then end with remote machines etc. ... on onboarding we
+    open like a mini window like how many apps show onboarding, with minimal clean design, and text and screenshots
+    overlayed with minimal animations ... less number of pages, but cover all things clearly, with of course a skip
+    option. so update that same html report and replace that with five designs of this type of onboarding"
+    (Track X, report only: `~/Downloads/ovvi-research/onboarding-plan.html`).
