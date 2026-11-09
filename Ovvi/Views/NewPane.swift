@@ -36,7 +36,7 @@ struct NewPane: View {
                     // The folder line under the list, on a card with room for both.
                     let folder = size.height - 16 >= height + 12 + NewPaneFolder.height
                     VStack(spacing: 12) {
-                        list(rows, details: size.width >= 300)
+                        list(rows, details: size.width >= 300, scrolls: height > size.height - 16)
                             .frame(width: width, height: max(0, min(height, size.height - 16)))
                         if folder {
                             NewPaneFolder(chooser: chooser, page: page, cardID: cardID)
@@ -58,7 +58,10 @@ struct NewPane: View {
         .animation(fade, value: chooser.starting)
         .animation(fade, value: chooser.open)
         .animation(fade, value: chooser.opening)
-        .onAppear { focus = chooser.selected }
+        .onAppear {
+            focus = chooser.selected
+            Latency.shared.step("list")
+        }
         .onChange(of: chooser.selected) { pointer = NSEvent.mouseLocation }
         // It leaves when the pane runs something else (typed from herdr's TUI): a program besides the shell, or an
         // agent herdr reports. Not the programs of a new shell's startup.
@@ -73,18 +76,26 @@ struct NewPane: View {
         page.store.pane(cardID).map { $0.agent != nil || $0.program?.isShell == false && !$0.starting } ?? false
     }
 
-    private func list(_ rows: [Chooser.Row], details: Bool) -> some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                VStack(spacing: Self.spacing) {
-                    ForEach(rows, id: \.self) { row in
-                        self.row(row, details: details).id(row)
-                    }
-                }
+    /// A scroll view only on a card lower than the list: an AppKit scroll view of its own, it was the list's dearest
+    /// part to make.
+    @ViewBuilder
+    private func list(_ rows: [Chooser.Row], details: Bool, scrolls: Bool) -> some View {
+        let stack = VStack(spacing: Self.spacing) {
+            ForEach(rows, id: \.self) { row in
+                self.row(row, details: details).id(row)
             }
-            .scrollBounceBehavior(.basedOnSize)
-            .scrollIndicators(.never)
-            .onChange(of: chooser.selected) { proxy.scrollTo(chooser.selected) }
+        }
+        Group {
+            if scrolls {
+                ScrollViewReader { proxy in
+                    ScrollView { stack }
+                        .scrollBounceBehavior(.basedOnSize)
+                        .scrollIndicators(.never)
+                        .onChange(of: chooser.selected) { proxy.scrollTo(chooser.selected) }
+                }
+            } else {
+                stack
+            }
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("New Pane")
@@ -164,35 +175,21 @@ struct NewPane: View {
     }
 }
 
-/// The chooser on a card, fading out over 0.15 s after a pick as the terminal fades in (`TerminalHost`).
+/// The chooser on a card, fading out over 0.15 s after a pick as the terminal fades in (`TerminalHost`). A split's
+/// new card slides in with its list: held back until the card landed, the list showed 0.25 s or more after the key,
+/// and the split felt slow.
 struct NewPaneOverlay: View {
     let chooser: Chooser?
     let page: Page
     let cardID: String
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    /// A split's new card shows its list once it slid in: made in the split's turn, the list took about a third of
-    /// it, before the slide's first frame. Its keys work meanwhile (`Page.chooserKey`).
-    @State private var waiting: Bool
-
-    init(chooser: Chooser?, page: Page, cardID: String) {
-        (self.chooser, self.page, self.cardID) = (chooser, page, cardID)
-        _waiting = State(initialValue: page.store.sliding > .now)
-    }
 
     var body: some View {
         ZStack {
-            if let chooser, !waiting {
+            if let chooser {
                 NewPane(chooser: chooser, page: page, cardID: cardID).transition(.opacity)
             }
         }
-        .animation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.15),
-                   value: chooser == nil || waiting)
-        .task {
-            guard waiting else { return }
-            while page.store.sliding > .now, !Task.isCancelled {
-                try? await Task.sleep(until: page.store.sliding)
-            }
-            waiting = false
-        }
+        .animation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.15), value: chooser == nil)
     }
 }

@@ -267,6 +267,7 @@ extension HostStore {
         guard ask == pane.asks, self.client != nil, self.pane(paneID) === pane else { return }
         do {
             let program = try await client.program(paneID)
+            Latency.shared.step("program")
             if ask == pane.asks {
                 bind(pane, program, ask: ask)
                 pane.program = program

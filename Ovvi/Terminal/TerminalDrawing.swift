@@ -101,6 +101,7 @@ extension PaneTerminal {
         deadline = nil
         guard redrawing == nil else { return }
         ready = true
+        Latency.shared.step("ready")
         draw()
         let first = !revealed
         revealed = true
@@ -196,6 +197,7 @@ extension PaneSurfaceView {
     func rebuild() {
         guard controller == nil else { return }
         purgeable(false)
+        Latency.shared.step("surface")
         controller = PaneTerminal.controller
     }
 

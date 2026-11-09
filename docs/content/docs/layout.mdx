@@ -118,9 +118,9 @@ In Glass the two are close: the keyboard card is only a little brighter.
   ([Size](/docs/talking-to-herdr#size)): resized at every frame, a terminal
   went blank for most of the motion.
 - The slide has the main thread to itself
-  ([Measuring](#measuring-the-slide)). A split's new card shows its chooser
-  once it has slid in, and herdr's answer to the split (its snapshot) is drawn
-  after the slide. The window cannot be dragged during the slide: AppKit then
+  ([Measuring](#measuring-the-slide)). A split's new card slides in with its
+  chooser already drawn, and herdr's answer to the split (its snapshot) is
+  drawn after the slide. The window cannot be dragged during the slide: AppKit then
   skips its window drag region, which it would work out again at every frame.
   A kept page out of view does not draw its cards again for a split in the
   shown tab.
@@ -130,10 +130,13 @@ In Glass the two are close: the keyboard card is only a little brighter.
 ## Measuring the slide
 
 `-recordLatency YES` gives a record of each split's frames: the display
-link's frames for 0.8 s at the display's full rate, the hitches (a frame
-over one and a half display frames), the main thread's CPU time, and each
-hitch with its CPU time. A hitch with little CPU time waited on the render
-server. The on-demand UI test `testSplitsKeepTheDisplayRate` splits beside a
+link's frames for 1.2 s at the display's full rate, the hitches (a frame
+over one and a half display frames), the main thread's CPU time, each hitch
+with its CPU time, and the steps that came in that time with the CPU time of
+their frame: herdr's snapshot applied (`apply`), the chooser's list shown
+(`list`), the new terminal's surface made (`surface`), the terminal shown at
+its size (`ready`) and the pane's program known (`program`). A hitch with
+little CPU time waited on the render server. The on-demand UI test `testSplitsKeepTheDisplayRate` splits beside a
 shell, a program that redraws all of its screen 30 times a second, File
 Explorer, Git, Markdown and a browser, and among six panes. It runs under
 XCUITest, whose accessibility client takes about a quarter more of the main

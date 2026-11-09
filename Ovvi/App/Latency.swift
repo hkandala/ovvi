@@ -190,6 +190,13 @@ final class Latency {
         }
     }
 
+    /// A step of the split being recorded, at its time from the split: "made@95".
+    func step(_ name: String) {
+        if Self.isOn {
+            meter.step(name)
+        }
+    }
+
     /// A test's note in the record.
     func note(_ text: String) {
         if Self.isOn {
@@ -209,14 +216,14 @@ final class Latency {
 
 /// Frames while the window scrolls or splits, at the display's full rate: a display link runs from a scroll event
 /// until 0.3 s after the last ("scroll <frames> <hitches> <ms>"; a hitch, a frame over 25 ms after the one before), or
-/// for 0.8 s from a split, its slide and what lands after ("split <frames> <hitches> <ms> <p50> <p95> <max> <the main
+/// for 1.2 s from a split, its slide and what lands after ("split <frames> <hitches> <ms> <p50> <p95> <max> <the main
 /// thread's CPU> <each hitch: its end+gap/CPU>", in ms; a hitch, over one and a half display frames).
 @MainActor
 private final class FrameMeter: NSObject {
     let record: (String) -> Void
     private var link: CADisplayLink?
     private var name = "", start = 0.0, last = 0.0, end = 0.0, cpu = 0.0
-    private var gaps: [Double] = [], cpus: [Double] = [], lastCPU = 0.0
+    private var gaps: [Double] = [], cpus: [Double] = [], lastCPU = 0.0, steps: [(String, Double)] = []
 
     init(record: @escaping (String) -> Void) {
         self.record = record
@@ -227,7 +234,13 @@ private final class FrameMeter: NSObject {
     }
 
     func split() {
-        run("split", until: ProcessInfo.processInfo.systemUptime + 0.8)
+        run("split", until: ProcessInfo.processInfo.systemUptime + 1.2)
+    }
+
+    func step(_ step: String) {
+        if link != nil, name == "split" {
+            steps.append((step, ProcessInfo.processInfo.systemUptime - start))
+        }
     }
 
     private func run(_ name: String, until end: TimeInterval) {
@@ -236,7 +249,7 @@ private final class FrameMeter: NSObject {
             return
         }
         let now = ProcessInfo.processInfo.systemUptime
-        (self.name, self.end, start, last, gaps) = (name, end, now, now, [])
+        (self.name, self.end, start, last, gaps, steps) = (name, end, now, now, [], [])
         cpu = Latency.threadTime
         (lastCPU, cpus) = (cpu, [])
         link = screen.displayLink(target: self, selector: #selector(frame))
@@ -271,6 +284,14 @@ private final class FrameMeter: NSObject {
         }
         let busy = Int((Latency.threadTime - cpu) * 1000)
         record("split \(gaps.count) \(hitches.count) \(time)ms \(part(0.5)) \(part(0.95)) \(part(1)) \(busy)ms "
-            + hitches.joined(separator: ","))
+            + hitches.joined(separator: ",") + " " + steps.map { step, time in
+                // The CPU of the frame it fell in.
+                var end = 0.0
+                let cpu = zip(gaps, cpus).first { gap, _ in
+                    end += gap
+                    return end >= time
+                }?.1 ?? 0
+                return "\(step)@\(Int(time * 1000))/\(Int(cpu * 1000))"
+            }.joined(separator: ","))
     }
 }
