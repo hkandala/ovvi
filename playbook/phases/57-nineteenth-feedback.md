@@ -721,6 +721,31 @@ side.
 - **For the user.** Pinch a browser card's page and two-finger double tap a paragraph (Smart zoom on in System
   Settings ▸ Trackpad); ⌘0 undoes it, also in a floating browser window.
 
+### Track B, round 4 (items 32–37, 41)
+
+- **Built.** Spaces start unfolded and a fold sticks (`agentsOpen` keeps "folded ‹id›" lines now; the old unfold lines
+  go at launch). Every space row not selected has the 1 pt border, folded or not; the selected one has the glass.
+  Rows are 10 pt apart (pictures of 8 and 10 pt; 10 picked). Pinned tabs are gone: the sidebar part, the pill's pin,
+  Pin Tab / Unpin Tab, `tabPins` (removed at launch), the move bookkeeping, docs and the test. A tab's hover card
+  keeps one line per pane: the 3-line prompt under an agent's name is gone (the title fades, as every title).
+  Archived Sessions sits under the pages, the machine's (one fold per machine, `‹machine› archived-sessions`), in a
+  space row's border, with a search field (title and folder; Esc clears; a fold clears it) and the agent menu at the
+  field's end; the footer filter no longer reaches it. The page dots are back above it, centered on the rows.
+- **Measured** (2x pictures): between two rows 12 px = 6 pt before, 20 px = 10 pt after; borders 2 px = 1 pt; the
+  Archived header 60 px = 30 pt; its chevron and a row's both centered at x 549.5 px; the Archived and agent tiles
+  both at x 36 px = 18 pt; the search field 8 px = 4 pt inside the border; the dots 6 pt, centered at the rows' 149.5
+  pt, 11 pt from the list's end and 11 pt from Archived Sessions.
+- **Review.** Round 1: a blocker (the migration dropped the new Archived fold line at each launch), five should-fix
+  items and eight nits, all fixed; round 2 clean.
+- **Runs.** CI 42559593130: 21 of 22 chosen tests green; `testTheSelectedRowScrollsIntoView` measured a long list's
+  end at the last space's header, which now has its agent's line under it (unfolded), so it measures that line.
+  CI 42561566780 on the rebased head: that test and five sidebar tests, 6 executed, all green.
+- **Pictures**, before (main a2172480) and after, dark and light, with the numbers:
+  `~/Downloads/ovvi-research/p57b/r4/index.html`.
+- **For the user.** Fold a space and relaunch: it stays folded, the others unfolded. Open Archived Sessions, type in
+  its search, pick an agent from the menu at the field's end, then swipe or click a dot to another session: the shelf
+  stays where it is, open, with the same list.
+
 ### Track N (item 42)
 
 - **What 1.0 is.** libghostty 1.0 (tag `vt-1.0.0`) is libghostty-vt: a stable C ABI for a terminal's state (parse,
