@@ -278,7 +278,8 @@ extension HostStore {
                 await settle(id)
             }
             unlaunch(chooser, unless: ended)
-            if let resume, live {
+            // Its pane may have closed meanwhile.
+            if let resume, live, chooser.paneID.flatMap(pane) != nil {
                 relaunchEnded(ended, agent, chooser, resume)
             }
         }

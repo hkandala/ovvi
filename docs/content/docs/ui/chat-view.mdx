@@ -104,7 +104,7 @@ agent has ended and the shell is in front):
 | "‹agent› could not start with chat" | step 2 failed |
 | "‹agent› did not quit" | step 4 ran out |
 | "‹agent› did not start again" | the shell came back at once after the line (the agent refused it, or the command is not found in the pane's shell) |
-| "‹agent› started again without chat" | herdr reports the agent, but none of its processes carries the marker or is named as the agent |
+| "‹agent› started again without chat" | herdr reports the agent, but none of its processes carries the marker or is named as the agent (after the 10 s search) |
 | "‹agent› is not back after 10 s" | herdr reports no agent yet; the chat still opens if it comes |
 
 - Codex shows its old messages only after the first message, when its hook
