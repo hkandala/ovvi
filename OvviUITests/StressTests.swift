@@ -116,7 +116,9 @@ extension OvviUITests {
         try await sample("quiet tab", in: eight)
         let cards = element("page.\(new)").descendants(matching: .any)
             .matching(NSPredicate(format: "identifier MATCHES %@", #"pane\.[^.]+"#))
-        quietKey("d", .command) { cards.count == 2 }
+        quietKey("d", .command, until: { cards.count == 2 }, saw: {
+            cards.allElementsBoundByIndex.map(\.identifier).joined(separator: " ")
+        })
         // The new pane's first program answer, so the close does not wait for herdr's.
         try await Task.sleep(for: .seconds(2.5))
         quietKey("w", .command) { cards.count == 1 }
@@ -125,10 +127,12 @@ extension OvviUITests {
 
     /// The key, then 1.5 s with no accessibility query before its change is checked: XCUITest's queries take the main
     /// thread, for seconds at this size, and would be counted as the key's time.
-    private func quietKey(_ key: String, _ flags: XCUIElement.KeyModifierFlags, until done: () -> Bool) {
+    private func quietKey(_ key: String, _ flags: XCUIElement.KeyModifierFlags, until done: () -> Bool,
+                          saw: () -> String = { "" })
+    {
         app.typeKey(key, modifierFlags: flags)
         Thread.sleep(forTimeInterval: 1.5)
-        XCTAssertTrue(until(5, done), "after \(key)")
+        XCTAssertTrue(until(5, done), "after \(key): \(saw())")
     }
 
     /// A line in the result bundle and the log.
