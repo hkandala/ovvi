@@ -813,3 +813,7 @@ you did, no need of reverting them".
     it concise and fit well to the overall ui" (Track A).
 - "only once all these are done, invoke our cleanup things and ci check i mentioned earlier": Track O (item 43) starts
   after every track of rounds 4 and 5 has landed.
+50. "in classic view, the borders of ui elements are not quite visible, like i mean in glass view all components are
+    clearly distinct, but in classic view specfiically dark mode, like tabs, workspaces and panes can have may be very
+    subtle borders to improve them? check all components in classic view and improve them overall and make the
+    components better" (Track T).
