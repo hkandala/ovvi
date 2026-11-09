@@ -274,12 +274,12 @@ final class Page: Identifiable {
         selectedTabIDs[workspace.id] = tabs[(selectedIndex(in: workspace) + offset + tabs.count) % tabs.count].id
     }
 
-    /// The sidebar's order: each workspace, its worktrees right after it.
+    /// herdr's order, the sidebar's in Manual: each workspace, its worktrees right after it.
     var sidebarWorkspaces: [HostStore.Workspace] {
         store.groups.flatMap(\.self)
     }
 
-    /// The workspace before or after the selected one in the sidebar, round the ends (⌃⌘[ ⌃⌘]).
+    /// The workspace before or after the selected one in `sidebarWorkspaces`, round the ends (⌃⌘[ ⌃⌘]).
     func stepWorkspace(_ offset: Int) {
         let workspaces = sidebarWorkspaces
         guard let index = workspaces.firstIndex(where: { $0.id == selectedWorkspaceID }) else { return }

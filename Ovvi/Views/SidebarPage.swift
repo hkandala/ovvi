@@ -12,9 +12,10 @@ struct SidebarPage: View {
     typealias Row = (workspace: HostStore.Workspace, parent: HostStore.Workspace?)
     /// The folded spaces (`Page.foldKey`), with the open shelf; spaces start unfolded.
     @AppStorage(Page.openShelves, store: .agents) private var opened = ""
-    /// Each workspace's agents in the order on screen while the pointer is over the rows: they hold still until it
-    /// leaves, and 1 s more.
-    @State private var held: [String: [String]]?
+    @AppStorage(SpaceOrder.key, store: .agents) private var spaceOrder = SpaceOrder.manual
+    /// The groups' heads in the order on screen while the pointer is over the rows: in Recent they hold still until
+    /// it leaves, and 1 s more.
+    @State private var held: [String]?
     @State private var hovering = false
     @State private var leaves = 0
 
@@ -30,7 +31,8 @@ struct SidebarPage: View {
 
     var body: some View {
         let store = page.store
-        let rowsDrop = RowsDrop(page: page, frames: frames, state: $drop, reorders: filter.isEmpty) { rows, offset in
+        let reorders = filter.isEmpty && spaceOrder == .manual
+        let rowsDrop = RowsDrop(page: page, frames: frames, state: $drop, reorders: reorders) { rows, offset in
             if !reduceMotion || Animation.forceMotion {
                 landing = Landing(ids: rows, offset: offset, count: (landing?.count ?? 0) + 1)
             }
@@ -45,6 +47,7 @@ struct SidebarPage: View {
                     // A right-click on it reaches the row's menu.
                     .allowsHitTesting(false)
                 Spacer()
+                sortMenu
                 IconButton(symbol: "plus", help: "New Space") { Task { await page.newWorkspace() } }
                     .disabled(store.state != .live)
                     .accessibilityIdentifier("sidebar.new-workspace")
@@ -69,14 +72,16 @@ struct SidebarPage: View {
             ScrollView {
                 // Lazy: at hundreds of spaces and agents an eager stack made and laid out every row in each update.
                 LazyVStack(alignment: .leading, spacing: WorkspaceRow.gap) {
-                    let groups = store.groups, rows = rows(in: groups)
+                    let groups = sorted(store.groups), rows = rows(in: groups)
                     ForEach(Array(rows.enumerated()), id: \.element.workspace.id) { index, row in
                         let id = row.workspace.id, hasAgents = runsAgents(row.workspace)
                         let shown = hasAgents && (!folds(id) || !filter.isEmpty) ? agents(of: row.workspace) : []
                         WorkspaceRow(workspace: row.workspace, parent: row.parent, page: page, frames: frames,
                                      guideBelow: rows.indices.contains(index + 1)
                                          && rows[index + 1].parent != nil,
-                                     ends: (groups.first?.first?.id, groups.last?.first?.id),
+                                     // In Recent no row moves: each is both ends.
+                                     ends: spaceOrder == .recent ? (row.workspace.id, row.workspace.id)
+                                         : (groups.first?.first?.id, groups.last?.first?.id),
                                      agents: shown, hasAgents: hasAgents,
                                      fold: filter.isEmpty ? { fold(id) } : nil)
                             .equatable()
@@ -154,7 +159,7 @@ struct SidebarPage: View {
                 case let .active(point):
                     if frames.point == nil {
                         hovering = true
-                        held = held ?? Dictionary(uniqueKeysWithValues: store.workspaces.map { ($0.id, order($0)) })
+                        held = held ?? sorted(store.groups).map(\.[0].id)
                     }
                     frames.point = point
                 case .ended:
@@ -167,7 +172,7 @@ struct SidebarPage: View {
             .task(id: leaves) {
                 try? await Task.sleep(for: .seconds(1))
                 if !Task.isCancelled, !hovering, held != nil {
-                    withAnimation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.2)) {
+                    withAnimation(motion) {
                         held = nil
                     }
                 }
@@ -216,30 +221,28 @@ struct SidebarPage: View {
         }
     }
 
-    /// The page header's and the empty sidebar's menu: the session's own actions, as the menu bar has them. Detach
-    /// Session takes the page out of this window; the herdr session keeps running.
-    @ViewBuilder private var sessionMenu: some View {
-        Button("New Space") { Task { await page.newWorkspace() } }
-            .disabled(page.store.state != .live)
-        Button("Open Session…", action: openSession)
-        if settings.showClosed {
-            Button(opened.hasLine(page.archivedKey) ? "Hide Archived Sessions" : "Show Archived Sessions") {
-                withAnimation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.2)) {
-                    opened = opened.togglingLine(page.archivedKey)
-                }
-            }
+    /// Recent: the group whose agent changed state last first (`Pane.changeSeq`; the user's look at a finish is no
+    /// change), the rest in herdr's order; as held while the pointer is over the rows (a new group under them).
+    private func sorted(_ groups: [[HostStore.Workspace]]) -> [[HostStore.Workspace]] {
+        guard spaceOrder == .recent else { return groups }
+        let place = Dictionary(uniqueKeysWithValues: (held ?? []).enumerated().map { ($1, $0) })
+        return groups.map { group in
+            let changed = group.flatMap(\.tabs).flatMap { page.store.panes(in: $0.id) }.compactMap(\.changeSeq).max()
+            return (group, place[group[0].id] ?? .max, -(changed ?? -1))
         }
-        Divider()
-        Button("Detach Session") { pages.close(page) }.disabled(pages.list.count < 2)
+        .sorted { ($0.1, $0.2) < ($1.1, $1.2) }
+        .map(\.0)
     }
 
-    /// The workspace's agent panes, newest change of state first (herdr's `state_change_seq`, herdr's order among
-    /// equals), as held while the pointer is over the rows; with a filter, those whose title, agent or tab matches.
+    /// The workspace's agent panes by tab, then by place in the tab (left and top first), never by state; with a
+    /// filter, those whose title, agent or tab matches.
     private func agents(of workspace: HostStore.Workspace) -> [HostStore.Pane] {
-        let now = order(workspace)
-        let ids = held?[workspace.id].map { held in held.filter(now.contains) + now.filter { !held.contains($0) } }
-            ?? now
-        return ids.compactMap(page.store.pane).filter { pane in
+        workspace.tabs.flatMap { tab -> [HostStore.Pane] in
+            let panes = page.store.panes(in: tab.id).filter { $0.state != nil }
+            let place = tab.tree?.paneIDs ?? []
+            return place.compactMap { id in panes.first { $0.id == id } } + panes.filter { !place.contains($0.id) }
+        }
+        .filter { pane in
             filter.isEmpty || [pane.agentTitle, pane.agentName, page.place(pane)].compactMap(\.self)
                 .contains { $0.matches(filter) }
         }
@@ -250,19 +253,13 @@ struct SidebarPage: View {
         workspace.tabs.contains { page.store.panes(in: $0.id).contains { $0.agent != nil } }
     }
 
-    private func order(_ workspace: HostStore.Workspace) -> [String] {
-        workspace.tabs.flatMap { page.store.panes(in: $0.id).filter { $0.state != nil } }.enumerated()
-            .sorted { ($0.element.changeSeq ?? -1, -$0.offset) > ($1.element.changeSeq ?? -1, -$1.offset) }
-            .map(\.element.id)
-    }
-
     private func folds(_ workspace: String) -> Bool {
         opened.hasLine(page.foldKey(workspace))
     }
 
     /// Folds or unfolds the space's agents, kept per machine and session across relaunches.
     private func fold(_ workspace: String) {
-        withAnimation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.2)) {
+        withAnimation(motion) {
             opened = opened.togglingLine(page.foldKey(workspace))
         }
     }
@@ -278,6 +275,50 @@ struct SidebarPage: View {
             guard let head = group.first, !shown.isEmpty else { return [] }
             return (shown.first === head ? shown : [head] + shown).map { Row($0, $0 === head ? nil : head) }
         }
+    }
+}
+
+private extension SidebarPage {
+    /// The page header's and the empty sidebar's menu: the session's own actions, as the menu bar has them. Detach
+    /// Session takes the page out of this window; the herdr session keeps running.
+    @ViewBuilder var sessionMenu: some View {
+        Button("New Space") { Task { await page.newWorkspace() } }
+            .disabled(page.store.state != .live)
+        Button("Open Session…", action: openSession)
+        if settings.showClosed {
+            Button(opened.hasLine(page.archivedKey) ? "Hide Archived Sessions" : "Show Archived Sessions") {
+                withAnimation(motion) {
+                    opened = opened.togglingLine(page.archivedKey)
+                }
+            }
+        }
+        Divider()
+        Button("Detach Session") { pages.close(page) }.disabled(pages.list.count < 2)
+    }
+
+    var sortMenu: some View {
+        Menu {
+            Picker("Sort Spaces", selection: $spaceOrder.animation(motion)) {
+                Text("Manual").tag(SpaceOrder.manual)
+                Text("Recent").tag(SpaceOrder.recent)
+            }
+            .pickerStyle(.inline)
+            .labelsHidden()
+        } label: {
+            Image(systemName: "arrow.up.arrow.down").fontWeight(.medium).frame(width: 28, height: 28)
+        }
+        .menuStyle(.button)
+        .menuIndicator(.hidden)
+        .buttonStyle(ChromeStyle(radius: 7))
+        .fixedSize()
+        .help("Sort Spaces")
+        .accessibilityLabel("Sort Spaces")
+        .accessibilityValue(spaceOrder == .manual ? "Manual" : "Recent")
+        .accessibilityIdentifier("sidebar.sort")
+    }
+
+    var motion: Animation? {
+        reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.2)
     }
 }
 

@@ -31,6 +31,13 @@ extension UserDefaults {
     }
 }
 
+/// The spaces' order in the sidebar, one for the app: herdr's (drag order), or the space whose agent changed state
+/// last first.
+enum SpaceOrder: String {
+    case manual, recent
+    static let key = "spaceOrder"
+}
+
 extension Page {
     /// The defaults key of the folded spaces ("‹machine› ‹session› folded ‹id›") and the open Archived Sessions
     /// ("‹machine› archived-sessions"), a line each.

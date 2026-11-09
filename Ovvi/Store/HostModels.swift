@@ -80,7 +80,7 @@ extension HostStore {
         var state: AgentState?
         /// When the app saw the state change, for the working time.
         var since: Date?
-        /// herdr's `state_change_seq`: a workspace's agent rows list the newest change first.
+        /// herdr's `state_change_seq`, one counter for the session's agents: the spaces' Recent order.
         var changeSeq: Int?
         /// The agent's name: herdr's `display_agent`, else its kind.
         var agentName: String?

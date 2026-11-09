@@ -1,11 +1,12 @@
 import XCTest
 
-/// The sidebar's agents (ui/window#sidebar): under each space, unfolded at first, one line each, newest change first,
-/// held still under the pointer, folded by the space's chevron; an untitled session's first prompt; Archived Sessions
+/// The sidebar's agents (ui/window#sidebar): under each space, unfolded at first, one line each, by tab and place in
+/// the tab, folded by the space's chevron; the spaces' Recent order, held still under the pointer; an untitled
+/// session's first prompt; Archived Sessions
 /// and the page dots under the pages. Every status comes from `pane.report_agent` on a throwaway tab, closed after the
 /// test (its agent goes with it).
 extension OvviUITests {
-    func testAWorkspaceUnfoldsToItsAgentsByTheirNewestChange() async throws {
+    func testAWorkspaceUnfoldsToItsAgentsByTabAndPlace() async throws {
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
         let idle = try await newTab("review", in: "w1").pane
         try await report(idle, "idle", agent: "pi")
@@ -29,8 +30,8 @@ extension OvviUITests {
         try await expect("each row's state") {
             rows.map { $0.value as? String } == ["Done", "Needs you", "Working", "Idle"]
         }
-        try await expectOrder([element("workspace.w1"), rows[2], rows[3], element("workspace.w2"), rows[0], rows[1]],
-                              "newest change first, under each workspace")
+        try await expectOrder([element("workspace.w1"), rows[3], rows[2], element("workspace.w2"), rows[1], rows[0]],
+                              "by tab, then left to right, under each workspace")
         try await expect("the pane's name as the title") { rows[2].label.hasPrefix("fixer, alpha · ") }
         XCTAssertTrue(rows[3].label.hasPrefix("Untitled, alpha · "), rows[3].label)
         // One line, 28 pt; the tile on the names' edge (8 pt into the row).
@@ -38,14 +39,10 @@ extension OvviUITests {
         XCTAssertEqual(rows[0].frame.minX - 4, element("workspace.w2").frame.minX, accuracy: 0.5)
         keepScreenshot("unfolded workspaces")
 
-        // A change while the pointer rests on the rows: the box at once, the row stays; it moves once the pointer
-        // leaves.
-        rows[3].hover()
-        try await report(idle, "working", agent: "pi")
-        try await waitForValue("agent.\(idle)", containing: "Working")
-        XCTAssertFalse(until(1.5) { rows[3].frame.minY < rows[2].frame.minY }, "moved under the pointer")
-        element("sidebar.header").hover()
-        try await expectOrder([rows[3], rows[2]], "the newest on top once the pointer left")
+        // A change never moves an agent.
+        try await report(working, "idle")
+        try await waitForValue("agent.\(working)", containing: "Done")
+        XCTAssertFalse(until(1.5) { rows[2].frame.minY < rows[3].frame.minY }, "the changed agent moved up")
 
         filter("beta", keeps: rows, [true, true, false, false])
         filter("fixer", keeps: rows, [false, false, true, false])
@@ -56,6 +53,65 @@ extension OvviUITests {
         XCTAssertTrue(rows[0].exists(within: connect))
         XCTAssertEqual(element("fold.w1").value as? String, "collapsed")
         XCTAssertFalse(rows[2].exists)
+    }
+
+    /// Recent: the space whose agent changed state last first (a start, a finish, a need), held still under the
+    /// pointer; a look at a finish is no change. No row drags or moves in Recent; Manual is herdr's order again.
+    func testRecentPutsTheSpaceWhoseAgentChangedLastFirst() async throws {
+        XCTAssertTrue(element("workspace.w1").exists(within: connect))
+        let alpha = try await newTab("recent-a", in: "w1").pane, beta = try await newTab("recent-b", in: "w2").pane
+        try await report(alpha, "working", agent: "pi")
+        try await report(beta, "working", agent: "pi")
+        let alphaRow = element("workspace.w1"), betaRow = element("workspace.w2"), sort = element("sidebar.sort")
+        try await waitForValue("agent.\(beta)", containing: "Working")
+        XCTAssertEqual(sort.value as? String, "Manual")
+        addTeardownBlock { @MainActor in
+            if sort.value as? String == "Recent" {
+                sort.click()
+                sort.menuItems["Manual"].click()
+            }
+        }
+        sort.click()
+        keepScreenshot("sort menu")
+        sort.menuItems["Recent"].click()
+        try await expectOrder([betaRow, alphaRow], "beta's agent changed last")
+
+        // Under the pointer the rows hold still; they move once it leaves.
+        betaRow.hover()
+        try await report(alpha, "idle", agent: "pi")
+        try await waitForValue("agent.\(alpha)", containing: "Done")
+        XCTAssertFalse(until(1.5) { alphaRow.frame.minY < betaRow.frame.minY }, "moved under the pointer")
+        element("sidebar.header").hover()
+        try await expectOrder([alphaRow, betaRow], "alpha's finish on top once the pointer left")
+
+        // A look at the finish (its Done cleared once left) moves nothing.
+        try await report(beta, "blocked", agent: "pi")
+        try await expectOrder([betaRow, alphaRow], "beta needs you")
+        element("agent.\(alpha)").click()
+        betaRow.click()
+        try await waitForValue("agent.\(alpha)", containing: "Idle")
+        element("sidebar.header").hover()
+        XCTAssertFalse(until(2.5) { alphaRow.frame.minY < betaRow.frame.minY }, "a look moved alpha's space up")
+
+        // No reorder: a space with no agent, last, dragged to the top leaves herdr's order; no Move Up or Down.
+        let gamma = try await workspace(of: createWorkspace("recent-c").tab), gammaRow = element("workspace.\(gamma)")
+        try await expectOrder([betaRow, alphaRow, gammaRow], "the space with no agent last")
+        let before = try await workspaceIDs()
+        during(gammaRow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
+               to: betaRow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.1)))
+        try await Task.sleep(for: .seconds(1))
+        let after = try await workspaceIDs()
+        XCTAssertEqual(after, before, "a drag reordered in Recent")
+        // Neither end in herdr's order or on screen.
+        alphaRow.rightClick()
+        XCTAssertFalse(app.menuItems["Move Up"].isEnabled)
+        XCTAssertFalse(app.menuItems["Move Down"].isEnabled)
+        app.typeKey(.escape, modifierFlags: [])
+
+        sort.click()
+        sort.menuItems["Manual"].click()
+        try await expectOrder([alphaRow, betaRow], "herdr's order")
+        XCTAssertEqual(sort.value as? String, "Manual")
     }
 
     /// With two pages, the dots show under them, then Archived Sessions, which keeps its place and its fold (it is the

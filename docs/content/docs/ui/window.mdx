@@ -286,8 +286,16 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   space rows' names and branch lines, the agents' icons and the shelf's label. It
   sits 3 pt above the first
   row, and, at the trailing
-  end, a `+` that makes a new space in that session, in `$HOME`. The
+  end, **Sort Spaces** (`arrow.up.arrow.down`) and a `+` that makes a new space in that session, in `$HOME`. The
   snapshot after it selects the new space.
+- **Sort Spaces.** A menu with a check on the current order, one for the app, kept across relaunches: **Manual**
+  (the default), herdr's order, which a drag or Move Up and Move Down change; or **Recent**, the space whose agent
+  changed state last first (a start, a finish, a need: herdr's `state_change_seq`, one counter for the session; a
+  look at a finish is no change), the spaces with no agent after in herdr's order, a worktree with its repository's
+  row. In Recent the rows hold still while the pointer is over them, and move 1 s after it leaves, sliding in 0.2 s
+  (no motion with Reduce Motion); no row reorders (a dropped row stays, Move Up and Move Down are off), as while
+  the filter hides rows. Next and previous space (⌃⌘[ ]), ⌃⌘1–9, the overview, Move Pane to Tab and the palette
+  keep herdr's order.
 - **Middle.** The [space rows](#space-rows), 10 pt apart. 18 pt fades show at the top and
   bottom of the space list when content is under them. When the selected space
   changes, however it changes (a click, the overview, ⌃⌘[ ], ⌃⌘1–9, a
@@ -374,17 +382,15 @@ Spaces panel.
   sends nothing.
 - VoiceOver reads the branch with the ahead and behind counts, and "worktree
   of ‹repository›" for a worktree row.
-- Drag a row to reorder the spaces
+- Drag a row to reorder the spaces, in Manual
   ([Drag and drop](/docs/ui/drag-and-drop)).
 
 ## Agent rows
 
 An unfolded [space row](#space-rows) lists its agent panes under its name, inside its glass or border,
 4 pt in from its edges.
-- **Order.** Newest change of state first (herdr's `state_change_seq`; herdr's order of tabs and panes among equals).
-  While the pointer is over the space rows they hold still: a state, a time and a title change at once, and the
-  rows move 1 s after the pointer leaves, sliding in 0.2 s (no motion with Reduce Motion). A new agent waits at the
-  end until then.
+- **Order.** Fixed: by tab, then by place in the tab's layout (left before right, top before bottom), never by
+  state; the user does not change it.
 - **One line**, 28 pt, one per agent pane, even when several share a tab: the program tile (8 pt into the space row,
   on the names' edge), then the pane's name (13 pt; its label, else its session's title, else its session's first
   typed prompt cut at 100 characters with "…", else "Untitled":
@@ -632,7 +638,7 @@ How it works: [Layout and sizing](/docs/layout).
     Zoom Pane or Restore Pane (⇧⌘↩).
   - Move Pane to Tab ▸ (New Tab and New Space, a separator, then every
     tab of the session but the pane's own, grouped by space: each
-    space's name as a section header, in the sidebar's order), Rename
+    space's name as a section header, in herdr's order: the sidebar's in Manual), Rename
     Pane…, Reset Pane Name.
   - Redraw Terminal (⌥⌘R, not on a browser or plugin pane), Replace Pane (⇧⌘R), Open Terminal Here, Start Agent
     Here ▸, Open Browser
@@ -834,7 +840,7 @@ agents at once.
   the overview then shows; a sideways swipe alone goes nowhere. From the top:
   the session's title as the sidebar's
   page header has it (13 pt semibold; This Mac's name for `default`), then
-  the session's spaces in the sidebar's order, 32 pt apart: each
+  the session's spaces in herdr's order (the sidebar's in Manual), 32 pt apart: each
   space's name (13 pt semibold, secondary), then its tabs as tiles in a
   grid, 2 to 4 a row (as many 340 pt tiles as fit), 16 pt apart. Wide
   margins all round: 8 % of the window's width
@@ -1058,7 +1064,7 @@ A window that watches a session another window controls (D66).
   tie, the title that is the whole filter comes first ("open file" gives
   Open File › before Open File Explorer Here), then a title that starts with
   the filter ("font size" gives Font Size › before Increase Font Size), then
-  commands before places, then the menu's and the sidebar's order.
+  commands before places, then the menu's and herdr's order (the sidebar's in Manual).
 - **Rows at open.** The palette reads its commands and places once, as it
   opens. A tab that changes its title while the palette is open keeps the
   old title in it, and a tab closed meanwhile stays listed and does nothing.
