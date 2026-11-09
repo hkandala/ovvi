@@ -5,15 +5,16 @@ description: "The words these docs use"
 
 | Word | Meaning |
 |---|---|
-| multiplexer | a program that keeps terminals alive in panes, tabs and workspaces, such as herdr or tmux. The app talks to one through the `Multiplexer` interface |
+| multiplexer | a program that keeps terminals alive in panes, tabs and spaces, such as herdr or tmux. The app talks to one through the `Multiplexer` interface |
 | herdr TUI | herdr's own text interface, run in a terminal app |
 | machine / host | a computer that runs herdr: This Mac or an SSH host. Each machine has its own icon and one entry in the machine list. Its sessions share one SSH connection |
 | This Mac | the Mac the app runs on |
 | session | one herdr server on a machine (`default`, `pi-herd`, …) |
+| space | a group of tabs in a session, one row in the sidebar, as herdr's own window calls it. herdr's API and CLI still say workspace (`workspace_id`, `workspace.*`, `herdr workspace`), and so does the app's code |
 | page | one session's page in the sidebar. A window shows only the sessions the user opened in it; pages swipe sideways. Its title is the session's name, or the machine's name for `default` |
 | window | an Ovvi window. It shows one machine and keeps its own selection; the user can open several |
 | `HostStore` | the app's live model of one open session, shared by every window that has its page |
-| machine button / workspace button | the title-row button with the machine's icon / the title-row button "‹page title› \| ‹workspace›", shown while the sidebar is collapsed |
+| machine button / space button | the title-row button with the machine's icon / the title-row button "‹page title› \| ‹space›", shown while the sidebar is collapsed |
 | Open Session | the panel that adds a session to the window as a page: it creates a session, starts a stopped one or opens a running one (⌥⌘T) |
 | tab page | the main area: the selected tab's cards in herdr's layout |
 | tab capsule | one tab in the tab bar |
@@ -53,7 +54,7 @@ description: "The words these docs use"
 | keyboard card | the card that gets typed keys, one per tab; the app's own choice, never herdr's focus |
 | program icon | the icon of the program that runs in a pane, from Ovvi's own catalog; a tab shows a stack of them |
 | hover card | the panel that shows a tab's panes when the pointer rests on a title-bar tab, a pinned tab or an agent row |
-| overview | every tab of the session as a miniature of its page, drawn from pictures, grouped by workspace (⌃⌘O) |
+| overview | every tab of the session as a miniature of its page, drawn from pictures, grouped by space (⌃⌘O) |
 | floating pane | a pane shown in a small window of its own; herdr keeps it in its tab |
 | float request | the older way a tool in a pane asks Ovvi to float a pane, through herdr's pane metadata tokens; kept for older callers |
 | `ovvi` command | the script at `~/.cache/ovvi/bin/ovvi` on each machine, through which an agent asks Ovvi for cards, floats and plugins |
@@ -61,7 +62,7 @@ description: "The words these docs use"
 | notice | the short capsule at the bottom of the tab page after a failed action |
 | Glass / Classic | the two interface styles: a window with a behind-window blur / an opaque window |
 | Appearance | Auto, Light or Dark |
-| agent row | an agent pane's one-line row inside its unfolded workspace row in the sidebar |
+| agent row | an agent pane's one-line row inside its unfolded space row in the sidebar |
 | Pinned | the sidebar's top part: the page's pinned tabs |
 | Archived Sessions | the folded shelf at the sidebar's foot: the closed sessions of Claude Code, Codex, Pi and OpenCode on the machine, read from their own stores; a click resumes one |
 | Take Back | the button that moves control of a session to this window, or of a pane to this device |
@@ -73,7 +74,7 @@ description: "The words these docs use"
 | state box | an agent row's state: its icon and time in a box tinted with the status color |
 | status word | working (blue), needs you (orange), finished (emerald), idle (gray); VoiceOver reads it with every state icon |
 | seen | this device has shown the agent's last finish to the user: its tab was selected on the page in view of the key window |
-| git state | a workspace row's branch and its ahead and behind counts, from `git status` on the machine |
+| git state | a space row's branch and its ahead and behind counts, from `git status` on the machine |
 | PTY | the pseudo-terminal a shell runs in; it has one size |
 | frame | one message of ANSI bytes from `terminal session` |
 | control / observe | the two stream kinds: control types and resizes; observe only watches |
@@ -84,7 +85,7 @@ description: "The words these docs use"
 | relay | a small Perl script, sent with each SSH connection and never installed, that carries every run of a remote machine over one SSH session |
 | run | the call the app makes on a machine: run a command and use its stdio |
 | envelope | the base64 wrapper every remote command travels in |
-| `terminal_id` / `pane_id` | herdr's id of a terminal process / of a pane slot; the pane id changes on a move to another workspace, the terminal id on a cold restart |
+| `terminal_id` / `pane_id` | herdr's id of a terminal process / of a pane slot; the pane id changes on a move to another space, the terminal id on a cold restart |
 | cold restart / live update | the herdr server stops, its terminals end, and it starts again / a new herdr server takes over the running terminals, which keep running |
 | `completion_seq` | the number of an agent's last finish (working or blocked → idle), from one counter per herdr server. herdr sets it back to null at the agent's next status change. It restarts at 0 when herdr restarts |
 | health check | the loop, one per open session, that reads `session.snapshot` every 30 s, every 2 s while it fails |

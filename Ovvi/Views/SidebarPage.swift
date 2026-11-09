@@ -51,7 +51,7 @@ struct SidebarPage: View {
                     // A right-click on it reaches the row's menu.
                     .allowsHitTesting(false)
                 Spacer()
-                IconButton(symbol: "plus", help: "New Workspace") { Task { await page.newWorkspace() } }
+                IconButton(symbol: "plus", help: "New Space") { Task { await page.newWorkspace() } }
                     .disabled(store.state != .live)
                     .accessibilityIdentifier("sidebar.new-workspace")
                     // A new workspace, as the ghost row under the rows, which a full page has no room for.
@@ -78,8 +78,8 @@ struct SidebarPage: View {
             }
             PinnedTabs(page: page, tabs: page.pinnedTabs(pins).filter(matches))
             if store.state == .live, store.workspaces.isEmpty {
-                EmptyState(symbol: "square.dashed", title: "No Workspaces", compact: true, id: "sidebar.empty") {
-                    Button("New Workspace") { Task { await page.newWorkspace() } }
+                EmptyState(symbol: "square.dashed", title: "No Spaces", compact: true, id: "sidebar.empty") {
+                    Button("New Space") { Task { await page.newWorkspace() } }
                         .accessibilityIdentifier("new-workspace")
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -115,12 +115,12 @@ struct SidebarPage: View {
                                 .background { Color.clear.id("into view \(id)").padding(.vertical, -18) }
                         }
                         if drop.ghost, page.dragging != nil {
-                            Text("New Workspace").foregroundStyle(.secondary).padding(.leading, WorkspaceRow.textInset)
+                            Text("New Space").foregroundStyle(.secondary).padding(.leading, WorkspaceRow.textInset)
                                 .frame(maxWidth: .infinity, minHeight: 30, alignment: .leading)
                                 .background { DropIndicator() }
                         }
                         if rows.isEmpty, !store.workspaces.isEmpty {
-                            EmptyState(symbol: "magnifyingglass", title: "No matching workspaces", compact: true,
+                            EmptyState(symbol: "magnifyingglass", title: "No matching spaces", compact: true,
                                        id: "sidebar.no-match")
                                 .frame(maxWidth: .infinity)
                         }

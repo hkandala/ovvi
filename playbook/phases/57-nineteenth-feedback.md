@@ -603,3 +603,20 @@ deleted; ⌘-click and ⌥-click on it opened nothing.
   `ovvi open` shows the notice only when typed in a shell: an agent's open (often a probe) gets its CLI error alone.
 - **For the user.** ⌘-click and ⌥-click a terminal path to a deleted file, and a Markdown link to one: a notice says
   "File not found: ~/…".
+
+### Track L
+
+- **herdr's words.** the herdr 0.9.5 TUI says Spaces (its sidebar, `ui.sidebar.spaces`, "grouped by space"); its
+  CLI, API, config keys and skill still say workspace. Ovvi follows the TUI: Space(s) in every surface the
+  user sees, workspace only where herdr's API is named.
+- **Fix.** Menus, ⌘K commands and their group, the title-row button's help and accessibility label, the sidebar's
+  empty states and ghost row, the close sheet, the rename prompt, Open Session's delete text, the drag type's
+  description (Info.plist) and every design page's prose. The glossary has a `space` row saying herdr's API still
+  says workspace. The `ovvi` CLI, the skill, the plugins and Settings had no such word.
+- **Decisions.** Swift identifiers, accessibility identifiers (`workspace.w1`, `sidebar.new-workspace`, `workspaces.*`),
+  herdr method and field names, `herdr workspace` commands and the playbook's history stay as they are. A ⌘K
+  command's identifier is `palette.command.<title>`, so those follow the new titles in the tests. "Empty space" in
+  the drag docs became "empty area", so space means one thing. Typing "workspace" in ⌘K no longer finds the Space
+  commands ("space" still does).
+- **For the user.** Look over the sidebar's right-click menu, File ▸ New Space / Close Space, ⌘K "space", and the close
+  sheet of a space with worktrees.

@@ -173,9 +173,9 @@ herdr's focus methods (D13):
 - ⌥⇧⌘ and an arrow (Move Pane): swaps the keyboard card with its neighbor
   that way, with `pane.swap {pane_id, direction, focus:false}`. The keyboard
   stays with the pane.
-- After a move to a new tab, another tab or a new workspace, the window
+- After a move to a new tab, another tab or a new space, the window
   selects the tab the pane went to, and the pane keeps the keyboard. A pane
-  moved to another workspace gets a new pane id; its terminal and card stay.
+  moved to another space gets a new pane id; its terminal and card stay.
 - **Focus follows mouse** (View ▸ Pane ▸ Focus Follows Mouse, off by
   default): a card gets the keyboard when the pointer rests on it for
   0.15 s. Only in the key window, never while a mouse button is down, and
@@ -214,15 +214,15 @@ herdr's focus methods (D13):
 
 - Each window has its own machine, open pages, page in view and sidebar
   width ([Data](/docs/data#every-piece-of-data)).
-- Selection is per page. Each page of a window keeps its selected workspace,
-  the selected tab of each workspace, the keyboard card of each tab, its
+- Selection is per page. Each page of a window keeps its selected space,
+  the selected tab of each space, the keyboard card of each tab, its
   zoomed card, and a tab it just made (selected once a snapshot shows it).
   The window's page holds them in memory, not the session's `HostStore`, so
   two windows on one session select on their own. Switching pages brings the
   selection back.
-- A tab that is gone falls back to herdr's active tab of that workspace, else
-  its first tab. A workspace that is gone falls back to herdr's focused
-  workspace, else the first one.
+- A tab that is gone falls back to herdr's active tab of that space, else
+  its first tab. A space that is gone falls back to herdr's focused
+  space, else the first one.
 - One `PaneViewRegistry` per window holds the terminals of all its pages.
   Only the shown tab of the page in view streams and draws; the cache keeps
   the 25 most recently shown other terminals streaming, over all pages of all

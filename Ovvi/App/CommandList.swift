@@ -43,7 +43,7 @@ struct CommandList {
             },
             Command(section: .file, title: "New Tab", key: .newTab, group: .tabs, symbol: "plus.square",
                     enabled: workspace != nil) { Task { await page?.newTab() } },
-            Command(section: .file, title: "New Workspace", key: .newWorkspace,
+            Command(section: .file, title: "New Space", key: .newWorkspace,
                     group: .workspaces, symbol: "folder.badge.plus",
                     enabled: live) { Task { await page?.newWorkspace() } },
             Command(section: .file, title: "Open Session…", key: .openSession, group: .sessions,
@@ -79,7 +79,7 @@ struct CommandList {
                             page.closeTabs(besides: tab.id, right: true)
                         }
                     }),
-            Command(section: .close, title: "Close Workspace", key: .init("w", modifiers: [.command, .control]),
+            Command(section: .close, title: "Close Space", key: .init("w", modifiers: [.command, .control]),
                     group: .workspaces, symbol: "folder.badge.minus", enabled: workspace != nil, action: {
                         if let page, let workspace = page.selectedWorkspace {
                             page.close(.workspace(workspace.id))
@@ -174,7 +174,7 @@ struct CommandList {
                     name: tab.map { tab in
                         (tab.label, { await page?.store.rename(tab: tab.id, label: $0) })
                     }),
-            Command(section: .palette, title: "Rename Workspace", group: .workspaces, symbol: "pencil",
+            Command(section: .palette, title: "Rename Space", group: .workspaces, symbol: "pencil",
                     enabled: workspace != nil,
                     name: workspace.map { workspace in
                         (workspace.label, { await page?.store.rename(workspace: workspace.id, label: $0) })
@@ -237,8 +237,8 @@ struct CommandList {
                     enabled: tabs.count > 1) { page?.step(1) },
             Self.moveTab(page, -1, enabled: tab != nil && tabs.first?.id != tab?.id),
             Self.moveTab(page, 1, enabled: tab != nil && tabs.last?.id != tab?.id),
-            stepWorkspace("Show Previous Workspace", "chevron.up", -1),
-            stepWorkspace("Show Next Workspace", "chevron.down", 1),
+            stepWorkspace("Show Previous Space", "chevron.up", -1),
+            stepWorkspace("Show Next Space", "chevron.down", 1),
             step("Previous Session", "chevron.left.2", -1),
             step("Next Session", "chevron.right.2", 1),
         ] + Self.jumps(page, pages)
@@ -349,7 +349,7 @@ extension CommandList {
             if let page, let workspace = page.selectedWorkspace, workspace.tabs.indices.contains(index) {
                 page.select(workspace, tab: workspace.tabs[index].id)
             }
-        } + jump(.workspaces, "Workspace", [.command, .control], workspaces.prefix(9).map(\.label)) {
+        } + jump(.workspaces, "Space", [.command, .control], workspaces.prefix(9).map(\.label)) {
             if let page, page.sidebarWorkspaces.indices.contains($0) {
                 page.select(page.sidebarWorkspaces[$0])
             }

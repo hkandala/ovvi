@@ -208,7 +208,7 @@ struct Command {
 
     /// The palette's and the Keyboard Shortcuts panel's groups: what a command acts on. In the palette's order.
     enum Group: String, CaseIterable {
-        case tabs = "Tabs", workspaces = "Workspaces", sessions = "Sessions", panes = "Panes", view = "View"
+        case tabs = "Tabs", workspaces = "Spaces", sessions = "Sessions", panes = "Panes", view = "View"
         case edit = "Edit", plugins = "Plugins"
     }
 

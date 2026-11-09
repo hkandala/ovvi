@@ -189,13 +189,13 @@ builds on one Mac) both hear it.
 | Token | Writer | Notes |
 |---|---|---|
 | `ovvi-shown` on a pane | each Ovvi, source `ovvi`, with `pane.report_metadata` | `1` or `remote`, which pi's copy reads ([Agent requests](/docs/talking-to-herdr#agent-requests)) |
-| `ovvi-open` on a workspace | each Ovvi, source `ovvi`, with `workspace.report_metadata` | `1`; `ttl_ms` 30000; on each workspace while a window has the session open, every 10 s and on a snapshot with a new workspace; cleared (`null`) when the last window lets the session go and on quit, which waits up to 1 s |
+| `ovvi-open` on a space | each Ovvi, source `ovvi`, with `workspace.report_metadata` | `1`; `ttl_ms` 30000; on each space while a window has the session open, every 10 s and on a snapshot with a new space; cleared (`null`) when the last window lets the session go and on quit, which waits up to 1 s |
 
 Both go in the same burst as the 10 s refresh, over the same bridge,
 the panes' `ovvi-shown` first: a tool reads it at each click, and the
-workspaces' marks are one call each. At quit the workspaces go first,
+spaces' marks are one call each. At quit the spaces go first,
 because `ovvi status` reads them and the quit waits only 1 s. A session
-with 8 workspaces adds 8 small calls every 10 s.
+with 8 spaces adds 8 small calls every 10 s.
 
 ## Security
 

@@ -130,7 +130,7 @@ struct Detail: View {
             // Not while it reconnects before its first snapshot.
             EmptyState(symbol: "square.dashed", title: "This session is empty", id: "detail.empty") {
                 Button { Task { await page.newWorkspace() } } label: {
-                    Text("New Workspace")
+                    Text("New Space")
                     Text(KeyboardShortcut.newWorkspace.glyphs).foregroundStyle(.secondary)
                 }
                 .buttonStyle(.glassProminent)

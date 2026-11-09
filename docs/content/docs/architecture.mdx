@@ -16,11 +16,11 @@ API bridge, a `terminal session` per streamed pane, and the event stream.
 | `ProcessExec` | `Process` with pipes, for This Mac |
 | `SSHExec` | a remote machine: its ControlMaster, the askpass prompts and the relay that carries every run |
 | `HostStore` | the app's live model of one open session: snapshot, events, streams, seen state, git state, and which window controls it. One per session, shared by every window that shows it |
-| Window state | one per window: its machine, its open pages and its selection (page, workspace, tab, keyboard card, zoom, sidebar width), restored with `@SceneStorage` |
+| Window state | one per window: its machine, its open pages and its selection (page, space, tab, keyboard card, zoom, sidebar width), restored with `@SceneStorage` |
 | `PaneViewRegistry` | owns terminal, browser and plugin views by terminal id, so scrolling never destroys them |
 | Plugin cards | `Registry` (the browser's manifest and every package's), `Plugin` and its `WebCard` (one web view and the `ovvi-plugin://` scheme), `Bridge` (the plugin API, one per card), `Header`, and the installs, builds, defaults and confirmations; the API's runtime and types in `web/ovvi/`, the default plugins and the template in `plugins/` ([Plugins](/docs/plugins)) |
 | Agent commands | `AgentCommands` in `Ovvi/Agent/`: the one parser and every command that the `ovvi` command asks for, run against the asking session's `HostStore`; the script itself, `ovvi.sh` ([Agent control](/docs/agent-control)) |
-| Views | title row, sidebar pages (pinned tabs, workspace and agent rows, Archived Sessions), tab bar, tab page, cards, overview, floating panes, panels and dialogs |
+| Views | title row, sidebar pages (pinned tabs, space and agent rows, Archived Sessions), tab bar, tab page, cards, overview, floating panes, panels and dialogs |
 
 `Exec` and `Multiplexer` are the only protocols. `HerdrKit` is a separate
 package, so its single test target runs with `swift test`.
@@ -36,7 +36,7 @@ interface and the app's own model types, never herdr's JSON or argv.
 | Part | What it gives the app | herdr implementation |
 |---|---|---|
 | Machine connection | one session on one machine, through that machine's `Exec` | [herdr on each machine](/docs/talking-to-herdr#herdr-on-each-machine), [Checks on connect](/docs/machines#checks-on-connect), [Health check](/docs/machines#health-check) |
-| Snapshot | every workspace, tab, pane, label and split tree, in the app's model types | `session.snapshot`, [Reconcile](/docs/talking-to-herdr#reconcile), [Layout](/docs/layout) |
+| Snapshot | every space, tab, pane, label and split tree, in the app's model types | `session.snapshot`, [Reconcile](/docs/talking-to-herdr#reconcile), [Layout](/docs/layout) |
 | Events | "the state changed, read the snapshot again" | `events.subscribe`, [Events](/docs/talking-to-herdr#events) |
 | Terminal streams | one pane's screen as ANSI frames; keys, resize, scroll and mouse back; control or watch | `terminal session control/observe`, [Terminal plane](/docs/talking-to-herdr#terminal-plane) |
 | Actions | create, split, move, swap, close, rename, resize; read a pane's text | [Writes are herdr calls](/docs/talking-to-herdr#writes-are-herdr-calls) |

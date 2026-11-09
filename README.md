@@ -1,7 +1,7 @@
 # Ovvi
 
 Ovvi is a native macOS app for [herdr](https://github.com/herdrdev/herdr), the terminal multiplexer for AI
-coding agents. herdr keeps the workspaces, tabs and panes; Ovvi shows them as live terminal cards in a
+coding agents. herdr keeps the spaces, tabs and panes; Ovvi shows them as live terminal cards in a
 Liquid Glass window and lets you drive them with the mouse, the trackpad and the keyboard.
 
 Website and docs: [ovvi.dev](https://ovvi.dev).
@@ -9,8 +9,8 @@ Website and docs: [ovvi.dev](https://ovvi.dev).
 ## What it does
 
 - Sessions of This Mac and of remote machines over SSH, each session a page in the sidebar; several windows.
-- Workspaces with their git branch, tabs in the title row, panes laid out as herdr splits them.
-- Split, zoom, resize, swap and drag panes; move them to another tab or workspace.
+- Spaces with their git branch, tabs in the title row, panes laid out as herdr splits them.
+- Split, zoom, resize, swap and drag panes; move them to another tab or space.
 - The Agents view: every agent of a session and who needs you, with notifications and a Dock badge.
 - The overview of every tab, and panes that float in windows of their own.
 - Drop files on a pane to paste their paths (copied over first on a remote machine).

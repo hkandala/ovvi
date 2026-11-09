@@ -75,7 +75,7 @@ Browser and plugin panes are created the same way.
      argument from herdr (`herdr pane get $HERDR_PANE_ID`) and draws again: on
      a resize, and when the app signals its processes by pid after the label
      changed (a browser's new address). herdr still finds a pane by its old id
-     after a move to another workspace. A placeholder from before the app
+     after a move to another space. A placeholder from before the app
      started shows its old argument until its label changes. It runs
      `stty raw -echo` and a background `cat <&3 >/dev/null` (standard input
      copied to descriptor 3 first: dash gives a background job `/dev/null`),

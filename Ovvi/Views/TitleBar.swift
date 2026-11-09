@@ -214,8 +214,8 @@ private struct WorkspaceButton: View {
         }
         .onDisappear { spring?.cancel() }
         .accessibilityIdentifier("titlebar.workspace")
-        .help("Workspace")
-        .accessibilityLabel("Workspace")
+        .help("Space")
+        .accessibilityLabel("Space")
         .accessibilityValue("\(page.store.title) | \(workspace)")
     }
 }
@@ -277,12 +277,12 @@ struct WorkspaceMenu: View {
         }
         let typed = filter.trimmingCharacters(in: .whitespaces)
         let create = typed.isEmpty || !workspaces.isEmpty ? [] : [
-            FilterList.Item(id: "create", symbol: "plus", title: "New Workspace “\(typed)”") {
+            FilterList.Item(id: "create", symbol: "plus", title: "New Space “\(typed)”") {
                 Task { await page.newWorkspace(label: typed) }
             },
         ]
         return create + workspaces + [
-            FilterList.Item(id: "new", symbol: "plus", title: "New Workspace", section: "",
+            FilterList.Item(id: "new", symbol: "plus", title: "New Space", section: "",
                             drop: MenuRowDrop.Target(page: page, destination: .newWorkspace(), shown: open),
                             act: { Task { await page.newWorkspace() } }),
             FilterList.Item(id: "open-session", symbol: "plus.square.on.square", title: "Open Session…",

@@ -37,7 +37,7 @@ Revision 5 adds only `server.apple.privacy_status`, so a `hello` with
 | Rex | Ovvi | Notes |
 |---|---|---|
 | server (host) | machine, and its one `Session` | one server per account and machine; `sessions()` returns one entry |
-| session | workspace | ordered; generated label such as `crisp-forest` |
+| session | space | ordered; generated label such as `crisp-forest` |
 | window | tab | ordered; each session has an `active_window_id` |
 | layer `tiled` | the tab's split tree | `split.direction` `horizontal` is `.right`, `vertical` is `.down`; `ratio` is the first child's share |
 | layer `floating` | none yet | a block that a Rex.app user floats would vanish from Ovvi if skipped; show it as a floating pane ([Floating pane](/docs/ui/window#floating-pane)) or as a card at the end of its tab. Detached blocks, blocks from other hosts (`host_id`) and blocks no terminal made need the same choice |
@@ -46,8 +46,8 @@ Revision 5 adds only `server.apple.privacy_status`, so a `hello` with
 
 A block keeps its id when it moves between windows. Rex has no separate
 terminal id, and none is needed. A block never leaves its Rex session, so
-with this mapping a pane cannot move to another workspace or a new one.
-Rex gives no git state and no worktree groups for a workspace; the app's own
+with this mapping a pane cannot move to another space or a new one.
+Rex gives no git state and no worktree groups for a space; the app's own
 `git status` run ([Git status](/docs/talking-to-herdr#git-status)) still works
 from the pane's cwd.
 
@@ -109,7 +109,7 @@ events to one reader.
 - **Create calls** send `focus: false` (`session.new_window` defaults to
   true). A new tab is
   `session.new_window {session_id, layout: {block: {flavor, options: {cwd}}}, focus: false}`;
-  a new workspace is
+  a new space is
   `session.create {initial_windows: [...]}`, then `session.attach` (`create`
   does not attach).
 
@@ -119,7 +119,7 @@ Every `Multiplexer` member, with its Rex call, is in the research's
 adapter code: one session per server, visible text cut from `format`,
 divider drags and ratios found in the tree, a move to a new tab built from
 several calls, and key names turned into key objects. 4 cannot work:
-`deleteSession`, `mark`, `scroll` and a move to a new workspace.
+`deleteSession`, `mark`, `scroll` and a move to a new space.
 The adapter's own work is listed there too
 ([Verdict](https://github.com/hkandala/ovvi/blob/main/resources/research/multiplexers/rex.md#5-verdict)).
 Stream fan-out is in [Transport](#transport), stale owners in
@@ -143,7 +143,7 @@ So Ovvi applies the response, then only events with a higher `seq`.
   events can arrive out of order.
 - `session_created`: attach the new session, then read its view.
   `session_destroyed`, `session_moved` and `session_label_changed` change the
-  workspace list.
+  space list.
 - `block_event` with `program_status_changed` or `program_status_removed`:
   update the agent status in place.
 - `block_event` with `process_changed` or `pwd_changed`: update the pane's
@@ -266,7 +266,7 @@ every device agrees.
 - A block's status is its strongest record: `blocked`, then `working`, then
   `done` or `error`, then `idle`. `error` shows as done with the word
   "failed".
-- Workspace and tab status fold their blocks, as herdr's do.
+- Space and tab status fold their blocks, as herdr's do.
 - Rex has no `completion_seq`. Ovvi uses a `done` record's `updated_at` as
   the finish marker. "Seen" stays in the app, keyed by block, record id and
   `updated_at`.

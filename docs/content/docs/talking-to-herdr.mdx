@@ -145,7 +145,7 @@ and watch files and run git the same way
   ([Open sessions](/docs/machines#open-sessions)).
 - Subscriptions (herdr accepts no wildcards):
   - `workspace.created|updated|renamed|moved|reordered|closed`. Not
-    `workspace.metadata_updated`: the app reads no workspace tokens, and herdr
+    `workspace.metadata_updated`: the app reads no space tokens, and herdr
     sends it on every token write, also one that changes nothing.
   - `tab.created|closed|renamed|moved`
   - `pane.created|closed|moved|updated|exited|agent_detected`. herdr sends
@@ -203,11 +203,11 @@ Ovvi does with no call to Ovvi (`ovvi status`):
 | Token | What |
 |---|---|
 | `ovvi-shown` on a pane | `pane.report_metadata` on each pane in view of a visible window (the shown tab of the page in view, only its zoomed card when one is, and the floated panes): source `ovvi`, `1` on This Mac, `remote` on another machine (for pi's copy), `ttl_ms` 30000. Written when a pane comes into view, again every 10 s while it stays, and cleared (`null`) when it leaves view, its page closes, its window hides or closes, or the app quits (which waits up to 1 s for it). Over the relay for a remote machine |
-| `ovvi-open` on a workspace | `workspace.report_metadata` on each workspace of a session that a window has open (a float-only page too): source `ovvi`, `1` (the protocol version), `ttl_ms` 30000. Written on a snapshot with a new workspace and every 10 s, in the same burst as `ovvi-shown` and before it; cleared when the last window lets the session go and on quit |
+| `ovvi-open` on a space | `workspace.report_metadata` on each space of a session that a window has open (a float-only page too): source `ovvi`, `1` (the protocol version), `ttl_ms` 30000. Written on a snapshot with a new space and every 10 s, in the same burst as `ovvi-shown` and before it; cleared when the last window lets the session go and on quit |
 
 - herdr sends `pane.updated` with the whole pane, `tokens` included, on each
   report and again when a token expires. `pane.get` and `session.snapshot`
-  list a pane's tokens, and `workspace.get` a workspace's.
+  list a pane's tokens, and `workspace.get` a space's.
 - Ovvi decodes `ovvi-req` only when it is a lowercase UUID version 4, and
   acts once per id: it keeps the last 256 ids per session.
 - When the app first connects to a session on a machine, it writes the
@@ -301,7 +301,7 @@ below. Everything else goes to the agent's own files, on its machine.
 
 ## Reconcile
 
-- One snapshot holds every workspace, tab, pane, agent and layout.
+- One snapshot holds every space, tab, pane, agent and layout.
 - The session's HostStore applies it to stable `@Observable` objects (`Workspace`,
   `Tab`, `Pane`) keyed by id, and sets only the fields that changed. A status
   change redraws one row, not the window.
@@ -391,7 +391,7 @@ One path is [Future work](/docs/future-work).
   no CPU. Many terminals per run would need herdr's private client protocol
   on its socket.
 - Streams are opened by `terminal_id`, so they survive the pane moving, even
-  to another workspace.
+  to another space.
 
 ### Size
 
@@ -520,24 +520,24 @@ handshake fails, it exits 1 with the reason on stderr.
 
 ## Git status
 
-The sidebar's workspace rows show the branch and the ahead and behind counts
+The sidebar's space rows show the branch and the ahead and behind counts
 (D67). herdr's snapshot has no branch, so the app asks git on the machine:
 - **Command.** `git --no-optional-locks -C <root> status --porcelain=v2
   --branch --untracked-files=no` (`--no-optional-locks`, so a run every 10 s
   never leaves `index.lock` behind), through `Exec.run`, so it works the same
   on This Mac and over SSH. `git` comes from the login shell's `PATH`, like herdr. The
-  root is the workspace's `worktree.checkout_path`, else the cwd of its first
+  root is the space's `worktree.checkout_path`, else the cwd of its first
   pane. A run that takes over 5 s is ended.
 - **Parse.** The `# branch.head` line gives the branch; when it is
   `(detached)`, the first 7 characters of `# branch.oid`.
   `# branch.ab +A -B` gives ahead and behind (absent without an upstream). The
   app reads no other line. A nonzero exit means the folder is not a git
   repository, and the row has no git line.
-- **When.** For a workspace that is new or whose root changed, and every 10 s
-  for every workspace, only for the page in view of a visible window. Hidden
-  pages never run. One run per workspace at a time. Fetch, Pull and Push in a
+- **When.** For a space that is new or whose root changed, and every 10 s
+  for every space, only for the page in view of a visible window. Hidden
+  pages never run. One run per space at a time. Fetch, Pull and Push in a
   row's menu read it again when git ends, and the 10 s refresh skips the
-  workspace while they run.
+  space while they run.
 - **No developer tools.** At launch the app checks once where `git` is. When
   it is only `/usr/bin/git` and `xcode-select -p` fails, the app runs no git
   on This Mac, so macOS never offers to install the developer tools. Rows on
@@ -545,11 +545,11 @@ The sidebar's workspace rows show the branch and the ahead and behind counts
   git letters and its Git cards say "git is not installed". Plugin cards on a remote machine
   still run that machine's git.
 - **Worktrees.** herdr's `worktree.is_linked_worktree` and `repo_key` place a
-  linked worktree under its repository's workspace. No git run is needed for
-  that. herdr 0.9.5 fills a workspace's `worktree` only after a `worktree.*`
+  linked worktree under its repository's space. No git run is needed for
+  that. herdr 0.9.5 fills a space's `worktree` only after a `worktree.*`
   call looked at it: `worktree.list`, `worktree.open` or `worktree.create`.
   A plain `workspace.create {cwd}` in a repository leaves it out, so its row
-  is never a worktree row. `worktree.open` also fills the open workspace of
+  is never a worktree row. `worktree.open` also fills the open space of
   the worktree's repository.
 - The result lives in memory on the session's `HostStore`.
 
@@ -557,9 +557,9 @@ The sidebar's workspace rows show the branch and the ahead and behind counts
 
 | User action | herdr call |
 |---|---|
-| New workspace (page header `+`, workspace menu, an empty session's New Workspace) | `workspace.create {cwd: "~", label, focus: false}` in that page's session (herdr reads `~` as its machine's home; a launchd-started server's cwd is not home); the label only when the user typed one; then the snapshot selects it |
+| New space (page header `+`, space menu, an empty session's New Space) | `workspace.create {cwd: "~", label, focus: false}` in that page's session (herdr reads `~` as its machine's home; a launchd-started server's cwd is not home); the label only when the user typed one; then the snapshot selects it |
 | Folder dropped on the Dock icon | `workspace.create {cwd, focus: false}`, one per folder, in the session of the last key window's page in view, once that page is live; the last one is selected when it appears. With no window (a drop that starts the app), a window opens first |
-| New tab | `tab.create {workspace_id, cwd}`, with the cwd of the keyboard card; from a workspace row's New Tab, that workspace's keyboard card; while a new tab's stand-in shows (⌘T again), the keyboard card of the tab used last there; else `~` |
+| New tab | `tab.create {workspace_id, cwd}`, with the cwd of the keyboard card; from a space row's New Tab, that space's keyboard card; while a new tab's stand-in shows (⌘T again), the keyboard card of the tab used last there; else `~` |
 | Split right or down | `pane.split {target_pane_id, direction: right or down, focus:false}`, then [equal splits](/docs/layout#dividers): a fresh snapshot, and one `layout.set_split_ratio` per split of the new pane's run whose ratio changes |
 | Split left or up | `pane.split` right or down (`focus:false`), then `pane.swap {pane_id: old, direction: right or down}`: the old pane swaps with the new one beside it (herdr splits only right and down); then equal splits |
 | Drag a divider | `layout.set_split_ratio {tab_id, path, ratio}` on release; ratio kept in 0.1–0.9 |
@@ -569,17 +569,17 @@ The sidebar's workspace rows show the branch and the ahead and behind counts
 | Move the keyboard card (⌥⇧⌘ + arrow) | `pane.swap {pane_id, direction, focus:false}` (herdr 0.9.5 focuses that tab anyway); the keyboard stays with the pane |
 | Move Pane to Tab ▸ ‹tab› (card menu) | `pane.move {pane_id, destination:{type:"tab", tab_id, split:"right", target_pane_id}}` beside the tab's last card, then equal splits (as a drop on its capsule); the window then selects that tab |
 | Move Pane to Tab ▸ New Tab (card menu) | `pane.move {pane_id, destination:{type:"new_tab", workspace_id}}`; the window then selects the new tab |
-| Move Pane to Tab ▸ New Workspace (card menu) | `pane.move {pane_id, destination:{type:"new_workspace"}}`; the window then selects the new tab. The pane gets a new pane id; its terminal and card stay |
+| Move Pane to Tab ▸ New Space (card menu) | `pane.move {pane_id, destination:{type:"new_workspace"}}`; the window then selects the new tab. The pane gets a new pane id; its terminal and card stay |
 | Drop on an edge of a pane in the same tab | `pane.move {pane_id, destination:{type:"new_tab", workspace_id}}`, then `pane.move {pane_id, destination:{type:"tab", tab_id, split, target_pane_id}}` back beside the target (right or down), then `pane.swap {source_pane_id, target_pane_id}` for left or top, then equal splits; each step uses the pane id herdr's reply names, and the snapshot is read after (herdr refuses a move into the pane's own tab with `same_tab`) |
 | Drop on an edge of a pane in another tab | `pane.move {pane_id, destination:{type:"tab", tab_id, split, target_pane_id}}`; for left or top, then `pane.swap`; then equal splits |
 | Drop on another tab's capsule | `pane.move {pane_id, destination:{type:"tab", tab_id, split:"right", target_pane_id}}` beside the tab's last card, then equal splits |
 | Drop on the tab track's empty end or `+` | `pane.move {pane_id, destination:{type:"new_tab", workspace_id}}` |
-| Drop on a workspace row | `pane.move {pane_id, destination:{type:"new_tab", workspace_id}}` |
-| Drop a tab on another workspace's row or menu row, or on New Workspace | its first pane `pane.move {pane_id, destination:{type:"new_tab", workspace_id, label}}`, or for New Workspace `{type:"new_workspace", tab_label}` (the label unless herdr's number), then each other pane, top down, `pane.move {pane_id, destination:{type:"tab", tab_id, split, target_pane_id, ratio}}` beside the first pane of its split's other side at that split's ratio, each with the pane id herdr's reply named; then the snapshot. herdr's `tab.move` stays inside a workspace, and `layout.apply` makes new terminals |
-| Drop on empty space at the bottom of the sidebar page, or on its header's `+` | `pane.move {pane_id, destination:{type:"new_workspace"}}` |
-| Move Tab Left or Right, drag a tab | `tab.move {tab_id, insert_index}`, inside its workspace only. herdr inserts before the tab now at `insert_index` (0 to the count), so one place left is index − 1 and one place right is index + 2. The bar shows the new order before herdr answers, until a snapshot has it |
-| Move Up or Down, drag a workspace | `workspace.move_block {workspace_ids, before_workspace_id}` with the row's group: the workspace and its linked worktrees, in order; without `before_workspace_id` the group goes last. A dragged worktree alone goes before another worktree of its repository, or (last) before the workspace after the last one. The sidebar shows the new order before herdr answers, until a snapshot has it |
-| Open Session: a new name, a running or a stopped session | starts `herdr --session S server` when it is not running (a launchd job on This Mac, D47; `nohup` on a remote machine) and waits for `session.snapshot`; a server the app started with no workspace gets `workspace.create {cwd: "~"}`; then the page opens and its `HostStore` connects ([Checks on connect](/docs/machines#checks-on-connect)) |
+| Drop on a space row | `pane.move {pane_id, destination:{type:"new_tab", workspace_id}}` |
+| Drop a tab on another space's row or menu row, or on New Space | its first pane `pane.move {pane_id, destination:{type:"new_tab", workspace_id, label}}`, or for New Space `{type:"new_workspace", tab_label}` (the label unless herdr's number), then each other pane, top down, `pane.move {pane_id, destination:{type:"tab", tab_id, split, target_pane_id, ratio}}` beside the first pane of its split's other side at that split's ratio, each with the pane id herdr's reply named; then the snapshot. herdr's `tab.move` stays inside a space, and `layout.apply` makes new terminals |
+| Drop on the empty area at the bottom of the sidebar page, or on its header's `+` | `pane.move {pane_id, destination:{type:"new_workspace"}}` |
+| Move Tab Left or Right, drag a tab | `tab.move {tab_id, insert_index}`, inside its space only. herdr inserts before the tab now at `insert_index` (0 to the count), so one place left is index − 1 and one place right is index + 2. The bar shows the new order before herdr answers, until a snapshot has it |
+| Move Up or Down, drag a space | `workspace.move_block {workspace_ids, before_workspace_id}` with the row's group: the space and its linked worktrees, in order; without `before_workspace_id` the group goes last. A dragged worktree alone goes before another worktree of its repository, or (last) before the space after the last one. The sidebar shows the new order before herdr answers, until a snapshot has it |
+| Open Session: a new name, a running or a stopped session | starts `herdr --session S server` when it is not running (a launchd job on This Mac, D47; `nohup` on a remote machine) and waits for `session.snapshot`; a server the app started with no space gets `workspace.create {cwd: "~"}`; then the page opens and its `HostStore` connects ([Checks on connect](/docs/machines#checks-on-connect)) |
 | Open Session: Stop, Delete | `herdr --session S session stop S` (the server ends, and every program in it) or `session delete S` (a stopped session only); both ask first; then the list is read again. A failure shows herdr's reason with Retry |
 | Detach Session | no herdr call; the page's store disconnects when no window shows it, and the session keeps running |
 | Close a pane | `pane.close`; asks first unless the pane's only foreground process is its shell (`pane.process_info`) |
@@ -589,7 +589,7 @@ The sidebar's workspace rows show the branch and the ahead and behind counts
 | Stop in a chat | `pane.send_keys {pane_id, keys: ["escape"]}` (OpenCode: twice), only while the agent works |
 | Chat text that starts with `/` | `pane.send_input` of the text, with no Return; the card shows its terminal |
 | Relaunch with Chat | while the agent works or waits, `pane.send_keys` of its Stop keys; `pane.send_keys {keys: ["ctrl+c"]}`; `pane.send_input` of its quit command and Return; `pane.process_info` and `pane.get` until only the shell runs and herdr reports no agent (30 s at most); then `pane.send_input` of the launch line with the resume arguments, and the loader's calls ([Relaunch with Chat](/docs/ui/chat-view#relaunch-with-chat)) |
-| Archived Sessions' Resume ([Archived Sessions](/docs/ui/window#archived-sessions)) | `tab.create {workspace_id, cwd, focus:false}`, then `tab.move` to right after the workspace's selected tab; with no workspace for the folder `workspace.create {cwd, focus:false}`; to the side the same `tab.create`, then `pane.move` of its pane beside the keyboard card. Then the chooser's start: `pane.send_input` of the agent's launch line with its session, and Return |
+| Archived Sessions' Resume ([Archived Sessions](/docs/ui/window#archived-sessions)) | `tab.create {workspace_id, cwd, focus:false}`, then `tab.move` to right after the space's selected tab; with no space for the folder `workspace.create {cwd, focus:false}`; to the side the same `tab.create`, then `pane.move` of its pane beside the keyboard card. Then the chooser's start: `pane.send_input` of the agent's launch line with its session, and Return |
 | Browser in the chooser, Open Browser Here | `layout.apply {workspace_id, focus:false, root:{type:"pane", cwd, label:"ovvi:browser#<iid>", command}}` (a new tab with the labeled placeholder pane, never a `tab_id`), then `pane.move` beside the old pane and `pane.close` of the old one; a failed move closes the new pane ([Create](/docs/ui/browser#create)) |
 | An address typed in a browser card | `pane.rename {pane_id, label:"ovvi:browser#<iid> <url>"}` |
 | A link opened in a new tab (⌘-click, `target=_blank`, Open Link in New Tab) | `layout.apply {workspace_id, focus:false, root:{type:"pane", cwd, label:"ovvi:browser#<iid> <url>", command}}`, then `tab.move {tab_id, insert_index}` to right after the card's tab (herdr adds the tab last), with the link in the label ([Popups, links and dialogs](/docs/ui/browser#popups-links-and-dialogs)) |
@@ -599,9 +599,9 @@ The sidebar's workspace rows show the branch and the ahead and behind counts
 | An open from a plugin card to the side (⌥-click) | the same `layout.apply` and `pane.get`, then `pane.move` of the new pane beside the card; a failed move closes the new pane |
 | A move inside a plugin card (a click, Back, Forward) | `pane.rename {pane_id, label:"ovvi:<plugin>#<iid> <place>"}`, also to a label the last snapshot already has |
 | Close a tab | `tab.close`; asks first only when a pane of it runs more than its shell (`pane.process_info` of each pane, at once), naming what runs, with the pane count |
-| Close a workspace | `workspace.close {workspace_id, close_group}`; asks as for a tab, with the tab and pane count. `close_group: true` for a repository's workspace with linked worktree workspaces: herdr refuses the close without it (`workspace_group_close_required`), and with it closes all of them, also ones not next to it. The git worktrees stay on disk. A worktree's own workspace closes alone |
+| Close a space | `workspace.close {workspace_id, close_group}`; asks as for a tab, with the tab and pane count. `close_group: true` for a repository's space with linked worktree spaces: herdr refuses the close without it (`workspace_group_close_required`), and with it closes all of them, also ones not next to it. The git worktrees stay on disk. A worktree's own space closes alone |
 | Close Other Tabs, Close Tabs to the Right | one `tab.close` per tab, all at once; asks once as for a tab, with the total pane count |
-| Rename a tab or workspace | `tab.rename {tab_id, label}` / `workspace.rename {workspace_id, label}`; an empty or unchanged name sends nothing |
+| Rename a tab or space | `tab.rename {tab_id, label}` / `workspace.rename {workspace_id, label}`; an empty or unchanged name sends nothing |
 | Rename a pane | `pane.rename {pane_id, label}`; an empty name sends `label: null`, which clears the label |
 | Go to Directory (⇧⌘G) | `pane.send_input` of `cd -- '‹path›'` and Return, only when the pane runs only its shell |
 | Insert Path (⇧⌘I) | `pane.send_input` of the shell-quoted path, no Return |
@@ -609,15 +609,15 @@ The sidebar's workspace rows show the branch and the ahead and behind counts
 | Resize Pane (View ▸ Pane, the palette; no key) | `pane.resize {pane_id, direction, amount: 0.05}` on the keyboard card; herdr moves the nearest divider that way, or returns `changed:false` when there is none |
 | Move the keyboard (⌥⌘ + arrow; not a write) | no herdr call: the app picks the card from the split tree ([Moving the keyboard](/docs/layout#moving-the-keyboard)) |
 | A pane comes into view or leaves it | `pane.report_metadata {pane_id, source:"ovvi", tokens:{"ovvi-shown": "1", "remote" or null}, ttl_ms:30000}` ([Agent requests](#agent-requests)) |
-| A window opens a session, or lets it go; a new workspace | `workspace.report_metadata {workspace_id, source:"ovvi", tokens:{"ovvi-open": "1" or null}, ttl_ms:30000}` ([Agent requests](#agent-requests)) |
+| A window opens a session, or lets it go; a new space | `workspace.report_metadata {workspace_id, source:"ovvi", tokens:{"ovvi-open": "1" or null}, ttl_ms:30000}` ([Agent requests](#agent-requests)) |
 | An agent's `ovvi open` | as an open from a plugin card: `layout.apply` with the label and the placeholder in a new tab, then `tab.move` to right after the asking pane's tab for `--tab`, else `pane.move` beside a pane; `--replace` is `pane.rename` of the card's label ([CLI](/docs/agent-control/cli#open)) |
-| Git state of the workspace rows (not a write) | no herdr call: `git status` on the machine ([Git status](#git-status)) |
+| Git state of the space rows (not a write) | no herdr call: `git status` on the machine ([Git status](#git-status)) |
 | Plugin cards' files and git (not herdr writes) | no herdr call: commands on the machine through `Exec.run` ([Commands](/docs/reference/herdr-calls#commands)) |
 
 - No close can be undone.
 - Every create and move passes `focus:false`, so herdr's focus never moves.
-- Every workspace reorder is `workspace.move_block`, which names the
-  workspace to go before. The app never calls `workspace.move`.
+- Every space reorder is `workspace.move_block`, which names the
+  space to go before. The app never calls `workspace.move`.
 - `pane.move` and `pane.swap` can succeed with `changed:false` and a `reason`
   (`same_tab`, `zoomed_tab`, `cross_tab`, `no_neighbor`). The app shows the
   reason. Its drag targets avoid `same_tab` and `cross_tab` by design
@@ -625,12 +625,12 @@ The sidebar's workspace rows show the branch and the ahead and behind counts
 - A drop that takes several steps stops at the first step that fails. The
   pane stays where it got to, and the notice says so.
 - After its own write, the app reads the snapshot at once. A new tab, a split,
-  a tab or workspace move and a close show before herdr answers: the new tab or pane as an empty card
-  under a stand-in id, a closing pane, tab or workspace left out. The
+  a tab or space move and a close show before herdr answers: the new tab or pane as an empty card
+  under a stand-in id, a closing pane, tab or space left out. The
   snapshots after the write confirm it (herdr's tab or pane takes the
   stand-in's place; the closed one is gone) or take it back (a failed write).
   A closing item clears when its id is absent: herdr never gives a closed
-  id to a new pane, tab or workspace while its server runs.
+  id to a new pane, tab or space while its server runs.
   Otherwise the app never changes its own state by hand.
 - Writes of a session run one at a time, in order: a write asked while
   another runs waits for it.

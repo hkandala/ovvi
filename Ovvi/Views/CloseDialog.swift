@@ -62,10 +62,10 @@ struct CloseDialog: ViewModifier {
             return ("\(closing.replace == nil ? "Close" : "Replace") “\(name)”?", running + "it and" + end)
         case let .workspace(id):
             let worktrees = store.worktrees(of: id)
-            let also = worktrees.isEmpty ? "" : worktrees.count == 1 ? " and its worktree’s workspace"
-                : " and its \(worktrees.count) worktrees’ workspaces"
+            let also = worktrees.isEmpty ? "" : worktrees.count == 1 ? " and its worktree’s space"
+                : " and its \(worktrees.count) worktrees’ spaces"
             let label = store.workspaces.first { $0.id == id }?.label ?? id
-            return ("Close the workspace “\(label)”\(also)?",
+            return ("Close the space “\(label)”\(also)?",
                     running + "it. \(tabs.count == 1 ? "Its tab" : "Its \(tabs.count) tabs"), " + them + end)
         }
     }
@@ -77,7 +77,7 @@ private extension HostStore.Close {
         case .pane: "Close Pane"
         case .tab: "Close Tab"
         case .otherTabs: "Close Tabs"
-        case .workspace: "Close Workspace"
+        case .workspace: "Close Space"
         }
     }
 }

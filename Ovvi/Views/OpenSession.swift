@@ -74,9 +74,9 @@ struct OpenSession: View {
             Button("Cancel", role: .cancel) {}
         } message: { asked in
             Text(asked.verb == "stop"
-                ? "Every program in it will end, here and in every herdr client. Its workspaces and tabs stay "
+                ? "Every program in it will end, here and in every herdr client. Its spaces and tabs stay "
                 + "for its next start."
-                : "Its workspaces, tabs and panes go for good. This cannot be undone.")
+                : "Its spaces, tabs and panes go for good. This cannot be undone.")
         }
     }
 

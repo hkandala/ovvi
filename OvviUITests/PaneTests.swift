@@ -256,7 +256,7 @@ extension OvviUITests {
         let workspaces = try await workspaceIDs()
         XCTAssertFalse(workspaces.isEmpty)
         closeNew("workspace", besides: workspaces)
-        paneMenu(pane, "Move Pane to Tab", "New Workspace")
+        paneMenu(pane, "Move Pane to Tab", "New Space")
         let away = try await poll("the pane in a new workspace") { () async throws -> String? in
             let panes = try await snapshot()["panes"] as? [[String: Any]] ?? []
             return panes.first { $0["terminal_id"] as? String == terminal && $0["pane_id"] as? String != pane }?[

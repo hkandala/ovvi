@@ -41,7 +41,7 @@
 			<key>UTTypeIdentifier</key>
 			<string>dev.ovvi.app.drag</string>
 			<key>UTTypeDescription</key>
-			<string>Ovvi pane, tab or workspace</string>
+			<string>Ovvi pane, tab or space</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.data</string>

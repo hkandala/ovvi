@@ -30,7 +30,7 @@ ovvi [--pane <pane>] [--timeout <seconds>] <command> [<args>] [--json]
 ```
 
 - `--pane` rings another pane of the session than `$HERDR_PANE_ID`. Use it
-  for a caller outside a pane, or after the pane moved to another workspace:
+  for a caller outside a pane, or after the pane moved to another space:
   herdr then gives it a new id, and the environment keeps the old one.
 - `--timeout` is how long the command waits for Ovvi's answer once Ovvi
   took the request, in whole seconds. The default is 10. Give `plugins new`,
@@ -362,7 +362,7 @@ $ ovvi reveal w1:p3 --json
   floating card flashes in its own window.
 - Not in view: a [notice](/docs/ui/window#notice) in the information tone,
   "‹agent› points to ‹title›", with **Show**, in each window that shows the
-  session. Show selects the pane's workspace, tab and card in that window.
+  session. Show selects the pane's space, tab and card in that window.
 - A pane of a session that Ovvi does not show is `failed`.
 
 ## card

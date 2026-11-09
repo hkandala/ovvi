@@ -188,7 +188,7 @@ extension OvviUITests {
         let panel = element("shortcuts")
         app.typeKey("/", modifierFlags: .command)
         XCTAssertTrue(panel.exists(within: 2))
-        for section in ["Panes", "Tabs", "Workspaces", "Sessions", "View", "Edit"] {
+        for section in ["Panes", "Tabs", "Spaces", "Sessions", "View", "Edit"] {
             XCTAssertTrue(element("shortcuts.section.\(section)").exists, section)
         }
         // Only over a plugin card.
@@ -196,11 +196,11 @@ extension OvviUITests {
         // A family is one row; a second key is on its first's row. One pattern: the key says the action,
         // the modifier the level.
         let rows = [
-            "Split Right": "⌘D", "Select Pane": "⌥⌘←→↑↓", "Show Tab 1–9": "⌘1–9", "New Workspace": "⌃⌘T",
-            "Show Workspace 1–9": "⌃⌘1–9", "Show Session 1–9": "⌥⌘1–9", "Show Previous Tab": "⇧⌘[ or ⌃⇧⇥",
+            "Split Right": "⌘D", "Select Pane": "⌥⌘←→↑↓", "Show Tab 1–9": "⌘1–9", "New Space": "⌃⌘T",
+            "Show Space 1–9": "⌃⌘1–9", "Show Session 1–9": "⌥⌘1–9", "Show Previous Tab": "⇧⌘[ or ⌃⇧⇥",
             "Show Next Tab": "⇧⌘] or ⌃⇥",
             "Command Palette": "⌘K or ⇧⌘P", "Find": "⌘F", "Reset Font Size": "⌘0", "Open Session": "⌥⌘T",
-            "Close Tab": "⇧⌘W", "Close Workspace": "⌃⌘W", "Detach Session": "⌥⌘W", "Balance Splits": "⌥⌘=",
+            "Close Tab": "⇧⌘W", "Close Space": "⌃⌘W", "Detach Session": "⌥⌘W", "Balance Splits": "⌥⌘=",
             "Insert Path": "⇧⌘I", "Zoom Pane": "⇧⌘↩", "Move Tab Left": "⇧⌘←", "Move Tab Right": "⇧⌘→",
         ]
         for (title, keys) in rows {

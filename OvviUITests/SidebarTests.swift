@@ -207,7 +207,7 @@ extension OvviUITests {
 
         // Rename: the inline field, Enter saves.
         row.rightClick()
-        app.menuItems["Rename Workspace"].click()
+        app.menuItems["Rename Space"].click()
         let field = element("workspace.\(made).rename")
         XCTAssertTrue(hasKeyboard(field))
         field.typeKey("a", modifierFlags: .command)
@@ -240,13 +240,13 @@ extension OvviUITests {
         try await runSleep(pane(of: tab))
         try await settle(tabIDs().filter { workspace(of: $0) == made })
         row.rightClick()
-        app.windows.firstMatch.menuItems["Close Workspace"].click()
+        app.windows.firstMatch.menuItems["Close Space"].click()
         // D41: a program runs, so it asks, with what runs and the tab and pane count.
         // A predicate: a query by identifier takes at most 128 characters.
         let text = "sleep is running in it. Its 2 tabs, 2 panes and everything running in them will end, here and "
             + "in every herdr client. This cannot be undone."
         XCTAssertTrue(sheetText(text).exists(within: 2))
-        app.sheets.buttons["Close Workspace"].click()
+        app.sheets.buttons["Close Space"].click()
         try await expect("herdr to close it") { try await !workspaceIDs().contains(made) }
         XCTAssertTrue(row.vanishes(within: 2))
     }

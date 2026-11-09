@@ -11,9 +11,9 @@ Terminal is selected, so ⌘T and then Return gives a terminal with no click.
 ## Which panes show it
 
 - Every pane the app creates with a new shell: ⌘T and the title row's `+`,
-  ⌘D, ⇧⌘D, Split Left and Split Up, ⌃⌘T and every New Workspace (the page
-  header's `+`, the workspace menu, a folder dropped on the Dock icon), New
-  Tab in a workspace's menu, and the first workspace of a session the app
+  ⌘D, ⇧⌘D, Split Left and Split Up, ⌃⌘T and every New Space (the page
+  header's `+`, the space menu, a folder dropped on the Dock icon), New
+  Tab in a space's menu, and the first space of a session the app
   started.
 - The herdr pane and its shell start at once behind the chooser. Nothing in
   herdr waits for the pick.
@@ -119,9 +119,9 @@ from its snapshot by herdr's own rule (`resolve_new_terminal_cwd` in
 herdr's `src/app/creation.rs`):
 
 - A split starts in the folder of the pane it splits.
-- A new tab starts in the folder of the workspace's keyboard card, which the
+- A new tab starts in the folder of the space's keyboard card, which the
   app gives herdr.
-- A new workspace starts in the folder the app gives herdr (the home folder
+- A new space starts in the folder the app gives herdr (the home folder
   by default).
 
 This is herdr's rule with its default `new_cwd` (`follow`). Once herdr

@@ -5,7 +5,7 @@ description: "Everything Ovvi does, in one list"
 
 Each part of the window has its own page under UI design.
 
-## Machines and workspaces
+## Machines and spaces
 
 - A machine is a computer: This Mac or a host you reach with `ssh`, each
   with its own icon. Add Remote Host in the machine menu adds one. herdr on
@@ -17,10 +17,10 @@ Each part of the window has its own page under UI design.
 - A sidebar page per herdr session you open in the window. Swipe the sidebar
   sideways to switch sessions, like Arc's spaces. **Open Session** (⌥⌘T)
   creates a session, starts a stopped one or opens a running one as a page.
-- Workspace rows like herdr's: its agents' state as a still icon at the row's
+- Space rows like herdr's: its agents' state as a still icon at the row's
   end (t3code's dashed circle, alert circle and check), the git branch with
   ahead and behind counts, and linked worktrees indented under their
-  repository. Rename in place, add a tab, reorder or close a workspace, and
+  repository. Rename in place, add a tab, reorder or close a space, and
   Fetch, Pull or Push a repository's row from its menu.
 - The sidebar resizes from 227 to 480 pt; each window keeps its width.
 ## Tabs and panes
@@ -30,7 +30,7 @@ Each part of the window has its own page under UI design.
 - Rex's tab bar, always in the title row: equal-width capsules on a track, a
   selection marker that jumps with every change, titles that fade instead of cutting off, × on hover, a
   context menu, rename in place, drag to reorder, and ⌘1…⌘9 keycaps when you
-  hold ⌘ (⌃⌘1…⌃⌘9 on the sidebar's workspaces when you hold ⌃⌘).
+  hold ⌘ (⌃⌘1…⌃⌘9 on the sidebar's spaces when you hold ⌃⌘).
 - Program icons: each tab shows the overlapping icons of the programs in its
   panes, and at the capsule's end one still icon for **working**,
   **needs you** or **finished**. A tab that needs you or finishes while you are elsewhere
@@ -40,7 +40,7 @@ Each part of the window has its own page under UI design.
 - Panes follow herdr's split layout. Drag a divider to resize it, double-click
   it to reset it to half. ⌥⌘= balances all splits.
 - Split in four directions, move between cards and swap them with the keys,
-  rename a pane, move it to another tab or workspace from its context menu.
+  rename a pane, move it to another tab or space from its context menu.
 - A new pane asks what it runs: Terminal, Agent (Claude Code, Codex, Pi or
   OpenCode, with a loader until it is ready), Browser, File Explorer, Git
   or another plugin with a chooser row.
@@ -77,7 +77,7 @@ Each part of the window has its own page under UI design.
 - Layout changes animate.
 - Zoom a pane to fill the window, then return.
 - Drag a pane to swap it, place it beside another card, split it into
-  another tab, or move it to another workspace, within what herdr allows.
+  another tab, or move it to another space, within what herdr allows.
 - Float a pane in a small window of its own, above the main window or
   above every app.
 - Agents drive Ovvi with one command, `ovvi`, on This Mac and on every
@@ -96,16 +96,16 @@ Each part of the window has its own page under UI design.
   the system ends their web process.
 - Drop files on a terminal to paste their paths (copied to the machine first
   on a remote card).
-- Drop folders on the Dock icon to open a workspace in each.
+- Drop folders on the Dock icon to open a space in each.
 - Windows and their pages come back after a quit.
 - A command palette (⌘K) with every command and its shortcut, in groups
-  (Tabs, Workspaces, Sessions, Panes, View, Edit, Plugins), sub-pages for
+  (Tabs, Spaces, Sessions, Panes, View, Edit, Plugins), sub-pages for
   renames, moves, appearance and the font size, Go to Directory, Insert
   Path, Open File, Open Working Tree and Open Commit.
 
 ## Agents
 
-- **One sidebar:** pin tabs on top (from a tab's hover or menu); each workspace's chevron unfolds its agents, one
+- **One sidebar:** pin tabs on top (from a tab's hover or menu); each space's chevron unfolds its agents, one
   line each with its state and working time, the newest change first; Archived Sessions at the foot lists the
   closed sessions of the four agents, to resume. An untitled session shows its first prompt.
 - **Chat view:** an agent started from a new pane opens on its TUI. Switch to
@@ -134,7 +134,7 @@ Each part of the window has its own page under UI design.
 - Light, dark or Auto, in two styles: Glass (the desktop shows softly through
   the window) and Classic (an opaque window). Pane cards float on the window
   as translucent cards, the sidebar sits flat, and glass is only on the
-  Glass style's tab marker and selected workspace row, and on floating panels.
+  Glass style's tab marker and selected space row, and on floating panels.
 - Our own program icons, from open-license sets.
 - A Settings window (⌘,) in the style of System Settings: the look, the
   terminal's font, cursor and Option key, the agents in New Pane with extra

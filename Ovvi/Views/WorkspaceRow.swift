@@ -3,7 +3,7 @@ import SwiftUI
 
 /// A workspace: its name, and its branch with ahead and behind on a second line in a repository; its state's icon and,
 /// when it runs agents, a chevron at the end. Unfolded, its agents follow, one line each, inside the row's glass
-/// (selected) or a border (ui/window#workspace-rows). A linked worktree sits indented under its repository's row, on a
+/// (selected) or a border (ui/window#space-rows). A linked worktree sits indented under its repository's row, on a
 /// guide line.
 struct WorkspaceRow: View {
     /// The text's inset in a row; the page header's text lines up.
@@ -108,7 +108,7 @@ struct WorkspaceRow: View {
         .overlay(alignment: .leading) {
             if renaming {
                 // Enter: herdr's label; the snapshot after it shows it.
-                RenameField(prompt: "Workspace Name", initial: workspace.label, commit: { label in
+                RenameField(prompt: "Space Name", initial: workspace.label, commit: { label in
                     Task { await page.store.rename(workspace: workspace.id, label: label) }
                 }, end: stopRenaming)
                     .font(.system(size: 13))
@@ -192,7 +192,7 @@ struct WorkspaceRow: View {
         let store = page.store
         let first = ends.first == workspace.id, last = ends.last == workspace.id
         Button("New Tab") { Task { await page.newTab(in: workspace) } }
-        Button("Rename Workspace") { startRenaming() }
+        Button("Rename Space") { startRenaming() }
         // A worktree moves with its repository's row.
         Button("Move Up") { store.move(workspace: workspace.id, by: -1) }
             .disabled(parent != nil || first)
@@ -206,7 +206,7 @@ struct WorkspaceRow: View {
             Button("Push") { Task { await store.sync(workspace, .push) } }
         }
         Divider()
-        Button("Close Workspace") { page.close(.workspace(workspace.id)) }
+        Button("Close Space") { page.close(.workspace(workspace.id)) }
     }
 
     /// Not while the session is stopped (a double-click too): the rename would fail.

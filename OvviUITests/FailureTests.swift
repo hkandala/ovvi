@@ -20,9 +20,9 @@ extension OvviUITests {
         // The button: its open context menu carries the same identifier.
         let row = app.buttons["workspace.\(workspace)"]
         row.rightClick()
-        XCTAssertFalse(app.menuItems["Rename Workspace"].isEnabled)
+        XCTAssertFalse(app.menuItems["Rename Space"].isEnabled)
         app.typeKey(.escape, modifierFlags: [])
-        XCTAssertTrue(app.menuItems["Rename Workspace"].vanishes(within: 2))
+        XCTAssertTrue(app.menuItems["Rename Space"].vanishes(within: 2))
         row.doubleClick()
         XCTAssertFalse(element("workspace.\(workspace).rename").exists(within: 1))
         keepScreenshot("not running")

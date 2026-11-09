@@ -48,7 +48,7 @@ extension CommandList {
                                 await page.move(pane, to: .newTab(workspaceID: workspace.id))
                             }
                         },
-                        act("New Workspace", nil, .paneMove, symbol: "folder.badge.plus") {
+                        act("New Space", nil, .paneMove, symbol: "folder.badge.plus") {
                             await $0.move($1, to: .newWorkspace())
                         },
                     ] + others),

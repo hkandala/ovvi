@@ -5,7 +5,7 @@ description: "Agent states in the sidebar and tabs, notifications and the Dock"
 
 ## Agents and notifications
 
-- Tab capsules, workspace rows and their agent rows, pinned tabs, the hover card, notifications and the
+- Tab capsules, space rows and their agent rows, pinned tabs, the hover card, notifications and the
   Dock all read `agent_status` and `completion_seq` from the
   snapshot. No extra calls.
 - Status comes only from the multiplexer's API (D55), never from
@@ -14,28 +14,28 @@ description: "Agent states in the sidebar and tabs, notifications and the Dock"
   null and differs from the value this device recorded as seen. How "seen"
   works: [Selection and "seen" are the app's own](/docs/layout#selection-and-seen-are-the-apps-own).
 - Each agent pane is needs you (herdr's `blocked`), working, finished (not
-  seen) or idle. herdr's `done` is not used. A tab and a workspace show the
+  seen) or idle. herdr's `done` is not used. A tab and a space show the
   strongest state of their panes, as one icon: needs you, then finished, then
   working; nothing when all are idle.
 - Looking at a pane means it is the keyboard card on the page in view of the
   last key window, or the pane of a floating window that was key last; the
   app going to the background does not change it. A
   finish counts as seen when the user leaves the pane: another pane, tab,
-  workspace or session gets the keyboard. Until then it stays Done.
+  space or session gets the keyboard. Until then it stays Done.
 - Each change carries the time the app saw it, kept across relaunches while
   herdr's `state_change_seq` of the agent stays the same. An agent row
   shows a Working agent's time from that time.
 
 ### Agents
 
-One sidebar (D111): each workspace row shows its strongest agent's state, and its chevron unfolds its agent panes,
+One sidebar (D111): each space row shows its strongest agent's state, and its chevron unfolds its agent panes,
 one line each with its state box and working time, newest change of state first. A click on an agent row selects
-that workspace, tab and pane and gives the pane the keyboard. Its unread check stays until the user leaves the pane;
+that space, tab and pane and gives the pane the keyboard. Its unread check stays until the user leaves the pane;
 the row does not move for it. Pinned tabs on top show their state too, and Archived Sessions at the foot lists the
 closed sessions of Claude Code, Codex, Pi and OpenCode, which a click resumes. The Dock badge counts the agents that
 need you, over every open session.
 
-The look is in [Main window: Workspace rows](/docs/ui/window#workspace-rows),
+The look is in [Main window: Space rows](/docs/ui/window#space-rows),
 [Agent rows](/docs/ui/window#agent-rows) and [Pinned](/docs/ui/window#pinned).
 
 ### Notifications
@@ -44,7 +44,7 @@ The app makes notifications itself, from snapshot changes, for every session
 open in any window. Each change posts once, even when several windows show
 the session:
 - A pane's status becomes `blocked`: "codex needs you", with "‹session› ·
-  ‹workspace› · ‹tab›" as the body.
+  ‹space› · ‹tab›" as the body.
 - `completion_seq` changes to a new non-null value: "pi finished", with the
   same body.
 - None for the panes of the tab shown in the key window while the app is

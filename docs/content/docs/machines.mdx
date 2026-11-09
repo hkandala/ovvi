@@ -154,7 +154,7 @@ description: "What a machine is, its sessions, the SSH connection, the health ch
   then shows "herdr is not installed on ‹machine›" with the install command
   and **Install herdr**, which installs it over the connection
   ([Install herdr](/docs/talking-to-herdr#install-herdr)).
-- **New tabs and workspaces** pass `cwd` `~`, which herdr reads as the
+- **New tabs and spaces** pass `cwd` `~`, which herdr reads as the
   machine's home, so the app never sends This Mac's home to a remote machine.
 - **Dropped files** (and Insert Path's file) are copied to the machine over the
   relay, one run per file, and the copies' paths are pasted
@@ -230,7 +230,7 @@ One loop per open session checks that it answers.
    - **This Mac:** a **Start** button. A new window's first page starts its
      session this way when it is stopped. In the Open Session panel, a stopped
      session or a new name starts the same way. A server the app started gets
-     its first workspace in `$HOME`; a server that already runs is left
+     its first space in `$HOME`; a server that already runs is left
      alone. The app starts the
      server as a one-shot launchd job (D47). launchd, not the app, is the
      server's parent and "responsible process": macOS privacy prompts never

@@ -20,7 +20,7 @@ uncommitted changes or one commit ([Diff](/docs/plugins/default-plugins#diff)).
   right of the tab page, outside herdr's split tree. It is not a card and not a
   herdr pane, like Archived Sessions. Dropping a card on it does nothing.
 - **What it shows:** the worktree of the keyboard card: the pane's cwd from
-  the snapshot, else the workspace's root. herdr's process info seems to
+  the snapshot, else the space's root. herdr's process info seems to
   carry no cwd, so an agent that changes folder without a shell `cd` is not
   followed.
 - **Bases:** Uncommitted (`HEAD` against now, untracked files included),
@@ -32,7 +32,7 @@ uncommitted changes or one commit ([Diff](/docs/plugins/default-plugins#diff)).
   to `sidebarWidth`. The base and the folded files live in memory. Nothing is
   in herdr.
 - **Data:** git runs on the machine through `Exec`, as the git state of
-  workspace rows does ([Git status](/docs/talking-to-herdr#git-status)), with
+  space rows does ([Git status](/docs/talking-to-herdr#git-status)), with
   `--no-optional-locks --no-ext-diff --no-textconv`. The result is cached by
   worktree root in the session's `HostStore`, so two windows on one session
   share it. "Now" is a snapshot tree too, so untracked files show in every
@@ -60,7 +60,7 @@ uncommitted changes or one commit ([Diff](/docs/plugins/default-plugins#diff)).
 
 A small chip in the card header shows the branch and `+N −M` from
 `git diff --numstat -z HEAD`, one run per worktree root. A click opens the
-drawer. Workspace rows still show no changed-file count (D67); the chip is
+drawer. Space rows still show no changed-file count (D67); the chip is
 on cards. The chip needs the user's agreement before it is built.
 
 ## Last turn
