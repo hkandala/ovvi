@@ -294,7 +294,7 @@ extension OvviUITests {
         app.typeKey("g", modifierFlags: [.command, .shift])
         choose(folder)
         // The line may wrap at the card's width.
-        try await waitFor(pane, times: 100) { $0.replacing("\n", with: "").contains("cd -- '\(folder)/'") }
+        try await waitFor(pane, toShow: "cd -- '\(folder)/'", times: 100)
         try await send("clear; pwd\r", to: pane)
         try await waitFor(pane) { $0.split(separator: "\n").contains { $0 == folder } }
 
@@ -302,7 +302,7 @@ extension OvviUITests {
         element("terminal.\(pane)").click()
         app.typeKey("i", modifierFlags: [.command, .shift])
         choose("\(folder)/a b")
-        try await waitFor(pane, times: 100) { $0.replacing("\n", with: "").contains("'\(folder)/a b'") }
+        try await waitFor(pane, toShow: "'\(folder)/a b'", times: 100)
     }
 
     /// In the open panel: Go to Folder with the path, then Open.

@@ -29,11 +29,11 @@ extension OvviUITests {
             try await send("clear\r", to: pane)
             try await run("\(ovvi) --json agent claude\(place)", in: pane, marker, 0, #"{"agent":"claude""#)
             let text = try await read(pane)
-            let id = try String(XCTUnwrap(text.firstMatch(of: /"pane":"(w\d+:p\d+)"/)?.1, text))
+            let id = try String(XCTUnwrap(text.firstMatch(of: /"pane":"(w\w+:p\w+)"/)?.1, text))
             let new = try await self.pane(id)["tab_id"] as? String
             XCTAssertEqual(new == tab, place.isEmpty, "\(id) in \(new ?? "no tab")")
             // Wrapped at the pane's width (about 45 columns on CI).
-            try await waitFor(id) { $0.replacing("\n", with: "").contains("claude --session-id ") }
+            try await waitFor(id, toShow: "claude --session-id ")
             XCTAssertTrue(element("tab.\(tab)").isSelected, marker)
             XCTAssertTrue(hasKeyboard("terminal.\(pane)"), marker)
         }

@@ -37,7 +37,9 @@ extension OvviUITests {
         XCTAssertGreaterThanOrEqual(scrolls.count, 4)
 
         // The first space, in view again; its fold and unfold, and an agent line's hover card, which comes and goes
-        // with the pointer.
+        // with the pointer. Through the second: the first is selected already, and only a new selection scrolls to
+        // its row, which the scrolls may have left out of view.
+        app.typeKey("2", modifierFlags: [.command, .control])
         app.typeKey("1", modifierFlags: [.command, .control])
         XCTAssertTrue(element("workspace.w1").has(\.isSelected, true, within: 5))
         fold("w1")

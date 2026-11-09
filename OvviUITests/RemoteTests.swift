@@ -203,7 +203,7 @@ extension OvviUITests {
         let points = "\(from.midX) \(from.midY) \(card.midX) \(card.midY)"
         let path = try await String(decoding: Self.post("\(one)/file-drag", Data(points.utf8)), as: UTF8.self)
         let folder = URL(filePath: path).deletingLastPathComponent().lastPathComponent
-        try await waitFor(pane) { $0.replacing("\n", with: "").contains(#"/drop\ me\'s\ \(1\).txt"#) }
+        try await waitFor(pane, toShow: #"/drop\ me\'s\ \(1\).txt"#)
         let pasted = try await read(pane).replacing("\n", with: "")
         XCTAssertTrue(pasted.contains("/ovvi-drops-"), pasted)
         XCTAssertFalse(pasted.contains(folder), pasted)

@@ -183,6 +183,12 @@ extension OvviUITests {
         }
     }
 
+    /// The pane's text shows `line`, which may wrap: a row ends where it wraps, and one that wraps at a space drops it.
+    func waitFor(_ pane: String, toShow line: String, times: Int = 50) async throws {
+        let squeezed = line.filter { !$0.isWhitespace }
+        try await waitFor(pane, times: times) { $0.filter { !$0.isWhitespace }.contains(squeezed) }
+    }
+
     /// `probe` every 100 ms until it gives a value (a predicate expectation checks only about once a second); the
     /// test fails after `times` tries.
     @discardableResult

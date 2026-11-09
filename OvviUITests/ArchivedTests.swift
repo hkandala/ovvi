@@ -155,7 +155,7 @@ extension OvviUITests {
             return resumed != nil
         }
         // Wrapped at the pane's width.
-        try await waitFor(XCTUnwrap(resumed)) { $0.replacing("\n", with: "").contains("claude --resume \(id)") }
+        try await waitFor(XCTUnwrap(resumed), toShow: "claude --resume \(id)")
         // The stand-in exits, or the shell has no claude: the session is closed again, back in Archived.
         XCTAssertTrue(row.exists(within: 15))
     }

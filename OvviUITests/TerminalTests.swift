@@ -172,7 +172,7 @@ extension OvviUITests {
         app.typeKey("s", modifierFlags: .control)
         // The tty's echo, ESC as ^[: Shift is modifier 6, Ctrl alone 5.
         let keys = "^[[115;6u^[[98;6u^[[116;6u^[[111;6u^[[119;6u^[[13;6u^[[115;5u"
-        try await waitFor(pane) { $0.replacing("\n", with: "").contains(keys) }
+        try await waitFor(pane, toShow: keys)
         keepScreenshot("control shift keys")
     }
 

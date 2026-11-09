@@ -34,7 +34,7 @@ extension OvviUITests {
         XCTAssertTrue(menu["Paste"].exists(within: 2))
         menu["Paste"].click()
         // pane.read wraps lines at the pane's width.
-        try await waitFor(pane) { $0.replacing("\n", with: "").contains(command) }
+        try await waitFor(pane, toShow: command)
         let elsewhere = try await read(other)
         XCTAssertFalse(elsewhere.replacing("\n", with: "").contains(command))
 
@@ -74,7 +74,7 @@ extension OvviUITests {
         let path = try await String(decoding: Self.post("\(one)/file-drag", Data(points.utf8)), as: UTF8.self)
         let folder = URL(filePath: path).deletingLastPathComponent().lastPathComponent
         let name = #"drop\ me\'s\ \(1\).txt"#
-        try await waitFor(pane) { $0.replacing("\n", with: "").contains("\(folder)/\(name)") }
+        try await waitFor(pane, toShow: "\(folder)/\(name)")
 
         try await send(" ", to: pane)
         let temporary = try await String(
@@ -92,7 +92,7 @@ extension OvviUITests {
 
         // Text pastes as it is (libghostty-spm's drop).
         _ = try await Self.post("\(one)/text-drag", Data("\(points) echo ovvi-e2e-$((6*7))".utf8))
-        try await waitFor(pane) { $0.replacing("\n", with: "").contains("echo ovvi-e2e-$((6*7))") }
+        try await waitFor(pane, toShow: "echo ovvi-e2e-$((6*7))")
         try await Self.call(one, "pane.send_keys", ["pane_id": pane, "keys": ["enter"]])
         try await waitFor(pane) { $0.contains("ovvi-e2e-42") }
     }
