@@ -406,7 +406,8 @@ runs and on-demand on the final head.
   channel open was not measured: a new connection there asks keyboard-interactive, and the user's master is off
   limits. A test stops the master on CI. Pages that stall together share one check. Not covered: a connection
   WebKit already holds (a Reload of the same page) on a master that stays stopped waits WebKit's 60 s; a link that
-  hangs ends it sooner (`-O exit`, or ServerAlive in 15 s).
+  hangs ends it sooner (`-O exit`, or ServerAlive in 15 s). Runs: green 42546671665 and 42547529376 (2 tests each,
+  the stopped master among them).
 - **For the user.** With a devvm-aai browser card open, sleep the Mac for a while, wake it, and reload: the page loads
   without closing the window.
 
