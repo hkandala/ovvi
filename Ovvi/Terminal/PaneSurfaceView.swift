@@ -53,7 +53,6 @@ final class PaneSurfaceView: AppTerminalView {
         acceptsFileDrops = false
     }
 
-    /// Gives this terminal the keyboard, now or once it is in a window.
     func takeKeyboard() {
         wantsKeyboard = window == nil
         claimed = true
@@ -64,7 +63,6 @@ final class PaneSurfaceView: AppTerminalView {
     /// older one cannot steal the keyboard back. Per window: a claim in one window leaves another's alone.
     private var claimed = false
 
-    /// Another terminal of the window asked for the keyboard.
     func dropClaim() {
         wantsKeyboard = false
         claimed = false

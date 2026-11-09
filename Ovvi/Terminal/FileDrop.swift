@@ -48,8 +48,6 @@ extension PaneSurfaceView {
         return true
     }
 
-    /// Pastes the files' paths, joined by spaces; on a remote machine, the paths of their copies there, once all are
-    /// copied. A copy that fails shows why, and nothing is pasted.
     private func drop(_ urls: [URL]) -> Bool {
         guard let store = store(), store.machine.isRemote else {
             return paste(text: urls.map { Self.escaped(Self.reachable($0).path(percentEncoded: false)) }
@@ -155,7 +153,6 @@ extension Page {
 }
 
 extension String {
-    /// In single quotes for a shell, each `'` as `'\''`.
     var shellQuoted: String {
         "'" + replacing("'", with: #"'\''"#) + "'"
     }

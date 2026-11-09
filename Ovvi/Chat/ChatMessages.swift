@@ -229,7 +229,6 @@ struct ChatMessages: View, Equatable {
         }
     }
 
-    /// Down to the newest message, over the messages' bottom: above the reply box.
     private func bottomButton(_ action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: "arrow.down").font(.system(size: 12, weight: .semibold)).frame(width: 30, height: 30)
@@ -258,7 +257,6 @@ struct ChatMessages: View, Equatable {
         CFRunLoopAddObserver(CFRunLoopGetMain(), observer, .commonModes)
     }
 
-    /// The next block of rows above, in its own row at the top of the messages; a spinner while they load.
     private func earlierButton(loading: Bool, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text("Show Earlier").opacity(loading ? 0 : 1)
@@ -279,7 +277,7 @@ struct ChatMessages: View, Equatable {
         .padding(.top, floats ? 28 : 16)
     }
 
-    /// On its way, with one tick once sent; or "Not sent" (the header's switch shows the TUI).
+    /// "Not sent" has no button: the header's switch shows the TUI.
     private func outgoing(_ message: Chat.Outgoing, error: Color) -> some View {
         VStack(alignment: .trailing, spacing: 4) {
             UserBubble(text: message.text, paneID: chat.paneID, sending: true, time: message.time,
@@ -324,7 +322,6 @@ private final class Tops {
     }
 }
 
-/// The history's rows, with the runs and tool calls clicked open.
 private struct Rows: View {
     let chat: Chat
     let rows: ArraySlice<ChatRow>

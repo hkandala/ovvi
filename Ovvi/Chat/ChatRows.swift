@@ -160,7 +160,7 @@ extension View {
     }
 }
 
-/// A todo list: done items struck through, the one in progress in the accent color.
+/// A todo list.
 private struct Plan: View {
     let todos: [ChatTodo]
 

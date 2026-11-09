@@ -12,8 +12,6 @@ enum AgentPlace {
 }
 
 extension AgentCall {
-    /// Reads the place's options, at most one of `--beside <pane> [--down]`, `--down`, `--tab`, `--float` and
-    /// `--replace <pane>`.
     mutating func place() async throws -> AgentPlace {
         let down = flag("--down"), tab = flag("--tab"), float = flag("--float")
         let beside = try value("--beside"), replace = try value("--replace")

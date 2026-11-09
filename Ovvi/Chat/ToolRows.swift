@@ -122,7 +122,6 @@ private struct Icon: View {
     }
 }
 
-/// A call's input or output: monospaced, selectable, at most 180 pt tall, then it scrolls.
 private struct ToolDetail: View {
     let title: String
     let text: String
@@ -154,7 +153,6 @@ private struct Chevron: View {
     }
 }
 
-/// How long it took, from a second on.
 private struct Time: View {
     let start: Date?
     let end: Date?
@@ -166,7 +164,6 @@ private struct Time: View {
     }
 }
 
-/// An edit's changed lines, numbered, at most 40.
 private struct Diff: View {
     let lines: [ChatTool.DiffLine]
     @Environment(\.look) private var look

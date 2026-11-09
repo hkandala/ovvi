@@ -1,9 +1,7 @@
 import AppKit
 import GhosttyTerminal
 
-/// The text size, the Terminal settings and the one configuration every surface shares.
 extension PaneTerminal {
-    /// The default text size (design: theme and accessibility).
     static let fontSize = 13
     static let fontSizes = 8 ... 32
 
@@ -33,7 +31,6 @@ extension PaneTerminal {
     /// The system monospaced font (SF Mono) rather than libghostty's own JetBrains Mono.
     static let systemFont = NSFont.monospacedSystemFont(ofSize: 0, weight: .regular).familyName ?? "Menlo"
 
-    /// The fixed-pitch families on this Mac, for Settings ▸ Terminal ▸ Font; not the hidden system ones (`.SF…`).
     static var fonts: [String] {
         let names = NSFontManager.shared.availableFontNames(with: .fixedPitchFontMask) ?? []
         // SF Mono, when installed, is the first choice already.
@@ -41,7 +38,6 @@ extension PaneTerminal {
             .filter { !$0.hasPrefix(".") && $0 != "SF Mono" }).sorted()
     }
 
-    /// The font and size `configure` last gave the terminals.
     private static var lastGrid = ""
 
     /// Reads the stored size, not a caller's copy: SwiftUI keeps a shortcut's first action.
@@ -79,7 +75,7 @@ extension PaneTerminal {
         })
     }
 
-    /// In 8–32: a hand-edited default (`defaults write`) can be out of range.
+    /// A hand-edited default (`defaults write`) can be out of range.
     private static func clamped(_ size: Int) -> Int {
         min(max(size, fontSizes.lowerBound), fontSizes.upperBound)
     }

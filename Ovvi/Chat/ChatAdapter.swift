@@ -329,7 +329,6 @@ enum ChatAdapters {
 }
 
 extension [String] {
-    /// The argument after `flag`.
     func after(_ flag: String) -> String? {
         firstIndex(of: flag).flatMap { $0 + 1 < count ? self[$0 + 1] : nil }
     }

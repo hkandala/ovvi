@@ -39,8 +39,6 @@ enum AgentCommands {
     /// The script Ovvi writes to `~/.cache/ovvi/bin/ovvi` on each machine it opens a session on.
     static let script = Bundle.main.url(forResource: "ovvi", withExtension: "sh").flatMap { try? Data(contentsOf: $0) }
 
-    /// Parses the arguments, runs the command against the asking session's store and makes its answer: what goes to
-    /// standard output (text, or JSON with `--json`), the exit code and the text for standard error.
     static func run(_ argv: [String], cwd: String, from pane: String, request id: String,
                     store: HostStore) async -> AgentAnswer
     {
@@ -58,7 +56,6 @@ enum AgentCommands {
         }
     }
 
-    /// The answer for an error: `ovvi: ‹message›` on standard error, and with `--json` the error as JSON too.
     static func failure(_ error: Error, json: Bool) -> AgentAnswer {
         let error = error as? AgentError ?? AgentError(code: "failed", message: error.localizedDescription)
         let out = json ? AgentOutput(["error": ["code": error.code, "message": error.message]]).jsonData : Data()
@@ -66,7 +63,6 @@ enum AgentCommands {
     }
 }
 
-/// What goes back to the command: its exit code, its standard output and its standard error.
 struct AgentAnswer {
     let code: Int32
     let out: Data
@@ -148,26 +144,22 @@ struct AgentCall {
         return args[index + 1]
     }
 
-    /// The next argument, which must be there; `name` says which in the error.
     mutating func argument(_ name: String) throws -> String {
         guard let next = try optionalArgument() else { throw AgentError.usage("missing <\(name)>") }
         return next
     }
 
-    /// The next argument, nil when none is left.
     mutating func optionalArgument() throws -> String? {
         guard let next = args.first else { return nil }
         guard !next.hasPrefix("--") else { throw AgentError.usage("unknown option \(next)") }
         return args.removeFirst()
     }
 
-    /// Every argument was read: one left over is a usage error.
     func done() throws {
         guard let extra = args.first else { return }
         throw AgentError.usage(extra.hasPrefix("--") ? "unknown option \(extra)" : "extra argument \(extra)")
     }
 
-    /// The asking pane.
     var asking: PaneTarget {
         PaneTarget(session: store.session, id: pane, machine: store.machine)
     }

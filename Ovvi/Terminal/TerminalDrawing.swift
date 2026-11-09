@@ -62,7 +62,6 @@ extension PaneTerminal {
         }
     }
 
-    /// Draws while shown; an old picture over a new surface goes once that drew.
     func draw() {
         view.setSurfaceVisible(inView)
         if inView {
@@ -167,7 +166,6 @@ extension PaneTerminal {
 /// keeps showing its last IOSurface, volatile while no window shows it, so it costs no memory then (the system may
 /// take it back under memory pressure). A new surface draws under it until its frames are drawn (design D46).
 extension PaneSurfaceView {
-    /// Frees libghostty's surface; the view keeps its picture.
     func free() {
         guard controller != nil else { return }
         // One not dropped yet (shown and evicted again before its new surface drew) stays the picture.

@@ -47,7 +47,6 @@ final class PaneViewRegistry {
 
     /// Kept terminals of every window (a surface; a stream unless paused), the most recently shown last.
     static var recent: [PaneTerminal] = []
-    /// Its window's pages: they hear of the keyboard, Return and input in its terminals.
     weak var pages: WindowPages?
     var terminals: [String: PaneTerminal] = [:]
     /// Browser panes' cards (ui/browser), by terminal id as terminals are: a moved card keeps its page.
@@ -56,7 +55,6 @@ final class PaneViewRegistry {
     var plugins: [String: Plugin] = [:]
     /// Linked opens' landings (`Page.open(_:arg:at:from:how:)`) for the cards not made yet.
     var landings: [String: String] = [:]
-    /// The web cards in this window's view.
     var webInView: Set<String> = []
     /// Dropped web cards' and chats' last pictures (`pictured`), until made again.
     var pictures: [(id: String, picture: CGImage)] = []
@@ -85,7 +83,6 @@ final class PaneViewRegistry {
         _ = Self.pressure
     }
 
-    /// The pane's terminal, made on first use.
     func terminal(_ terminalID: String, pane paneID: String, client: any Multiplexer) -> PaneTerminal {
         if let terminal = terminals[terminalID] {
             // A moved pane keeps its terminal under a new pane id.
@@ -106,7 +103,6 @@ final class PaneViewRegistry {
         return terminal
     }
 
-    /// The browser pane's card, made on first use from its label.
     func browser(_ pane: HostStore.Pane, _ label: PaneLabel, terminalID: String, store: HostStore) -> Browser {
         // Made again for another iid: its state file is another's.
         if let browser = browsers[terminalID], browser.label.iid == label.iid {
@@ -125,8 +121,7 @@ final class PaneViewRegistry {
         return browser
     }
 
-    /// The plugin pane's card, made on first use from its label, and again when its manifest changed (Reload Plugin);
-    /// nil for a plugin not on this Mac or with no pages.
+    /// Made again when its manifest changed (Reload Plugin); nil for a plugin not on this Mac or with no pages.
     func plugin(_ pane: HostStore.Pane, _ label: PaneLabel, terminalID: String, store: HostStore) -> Plugin? {
         if let plugin = plugins[terminalID], plugin.label.iid == label.iid, plugin.manifest == label.manifest {
             if plugin.paneID != pane.id {
@@ -199,12 +194,10 @@ final class PaneViewRegistry {
         }
     }
 
-    /// The browser card of this terminal id, if made.
     func built(_ terminalID: String) -> Browser? {
         browsers[terminalID]
     }
 
-    /// The plugin card of this terminal id, if made.
     func builtPlugin(_ terminalID: String) -> Plugin? {
         plugins[terminalID]
     }
@@ -262,8 +255,7 @@ final class PaneViewRegistry {
         ids.compactMap { terminals[$0] }
     }
 
-    /// Gives the keyboard to this terminal. A view that left the window with the keyboard
-    /// would take it back when its tab returns; this one wins instead.
+    /// A view that left the window with the keyboard would take it back when its tab returns; this one wins instead.
     func focus(_ terminalID: String) {
         // A panel's keys: its close gives them to the keyboard card.
         guard pages?.panelOpen != true || pages?.floats(terminalID) == true else { return }
@@ -325,7 +317,6 @@ extension PaneViewRegistry {
 }
 
 extension WindowPages {
-    /// The web cards in view: the shown tab's and every page's floated ones.
     var webInView: Set<String> {
         Set(withFloats.flatMap { page in
             page.store.panes.filter { $0.plugin != nil && (page === current && $0.tabID == page.selectedTab?.id

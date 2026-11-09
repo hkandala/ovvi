@@ -18,7 +18,6 @@ final class FrameProbe {
     static let isOn = UserDefaults.standard.bool(forKey: "recordFrames")
     /// The changes' records, "; " between them.
     private(set) var recorded = ""
-    /// The page and tab being recorded.
     @ObservationIgnored private var shown: (page: String, tab: String)?
     @ObservationIgnored private var start = 0.0
     /// Each card's states of the change being recorded; nil while its terminal is in no card's host of the window.
@@ -91,7 +90,6 @@ final class FrameProbe {
                       topLeft: view.convert(view.bounds, to: nil).integral.topLeft)
     }
 
-    /// The change's record, once.
     private func finish() {
         guard let shown, !samples.isEmpty else { return }
         var bad = 0, frames = 0, codes = ""

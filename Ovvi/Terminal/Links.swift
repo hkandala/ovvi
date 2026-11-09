@@ -156,7 +156,6 @@ extension PaneSurfaceView: TerminalSurfaceOpenURLDelegate, TerminalSurfaceHoverL
         _ = openLink?(url, .tab)
     }
 
-    /// A pointing hand while ⌘ or ⌥ is down over a link.
     func terminalDidUpdateHoverLink(_ url: String?) {
         hoveredLink = url
         (url == nil ? NSCursor.arrow : .pointingHand).set()

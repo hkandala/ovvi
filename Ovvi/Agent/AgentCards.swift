@@ -117,7 +117,6 @@ extension AgentCall {
         store.pane(pane).map { $0.agentLabel ?? $0.programName ?? $0.cardTitle } ?? pane
     }
 
-    /// A pane argument's store and pane, in a session that Ovvi shows.
     func found(_ target: PaneTarget) throws -> (HostStore, HostStore.Pane) {
         guard let store = target.store else {
             throw AgentError(code: "failed", message: "Ovvi does not show herdr session \(target.session)")
@@ -277,7 +276,6 @@ extension AgentCall {
 }
 
 extension HostStore {
-    /// Its panes that float in a window of their own, over a visible window.
     var floatingPanes: Set<String> {
         Set(windows.filter(\.visible).flatMap(\.withFloats).filter { $0.store === self }
             .flatMap { page in panes.filter(page.floats).map(\.id) })
@@ -289,7 +287,6 @@ extension HostStore {
         .map { Duration.seconds($0) }
     private static var flashes = 0
 
-    /// An agent's notice in each window that shows the session, in the information tone, with Show.
     func notice(_ text: String, show pane: Pane) {
         Task { await show(Notice(text: text, tone: .info, show: pane.terminalID), for: Self.held ?? .seconds(4)) }
     }
@@ -340,7 +337,6 @@ struct CardFlash: View {
 }
 
 extension AgentError {
-    /// A control character or over 1024 characters.
     static func noLabel(_ arg: String) -> AgentError {
         AgentError(code: "bad_argument", message: "\(arg) makes no label: a control character, or over 1024 characters")
     }

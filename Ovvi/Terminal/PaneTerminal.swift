@@ -8,7 +8,6 @@ import Observation
 @MainActor @Observable
 final class PaneTerminal {
     private(set) var state = State.idle
-    /// The terminal view is the first responder: keys go here.
     var hasKeyboard = false
     /// The content shows: herdr's frames at the card's grid settled (PTY resized, program redrawn), or a watcher
     /// drew. Off from a new surface's start and from each grid change until then, so herdr's first frame (the old
@@ -32,7 +31,6 @@ final class PaneTerminal {
     @ObservationIgnored private let terminalID: String
     @ObservationIgnored private let client: any Multiplexer
     @ObservationIgnored private let session: InMemoryTerminalSession
-    /// Input not sent yet; it goes out while the stream is live.
     @ObservationIgnored private var pending: [Input] = []
     @ObservationIgnored private var draining: Task<Void, Never>?
     /// A paste libghostty is still writing.
@@ -92,7 +90,7 @@ final class PaneTerminal {
         ]
     }
 
-    /// The card's tab is shown: stream it. Also retries a stream that failed.
+    /// Also retries a stream that failed.
     func show() {
         guard !shown || state.isFailed else { return }
         shown = true
@@ -125,7 +123,6 @@ final class PaneTerminal {
         tasks.forEach { $0.cancel() }
     }
 
-    /// Take back: control with `--takeover`.
     func takeBack() {
         open(takeover: true)
     }
@@ -206,7 +203,6 @@ final class PaneTerminal {
         }
     }
 
-    /// The first frame of a stream.
     private func started(_ frame: TerminalStream.Frame) {
         state = observing ? .watching : .live
         // The card may have changed size while the stream opened. Its latest size: a new surface's first guess (100×40

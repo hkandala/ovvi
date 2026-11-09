@@ -21,7 +21,6 @@ struct Markdown: View {
     }
 }
 
-/// A document's, a quote's or a list item's blocks, one under the other.
 private struct Blocks: View {
     let container: any Markup
 
@@ -35,7 +34,6 @@ private struct Blocks: View {
         }
     }
 
-    /// Wide before a heading, narrow under one and inside a list item, 12 pt between other blocks.
     private static func space(_ above: any Markup, _ block: any Markup) -> CGFloat {
         if let heading = block as? Heading {
             heading.level < 3 ? 22 : 16
@@ -84,7 +82,6 @@ private struct Block: View {
     }
 }
 
-/// Items hang behind their bullet (•, ◦, ▪ by depth), number or checkbox, 18 pt in per level.
 private struct ListBlock: View {
     let list: any ListItemContainer
 
@@ -116,7 +113,6 @@ private struct ListBlock: View {
     }
 }
 
-/// A table on a faint frame: the head on a fill, a line between rows, each column aligned as written.
 private struct TableGrid: View {
     let table: Markdown::Table
 

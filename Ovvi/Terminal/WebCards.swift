@@ -1,7 +1,6 @@
 import AppKit
 import HerdrKit
 
-/// The web cards' budget and the cards' pictures.
 extension PaneViewRegistry {
     /// The web cards in view now: the ones that left keep a picture; past the `spareWeb` most recently shown others,
     /// the oldest are dropped.
@@ -39,7 +38,6 @@ extension PaneViewRegistry {
         }
     }
 
-    /// Out of view, not floating, and with no unsaved edits.
     func droppable(_ id: String) -> Bool {
         !webInView.contains(id) && pages?.floats(id) != true && plugins[id]?.dirty != true && webView(id) != nil
     }
@@ -106,7 +104,6 @@ extension PaneViewRegistry {
         }
     }
 
-    /// The web card's or chat's last picture: its overview tile.
     func picture(_ id: String) -> CGImage? {
         webView(id)?.shot.image ?? pictures.last { $0.id == id }?.picture
     }

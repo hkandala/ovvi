@@ -42,7 +42,6 @@ struct TerminalHost: NSViewRepresentable {
     }
 }
 
-/// A card's terminal, with what to do when it does not stream.
 struct TerminalCard: View {
     let terminal: PaneTerminal
     /// Another window controls the session (D66): the window's capsule offers Take Back instead of the card.
@@ -67,7 +66,6 @@ struct TerminalCard: View {
                         .accessibilityIdentifier("pane.\(terminal.paneID).take-back")
                         .padding(gap)
                 case let .failed(text):
-                    // herdr's reason, over the card's fill; Retry opens the stream again.
                     EmptyState(symbol: "terminal", title: "The terminal stopped", text: text, compact: true) {
                         Button("Retry", action: terminal.show).buttonStyle(.glassProminent)
                             .accessibilityIdentifier("pane.\(terminal.paneID).retry")
@@ -89,8 +87,7 @@ struct TerminalCard: View {
     }
 }
 
-/// A terminal card's own menu items, before the pane's: Copy, Paste and Select All on this terminal, not on the
-/// keyboard card.
+/// Copy, Paste and Select All on this terminal, not on the keyboard card.
 struct TerminalItems: View {
     let view: PaneSurfaceView
 
