@@ -748,6 +748,10 @@ side.
   same. Memory: 124–125 MB with one pane both; seven panes 183–184 MB before, 175–177 MB after (9.8 → 8.6 MB a pane).
   Idle, seven panes, 10 s: 0.24–0.26 s of CPU before, 0.09–0.12 s after: the package's cursor timer no longer redraws
   surfaces that are not focused or do not blink.
+- **Runs (CI).** Chosen tests on the upgrade: 42556540631 green, executed 50 (Terminal, Pane, Pane input, Replace, Drag,
+  Reveal, a tab's flicker, selection and cursor looks, links, HTML, Find, font size). On the drop fix: 42558841860
+  executed 6, the remote file drop and the drags green; the new text drop pasted but its check missed the pane's wrap,
+  fixed and green locally.
 - **Decisions.** The package dropped its `font-thicken = true` default, and Ovvi takes Ghostty's (off): text draws as in
   Ghostty and Terminal, thinner than before, most visibly light on dark. Sheets in
   `~/Downloads/ovvi-research/p57n/` (`sheet-font-thicken.png`, `zoom-dark-before-after.png`).
