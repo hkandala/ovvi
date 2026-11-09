@@ -42,8 +42,6 @@ struct SessionPicker: View {
                 prompt: "Find a session",
                 name: "picker",
                 items: items,
-                // Not on a machine's empty row while it reads: no lit bar that turns into its sessions.
-                start: items("").firstIndex { !$0.title.isEmpty } ?? 0,
                 maxHeight: min(420, max(120, room - 400)),
                 pinned: 2,
             ) {}

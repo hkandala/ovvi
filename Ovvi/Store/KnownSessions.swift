@@ -15,11 +15,16 @@ enum KnownSessions {
         all[key(machine)]
     }
 
+    /// Not for a machine removed meanwhile: its open windows still read it.
     static func keep(_ sessions: [Session], of machine: Machine) {
+        guard !machine.isRemote || MachineList.shared.list.contains(where: { $0.target == machine.target })
+        else { return }
         set(sessions, key(machine))
     }
 
     /// A machine removed, or one that needs a password again: its old rows would show, then flip.
+    /// ponytail: a password host's rows are forgotten only when a read finds it needs one, so the launch after a
+    /// connect shows them once before Connect; forget them at quit when masters say whether they needed an answer.
     static func forget(_ machine: Machine) {
         set(nil, key(machine))
     }
