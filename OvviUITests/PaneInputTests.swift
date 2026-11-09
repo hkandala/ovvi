@@ -92,7 +92,7 @@ extension OvviUITests {
 
         // Text pastes as it is (libghostty-spm's drop).
         _ = try await Self.post("\(one)/text-drag", Data("\(points) echo ovvi-e2e-$((6*7))".utf8))
-        try await waitFor(pane) { $0.contains("echo ovvi-e2e-$((6*7))") }
+        try await waitFor(pane) { $0.replacing("\n", with: "").contains("echo ovvi-e2e-$((6*7))") }
         try await Self.call(one, "pane.send_keys", ["pane_id": pane, "keys": ["enter"]])
         try await waitFor(pane) { $0.contains("ovvi-e2e-42") }
     }
