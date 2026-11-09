@@ -6,12 +6,17 @@ import HerdrKit
 /// as a PNG first, or received from its source (a browser's image may be only a file promise). On a remote machine
 /// the files are copied there first and their copies' paths pasted (`Exec.upload`). On This Mac, a file in a
 /// `TemporaryItems` folder is copied to a new folder first (`reachable`). A pane drag carries none of these types, so
-/// it goes on to the card's drop zones.
+/// it goes on to the card's drop zones. Text and links paste as libghostty-spm drops them.
 extension PaneSurfaceView {
-    static let dropTypes: [NSPasteboard.PasteboardType] = [.fileURL, .tiff, .png]
-        + NSFilePromiseReceiver.readableDraggedTypes.map { .init($0) }
+    /// File promises, beside libghostty-spm's own types (files, images, links, text).
+    static let dropTypes = NSFilePromiseReceiver.readableDraggedTypes.map { NSPasteboard.PasteboardType($0) }
 
     override func draggingEntered(_: any NSDraggingInfo) -> NSDragOperation {
+        .copy
+    }
+
+    /// libghostty-spm's refuses a file promise.
+    override func draggingUpdated(_: any NSDraggingInfo) -> NSDragOperation {
         .copy
     }
 
@@ -27,7 +32,9 @@ extension PaneSurfaceView {
         }
         // ponytail: each promised file pastes on its own; join them when a source promises several.
         let promises = board.readObjects(forClasses: [NSFilePromiseReceiver.self]) as? [NSFilePromiseReceiver]
-        guard let promise = promises?.first, let folder = Self.newFolder() else { return false }
+        guard let promise = promises?.first, let folder = Self.newFolder() else {
+            return super.performDragOperation(sender)
+        }
         promise.receivePromisedFiles(
             atDestination: folder,
             options: [:],
@@ -88,10 +95,10 @@ extension PaneSurfaceView {
         return copy
     }
 
-    /// The dragged image as a PNG.
+    /// The dragged image as a PNG. Not `NSImage(pasteboard:)`, which would load a dragged web link.
     private static func savedImage(_ board: NSPasteboard) -> URL? {
-        guard let tiff = NSImage(pasteboard: board)?.tiffRepresentation,
-              let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]),
+        guard let type = board.availableType(from: [.png, .tiff]), let data = board.data(forType: type),
+              let png = NSBitmapImageRep(data: data)?.representation(using: .png, properties: [:]),
               let file = newFolder()?.appending(path: "image.png")
         else { return nil }
         return (try? png.write(to: file)).map { file }
