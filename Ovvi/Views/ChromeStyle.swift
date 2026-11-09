@@ -35,7 +35,10 @@ struct ChromeStyle: ButtonStyle {
                             let strength = configuration.isPressed ? 0.08 : lit && enabled ? 0.05 : 0
                             // On the tint alone: on the whole label it also faded a menu's light from row to row
                             // (FilterList lights the hovered row).
-                            shape.fill(.primary.opacity(strength)).animation(.easeOut(duration: 0.14), value: lit)
+                            // A list's pointer fades its lights itself: an animation here, of the light the button
+                            // observes, kept the main thread busy for half of a hover sweep over 200 spaces.
+                            shape.fill(.primary.opacity(strength))
+                                .animation(style.pointer == nil ? .easeOut(duration: 0.14) : nil, value: lit)
                         } else if let tint = style.tint {
                             shape.fill(tint)
                         } else {

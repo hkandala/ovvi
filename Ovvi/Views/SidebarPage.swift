@@ -194,8 +194,11 @@ struct SidebarPage: View {
         var pointer: String? {
             didSet {
                 if pointer != oldValue {
-                    oldValue.map { light($0).lit = false }
-                    pointer.map { light($0).lit = true }
+                    // `ChromeStyle`'s fade.
+                    withAnimation(.easeOut(duration: 0.14)) {
+                        oldValue.map { light($0).lit = false }
+                        pointer.map { light($0).lit = true }
+                    }
                 }
             }
         }
