@@ -126,13 +126,13 @@ description: "What a machine is, its sessions, the SSH connection, the health ch
   - Anything else (no network, the host down, a refused connection): runs fail
     at once until the next try, 2, 4, 8, 16, then every 30 s, and the pages
     show Reconnecting.
-- **Prompts:** only **Connect** and Add Remote Host start a master that may
+- **Prompts:** only **Connect** and a new machine's first window start a master that may
   ask. That start sets `SSH_ASKPASS` to a small script the app writes beside
   the sockets (mode 0700) and `SSH_ASKPASS_REQUIRE=force`. ssh runs the
   script with ssh's own stdin and stderr, which are the app's pipes: the
   script prints the question, base64 on one line after a marker, to stderr
   and reads the answer from stdin. The app shows the question in a dialog of
-  the window that connects ([Add a machine](/docs/ui/add-a-machine)) and
+  the window that connects ([The SSH connection](#the-ssh-connection)) and
   writes the answer to ssh's stdin. Nothing is stored. A key or agent that
   works needs no question, so the start asks only what ssh asks.
   - A new host key shows ssh's text with its fingerprint and asks yes or no;

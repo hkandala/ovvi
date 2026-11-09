@@ -324,6 +324,16 @@ runs and on-demand on the final head.
   px (remote), 310 px for the tests' fake command on This Mac; the old 451 pt sentence wrapped at 420 pt into one long
   and one short line. Run 42580014495 green (scenes, both install tests).
 
+- **Round 6 (54), cause.** The view opened with nothing known: every machine's first frames showed a spinner row,
+  which the answer replaced a split second later. **Fix:** each machine's sessions as last listed (`KnownSessions`:
+  memory, every page's own session read, and `sessions.json` under the caches; memory only in a `-session` run) show
+  from the first frame, and the read behind them changes the rows in place. A machine with none known keeps one empty
+  row's room, shows the spinner only after 150 ms, and fades its rows in over 0.15 s. The local read was one herdr call
+  already (the path is cached after launch).
+- **Round 6 (59), decision.** Settings ▸ Machines is the one place that adds and edits machines: the view's Add
+  Machine and the machine menu's "Add Machine…" open its add form, "Edit Machines…" its list; the Add Remote Host
+  overlay is gone.
+
 ### Track B
 
 - **Built** (D111): one sidebar. Pinned tabs on top (a tab's hover pin before its ×, Pin Tab / Unpin Tab in its menu,

@@ -1,69 +1,7 @@
 import HerdrKit
 import SwiftUI
 
-/// The machine menu's remote host dialog (ui/add-a-machine): a name, the SSH target and an icon. Add saves a new
-/// machine and opens it in a new window (in this one when it has no page yet), which connects and asks what ssh asks;
-/// Save keeps an edit, Remove takes the machine off the list.
-struct HostDialog: View {
-    let pages: WindowPages
-    let editing: Bool
-    @State private var draft: Machine
-    @FocusState private var focused: Bool
-
-    init(pages: WindowPages, machine: Machine) {
-        self.pages = pages
-        editing = MachineList.shared.list.contains { $0.id == machine.id }
-        _draft = State(initialValue: machine)
-    }
-
-    var body: some View {
-        let target = draft.target.trimmingCharacters(in: .whitespaces)
-        VStack(alignment: .leading, spacing: 14) {
-            // Text only, flush with the form (the glyph sat off the line).
-            Text(editing ? "Edit Remote Host" : "Add Remote Host").font(.system(size: 13, weight: .semibold))
-            Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 8) {
-                GridRow {
-                    Text("Name").gridColumnAlignment(.trailing)
-                    TextField("", text: $draft.name).focused($focused).focusSoon($focused).dialogField()
-                        .accessibilityLabel("Name").accessibilityIdentifier("host.name")
-                }
-                GridRow {
-                    Text("SSH Target")
-                    TextField("", text: $draft.target).dialogField()
-                        .accessibilityLabel("SSH Target").accessibilityIdentifier("host.target")
-                }
-                GridRow {
-                    Text("Icon")
-                    IconPicker(icon: $draft.icon)
-                }
-            }
-            .font(.system(size: 13))
-            HStack {
-                if editing {
-                    Button("Remove", role: .destructive) {
-                        MachineList.shared.remove(draft)
-                        pages.hostDialog = nil
-                    }
-                    .buttonStyle(.glass)
-                    .accessibilityIdentifier("host.remove")
-                }
-                Spacer()
-                Button("Cancel") { pages.hostDialog = nil }
-                    .keyboardShortcut(.cancelAction)
-                    .buttonStyle(.glass)
-                Button(editing ? "Save" : "Add") {
-                    pages.hostDialog = nil
-                    _ = MachineList.shared.keep(draft, target: target, in: pages)
-                }
-                .keyboardShortcut(.defaultAction)
-                .buttonStyle(.glassProminent)
-                .disabled(!SSHExec.isValidTarget(target))
-                .accessibilityIdentifier("host.save")
-            }
-        }
-    }
-}
-
+/// A machine's icon: a button that opens a searchable grid of SF Symbols (Settings ▸ Machines).
 struct IconPicker: View {
     @Binding var icon: String
     @State private var open = false

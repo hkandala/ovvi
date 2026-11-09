@@ -149,7 +149,14 @@ extension OvviUITests {
         for look in ["dark", "light"] {
             relaunch(one, ["-appearance", look, "-machines", ssh ? host : "[]"])
             _ = element("terminal.w1:p1").exists(within: connect)
+            let first = app.windows.firstMatch.identifier
             app.typeKey("n", modifierFlags: .command)
+            // Its first frames, as soon as the window is there: what shows before any read answers.
+            if let window = until(3, { app.windows.count > 1 }) ? app.windows.allElementsBoundByIndex
+                .first(where: { $0.identifier != first }) : nil
+            {
+                keepScreenshot("\(look) N0 new window, first frames", of: window)
+            }
             _ = element("picker.local.\(one)").exists(within: connect)
             if ssh {
                 _ = element("picker.e2e-pw.+connect").exists(within: 20)
@@ -157,6 +164,9 @@ extension OvviUITests {
             await newWindowShot(look, "N1 new window")
             app.typeText("ovvi-e2e-build")
             await newWindowShot(look, "N2 new window, a typed name")
+            element("picker.+add-machine").click()
+            try? await Task.sleep(for: .seconds(1))
+            await newWindowShot(look, "N4 new window, Add Machine")
             app.launchEnvironment["SHELL"] = "\(Self.fixtures)/no-herdr/login-shell"
             app.launchEnvironment["PATH"] = "/usr/bin:/bin"
             app.terminate()

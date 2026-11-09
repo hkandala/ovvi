@@ -49,7 +49,7 @@ extension OvviUITests {
         let thisMac = app.menuItems["This Mac"]
         XCTAssertTrue(thisMac.exists(within: 2))
         // Its checkmark is not in XCUITest's view of a menu item; the screenshot shows it.
-        XCTAssertTrue(app.menuItems["Add Remote Host…"].exists)
+        XCTAssertTrue(app.menuItems["Add Machine…"].exists)
         keepScreenshot("machine menu")
         // The current machine: nothing changes.
         thisMac.click()

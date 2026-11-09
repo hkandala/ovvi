@@ -238,8 +238,9 @@ final class HostStore {
 
     /// herdr's session list again: a session started since shows up.
     func loadSessions() async {
-        guard let client else { return }
-        sessions = await (try? client.sessions()) ?? sessions
+        guard let client, let listed = try? await client.sessions() else { return }
+        sessions = listed
+        KnownSessions.keep(listed, of: machine)
     }
 
     /// The last snapshot drawn again, with what the app shows ahead of herdr.

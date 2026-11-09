@@ -205,6 +205,21 @@ extension OvviUITests {
         try await Self.snapshot(eight)
     }
 
+    /// ⌘N shows This Mac's sessions from its first frame: the ones its page listed are known, so no spinner row comes
+    /// first and the rows do not change under the pointer.
+    func testNewWindowShowsKnownSessionsAtOnce() {
+        XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
+        // The page's own read of the session list, as its first snapshot came.
+        XCTAssertTrue(until(5) { element("sidebar.header").exists })
+        app.typeKey("n", modifierFlags: .command)
+        let row = element("picker.local.\(one)"), reading = element("picker.local.+reading")
+        // The first of the two that shows: the known row, never the spinner's.
+        XCTAssertTrue(until(3) { row.exists || reading.exists })
+        XCTAssertTrue(row.exists, "the spinner row came first")
+        let label = row.label
+        XCTAssertFalse(until(1) { reading.exists || row.label != label })
+    }
+
     /// A launch with no window to restore and no `-session` connects to nothing: the window lists the sessions to pick
     /// from, and no card streams.
     func testALaunchWithNothingToRestoreConnectsToNothing() async throws {

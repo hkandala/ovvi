@@ -211,89 +211,67 @@ extension OvviUITests {
         try await waitFor(pane) { $0.contains("\novvi-e2e-dropped") }
     }
 
-    /// The dialog in the palette's glass in each look (screenshots), and its icon picker's search.
-    func testTheRemoteHostDialogInEveryLook() {
-        for (appearance, style) in [("dark", "glass"), ("light", "glass"), ("dark", "classic"), ("light", "classic")] {
-            relaunch(one, ["-appearance", appearance, "-interfaceStyle", style, "-machines", "[]"])
-            XCTAssertTrue(element("window.look").has(\.stringValue, "\(style) \(appearance)", within: connect))
-            element("titlebar.machine").click()
-            let add = app.menuItems["Add Remote Host…"]
-            XCTAssertTrue(add.exists(within: 2))
-            // No hosts: nothing to edit.
-            XCTAssertFalse(app.menuItems["Edit Remote Host"].exists)
-            add.click()
-            XCTAssertTrue(element("host.name").exists(within: 3))
-            keepScreenshot("add remote host \(style) \(appearance)")
-            if style == "classic", appearance == "light" {
-                break
-            }
-            app.typeKey(.escape, modifierFlags: [])
-            XCTAssertTrue(element("host.name").vanishes(within: 2))
-        }
-        let icon = element("host.icon")
+    /// The machine menu's Add Machine opens Settings ▸ Machines at its form; the icon picker's search finds a dotted
+    /// name only.
+    func testAddMachineOpensSettingsAtItsForm() {
+        XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
+        element("titlebar.machine").click()
+        app.menuItems["Add Machine…"].click()
+        let settings = settingsWindow
+        XCTAssertTrue(element("settings.machine.name", in: settings).exists(within: 5))
+        let icon = element("host.icon", in: settings)
         XCTAssertEqual(icon.value as? String, "server.rack")
-        // Esc closes the popover only.
-        icon.click()
-        XCTAssertTrue(element("host.icon.gamecontroller").exists(within: 3))
-        app.typeKey(.escape, modifierFlags: [])
-        XCTAssertTrue(element("host.icon.gamecontroller").vanishes(within: 2))
-        XCTAssertTrue(element("host.name").exists)
         icon.click()
         XCTAssertTrue(element("host.icon.search").exists(within: 3))
         element("host.icon.search").click()
         app.typeText("globe.eu")
         XCTAssertTrue(element("host.icon.gamecontroller").vanishes(within: 2))
-        keepScreenshot("icon search")
-        // A dotted search: only Europe and Africa's globe, not the plain one.
+        keepScreenshot("icon search", of: settings)
         XCTAssertFalse(element("host.icon.globe").exists)
         let europe = element("host.icon.globe.europe.africa")
         europe.click()
         XCTAssertTrue(europe.vanishes(within: 2))
         XCTAssertEqual(icon.value as? String, "globe.europe.africa")
+        settings.typeKey("w", modifierFlags: .command)
     }
 
-    /// The machine menu's Edit Remote Host: a rename, a new target and icon reach the open window of the machine;
-    /// Remove takes it off the menu.
+    /// Settings ▸ Machines edits a machine: a rename, a new target and icon reach its open window; Remove takes it
+    /// off the machine menu.
     func testEditingARemoteHostRenamesItAndRemoveTakesItOff() async throws {
         try await skipWithoutSSH()
         relaunch(one, ["-machines", Self.keyHost, "-machine", "e2e-key"])
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
-        editHost("Key Host")
-        let name = element("host.name")
+        let settings = editHost()
+        let name = element("settings.machine.name", in: settings)
         XCTAssertEqual(name.value as? String, "Key Host")
-        XCTAssertEqual(element("host.target").value as? String, "ovvi-key")
+        let target = element("settings.machine.target", in: settings)
+        XCTAssertEqual(target.value as? String, "ovvi-key")
         name.click()
         app.typeKey("a", modifierFlags: .command)
         app.typeText("Build Box")
-        let target = element("host.target")
         target.click()
         app.typeKey("a", modifierFlags: .command)
         app.typeText("ovvi-pw")
-        element("host.icon").click()
+        element("host.icon", in: settings).click()
         XCTAssertTrue(element("host.icon.search").exists(within: 3))
         element("host.icon.search").click()
         app.typeText("flask")
         element("host.icon.flask").click()
-        keepScreenshot("edit remote host")
-        element("host.save").click()
-        XCTAssertTrue(name.vanishes(within: 2))
-        let window = app.windows.firstMatch
-        XCTAssertEqual(machine(of: window), "Build Box")
-        XCTAssertEqual(element("titlebar.machine").value as? String, "flask")
-        XCTAssertTrue(element("terminal.w1:p1").exists)
-
-        editHost("Build Box") {
-            XCTAssertFalse(app.menuItems["Key Host"].exists)
-        }
-        // The edit was kept; the open page stays on its connection.
-        XCTAssertEqual(target.value as? String, "ovvi-pw")
-        XCTAssertEqual(element("host.icon").value as? String, "flask")
-        element("host.remove").click()
-        XCTAssertTrue(name.vanishes(within: 2))
-        element("titlebar.machine").click()
-        XCTAssertTrue(app.menuItems["Add Remote Host…"].exists(within: 2))
+        element("settings.machine.save", in: settings).click()
+        let window = app.windows.matching(NSPredicate(format: "identifier BEGINSWITH 'main-'")).firstMatch
+        XCTAssertTrue(until(3) { machine(of: window) == "Build Box" })
+        XCTAssertEqual(element("titlebar.machine", in: window).value as? String, "flask")
+        XCTAssertTrue(element("terminal.w1:p1", in: window).exists)
+        // The open page stays on its connection; Remove takes it off the list.
+        element("settings.machine.remove", in: settings).click()
+        let sheet = settings.sheets.firstMatch
+        XCTAssertTrue(sheet.buttons["Remove"].exists(within: 5))
+        sheet.buttons["Remove"].click()
+        XCTAssertTrue(name.vanishes(within: 3))
+        settings.typeKey("w", modifierFlags: .command)
+        element("titlebar.machine", in: window).click()
+        XCTAssertTrue(app.menuItems["Add Machine…"].exists(within: 2))
         XCTAssertFalse(app.menuItems["Build Box"].exists)
-        XCTAssertFalse(app.menuItems["Edit Remote Host"].exists)
         app.typeKey(.escape, modifierFlags: [])
     }
 
@@ -347,18 +325,16 @@ extension OvviUITests {
         app.typeKey(.escape, modifierFlags: [])
     }
 
-    private func editHost(_ name: String, menu: () -> Void = {}) {
-        // The remote page connected and drawn first: opened while its cards loaded, the menu closed under XCUITest's
-        // click into its submenu (the CI recording).
-        XCTAssertTrue(drawn("w1:p1", within: 10), element("pane.w1:p1").stringValue)
+    /// Settings ▸ Machines at Key Host's page, from the machine menu's Edit Machines.
+    private func editHost() -> XCUIElement {
         element("titlebar.machine").click()
-        let edit = app.menuItems["Edit Remote Host"]
-        XCTAssertTrue(edit.exists(within: 2))
-        XCTAssertTrue(app.menuItems[name].exists)
-        menu()
-        edit.hover()
-        edit.menuItems[name].click()
-        XCTAssertTrue(element("host.name").exists(within: 3))
+        app.menuItems["Edit Machines…"].click()
+        let settings = settingsWindow
+        let row = element("settings.machine.e2e-key", in: settings)
+        XCTAssertTrue(row.exists(within: 5))
+        row.click()
+        XCTAssertTrue(element("settings.machine.name", in: settings).exists(within: 3))
+        return settings
     }
 
     private func machine(of window: XCUIElement) -> String {

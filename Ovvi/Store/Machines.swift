@@ -89,10 +89,8 @@ final class MachineList {
         }
     }
 
-    /// Add Remote Host's or Settings' Add or Save: the name is the target when empty. A new machine opens in a new
-    /// window, which connects; in `pages`, a window with no page yet (the new-window view's Add Machine), it opens
-    /// there.
-    func keep(_ draft: Machine, target: String, in pages: WindowPages? = nil) -> Machine {
+    /// Settings' Add or Save: the name is the target when empty. A new machine opens in a new window, which connects.
+    func keep(_ draft: Machine, target: String) -> Machine {
         var machine = draft
         let name = machine.name.trimmingCharacters(in: .whitespaces)
         machine.name = name.isEmpty ? target : name
@@ -101,16 +99,7 @@ final class MachineList {
             save(machine)
         } else {
             list.append(machine)
-            if let pages, pages.current == nil {
-                pages.machine = machine
-                pages.open("default")
-                pages.opened()
-                if let store = pages.current?.store {
-                    Task { await store.connect(in: pages) }
-                }
-            } else {
-                WindowPages.open(machine: machine, connect: true)
-            }
+            WindowPages.open(machine: machine, connect: true)
         }
         return machine
     }

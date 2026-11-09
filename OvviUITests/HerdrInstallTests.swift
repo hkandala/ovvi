@@ -62,14 +62,18 @@ extension OvviUITests {
             return button.isHittable && now == frame
         }, "\(button.frame)")
         button.click()
-        app.menuItems["Add Remote Host…"].click()
-        let field = element("host.name")
-        XCTAssertTrue(field.exists(within: 3))
+        app.menuItems["Add Machine…"].click()
+        // Settings ▸ Machines' add form; Add opens the machine in a new window, and Settings closes for the test.
+        let settings = settingsWindow
+        let field = element("settings.machine.name", in: settings)
+        XCTAssertTrue(field.exists(within: 5))
         field.click()
         app.typeText(name)
-        element("host.target").click()
+        element("settings.machine.target", in: settings).click()
         app.typeText(target)
-        element("host.save").click()
+        element("settings.machine.save", in: settings).click()
+        settings.buttons[XCUIIdentifierCloseWindow].click()
+        XCTAssertTrue(settings.vanishes(within: 3))
     }
 
     func typePassword(_ password: String = "ovvi-e2e-pw") {

@@ -149,16 +149,11 @@ private struct MachineButton: View {
             // The machine's other sessions, also from here (not found in a remote window).
             Button("Open Session…", systemImage: "plus.square.on.square") { openSession = true }
             Divider()
-            Button("Add Remote Host…", systemImage: "plus") {
-                pages.hostDialog = .new
+            // Settings ▸ Machines, the one place that adds and edits machines.
+            Button("Add Machine…", systemImage: "plus") {
+                SettingsRoute.shared.open(.machines, .machine(MachinePage.new))
             }
-            if !MachineList.shared.list.isEmpty {
-                Menu("Edit Remote Host", systemImage: "pencil") {
-                    ForEach(MachineList.shared.list) { machine in
-                        Button(machine.name) { pages.hostDialog = machine }
-                    }
-                }
-            }
+            Button("Edit Machines…", systemImage: "pencil") { SettingsRoute.shared.open(.machines) }
         } label: {
             Image(systemName: current.icon).fontWeight(.medium)
                 .frame(width: 28, height: 28)

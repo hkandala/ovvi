@@ -343,9 +343,6 @@ private struct WindowContent: View {
         }
         .modifier(CloseDialog(page: page))
         .overlay {
-            if let machine = pages.hostDialog {
-                HostDialog(pages: pages, machine: machine).dialog()
-            }
             // A new question gets a new field.
             if let question = pages.question {
                 AskDialog(question: question, machine: pages.machine).id(question.id).dialog()

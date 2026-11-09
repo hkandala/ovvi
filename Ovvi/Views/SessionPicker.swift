@@ -8,8 +8,13 @@ import SwiftUI
 /// the row that fixes it (Install herdr, Connect).
 struct SessionPicker: View {
     let pages: WindowPages
-    /// Each machine's sessions by id, once read; an error when they could not be.
+    /// Each machine's sessions by id, once read; an error when they could not be. Until then its known ones show.
     @State private var read: [String: Result<[Session], Error>] = [:]
+    /// The machines with no known sessions when the view opened: their rows fade in once they answer.
+    @State private var unknown = Set(([Machine.thisMac] + MachineList.shared.list).map(\.id))
+        .subtracting(KnownSessions.all.keys)
+    /// A machine still reading after 150 ms shows its spinner; a quicker answer shows none.
+    @State private var slow = false
     @State private var fullScreen = false
     @State private var lightsOff = 0
     /// The window's content height: the list gets what the icon, the name and the panel's own rows leave.
@@ -17,6 +22,7 @@ struct SessionPicker: View {
     private var settings = AppSettings()
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(pages: WindowPages) {
         self.pages = pages
@@ -43,6 +49,8 @@ struct SessionPicker: View {
                 maxHeight: min(420, max(120, room - 400)),
                 pinned: 2,
             ) {}
+                .animation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.15),
+                           value: read.keys.filter(unknown.contains).sorted())
                 .padding(8)
                 .frame(width: 440)
                 .floatingGlass(in: .rect(cornerRadius: 14))
@@ -52,14 +60,13 @@ struct SessionPicker: View {
         .padding(.bottom, TitleBar.height)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { room = $0 }
-        .overlay {
-            if let machine = pages.hostDialog {
-                HostDialog(pages: pages, machine: machine).dialog()
-            }
-        }
         .environment(\.look, look)
         // Again for a machine added meanwhile.
         .task(id: machines.map(\.id)) { await readAll() }
+        .task {
+            try? await Task.sleep(for: .milliseconds(150))
+            slow = true
+        }
         .windowChrome(look)
         .background(WindowReader(pages: pages, fullScreen: $fullScreen, lightsOff: $lightsOff))
         .navigationTitle("Ovvi")
@@ -83,6 +90,9 @@ struct SessionPicker: View {
                 let result = await Self.sessions(on: machine)
                 if read[machine.id] == nil {
                     read[machine.id] = result
+                    if case let .success(sessions) = result {
+                        KnownSessions.keep(sessions, of: machine)
+                    }
                 }
             }
         }
@@ -119,7 +129,7 @@ struct SessionPicker: View {
         let sessions = (groups.filter(\.matched) + groups.filter { !$0.matched }).flatMap(\.rows)
         return sessions + [
             FilterList.Item(id: "+add-machine", symbol: "plus.circle", title: "Add Machine…", section: "") {
-                pages.hostDialog = .new
+                SettingsRoute.shared.open(.machines, .machine(MachinePage.new))
             },
             FilterList.Item(id: "+edit-machines", symbol: "gearshape", title: "Edit Machines…", section: "") {
                 SettingsRoute.shared.open(.machines)
@@ -131,28 +141,21 @@ struct SessionPicker: View {
     /// which no session name has.
     private func group(_ machine: Machine, typed: String) -> ([FilterList.Item], Set<String>) {
         let fallback = Self.throwaway ?? "default"
-        switch read[machine.id] {
+        switch read[machine.id] ?? KnownSessions.all[machine.id].map(Result.success) {
         case nil:
-            return ([row(machine, "+reading", machine.icon, "", title: "Reading sessions…", busy: true) {}], [])
+            // The row's place from the first frame, its words and spinner only once the read is slow.
+            var reading = row(
+                machine,
+                "+reading",
+                machine.icon,
+                "",
+                title: slow ? "Reading sessions…" : "",
+                busy: slow,
+            ) {}
+            reading.symbol = slow ? machine.icon : nil
+            return ([reading], [])
         case let .failure(error):
-            let fix = switch error as? HerdrError {
-            case .notFound:
-                row(machine, "+install", "shippingbox", "herdr is not installed", title: "Install herdr") {
-                    pick(fallback, on: machine)
-                    Task { await HerdrInstall.shared.install(on: machine, session: fallback) }
-                }
-            case .disconnected:
-                row(machine, "+connect", "network.slash", "Not connected", title: "Connect") {
-                    pick(fallback, on: machine)
-                    if let store = pages.current?.store {
-                        Task { await store.connect(in: pages) }
-                    }
-                }
-            default:
-                row(machine, "+default", machine.isRemote ? "network.slash" : "exclamationmark.triangle",
-                    error.localizedDescription, title: fallback) { pick(fallback, on: machine) }
-            }
-            return ([fix], [])
+            return ([fix(machine, error, fallback: fallback)], [])
         case let .success(sessions):
             let shown = sessions.filter { Self.throwaway == nil || $0.name.hasPrefix("ovvi-") }
             var rows = (shown.filter(\.running) + shown.filter { !$0.running }).map { session in
@@ -174,6 +177,27 @@ struct SessionPicker: View {
                 rows.append(new)
             }
             return (rows, matched)
+        }
+    }
+
+    /// The row that fixes why the machine's sessions cannot be read.
+    private func fix(_ machine: Machine, _ error: Error, fallback: String) -> FilterList.Item {
+        switch error as? HerdrError {
+        case .notFound:
+            row(machine, "+install", "shippingbox", "herdr is not installed", title: "Install herdr") {
+                pick(fallback, on: machine)
+                Task { await HerdrInstall.shared.install(on: machine, session: fallback) }
+            }
+        case .disconnected:
+            row(machine, "+connect", "network.slash", "Not connected", title: "Connect") {
+                pick(fallback, on: machine)
+                if let store = pages.current?.store {
+                    Task { await store.connect(in: pages) }
+                }
+            }
+        default:
+            row(machine, "+default", machine.isRemote ? "network.slash" : "exclamationmark.triangle",
+                error.localizedDescription, title: fallback) { pick(fallback, on: machine) }
         }
     }
 

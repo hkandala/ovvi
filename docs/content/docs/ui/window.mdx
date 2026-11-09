@@ -12,7 +12,7 @@ description: "Windows, the title row, tab bar, sidebar pages with spaces and the
   restore shows the [new-window view](#new-window): at launch, on File ▸ New
   Window (⌘N), and when the app reopens with no window (a Dock click). A
   window that macOS restores keeps its pages. A window opened for a machine
-  (the machine menu, Add Remote Host) opens that machine's `default`, which
+  (the machine menu, Add Machine) opens that machine's `default`, which
   the user asked for.
 - Two windows on the same machine share the live data of each session. Each
   window keeps its own selection: page, space, tab, keyboard card, zoom
@@ -39,17 +39,21 @@ background, its column centered in the room under the title row:
   that machine and opens it (in a run with `-session`, only for a typed
   `ovvi-` name). A pick opens the session as the window's first
   page; on This Mac a stopped one starts.
-- A machine that is still reading shows "Reading sessions…" with a spinner.
-  Each machine reads on its own and answers within 15 s, whatever the others
+- Each machine's sessions as last listed show from the first frame (kept in
+  memory, from every page's own read too, and in `sessions.json` under the
+  app's caches; a run with `-session` keeps them in memory only), and the
+  machine reads again behind them: its rows change in place. A machine with
+  none known keeps one row's room, empty; after 150 ms it shows "Reading
+  sessions…" with a spinner, so a quick answer shows none, and its rows fade
+  in over 0.15 s once it answers (at once with Reduce Motion). Each machine reads on its own and answers within 15 s, whatever the others
   do; then its row says "No answer within 15 s". A machine whose sessions
   cannot be read shows the row that fixes it: **Install herdr** (a box; it
   opens the page and installs, [Install herdr](/docs/talking-to-herdr#install-herdr)),
   **Connect** (`network.slash`, "Not connected"; it opens the page and asks
   what ssh asks in this window), or `default` with the error (`network.slash`
   on a remote machine, a warning triangle on This Mac).
-- At the list's foot, always in view: **Add Machine…** (the Add Remote Host
-  dialog, in this window; Add opens the machine's `default` in this window and
-  connects) and **Edit Machines…** (Settings ▸ Machines). The list is at most
+- At the list's foot, always in view: **Add Machine…** (Settings ▸ Machines at
+  its add form) and **Edit Machines…** (Settings ▸ Machines). The list is at most
   as tall as the window leaves room for (its height less 400 pt, at least
   120 pt).
 - A window that macOS restores before its pick shows the view again. A run
@@ -106,8 +110,9 @@ Window menu and Mission Control show it.
   laptop when it has an internal battery, else a desktop.
 - The menu lists the machines, each with its icon and name, and a checkmark
   on the current one. Then "Open Session…" (the window's Open Session panel,
-  as ⌥⌘T, for the machine's other sessions), "Add Remote Host…" and, with
-  remote machines in the list, "Edit Remote Host ▸" with each of them
+  as ⌥⌘T, for the machine's other sessions), "Add Machine…" (Settings ▸
+  Machines at its add form) and "Edit Machines…" (Settings ▸ Machines):
+  Settings is the one place that adds and edits machines
   ([Add a machine](/docs/ui/add-a-machine)).
 - Picking another machine brings its window forward (the one used last, when
   there are several); with none open, a new window on it opens with its
@@ -277,8 +282,8 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   whose name or branch matches, and the rows with an agent whose name, agent, space or tab matches, unfolded to
   those agents (a row kept by its branch alone stays folded). A matching worktree also keeps its repository's row.
   With none, the compact empty state says "No matching spaces" (`magnifyingglass`). Archived Sessions has its own
-  search field. The footer has no New Space and no Add Remote Host:
-  the page header has `+`, and the machine menu has Add Remote Host.
+  search field. The footer has no New Space and no Add Machine:
+  the page header has `+`, and the machine menu has Add Machine.
 - **Width.** 300 pt in a new window, from the window's edge to the cards: the rows sit 10 pt in from the window's
   edge, and the 8 pt handle lies over the gap before the cards. Drag the
   handle to resize it between 227 and 480 pt. Each window keeps its own
