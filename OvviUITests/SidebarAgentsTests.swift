@@ -1,8 +1,9 @@
 import XCTest
 
-/// The sidebar's agents (ui/window#sidebar): a workspace's chevron unfolds them, one line each, newest change first,
-/// held still under the pointer; pinned tabs on top; an untitled session's first prompt. Every status comes from
-/// `pane.report_agent` on a throwaway tab, closed after the test (its agent goes with it).
+/// The sidebar's agents (ui/window#sidebar): under each space, unfolded at first, one line each, newest change first,
+/// held still under the pointer, folded by the space's chevron; an untitled session's first prompt; Archived Sessions
+/// and the page dots under the pages. Every status comes from `pane.report_agent` on a throwaway tab, closed after the
+/// test (its agent goes with it).
 extension OvviUITests {
     func testAWorkspaceUnfoldsToItsAgentsByTheirNewestChange() async throws {
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
@@ -20,13 +21,11 @@ extension OvviUITests {
         try await report(docs.pane, "idle")
         let done = docs.pane
 
-        // Folded at first: no agent rows, a chevron on each workspace that runs agents.
+        // Unfolded at first: the agent rows under a chevron on each space that runs agents.
         let rows = [done, blocked, working, idle].map { element("agent.\($0)") }
         XCTAssertTrue(element("fold.w2").exists(within: 3))
-        XCTAssertEqual(element("fold.w2").value as? String, "collapsed")
-        XCTAssertFalse(rows[0].exists)
-        unfold("w2")
-        unfold("w1")
+        XCTAssertEqual(element("fold.w2").value as? String, "expanded")
+        XCTAssertEqual(element("fold.w1").value as? String, "expanded")
         try await expect("each row's state") {
             rows.map { $0.value as? String } == ["Done", "Needs you", "Working", "Idle"]
         }
@@ -51,57 +50,45 @@ extension OvviUITests {
 
         filter("beta", keeps: rows, [true, true, false, false])
         filter("fixer", keeps: rows, [false, false, true, false])
-        // The chevron folds them away again.
-        element("fold.w1").click()
+        // The chevron folds them away, and the fold stays over a relaunch.
+        fold("w1")
         XCTAssertTrue(rows[2].vanishes(within: 2))
         XCTAssertTrue(rows[0].exists)
+        relaunch()
+        XCTAssertTrue(rows[0].exists(within: connect))
+        XCTAssertEqual(element("fold.w1").value as? String, "collapsed")
+        XCTAssertFalse(rows[2].exists)
     }
 
-    /// Pin from the tab's hover button or its menu: the tab's row goes on top of the sidebar, stays over a relaunch and
-    /// a move to another workspace, and shows its tab; Unpin from the row's hover button or the tab's menu.
-    func testAPinnedTabStaysOnTop() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        let (tab, _) = try await newTab("deploy")
-        let pinned = element("pinned.\(tab)")
-        XCTAssertFalse(element("sidebar.pinned").exists)
-        element("tab.\(tab)").hover()
-        element("tab.\(tab).pin").click()
-        XCTAssertTrue(pinned.exists(within: 2))
-        XCTAssertLessThan(pinned.frame.maxY, element("workspace.w1").frame.minY)
-        XCTAssertEqual(pinned.label, "deploy, beta")
-        keepScreenshot("pinned tab")
-        relaunch()
-        XCTAssertTrue(pinned.exists(within: connect))
-        element("workspace.w1").click()
-        XCTAssertTrue(element("tab.\(tab)").vanishes(within: 2))
-        pinned.click()
-        XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, true, within: 2))
-        XCTAssertTrue(pinned.has(\.isSelected, true, within: 2))
-        pinned.hover()
-        element("pinned.\(tab).unpin").click()
-        XCTAssertTrue(pinned.vanishes(within: 2))
-        XCTAssertFalse(element("sidebar.pinned").exists)
-
-        element("tab.\(tab)").rightClick()
-        app.menus.menuItems["Pin Tab"].firstMatch.click()
-        XCTAssertTrue(pinned.exists(within: 2))
-        // Dragged onto alpha's row: herdr gives it a new id, and the pin follows it.
-        let before = try await tabIDs()
-        during(element("tab.\(tab)").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
-               to: element("workspace.w1").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
-        var moved = ""
-        try await expect("the tab in alpha") {
-            moved = try await tabIDs().first { !before.contains($0) && $0.hasPrefix("w1:") } ?? ""
-            return !moved.isEmpty
+    /// With two pages, the dots show under them, then Archived Sessions, which stays put and keeps its fold (it is
+    /// the machine's) as the pages change; open, its search field and menu.
+    func testArchivedSessionsAndTheDotsStayUnderThePages() {
+        XCTAssertTrue(element("workspace.w1").exists(within: connect))
+        let shelf = element("agents.shelf.Archived Sessions")
+        XCTAssertFalse(element("sidebar.dot.\(one)").exists)
+        openPage(two)
+        let dots = [one, two].map { element("sidebar.dot.\($0)") }
+        XCTAssertTrue(dots[1].has(\.isSelected, true, within: 2))
+        XCTAssertLessThan(dots[1].frame.maxY, shelf.frame.minY)
+        let place = shelf.frame
+        if shelf.value as? String == "collapsed" {
+            shelf.click()
         }
-        closeAfter("tab", moved)
-        let movedPin = element("pinned.\(moved)")
-        XCTAssertTrue(movedPin.exists(within: 3))
-        XCTAssertEqual(movedPin.label, "deploy, alpha")
-        XCTAssertFalse(pinned.exists)
-        element("tab.\(moved)").rightClick()
-        app.menus.menuItems["Unpin Tab"].firstMatch.click()
-        XCTAssertTrue(movedPin.vanishes(within: 2))
+        addTeardownBlock { @MainActor [self] in
+            let shelf = element("agents.shelf.Archived Sessions")
+            if shelf.exists, shelf.value as? String == "expanded" {
+                shelf.click()
+            }
+        }
+        XCTAssertTrue(element("agents.archived.search").exists(within: 2))
+        XCTAssertTrue(element("agents.archived.filter").exists)
+        dots[0].click()
+        XCTAssertTrue(until(3) { header == one })
+        XCTAssertEqual(shelf.value as? String, "expanded")
+        XCTAssertTrue(element("agents.archived.search").exists)
+        keepScreenshot("dots and Archived Sessions")
+        shelf.click()
+        XCTAssertTrue(until(2) { shelf.frame == place }, "\(shelf.frame) \(place)")
     }
 
     /// An untitled Claude Code session (its transcript in the tests' fixture home, `-archivedHome`): its row shows its
@@ -133,7 +120,7 @@ extension OvviUITests {
         keepScreenshot("untitled agent's first prompt")
     }
 
-    /// Unfolds the workspace's agents; folds them back after the test (the tests' defaults keep the folds).
+    /// The space's agents shown (spaces start unfolded; a fold from a failed run stays in the tests' defaults).
     func unfold(_ workspace: String) {
         let fold = element("fold.\(workspace)")
         XCTAssertTrue(fold.exists(within: 3))
@@ -141,9 +128,19 @@ extension OvviUITests {
             fold.click()
         }
         XCTAssertTrue(fold.has(\.stringValue, "expanded", within: 2))
+    }
+
+    /// Folds the space's agents; unfolds them again after the test (the tests' defaults keep the folds).
+    func fold(_ workspace: String) {
+        let fold = element("fold.\(workspace)")
+        XCTAssertTrue(fold.exists(within: 3))
+        if fold.value as? String == "expanded" {
+            fold.click()
+        }
+        XCTAssertTrue(fold.has(\.stringValue, "collapsed", within: 2))
         addTeardownBlock { @MainActor [self] in
             let fold = element("fold.\(workspace)")
-            if fold.exists, fold.value as? String == "expanded" {
+            if fold.exists, fold.value as? String == "collapsed" {
                 fold.click()
             }
         }

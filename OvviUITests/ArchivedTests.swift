@@ -82,8 +82,16 @@ extension OvviUITests {
         return shelf
     }
 
-    /// The menu shows Pi's sessions only, then all again.
+    /// The search field keeps the sessions whose title or folder matches, Esc clears it; the menu in it shows Pi's
+    /// sessions only, then all again.
     private func filters(_ claude: XCUIElement, _ piRow: XCUIElement) {
+        let search = element("agents.archived.search")
+        search.click()
+        search.typeText("trip")
+        XCTAssertTrue(claude.vanishes(within: 2))
+        XCTAssertTrue(piRow.exists)
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(claude.exists(within: 2))
         let menu = element("agents.archived.filter")
         menu.click()
         menu.menuItems["Pi"].click()

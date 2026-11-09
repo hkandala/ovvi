@@ -42,8 +42,7 @@ extension OvviUITests {
         // capsules.
         unfold("w1")
         try await scroll(over: element("sidebar").frame, vertical: true)
-        element("fold.w1").click()
-        XCTAssertTrue(element("fold.w1").has(\.stringValue, "collapsed", within: 2))
+        fold("w1")
         try await scroll(over: element("sidebar").frame, vertical: true)
         try await scroll(over: element("tab.w1:t1").frame, vertical: false)
 
