@@ -183,7 +183,7 @@ struct ContentView: View {
             [:]
         for page in pages.list {
             guard let saved = selection[page.id] else { continue }
-            page.floating = saved.floating ?? [:]
+            page.floating = saved.floating
             page.selectedWorkspaceID = saved.workspace
             page.selectedTabIDs = saved.tabs
             // A store another window has loaded settles now; a new one on its first snapshot.
@@ -196,8 +196,7 @@ struct ContentView: View {
     private struct Selection: Codable {
         var workspace: String?
         var tabs: [String: String]
-        /// The floated panes (D50); nil in a selection saved before them.
-        var floating: [String: Bool]?
+        var floating: [String: Bool]
     }
 
     /// The machine: `opening`, else `-machine <id>`, else the saved one. Pages: `-session`, else the saved ones

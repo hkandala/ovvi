@@ -10,8 +10,8 @@ extension UserDefaults {
         ?? .standard
 
     /// Drops the keys of the old sidebars left in the user's defaults: the Agents view's agent pins, Settled fold and
-    /// setting, the pinned tabs, the old Archived folds (per session), and the unfolded spaces (all start unfolded
-    /// now). The app's own defaults only outside a test's config folder: those are the user's.
+    /// setting, the pinned tabs, the old Archived folds (per session), and the unfolded spaces (spaces start
+    /// unfolded). The app's own defaults only outside a test's config folder: those are the user's.
     /// ponytail: runs on every launch; delete once no user runs a build from before phase 57.
     static func dropAgentsView() {
         agents.removeObject(forKey: "agentPins")

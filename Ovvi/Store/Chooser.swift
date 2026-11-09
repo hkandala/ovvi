@@ -133,12 +133,10 @@ extension Chooser.Row {
 
     /// Its identifier's last part: an agent's command, a plugin's id, else its name.
     var id: String {
-        if case let .start(index) = self {
-            Chooser.agents[index].command
-        } else if case let .plugin(id) = self {
-            id
-        } else {
-            labels.name.lowercased()
+        switch self {
+        case let .start(index): Chooser.agents[index].command
+        case let .plugin(id): id
+        case .terminal, .agent: labels.name.lowercased()
         }
     }
 }

@@ -2,10 +2,11 @@ import Foundation
 import HerdrKit
 
 extension Page {
-    /// Resume (ui/window#archived): the agent's own resume line, with Ovvi's flags, in a new pane in the session's
-    /// folder, shown with the keyboard: a new tab after the selected tab of the workspace whose folder holds it (else a
-    /// new workspace there), or `beside` the keyboard card. A session whose folder is gone resumes nowhere, as Claude
-    /// Code refuses one from another folder; but pi's, which keeps its folder in its file, in the home folder.
+    /// Resume (ui/window#archived-sessions): the agent's own resume line, with Ovvi's flags, in a new pane in the
+    /// session's folder, shown with the keyboard: a new tab after the selected tab of the workspace whose folder holds
+    /// it (else a new workspace there), or `beside` the keyboard card. A session whose folder is gone resumes nowhere,
+    /// as Claude Code refuses one from another folder; but pi's, which keeps its folder in its file, in the home
+    /// folder.
     /// Once: a second click before herdr reports the session would start a second agent on it.
     func resume(_ session: ClosedSession, beside: Bool) {
         guard let agent = Chooser.agents.first(where: { $0.command == session.agent }),

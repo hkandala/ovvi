@@ -42,7 +42,7 @@ extension Machine {
     /// By target, as the sockets are: two machines of one target share a master.
     @MainActor private static var execs: [String: SSHExec] = [:]
 
-    /// The app quits: each remote machine's master ends (machines#macos).
+    /// The app quits: each remote machine's master ends (machines#the-ssh-connection).
     @MainActor static func disconnectAll() {
         execs.values.forEach { $0.disconnect() }
     }

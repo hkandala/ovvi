@@ -217,7 +217,7 @@ extension HostStore {
     /// 0.8 s until only its shell runs. ponytail: a slower startup (a cold nvm) still asks, naming what it runs.
     /// `placeholders`: browser panes, whose placeholder runs no program (any process can label a pane, so only the
     /// placeholder counts).
-    func programs(_ paneIDs: [String], starting: Set<String>, placeholders: Set<String> = [],
+    func programs(_ paneIDs: [String], starting: Set<String>, placeholders: Set<String>,
                   _ client: any Multiplexer) async -> Set<String>
     {
         await withTaskGroup(of: String?.self) { group in
