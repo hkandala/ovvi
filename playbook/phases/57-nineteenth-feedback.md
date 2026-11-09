@@ -781,6 +781,17 @@ side.
   pinch (2.6x), 68 px after a pinch on the old build. CI 42559293377 green (3 tests).
 - **For the user.** Pinch a browser card's page and two-finger double tap a paragraph (Smart zoom on in System
   Settings ▸ Trackpad); ⌘0 undoes it, also in a floating browser window.
+- **Cause (gestures into the user's Ovvi).** The scripts that post events (pinch, swipe, drag, press, file and text
+  drags) checked only that a window named Ovvi was under the point, which the user's own Ovvi passes. Now each refuses
+  unless the front window below the Dock's level at every point is the tests' app's; the helper passes its pid (the
+  newest Ovvi on one of the helper's sessions, as usage, sample, heap and web-kill now find it). A dry run with the
+  user's Ovvi in front refused all four scripts before any event. macOS's UI-test overlay (AutomationModeUI) and, on
+  CI, a full-screen Dock window sit over the app and let events through, so only levels below the Dock count.
+- **Cause (the floating restore test).** newTab waited for herdr's tab, not for the space's row; this test launches the
+  app itself and asked before the window connected. Under that: its first launch restores whatever windows the last
+  Ovvi saved (the bundle id's saved state is shared by every Ovvi on the Mac and by earlier tests, also ones launched
+  with -ApplePersistenceIgnoreState), each as its own window on -session, so the row showed twice. newTab now waits
+  for the row; the two restore tests start from no saved windows (forget-windows, CI only) and skip on a Mac.
 
 ### Track B, round 4 (items 32–37, 41)
 
