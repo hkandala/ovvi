@@ -49,15 +49,17 @@ Problems that came back across phases, and the rule that stops each. How we work
   `XCUIApplication(bundleIdentifier:)`) once reached the user's own Ovvi; keep new keys on the bundle id. The
   executable is `Ovvi` in both: never find the tests' app by its process name (`pgrep Ovvi`), find it by its
   session. An old Debug build on disk keeps its Launch Services registration (and `ovvi://`) until it is deleted
-  or unregistered (`lsregister -u`). Tests still share defaults and saved windows with each other and with dev runs: pin settings with
-  launch arguments, reset them in teardown, launch with `-ApplePersistenceIgnoreState` (which also saves no windows at ⌘Q). Saved windows live in `$TMPDIR/dev.ovvi.app.debug.savedState`: a restore test clears them first
-  (`forget-windows`).
+  or unregistered (`lsregister -u`). Tests still share defaults and saved windows with each other and with dev
+  runs: pin settings with launch arguments, reset them in teardown, launch with `-ApplePersistenceIgnoreState`
+  (which also saves no windows at ⌘Q). Saved windows live in `$TMPDIR/dev.ovvi.app.debug.savedState`: a restore
+  test clears them first (`forget-windows`).
 - **The argument domain drops a value it cannot read as a property list** (`-machines []`, any JSON): read such
   arguments from `ProcessInfo.arguments`. The machine list's guard read the domain, so a test launched without
   `-session` loaded the user's machines, and the new-window view tried their SSH (phase 57).
 - **Every app with the installed bundle id shares its saved windows and defaults.** A Release build run by hand (a
   measure) quit with its throwaway session's window, and the user's next launch restored that window instead of
-  theirs. `make app` builds `dev.ovvi.app.release`; only `make install` and `make dmg` build `dev.ovvi.app`.
+  theirs. `make app` builds `dev.ovvi.app.release` (scheme `ovvi-release://`); only `make install` and `make dmg`
+  build `dev.ovvi.app`. A measure still shares `~/.config/ovvi`: pass `-configFolder`.
 - **Each test restores what it changes** (defaults, herdr focus, the pointer, leftover sessions) and reads
   fixture ids from herdr instead of assuming them; otherwise it passes alone and fails in its shard.
 - **Convert a screenshot to sRGB before you read its pixels.** Screenshots come in the display's profile

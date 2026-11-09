@@ -85,11 +85,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         return menu
     }
 
-    /// `ovvi://` URLs (`ovvi-dev://`, the scheme a Debug build claims, so it never takes the installed app's), and
-    /// folders dropped on the Dock icon (WindowPages). With no window (one that starts the app opens none:
-    /// `handlesExternalEvents(matching: [])`), a new one takes them once its page is live.
+    /// `ovvi://` URLs (`ovvi-dev://` and `ovvi-release://`, the schemes Debug and measure builds claim, so neither
+    /// takes the installed app's), and folders dropped on the Dock icon (WindowPages). With no window (one that starts
+    /// the app opens none: `handlesExternalEvents(matching: [])`), a new one takes them once its page is live.
     func application(_: NSApplication, open urls: [URL]) {
-        urls.filter { ["ovvi", "ovvi-dev"].contains($0.scheme) }.forEach(WindowPages.float)
+        urls.filter { ["ovvi", "ovvi-dev", "ovvi-release"].contains($0.scheme) }.forEach(WindowPages.float)
         // Files only: `ovvi://float/?…` has a directory path too ("/").
         let folders = urls.filter { $0.isFileURL && $0.hasDirectoryPath }
         if !folders.isEmpty {

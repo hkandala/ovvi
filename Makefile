@@ -110,9 +110,12 @@ run: build
 # Only install and dmg build the installed app's bundle id: a Release build run by hand (a measure) with it shared the
 # user's saved windows and defaults, and its windows came back at the user's next launch.
 BUNDLE_ID ?= dev.ovvi.app.release
+URL_SCHEME ?= ovvi-release
 install dmg: BUNDLE_ID = dev.ovvi.app
+install dmg: URL_SCHEME = ovvi
 app: web
-	$(XCODEBUILD) $(MAC) -configuration Release PRODUCT_BUNDLE_IDENTIFIER=$(BUNDLE_ID) build $(NOWARN) $(BEAUTIFY)
+	$(XCODEBUILD) $(MAC) -configuration Release PRODUCT_BUNDLE_IDENTIFIER=$(BUNDLE_ID) OVVI_URL_SCHEME=$(URL_SCHEME) \
+		build $(NOWARN) $(BEAUTIFY)
 	@echo "$(DERIVED_DATA)/Build/Products/Release/Ovvi.app"
 
 # Also links the ovvi skill for pi and Codex (~/.agents/skills) and Claude Code (~/.claude/skills), where no ovvi
