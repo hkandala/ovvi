@@ -4,8 +4,8 @@ import XCTest
 /// the Mac, an agent in a new pane, Relaunch with Chat, the Chat | TUI switch and Balance Splits, asked from a pane.
 extension OvviUITests {
     /// A split beside the asking pane, then a tab right after its tab: each shell gets Claude Code's line with Ovvi's
-    /// flags, the answer comes once it is typed, and the keyboard and the selected tab stay. CI only past the errors: a
-    /// new pane's shell has no stand-in and runs the real `claude` when there is one, and CI has none.
+    /// flags, the answer comes once it is typed, and the keyboard and the selected tab stay. Past the errors only with
+    /// no `claude` or the stand-in (CI puts it on the login shell's PATH): a new pane's shell would start a real one.
     func testAgentStartsAnAgentWithChatBesideThePane() async throws {
         let before = try await tabIDs()
         closeNew("tab", besides: before)
@@ -18,9 +18,10 @@ extension OvviUITests {
         try await run("\(ovvi) agent nobody --beside w9:p9", in: pane, "nobody", 1,
                       "ovvi: no agent nobody; there are claude")
         try await run("\(ovvi) agent claude --replace w9:p9", in: pane, "replace", 2, "ovvi: --replace takes")
-        try await send("command -v claude >/dev/null; echo installed-$((6*7))-$?\r", to: pane)
-        try await waitFor(pane) { $0.contains("\ninstalled-42-") }
-        if try await read(pane).contains("\ninstalled-42-0") {
+        try await send("case \"$(command -v claude)\" in ''|*/Fixtures/agents/*) echo claude-$((6*7))-safe;; "
+            + "*) echo claude-$((6*7))-real;; esac\r", to: pane)
+        try await waitFor(pane) { $0.contains("\nclaude-42-") }
+        if try await read(pane).contains("\nclaude-42-real") {
             throw XCTSkip("this Mac has claude, which the new pane would start")
         }
 
