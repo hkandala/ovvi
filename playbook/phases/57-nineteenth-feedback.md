@@ -1208,4 +1208,10 @@ you did, no need of reverting them".
   SwiftUI's hierarchical styles draw fuller on the glass than AppKit's label colors (white 100/40/27 % in dark, black
   100/42/31 % in light, measured), so the rows use those. Left: 1 px (0.5 pt) on some symbols and the keycaps' glyphs,
   and the drawn glass is close to, not the same as, live glass.
+- **Review.** A pooled row forgot the pointer, headers and gaps lit the row, every update scrolled back to the light,
+  the header sat inside the row's button for VoiceOver, Increase Contrast was lost, and new rows drew 2× tiles on a
+  1× screen: all fixed before CI.
+- **Runs.** CI 42609386222: 31 palette, panel, menu and stress tests green. CI's Debug build, XCUITest attached:
+  testPanelsAndSwitchesReactAtOnce's first letter 172 → 32 ms and ⌫ 121 → 20 ms; the stress session's first letter
+  372 → 56 ms and its slowest ⌫ 575 → 51 ms.
 - **For the user.** With Raycast or another accessibility app running, open ⌘K and type: each key should draw at once.
