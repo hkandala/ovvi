@@ -271,6 +271,9 @@ extension OvviUITests {
         pageText("ovvi-page-one").click()
         XCTAssertTrue(element("tab.\(tab)").has(\.label, "Browser One", within: 3))
         XCTAssertTrue(twoRows(pane, title: "One", above: "browser.\(pane).address"))
+        // The page 11 pt under Back, as in a floating window.
+        let back = element("browser.\(pane).back").frame
+        XCTAssertEqual(element("browser.\(pane)").frame.minY - back.maxY, 11, accuracy: 1, "\(back)")
         // An agent changes the address with the skill's commands: a rename, then a metadata token so Ovvi reads the
         // layout again (a rename sends no event). The card loads it as a new page of its history.
         let two = page.replacing("one.html", with: "two.html")

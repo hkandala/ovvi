@@ -10,8 +10,8 @@ struct PaneCard: View {
     static let row: CGFloat = 32
     /// A floating window's browser or plugin card: room above its row, which sits right under the title row. Its 22 pt
     /// buttons, centered in the 36 pt row, then sit as far from the card's top edge as from its left (11 pt), and as
-    /// far from what is under the row: the browser's page after as much room again, a plugin's page after its own
-    /// 4 pt at its top.
+    /// far from what is under the row: the browser's page after as much room again (in a pane too), a plugin's page
+    /// after its own 4 pt at its top.
     static let floatingTop: CGFloat = 4
     let id: String
     let page: Page

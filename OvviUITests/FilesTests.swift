@@ -18,6 +18,9 @@ extension OvviUITests {
 
         let tree = element("files.\(card).page")
         XCTAssertTrue(row("a.txt", in: tree).exists(within: 10))
+        // The first row 11 pt under Back, as in a floating window.
+        let back = element("pane.\(card).go-back").frame
+        XCTAssertEqual(row("..", in: tree).frame.minY - back.maxY, 11, accuracy: 1, "\(back)")
         XCTAssertTrue(row("build", in: tree).exists)
         XCTAssertFalse(row("main.swift", in: tree).exists)
         // The first row, `..`, has the keyboard unseen: the first ↓ goes to it, not to the row after it.
@@ -168,6 +171,9 @@ extension OvviUITests {
         let card = try await newCard("ovvi:explorer#e2efil \(root)/", cwd: repo).pane
         let tree = element("files.\(card).page")
         XCTAssertTrue(row("a.txt", in: tree).exists(within: 10))
+        // The first row 11 pt under Back, as in a floating window.
+        let back = element("pane.\(card).go-back").frame
+        XCTAssertEqual(row("..", in: tree).frame.minY - back.maxY, 11, accuracy: 1, "\(back)")
         XCTAssertFalse(row(".gitignore", in: tree).exists)
 
         // `..`, build, src, a.txt: the first row has the keyboard, a turn after the page's focus. The first ↑ goes to

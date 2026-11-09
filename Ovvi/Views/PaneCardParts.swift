@@ -41,8 +41,13 @@ extension Page {
         }
     }
 
+    /// Under a browser's or a plugin's second row, the room its buttons have under them in a floating window: the
+    /// rest of that window's 36 pt row, and under the browser's toolbar the 4 pt a plugin page leaves at its top.
     func headerHeight(_ pane: HostStore.Pane?) -> CGFloat {
-        PaneCard.header + (twoRows(pane) ? PaneCard.row : 0)
+        guard let pane, twoRows(pane) else { return PaneCard.header }
+        guard pane.plugin != nil else { return PaneCard.header + PaneCard.row }
+        let rest = (PaneCard.header - PaneCard.row) / 2
+        return PaneCard.header + PaneCard.row + rest + (pane.browser != nil ? PaneCard.floatingTop : 0)
     }
 }
 
