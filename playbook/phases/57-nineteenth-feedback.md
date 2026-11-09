@@ -637,3 +637,53 @@ deleted; ⌘-click and ⌥-click on it opened nothing.
 
 - The test slows upload-pack by 3 s to see the spinner. It was red on the old code ("Information" is not "In
   progress"), and green on the new code.
+
+## Round 4 (items 31–43)
+
+Screenshots in `.build/fb57/`: `r4-6.52.26.png` (floating Git diff), `r4-6.52.37.png` (floating Git history),
+`r4-6.53.14.png` (floating File Explorer), `r4-6.54.01.png` (floating browser): the space above the top bar is now right,
+the space under it is not the same. `r4-6.58.31.png`: a chat bubble whose text sits closer to its top edge than to its
+side.
+
+31. "right now when no window is opened in ovvi, we still connect to default mac session by default, we shouldn't
+    automatically connect to any session by default, on cmd+n or opening ovvi with all herdr installed and everything
+    should open the new session page, and let's revamp the open session window, it shouldn't say open session, it
+    should have ovvi logo and name with options for session or add or edit machines etc stuff, also new session window
+    should be maximised by default and default window should be maximised by default as well. think through what should
+    go through new window view, it should be minimal but should have quick acees things so user can connect to a
+    session or machine quickly" (Track A).
+32. "can we archived sessions search, like search by title is fine, when we expand archived sessions show a search
+    below the title and the list below should be updated based on the search, also for archived sessions as well can
+    we add a border around similar to inactive workspaces, no need of glass effect though, just the current design we
+    have for inactive workspaces which are expanded. also the filter we have for archived sessions right now where we
+    filter by agents, let's keep that within the new search bar." (Track B).
+33. "let's increase spacing a bit more between workspaces, they are bit too close to me" (Track B).
+34. "let's expand all spaces showing their agents in sidebar by default" (Track B).
+35. "let's actually drop pinned tabs feature for now, its not fitting well overall in the sidebar i feel" (Track B).
+36. "for agent tabs with no title and grabs user prompt as title, on tab hover it shows multiple lines, let's limit the
+    title to single please, no multiple lines needed." (Track B).
+37. "for the workpaces in sidebar, lets show the subtle border even when the agents things are not expanded, it looks
+    weird with few having borders and few not having, so basically add borders to all and increase spacing a bit"
+    (Track B).
+38. "let's remove the shortcut keys we show on tabs and worskpaces on holding cmd or ctrl+command, its bit distracting
+    and add very less value i feel" (Track E).
+39. "one more thing i noticed with browser plugin, i cannot zoom in the page using trackpad pinch and zoom gestures, in
+    regular browser, you can pinch and zoom a page which basically maginfies the page, not increasing font one, just
+    regular magnify zooming into part of page, chromes does that, can we introduce something like that with our
+    browser plugin?" (Track D).
+40. "and with floating panes, we are lackign symmetry with upper padding and lower padding in mostly all plugins, upper
+    padding is good now, but equivalent lower one should be there, you are lacking the attention to detail, check these
+    screenshots and improve: <r4-6.52.26, 6.52.37, 6.53.14, 6.54.01>, and similarly for chat view as well:
+    <r4-6.58.31>, top paddding is less here" (Track E).
+41. "and one more improvements when multiple sessions are there in a window, let's keep archived sessions stick like
+    filter, as it will be same for a device and it won't change with sessions, and above archived sessions let's bring
+    back the dots indicating which session we are on which we removed it." (Track B).
+42. "and one more thing libghostty 1.0 has released: https://mitchellh.com/writing/libghostty-1-0, let's upgrade to use
+    it, also make sure what flags to use etc, and any improvements that we can take from altest upgrade etc" (Track N,
+    new).
+43. "and finally now that we added many features, scrapped few more featurees etc, lets try to revisit all code with
+    one agent, goal is to make sure the code is clean and doesn't have traces of old code or unnecessary complexities
+    from the old code, simplify where possible, cleanup unnecessary comments, comments are needed only when something
+    cannot be explained by code and needs there to avoid confusion, let's avoid random unnecessary comments or
+    unnecessary or weird abstractions and once all done, do a full ci runs and make sure everything is good" (Track O,
+    new, after every other track lands; then the phase's full runs).
