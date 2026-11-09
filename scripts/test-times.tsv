@@ -108,7 +108,6 @@
 18	testPickingAnAgentStartsItBehindTheLoader
 18	testSecondShortcuts
 17	testACodexChatOnARemoteMachine
-17	testASwitchToALongChatBuildsOnlyItsNewestRows
 17	testCommandDSplitsInTheKeyWindowOnly
 17	testFileExplorerKeysHiddenFilesAndFind
 17	testGlassCardsHaveABrighterTopRim

@@ -5,7 +5,7 @@ import XCTest
 /// while a busy one does (the e2e helper's `usage`, kept in the result bundle and printed).
 extension OvviUITests {
     func testMemoryAndCPUOverManyTabs() async throws {
-        // The working dots move, as on a Mac without Reduce Motion.
+        // Motion on, as on a Mac without Reduce Motion (CI has it on).
         relaunch(nil, ["-forceMotion", "YES"])
         let (tabs, _) = try await newWorkspace("usage", tabs: 6)
         var panes: [[String]] = []
@@ -36,8 +36,8 @@ extension OvviUITests {
         }
         app.typeKey("1", modifierFlags: .command)
         drawn(panes[0])
-        // Every card shown keeps its herdr run, up to 16 out of view (D46): the 12 here, t1's 3 and w2's 1
-        // (one more while a run ends, a few less is still past the old 4).
+        // Every card shown keeps its herdr run (D46): the 12 here, t1's 3 and w2's 1 (one more while a run ends; a
+        // few less still shows they are kept).
         let quiet = try await measure("quiet tab")
         XCTAssertTrue((13 ... 17).contains(helpers(quiet)), quiet)
         app.typeKey("6", modifierFlags: .command)

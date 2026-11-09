@@ -116,8 +116,8 @@ extension OvviUITests {
         try await swipe(sidebar, until: header, \.stringValue, two)
     }
 
-    /// With three sessions, the page a swipe lands on shows its rows, in the sidebar, at rest: from 8c524dd a page not
-    /// laid out took no room, so every page but the first showed blank once a swipe settled.
+    /// With three sessions, the page a swipe lands on shows its rows, in the sidebar, at rest: a page not laid out
+    /// takes no room, and would show blank once a swipe settled.
     func testSwipedSessionPagesShowTheirRows() async throws {
         let five = try env("OVVI_SESSION5")
         try await running(five)

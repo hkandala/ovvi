@@ -1,10 +1,9 @@
-// A two-finger trackpad swipe at a known speed, for the session swipe test: the pointer to x y (screen
-// points, top left), then a scroll that begins, moves `step` pt sideways `steps` times 16 ms apart and ends, then
-// momentum that decays for about 0.6 s, as a trackpad sends; with `pause` ms, the fingers stop that long before they
-// lift, and an empty momentum follows at once, as a trackpad sends. Posted to the HID system: the sandboxed UI test
-// runner cannot post events, and the app takes scrolls posted to its pid without scrolling. Only over the
-// tests' app's window (`onlyIntoTheApp`). With `vertical` 1, the scroll goes up or down instead, for the
-// stress test's frame meter. With `option` 1, ⌥ is held.
+// A two-finger trackpad swipe at a known speed: the pointer to x y (screen points, top left), then a scroll that
+// begins, moves `step` pt sideways `steps` times 16 ms apart and ends, then momentum that decays for about 0.6 s, as a
+// trackpad sends; with `pause` ms, the fingers stop that long before they lift, and an empty momentum follows at once,
+// as a trackpad sends. Posted to the HID system: the sandboxed UI test runner cannot post events, and the app takes
+// scrolls posted to its pid without scrolling. Only over the tests' app's window (`onlyIntoTheApp`). With `vertical`
+// 1, the scroll goes up or down instead. With `option` 1, ⌥ is held.
 // Usage: swift scripts/swipe.swift <x> <y> <step> <steps> [pause [vertical [option]]]
 import CoreGraphics
 import Foundation

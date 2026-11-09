@@ -11,7 +11,10 @@ Website and docs: [ovvi.dev](https://ovvi.dev).
 - Sessions of This Mac and of remote machines over SSH, each session a page in the sidebar; several windows.
 - Spaces with their git branch, tabs in the title row, panes laid out as herdr splits them.
 - Split, zoom, resize, swap and drag panes; move them to another tab or space.
-- The Agents view: every agent of a session and who needs you, with notifications and a Dock badge.
+- Each space's agents in the sidebar and who needs you, with notifications and a Dock badge; Archived Sessions
+  resumes closed agent sessions.
+- A chat view for Claude Code, Codex, Pi and OpenCode; browser, File Explorer and Git cards; plugins.
+- A Settings window (⌘,).
 - The overview of every tab, and panes that float in windows of their own.
 - Drop files on a pane to paste their paths (copied over first on a remote machine).
 - Find in a pane, ⌘-click links, the command palette (⌘K), and keys for everything.
@@ -24,8 +27,8 @@ Website and docs: [ovvi.dev](https://ovvi.dev).
 - Perl on remote machines (the SSH relay is a small Perl script; nearly every Unix has it).
 - Dependencies: libghostty-spm (a Swift package at an exact pin, which brings DisplayLink) and the system
   `ssh`; nothing else ships in the app.
-- To build: Xcode 27 and Homebrew (`make setup` installs SwiftFormat, SwiftLint and xcbeautify from the
-  `Brewfile`). The docs site needs Node 22 and pnpm 10.
+- To build: Xcode 27 and Homebrew (`make setup` installs SwiftFormat, SwiftLint, xcbeautify and Node from
+  the `Brewfile`). The docs site needs Node 22 and pnpm 10.
 
 ## Build and install
 
@@ -49,9 +52,8 @@ keyboard shortcuts ([all of them](https://ovvi.dev/docs/ui/theme-and-accessibili
 
 ## Future work
 
-Bundling herdr in the app, an iPhone and iPad app, a chat view for agents, image paste, plugins and other
-pane kinds, floating status pills, a Settings window. Their designs are in
-[Future work](docs/content/docs/future-work/index.mdx).
+Bundling herdr in the app, an iPhone and iPad app, image paste, floating status pills, a changes panel. Their designs
+are in [Future work](docs/content/docs/future-work/index.mdx).
 
 ## Links
 

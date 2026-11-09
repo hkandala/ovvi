@@ -258,8 +258,8 @@ extension OvviUITests {
         return filter
     }
 
-    /// Whether the element draws mostly red: a destructive button's fill, with the lit row's accent at its corners.
-    /// Mostly red, by its pixels: a destructive button (XCUITest reads no color). An alert's fades in: wait.
+    /// Mostly red, by its pixels (XCUITest reads no color): a destructive button's fill, with the lit row's accent at
+    /// its corners. An alert's fades in: wait.
     func isRed(_ element: XCUIElement) -> Bool {
         let pixels = Self.pixels(element.screenshot().image)
         let count = max(pixels.count / 4, 1)

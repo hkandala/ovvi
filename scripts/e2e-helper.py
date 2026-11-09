@@ -72,11 +72,9 @@ sessions, command = sys.argv[1:split], sys.argv[split + 1:]
 folders = []
 # Each session's drag that /press holds down until /release.
 held = {}
-# The tests' config folder (OvviUITests.noConfig): a launch from here installs the default plugins there, never in a
-# Debug build's ~/.config/ovvi-dev.
-NO_CONFIG = "/tmp/ovvi-e2e-no-config"
-# The tests' config folder and agents' stores, never the user's (OvviUITests.noConfig).
-ISOLATED = ["-configFolder", NO_CONFIG, "-archivedHome", "/tmp/ovvi-e2e-archived"]
+# The tests' config folder and agents' stores, never the user's (OvviUITests.noConfig): a launch from here installs
+# the default plugins there, never in a Debug build's ~/.config/ovvi-dev.
+ISOLATED = ["-configFolder", "/tmp/ovvi-e2e-no-config", "-archivedHome", "/tmp/ovvi-e2e-archived"]
 # Compiled once, beside the app's build: `swift` interpreting the script again took up to 10 s a swipe on CI.
 tools = tempfile.mkdtemp()
 folders.append(tools)

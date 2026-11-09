@@ -28,7 +28,6 @@ extension OvviUITests {
         let right = try await split(pane)
         try await fill(right)
         try await expectText([pane, right], "split")
-        // The overview's live tiles give the terminals back to their cards in the kept page under it.
         app.typeKey("o", modifierFlags: [.command, .control])
         XCTAssertTrue(element("overview").exists(within: 5))
         app.typeKey(.escape, modifierFlags: [])
@@ -57,8 +56,8 @@ extension OvviUITests {
                 grids.append(terminal.stringValue)
             }
         }
-        // The check that tells this from a resize at every frame: herdr's one resize (the winch count) came with the
-        // old 100 ms settle too. A stall over 150 ms inside the slide would give a real third grid.
+        // The check that tells this from a resize at every frame: herdr's one resize (the winch count) comes with a
+        // 100 ms settle too. A stall over 150 ms inside the slide would give a real third grid.
         XCTAssertEqual(grids.count, 2, "grids while the sidebar slid: \(grids)")
         // bash prints it after its prompt, on the prompt's line.
         let winches = { (screen: String) in screen.split(separator: "\n").count { $0.hasSuffix("winch") } }
@@ -166,8 +165,8 @@ extension OvviUITests {
         }
     }
 
-    /// A visited card keeps its stream and its surface out of view: back after more tabs than
-    /// the old cap of 4, it shows at once, never loading, with what its program printed meanwhile.
+    /// A visited card keeps its stream and its surface out of view: back after 6 other tabs,
+    /// it shows at once, never loading, with what its program printed meanwhile.
     func testAVisitedCardComesBackAtOnce() async throws {
         let terminal = element("terminal.w1:p1")
         XCTAssertTrue(terminal.exists(within: connect))

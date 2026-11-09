@@ -105,9 +105,8 @@ extension OvviUITests {
     }
 
     /// Quick ⌘T three times, then quick ⌘W: each closes the shown tab and goes to the one used before it, one step
-    /// back each time, while the new tabs are still stand-ins or their shells start. The old code lost a
-    /// stand-in from the history once herdr's tab took its place, and waited for a starting shell, so it jumped back
-    /// to the first tab.
+    /// back each time, while the new tabs are still stand-ins or their shells start (a stand-in keeps its place in
+    /// the history once herdr's tab takes it, and a starting shell holds up no close).
     func testQuickNewTabsThenClosesStepBackOneTabEach() async throws {
         let before = try await tabIDs()
         closeNew("tab", besides: before)
@@ -233,8 +232,7 @@ extension OvviUITests {
         XCTAssertEqual(first.frame.maxX + 1, second.frame.minX, "\(first.frame) \(second.frame)")
     }
 
-    /// A tab's "claude needs you" stays on its session's tab: session two's w1:t1 has the same id, and its capsule
-    /// showed the other session's announcement.
+    /// A tab's "claude needs you" stays on its session's tab: session two's w1:t1 has the same id.
     func testAnnouncementStaysInItsSession() async throws {
         XCTAssertTrue(element("tab.w1:t2").exists(within: connect))
         let created = try await Self.call(two, "tab.create", ["workspace_id": "w1", "label": "delta", "cwd": "/tmp",
@@ -263,9 +261,9 @@ extension OvviUITests {
 }
 
 extension OvviUITests {
-    /// A workspace switch makes only the capsules near the row's view, whatever its tab count (item 39): of 24 tabs, at
+    /// A workspace switch makes only the capsules near the row's view, whatever its tab count: of 24 tabs, at
     /// most the ones that fit the row twice over (SwiftUI's lazy stack makes a view's width ahead), with none made
-    /// after it settles. The bar made all 24 before.
+    /// after it settles.
     func testAWorkspaceSwitchMakesOnlyTheCapsulesInView() async throws {
         relaunch(one, ["-recordMotion", "YES"])
         let tabs = try await newWorkspace("many", tabs: 24).tabs

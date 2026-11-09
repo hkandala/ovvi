@@ -101,8 +101,7 @@ e2e: web
 		$(if $(ONLY),$(addprefix -only-testing:,$(subst $(comma), ,$(ONLY))),$(addprefix -skip-testing:OvviUITests/OvviUITests/,$(ON_DEMAND))) \
 		test $(BEAUTIFY)
 
-run: web
-	$(XCODEBUILD) $(MAC) build $(NOWARN) $(BEAUTIFY)
+run: build
 	open "$(DERIVED_DATA)/Build/Products/Debug/Ovvi Dev.app" $(if $(SESSION),--args -session $(SESSION))
 
 # A Release Ovvi.app to copy into ~/Applications, and a disk image of it. Ad-hoc signed: fine on this Mac;

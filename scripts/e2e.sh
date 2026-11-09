@@ -10,7 +10,7 @@ unset "${!HERDR_@}"
 id=$(openssl rand -hex 3)
 one=ovvi-e2e-$id-a
 two=ovvi-e2e-$id-b
-# Listed but stopped, for "Show stopped".
+# Listed but stopped, for the Stopped rows of Open Session and a new window.
 three=ovvi-e2e-$id-c
 # Made by the app's New Session.
 four=ovvi-e2e-$id-d

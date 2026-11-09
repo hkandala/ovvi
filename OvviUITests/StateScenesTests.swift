@@ -191,6 +191,5 @@ extension OvviUITests {
         keepScreenshot("\(look) \(name)", of: main.exists ? main : nil)
     }
 
-    /// The tests' fixtures folder.
     static let fixtures = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "Fixtures").path
 }
