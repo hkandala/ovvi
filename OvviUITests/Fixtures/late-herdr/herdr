@@ -1,0 +1,4 @@
+#!/bin/sh
+# The real herdr ($OVVI_E2E_HERDR), whose `session list` answers 2 s late, as over a slow link.
+case "$*" in *"session list"*) sleep 2 ;; esac
+exec "$OVVI_E2E_HERDR" "$@"

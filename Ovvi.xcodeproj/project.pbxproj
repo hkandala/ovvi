@@ -47,6 +47,7 @@
 				"Fixtures/agents/login-shell",
 				Fixtures/agents/opencode,
 				Fixtures/agents/pi,
+				"Fixtures/late-herdr/herdr",
 				"Fixtures/no-herdr/install",
 				"Fixtures/no-herdr/login-shell",
 				"Fixtures/slow-herdr/herdr",

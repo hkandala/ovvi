@@ -10,9 +10,6 @@ struct SessionPicker: View {
     let pages: WindowPages
     /// Each machine's sessions by id, once read; an error when they could not be. Until then its known ones show.
     @State private var read: [String: Result<[Session], Error>] = [:]
-    /// The machines with no known sessions when the view opened: their rows fade in once they answer.
-    @State private var unknown = Set(([Machine.thisMac] + MachineList.shared.list).map(\.id))
-        .subtracting(KnownSessions.all.keys)
     /// A machine still reading after 150 ms shows its spinner; a quicker answer shows none.
     @State private var slow = false
     @State private var fullScreen = false
@@ -22,7 +19,6 @@ struct SessionPicker: View {
     private var settings = AppSettings()
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(pages: WindowPages) {
         self.pages = pages
@@ -46,11 +42,11 @@ struct SessionPicker: View {
                 prompt: "Find a session",
                 name: "picker",
                 items: items,
+                // Not on a machine's empty row while it reads: no lit bar that turns into its sessions.
+                start: items("").firstIndex { !$0.title.isEmpty } ?? 0,
                 maxHeight: min(420, max(120, room - 400)),
                 pinned: 2,
             ) {}
-                .animation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.15),
-                           value: read.keys.filter(unknown.contains).sorted())
                 .padding(8)
                 .frame(width: 440)
                 .floatingGlass(in: .rect(cornerRadius: 14))
@@ -90,8 +86,10 @@ struct SessionPicker: View {
                 let result = await Self.sessions(on: machine)
                 if read[machine.id] == nil {
                     read[machine.id] = result
-                    if case let .success(sessions) = result {
-                        KnownSessions.keep(sessions, of: machine)
+                    switch result {
+                    case let .success(sessions): KnownSessions.keep(sessions, of: machine)
+                    case .failure(HerdrError.disconnected): KnownSessions.forget(machine)
+                    case .failure: break
                     }
                 }
             }
@@ -141,7 +139,7 @@ struct SessionPicker: View {
     /// which no session name has.
     private func group(_ machine: Machine, typed: String) -> ([FilterList.Item], Set<String>) {
         let fallback = Self.throwaway ?? "default"
-        switch read[machine.id] ?? KnownSessions.all[machine.id].map(Result.success) {
+        switch read[machine.id] ?? KnownSessions.of(machine).map(Result.success) {
         case nil:
             // The row's place from the first frame, its words and spinner only once the read is slow.
             var reading = row(

@@ -181,7 +181,7 @@ extension OvviUITests {
     }
 
     /// The new-window view makes a typed session: Return on its New Session row starts it on This Mac and opens it
-    /// as the window's first page; Edit Machines opens Settings at Machines.
+    /// as the window's first page; Add Machine opens Settings at its add form, Edit Machines at Machines.
     func testNewWindowMakesATypedSession() async throws {
         let eight = try env("OVVI_SESSION8")
         // Down first: a run cut short may have left it.
@@ -191,6 +191,10 @@ extension OvviUITests {
         let identifier = app.windows.firstMatch.identifier
         app.typeKey("n", modifierFlags: .command)
         XCTAssertTrue(element("picker.local.\(one)").exists(within: connect))
+        element("picker.+add-machine").click()
+        XCTAssertTrue(element("settings.machine.target", in: settingsWindow).exists(within: 5))
+        settingsWindow.typeKey("w", modifierFlags: .command)
+        XCTAssertTrue(settingsWindow.vanishes(within: 3))
         element("picker.+edit-machines").click()
         XCTAssertTrue(element("settings.machines.add", in: settingsWindow).exists(within: 5))
         settingsWindow.typeKey("w", modifierFlags: .command)
@@ -205,19 +209,24 @@ extension OvviUITests {
         try await Self.snapshot(eight)
     }
 
-    /// ⌘N shows This Mac's sessions from its first frame: the ones its page listed are known, so no spinner row comes
-    /// first and the rows do not change under the pointer.
-    func testNewWindowShowsKnownSessionsAtOnce() {
+    /// ⌘N shows This Mac's sessions from its first frame, from the page's own read, while its own read answers 2 s
+    /// late: no spinner row comes first, and the rows do not change under the pointer.
+    func testNewWindowShowsKnownSessionsAtOnce() throws {
+        app.launchEnvironment["SHELL"] = "\(Self.agents)/login-shell"
+        app.launchEnvironment["PATH"] = "\(Self.fixtures)/late-herdr:/usr/bin:/bin"
+        app.launchEnvironment["OVVI_E2E_HERDR"] = try env("OVVI_HERDR")
+        relaunch()
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
-        // The page's own read of the session list, as its first snapshot came.
-        XCTAssertTrue(until(5) { element("sidebar.header").exists })
+        // The page's session list is read: Open Session lists it.
+        app.typeKey("t", modifierFlags: [.command, .option])
+        XCTAssertTrue(element("open-session.session.\(two)").exists(within: connect))
+        app.typeKey(.escape, modifierFlags: [])
         app.typeKey("n", modifierFlags: .command)
         let row = element("picker.local.\(one)"), reading = element("picker.local.+reading")
-        // The first of the two that shows: the known row, never the spinner's.
         XCTAssertTrue(until(3) { row.exists || reading.exists })
         XCTAssertTrue(row.exists, "the spinner row came first")
         let label = row.label
-        XCTAssertFalse(until(1) { reading.exists || row.label != label })
+        XCTAssertFalse(until(3) { reading.exists || row.label != label })
     }
 
     /// A launch with no window to restore and no `-session` connects to nothing: the window lists the sessions to pick

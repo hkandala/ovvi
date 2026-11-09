@@ -326,10 +326,12 @@ runs and on-demand on the final head.
 
 - **Round 6 (54), cause.** The view opened with nothing known: every machine's first frames showed a spinner row,
   which the answer replaced a split second later. **Fix:** each machine's sessions as last listed (`KnownSessions`:
-  memory, every page's own session read, and `sessions.json` under the caches; memory only in a `-session` run) show
-  from the first frame, and the read behind them changes the rows in place. A machine with none known keeps one empty
-  row's room, shows the spinner only after 150 ms, and fades its rows in over 0.15 s. The local read was one herdr call
-  already (the path is cached after launch).
+  memory, every page's own session read, and `sessions.json` under the app's own caches, by SSH target; memory only in
+  an isolated run) show from the first frame, and the read behind them changes the rows in place. A machine with none
+  known keeps one empty, unlit row's room and shows the spinner only after 150 ms; a remote that needs a password
+  again drops its known rows. No fade: it would only mask the change. The local read was one herdr call already (the
+  path is cached after launch). Measured in CI's screen recording (about 16 frames a second) before: the spinner
+  rows showed for 3 frames (about 180 ms) after the window's first empty frame.
 - **Round 6 (59), decision.** Settings ▸ Machines is the one place that adds and edits machines: the view's Add
   Machine and the machine menu's "Add Machine…" open its add form, "Edit Machines…" its list; the Add Remote Host
   overlay is gone.

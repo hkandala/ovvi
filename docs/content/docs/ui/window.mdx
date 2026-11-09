@@ -39,14 +39,13 @@ background, its column centered in the room under the title row:
   that machine and opens it (in a run with `-session`, only for a typed
   `ovvi-` name). A pick opens the session as the window's first
   page; on This Mac a stopped one starts.
-- Each machine's sessions as last listed show from the first frame (kept in
-  memory, from every page's own read too, and in `sessions.json` under the
-  app's caches; a run with `-session` keeps them in memory only), and the
-  machine reads again behind them: its rows change in place. A machine with
-  none known keeps one row's room, empty; after 150 ms it shows "Reading
-  sessions…" with a spinner, so a quick answer shows none, and its rows fade
-  in over 0.15 s once it answers (at once with Reduce Motion). Each machine reads on its own and answers within 15 s, whatever the others
-  do; then its row says "No answer within 15 s". A machine whose sessions
+- Each machine's sessions as last listed show from the first frame, and the
+  machine reads again behind them: its rows change in place
+  ([Data](/docs/data#every-piece-of-data)). A remote machine that needs a
+  password again drops its known rows. A machine with none known keeps one
+  empty row's room, not lit; after 150 ms it shows "Reading sessions…" with a
+  spinner, so a quick answer shows none. Each machine reads on its own and answers within 15 s, whatever the others
+  do; then its row says "No answer within 15 s", also over its known rows. A machine whose sessions
   cannot be read shows the row that fixes it: **Install herdr** (a box; it
   opens the page and installs, [Install herdr](/docs/talking-to-herdr#install-herdr)),
   **Connect** (`network.slash`, "Not connected"; it opens the page and asks

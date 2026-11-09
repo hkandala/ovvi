@@ -322,7 +322,7 @@ struct PaneProcesses: Decodable {
     enum CodingKeys: String, CodingKey { case shellPID = "shell_pid", foregroundProcesses = "foreground_processes" }
 }
 
-public struct Session: Decodable, Equatable, Sendable {
+public struct Session: Codable, Equatable, Sendable {
     public let name: String
     public let running: Bool
 

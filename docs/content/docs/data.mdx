@@ -31,6 +31,7 @@ sockets are per app.
 | Terminal content and PTY | herdr | `terminal session` frames |
 | Agent kind, status, `completion_seq`, session (`agent_session`) | herdr | `agents[]`, `panes[]` |
 | A machine's sessions | herdr | `herdr session list --json`, run on the machine |
+| The sessions each machine listed last, for the [new-window view](/docs/ui/window#new-window) | app, per device | memory, and `~/Library/Caches/<bundle id>/sessions.json` by SSH target (This Mac by its id); memory only with `-session` or `-machines`. Removing a machine drops its entry |
 | Remote machines: name, SSH target, icon, id | app, disk | `UserDefaults`, JSON under `machines` |
 | Settings: appearance, interface style, text size, Focus Follows Mouse, the notification switches, the terminal's font, cursor, Option key and copy on select, the first view of new agents and each agent's extra arguments (`agentArguments.<command>`), and whether the sidebar shows Archived Sessions (`showClosedSessions`) ([Settings](/docs/ui/settings)); a floating pane's window frame, per pane | app, disk | app storage (`UserDefaults`) |
 | Per window: the machine's id (`machine`), the names of its open pages (`pages`), the page in view (`page`), each page's selected space and tabs and its floating panes with their Stay on Top (`selection`, one JSON string), sidebar shown or hidden (`sidebar`) and sidebar width (`sidebarWidth`) | app, disk | `@SceneStorage`, one set per window |

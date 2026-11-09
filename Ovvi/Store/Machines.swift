@@ -63,7 +63,7 @@ final class MachineList {
 
     /// The raw arguments: the argument domain drops a JSON value it cannot read as a property list (`-machines []`),
     /// and a test's launch without `-session` then read the user's machines.
-    private static let isolated = ProcessInfo.processInfo.arguments
+    static let isolated = ProcessInfo.processInfo.arguments
         .contains { ["-session", "-defaultSession", "-machines"].contains($0) }
 
     private init() {
@@ -107,6 +107,7 @@ final class MachineList {
     func remove(_ machine: Machine) {
         list.removeAll { $0.id == machine.id }
         Browser.forget(machine)
+        KnownSessions.forget(machine)
     }
 
     func machine(_ id: String) -> Machine? {
