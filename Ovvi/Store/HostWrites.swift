@@ -74,27 +74,31 @@ extension HostStore {
         return try result.get()
     }
 
-    /// Fetch, Pull or Push in the workspace's repository on its machine: a notice while git runs, git's message when
-    /// it fails, then the workspace's git line read again. The 10 s refresh skips it meanwhile, so no older read lands
+    /// Fetch, Pull or Push in the workspace's repository on its machine: a spinner's notice while git runs, then the
+    /// workspace's git line read again, then a check for 2 s, or git's message when it fails. The 10 s refresh skips it
+    /// meanwhile, so no older read lands
     /// after that one.
     func sync(_ workspace: Workspace, _ sync: Git.Sync) async {
         guard let root = workspace.gitRoot else { return }
         gitRuns.insert(workspace.id)
         defer { gitRuns.remove(workspace.id) }
         let exec = await machine.exec()
-        let running = Notice(text: "\(sync.rawValue.capitalized)ing \(workspace.label)…", tone: .info)
+        let word = sync.rawValue.capitalized
+        let running = Notice(text: "\(word)ing \(workspace.label)…", tone: .progress)
         notice = running
+        var done = Notice(text: "\(word)ed \(workspace.label)", tone: .success)
         do {
             try await Git.run(root, sync.arguments, exec: exec)
-            if notice?.id == running.id {
-                notice = nil
-            }
         } catch {
             // The notice shows two lines: git's error comes last, after its hints.
             let lines = error.localizedDescription.split(separator: "\n").filter { !$0.hasPrefix("hint:") }
-            Task { await show(Notice(text: lines.suffix(2).joined(separator: "\n"))) }
+            done = Notice(text: lines.suffix(2).joined(separator: "\n"))
         }
         workspace.git = await GitStatus.of(root, exec: exec)
+        // A newer notice stays over a success, not over an error.
+        if done.tone == .error || notice?.id == running.id {
+            Task { [done] in await show(done, for: .seconds(done.tone == .error ? 4 : 2)) }
+        }
     }
 
     /// A file or folder that a click, a link or a command named is gone (ui/window#opening-links-and-files).

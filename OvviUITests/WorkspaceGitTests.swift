@@ -54,7 +54,8 @@ extension OvviUITests {
     }
 
     /// Fetch, Pull and Push after a separator only on a repository's row: Fetch brings a commit another clone pushed,
-    /// Push's refusal shows git's words in the notice, and Pull brings the commit; the line follows each at once.
+    /// Push's refusal shows git's words in the notice, and Pull brings the commit; the line follows each at once. The
+    /// notice has a spinner while git runs (a 2 s upload-pack), then a check for 2 s.
     private func sync(_ row: XCUIElement, root: String, git: String) async throws {
         element("workspace.w2").rightClick()
         XCTAssertTrue(app.menuItems["Move Down"].exists(within: 2))
@@ -62,19 +63,31 @@ extension OvviUITests {
         keepScreen("menu without a repository")
         app.typeKey(.escape, modifierFlags: [])
         try await send("(cd \(root) && git clone -q up.git other && cd other && \(git) commit -q --allow-empty -m four "
-            + "&& git push -q origin main) && echo pushed-$((6*7))\r", to: "w2:p1")
+            + "&& git push -q origin main && git -C ../repo config remote.origin.uploadpack 'sleep 2; git-upload-pack'"
+            + ") && echo pushed-$((6*7))\r", to: "w2:p1")
         try await waitFor("w2:p1") { $0.contains("\npushed-42") }
         row.rightClick()
         XCTAssertTrue(app.menuItems["Push"].exists(within: 2))
         keepScreen("menu of a repository")
         app.menuItems["Fetch"].click()
+        let notice = element("detail.notice"), symbol = notice.descendants(matching: .any)["notice.symbol"]
+        XCTAssertTrue(notice.staticTexts["Fetching repo…"].exists(within: 2))
+        keepScreen("fetching")
+        XCTAssertEqual(symbol.label, "In progress")
+        XCTAssertTrue(notice.staticTexts["Fetched repo"].exists(within: 10))
+        keepScreen("fetched")
+        XCTAssertEqual(symbol.label, "Done")
         XCTAssertTrue(until(10) { row.value as? String == "main ahead 2 behind 2" }, "\(row.value ?? "")")
+        XCTAssertFalse(notice.vanishes(within: 1))
+        XCTAssertTrue(notice.vanishes(within: 3))
 
         row.rightClick()
         XCTAssertTrue(app.menuItems["Push"].exists(within: 2))
         app.menuItems["Push"].click()
-        XCTAssertTrue(element("detail.notice").staticTexts.matching(NSPredicate(format: "value CONTAINS 'rejected'"))
-            .firstMatch.exists(within: 10))
+        XCTAssertTrue(notice.staticTexts.matching(NSPredicate(format: "value CONTAINS 'rejected'")).firstMatch
+            .exists(within: 10))
+        XCTAssertEqual(symbol.label, "Error")
+        keepScreen("push refused")
 
         // One behind and none ahead: Pull fast-forwards.
         try await send("(cd \(root)/repo && git reset -q --hard origin/main~1) && echo reset-$((6*7))\r", to: "w2:p1")

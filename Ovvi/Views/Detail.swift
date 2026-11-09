@@ -5,7 +5,8 @@ import SwiftUI
 /// A short message at the bottom of the page (design: Notice).
 struct Notice {
     enum Tone {
-        case error, warning, info
+        /// `progress`: a spinner while a command runs; `success`: a green check when it ended.
+        case error, warning, info, progress, success
     }
 
     let text: String
@@ -31,12 +32,19 @@ struct NoticeCapsule<Action: View>: View {
         case .error: ("xmark.octagon.fill", "Error", look.error)
         case .warning: ("exclamationmark.triangle.fill", "Warning", look.needsYou)
         case .info: ("info.circle.fill", "Information", look.working)
+        case .progress: ("", "In progress", look.working)
+        case .success: ("checkmark.circle.fill", "Done", look.finished)
         }
         HStack(spacing: 8) {
-            Image(systemName: symbol ?? toneSymbol)
-                .foregroundStyle(color)
-                .accessibilityLabel(label)
-                .accessibilityIdentifier("notice.symbol")
+            Group {
+                if tone == .progress, symbol == nil {
+                    ProgressView().controlSize(.small)
+                } else {
+                    Image(systemName: symbol ?? toneSymbol).foregroundStyle(color)
+                }
+            }
+            .accessibilityLabel(label)
+            .accessibilityIdentifier("notice.symbol")
             Text(text).lineLimit(2)
             action
         }

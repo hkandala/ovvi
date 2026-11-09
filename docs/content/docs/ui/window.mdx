@@ -326,9 +326,10 @@ Spaces panel.
   - Fetch (`git fetch --all`), Pull (`git pull`) and Push (`git push`, which
     sets the upstream of a branch that has none) run in the folder of the
     row's git line, on the session's machine. git never asks for a password:
-    it fails instead. An information notice shows while git runs, and git's
-    own message shows as an error notice when it fails. Then the git line is
-    read again. Pull and Push stay enabled at zero behind or ahead: the counts
+    it fails instead. While git runs, a [notice](#notice) with a spinner says
+    "Pulling ‹name›…". When git ends, the git line is read again, and the
+    notice turns to a green check and "Pulled ‹name›" for 2 s, or to git's own
+    message in the error tone for 4 s. Pull and Push stay enabled at zero behind or ahead: the counts
     are from the last fetch, and Pull fetches first.
   - Close Space asks only when a program besides the shell runs in one of
     its panes, with what runs and the tab and pane count. On a repository
@@ -937,7 +938,9 @@ A short message after a failed action or a refused move, or from an agent.
 - A capsule at the bottom center of the tab's page, 30 pt above its bottom, 36 pt
   tall: glass, a leading symbol in a tone color (red `xmark.octagon.fill` for
   an error, orange `exclamationmark.triangle.fill` for a warning, blue for
-  information), the text (two lines at most), an optional action button and ×.
+  information, a spinner while a command runs, a green
+  `checkmark.circle.fill` when it ended), the text (two lines at most), an
+  optional action button and ×.
 - A failed write's notice has no action: after a timeout the write may have
   happened, so a retry is not safe. The Open Session panel's "Could not
   start" notice has **Retry**.
@@ -948,7 +951,8 @@ A short message after a failed action or a refused move, or from an agent.
   information tone, with **Show**, in each window that shows the session.
   Show selects the pane's space, tab and card in that window. Ovvi does
   not come to the front for it.
-- It goes after 4 s, or at ×. A newer notice replaces it.
+- It goes after 4 s (a check after 2 s; a spinner when its command ends), or
+  at ×. A newer notice replaces it.
 
 ## Control capsule
 
