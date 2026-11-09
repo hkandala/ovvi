@@ -28,7 +28,7 @@ struct SidebarPage: View {
 
     var body: some View {
         let store = page.store
-        let rowsDrop = RowsDrop(page: page, rows: frames, state: $drop, reorders: filter.isEmpty) { rows, offset in
+        let rowsDrop = RowsDrop(page: page, frames: frames, state: $drop, reorders: filter.isEmpty) { rows, offset in
             if !reduceMotion || Animation.forceMotion {
                 landing = Landing(ids: rows, offset: offset, count: (landing?.count ?? 0) + 1)
             }
@@ -78,7 +78,7 @@ struct SidebarPage: View {
                 ScrollView {
                     // Lazy: at hundreds of spaces and agents an eager stack made and laid out every row in each update.
                     LazyVStack(alignment: .leading, spacing: WorkspaceRow.gap) {
-                        let rows = rows, groups = store.groups
+                        let groups = store.groups, rows = rows(in: groups)
                         ForEach(Array(rows.enumerated()), id: \.element.workspace.id) { index, row in
                             let id = row.workspace.id, hasAgents = runsAgents(row.workspace)
                             let shown = hasAgents && (!folds(id) || !filter.isEmpty) ? agents(of: row.workspace) : []
@@ -101,8 +101,13 @@ struct SidebarPage: View {
                                 .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("rows")) } action: {
                                     frames.rows[id] = $0
                                 }
-                                // Hidden by the filter, closed or out of the lazy stack: no stale target.
-                                .onDisappear { frames.rows[id] = nil }
+                                // Hidden by the filter, closed or out of the lazy stack: no stale target. A dragged
+                                // row keeps its place (content frames hold through a scroll) for its slide and landing.
+                                .onDisappear {
+                                    if page.dragging != .workspace(id) {
+                                        frames.rows[id] = nil
+                                    }
+                                }
                                 .background {
                                     Color.clear.id("into view \(id)").padding(.top, -18).padding(.bottom, -18 - bottom)
                                 }
@@ -124,15 +129,11 @@ struct SidebarPage: View {
                 }
                 .onScrollGeometryChange(for: CGFloat.self) { $0.visibleRect.minY } action: {
                     frames.top = $1
-                    // No light while the rows move under a still pointer; again once they stop.
-                    if frames.pointer != nil {
-                        frames.pointer = nil
-                    }
+                    frames.aim()
                 }
                 .onScrollPhaseChange { _, phase in
-                    if phase == .idle {
-                        aim()
-                    }
+                    frames.scrolling = phase != .idle
+                    frames.aim()
                 }
                 .scrollIndicators(.never)
                 // Only asked, never told: the scroll view's writes made the page and the rows in view again.
@@ -141,8 +142,13 @@ struct SidebarPage: View {
                 // it was selected; again once laid out, for a row new in this update (a new page).
                 // The lazy stack finds a row not made yet by its own id only.
                 .onChange(of: page.selectedWorkspaceID ?? "", initial: true) { _, id in
-                    withTransaction(\.animation, nil) { position.scrollTo(id: id) }
-                    Task { position.scrollTo(id: "into view \(id)") }
+                    withTransaction(\.animation, nil) { position.scrollTo(id: "into view \(id)") }
+                    // A new page's first ask can be dropped; then the row may not be made yet.
+                    Task {
+                        position.scrollTo(id: id)
+                        await Task.yield()
+                        position.scrollTo(id: "into view \(id)")
+                    }
                 }
                 .onDrop(of: [.ovviDrag], delegate: rowsDrop)
                 .clearsDrop(page) {
@@ -163,7 +169,7 @@ struct SidebarPage: View {
                         hovering = false
                         leaves += 1
                     }
-                    aim()
+                    frames.aim()
                 }
                 .task(id: leaves) {
                     try? await Task.sleep(for: .seconds(1))
@@ -188,17 +194,16 @@ struct SidebarPage: View {
         var targets: [String: CGRect] = [:]
         /// The pointer in the scroll view, while it is over it.
         var point: CGPoint?
+        /// No light while the rows move under the pointer; again once they stop.
+        var scrolling = false
         /// The space header or agent line under the pointer, found from the pointer's place: one hover for the list,
         /// where a hover region in each row cost every scroll frame a hit test of each (half the frames at 200
         /// spaces). Each target observes its own light: one value all observed lit every made button again.
         var pointer: String? {
             didSet {
                 if pointer != oldValue {
-                    // `ChromeStyle`'s fade.
-                    withAnimation(.easeOut(duration: 0.14)) {
-                        oldValue.map { light($0).lit = false }
-                        pointer.map { light($0).lit = true }
-                    }
+                    oldValue.map { light($0).lit = false }
+                    pointer.map { light($0).lit = true }
                 }
             }
         }
@@ -207,21 +212,15 @@ struct SidebarPage: View {
 
         /// ponytail: a light per target made, kept with the page (a few hundred); prune with the targets if it grows.
         func light(_ id: String) -> RowLight {
-            if let light = lights[id] {
-                return light
-            }
-            let light = RowLight()
+            let light = lights[id] ?? RowLight()
             lights[id] = light
             return light
         }
-    }
 
-    /// The header or line under the pointer lights (`RowFrames.pointer`).
-    private func aim() {
-        let point = frames.point.map { CGPoint(x: $0.x, y: $0.y + frames.top) }
-        let under = point.flatMap { point in frames.targets.first { $0.value.contains(point) }?.key }
-        if under != frames.pointer {
-            frames.pointer = under
+        /// The header or line under the pointer lights: after a move, a scroll, or a target that moved under it.
+        func aim() {
+            let point = scrolling ? nil : point.map { CGPoint(x: $0.x, y: $0.y + top) }
+            pointer = point.flatMap { point in targets.first { $0.value.contains(point) }?.key }
         }
     }
 
@@ -261,8 +260,8 @@ struct SidebarPage: View {
 
     /// The rows that pass the filter by name or branch, or by an agent's, each with the workspace it sits under; a
     /// matching worktree keeps its repository's row.
-    private var rows: [Row] {
-        page.store.groups.flatMap { group -> [Row] in
+    private func rows(in groups: [[HostStore.Workspace]]) -> [Row] {
+        groups.flatMap { group -> [Row] in
             let shown = group.filter { workspace in
                 workspace.label.matches(filter) || (workspace.git?.branch ?? "").matches(filter)
                     || !filter.isEmpty && !agents(of: workspace).isEmpty

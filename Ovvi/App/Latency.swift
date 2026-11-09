@@ -86,8 +86,8 @@ final class Latency {
         // A turn still running counts up to now, so a main thread that never sleeps does not show as idle.
         endTurn(next: awake.map { _ in ProcessInfo.processInfo.systemUptime })
         let line = "main \(Int(busy * 1000))ms \(Int(longest * 1000))ms \(snapshots) \(Int(applying * 1000))ms"
-            + " \(Self.rows - rows)"
-        rows = Self.rows
+            + " \(Self.rows - rowsBefore)"
+        rowsBefore = Self.rows
         record(line)
         (busy, longest, snapshots, applying) = (0, 0, 0, 0)
     }
@@ -129,7 +129,7 @@ final class Latency {
     @ObservationIgnored private var longest = 0.0
     @ObservationIgnored private var applying = 0.0
     @ObservationIgnored private var snapshots = 0
-    @ObservationIgnored private var rows = 0
+    @ObservationIgnored private var rowsBefore = 0
     @ObservationIgnored private lazy var meter = FrameMeter { self.record($0) }
 
     private func event(_ event: NSEvent) {
@@ -241,7 +241,7 @@ private final class FrameMeter: NSObject {
     let record: (String) -> Void
     private var link: CADisplayLink?
     private var name = "", start = 0.0, last = 0.0, end = 0.0, cpu = 0.0
-    private var gaps: [Double] = [], cpus: [Double] = [], lastCPU = 0.0, steps: [(String, Double)] = [], rows = 0
+    private var gaps: [Double] = [], cpus: [Double] = [], lastCPU = 0.0, steps: [(String, Double)] = [], rowsBefore = 0
 
     init(record: @escaping (String) -> Void) {
         self.record = record
@@ -269,7 +269,7 @@ private final class FrameMeter: NSObject {
         let now = ProcessInfo.processInfo.systemUptime
         (self.name, self.end, start, last, gaps, steps) = (name, end, now, now, [], [])
         cpu = Latency.threadTime
-        (lastCPU, cpus, rows) = (cpu, [], Latency.rows)
+        (lastCPU, cpus, rowsBefore) = (cpu, [], Latency.rows)
         link = screen.displayLink(target: self, selector: #selector(frame))
         // The display's full rate: ProMotion runs at 60 Hz or less when nothing asks for more.
         link?.preferredFrameRateRange = CAFrameRateRange(minimum: 120, maximum: 120, preferred: 120)
@@ -300,7 +300,7 @@ private final class FrameMeter: NSObject {
         let busy = Int((Latency.threadTime - cpu) * 1000)
         if name == "scroll" {
             record("scroll \(gaps.count) \(hitches.count) \(time)ms \(part(0.5)) \(part(0.95)) \(part(1)) \(busy)ms "
-                + "\(Latency.rows - rows) " + hitches.joined(separator: ","))
+                + "\(Latency.rows - rowsBefore) " + hitches.joined(separator: ","))
             return
         }
         record("split \(gaps.count) \(hitches.count) \(time)ms \(part(0.5)) \(part(0.95)) \(part(1)) \(busy)ms "

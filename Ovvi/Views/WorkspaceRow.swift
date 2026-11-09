@@ -29,13 +29,13 @@ struct WorkspaceRow: View, Equatable {
     @State private var renaming = false
     @Environment(\.look) private var look
 
-    /// The same row when its parts are: the page's every update (a scroll's write, a hover's hold) made the rows in
-    /// view again, as `fold` is a new closure each time. What the row reads from the store it observes itself.
+    /// The same row when its parts are: the page's every update (a hover's hold, a selection's scroll) made the rows
+    /// in view again, as `fold` is a new closure each time. What the row reads from the store it observes itself.
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.workspace === rhs.workspace && lhs.parent === rhs.parent && lhs.page === rhs.page
-            && lhs.frames === rhs.frames && lhs.guideBelow == rhs.guideBelow && lhs
-            .ends == rhs.ends && lhs.hasAgents == rhs.hasAgents
-            && (lhs.fold == nil) == (rhs.fold == nil) && lhs.agents.elementsEqual(rhs.agents, by: ===)
+            && lhs.frames === rhs.frames && lhs.guideBelow == rhs.guideBelow && lhs.ends == rhs.ends
+            && lhs.hasAgents == rhs.hasAgents && (lhs.fold == nil) == (rhs.fold == nil)
+            && lhs.agents.elementsEqual(rhs.agents, by: ===)
     }
 
     var body: some View {
@@ -95,9 +95,7 @@ struct WorkspaceRow: View, Equatable {
                 .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .leading)
         }
         // The row's glass is the whole row's (`body`); under the pointer only an unselected one fills.
-        .buttonStyle(ChromeStyle(radius: 10, hovered: selected ? false : nil) { [frames, id = workspace.id] in
-            frames.light(id).lit
-        })
+        .buttonStyle(ChromeStyle(radius: 10, hovered: selected ? false : nil, light: frames.light(workspace.id)))
         .target(workspace.id, in: frames)
         .dragSource(.workspace(workspace.id), page: page)
         .accessibilityIdentifier("workspace.\(workspace.id)")
@@ -234,6 +232,7 @@ struct AgentLine: View {
         let _ = Latency.madeRow() // swiftlint:disable:this redundant_discardable_let
         let state = pane.state ?? .idle
         let lit = page.keyboardCard(page.selectedTab?.id) === pane
+        let light = frames.light(pane.id)
         let title = pane.agentTitle ?? "agent"
         Button { page.go(to: pane) } label: {
             HStack(spacing: 8) {
@@ -248,23 +247,27 @@ struct AgentLine: View {
             .padding(.horizontal, 4)
             .frame(height: 28)
         }
-        .buttonStyle(ChromeStyle(selected: lit, radius: 7, tint: .primary.opacity(0.08)) { [frames, id = pane.id] in
-            frames.light(id).lit
-        })
+        .buttonStyle(ChromeStyle(selected: lit, radius: 7, tint: .primary.opacity(0.08), light: light))
         .target(pane.id, in: frames)
         .accessibilityIdentifier("agent.\(pane.id)")
         .accessibilityLabel("\(title), \(page.place(pane))")
         .accessibilityValue(pane.state?.title ?? "")
         .accessibilityAddTraits(lit ? .isSelected : [])
-        .hoverPanel(place: .beside, pointer: { [frames, id = pane.id] in frames.light(id).lit },
-                    { close in HoverCard(tabID: pane.tabID, page: page, close: close) })
+        .hoverPanel(place: .beside, light: light) { close in HoverCard(tabID: pane.tabID, page: page, close: close) }
     }
 }
 
 private extension View {
     /// Its frame in the rows' content, for the pointer, while it is made.
     func target(_ id: String, in frames: SidebarPage.RowFrames) -> some View {
-        onGeometryChange(for: CGRect.self) { $0.frame(in: .named("rows")) } action: { frames.targets[id] = $0 }
-            .onDisappear { frames.targets[id] = nil }
+        onGeometryChange(for: CGRect.self) { $0.frame(in: .named("rows")) } action: {
+            frames.targets[id] = $0
+            // Moved under a still pointer: a snapshot, a fold, the filter.
+            frames.aim()
+        }
+        .onDisappear {
+            frames.targets[id] = nil
+            frames.aim()
+        }
     }
 }
