@@ -1432,3 +1432,5 @@ you did, no need of reverting them".
     activity one and also within a workspace, always sort the agents based on their tab positions, if in same tab then
     based on pane positions, basically fixed sorting withing workspace and you cannot change that, i think right now
     its sorted based on activity i guess, let's change that" (Track B).
+    Follow-up: "in recent, leaving should just remove the done status but that shouldn't move the sorting, even after
+    leaving, done to idle is not considered as change of status" and "disable dragging a row while in recent mode".
