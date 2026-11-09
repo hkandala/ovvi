@@ -113,17 +113,20 @@ extension PaneSurfaceView {
         linkSurface?.sendMousePos(x: point.x, y: bounds.height - point.y, modifiers: .super_)
     }
 
-    /// A modifier down or up with the pointer still over the view and no button down: the link under it shows or
-    /// goes, as when ⌘ goes down or up (also ⌥ left alone by ⇧ going up). libghostty reports a link again only on
-    /// another cell, so the pointer leaves the view first.
+    /// ⌥ alone down or up (also left alone by ⇧ going up) with the pointer still over the view and no button down: the
+    /// link under it shows or goes, as libghostty does by itself when ⌘ goes down or up. libghostty reports a link
+    /// again only on another cell, so the pointer leaves the view first. Only then: made-up moves on every ⇧ or ⌃
+    /// would reach a program that tracks the mouse.
     override func flagsChanged(with event: NSEvent) {
         super.flagsChanged(with: event)
-        guard NSEvent.pressedMouseButtons == 0, let window,
+        let side = Self.sideKey(event.modifierFlags)
+        defer { sideHeld = side }
+        guard side != sideHeld, NSEvent.pressedMouseButtons == 0, let window,
               NSWindow.windowNumber(at: NSEvent.mouseLocation, belowWindowWithWindowNumber: 0) == window.windowNumber,
               window.contentView?.hitTest(window.mouseLocationOutsideOfEventStream)?.isDescendant(of: self) == true
         else { return }
-        let point = convert(window.mouseLocationOutsideOfEventStream, from: nil), flags = event.modifierFlags
-        let modifiers: TerminalInputModifiers = Self.sideKey(flags) ? .super_ : .init(from: flags)
+        let point = convert(window.mouseLocationOutsideOfEventStream, from: nil)
+        let modifiers: TerminalInputModifiers = side ? .super_ : .init(from: event.modifierFlags)
         linkSurface?.sendMousePos(x: -1, y: -1, modifiers: modifiers)
         linkSurface?.sendMousePos(x: point.x, y: bounds.height - point.y, modifiers: modifiers)
     }

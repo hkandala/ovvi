@@ -198,20 +198,13 @@ struct SidebarPage: View {
     }
 
     private func opens(_ workspace: String) -> Bool {
-        opened.split(separator: "\n").contains { $0 == page.shelfKey("workspace \(workspace)") }
+        page.opens("workspace \(workspace)", in: opened)
     }
 
     /// Unfolds or folds the workspace's agents, kept per machine and session across relaunches.
     private func fold(_ workspace: String) {
-        let key = page.shelfKey("workspace \(workspace)")
-        var lines = opened.split(separator: "\n").map(String.init)
-        if lines.contains(key) {
-            lines.removeAll { $0 == key }
-        } else {
-            lines.append(key)
-        }
         withAnimation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.2)) {
-            opened = lines.joined(separator: "\n")
+            opened = page.toggled("workspace \(workspace)", in: opened)
         }
     }
 

@@ -21,6 +21,8 @@ final class PaneSurfaceView: AppTerminalView {
     /// opens (false: the link opens nothing).
     weak var linkSurface: TerminalSurface?
     var hoveredLink: String?
+    /// ⌥ alone was down at the last modifier change (`flagsChanged`).
+    var sideHeld = false
     var openLink: ((String, Opening) -> Bool)?
     private var scrolled: CGFloat = 0
 

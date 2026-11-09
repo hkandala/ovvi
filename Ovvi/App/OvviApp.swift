@@ -90,8 +90,9 @@ struct ContentView: View {
     @SceneStorage("selection") private var savedSelection = ""
     @SceneStorage("sidebar") private var sidebar = true
     @SceneStorage("sidebarWidth") private var sidebarWidth = 300.0
-    /// A new window (⌘N) shows the sessions to pick from until a pick opens its first page.
-    @State private var picking = false
+    /// A new window (⌘N) shows the sessions to pick from until a pick opens its first page, also when macOS restores
+    /// it.
+    @SceneStorage("picking") private var picking = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openWindow) private var openWindow
 
@@ -110,8 +111,8 @@ struct ContentView: View {
             // New Window: a session to pick, none opened by itself; it joins the windows with its first page.
             if let opening, opening.machine == nil {
                 picking = true
-                return
             }
+            guard !picking else { return }
             await restore(opening?.machine)
             // Closed while it restored: nothing of it may stay.
             if Task.isCancelled {
@@ -130,7 +131,12 @@ struct ContentView: View {
                 }
             }
         }
-        .onChange(of: pages.list.map(\.id)) { savedPages = $1.joined(separator: " ") }
+        .onChange(of: pages.list.map(\.id)) {
+            savedPages = $1.joined(separator: " ")
+            if !$1.isEmpty {
+                picking = false
+            }
+        }
         .onChange(of: pages.current?.id) { savedPage = $1 ?? "" }
         .onChange(of: pages.machine.id) { savedMachine = $1 }
         .onChange(of: selection) { savedSelection = $1 }

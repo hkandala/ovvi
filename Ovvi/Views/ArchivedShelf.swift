@@ -23,7 +23,7 @@ struct ArchivedShelf: View {
     static let home = UserDefaults.standard.string(forKey: "archivedHome")
 
     var body: some View {
-        let open = opened.split(separator: "\n").contains { $0 == page.shelfKey(Self.label) }
+        let open = page.opens(Self.label, in: opened)
         let shown = agent.isEmpty ? Chooser.agents.map(\.command) : [agent]
         let rows = open ? rows(shown) : []
         let next = list.next(of: shown).filter { !failed.contains($0) }

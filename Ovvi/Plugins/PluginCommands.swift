@@ -9,7 +9,7 @@ extension CommandList {
         guard let plugin else { return [] }
         let id = plugin.manifest.id, view = plugin.web.view
         return [
-            Command(section: .pane, title: "Reload Plugin", key: .init("r", modifiers: [.command, .option]),
+            Command(section: .pane, title: "Reload Plugin", key: .redraw,
                     group: .plugins, symbol: "arrow.clockwise", keywords: "plugin build refresh",
                     action: { Task { await Plugin.reload(id) } }),
             Command(section: .pane, title: view.inspectorShown ? "Hide Web Inspector" : "Show Web Inspector",

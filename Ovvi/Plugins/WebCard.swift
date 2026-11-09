@@ -147,12 +147,14 @@ private final class Relay: NSObject, WKScriptMessageHandlerWithReply, WKNavigati
     /// The system ends a page's process (memory pressure, a long sleep): the page loads again with its state now, once
     /// per load; one that ends it again before it loaded says so, with Reload, instead of a blank card.
     func webViewWebContentProcessDidTerminate(_: WKWebView) {
-        guard let card, let bridge = card.bridge, let manifest = bridge.plugin?.manifest else { return }
+        guard let card else { return }
         card.dirty = false
         guard !reloaded else {
             card.ready = true
-            bridge.failure = .noted(manifest, PluginProblem(title: "The page stopped working",
-                                                            text: "It stopped again as it loaded."))
+            if let bridge = card.bridge, let manifest = bridge.plugin?.manifest {
+                bridge.failure = .noted(manifest, PluginProblem(title: "The page stopped working",
+                                                                text: "It stopped again as it loaded."))
+            }
             return
         }
         reloaded = true

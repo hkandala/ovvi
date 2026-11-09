@@ -75,8 +75,9 @@ extension UserDefaults {
     static let agents = UserDefaults(suiteName: "dev.ovvi.app.agents." + Registry.config.path.replacing("/", with: "_"))
         ?? .standard
 
-    /// Drops what the Agents view kept (phase 57): its agent pins, its Settled fold and setting, the Archived fold's
-    /// old name. The app's own defaults only outside a test's config folder: those are the user's.
+    /// Drops the keys of the old Agents view left in the user's defaults: its agent pins, its Settled fold and setting,
+    /// the Archived fold's old name. The app's own defaults only outside a test's config folder: those are the user's.
+    /// ponytail: runs on every launch; delete once no user runs a build from before the one sidebar.
     static func dropAgentsView() {
         agents.removeObject(forKey: "agentPins")
         let open = agents.string(forKey: Page.openShelves)?.split(separator: "\n") ?? []

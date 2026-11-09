@@ -13,10 +13,9 @@ struct Shelf<Accessory: View, Content: View>: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        let key = page.shelfKey(label)
-        let open = opened.split(separator: "\n").contains { $0 == key }
+        let open = page.opens(label, in: opened)
         VStack(spacing: 4) {
-            header(key, open: open)
+            header(open: open)
             if open {
                 // Lazy, for Archived's pages; as tall as its rows, up to five.
                 ScrollView {
@@ -36,16 +35,10 @@ struct Shelf<Accessory: View, Content: View>: View {
         }
     }
 
-    private func header(_ key: String, open: Bool) -> some View {
+    private func header(open: Bool) -> some View {
         Button {
-            var lines = opened.split(separator: "\n").map(String.init)
-            if open {
-                lines.removeAll { $0 == key }
-            } else {
-                lines.append(key)
-            }
             withAnimation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.2)) {
-                opened = lines.joined(separator: "\n")
+                opened = page.toggled(label, in: opened)
             }
         } label: {
             line(open: open) {
@@ -92,5 +85,22 @@ extension Page {
     /// "‹machine› ‹session› ‹label›".
     func shelfKey(_ label: String) -> String {
         "\(store.machine.id) \(id) \(label)"
+    }
+
+    /// Whether `opened` (the `openShelves` text) has the line of `label`.
+    func opens(_ label: String, in opened: String) -> Bool {
+        opened.split(separator: "\n").contains { $0 == shelfKey(label) }
+    }
+
+    /// `opened` with the line of `label` added, or taken out when it is there.
+    func toggled(_ label: String, in opened: String) -> String {
+        let key = shelfKey(label)
+        var lines = opened.split(separator: "\n").map(String.init)
+        if lines.contains(key) {
+            lines.removeAll { $0 == key }
+        } else {
+            lines.append(key)
+        }
+        return lines.joined(separator: "\n")
     }
 }
