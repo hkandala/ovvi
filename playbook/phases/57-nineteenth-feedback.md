@@ -896,3 +896,20 @@ you did, no need of reverting them".
   lookup ("herdr is not installed"); a fixture login shell (`SHELL=…`) fixed it for the run.
 - Incident: `pkill -f <pattern> -P 1` on macOS took `-P` and `1` as patterns and killed many of the user's
   processes (lesson `eb845b4a`). Kill exact pids only.
+
+### Track R (item 48)
+
+- **Fix.** Settings ▸ General ▸ Panes has "New panes open": New Pane (the chooser, the default), Terminal, each agent,
+  Browser, File Explorer, Git and every plugin with a chooser row (`newPaneOpens`, a row's id). Every new shell pane
+  (⌘T, ⌘D, ⇧⌘D, Split Left and Up, the `+` buttons, the menus, ⌘K, every New Space, a folder on the Dock, a started
+  session's first space) makes that pick on its chooser at once, through the chooser's own `pick`: the list never
+  shows; an agent or a plugin shows its loader on the stand-in until herdr made the pane. The New Pane view is
+  untouched.
+- **Decisions.** ⌥ held as you click to make the pane shows the chooser. No ⌥ key: ⌥⌘D is macOS's Turn Dock Hiding
+  On/Off (the system takes it) and ⌥⌘T is Open Session; from the keyboard, ⇧⌘R on the new agent, browser or plugin
+  pane gives the chooser. ⌥ is read as the pane is made, before any await (New Space: before herdr's answer). Not for
+  Replace Pane, Open … Here, Start Agent Here, Resume (it picks its own agent) or the CLI (no plain new pane). An agent
+  the machine lacks, or a plugin removed since, gives the chooser.
+- **For the user.** Pick a default, then ⌘D, ⌘T and New Space; ⌥-click a `+` or a split button for the chooser. With
+  Terminal fixed on a remote machine, type right after ⌘D: keys typed before herdr made the pane go to the old pane
+  (no chooser holds them then).
