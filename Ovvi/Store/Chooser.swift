@@ -155,7 +155,9 @@ extension HostStore {
     func choose(standIn: String, cwd: String?) -> Chooser {
         let chooser = Chooser(standIn: standIn, cwd: cwd)
         choosers.append(chooser)
-        pickDefault(chooser)
+        if !Chooser.asked {
+            pickDefault(chooser)
+        }
         return chooser
     }
 

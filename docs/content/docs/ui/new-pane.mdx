@@ -47,19 +47,26 @@ same frame the card shows. The list never shows.
   loader and takes the pane's place as in [Browser](#browser). It starts in
   the folder herdr starts the pane in. A pick that waits for herdr's pane
   (an agent, a plugin) shows its loader on the new card meanwhile.
-- **The chooser on demand.** Hold ⌥ when you make the pane: ⌥⌘D, ⌥⇧⌘D, or a
-  click on a `+`, a split button or a menu item with ⌥ held. Then the
-  chooser shows as usual. ⌥⌘T stays Open Session, so a new tab's chooser
-  comes with ⌥ and a click.
+- **The chooser on demand.** Hold ⌥ while you click to make the pane: a
+  `+`, a split button in a card's header, or a menu item. Then the chooser
+  shows as usual. The app reads ⌥ as it makes the pane, before it asks
+  herdr. There is no ⌥ key for it: ⌥⌘D is macOS's Turn Dock Hiding On/Off,
+  and ⌥⌘T is Open Session. From the keyboard, Replace Pane (⇧⌘R) on the new
+  agent, browser or plugin pane gives the chooser, and the palette's Start
+  Agent Here and Open … Here change any pane's kind
+  ([Commands that change a pane's kind](#commands-that-change-a-panes-kind)).
 - **An agent that is not installed** on the window's machine
   ([Agents that are not installed](#agents-that-are-not-installed)) is not
-  picked: the chooser shows, with that agent dimmed.
+  picked: the chooser shows, with that agent dimmed. Until the window's check
+  answers, every agent counts as installed, as in the chooser, so a new
+  window's first pane can type an agent that is not there; the terminal then
+  shows what the command printed.
 - **Not for** panes that ask for their own kind: Replace Pane, the Open … Here
   and Start Agent Here commands, Resume of an archived session,
   `ovvi agent` and `ovvi open`. The `ovvi` CLI makes no plain new pane.
 - A plugin pick opens through the key window of the pane's session. The first
   space of a session the app started picks through any window that shows that
-  session.
+  session; with none, the chooser shows.
 
 ## Look
 

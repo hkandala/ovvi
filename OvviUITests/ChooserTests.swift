@@ -179,8 +179,8 @@ extension OvviUITests {
     }
 
     /// Settings ▸ General ▸ New panes open Browser (ui/new-pane#a-fixed-pick): ⌘D's stand-in shows the browser's
-    /// loader, never the chooser, also while herdr has not answered, and the pane becomes a browser; ⌥⌘D shows the
-    /// chooser.
+    /// loader, never the chooser, also while herdr has not answered, and the pane becomes a browser; a split button's
+    /// ⌥-click shows the chooser.
     func testAFixedPickSkipsTheChooserAndOptionShowsIt() async throws {
         relaunch(one, ["-newPaneOpens", "browser"])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
@@ -209,7 +209,9 @@ extension OvviUITests {
         keepScreenshot("fixed pick browser")
 
         // ⌥ held: the chooser.
-        XCUIElement.perform(withKeyModifiers: .option) { app.typeKey("d", modifierFlags: .command) }
+        let split = element("pane.\(browser).split-right")
+        XCTAssertTrue(split.exists(within: 2))
+        XCUIElement.perform(withKeyModifiers: .option) { split.click() }
         let chooser = try await replaced(browser, in: tab, besides: [left, browser])
         let terminal = element("pane.\(chooser).chooser.terminal")
         XCTAssertTrue(terminal.has(\.isSelected, true, within: 3))

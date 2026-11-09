@@ -13,21 +13,24 @@ extension Chooser {
         [.terminal] + agents.indices.map(Row.start) + Registry.all.filter { $0.chooser != nil }.map { .plugin($0.id) }
     }
 
-    /// The row a new pane picks; nil: the chooser, also for an id no row has now (a plugin removed since).
-    static var fixed: Row? {
-        let id = UserDefaults.standard.string(forKey: opensKey) ?? ""
-        return id.isEmpty ? nil : fixedRows.first { $0.id == id }
+    /// The row of a setting's id; nil: the chooser, also for an id no row has now (a plugin removed since).
+    static func fixedRow(_ id: String) -> Row? {
+        id.isEmpty ? nil : fixedRows.first { $0.id == id }
+    }
+
+    /// ⌥ is down as the user makes a pane: it shows the chooser whatever the setting says. Read before any await, while
+    /// the key or click that makes the pane is still held.
+    static var asked: Bool {
+        NSEvent.modifierFlags.contains(.option)
     }
 }
 
 extension HostStore {
-    /// A new pane's chooser makes Settings' pick at once, so its list never shows. Not while ⌥ is down (the way to the
-    /// chooser), nor for an agent the window's machine does not have: the chooser shows it dimmed. A plugin opens
-    /// through the key window's page of this session, else any window's.
+    /// A new pane's chooser makes Settings' pick at once, so its list never shows; not for an agent the window's
+    /// machine does not have: the chooser shows it dimmed. A plugin opens through the key window's page of this
+    /// session, else any window's; with none, the chooser stays.
     func pickDefault(_ chooser: Chooser) {
-        // ponytail: ⌥ is read as the pane is made, a moment after the key or click (a task later); read it from the
-        // event if a quick ⌥ release ever loses it.
-        guard let row = Chooser.fixed, !NSEvent.modifierFlags.contains(.option) else { return }
+        guard let row = Chooser.fixedRow(UserDefaults.standard.string(forKey: Chooser.opensKey) ?? "") else { return }
         let shown = WindowPages.windows.filter { $0.current?.store === self },
             page = (shown.first { $0.window?.isKeyWindow == true } ?? shown.first)?.current
         guard !Chooser.missing(row, page?.terminals.pages?.agents) else { return }

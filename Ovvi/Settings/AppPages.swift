@@ -9,14 +9,13 @@ struct GeneralPage: View {
 
     var body: some View {
         // A plugin removed since it was picked: New Pane.
-        let rows = Chooser.fixedRows,
-            opens = rows.contains { $0.id == settings.newPaneOpens } ? settings.newPaneOpens : ""
+        let opens = Chooser.fixedRow(settings.newPaneOpens)?.id ?? ""
         Form {
             Section("Startup") { OpenAtLogin() }
             Section("Panes") {
                 Picker(selection: Binding { opens } set: { settings.newPaneOpens = $0 }) {
                     Text("New Pane").tag("")
-                    ForEach(rows, id: \.self) { row in
+                    ForEach(Chooser.fixedRows, id: \.self) { row in
                         if [.terminal, .start(0), .plugin(Registry.browser.id)].contains(row) {
                             Divider()
                         }
@@ -24,7 +23,7 @@ struct GeneralPage: View {
                     }
                 } label: {
                     Text("New panes open")
-                    Text("Hold ⌥ when you make a pane to see New Pane.")
+                    Text("Hold ⌥ as you click + or a split button to choose each time.")
                 }
                 .accessibilityIdentifier("settings.general.new-pane").settingsRow("general.new-pane")
                 Toggle(isOn: settings.$followMouse) {
