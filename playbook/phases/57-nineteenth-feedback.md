@@ -720,3 +720,37 @@ side.
   pinch (2.6x), 68 px after a pinch on the old build. CI 42559293377 green (3 tests).
 - **For the user.** Pinch a browser card's page and two-finger double tap a paragraph (Smart zoom on in System
   Settings ▸ Trackpad); ⌘0 undoes it, also in a floating browser window.
+### Track N (item 42)
+
+- **What 1.0 is.** libghostty 1.0 (tag `vt-1.0.0`) is libghostty-vt: a stable C ABI for a terminal's state (parse,
+  screen, scrollback, input encoding, selection, Kitty graphics data), with no renderer. Its official XCFramework
+  (`GhosttyVt`) cannot replace GhosttyKit: Ovvi needs Ghostty's embedding API with its Metal renderer, fonts and AppKit
+  view, which 1.0's ABI promise does not cover. Moving would mean drawing the cells ourselves. herdr is the program that
+  runs on libghostty-vt: scrollback, OSC, input modes, IME results and resize reflow are herdr's, and Ovvi draws herdr's
+  frames.
+- **Fix.** libghostty-spm 2.2.2026100801 → 2.2.2026110702, its latest (Ghostty 042b16b6, Nov 2: 479 upstream commits
+  newer than our pin, 165 older than `vt-1.0.0`; the package has no `vt-1.0.0` build yet). It brings faster print paths,
+  Kitty graphics from the render state, DEC 2026 kept across a resize, copy without a TUI's padding, the left or right
+  Option for "Left acts as Meta" (before, both read as left), and no GNU libintl (LGPL): its license left the
+  Acknowledgements, which settles phase 33's open point. Its AppKit view now takes drops itself and refused file
+  promises, so the card keeps its own file and image drops (remote copies, `TemporaryItems`, promises) and hands text
+  and links to the package, which pastes them.
+- **Flags.** 1.0's build flags (SIMD, system simdutf and Highway, features compiled out) apply only to a build of
+  libghostty-vt; a prebuilt GhosttyKit has none. Config kept: `keybind = clear`, no padding, `scrollback-limit = 0`
+  (herdr's), transparent background, the selection colors, `macos-option-as-alt`, `copy-on-select = clipboard`. Ghostty's
+  defaults fit the rest (Metal, vsync, `link-osc8`, `alpha-blending = native`).
+- **Kept workaround.** ⌥ over a link still sends libghostty ⌘ (Track C): Ghostty still hard-codes the link hover to
+  ⌘ or ⌃ (`hover_mods = ctrlOrSuper`), and its `link` config "can't currently be set". libghostty-spm's open pull
+  requests #102 and #103 (hover link and open-URL hooks) do not change that.
+- **Runs (Release app, no XCUITest, old and new in turns, 2 rounds, load 200–300).** `cat` of a 32 MB file: 0.38–0.51 s
+  before and 0.39–0.45 s after, Ovvi 0.12–0.14 s of CPU both (herdr sends frames, so the app parses screens, not the
+  file). 10 splits and closes: 3.70–3.73 s of CPU before, 3.78–3.86 s after; 20 resizes 3.69–3.75 s, 3.66–3.70 s: the
+  same. Memory: 124–125 MB with one pane both; seven panes 183–184 MB before, 175–177 MB after (9.8 → 8.6 MB a pane).
+  Idle, seven panes, 10 s: 0.24–0.26 s of CPU before, 0.09–0.12 s after: the package's cursor timer no longer redraws
+  surfaces that are not focused or do not blink.
+- **Decisions.** The package dropped its `font-thicken = true` default, and Ovvi takes Ghostty's (off): text draws as in
+  Ghostty and Terminal, thinner than before, most visibly light on dark. Sheets in
+  `~/Downloads/ovvi-research/p57n/` (`sheet-font-thicken.png`, `zoom-dark-before-after.png`).
+- **For the user.** Look at the font sheets: `$0.withFontThicken(true)` in `TerminalFont.swift` brings the heavier text
+  back. Drop text, a link and a browser image (a file promise) on a terminal, and a file on a remote card. With "Left
+  acts as Meta", the right Option types characters.
