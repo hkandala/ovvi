@@ -290,11 +290,11 @@ extension OvviUITests {
     /// was selected.
     func testTheSelectedRowScrollsIntoView() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        var rows: [String] = []
+        var rows: [String] = [], panes: [String] = []
         for index in 0 ..< 24 {
             let (tab, pane) = try await createWorkspace("long\(index)")
             try await report(pane, "working")
-            rows.append("workspace.\(workspace(of: tab))")
+            (rows, panes) = (rows + ["workspace.\(workspace(of: tab))"], panes + [pane])
         }
         let header = element("sidebar.header"), filter = element("sidebar.filter")
         let first = element("workspace.w1"), long0 = element(rows[0]), last = element(rows[23])
@@ -306,8 +306,10 @@ extension OvviUITests {
         // Round the end to the last row.
         app.typeKey("[", modifierFlags: [.command, .control])
         XCTAssertTrue(until(2) { last.isSelected && inView(last) }, "\(last.frame), filter \(filter.frame)")
-        // Just enough: at the list's end, over its bottom inset, Archived Sessions and the footer's padding.
-        XCTAssertGreaterThan(last.frame.maxY, filter.frame.minY - 60, "\(last.frame), filter \(filter.frame)")
+        // Just enough: the row's end (its agent's line, unfolded) at the list's end, over its bottom inset, Archived
+        // Sessions and the footer's padding.
+        let end = element("agent.\(panes[23])").frame
+        XCTAssertGreaterThan(end.maxY, filter.frame.minY - 60, "\(end), filter \(filter.frame)")
         XCTAssertFalse(inView(first))
         // ⌃⌘3 (after alpha and beta): up to long0, with the 18 pt fade's room above it (the list starts 3 pt under the
         // header).
