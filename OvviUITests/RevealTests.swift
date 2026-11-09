@@ -268,7 +268,8 @@ extension OvviUITests {
 
     /// `-recordMotion`'s label on a card: the motions Core Animation made of it ("slides 3").
     private static func slides(_ card: XCUIElement) -> Int {
-        Int(card.label.split(separator: " ").last ?? "") ?? 0
+        let words = card.label.split(separator: " ")
+        return words.firstIndex(of: "slides").flatMap { Int(words[min($0 + 1, words.count - 1)]) } ?? 0
     }
 
     /// `-recordMotion`'s label: the sizes the host took, and the ms its latest motion's sizes spanned.
