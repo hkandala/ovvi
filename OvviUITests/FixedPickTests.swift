@@ -47,7 +47,7 @@ extension OvviUITests {
     }
 
     /// New panes open Terminal: ⌘T and ⌘D give a shell at once, with no chooser. Keys typed before herdr made the pane
-    /// go to the new shell in the order typed (text, then ← ×3, then text), none to the old one.
+    /// go to the new shell in the order typed (text, then ← ×9, then text), none to the old one.
     func testAFixedTerminalTakesTheKeysTypedBeforeItsPane() async throws {
         relaunch(one, ["-newPaneOpens", "terminal"])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))

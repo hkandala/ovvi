@@ -153,7 +153,10 @@ and Return never reaches the old card's shell.
   [fixed pick](#a-fixed-pick)) runs `ls` in the new shell, never in the old
   card. An agent gets them once it is ready. If the terminal does not get the
   keyboard (the window went to the back), the keys are dropped with a beep.
-  While a browser or plugin pane opens, each key beeps.
+  While a browser or plugin pane opens, each key beeps. Held keys go in as
+  plain keys: a dead key or an input method does not compose, ⌥ types its
+  character whatever Settings ▸ Terminal ▸ Option key says, and ⌘V pastes the
+  clipboard's text.
 - The pointer selects a row once it moves, as in the palette. A click picks.
   A click beside the list gives the card the keyboard.
 - Other keys do nothing, also ⌃ and ⌥ chords, so ⌃D cannot end the hidden

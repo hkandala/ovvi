@@ -6,6 +6,8 @@ import SwiftUI
 /// Settings ▸ General: opening at login, what new panes open, how panes take the keyboard, and the shortcuts.
 struct GeneralPage: View {
     private var settings = AppSettings()
+    private static let chooserNote = "What ⌘T, ⌘D and New Space open."
+    private static let fixedNote = "Hold ⌥ as you make a pane to choose each time."
 
     var body: some View {
         // A plugin removed since it was picked: New Pane.
@@ -23,8 +25,7 @@ struct GeneralPage: View {
                     }
                 } label: {
                     Text("New panes open")
-                    Text(opens
-                        .isEmpty ? "What ⌘T, ⌘D and New Space open." : "Hold ⌥ as you make a pane to choose each time.")
+                    Text(opens.isEmpty ? Self.chooserNote : Self.fixedNote)
                 }
                 .accessibilityIdentifier("settings.general.new-pane").settingsRow("general.new-pane")
                 Toggle(isOn: settings.$followMouse) {

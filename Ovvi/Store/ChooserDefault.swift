@@ -77,7 +77,13 @@ extension HostStore {
         for event in held {
             if let key = PaneSurfaceView.herdrKey(event) {
                 terminal.keys([key])
-            } else if !event.modifierFlags.contains(.command), let text = event.characters {
+            } else if event.modifierFlags.contains(.command) {
+                // ⌘V, framed as libghostty frames a paste; herdr pastes it.
+                NSPasteboard.general.string(forType: .string).map { terminal.type("\u{1B}[200~" + $0 + "\u{1B}[201~") }
+            } else if let text = event.characters,
+                      // Not AppKit's function-key characters (Home, End, Page Up and Down, forward delete).
+                      !text.unicodeScalars.contains(where: { (0xF700 ... 0xF8FF).contains($0.value) })
+            {
                 terminal.type(text)
             }
         }
