@@ -367,7 +367,9 @@ runs and on-demand on the final head.
   has 5 pt above it there, under row 1.
 - **Fix, item 40, chat.** A bubble had 8 pt above its text and under its time: 23 and 22 px to the letters at 2x, 38
   px at the sides. 16 pt now: 39, 38, 38 and 38 px.
-- **Runs, round 4.** Chosen tests 42557814388 on the first fix; RUNS2.
+- **Runs, round 4.** Chosen tests 42557814388: 5 of 6 green, the floated browser's page gap read 11 vs 12 pt on CI's
+  1x screen (the card's frame rounds; now 1 pt of slack); 42559159986 green (5 tests: browser, Git card and home, File
+  Explorer's floated `..` row, floating chat).
 - **For the user, round 4.** Panes changed too: plugin pages start 9 pt under row 2's Back there (were 11 to 17 pt,
   different per plugin). Markdown's Rich Text keeps its 28 pt page margin. Chat bubbles are taller (16 pt above the
   text and under the time).
