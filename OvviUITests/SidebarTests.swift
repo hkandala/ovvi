@@ -301,11 +301,15 @@ extension OvviUITests {
         let inView = { (row: XCUIElement) in
             row.exists && row.frame.minY >= header.frame.maxY && row.frame.maxY <= filter.frame.minY
         }
-        XCTAssertTrue(last.exists(within: 5))
+        // The lazy list makes no row out of view.
         XCTAssertFalse(inView(last), "\(last.frame) under \(header.frame), over \(filter.frame)")
-        // Round the end to the last row.
-        app.typeKey("[", modifierFlags: [.command, .control])
-        XCTAssertTrue(until(2) { last.isSelected && inView(last) }, "\(last.frame), filter \(filter.frame)")
+        // Round the end to the last row (from the first again until the snapshot with all of them came).
+        XCTAssertTrue(until(5) {
+            self.app.typeKey("1", modifierFlags: [.command, .control])
+            self.app.typeKey("[", modifierFlags: [.command, .control])
+            return until(1) { last.isSelected }
+        })
+        XCTAssertTrue(until(2) { inView(last) }, "\(last.frame), filter \(filter.frame)")
         // Just enough: the row's end (its agent's line, unfolded) at the list's end, over its bottom inset, Archived
         // Sessions and the footer's padding.
         let end = element("agent.\(panes[23])").frame

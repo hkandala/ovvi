@@ -1145,3 +1145,41 @@ you did, no need of reverting them".
   browser page yet, no team sharing, and herdr (plus Perl for the relay) must be on each machine.
 - Pictures: reused Track Q's captures from `ovvi-dev-p57q` (`landing/assets/`) and a crop of Track R's New Pane
   chooser that leaves out the shell prompt. No new GUI runs.
+
+### Track U (item 57)
+
+- **Measured.** Release builds of main and the branch, by turns, on throwaway sessions: one of 200 spaces and 300
+  agent panes (stand-ins: `pane.report_agent` from outside, three agents a second changing state), two of 10. Posted
+  trackpad events (fast scrolls of 30 × 60 pt with momentum, two-finger swipes to the next page and back, a fold, two
+  pointer sweeps), `-recordLatency` frame records, `sample`, a temporary count of the rows made. "With an AX client":
+  a process that reads the app's whole accessibility tree every second, as XCUITest does. The Mac's load was 40–150.
+- **Cause.** (1) An eager `VStack`: every update of the page made all 500 rows (1,400–1,800 a scroll), and a swipe
+  that brings the page in made 2,300 in one frame. (2) `HostStore.groups` looked up each space's parent among all
+  spaces: 40,000 observed reads at 200 spaces in every sidebar update and menu refresh. (3) A hover region in every
+  row (`ChromeStyle`'s and the hover card's `onHover`): AppKit hit-tests each at every scroll frame, which cost half
+  the frames once the list was lazy. (4) In the lazy stack, a 0.14 s fade of a row's hover fill kept the main thread
+  busy for half of a pointer sweep, with 100 ms frames.
+- **Fix.** A `LazyVStack`. The drop frames go to a non-observed box in the content's own space (a scroll moves no
+  frame); a drop point adds the visible top; blocks not made lie above or below; a dragged row keeps its frame. The
+  `ScrollPosition` is only asked. `WorkspaceRow` is `Equatable`. `groups` is one pass. One pointer for the list
+  (`onContinuousHover`): each header and agent line reports its frame, the one under the pointer lights through its
+  own observed `RowLight` (no row draws again), nothing lights while the list scrolls, and a target that moves under
+  a still pointer finds it again. The sidebar's fill comes on with no fade.
+- **Before → after**, per 1.7 s scroll (120 Hz: 200 frames), no AX client: 9–25 → 106–129 frames, p95 180–250 → 23–28
+  ms, the main thread 1.6–1.8 → 0.9–1.1 s, rows made 1,400–1,800 → 73–122. With the AX client: 10–36 → 78–114
+  frames, p95 220–280 → 33–53 ms. A swipe to the big page and back, the worst frame: 0.3–1.6 s → 0.10–0.14 s
+  (with the AX client 0.36–5.0 s → 0.15–0.5 s). A fold's longest turn 0.5 s → 0.16 s. A pointer sweep: the main
+  thread 1.5 → 0.3–0.8 s per 5 s, longest turn 8–15 → 9–48 ms. Records and recordings (before left, after right):
+  `~/Downloads/ovvi-research/p57u/`.
+- **Left.** Rows that come into view are made then: about 10 ms of the main thread each (SwiftUI's modifiers per
+  row), so a fast scroll runs at 60–75 frames a second, not the display's 120. An AppKit table would reuse rows; the
+  look, folds, drags and hover cards would all need building again in it, for the last part of the way.
+- **Decisions.** The hover fill does not fade in the sidebar (the tab capsules keep theirs). The first-page check
+  for the selected row asks the row's own id, then the fade's room, since a new page's first ask can be dropped.
+- **Review.** No blocker; five should-fix items (the fade, a page made again, lights after a move, lights in a
+  scroll, a dragged row's frame), the test's bound, and nits: fixed.
+- **Runs.** CI 42606451106: 34 of 35 chosen tests green (sidebar, agents, hover cards, drags, swipes, the stress
+  tests); `testTheSelectedRowScrollsIntoView` waited for a row out of view to exist, which a lazy list does not make.
+  CI 42606461976 on an eager `VStack` tag: the new stress test red (a 20 s frame, 1,000 rows made in one swipe).
+- **For the user.** In a session with hundreds of spaces: scroll fast, swipe to another session and back, fold a
+  space, and rest the pointer on an agent row for its card.

@@ -59,14 +59,13 @@ extension OvviUITests {
         XCTAssertTrue(last.has(\.isHittable, true, within: 3), "\(last.frame) in \(sidebar)")
         let swipes = records().dropFirst(swiped)
         note("swipes: \(swipes.joined(separator: ", "))")
-        XCTAssertGreaterThanOrEqual(swipes.count, 4)
-
         // The swipes carry it: the page that comes back in is made again, and an eager list made all its rows then
-        // (2,300 at 200 spaces and 400 agents), a lazy one those in view (about 50).
+        // (1,000 on CI, in one 20 s frame), a lazy one those in view (about 110).
         for record in swipes {
             let rows = Int(record.split(separator: " ").dropFirst(8).first ?? "") ?? .max
             XCTAssertLessThan(rows, 300, String(record))
         }
+        XCTAssertGreaterThanOrEqual(swipes.count, 4)
     }
 
     /// Two swipes each way over the sidebar: to the other page and back.
