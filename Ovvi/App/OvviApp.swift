@@ -40,6 +40,15 @@ struct OvviApp: App {
         // A folder dropped on the Dock icon opens a workspace (AppDelegate), not a window.
         .handlesExternalEvents(matching: [])
         .onChange(of: settings.terminal) { PaneTerminal.configure() }
+        // Every window (the new-window view's too), sheet and menu, and the terminals' palettes, follow the app's
+        // appearance.
+        .onChange(of: settings.appearance, initial: true) {
+            NSApp.appearance = switch settings.appearance {
+            case .auto: nil
+            case .light: NSAppearance(named: .aqua)
+            case .dark: NSAppearance(named: .darkAqua)
+            }
+        }
         // A floated pane (D50). Its main window saves and opens it, so SwiftUI does not restore it.
         WindowGroup(id: "float", for: Floating.self) { $floating in
             if let floating {
@@ -260,7 +269,7 @@ private struct WindowContent: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        let style = settings.style, appearance = settings.appearance
+        let style = settings.style
         let look = Look(style: style, dark: colorScheme == .dark, contrast: colorSchemeContrast == .increased)
         let commands = CommandList(pages: pages, palette: open(.palette), sidebar: $sidebar,
                                    openSession: open(.openSession), shortcuts: open(.shortcuts), settings: settings)
@@ -368,14 +377,6 @@ private struct WindowContent: View {
         .testValue("window.lights", "Traffic Lights Off", "\(lightsOff)",
                    shown: WindowReader.recordLights)
         .navigationTitle(page.selectedTab.map { "\(page.titleText($0)) - \(page.store.title)" } ?? page.store.name)
-        // Every window, sheet and menu, and the terminals' palettes, follow the app's appearance.
-        .onChange(of: appearance, initial: true) {
-            NSApp.appearance = switch appearance {
-            case .auto: nil
-            case .light: NSAppearance(named: .aqua)
-            case .dark: NSAppearance(named: .darkAqua)
-            }
-        }
         .menuBar(commands)
         // The workspace menu belongs to the collapsed sidebar's button.
         .onChange(of: sidebar) {
