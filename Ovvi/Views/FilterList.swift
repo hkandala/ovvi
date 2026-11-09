@@ -120,9 +120,11 @@ struct FilterList: View {
             if submit == nil {
                 ScrollViewReader { proxy in
                     ScrollView {
-                        // Lazy: the palette's 100 rows took 230 ms to build and lay out on CI as it opened.
+                        // Lazy: the palette's 100 rows took 230 ms to build and lay out on CI as it opened. By place,
+                        // not by row: a typed key changes what the rows in view show, instead of making them anew with
+                        // their accessibility (100 ms a key at 130 rows with an accessibility client).
                         LazyVStack(alignment: .leading, spacing: 2) {
-                            ForEach(Array(items.enumerated().dropLast(pinned)), id: \.element.id) { offset, _ in
+                            ForEach(Array(items.enumerated().dropLast(pinned)), id: \.offset) { offset, _ in
                                 row(items, offset, index)
                             }
                             if items.isEmpty {
@@ -144,7 +146,7 @@ struct FilterList: View {
                     .onChange(of: rowsHeight > 0 ? index : nil) {
                         if !pointed, items.indices.contains(index) {
                             // The last row to the end, with the gap after it.
-                            proxy.scrollTo(items[index].id, anchor: index == items.count - 1 ? .top : nil)
+                            proxy.scrollTo(index, anchor: index == items.count - 1 ? .top : nil)
                         }
                     }
                 }
