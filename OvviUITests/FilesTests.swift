@@ -14,7 +14,7 @@ extension OvviUITests {
         try await waitForPrompt(shell)
         let repo = "/tmp/ovvi-e2e-files", root = "/private/tmp/ovvi-e2e-files"
         try await makeTreeRepo(repo, in: shell)
-        let (tab, card) = try await newCard("ovvi:explorer#e2efil \(root)/", cwd: repo)
+        let card = try await newCard("ovvi:explorer#e2efil \(root)/", cwd: repo).pane
 
         let tree = element("files.\(card).page")
         XCTAssertTrue(row("a.txt", in: tree).exists(within: 10))
@@ -168,7 +168,7 @@ extension OvviUITests {
         try await waitForPrompt(shell)
         let repo = "/tmp/ovvi-e2e-files-keys", root = "/private/tmp/ovvi-e2e-files-keys"
         try await makeTreeRepo(repo, in: shell)
-        let (tab, card) = try await newCard("ovvi:explorer#e2efil \(root)/", cwd: repo)
+        let card = try await newCard("ovvi:explorer#e2efil \(root)/", cwd: repo).pane
         let tree = element("files.\(card).page")
         XCTAssertTrue(row("a.txt", in: tree).exists(within: 10))
         XCTAssertFalse(row(".gitignore", in: tree).exists)

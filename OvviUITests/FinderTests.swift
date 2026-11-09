@@ -13,7 +13,7 @@ extension OvviUITests {
         try await waitForPrompt(shell)
         let repo = "/tmp/ovvi-e2e-files-finder", root = "/private/tmp/ovvi-e2e-files-finder"
         try await makeTreeRepo(repo, in: shell)
-        let (tab, card) = try await newCard("ovvi:explorer#e2efil \(root)/", cwd: repo)
+        let card = try await newCard("ovvi:explorer#e2efil \(root)/", cwd: repo).pane
         let tree = element("files.\(card).page"), field = tree.textFields["Filter"]
         // The first card of a run waits for the default plugins to install and build.
         XCTAssertTrue(row("a.txt", in: tree).exists(within: 30))
