@@ -3,7 +3,7 @@ import SwiftUI
 
 /// Where a plugin card opens a file or a diff (plugins/default-plugins): in the card (a click or a double-click), in a
 /// new tab right after the card's tab (⌘), or in a pane to the card's side (⌥).
-enum Opening: String {
+enum Opening {
     case here, tab, side
 }
 

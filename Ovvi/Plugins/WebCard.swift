@@ -16,7 +16,6 @@ final class WebCard {
 
     @ObservationIgnored weak var store: HostStore?
     @ObservationIgnored let view: WebCardView
-    /// The page's calls and events.
     var bridge: Bridge?
     /// A linked open's landing, for the first load only (`ovvi.card.at`).
     @ObservationIgnored var place: String?
@@ -99,19 +98,6 @@ final class WebCard {
             source: "window.ovvi_card = \(json); document.documentElement.style.cssText = window.ovvi_card.css",
             injectionTime: .atDocumentStart, forMainFrameOnly: true,
         ))
-    }
-}
-
-/// A menu item's action as a closure: the item keeps it (`representedObject`), its target is weak.
-final class MenuAction: NSObject {
-    private let run: () -> Void
-
-    init(_ run: @escaping () -> Void) {
-        self.run = run
-    }
-
-    @objc func fire() {
-        run()
     }
 }
 

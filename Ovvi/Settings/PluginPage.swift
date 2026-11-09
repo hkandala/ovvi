@@ -23,7 +23,6 @@ struct PluginPage: View {
         Form {
             if let failure = PluginInstalls.shared.failure {
                 NoticeCapsule(tone: .error, text: failure.text) {}.frame(maxWidth: .infinity)
-                    .accessibilityIdentifier("plugins.notice")
             }
             if let row {
                 Section { PluginSummary(row: row, gone: { dismiss() }) }
@@ -71,7 +70,6 @@ struct PluginPage: View {
         if id == Registry.browser.id {
             LabeledContent("Approved websites") {
                 Button("Show in Privacy") { SettingsRoute.shared.open(.privacy) }
-                    .accessibilityIdentifier("plugins.browser.privacy")
             }
         }
     }
@@ -100,15 +98,12 @@ private struct PluginSummary: View {
 
     var body: some View {
         let installs = PluginInstalls.shared, defaults = DefaultPlugins.shared, id = "plugins.\(row.id)"
-        let manifest = row.manifest, busy = installs.busy[row.id]
-            ?? (defaults.installing.contains(row.id) ? "Installing…" : nil)
-        // The browser is the app's own: no version.
-        let version = manifest?.entry != nil || manifest == nil ? manifest.map(\.version.shown) ?? "Not installed" : nil
+        let manifest = row.manifest
         let lines = [manifest?.description.shown ?? "", row.source]
-        SettingsHeader(title: manifest?.name.shown ?? row.id, note: version, lines: lines) {
+        SettingsHeader(title: manifest?.name.shown ?? row.id, note: row.version, lines: lines) {
             ProgramTile(icon: manifest?.icon ?? Registry.missing).scaleEffect(2)
         } actions: {
-            if let busy {
+            if let busy = row.busy {
                 ProgressView().controlSize(.small)
                 Text(busy).foregroundStyle(.secondary).accessibilityIdentifier("\(id).busy")
             } else {
@@ -128,7 +123,6 @@ private struct PluginSummary: View {
                     Button(offer.map { "Update to Version \($0)" } ?? "Reset to Default") {
                         Task { await defaults.reset(row.id) }
                     }
-                    .accessibilityIdentifier("\(id).reset")
                 }
                 if manifest?.entry != nil {
                     Button("Show Log") { PluginLog.show(row.id) }.accessibilityIdentifier("\(id).log")

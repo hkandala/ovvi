@@ -106,20 +106,11 @@ final class DefaultPlugins {
     func reset(_ id: String) async {
         let copy = PluginInstalls.plugins.appending(path: id), record = Self.read()[id]
         let edited = await Self.hash(copy) != record?.copy
-        if edited {
-            let alert = NSAlert()
-            alert.messageText = "Replace your edited \(Self.bundled[id]?.name ?? id)?"
-            alert.informativeText = "Your copy goes to the Trash, and Ovvi installs its own."
-            // Red, so not the default button: Return clicks it all the same (`NSWindow.confirm`).
-            let replace = alert.addButton(withTitle: "Replace")
-            (replace.hasDestructiveAction, replace.keyEquivalent) = (true, "")
-            alert.addButton(withTitle: "Cancel")
-            let answer = if let window = NSApp.keyWindow {
-                await alert.beginSheetModal(for: window)
-            } else {
-                alert.runModal()
-            }
-            guard answer == .alertFirstButtonReturn else { return }
+        if edited, await !PluginInstalls.ask("Replace your edited \(Self.bundled[id]?.name ?? id)?",
+                                             "Your copy goes to the Trash, and Ovvi installs its own.",
+                                             button: "Replace", destructive: true)
+        {
+            return
         }
         await put(id, trash: edited)
         await check()
@@ -170,7 +161,7 @@ final class DefaultPlugins {
             }
         } catch {
             if let manifest = Self.bundled[id] {
-                failures[id] = .failed(manifest, "could not install", error, button: "Try Again")
+                failures[id] = .failed(manifest, "could not install", error)
             }
         }
     }

@@ -35,7 +35,6 @@ final class SettingsRoute {
     var path: [SettingsDetail] = []
     var ring: String?
 
-    /// Opens the window at a page, and a detail page on it.
     func open(_ page: SettingsPage, _ detail: SettingsDetail? = nil) {
         self.page = page
         path = detail.map { [$0] } ?? []
@@ -88,8 +87,7 @@ struct SettingsWindow: View {
                     ContentUnavailableView.search(text: search)
                 }
             }
-            // A little room between the search field and the first row (the user's ask); the list's content margins
-            // drew no gap.
+            // A little room between the search field and the first row: the list's content margins draw none.
             .safeAreaPadding(.top, 6)
             .searchable(text: $search, placement: .sidebar)
             // As System Settings: the sidebar always shows.
@@ -124,7 +122,6 @@ private struct SettingsSidebarRow: View {
     }
 }
 
-/// The sidebar page's form.
 private struct SettingsPageView: View {
     let page: SettingsPage
 
@@ -142,8 +139,8 @@ private struct SettingsPageView: View {
         }
         .formStyle(.grouped)
         .navigationTitle(page.title)
-        // A toolbar item, so the window has a toolbar as System Settings: with none (the sidebar toggle is gone), the
-        // window had a bare title bar, its traffic lights in the corner and its corners square. A pushed page has
+        // A toolbar item, so the window has a toolbar as System Settings: with none (the sidebar toggle is off), the
+        // window has a bare title bar, its traffic lights in the corner and its corners square. A pushed page has
         // its Back button.
         .toolbar { ToolbarSpacer(.fixed) }
         .scrollsToRing()

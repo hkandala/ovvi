@@ -114,12 +114,12 @@ private struct PluginFailure: View {
             id: "\(id).failure",
         ) {
             if building {
-                ProgressView().controlSize(.small).accessibilityIdentifier("\(id).building")
+                ProgressView().controlSize(.small)
             } else if let button = problem.button {
                 Button(button) { fix() }.buttonStyle(.glassProminent)
                     .accessibilityIdentifier(problem.builds ? "\(id).build" : "\(id).reload")
             }
-            Button("Show Log") { PluginLog.show(plugin.manifest.id) }.accessibilityIdentifier("\(id).show-log")
+            Button("Show Log") { PluginLog.show(plugin.manifest.id) }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         // Over what the page drew before it stopped.
@@ -179,7 +179,7 @@ struct MissingPlugin: View {
             id: "\(id).missing",
         ) {
             Button("Show Placeholder") { pane.placeholder = true }.accessibilityIdentifier("\(id).show-placeholder")
-            Button("Close Pane") { page.closePane(pane) }.accessibilityIdentifier("\(id).close-missing")
+            Button("Close Pane") { page.closePane(pane) }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

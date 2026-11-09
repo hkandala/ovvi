@@ -133,10 +133,23 @@ extension Bridge {
     }
 }
 
+/// A menu item's action as a closure: the item keeps it (`representedObject`), its target is weak.
+private final class MenuAction: NSObject {
+    private let run: () -> Void
+
+    init(_ run: @escaping () -> Void) {
+        self.run = run
+    }
+
+    @objc func fire() {
+        run()
+    }
+}
+
 extension CommandList {
     /// The manifest's commands of the plugin card with the keyboard, in the menu bar and the palette
-    /// (manifest#commands):
-    /// gone elsewhere, so they swallow no key. A key the app already uses is left off, once in the log.
+    /// (plugins/manifest#commands); none while the keyboard is elsewhere, so they swallow no key. A key the app
+    /// already uses is left off, once in the log.
     static func plugin(_ plugin: Plugin?, besides list: [Command]) -> [Command] {
         guard let plugin, let bridge = plugin.web.bridge else { return [] }
         let taken = Set(list.compactMap(\.key))

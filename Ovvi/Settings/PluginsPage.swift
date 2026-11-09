@@ -32,10 +32,9 @@ struct PluginsPage: View {
                         .accessibilityIdentifier("plugins.source")
                     if let busy = installs.busy[typed] {
                         ProgressView().controlSize(.small)
-                        Text(busy).foregroundStyle(.secondary).accessibilityIdentifier("plugins.busy")
+                        Text(busy).foregroundStyle(.secondary)
                     } else {
                         Button("Install", action: install).buttonStyle(.borderedProminent).disabled(typed.isEmpty)
-                            .accessibilityIdentifier("plugins.install")
                     }
                 }
             } footer: {
@@ -48,7 +47,6 @@ struct PluginsPage: View {
                         Button("Retry", action: retry).accessibilityIdentifier("notice.retry")
                     }
                 }
-                .accessibilityIdentifier("plugins.notice")
                 .frame(maxWidth: .infinity)
             }
             Section {
@@ -64,7 +62,6 @@ struct PluginsPage: View {
                     }
                     Button("New Plugin…") { Task { await installs.create() } }.accessibilityIdentifier("plugins.new")
                     Button("Reload All", systemImage: "arrow.clockwise") { Task { await Plugin.reloadAll() } }
-                        .accessibilityIdentifier("plugins.reload-all")
                 }
                 .controlSize(.small)
             }
@@ -88,24 +85,21 @@ private struct PluginLink: View {
     let row: InstalledPlugin
 
     var body: some View {
-        let busy = PluginInstalls.shared.busy[row.id]
-            ?? (DefaultPlugins.shared.installing.contains(row.id) ? "Installing…" : nil)
         NavigationLink(value: SettingsDetail.plugin(row.id)) {
             HStack(spacing: 10) {
                 ProgramTile(icon: row.manifest?.icon ?? Registry.missing)
                 VStack(alignment: .leading, spacing: 1) {
                     HStack(spacing: 5) {
                         Text(row.manifest?.name.shown ?? row.id).lineLimit(1)
-                        // The browser is the app's own: no version.
-                        if row.manifest?.entry != nil || row.manifest == nil {
-                            Text(row.manifest.map(\.version.shown) ?? "Not installed").foregroundStyle(.secondary)
+                        if let version = row.version {
+                            Text(version).foregroundStyle(.secondary)
                         }
                     }
                     Text(row.source).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
                         .truncationMode(.middle)
                 }
                 Spacer(minLength: 8)
-                if let busy {
+                if let busy = row.busy {
                     ProgressView().controlSize(.small)
                     Text(busy).font(.system(size: 11)).foregroundStyle(.secondary)
                 }

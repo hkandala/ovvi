@@ -32,12 +32,11 @@ struct GeneralPage: View {
                     Text("Focus follows mouse")
                     Text("A pane gets the keyboard when the pointer rests on it.")
                 }
-                .accessibilityIdentifier("settings.general.follow-mouse").settingsRow("general.follow-mouse")
+                .settingsRow("general.follow-mouse")
             }
             Section("Help") {
                 LabeledContent("Keyboard shortcuts") {
                     Button("Show Shortcuts") { CommandList.runInMainWindow("Keyboard Shortcuts") }
-                        .accessibilityIdentifier("settings.general.shortcuts")
                 }
                 .settingsRow("general.shortcuts")
             }
@@ -81,7 +80,6 @@ private struct OpenAtLogin: View {
         if status == .requiresApproval {
             LabeledContent("Waiting for your approval") {
                 Button("Open Login Items") { SMAppService.openSystemSettingsLoginItems() }
-                    .accessibilityIdentifier("settings.general.login-items")
             }
         }
     }
@@ -144,9 +142,7 @@ struct AppearancePage: View {
                 LabeledContent {
                     HStack(spacing: 6) {
                         Text("\(settings.fontSize) pt").monospacedDigit()
-                            .accessibilityIdentifier("settings.appearance.font-size.value")
                         Stepper("Text size", value: settings.$fontSize, in: PaneTerminal.fontSizes).labelsHidden()
-                            .accessibilityIdentifier("settings.appearance.font-size")
                     }
                 } label: {
                     Text("Text size")
@@ -240,7 +236,7 @@ struct TerminalPage: View {
                     Text("Underline").tag(TerminalCursorStyle.underline)
                 }
                 .pickerStyle(.segmented)
-                .accessibilityIdentifier("settings.terminal.cursor").settingsRow("terminal.cursor")
+                .settingsRow("terminal.cursor")
                 Toggle("Blink the cursor", isOn: settings.$cursorBlink)
                     .accessibilityIdentifier("settings.terminal.blink").settingsRow("terminal.blink")
                 Picker(selection: settings.$optionKey) {
@@ -283,7 +279,7 @@ struct AgentsPage: View {
                     Text("Show closed sessions")
                     Text("Archived Sessions lists the Claude Code, Codex, Pi and OpenCode sessions no pane runs.")
                 }
-                .accessibilityIdentifier("settings.agents.closed").settingsRow("agents.closed")
+                .settingsRow("agents.closed")
             }
             Section {
                 ForEach(Chooser.agents, id: \.command) { AgentSettingsRow(agent: $0) }
@@ -298,14 +294,14 @@ struct AgentsPage: View {
                     Text("When an agent needs you")
                     Text("It asks a question or waits for permission.")
                 }
-                .accessibilityIdentifier("settings.agents.needs-you").settingsRow("agents.needs-you")
+                .settingsRow("agents.needs-you")
                 Toggle("When an agent finishes", isOn: settings.$notifyFinished)
-                    .accessibilityIdentifier("settings.agents.finished").settingsRow("agents.finished")
+                    .settingsRow("agents.finished")
                 Toggle(isOn: settings.$notifyFromAgents) {
                     Text("When an agent sends one")
                     Text("Agents send them with the ovvi command.")
                 }
-                .accessibilityIdentifier("settings.agents.from-agents").settingsRow("agents.from-agents")
+                .settingsRow("agents.from-agents")
             } header: {
                 Text("Notifications")
             } footer: {

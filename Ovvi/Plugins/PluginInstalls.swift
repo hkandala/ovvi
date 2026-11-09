@@ -91,7 +91,7 @@ final class PluginInstalls {
     /// Remove: off the list, its trust forgotten, and an installed or hand-made folder to the Trash. A local path's
     /// folder stays where it is.
     func remove(_ row: InstalledPlugin) async {
-        guard row.kind != .bundled, await ask(
+        guard row.kind != .bundled, await Self.ask(
             "Remove “\((row.manifest?.name ?? row.id).shown)”?",
             Self.removal(row),
             button: "Remove",
@@ -165,21 +165,13 @@ final class PluginInstalls {
 
     /// New Plugin's name, or nil on Cancel.
     private func askName() async -> String? {
-        let alert = NSAlert()
-        alert.messageText = "New Plugin"
-        alert.informativeText = "Ovvi copies its template into the plugins folder, then installs and builds it."
-        let field = NSTextField(string: "")
+        let alert = NSAlert(), field = NSTextField(string: "")
         field.frame.size.width = 260
         alert.accessoryView = field
-        alert.addButton(withTitle: "Create")
-        alert.addButton(withTitle: "Cancel")
         alert.window.initialFirstResponder = field
-        let answer = if let window = NSApp.keyWindow {
-            await alert.beginSheetModal(for: window)
-        } else {
-            alert.runModal()
-        }
-        return answer == .alertFirstButtonReturn ? field.stringValue : nil
+        return await Self.ask("New Plugin",
+                              "Ovvi copies its template into the plugins folder, then installs and builds it.",
+                              button: "Create", alert: alert) ? field.stringValue : nil
     }
 
     private func fetch(_ source: PluginSource, _ text: String, for agent: Asker?) async throws -> PluginManifest {
@@ -248,8 +240,8 @@ final class PluginInstalls {
             alert.suppressionButton?.title = "Show in New Pane"
             alert.suppressionButton?.state = Registry.inNewPane(manifest) ? .on : .off
         }
-        guard await ask("Install “\(manifest.name.shown)”?", text.joined(separator: "\n\n"), button: "Install",
-                        alert: alert, for: agent) else { throw CancellationError() }
+        guard await Self.ask("Install “\(manifest.name.shown)”?", text.joined(separator: "\n\n"), button: "Install",
+                             alert: alert, for: agent) else { throw CancellationError() }
         if let box = alert.suppressionButton, alert.showsSuppressionButton {
             Registry.show(manifest.id, inNewPane: box.state == .on)
         }
@@ -258,8 +250,8 @@ final class PluginInstalls {
     /// A sheet on the key window, or for an agent on its session's window. An agent's prompt never takes the user's
     /// keys: Ovvi only asks for attention, and Return is not Install, so typing that lands here installs nothing.
     /// `destructive`: the button is red, so not the default button; Return clicks it all the same (`NSWindow.confirm`).
-    private func ask(_ title: String, _ text: String, button: String, destructive: Bool = false,
-                     alert: NSAlert = NSAlert(), for agent: Asker? = nil) async -> Bool
+    static func ask(_ title: String, _ text: String, button: String, destructive: Bool = false,
+                    alert: NSAlert = NSAlert(), for agent: Asker? = nil) async -> Bool
     {
         alert.messageText = title
         alert.informativeText = text
@@ -331,6 +323,17 @@ struct InstalledPlugin: Identifiable {
     let id: String
     let manifest: PluginManifest?
     let kind: Kind
+
+    /// Its version; none for the browser, the app's own.
+    var version: String? {
+        guard let manifest else { return "Not installed" }
+        return manifest.entry == nil ? nil : manifest.version.shown
+    }
+
+    /// What it is doing (`Installing…`), if anything.
+    @MainActor var busy: String? {
+        PluginInstalls.shared.busy[id] ?? (DefaultPlugins.shared.installing.contains(id) ? "Installing…" : nil)
+    }
 
     /// The line under its name.
     var source: String {

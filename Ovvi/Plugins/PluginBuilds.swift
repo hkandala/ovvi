@@ -2,7 +2,7 @@ import AppKit
 import HerdrKit
 import WebKit
 
-/// Runs each plugin package's own `build` script (decision 5, as pi's packages), with the npm, pnpm or bun on the
+/// Runs each plugin package's own `build` script (D97, as pi's packages), with the npm, pnpm or bun on the
 /// login `PATH`: on Reload Plugin, from a card's Build, and after an install. The app ships no bundler; the page loads
 /// the built entry (`dist/main.js`) with its chunks and CSS from the entry's folder (`Registry.files`).
 @MainActor
@@ -34,7 +34,7 @@ final class PluginBuilds {
                 )
                 return Self.built(manifest)
             } catch {
-                return .failed(manifest, "did not build", error, button: "Try Again", builds: true)
+                return .failed(manifest, "did not build", error, builds: true)
             }
         }
         running[id] = task
@@ -97,12 +97,12 @@ struct PluginProblem {
     }
 
     /// A failed install or build: no package manager says to install Node.js; else the command's last lines.
-    static func failed(_ manifest: PluginManifest, _ what: String, _ error: any Error, button: String,
+    static func failed(_ manifest: PluginManifest, _ what: String, _ error: any Error,
                        builds: Bool = false) -> PluginProblem
     {
         let title = error is PluginPackages.NoManager ? "\(manifest.name.shown) needs Node.js"
             : "\(manifest.name.shown) \(what)"
-        return noted(manifest, PluginProblem(title: title, text: error.localizedDescription, button: button,
+        return noted(manifest, PluginProblem(title: title, text: error.localizedDescription, button: "Try Again",
                                              builds: builds))
     }
 

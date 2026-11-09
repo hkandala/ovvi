@@ -184,8 +184,7 @@ extension Browser {
     /// the card's, left in the background as Safari does; Open Link to the Side and ⌥-click: beside the card. The
     /// user picked the link: its origin is approved, so the new card loads it. False for an address a label cannot
     /// hold.
-    @discardableResult
-    func openTab(_ link: URL, side: Bool = false) -> Bool {
+    func openTab(_ link: URL, side: Bool) -> Bool {
         // Not `mailto:`: `url` reads an address without `://` as a host.
         guard ["http", "https", "file"].contains(link.scheme?.lowercased() ?? ""), let store,
               let pane = store.pane(paneID), let workspace = store.workspace(of: pane.tabID),
