@@ -63,7 +63,7 @@ extension OvviUITests {
         }, "\(button.frame)")
         button.click()
         app.menuItems["Add Machine…"].click()
-        // Settings ▸ Machines' add form; Add opens the machine in a new window, and Settings closes for the test.
+        // Settings ▸ Machines' add form; Add opens the machine in a new window and closes Settings.
         let settings = settingsWindow
         let field = element("settings.machine.name", in: settings)
         XCTAssertTrue(field.exists(within: 5))
@@ -72,7 +72,6 @@ extension OvviUITests {
         element("settings.machine.target", in: settings).click()
         app.typeText(target)
         element("settings.machine.save", in: settings).click()
-        settings.buttons[XCUIIdentifierCloseWindow].click()
         XCTAssertTrue(settings.vanishes(within: 3))
     }
 

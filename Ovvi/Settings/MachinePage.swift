@@ -9,6 +9,7 @@ struct MachinePage: View {
     @State private var draft: Machine
     @State private var confirm: Confirm?
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dismissWindow) private var dismissWindow
     @Environment(\.look) private var look
 
     private enum Confirm {
@@ -134,10 +135,12 @@ struct MachinePage: View {
                     Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
                 }
                 Button(saved == nil ? "Add" : "Save") {
+                    draft = MachineList.shared.keep(draft, target: target)
+                    // The new machine's window comes forward, where ssh asks what it asks.
                     if saved == nil {
                         dismiss()
+                        dismissWindow(id: "settings")
                     }
-                    draft = MachineList.shared.keep(draft, target: target)
                 }
                 .buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
                 .disabled(!SSHExec.isValidTarget(target) || saved == draft)
