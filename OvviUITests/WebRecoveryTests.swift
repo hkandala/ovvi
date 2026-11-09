@@ -122,46 +122,52 @@ extension OvviUITests {
         try await show(kept)
         let home = element("git.\(git).page")
         let commit = { home.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", $0 + ",")).firstMatch }
-        XCTAssertTrue(drawn(commit("before"), within: 15), "the Git card at first")
+        XCTAssertTrue(drawn(commit("before"), in: home, within: 15), "the Git card at first")
         try await show(tab)
-        let notes = element("markdown.\(markdown).page")
+        let notes = element("markdown.\(markdown).page"), page = element("browser.\(browser)")
         let heading = { notes.staticTexts.matching(NSPredicate(format: "value == %@", $0)).firstMatch }
-        XCTAssertTrue(drawn(pageText("Paragraph 1"), within: 15), "the browser at first")
-        XCTAssertTrue(drawn(heading("Notes"), within: 15), "the Markdown card at first")
+        XCTAssertTrue(drawn(pageText("Paragraph 1"), in: page, within: 15), "the browser at first")
+        XCTAssertTrue(drawn(heading("Notes"), in: notes, within: 15), "the Markdown card at first")
 
-        let hung = try await hangGPU(over: element("browser.\(browser)"))
+        let hung = try await hangGPU(over: page)
         try XCTSkipUnless(hung, "no GPU process (CI's virtual Mac)")
+        // Back to its top, which Reload keeps.
+        page.scroll(byDeltaX: 0, deltaY: 10000)
         element("browser.\(browser).reload").click()
-        XCTAssertTrue(drawn(pageText("Paragraph 1"), within: 15), "the browser after Reload")
+        XCTAssertTrue(drawn(pageText("Paragraph 1"), in: page, within: 10), "the browser after Reload")
         try await send("echo '# Changed' >notes.md && git -c user.name=e2e -c user.email=e2e@ovvi commit -q "
             + "--allow-empty -m after\r", to: shell)
-        XCTAssertTrue(drawn(heading("Changed"), within: 15), "the Markdown card's change")
+        XCTAssertTrue(drawn(heading("Changed"), in: notes, within: 10), "the Markdown card's change")
         try await show(kept)
-        XCTAssertTrue(drawn(commit("after"), within: 15), "the kept Git card's new commit")
+        XCTAssertTrue(drawn(commit("after"), in: home, within: 10), "the kept Git card's new commit")
     }
 
-    /// Stops the app's GPU process while the browser's page scrolls, so its draws wait on it, until WebKit gives up
-    /// on it (9 to 12 s here) and the app ends it; then lets it go on. On the old code it lived on, and let go after
-    /// 40 s, the pages drew nothing again. False with no GPU process.
+    /// Stops the app's GPU process while the browser's page scrolls, so its draws wait on it, until WebKit gives up on
+    /// it (10 to 25 s here) and the app ends it. On the old code it lived on: still stopped and with no draw for 30 s
+    /// more, it answered no page once let go, and the pages drew nothing again. False with no GPU process.
     private func hangGPU(over page: XCUIElement) async throws -> Bool {
         let stopped = try await web("web-stop")
         guard !stopped.isEmpty else { return false }
         var delta = -3000.0, ended = false
-        let deadline = Date.now + 40
+        let deadline = Date.now + 30
         while !ended, Date.now < deadline {
             page.scroll(byDeltaX: 0, deltaY: delta)
             delta = -delta
             ended = try await web("web-pids").isDisjoint(with: stopped)
         }
-        _ = try await web("web-resume")
-        XCTAssertTrue(ended, "the GPU process WebKit gave up on still runs")
+        if !ended {
+            // A draw that waits on it closes the page's connection (WebKit's own timeout): none until it answers again.
+            try await Task.sleep(for: .seconds(35))
+            _ = try await web("web-resume")
+        }
         return true
     }
 
     /// The element shows its text: both dark and light pixels in its frame, not one blank fill.
-    private func drawn(_ element: XCUIElement, within seconds: Double) -> Bool {
+    private func drawn(_ element: XCUIElement, in page: XCUIElement, within seconds: Double) -> Bool {
         until(seconds) {
-            guard element.exists else { return false }
+            // Only in its page's view: one out of it, or with an empty frame (a blank page's text), has no screenshot.
+            guard element.exists, !element.frame.isEmpty, page.frame.contains(element.frame) else { return false }
             let brightness = Self.brightness(element.screenshot().image)
             return (brightness.max() ?? 0) - (brightness.min() ?? 0) > 100
         }

@@ -166,6 +166,9 @@ Problems that came back across phases, and the rule that stops each. How we work
   row short (phase 57).
 - **Hover state is unreliable.** A view removed under the pointer gets no hover end, and a busy app runs
   hover late. Decide from the pointer's location when it matters.
+- **WebKit cannot end its own helper processes here** (xpc: "Operation not permitted"): a GPU or page process it gave
+  up on lives on, and its pages stayed blank with no delegate call (phase 57). Force a hang with SIGSTOP, not only a
+  `kill -9`, and check the log for "Could not signal".
 - **A web page takes the keyboard by itself.** WebKit makes its web view first responder when the page focuses an
   element (`PageClientImpl::makeFirstResponder`), and `NSWindow.makeFirstResponder` never asks `acceptsFirstResponder`:
   refuse in `becomeFirstResponder`, and give the keys back, since the old responder has resigned by then.

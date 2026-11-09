@@ -1216,6 +1216,45 @@ you did, no need of reverting them".
   372 → 56 ms and its slowest ⌫ 575 → 51 ms.
 - **For the user.** With Raycast or another accessibility app running, open ⌘K and type: each key should draw at once.
 
+## Round 7 (item 60)
+
+60. "my browser and other plugins are kinda blank and stuck now ... i basically left the app open for quite some time
+    and went and browsed different things ... its just even when i focus on them they are not restoring, i have to
+    close the pane and open a fresh pane ... its not just browser btw, i see file explorer, git, basically all plugin
+    panes are just stuck like blank" (Track W, new).
+   - The user's log: WebKit's GPU process stopped answering on a starved Mac (load 55–70, swap); WebKit said
+     "terminating it", every page process lived on, so `webViewWebContentProcessDidTerminate` never ran. Reproduce in a
+     test build, fix by cause: every web card comes back by itself where it was, visible at once, kept ones when
+     shown, and Reload always works.
+
+### Track W (item 60)
+
+- **Cause.** WebKit gives up on a GPU process that stops answering and starts a new one, but its kill fails: xpc logs
+  "Could not signal service com.apple.WebKit.GPU: 1: Operation not permitted" (the user's log has it 8 times between
+  10:17 and 10:30). The old process lives on and keeps every page's drawing connection; once it answers again more
+  than about 30 s after WebKit gave up, it answers no page, and no page reconnects. So every card, browser and
+  plugin, stays blank, Reload too (it loads in the same page process); a new pane gets a new process and draws.
+  Forced in a test build by stopping its GPU process (SIGSTOP) until WebKit gave up (9–25 s), 30 s more, then
+  resuming it: the browser, Markdown and Explorer cards went blank and stayed blank, also after Reload. Killing that
+  old process by hand brought all three back in place with no reload. `kill -9` alone never sticks: the pages see
+  the process end and reconnect (Track D).
+- **Fix.** Every 2 s while web cards exist, the app reads WebKit's GPU process id (`_gpuProcessIdentifier`, private:
+  WebKit has no public word of its GPU process or a way to end it, and every public signal stays silent: no delegate
+  call, the page still runs script and `requestAnimationFrame`). When WebKit drops a GPU process that still runs (same
+  pid and start time), the app ends it. The pages reconnect to the new one and draw where they were, with their scroll
+  and state (no reload); a kept card's paused page does so when it shows.
+- **Decisions.** End the stale process rather than reload or remake each card: no state is lost and no page process
+  is left behind. A timer rather than a check on focus or wake: a card the user looks at in a background window has
+  neither. `takeSnapshot` fails on a stuck page (WKErrorDomain 1), but as a check it costs a picture of every card
+  each time.
+  The on-demand set: CI's virtual Mac has no GPU process (the test skips there).
+- **Runs.** testWebCardsDrawAgainAfterTheGPUProcessHangs, local: red on the old code ("the browser after Reload",
+  101 s), green on the new.
+- **For the user.** Leave Ovvi open with browser, Explorer, Markdown and Git cards (some in other tabs) while the Mac
+  is busy. If a card still goes blank, wait 2 s: it draws again by itself; open its other tabs, and Reload once. If it
+  stays blank, tell us and send `log show --last 2h --style compact --predicate 'process == "Ovvi" AND eventMessage
+  CONTAINS "GPU"'`.
+
 ## The phase's end
 
 ### Findings (finish)
