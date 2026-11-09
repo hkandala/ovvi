@@ -93,6 +93,86 @@ extension OvviUITests {
         XCTAssertTrue(pageText("ovvi-hang").exists(within: 15))
     }
 
+    /// WebKit gives up on a GPU process that stops answering (a starved Mac) but cannot end it, so every page kept its
+    /// drawing connection to it and stayed blank, Reload too. Drawn again after it: a browser's Reload, a Markdown
+    /// file's change, and a Git card's new commit in a kept tab out of view, shown. Needs a GPU process (not CI's).
+    func testWebCardsDrawAgainAfterTheGPUProcessHangs() async throws {
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        let (tab, shell) = try await newTab("hang")
+        try await waitForPrompt(shell)
+        let folder = "/tmp/ovvi-e2e-hang"
+        addTeardownBlock { [one] in
+            _ = try? await Self.post("\(one)/web-resume", Data("GPU".utf8))
+            _ = try? await Self.call(one, "pane.send_text", ["pane_id": shell, "text": "rm -rf \(folder)\r"])
+        }
+        try await send("rm -rf \(folder) && mkdir -p \(folder) && cd \(folder) && git init -q "
+            + "&& git -c user.name=e2e -c user.email=e2e@ovvi commit -q --allow-empty -m before "
+            + "&& { for i in $(seq 200); do echo \"<p>Paragraph $i</p>\"; done; } >long.html "
+            + "&& echo '# Notes' >notes.md && clear && echo ready-$((6*7))\r", to: shell)
+        try await waitFor(shell) { $0.contains("ready-42") }
+        let browser = try await split(shell), markdown = try await split(browser)
+        let (kept, keptShell) = try await createTab(in: "w2", label: "kept")
+        closeAfter("tab", kept)
+        let git = try await split(keptShell)
+        for (pane, label) in [(browser, "browser#e2ehng file://\(folder)/long.html"),
+                              (markdown, "markdown#e2ehmd \(folder)/notes.md"), (git, "git#e2ehgt /private\(folder)/")]
+        {
+            try await Self.call(one, "pane.rename", ["pane_id": pane, "label": "ovvi:\(label)"])
+        }
+        try await show(kept)
+        let home = element("git.\(git).page")
+        let commit = { home.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", $0 + ",")).firstMatch }
+        XCTAssertTrue(drawn(commit("before"), within: 15), "the Git card at first")
+        try await show(tab)
+        let notes = element("markdown.\(markdown).page")
+        let heading = { notes.staticTexts.matching(NSPredicate(format: "value == %@", $0)).firstMatch }
+        XCTAssertTrue(drawn(pageText("Paragraph 1"), within: 15), "the browser at first")
+        XCTAssertTrue(drawn(heading("Notes"), within: 15), "the Markdown card at first")
+
+        let hung = try await hangGPU(over: element("browser.\(browser)"))
+        try XCTSkipUnless(hung, "no GPU process (CI's virtual Mac)")
+        element("browser.\(browser).reload").click()
+        XCTAssertTrue(drawn(pageText("Paragraph 1"), within: 15), "the browser after Reload")
+        try await send("echo '# Changed' >notes.md && git -c user.name=e2e -c user.email=e2e@ovvi commit -q "
+            + "--allow-empty -m after\r", to: shell)
+        XCTAssertTrue(drawn(heading("Changed"), within: 15), "the Markdown card's change")
+        try await show(kept)
+        XCTAssertTrue(drawn(commit("after"), within: 15), "the kept Git card's new commit")
+    }
+
+    /// Stops the app's GPU process while the browser's page scrolls, so its draws wait on it, until WebKit gives up
+    /// on it (9 to 12 s here) and the app ends it; then lets it go on. On the old code it lived on, and let go after
+    /// 40 s, the pages drew nothing again. False with no GPU process.
+    private func hangGPU(over page: XCUIElement) async throws -> Bool {
+        let stopped = try await web("web-stop")
+        guard !stopped.isEmpty else { return false }
+        var delta = -3000.0, ended = false
+        let deadline = Date.now + 40
+        while !ended, Date.now < deadline {
+            page.scroll(byDeltaX: 0, deltaY: delta)
+            delta = -delta
+            ended = try await web("web-pids").isDisjoint(with: stopped)
+        }
+        _ = try await web("web-resume")
+        XCTAssertTrue(ended, "the GPU process WebKit gave up on still runs")
+        return true
+    }
+
+    /// The element shows its text: both dark and light pixels in its frame, not one blank fill.
+    private func drawn(_ element: XCUIElement, within seconds: Double) -> Bool {
+        until(seconds) {
+            guard element.exists else { return false }
+            let brightness = Self.brightness(element.screenshot().image)
+            return (brightness.max() ?? 0) - (brightness.min() ?? 0) > 100
+        }
+    }
+
+    /// The app's GPU processes, after the action on them.
+    private func web(_ action: String) async throws -> Set<String> {
+        let pids = try await Self.post("\(one)/\(action)", Data("GPU".utf8))
+        return Set(String(decoding: pids, as: UTF8.self).split(separator: "\n").map(String.init))
+    }
+
     /// WebKit starts its GPU and network processes again by itself: the pages still draw, the browser's Reload loads,
     /// a file change still shows.
     private func survivesHelperProcesses(_ browser: String, notes: XCUIElement, heading: XCUIElement,

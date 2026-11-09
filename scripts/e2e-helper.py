@@ -30,7 +30,9 @@ hangs), on CI only; ssh-drop ends it. The pids come back, one per line.
 POST /<session>/ssh-unforward with an SSH target as the body cancels the dynamic forwards (the browser proxy's `-D`)
 of the app's ControlMaster to it, on CI only, as a master that lost them; the ports come back, one per line.
 POST /<session>/web-kill kills the app's WebKit page processes (SIGKILL, as the system ends one), or with GPU or
-Networking as the body its GPU or network process, and gives back the pids it killed, one per line.
+Networking as the body its GPU or network process, and gives back the pids it killed, one per line. /<session>/web-stop
+stops them instead (SIGSTOP, as a process that hangs), /<session>/web-resume lets them go on, and /<session>/web-pids
+only lists them.
 POST /<session>/forget-windows removes the Debug build's saved windows ($TMPDIR/dev.ovvi.app.debug.savedState): a test
 that restores windows starts from none, not from an earlier test's.
 POST /<session>/ssh-forget with an SSH target as the body removes its host key from ~/.ssh/known_hosts, on CI only, so
@@ -149,7 +151,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                             "ssh-forget", "forget-windows", "ssh-unforward",
                             "ssh-connections",
                             "swipe", "pinch", "drag", "stress", "sample", "heap", "press", "release", "pause", "resume",
-                            "web-kill"):
+                            "web-kill", "web-stop", "web-resume", "web-pids"):
             status, reply = 404, f"no action '{action}'".encode()
         elif action in ("control", "takeover") and not re.fullmatch(rb"\w[\w-]*", body):
             status, reply = 400, b"the body must be a terminal id"
@@ -242,9 +244,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                                     "--", target], capture_output=True)
                     ports.append(port)
             status, reply = 200, "\n".join(ports).encode()
-        elif action == "web-kill" and body not in (b"", b"GPU", b"Networking"):
+        elif action.startswith("web-") and body not in (b"", b"GPU", b"Networking"):
             status, reply = 400, b"the body must be empty (page processes), GPU or Networking"
-        elif action == "web-kill":
+        elif action.startswith("web-"):
             # WebKit's processes the tests' app is responsible for.
             app = int(app_pid() or 0)
             responsible = ctypes.CDLL(None).responsibility_get_pid_responsible_for_pid
@@ -252,7 +254,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             found = subprocess.run(["pgrep", "-f", f"{kind}.xpc/"], capture_output=True, text=True).stdout
             pids = [pid for pid in map(int, found.split()) if app and responsible(pid) == app]
             for pid in pids:
-                os.kill(pid, 9)
+                if action != "web-pids":
+                    os.kill(pid, {"web-kill": 9, "web-stop": signal.SIGSTOP, "web-resume": signal.SIGCONT}[action])
             status, reply = 200, "".join(f"{pid}\n" for pid in pids).encode()
         elif action == "forget-windows":
             shutil.rmtree(os.path.join(tempfile.gettempdir(), "dev.ovvi.app.debug.savedState"), ignore_errors=True)

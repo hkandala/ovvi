@@ -5,6 +5,7 @@ extension PaneViewRegistry {
     /// The web cards in view now: the ones that left keep a picture; past the `spareWeb` most recently shown others,
     /// the oldest are dropped.
     func showWeb(_ shown: Set<String>) {
+        _ = GPUProcess.watch
         for id in webInView.subtracting(shown) {
             webView(id)?.takePicture()
             plugins[id]?.web.bridge?.shown(false)
