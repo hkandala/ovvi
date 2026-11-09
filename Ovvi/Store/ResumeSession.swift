@@ -32,7 +32,7 @@ extension Page {
         }
         let cwd = found ? session.folder : "~", card = beside ? keyboardPane : nil
         guard let workspace = card.flatMap({ store.workspace(of: $0.tabID) }) ?? workspace(holding: cwd) else {
-            guard let chooser = await newWorkspace(cwd: cwd).flatMap({ store.chooser($0.id) }) else {
+            guard let chooser = await newWorkspace(cwd: cwd, fixed: false).flatMap({ store.chooser($0.id) }) else {
                 store.resuming.remove(session.value)
                 return nil
             }

@@ -371,10 +371,10 @@ extension Page {
         store.madeTab(standIn, made.tabID)
     }
 
-    /// The snapshot after it selects the new workspace. Its first pane.
+    /// The snapshot after it selects the new workspace. Its first pane. `fixed`: as `HostStore.newWorkspace`.
     @discardableResult
-    func newWorkspace(label: String? = nil, cwd: String = "~") async -> HerdrKit.Pane? {
-        let pane = await store.newWorkspace(label: label, cwd: cwd)
+    func newWorkspace(label: String? = nil, cwd: String = "~", fixed: Bool = true) async -> HerdrKit.Pane? {
+        let pane = await store.newWorkspace(label: label, cwd: cwd, fixed: fixed)
         arriving = pane?.tabID ?? arriving
         return pane
     }

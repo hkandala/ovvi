@@ -50,6 +50,7 @@ Settings that are not on this page do not exist.
 | Setting | Control | Key | Default |
 |---|---|---|---|
 | Open at login | switch | none: the system's login item (`SMAppService.mainApp`) | off |
+| New panes open | pop-up: New Pane; Terminal; Claude Code, Codex, Pi, OpenCode; Browser, File Explorer, Git and each plugin with a New Pane row | `newPaneOpens` | empty: New Pane |
 | Focus follows mouse | switch | `focusFollowsMouse` | off |
 | Keyboard shortcuts | Show Shortcuts, which opens the panel in the front window | | |
 
@@ -58,6 +59,14 @@ reads the system each time Ovvi comes forward, so a change in System Settings â–
 General â–¸ Login Items shows here. When macOS waits for you to allow it, the
 switch says so and Open Login Items opens that page. A run with a config
 folder of its own (the UI tests) only flips the switch.
+
+New panes open: what every new pane opens. New Pane shows the chooser
+([New pane](/docs/ui/new-pane)). Any other choice opens that kind at once,
+with no chooser ([A fixed pick](/docs/ui/new-pane#a-fixed-pick)). The key
+holds the row's id: `terminal`, the agent's command, or the plugin's id. The
+list has every agent and every plugin with a chooser row, also one whose Show
+in New Pane switch is off. A plugin that is gone since it was picked counts
+as New Pane, and the pop-up shows New Pane.
 
 Focus follows mouse: a card gets the keyboard when the pointer rests on it for
 0.15 s, only in the key window

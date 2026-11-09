@@ -178,6 +178,76 @@ extension OvviUITests {
         try await waitFor(failing) { $0.contains("\novvi-no-agent") }
     }
 
+    /// Settings ▸ General ▸ New panes open Browser (ui/new-pane#a-fixed-pick): ⌘D's stand-in shows the browser's
+    /// loader, never the chooser, also while herdr has not answered, and the pane becomes a browser; ⌥⌘D shows the
+    /// chooser.
+    func testAFixedPickSkipsTheChooserAndOptionShowsIt() async throws {
+        relaunch(one, ["-newPaneOpens", "browser"])
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        let (tab, left) = try await newTab("fixed pick")
+        element("tab.\(tab)").click()
+        element("terminal.\(left)").click()
+        XCTAssertTrue(hasKeyboard("terminal.\(left)"))
+        addTeardownBlock { [one] in _ = try? await Self.post("\(one)/resume") }
+        let standIn = { (kind: String) in
+            self.app.descendants(matching: .any).matching(NSPredicate(
+                format: "identifier BEGINSWITH 'pane.new.' AND identifier ENDSWITH %@", kind,
+            )).firstMatch
+        }
+        _ = try await Self.post("\(one)/pause")
+        app.typeKey("d", modifierFlags: .command)
+        let loading = standIn(".loader").exists(within: 3), asked = standIn(".chooser.terminal").exists
+        keepScreenshot("fixed pick loader")
+        _ = try await Self.post("\(one)/resume")
+        XCTAssertTrue(loading)
+        XCTAssertFalse(asked, "the chooser showed")
+        let browser = try await poll("a browser pane") { () async throws -> String? in
+            let new = try await self.replaced(left, in: tab, besides: [left])
+            return try await self.paneLabel(new).hasPrefix("ovvi:browser#") ? new : nil
+        }
+        XCTAssertTrue(hasKeyboard(element("browser.\(browser).address")))
+        keepScreenshot("fixed pick browser")
+
+        // ⌥ held: the chooser.
+        XCUIElement.perform(withKeyModifiers: .option) { app.typeKey("d", modifierFlags: .command) }
+        let chooser = try await replaced(browser, in: tab, besides: [left, browser])
+        let terminal = element("pane.\(chooser).chooser.terminal")
+        XCTAssertTrue(terminal.has(\.isSelected, true, within: 3))
+        keepScreenshot("fixed pick option chooser")
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(terminal.vanishes(within: 2))
+    }
+
+    /// New panes open Terminal: ⌘T gives a shell at once, with no chooser. Settings shows the pick and offers every
+    /// kind.
+    func testAFixedTerminalOpensAShellAndSettingsShowsIt() async throws {
+        relaunch(one, ["-newPaneOpens", "terminal"])
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        element("workspace.w2").click()
+        XCTAssertTrue(element("pane.w2:p1").has(\.isHittable, true, within: 2))
+        let tabs = try await tabIDs()
+        closeNew("tab", besides: tabs)
+        app.typeKey("t", modifierFlags: .command)
+        let shell = try await pane(of: newTabID(after: tabs))
+        XCTAssertTrue(element("terminal.\(shell)").exists(within: 3))
+        XCTAssertFalse(element("pane.\(shell).chooser.terminal").exists)
+        try await waitForPrompt(shell)
+        try await typeAndRead(shell)
+
+        openSettings("general")
+        let picker = element("settings.general.new-pane", in: settingsWindow)
+        XCTAssertTrue(picker.has(\.stringValue, "Terminal", within: 3), picker.debugDescription)
+        keepScreenshot("settings new panes open", of: settingsWindow)
+        picker.click()
+        XCTAssertTrue(picker.menuItems["File Explorer"].exists(within: 2))
+        let menu = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        (menu.name, menu.lifetime) = ("settings new panes open menu", .keepAlways)
+        add(menu)
+        app.typeKey(.escape, modifierFlags: [])
+        settingsWindow.typeKey("w", modifierFlags: .command)
+        XCTAssertTrue(settingsWindow.vanishes(within: 2))
+    }
+
     /// ⇧⌘R on a terminal gives a shell with no chooser; on an agent pane, the chooser. Open Terminal Here shows only
     /// on an agent pane, Start Agent Here on every pane.
     func testReplacePaneAndThePaletteFollowThePanesKind() async throws {

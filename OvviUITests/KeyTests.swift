@@ -177,7 +177,7 @@ extension OvviUITests {
         // A family is one row; a second key is on its first's row. One pattern: the key says the action,
         // the modifier the level.
         let rows = [
-            "Split Right": "⌘D", "Select Pane": "⌥⌘←→↑↓", "Show Tab 1–9": "⌘1–9", "New Space": "⌃⌘T",
+            "Split Right": "⌘D or ⌥⌘D", "Select Pane": "⌥⌘←→↑↓", "Show Tab 1–9": "⌘1–9", "New Space": "⌃⌘T",
             "Show Space 1–9": "⌃⌘1–9", "Show Session 1–9": "⌥⌘1–9", "Show Previous Tab": "⇧⌘[ or ⌃⇧⇥",
             "Show Next Tab": "⇧⌘] or ⌃⇥",
             "Command Palette": "⌘K or ⇧⌘P", "Find": "⌘F", "Reset Font Size": "⌘0", "Open Session": "⌥⌘T",

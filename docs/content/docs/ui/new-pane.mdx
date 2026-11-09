@@ -7,6 +7,8 @@ A new pane asks what it runs: **Terminal**, **Agent**, **Browser**,
 **File Explorer**, **Git**, or another plugin whose manifest has a chooser
 row ([How it shows](/docs/plugins/manifest#how-it-shows)).
 Terminal is selected, so ⌘T and then Return gives a terminal with no click.
+Settings ▸ General ▸ New panes open can make every new pane open one kind
+instead ([A fixed pick](#a-fixed-pick)).
 
 ## Which panes show it
 
@@ -31,6 +33,33 @@ Terminal is selected, so ⌘T and then Return gives a terminal with no click.
   (a program other than the shell, or an agent that herdr reports), for
   example when someone types into it from herdr's TUI. Then the terminal
   shows.
+
+## A fixed pick
+
+Settings ▸ General ▸ New panes open is New Pane by default: the chooser
+shows. When it names a kind (Terminal, an agent, Browser, File Explorer, Git
+or another plugin with a chooser row), each pane in
+[Which panes show it](#which-panes-show-it) makes that pick at once, in the
+same frame the card shows. The list never shows.
+
+- **The pick** is the chooser's own: Terminal shows the shell, an agent
+  shows its loader and starts as in [Agent](#agent), and a plugin shows its
+  loader and takes the pane's place as in [Browser](#browser). It starts in
+  the folder herdr starts the pane in. A pick that waits for herdr's pane
+  (an agent, a plugin) shows its loader on the new card meanwhile.
+- **The chooser on demand.** Hold ⌥ when you make the pane: ⌥⌘D, ⌥⇧⌘D, or a
+  click on a `+`, a split button or a menu item with ⌥ held. Then the
+  chooser shows as usual. ⌥⌘T stays Open Session, so a new tab's chooser
+  comes with ⌥ and a click.
+- **An agent that is not installed** on the window's machine
+  ([Agents that are not installed](#agents-that-are-not-installed)) is not
+  picked: the chooser shows, with that agent dimmed.
+- **Not for** panes that ask for their own kind: Replace Pane, the Open … Here
+  and Start Agent Here commands, Resume of an archived session,
+  `ovvi agent` and `ovvi open`. The `ovvi` CLI makes no plain new pane.
+- A plugin pick opens through the key window of the pane's session. The first
+  space of a session the app started picks through any window that shows that
+  session.
 
 ## Look
 

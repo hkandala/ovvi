@@ -1,15 +1,32 @@
 import GhosttyTerminal
+import HerdrKit
 import ServiceManagement
 import SwiftUI
 
-/// Settings ▸ General: opening at login, how panes take the keyboard, and the shortcuts.
+/// Settings ▸ General: opening at login, what new panes open, how panes take the keyboard, and the shortcuts.
 struct GeneralPage: View {
     private var settings = AppSettings()
 
     var body: some View {
+        // A plugin removed since it was picked: New Pane.
+        let rows = Chooser.fixedRows,
+            opens = rows.contains { $0.id == settings.newPaneOpens } ? settings.newPaneOpens : ""
         Form {
             Section("Startup") { OpenAtLogin() }
             Section("Panes") {
+                Picker(selection: Binding { opens } set: { settings.newPaneOpens = $0 }) {
+                    Text("New Pane").tag("")
+                    ForEach(rows, id: \.self) { row in
+                        if [.terminal, .start(0), .plugin(Registry.browser.id)].contains(row) {
+                            Divider()
+                        }
+                        Text(row.labels.name).tag(row.id)
+                    }
+                } label: {
+                    Text("New panes open")
+                    Text("Hold ⌥ when you make a pane to see New Pane.")
+                }
+                .accessibilityIdentifier("settings.general.new-pane").settingsRow("general.new-pane")
                 Toggle(isOn: settings.$followMouse) {
                     Text("Focus follows mouse")
                     Text("A pane gets the keyboard when the pointer rests on it.")

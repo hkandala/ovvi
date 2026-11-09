@@ -150,22 +150,27 @@ extension HostStore {
         }
     }
 
-    /// A chooser on a new tab's or split's stand-in, in the folder herdr will start it in; `made` gives it herdr's
-    /// pane.
+    /// A chooser on a new tab's or split's stand-in, in the folder herdr will start it in, which makes Settings' pick;
+    /// `made` gives it herdr's pane.
     func choose(standIn: String, cwd: String?) -> Chooser {
         let chooser = Chooser(standIn: standIn, cwd: cwd)
         choosers.append(chooser)
+        pickDefault(chooser)
         return chooser
     }
 
-    /// A chooser on herdr's new pane; with an agent, its loader while the agent starts.
-    func choose(_ pane: HerdrKit.Pane?, starting agent: Chooser.Agent? = nil, closed: String? = nil) {
+    /// A chooser on herdr's new pane; with an agent, its loader while the agent starts; `fixed`: Settings' pick.
+    func choose(_ pane: HerdrKit.Pane?, starting agent: Chooser.Agent? = nil, closed: String? = nil,
+                fixed: Bool = false)
+    {
         guard let pane else { return }
         let chooser = Chooser()
         chooser.made(pane)
         choosers.append(chooser)
         if let agent {
             start(agent, chooser, closed: closed)
+        } else if fixed {
+            pickDefault(chooser)
         }
     }
 

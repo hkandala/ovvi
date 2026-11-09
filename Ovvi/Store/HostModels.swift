@@ -231,7 +231,7 @@ extension HostStore {
                try await client.snapshot().workspaces.isEmpty
             {
                 let pane = try await client.newWorkspace(label: nil, cwd: "~")
-                all.first { Self.key($0.session, $0.machine) == key }?.choose(pane)
+                all.first { Self.key($0.session, $0.machine) == key }?.choose(pane, fixed: true)
             }
         }
         starting[key] = start

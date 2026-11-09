@@ -37,6 +37,9 @@ extension KeyboardShortcut {
         (KeyboardShortcut(.tab, modifiers: [.control, .shift]), .previousTab),
         (KeyboardShortcut(.tab, modifiers: .control), .nextTab),
         (KeyboardShortcut("="), .bigger),
+        // With ⌥ a new pane shows the chooser whatever Settings ▸ General ▸ New panes open says (`pickDefault`).
+        (KeyboardShortcut("d", modifiers: [.command, .option]), .splitRight),
+        (KeyboardShortcut("d", modifiers: [.command, .option, .shift]), .splitDown),
     ]
 
     /// As the menu bar draws it: "⌥⌘T".

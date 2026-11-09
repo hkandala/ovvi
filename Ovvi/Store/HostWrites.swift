@@ -16,13 +16,13 @@ extension HostStore {
     }
 
     /// In home by default (herdr reads `~` as the machine's home): a server launchd started has another cwd. Its
-    /// first pane, which asks what it runs.
-    func newWorkspace(label: String? = nil, cwd: String = "~") async -> HerdrKit.Pane? {
+    /// first pane, which asks what it runs; `fixed`: or makes Settings' pick, unless the caller picks (a resume).
+    func newWorkspace(label: String? = nil, cwd: String = "~", fixed: Bool = true) async -> HerdrKit.Pane? {
         var created: HerdrKit.Pane?
         // Before the snapshot that shows it, so its first frame has the chooser.
         await write {
             created = try await $0.newWorkspace(label: label, cwd: cwd)
-            choose(created)
+            choose(created, fixed: fixed)
         }
         return created
     }
