@@ -58,7 +58,7 @@ extension OvviUITests {
         try launchRecordingLatency()
         let before = try await tabIDs()
         closeNew("tab", besides: before)
-        // A new tab is "New Tab" until its program is known,, never herdr's number.
+        // A new tab is "New Tab" until its program is known, never herdr's number.
         let selected = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'tab.' AND selected == true"))
             .firstMatch
         key("t", .command) { selected.label == "New Tab" && !self.element("tab.w1:t1").isSelected }
@@ -192,9 +192,7 @@ extension OvviUITests {
     }
 
     /// A quick flick between sessions: the fingers on the pad for 48 ms, then momentum. The pages slide on
-    /// to the next page and rest there with the window on its session. A slide asked of the scroll view on such a
-    /// flick stood still until a 0.6 s timeout; then the pages snapped back while the window showed the next session,
-    /// and then the first again.
+    /// to the next page and rest there with the window on its session.
     func testQuickSessionFlickLandsOnTheNextPageInStep() async throws {
         try launchRecordingLatency(["-forceMotion", "YES"])
         openPage(two)

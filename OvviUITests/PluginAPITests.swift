@@ -1,6 +1,6 @@
 import XCTest
 
-/// The plugin API (phase 47): a fixture package (Fixtures/plugin-api, a local path in the settings) calls every part of
+/// The plugin API: a fixture package (Fixtures/plugin-api, a local path in the settings) calls every part of
 /// `ovvi` on a folder of its own and shows a line per part. The test reads the lines and checks what the calls did
 /// through herdr and the folder: files, git, run, state (the state file, and again after a relaunch), watch, toast,
 /// the native menu, Choose Folder…, the Edited dot, the card's places with Back, ⌘S and open.
@@ -16,16 +16,8 @@ extension OvviUITests {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         element("workspace.w2").click()
 
-        let reply = try await Self.call(one, "layout.apply", ["workspace_id": "w2", "focus": false, "root": [
-            "type": "pane", "cwd": folder, "label": "ovvi:plugin-api#e2eapi \(root)/",
-            "command": ["sh", "-c", "cat", "sh"],
-        ]])
-        let layout = reply["layout"] as? [String: Any]
-        let cardTab: String = try field(layout?["tab_id"], "layout's tab")
-        let card: String = try field((layout?["root"] as? [String: Any])?["pane_id"], "layout's pane")
-        closeAfter("tab", cardTab)
-        try await show(cardTab)
-        XCTAssertTrue(line("ready: yes").exists(within: 10))
+        let (cardTab, card) = try await newCard("ovvi:plugin-api#e2eapi \(root)/", cwd: folder)
+        XCTAssertTrue(text("ready: yes").exists(within: 10))
         for line in ["state: 1", "card: 1 plugin-api This Mac \(root)/", "files.write: true", #"files.read: "hello\n""#,
                      "files.readBytes: 6", "files.info: 6 false true",
                      "files.changed: changed The file changed on disk",
@@ -34,7 +26,7 @@ extension OvviUITests {
                      "git.root: \(root)", "git.status: U .gitignore, U a.txt", "git.changes: a.txt", "git.commit: one",
                      "git.head: main", "git.branches: main", "git.diff: true", "clipboard: written", "symbol: true"]
         {
-            XCTAssertTrue(self.line(line).exists, line)
+            XCTAssertTrue(text(line).exists, line)
         }
         XCTAssertEqual(NSPasteboard.general.string(forType: .string), "ovvi-plugin-api")
         keepScreenshot("plugin API fixture")
@@ -42,10 +34,10 @@ extension OvviUITests {
         // A change while the card shows; showing it again calls the watch once more.
         let shown = count("visible: true ")
         try await send("echo x > \(folder)/watched.txt\r", to: shell)
-        XCTAssertTrue(line("watch: 1").exists(within: 5))
+        XCTAssertTrue(text("watch: 1").exists(within: 5))
         try await machineChecks(folder, shell: shell, tab: tab, cardTab: cardTab)
-        XCTAssertTrue(line("watch.again: yes").exists(within: 5))
-        XCTAssertTrue(line("visible: true \(shown + 2)").exists)
+        XCTAssertTrue(text("watch.again: yes").exists(within: 5))
+        XCTAssertTrue(text("visible: true \(shown + 2)").exists)
 
         try await cardCalls(card, in: cardTab, root: root)
         try await failingCard(root)
@@ -54,7 +46,7 @@ extension OvviUITests {
         relaunch(nil, ["-configFolder", config])
         element("workspace.w2").click()
         try await show(cardTab)
-        XCTAssertTrue(line("state: 2").exists(within: 10))
+        XCTAssertTrue(text("state: 2").exists(within: 10))
         try await send("rm -rf \(config) \(folder) ~/.local/state/ovvi/\(one)/plugin-api\r", to: shell)
     }
 
@@ -89,18 +81,18 @@ extension OvviUITests {
         button("Toast").click()
         XCTAssertTrue(element("pane.\(card).toast").exists(within: 3))
         element("pane.\(card).toast.main").click()
-        XCTAssertTrue(line("toast: Yes").exists(within: 3))
-        XCTAssertTrue(line("keyboard: true").exists)
+        XCTAssertTrue(text("toast: Yes").exists(within: 3))
+        XCTAssertTrue(text("keyboard: true").exists)
 
         button("Menu").click()
         XCTAssertTrue(app.menuItems["Two"].exists(within: 3))
         app.menuItems["Two"].click()
-        XCTAssertTrue(line("menu: two").exists(within: 3))
+        XCTAssertTrue(text("menu: two").exists(within: 3))
 
         button("Pick").click()
         XCTAssertTrue(app.sheets.buttons["Cancel"].exists(within: 5))
         app.sheets.buttons["Cancel"].click()
-        XCTAssertTrue(line("pick: undefined").exists(within: 3))
+        XCTAssertTrue(text("pick: undefined").exists(within: 3))
 
         button("Dirty").click()
         XCTAssertTrue(element("pane.\(card).dirty").exists(within: 3))
@@ -108,21 +100,21 @@ extension OvviUITests {
         XCTAssertTrue(element("pane.\(card).dirty").vanishes(within: 3))
 
         app.typeKey("s", modifierFlags: .command)
-        XCTAssertTrue(line("save: heard").exists(within: 3))
+        XCTAssertTrue(text("save: heard").exists(within: 3))
         // The manifest's commands while the card has the keyboard; one with a key the app uses goes without it.
         app.typeKey("y", modifierFlags: [.command, .shift])
-        XCTAssertTrue(line("control: shout").exists(within: 3))
+        XCTAssertTrue(text("control: shout").exists(within: 3))
         // A header button of the manifest; the header's text the page set.
         element("pane.\(card).again").click()
-        XCTAssertTrue(line("control: again").exists(within: 3))
+        XCTAssertTrue(text("control: again").exists(within: 3))
         XCTAssertTrue(element("pane.\(card).count").has(\.stringValue, "counted", within: 1))
 
         // A place of its own, its label following; Back says where it came back from.
         button("Go").click()
-        XCTAssertTrue(line("place: \(root)/sub/ x").exists(within: 3))
+        XCTAssertTrue(text("place: \(root)/sub/ x").exists(within: 3))
         try await expect("the label follows") { try await paneLabel(card).hasSuffix(" \(root)/sub/") }
         app.typeKey("-", modifierFlags: .control)
-        XCTAssertTrue(line("place: \(root)/ x").exists(within: 3))
+        XCTAssertTrue(text("place: \(root)/ x").exists(within: 3))
         try await expect("the label goes back") { try await paneLabel(card).hasSuffix(" \(root)/") }
 
         let before = try await tabIDs()
@@ -139,20 +131,12 @@ extension OvviUITests {
         let tabs = try await tabIDs()
         app.typeKey("t", modifierFlags: .command)
         _ = try await newTabID(after: tabs)
-        XCTAssertFalse(line("control: taken").exists)
+        XCTAssertFalse(text("control: taken").exists)
     }
 
     /// A page whose `main` throws (the fixture on a folder named fail): the card says so, with Reload.
     private func failingCard(_ root: String) async throws {
-        let reply = try await Self.call(one, "layout.apply", ["workspace_id": "w2", "focus": false, "root": [
-            "type": "pane", "cwd": root, "label": "ovvi:plugin-api#e2efal \(root)/fail/",
-            "command": ["sh", "-c", "cat", "sh"],
-        ]])
-        let layout = reply["layout"] as? [String: Any]
-        let tab: String = try field(layout?["tab_id"], "layout's tab")
-        let pane: String = try field((layout?["root"] as? [String: Any])?["pane_id"], "layout's pane")
-        closeAfter("tab", tab)
-        try await show(tab)
+        let pane = try await newCard("ovvi:plugin-api#e2efal \(root)/fail/", cwd: root).pane
         XCTAssertTrue(element("pane.\(pane).failure").has(\.stringValue, "Plugin API stopped", within: 10))
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "value BEGINSWITH 'asked to fail'")).firstMatch
             .exists)
@@ -174,11 +158,6 @@ extension OvviUITests {
                 return item
             })
         }
-    }
-
-    /// A line of the fixture's page.
-    private func line(_ text: String) -> XCUIElement {
-        app.staticTexts.matching(NSPredicate(format: "value == %@", text)).firstMatch
     }
 
     /// The number at the end of the line that starts with `prefix`; 0 for none.

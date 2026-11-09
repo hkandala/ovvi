@@ -126,21 +126,12 @@ extension OvviUITests {
         try await waitFor(made, in: five) { $0.contains("File Explorer") && $0.contains("Shown in Ovvi") }
     }
 
-    /// A tab per file page made as Ovvi makes one (`layout.apply` with the label and a placeholder): its card and
-    /// page, Open With on This Mac, the tab's title.
+    /// A card per file page: its card and page, Open With on This Mac, the tab's title.
     private func fileCards(in repo: String, root: String) async throws {
         for (word, page, name) in [("explorer", "file", "main.swift"), ("preview", "preview", "icon.png"),
                                    ("explorer", "markdown", "notes.md")]
         {
-            let reply = try await Self.call(one, "layout.apply", ["workspace_id": "w2", "focus": false, "root": [
-                "type": "pane", "cwd": repo, "label": "ovvi:\(word)#e2e42\(page.prefix(1)) \(root)/\(name)",
-                "command": ["sh", "-c", "cat", "sh"],
-            ]])
-            let layout = reply["layout"] as? [String: Any]
-            let tab: String = try field(layout?["tab_id"], "layout's tab")
-            let pane: String = try field((layout?["root"] as? [String: Any])?["pane_id"], "layout's pane")
-            closeAfter("tab", tab)
-            try await show(tab)
+            let (tab, pane) = try await newCard("ovvi:\(word)#e2e42\(page.prefix(1)) \(root)/\(name)", cwd: repo)
             XCTAssertTrue(element("explorer.\(pane).card").exists(within: 5))
             XCTAssertTrue(element("\(page).\(pane).page").exists)
             XCTAssertTrue(element("pane.\(pane).title").has(\.stringValue, name, within: 3))
@@ -148,10 +139,28 @@ extension OvviUITests {
             XCTAssertTrue(element("tab.\(tab)").has(\.label, "File Explorer \(name)", within: 3))
         }
     }
+
+    /// A new tab in w2 whose pane has this label, made as Ovvi makes a card (a placeholder), shown.
+    func newCard(_ label: String, cwd: String = "/tmp") async throws -> (tab: String, pane: String) {
+        let reply = try await Self.call(one, "layout.apply", ["workspace_id": "w2", "focus": false, "root": [
+            "type": "pane", "cwd": cwd, "label": label, "command": ["sh", "-c", "cat", "sh"],
+        ]])
+        let layout = reply["layout"] as? [String: Any]
+        let tab: String = try field(layout?["tab_id"], "layout's tab")
+        closeAfter("tab", tab)
+        let pane: String = try field((layout?["root"] as? [String: Any])?["pane_id"], "layout's pane")
+        try await show(tab)
+        return (tab, pane)
+    }
+
+    /// Text a page shows, by its value: a plain text's label is empty.
+    func text(_ value: String) -> XCUIElement {
+        app.staticTexts.matching(NSPredicate(format: "value == %@", value)).firstMatch
+    }
 }
 
 extension OvviUITests {
-    /// The registry (phase 47): packages in the plugins folder and the settings' local paths get chooser rows after
+    /// The registry: packages in the plugins folder and the settings' local paths get chooser rows after
     /// Git, by id, and Open ‹chooser› Here; a bad manifest and a taken id are left out. A label naming a plugin not on
     /// this Mac shows its missing card, whose Show Placeholder shows the pane's terminal.
     func testTheRegistryListsUserPackagesAndShowsAMissingPlugin() async throws {
@@ -244,15 +253,7 @@ extension OvviUITests {
 
     /// A label naming a plugin not on this Mac: its card, then the pane's terminal.
     private func missingCard() async throws {
-        let reply = try await Self.call(one, "layout.apply", ["workspace_id": "w2", "focus": false, "root": [
-            "type": "pane", "cwd": "/tmp", "label": "ovvi:csv-table#e2emis /tmp/data.csv",
-            "command": ["sh", "-c", "cat", "sh"],
-        ]])
-        let layout = reply["layout"] as? [String: Any]
-        let tab: String = try field(layout?["tab_id"], "layout's tab")
-        let pane: String = try field((layout?["root"] as? [String: Any])?["pane_id"], "layout's pane")
-        closeAfter("tab", tab)
-        try await show(tab)
+        let pane = try await newCard("ovvi:csv-table#e2emis /tmp/data.csv").pane
         XCTAssertTrue(element("pane.\(pane).missing").has(\.stringValue, "csv-table is not on this Mac", within: 5))
         XCTAssertFalse(element("terminal.\(pane)").exists)
         keepScreenshot("missing plugin")

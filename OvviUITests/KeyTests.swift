@@ -52,8 +52,7 @@ extension OvviUITests {
         XCTAssertTrue(until(2) { !pageList().contains(two) })
     }
 
-    /// The menu bar acts on the key window: two floating windows of one session each detach their own pane with ⌘W
-    /// (spec review: a command list that read the same kept the first window's actions).
+    /// The menu bar acts on the key window: two floating windows of one session each detach their own pane with ⌘W.
     func testEachFloatingWindowsKeysActOnItsOwnPane() async throws {
         let (tab, first) = try await newTab("float-keys")
         let second = try await split(first)
@@ -104,8 +103,8 @@ extension OvviUITests {
         }
     }
 
-    /// ⌃⇥ and ⌃⇧⇥ go round w2's tabs from every card, also from a text field: a chat's reply box and a browser's
-    /// address held them on their tab.
+    /// ⌃⇥ and ⌃⇧⇥ go round w2's tabs from every card, also from a text field (a chat's reply box, a browser's
+    /// address).
     func testControlTabStepsFromChatAndBrowserCards() async throws {
         let (chatTab, chat) = try await startChat()
         let (browserTab, left) = try await newTab("ctrl-tab")
@@ -187,7 +186,7 @@ extension OvviUITests {
         for (title, keys) in rows {
             XCTAssertEqual(element("shortcuts.\(title)").value as? String, keys, title)
         }
-        // Keys that went.
+        // Keys the app does not have.
         XCTAssertFalse(element("shortcuts.Resize Pane").exists)
         XCTAssertFalse(element("shortcuts.Close Window").exists)
         // Two columns.

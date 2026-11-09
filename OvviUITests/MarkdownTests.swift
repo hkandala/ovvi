@@ -21,7 +21,7 @@ extension OvviUITests {
             + "'[d]: https://example.com' >notes.md && printf 'Other\\n' >other.md && clear "
             + "&& echo ready-$((6*7))\r", to: shell)
         try await waitFor(shell) { $0.contains("ready-42") }
-        let (tab, card) = try await markdownCard("\(folder)/notes.md")
+        let (tab, card) = try await newCard("ovvi:markdown#e2emdc \(folder)/notes.md")
 
         // Rich Text, locked: the rendered page with no marks (`Second` alone), a table drawn; no text box.
         let page = element("markdown.\(card).page")
@@ -243,17 +243,5 @@ extension OvviUITests {
             let copied = NSPasteboard.general.string(forType: .string) ?? ""
             return copied.hasPrefix("---\ntitle: Hidden") && copied.contains("[Other](other.md)")
         }, NSPasteboard.general.string(forType: .string) ?? "nothing copied")
-    }
-
-    /// A Markdown card of this file in a tab of its own in w2 (selected by `newTab`), made as Ovvi makes one, shown.
-    private func markdownCard(_ path: String) async throws -> (tab: String, pane: String) {
-        let root: [String: Any] = ["type": "pane", "cwd": "/tmp", "label": "ovvi:markdown#e2emdc \(path)",
-                                   "command": ["sh", "-c", "cat", "sh"]]
-        let reply = try await Self.call(one, "layout.apply", ["workspace_id": "w2", "focus": false, "root": root])
-        let layout = reply["layout"] as? [String: Any]
-        let tab: String = try field(layout?["tab_id"], "layout's tab")
-        closeAfter("tab", tab)
-        try await show(tab)
-        return try (tab, field((layout?["root"] as? [String: Any])?["pane_id"], "layout's pane"))
     }
 }

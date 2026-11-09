@@ -67,15 +67,7 @@ extension OvviUITests {
 
     /// A second card of the plugin, in a tab of its own: Cancel in its confirmation closes its pane.
     private func cancelsASecondCard() async throws {
-        let reply = try await Self.call(one, "layout.apply", ["workspace_id": "w2", "focus": false, "root": [
-            "type": "pane", "cwd": "/tmp", "label": "ovvi:ovvi-e2e-shout#e2eshv /tmp",
-            "command": ["sh", "-c", "cat", "sh"],
-        ]])
-        let layout = reply["layout"] as? [String: Any]
-        let tab: String = try field(layout?["tab_id"], "layout's tab")
-        let pane: String = try field((layout?["root"] as? [String: Any])?["pane_id"], "layout's pane")
-        closeAfter("tab", tab)
-        try await show(tab)
+        let pane = try await newCard("ovvi:ovvi-e2e-shout#e2eshv /tmp").pane
         let cancel = element("pane.\(pane).trust.cancel")
         XCTAssertTrue(cancel.exists(within: 10))
         cancel.click()
@@ -126,20 +118,6 @@ extension OvviUITests {
         relaunch(nil, ["-configFolder", config])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         element("workspace.w2").click()
-        let reply = try await Self.call(one, "layout.apply", ["workspace_id": "w2", "focus": false, "root": [
-            "type": "pane", "cwd": "/tmp", "label": "ovvi:ovvi-e2e-shout#e2eshu /tmp",
-            "command": ["sh", "-c", "cat", "sh"],
-        ]])
-        let layout = reply["layout"] as? [String: Any]
-        let cardTab: String = try field(layout?["tab_id"], "layout's tab")
-        let card: String = try field((layout?["root"] as? [String: Any])?["pane_id"], "layout's pane")
-        closeAfter("tab", cardTab)
-        try await show(cardTab)
-        return (cardTab, card)
-    }
-
-    /// Text a plugin's page shows.
-    private func text(_ value: String) -> XCUIElement {
-        app.staticTexts.matching(NSPredicate(format: "value == %@", value)).firstMatch
+        return try await newCard("ovvi:ovvi-e2e-shout#e2eshu /tmp")
     }
 }

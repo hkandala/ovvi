@@ -97,7 +97,7 @@ extension OvviUITests {
         XCTAssertTrue(element("palette.section.Tabs").exists(within: 2))
     }
 
-    /// Rename Workspace › and Rename Pane… › hold the current name; Enter saves it to herdr. Reset Pane Name clears
+    /// Rename Space › and Rename Pane… › hold the current name; Enter saves it to herdr. Reset Pane Name clears
     /// the pane's.
     func testPaletteRenamesTheWorkspaceAndThePane() async throws {
         let (tabs, pane) = try await newWorkspace("before")
@@ -331,7 +331,7 @@ extension OvviUITests {
         XCTAssertTrue(element("pane.\(last)").exists(within: 2))
         element("tab.\(mover)").click()
         XCTAssertTrue(element("pane.\(pane)").has(\.isHittable, true, within: 3))
-        // Every tab of the session under its workspace's name, New Tab and New Workspace first.
+        // Every tab of the session under its workspace's name, New Tab and New Space first.
         paneMenu(pane, "Move Pane to Tab")
         let entry = app.windows.firstMatch.menuItems["Move Pane to Tab"]
         XCTAssertTrue(entry.menuItems["second"].exists(within: 2))

@@ -97,8 +97,7 @@ extension OvviUITests {
         let second = try await split(first), third = try await split(second), fourth = try await split(third)
         element("tab.\(tab)").click()
         try await settle([tab])
-        // The second, the fourth, then the first (herdr's focused pane: splits pass focus:false). Closed, the old code
-        // gave the first's neighbor, the second, which herdr focuses.
+        // The second, the fourth, then the first (herdr's focused pane: splits pass focus:false).
         for pane in [second, fourth, first] {
             element("terminal.\(pane)").click()
             XCTAssertTrue(hasKeyboard("terminal.\(pane)"), pane)
@@ -113,8 +112,7 @@ extension OvviUITests {
     }
 
     /// A split's new pane gets the keyboard (⌘D and the header's button); ⌘[ ⌘] step in the tree's order, not the
-    /// order the panes were made; ⇧⌘↩ zooms the keyboard card (the menu bar kept Zoom Pane disabled from
-    /// before the split, so the key did nothing).
+    /// order the panes were made; ⇧⌘↩ zooms the keyboard card.
     func testSplitsGiveTheNewPaneTheKeyboardAndKeysFollowTheTree() async throws {
         let (tab, first) = try await newTab("split-keys")
         element("tab.\(tab)").click()
@@ -146,8 +144,7 @@ extension OvviUITests {
     }
 
     /// ⌘D pressed fast three times splits the newest card each time, as Ghostty does, and the last one made keeps the
-    /// keyboard; ⌘W then steps back through them (each split the old card, and the keyboard went to the pane
-    /// whose terminal settled last). Each new card comes once: herdr's pane takes its stand-in's card.
+    /// keyboard; ⌘W then steps back through them. Each new card comes once: herdr's pane takes its stand-in's card.
     func testQuickSplitsSplitTheNewestAndItKeepsTheKeyboard() async throws {
         relaunch(one, ["-recordMotion", "YES", "-forceMotion", "YES"])
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
@@ -170,9 +167,8 @@ extension OvviUITests {
             let panes = try await order(tab)
             return panes.count == 4 ? panes : nil
         }
-        // The newest is the rightmost (the old code split the first card each time: the newest came right of it), and
-        // herdr's tree is P | (Q | (R | S)): each ⌘D split the newest. A split of an older card nests apart (A | C |
-        // B | D: the second ⌘D split the first card).
+        // The newest is the rightmost, and herdr's tree is P | (Q | (R | S)): each ⌘D split the newest. A split of an
+        // older card nests apart (A | C | B | D: the second ⌘D split the first card).
         XCTAssertEqual(panes.first, first)
         var node = try await root(tab)
         for pane in panes.dropLast() {

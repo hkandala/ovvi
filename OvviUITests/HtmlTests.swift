@@ -18,7 +18,7 @@ extension OvviUITests {
         try await waitFor(shell) { $0.contains("ready-42") }
         let html = "\(folder)/page.html"
 
-        let (tab, notes) = try await explorerCard("\(folder)/notes.md", "e2eht1")
+        let (tab, notes) = try await newCard("ovvi:explorer#e2eht1 \(folder)/notes.md")
         let link = element("markdown.\(notes).page").links["Page"]
         XCTAssertTrue(link.exists(within: 10))
         let tabs = try await tabIDs()
@@ -35,7 +35,7 @@ extension OvviUITests {
         }
         try await browserLabel(side, html)
 
-        let (_, file) = try await explorerCard(html, "e2eht2")
+        let (_, file) = try await newCard("ovvi:explorer#e2eht2 \(html)")
         let button = element("pane.\(file).browser")
         XCTAssertTrue(button.exists(within: 10))
         keepScreenshot("html file card")
@@ -46,7 +46,7 @@ extension OvviUITests {
         XCTAssertTrue(element("tab.\(opened)").has(\.isSelected, true, within: 5))
         try await browserLabel(pane(of: opened), html)
 
-        let (_, plain) = try await explorerCard("\(folder)/plain.txt", "e2eht3")
+        let (_, plain) = try await newCard("ovvi:explorer#e2eht3 \(folder)/plain.txt")
         XCTAssertTrue(element("pane.\(plain).open-with").exists(within: 10))
         XCTAssertFalse(element("pane.\(plain).browser").exists)
     }
@@ -83,7 +83,7 @@ extension OvviUITests {
         try await send("clear; \(Self.ovviCommand) open gone.md\r", to: shell)
         notFound(notice, "gone.md")
 
-        let (_, notes) = try await explorerCard("\(folder)/notes.md", "e2egn1")
+        let (_, notes) = try await newCard("ovvi:explorer#e2egn1 \(folder)/notes.md")
         let gone = element("markdown.\(notes).page").links["Gone"]
         XCTAssertTrue(gone.exists(within: 10))
         gone.click()
@@ -100,18 +100,6 @@ extension OvviUITests {
         XCTAssertTrue(text.firstMatch.exists(within: 10), notice.debugDescription)
         notice.buttons["notice.close"].click()
         XCTAssertTrue(notice.vanishes(within: 3))
-    }
-
-    /// A File Explorer card on `path` in a tab of its own, shown.
-    private func explorerCard(_ path: String, _ iid: String) async throws -> (tab: String, pane: String) {
-        let root: [String: Any] = ["type": "pane", "cwd": "/tmp", "label": "ovvi:explorer#\(iid) \(path)",
-                                   "command": ["sh", "-c", "cat", "sh"]]
-        let reply = try await Self.call(one, "layout.apply", ["workspace_id": "w2", "focus": false, "root": root])
-        let layout = reply["layout"] as? [String: Any]
-        let tab: String = try field(layout?["tab_id"], "layout's tab")
-        closeAfter("tab", tab)
-        try await show(tab)
-        return try (tab, field((layout?["root"] as? [String: Any])?["pane_id"], "layout's pane"))
     }
 
     /// The pane is a browser card on the file's `file:` page.

@@ -1,6 +1,6 @@
 import XCTest
 
-/// A plugin's header row (phase 47, plugins/manifest#header).
+/// A plugin's header row (plugins/manifest#header).
 extension OvviUITests {
     /// A user plugin's controls, drawn from its manifest before its page loads: Back and Forward at the row's left
     /// edge, a menu with a section and a divider, a path text, a badge in a button's label, a field that takes the
@@ -17,7 +17,7 @@ extension OvviUITests {
         relaunch(nil, ["-configFolder", config])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         element("workspace.w2").click()
-        let card = try await pluginTab("ovvi:fixture#e2ehdr /tmp/notes.md")
+        let card = try await newCard("ovvi:fixture#e2ehdr /tmp/notes.md").pane
 
         let control = { (id: String) in self.element("pane.\(card).\(id)") }
         XCTAssertTrue(control("root").exists(within: 5))
@@ -56,7 +56,7 @@ extension OvviUITests {
         try floatsTheSameRow(card)
 
         // The page starts right under row 1: one row of 36 pt, not two.
-        let bare = try await pluginTab("ovvi:bare#e2ebar /tmp")
+        let bare = try await newCard("ovvi:bare#e2ebar /tmp").pane
         XCTAssertTrue(element("bare.\(bare).card").exists(within: 5))
         XCTAssertLessThan(element("bare.\(bare).card").frame.minY - element("pane.\(bare)").frame.minY, 50)
         try await send("rm -rf \(config) /tmp/notes.md\r", to: shell)
@@ -78,19 +78,6 @@ extension OvviUITests {
         keepScreen("plugin header floating")
         window.buttons[XCUIIdentifierCloseWindow].click()
         XCTAssertTrue(window.vanishes(within: 3))
-    }
-
-    /// A new tab whose pane has this label, shown; its pane.
-    private func pluginTab(_ label: String) async throws -> String {
-        let reply = try await Self.call(one, "layout.apply", ["workspace_id": "w2", "focus": false, "root": [
-            "type": "pane", "cwd": "/tmp", "label": label, "command": ["sh", "-c", "cat", "sh"],
-        ]])
-        let layout = reply["layout"] as? [String: Any]
-        let tab: String = try field(layout?["tab_id"], "layout's tab")
-        let pane: String = try field((layout?["root"] as? [String: Any])?["pane_id"], "layout's pane")
-        closeAfter("tab", tab)
-        try await show(tab)
-        return pane
     }
 
     /// A shell line that writes a plugin whose header has every control type, and one with no header.

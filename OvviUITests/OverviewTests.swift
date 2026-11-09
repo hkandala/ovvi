@@ -1,6 +1,6 @@
 import XCTest
 
-/// The overview (D70): every tab of the session as a live miniature, grouped by workspace.
+/// The overview (D70): every tab of the session as a miniature, grouped by workspace.
 extension OvviUITests {
     /// ⌃⌘O hides the sidebar, the tab bar and every title-row button but one ×, and shows a tile per tab under its
     /// workspace, two a row on CI's window, with wide margins; a tab never shown draws live in its tile; × closes a
@@ -68,7 +68,7 @@ extension OvviUITests {
     }
 
     /// A tile of a tab never shown, then of the shown one: once the overview closes and its card drew, it never goes
-    /// back to loading (the user saw it flicker).
+    /// back to loading.
     func testOverviewTileIntoAnUnshownTabShowsItSteadily() async throws {
         relaunch(nil, ["-recordMotion", "YES"])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
@@ -94,8 +94,7 @@ extension OvviUITests {
     }
 
     /// Tiles with nothing to show yet show a loader, and each tile in view gets its picture in turn: two
-    /// never shown tabs of 9 panes each, side by side, more than the 16 live cards together. Before, the one past the
-    /// cap stayed blank as long as it was in view.
+    /// never shown tabs of 9 panes each, side by side, more than the 16 live cards together.
     func testOverviewLoadsEveryTileInTurn() async throws {
         relaunch(nil, ["-recordLatency", "YES"])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))

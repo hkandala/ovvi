@@ -1,6 +1,6 @@
 import XCTest
 
-/// The Git card (phase 46): a pane labeled `ovvi:git#<iid> <root>/` shows its home (`plugins/git/home.ts`) with row
+/// The Git card: a pane labeled `ovvi:git#<iid> <root>/` shows its home (`plugins/git/home.ts`) with row
 /// 2's branch and buttons; `<root>/ <source>` shows a diff (`plugins/git/diff.ts`). The writes run in a throwaway
 /// repository.
 extension OvviUITests {
@@ -360,11 +360,9 @@ extension OvviUITests {
         try await expectBeside(opened, tab)
         if behind {
             XCTAssertFalse(until(0.5) { !element("tab.\(tab)").isSelected }, "\(opened) took the selection")
+            try await show(opened)
         } else {
             XCTAssertTrue(element("tab.\(opened)").has(\.isSelected, true, within: 5))
-        }
-        if behind {
-            try await show(opened)
         }
         let pane = try await pane(of: opened), label = try await paneLabel(pane)
         XCTAssertTrue(label.hasPrefix("ovvi:explorer#") && label.hasSuffix(" \(path)"), label)

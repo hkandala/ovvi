@@ -79,8 +79,7 @@ extension OvviUITests {
 
     /// In every look the card over a busy terminal shows the text behind only as a soft blur: its empty part is far
     /// less sharp than the same text below the card. On a Mac Liquid Glass alone let it read clearly; CI's
-    /// VM draws glass with no backdrop (the old glass hid text there too), so on CI this
-    /// guards only against a see-through panel.
+    /// VM draws glass with no backdrop, so on CI this guards only against a see-through panel.
     func testHoverCardBlursTheTextBehindIt() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("busy")

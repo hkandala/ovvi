@@ -1,6 +1,6 @@
 import XCTest
 
-/// Plugin packages (phase 47, tracks F and F2): the building page's CSV Table (Fixtures/csv-table, its own esbuild
+/// Plugin packages: the building page's CSV Table (Fixtures/csv-table, its own esbuild
 /// build script) as a local path, its dependencies installed from npm's cache as its author would. Its first card asks
 /// to install it, then says it is not built; Build runs its build script and the page loads. An edit that imports a
 /// dependency from the package's own `node_modules` shows after Reload Plugin (⌥⌘R) with the header's values kept; a
@@ -28,15 +28,7 @@ extension OvviUITests {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         element("workspace.w2").click()
 
-        let reply = try await Self.call(one, "layout.apply", ["workspace_id": "w2", "focus": false, "root": [
-            "type": "pane", "cwd": data, "label": "ovvi:ovvi-e2e-csv-table#e2ecsv \(data)/a.csv",
-            "command": ["sh", "-c", "cat", "sh"],
-        ]])
-        let layout = reply["layout"] as? [String: Any]
-        let cardTab: String = try field(layout?["tab_id"], "layout's tab")
-        let card: String = try field((layout?["root"] as? [String: Any])?["pane_id"], "layout's pane")
-        closeAfter("tab", cardTab)
-        try await show(cardTab)
+        let (cardTab, card) = try await newCard("ovvi:ovvi-e2e-csv-table#e2ecsv \(data)/a.csv", cwd: data)
 
         try await trustsAndBuilds(card, csv: csv, shell: shell, tab: tab, cardTab: cardTab)
         let rows = element("pane.\(card).rows")
@@ -111,7 +103,7 @@ extension OvviUITests {
         app.typeKey("r", modifierFlags: [.command, .option])
         let toast = element("pane.\(card).toast")
         XCTAssertTrue(toast.exists(within: 10))
-        XCTAssertTrue((toast.stringValue).hasPrefix("CSV Table did not build"), toast.stringValue)
+        XCTAssertTrue(toast.stringValue.hasPrefix("CSV Table did not build"), toast.stringValue)
         XCTAssertTrue(text("CSV Table two").exists(within: 10))
     }
 
@@ -161,10 +153,5 @@ extension OvviUITests {
         try await send("clear; test -f \(config)/plugins/ovvi-e2e-csv-repo/dist/main.js && test -f "
             + "\(config)/plugins/ovvi-e2e-lines/dist/main.js && echo built-$((6*7))\r", to: shell)
         try await waitFor(shell) { $0.contains("built-42") }
-    }
-
-    /// Text the plugin's page shows.
-    private func text(_ value: String) -> XCUIElement {
-        app.staticTexts.matching(NSPredicate(format: "value == %@", value)).firstMatch
     }
 }
