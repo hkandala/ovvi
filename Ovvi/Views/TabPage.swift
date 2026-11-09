@@ -26,6 +26,9 @@ struct TabPage: View {
         .accessibilityIdentifier(hidden ? "" : "page.\(tab.id)")
     }
 
+    /// A split's, a close's, a swap's or a zoom's motion, in seconds. 0.2 s felt slow.
+    static let slide = 0.13
+
     /// A page's cards inside its page: room for the cards' outer stroke and shadow.
     static let inset = EdgeInsets(top: 4, leading: gap, bottom: gap, trailing: gap)
 
@@ -57,11 +60,11 @@ private struct SplitLayout: View {
     /// e2e (`-recordMotion YES`): the cards that came into the page and went from it.
     @State private var cards = (came: 0, went: 0)
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.pageHidden) private var hidden
 
-    /// A split, a close, a swap or a zoom; the terminals keep their size until it ends (`TerminalHost`). 0.2 s felt
-    /// slow.
+    /// A split, a close, a swap or a zoom; the terminals keep their size until it ends (`TerminalHost`).
     private var motion: Animation? {
-        reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.13)
+        reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: TabPage.slide)
     }
 
     var body: some View {
@@ -114,9 +117,12 @@ private struct SplitLayout: View {
         .animation(motion, value: tree)
         .animation(motion, value: zoomed)
         .onChange(of: tree, initial: true) {
-            let views = views(tree.paneIDs)
+            let views = views(tree.paneIDs), moves = placed != nil && motion != nil && !hidden
             withAnimation(motion) {
                 placed = tree.paneIDs.map { ($0, views[$0] ?? $0) }
+            }
+            if moves {
+                page.terminals.pages?.window?.holdStill()
             }
         }
     }
@@ -136,6 +142,38 @@ private struct SplitLayout: View {
             views[new] = old.view
         }
         return views
+    }
+}
+
+extension HostStore {
+    /// Draws a split ahead of herdr (`ahead.split`); its cards slide from now (`sliding`), unless under Reduce Motion.
+    func slide() {
+        redraw()
+        if !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion || Animation.forceMotion {
+            sliding = .now + .seconds(TabPage.slide)
+        }
+    }
+
+    /// Once a split's slide ended: herdr's answer comes during it, and its apply and the views it changes (the new
+    /// pane's card and terminal, the menus) took 30–60 ms of the main thread, frames the slide lost.
+    func slid() async {
+        if sliding > .now {
+            try? await Task.sleep(until: sliding)
+        }
+    }
+}
+
+private extension NSWindow {
+    /// Not movable while the cards slide: at each frame of a layout change AppKit works out a movable window's drag
+    /// region, for which SwiftUI walks every view under the title row (15–25 % of a split's frames). Nothing drags
+    /// the window meanwhile; not while a button is down (a window drag under way).
+    func holdStill() {
+        guard NSEvent.pressedMouseButtons == 0 else { return }
+        isMovable = false
+        Task {
+            try? await Task.sleep(for: .seconds(TabPage.slide))
+            isMovable = true
+        }
     }
 }
 

@@ -24,7 +24,7 @@ extension HostStore {
                 tree: tree.split(shown, direction, new: standIn, before: before),
                 known: known,
             )
-            redraw()
+            slide()
         }
         // herdr's `handle_pane_split` (src/app/api/panes.rs) starts it in the split pane's folder; an earlier split's
         // stand-in has its chooser's.
@@ -326,6 +326,7 @@ extension Page {
     /// the old one that still has the first responder, and only the newest split's pane takes the keyboard; the
     /// older ones join the keyboard history before it.
     func split(_ paneID: String, _ direction: SplitNode.Direction, before: Bool = false) async {
+        Latency.shared.split()
         zoomedPaneID = nil
         // Also the old card asked for: ⌘D read the keyboard card before a snapshot made the split before's pane it
         // (the second ⌘D split the first card, A | C | B | D).

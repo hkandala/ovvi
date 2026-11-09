@@ -32,13 +32,15 @@ struct PaneCard: View {
         let terminal = pane.flatMap(page.terminal)
         // The tab's keyboard card is lit, also while a text field has the keyboard; herdr's focus until one had it.
         // A split's new card at once, its stand-in too, among the shown tab's cards; a new tab's stand-in.
-        let shown = page.selectedTab?.tree?.paneIDs ?? []
-        let newest = page.newest.flatMap { newest in
+        // Not in a kept page out of view: each split changes these (the shown tab's tree, its newest card, the
+        // keyboard), and ran every kept card's body again at each change.
+        let shown = hidden ? [] : page.selectedTab?.tree?.paneIDs ?? []
+        let newest = hidden ? nil : page.newest.flatMap { newest in
             shown.contains(id) && shown.contains { $0 == newest.id || store.ahead.splitPanes[$0] == newest.id }
                 ? newest.id : nil
         }
-        let lit = newest.map { $0 == id || store.ahead.splitPanes[id] == $0 }
-            ?? pane.map { page.keyboardCard($0.tabID) === $0 } ?? (id == page.standIn)
+        let lit = !hidden && (newest.map { $0 == id || store.ahead.splitPanes[id] == $0 }
+            ?? pane.map { page.keyboardCard($0.tabID) === $0 } ?? (id == page.standIn))
         let floated = pane.map(page.floats) ?? false
         let follow = hovering && settings.followMouse && !away && active && !floated
         // The watching window's dim (D66), on the header and the terminal.

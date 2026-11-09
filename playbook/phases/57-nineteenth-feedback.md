@@ -500,3 +500,46 @@ chat bubble's time close to its text).
     no need of new agent button on top, let's skip that, for the unselected workpsaces, expanded one should have a
     border without glass effect, one selected should have glass  effect, rest go with your recommendations"
     (Track B: build).
+
+### Track J findings
+
+- **How it was measured.** The split record (`-recordLatency YES`: 0.8 s of display-link frames at 120 Hz from the
+  split, with the main thread's CPU per frame) and the on-demand `testSplitsKeepTheDisplayRate` (two ⌘D and two ⇧⌘D
+  beside a shell, a program that redraws its whole screen 30 times a second, File Explorer, Git, Markdown, a browser,
+  and among six panes). XCUITest's accessibility client took about a quarter more of the main thread, so the numbers
+  below come from the Release app with no XCUITest, clicking Split Right and Split Down by posted mouse events, before
+  and after in turns (8 splits a scenario each), at a load of 20–80. Time Profiler and `sample` for where the time
+  goes; a small SwiftUI probe app for single causes.
+- **Cause: no hot spot of the app's own.** A split took 190–250 ms of main-thread CPU in its 0.8 s. The split's own
+  turn held the first frame 32–41 ms (a third of it the new card's chooser list); each frame of the slide spent
+  5–20 ms in SwiftUI layout of the resizing cards and AppKit's hover, tracking-area and window-drag-region passes;
+  herdr's answer (snapshot apply, the new card's terminal, the menus: 30–60 ms) could land inside the 130 ms slide.
+  A kept page out of view drew all its cards again at each split change (40–100 card bodies a split under XCUITest).
+  libghostty, the PTY resize and the web views cost little: they already keep their size until the slide ends.
+- **Cause: the Glass look.** Gaps with little CPU are the render server: Glass composites the window's two blurs again
+  under every moving card. Classic had about half the hitches in the slide (2 against 4), with the same CPU.
+- **Fix.** The chooser list shows once the card slid in (its keys work before); herdr's snapshot is applied after the
+  slide; the window is not movable during the slide (AppKit then skips the drag region, about 15 % of a probe's
+  frames); hidden kept cards do not read the shown tab's tree, the newest card or the keyboard (−20–40 % bodies,
+  −10–15 % CPU with kept pages).
+- **Runs (before → after, medians; first frame and CPU are means).**
+
+  | Scenario | first frame ms | hitches in the slide | worst gap in it ms | p50 / p95 ms (0.8 s) | hitches / 0.8 s | CPU ms |
+  |---|---|---|---|---|---|---|
+  | shell | 37 → 25 | 4.6 → 4.2 | 29 → 25 | 8 / 21 → 8 / 17 | 11.5 → 11.9 | 190 → 173 |
+  | full-screen TUI | 35 → 22 | 4.4 → 4.1 | 29 → 23 | 8 / 22 → 8 / 18 | 12.0 → 12.4 | 199 → 176 |
+  | File Explorer | 32 → 20 | 5.4 → 4.5 | 26 → 22 | 8 / 19 → 8 / 17 | 10.8 → 10.9 | 203 → 188 |
+  | Git | 33 → 20 | 5.1 → 4.0 | 23 → 24 | 8 / 16 → 8 / 16 | 10.8 → 10.5 | 200 → 188 |
+  | Markdown | 35 → 20 | 4.5 → 4.1 | 26 → 25 | 8 / 17 → 8 / 17 | 9.1 → 9.6 | 197 → 177 |
+  | browser | 37 → 23 | 4.4 → 4.8 | 21 → 24 | 8 / 18 → 8 / 18 | 10.0 → 11.0 | 201 → 180 |
+  | six panes | 41 → 27 | 4.4 → 4.0 | 35 → 33 | 8 / 24 → 8 / 24 | 14.0 → 14.0 | 247 → 227 |
+
+  The slide starts 12–14 ms sooner and its worst steps are a little shorter; the hitch counts barely move, since most
+  are the render server and per-frame framework work, and the load of other agents moved them by as much. With kept
+  pages (the UI test, 7 kept pages by the last scenario) the CPU went 234–364 → 210–328 ms.
+- **Tried and dropped.** Making the cards' per-frame size writes stateless (no fewer bodies); a render-only slide
+  (offset and an animated clip, layout once at the end) in the probe: no clear gain for a rewrite of the layout and
+  its motion tests.
+- **For the user.** Split with ⌘D and ⇧⌘D in Glass and in Classic, beside a busy agent: the slide should start at once
+  and the chooser fade in as the card lands. If Glass still stutters where Classic does not, its blurs are the cost:
+  a lighter Glass while cards move is a look decision.

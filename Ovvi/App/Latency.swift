@@ -115,7 +115,7 @@ final class Latency {
     @ObservationIgnored private var longest = 0.0
     @ObservationIgnored private var applying = 0.0
     @ObservationIgnored private var snapshots = 0
-    @ObservationIgnored private lazy var meter = ScrollMeter { self.record($0) }
+    @ObservationIgnored private lazy var meter = FrameMeter { self.record($0) }
 
     private func event(_ event: NSEvent) {
         let name = event.type == .keyDown
@@ -183,6 +183,13 @@ final class Latency {
         }
     }
 
+    /// A split starts (a key, a button, the palette): its frames' record.
+    func split() {
+        if Self.isOn {
+            meter.split()
+        }
+    }
+
     /// A test's note in the record.
     func note(_ text: String) {
         if Self.isOn {
@@ -200,36 +207,67 @@ final class Latency {
     }
 }
 
-/// Frames while the window scrolls: a display link runs from a scroll event until 0.3 s after the
-/// last, and records "scroll <frames> <hitches> <ms>"; a hitch is a frame more than 25 ms after the one before.
+/// Frames while the window scrolls or splits, at the display's full rate: a display link runs from a scroll event
+/// until 0.3 s after the last ("scroll <frames> <hitches> <ms>"; a hitch, a frame over 25 ms after the one before), or
+/// for 0.8 s from a split, its slide and what lands after ("split <frames> <hitches> <ms> <p50> <p95> <max> <the main
+/// thread's CPU> <each hitch: its end+gap/CPU>", in ms; a hitch, over one and a half display frames).
 @MainActor
-private final class ScrollMeter: NSObject {
+private final class FrameMeter: NSObject {
     let record: (String) -> Void
     private var link: CADisplayLink?
-    private var start = 0.0, last = 0.0, lastScroll = 0.0
-    private var frames = 0, hitches = 0
+    private var name = "", start = 0.0, last = 0.0, end = 0.0, cpu = 0.0
+    private var gaps: [Double] = [], cpus: [Double] = [], lastCPU = 0.0
 
     init(record: @escaping (String) -> Void) {
         self.record = record
     }
 
     func scrolled() {
-        lastScroll = ProcessInfo.processInfo.systemUptime
+        run("scroll", until: ProcessInfo.processInfo.systemUptime + 0.3)
+    }
+
+    func split() {
+        run("split", until: ProcessInfo.processInfo.systemUptime + 0.8)
+    }
+
+    private func run(_ name: String, until end: TimeInterval) {
+        self.end = end
         guard link == nil, let screen = NSScreen.main else { return }
-        (start, last, frames, hitches) = (lastScroll, lastScroll, 0, 0)
+        self.name = name
+        (start, last, gaps) = (ProcessInfo.processInfo.systemUptime, ProcessInfo.processInfo.systemUptime, [])
+        cpu = Latency.threadTime
+        (lastCPU, cpus) = (cpu, [])
         link = screen.displayLink(target: self, selector: #selector(frame))
+        // The display's full rate: ProMotion runs at 60 Hz or less when nothing asks for more.
+        link?.preferredFrameRateRange = CAFrameRateRange(minimum: 120, maximum: 120, preferred: 120)
         link?.add(to: .main, forMode: .common)
     }
 
     @objc private func frame(_ link: CADisplayLink) {
         let now = ProcessInfo.processInfo.systemUptime
-        frames += 1
-        hitches += now - last > 0.025 ? 1 : 0
+        gaps.append(now - last)
         last = now
-        if now - lastScroll > 0.3 {
-            link.invalidate()
-            self.link = nil
-            record("scroll \(frames) \(hitches) \(Int((now - start) * 1000))ms")
+        cpus.append(Latency.threadTime - lastCPU)
+        lastCPU = Latency.threadTime
+        guard now > end else { return }
+        link.invalidate()
+        self.link = nil
+        let time = Int((now - start) * 1000)
+        if name == "scroll" {
+            record("scroll \(gaps.count) \(gaps.count { $0 > 0.025 }) \(time)ms")
+            return
         }
+        let sorted = gaps.sorted()
+        let part = { (share: Double) in Int(sorted[Int(Double(sorted.count - 1) * share)] * 1000) }
+        // Each hitch's end from the split, its gap, and the main thread's CPU in it: "130+41/30". A gap with little CPU
+        // waited on the render server.
+        var end = 0.0
+        let hitches = zip(gaps, cpus).compactMap { gap, cpu in
+            end += gap
+            return gap > link.duration * 1.5 ? "\(Int(end * 1000))+\(Int(gap * 1000))/\(Int(cpu * 1000))" : nil
+        }
+        let busy = Int((Latency.threadTime - cpu) * 1000)
+        record("split \(gaps.count) \(hitches.count) \(time)ms \(part(0.5)) \(part(0.95)) \(part(1)) \(busy)ms "
+            + hitches.joined(separator: ","))
     }
 }

@@ -46,6 +46,8 @@ final class HostStore {
 
     /// What shows before herdr has it.
     @ObservationIgnored var ahead = Ahead()
+    /// A split's cards slide until then (`TabPage.slide`).
+    @ObservationIgnored var sliding = ContinuousClock.now
     /// The last snapshot, drawn again with `ahead`.
     @ObservationIgnored private(set) var last: Snapshot?
     /// Panes being closed (`Ahead`), kept with what was asked of them in case the close comes back. A closing card
@@ -178,6 +180,7 @@ final class HostStore {
         for await update in await client.updates() {
             switch update {
             case let .snapshot(snapshot):
+                await slid()
                 let start = Latency.threadTime
                 let changes = apply(snapshot)
                 state = .live

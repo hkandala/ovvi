@@ -117,8 +117,35 @@ In Glass the two are close: the keyboard card is only a little brighter.
   resizes once 150 ms after it ends, as for any change of the card's size
   ([Size](/docs/talking-to-herdr#size)): resized at every frame, a terminal
   went blank for most of the motion.
+- The slide has the main thread to itself
+  ([Measuring](#measuring-the-slide)). A split's new card shows its chooser
+  once it has slid in, and herdr's answer to the split (its snapshot) is drawn
+  after the slide. The window cannot be dragged during the slide: AppKit then
+  skips its window drag region, which it would work out again at every frame.
+  A kept page out of view does not draw its cards again for a split in the
+  shown tab.
 - A divider drag follows the pointer with no animation.
 - Reduce Motion: no animation.
+
+## Measuring the slide
+
+`-recordLatency YES` gives a record of each split's frames: the display
+link's frames for 0.8 s at the display's full rate, the hitches (a frame
+over one and a half display frames), the main thread's CPU time, and each
+hitch with its CPU time. A hitch with little CPU time waited on the render
+server. The on-demand UI test `testSplitsKeepTheDisplayRate` splits beside a
+shell, a program that redraws all of its screen 30 times a second, File
+Explorer, Git, Markdown and a browser, and among six panes. It runs under
+XCUITest, whose accessibility client takes about a quarter more of the main
+thread. A Release build that a script clicks, with no XCUITest, gives the
+numbers that count.
+
+- Most of a split's main thread time is SwiftUI and AppKit work at each
+  frame of the slide: the layout of the cards that resize, hover and the
+  tracking areas. No code of the app's own stands out.
+- The Glass look composites the window's two blurs (the desktop behind the
+  window and the system glass under its tint) again under every card that
+  moves. With Classic the slide has about half the hitches.
 
 ## Moving the keyboard
 

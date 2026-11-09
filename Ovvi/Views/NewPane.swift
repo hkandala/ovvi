@@ -170,13 +170,28 @@ struct NewPaneOverlay: View {
     let page: Page
     let cardID: String
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// A split's new card shows its list once it slid in: made in the split's turn, the list took about a third of
+    /// it, before the slide's first frame. Its keys work meanwhile (`Page.chooserKey`).
+    @State private var waiting: Bool
+
+    init(chooser: Chooser?, page: Page, cardID: String) {
+        (self.chooser, self.page, self.cardID) = (chooser, page, cardID)
+        _waiting = State(initialValue: page.store.sliding > .now)
+    }
 
     var body: some View {
         ZStack {
-            if let chooser {
+            if let chooser, !waiting {
                 NewPane(chooser: chooser, page: page, cardID: cardID).transition(.opacity)
             }
         }
-        .animation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.15), value: chooser == nil)
+        .animation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.15),
+                   value: chooser == nil || waiting)
+        .task {
+            if waiting {
+                try? await Task.sleep(until: page.store.sliding)
+                waiting = false
+            }
+        }
     }
 }
