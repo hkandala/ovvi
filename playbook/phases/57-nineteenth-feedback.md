@@ -443,6 +443,12 @@ runs and on-demand on the final head.
 - **For the user, round 4.** Panes changed too: plugin pages started 9 pt under row 2's Back there (were 11 to 17
   pt, different per plugin; 11 since item 53). Markdown's Rich Text keeps its 28 pt page margin. Chat bubbles are taller (16 pt above the
   text and under the time).
+- **Fix, item 53.** A pane's browser and plugin cards keep row 2 where it was (Back 5 pt under row 1) and leave
+  2 pt more under it, 6 pt under the browser's toolbar (`headerHeight`): Back has 11 pt under it to the content, as
+  in a floating window. At 2x from Back's bottom edge, before and after: the browser's page 10 and 22 px; the tree's
+  first row, a Git diff's box, the Git home's Message field and its scrolled history, a file's first line 18 and
+  22 px; a commit's subject line 18 and 22 px (its letters 26 and 30). Agent cards are unchanged.
+- **Runs, round 6.** RUNS6.
 
 ### Track F
 
