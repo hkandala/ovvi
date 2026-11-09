@@ -257,6 +257,11 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   window never comes back in full screen: one that macOS restores in full
   screen leaves it. A window with nothing to restore shows the
   [new-window view](#new-window).
+  Only the installed app (`make install`, `make dmg`) has its bundle id, so no
+  other build's windows take the place of the user's
+  ([Data](/docs/data#where-things-live)). A restored window of a
+  remote machine that needs an answer keeps its pages, which show
+  Disconnected with **Connect**: nothing asks by itself.
 - **Pages.** A sideways swipe on the sidebar moves to the next or previous
   open page ([Swiping](/docs/ui/swiping)); so do ⌥⌘[ ], and ⌥⌘1–9 show a page by its place (Window menu).
 - **Page dots.** Over the pages' foot, above Archived Sessions, centered on the rows: one 6 pt dot per open page, 6
@@ -287,9 +292,8 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   windows, such as VoiceOver), and a swipe to its page draws in about a tenth of a second.
 - **Under the pointer.** A space row's name line or an agent row fills at once, with no
   fade. While the list scrolls nothing fills; when it stops, the row under the pointer does.
-- **Empty session.** A session with no space shows the compact empty state on its page
-  ([States](/docs/ui/states)): `square.dashed`, "No Spaces" and a New Space button. The window's content shows no
-  button, only an icon and "This session is empty".
+- **Empty session.** A session with no space leaves its page quiet: no rows, no text and no button (the page
+  header's `+` makes one). The window's content has the session's start ([States](/docs/ui/states)).
 - **Footer.** The filter field and one button, **Open Session** (⌥⌘T), which
   opens the [Open Session](#open-session) panel. The filter keeps the rows
   whose name or branch matches, and the rows with an agent whose name, agent, space or tab matches, unfolded to

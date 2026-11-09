@@ -182,6 +182,21 @@ extension OvviUITests {
         }
     }
 
+    /// A session with no space in each look: the window's start, and the sidebar's quiet page.
+    func testEmptySessionScenes() async throws {
+        let eight = try env("OVVI_SESSION8")
+        for look in ["dark", "light"] {
+            _ = try? await Self.post("\(eight)/stress", Data())
+            relaunch(eight, ["-appearance", look])
+            _ = element("workspace.w1").exists(within: connect)
+            _ = try? await Self.call(eight, "workspace.close", ["workspace_id": "w1"])
+            _ = element("detail.empty").exists(within: 5)
+            try? await Task.sleep(for: .seconds(1))
+            await stateShot(look, "E1 session with no spaces")
+        }
+        _ = try? await Self.post("\(eight)/stress", Data())
+    }
+
     /// The front window, the pointer off it.
     private func newWindowShot(_ look: String, _ name: String) async {
         let window = app.windows.firstMatch

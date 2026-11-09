@@ -131,13 +131,7 @@ struct Detail: View {
             }
         } else if page.store.state == .live {
             // Not while it reconnects before its first snapshot.
-            EmptyState(symbol: "square.dashed", title: "This session is empty", id: "detail.empty") {
-                Button { Task { await page.newWorkspace() } } label: {
-                    Text("New Space")
-                    Text(KeyboardShortcut.newWorkspace.glyphs).foregroundStyle(.secondary)
-                }
-                .buttonStyle(.glassProminent)
-            }
+            EmptySession(page: page)
         } else {
             // Room for the Reconnecting overlay: on no view it never drew (a machine that failed its first connect).
             Color.clear

@@ -229,6 +229,53 @@ extension OvviUITests {
         XCTAssertFalse(until(3) { reading.exists || row.label != label })
     }
 
+    /// ⌘Q with two windows on two sessions and a launch bring both windows back, each with its session; a launch
+    /// after the last window closed shows the new-window view.
+    func testRelaunchRestoresEveryWindowWithItsSession() async throws {
+        try await forgetWindows()
+        app.launchArguments = ["-session", one, "-NSQuitAlwaysKeepsWindows", "YES"] + Self.noConfig
+        app.launch()
+        XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
+        // One window to start from: a window an earlier run saved may come back too.
+        let main = app.windows.matching(NSPredicate(format: "identifier BEGINSWITH 'main-'"))
+        while main.count > 1 {
+            main.element(boundBy: 1).buttons[XCUIIdentifierCloseWindow].click()
+        }
+        XCTAssertEqual(headers, [one])
+        app.typeKey("n", modifierFlags: .command)
+        let pick = element("picker.local.\(two)")
+        XCTAssertTrue(pick.exists(within: connect))
+        pick.click()
+        XCTAssertTrue(until(connect) { headers.sorted() == [one, two].sorted() }, "\(headers)")
+        app.typeKey("q", modifierFlags: .command)
+        XCTAssertTrue(app.wait(for: .notRunning, timeout: 5))
+
+        app.launchArguments = ["-defaultSession", one, "-machines", "[]"] + Self.noConfig
+        app.launch()
+        XCTAssertTrue(until(connect) { headers.sorted() == [one, two].sorted() }, "\(headers)")
+        XCTAssertFalse(element("picker.title").exists)
+
+        // Every window closed, then ⌘Q: the next launch shows the view, connected to nothing.
+        while main.firstMatch.exists {
+            main.firstMatch.buttons[XCUIIdentifierCloseWindow].click()
+        }
+        XCTAssertTrue(until(5) { headers.isEmpty })
+        app.typeKey("q", modifierFlags: .command)
+        XCTAssertTrue(app.wait(for: .notRunning, timeout: 5))
+        app.launch()
+        XCTAssertTrue(element("picker.local.\(one)").exists(within: connect))
+        XCTAssertTrue(headers.isEmpty)
+    }
+
+    /// Each main window's page header, the session in view.
+    private var headers: [String] {
+        app.windows.matching(NSPredicate(format: "identifier BEGINSWITH 'main-'")).allElementsBoundByIndex
+            .compactMap { window in
+                let header = element("sidebar.header", in: window)
+                return header.exists ? header.value as? String : nil
+            }
+    }
+
     /// A launch with no window to restore and no `-session` connects to nothing: the window lists the sessions to pick
     /// from, and no card streams.
     func testALaunchWithNothingToRestoreConnectsToNothing() async throws {

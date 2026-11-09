@@ -66,117 +66,109 @@ struct SidebarPage: View {
             .padding(.bottom, 3)
             // Behind the row: on the row, a menu takes the row's frame for the name when it is the row's only element.
             .background { Color.clear.contentShape(.rect).contextMenu { sessionMenu } }
-            if store.state == .live, store.workspaces.isEmpty {
-                EmptyState(symbol: "square.dashed", title: "No Spaces", compact: true) {
-                    Button("New Space") { Task { await page.newWorkspace() } }
-                        .accessibilityIdentifier("new-workspace")
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                ScrollView {
-                    // Lazy: at hundreds of spaces and agents an eager stack made and laid out every row in each update.
-                    LazyVStack(alignment: .leading, spacing: WorkspaceRow.gap) {
-                        let groups = store.groups, rows = rows(in: groups)
-                        ForEach(Array(rows.enumerated()), id: \.element.workspace.id) { index, row in
-                            let id = row.workspace.id, hasAgents = runsAgents(row.workspace)
-                            let shown = hasAgents && (!folds(id) || !filter.isEmpty) ? agents(of: row.workspace) : []
-                            WorkspaceRow(workspace: row.workspace, parent: row.parent, page: page, frames: frames,
-                                         guideBelow: rows.indices.contains(index + 1)
-                                             && rows[index + 1].parent != nil,
-                                         ends: (groups.first?.first?.id, groups.last?.first?.id),
-                                         agents: shown, hasAgents: hasAgents,
-                                         fold: filter.isEmpty ? { fold(id) } : nil)
-                                .equatable()
-                                .overlay {
-                                    if drop.over == id, page.dragging != nil {
-                                        DropIndicator()
-                                    }
+            ScrollView {
+                // Lazy: at hundreds of spaces and agents an eager stack made and laid out every row in each update.
+                LazyVStack(alignment: .leading, spacing: WorkspaceRow.gap) {
+                    let groups = store.groups, rows = rows(in: groups)
+                    ForEach(Array(rows.enumerated()), id: \.element.workspace.id) { index, row in
+                        let id = row.workspace.id, hasAgents = runsAgents(row.workspace)
+                        let shown = hasAgents && (!folds(id) || !filter.isEmpty) ? agents(of: row.workspace) : []
+                        WorkspaceRow(workspace: row.workspace, parent: row.parent, page: page, frames: frames,
+                                     guideBelow: rows.indices.contains(index + 1)
+                                         && rows[index + 1].parent != nil,
+                                     ends: (groups.first?.first?.id, groups.last?.first?.id),
+                                     agents: shown, hasAgents: hasAgents,
+                                     fold: filter.isEmpty ? { fold(id) } : nil)
+                            .equatable()
+                            .overlay {
+                                if drop.over == id, page.dragging != nil {
+                                    DropIndicator()
                                 }
-                                .opacity(page.lifted == .workspace(id) ? 0.4 : 1)
-                                .offset(y: rowsDrop.shift(id))
-                                .lands(id, landing, axis: .vertical)
-                                // Its place in the list, outside the drag's slide and the drop's glide.
-                                .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("rows")) } action: {
-                                    frames.rows[id] = $0
+                            }
+                            .opacity(page.lifted == .workspace(id) ? 0.4 : 1)
+                            .offset(y: rowsDrop.shift(id))
+                            .lands(id, landing, axis: .vertical)
+                            // Its place in the list, outside the drag's slide and the drop's glide.
+                            .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("rows")) } action: {
+                                frames.rows[id] = $0
+                            }
+                            // Hidden by the filter, closed or out of the lazy stack: no stale target. A dragged
+                            // row keeps its place (content frames hold through a scroll) for its slide and landing.
+                            .onDisappear {
+                                if page.dragging != .workspace(id) {
+                                    frames.rows[id] = nil
                                 }
-                                // Hidden by the filter, closed or out of the lazy stack: no stale target. A dragged
-                                // row keeps its place (content frames hold through a scroll) for its slide and landing.
-                                .onDisappear {
-                                    if page.dragging != .workspace(id) {
-                                        frames.rows[id] = nil
-                                    }
-                                }
-                                .background {
-                                    Color.clear.id("into view \(id)").padding(.top, -18).padding(.bottom, -18 - bottom)
-                                }
-                        }
-                        if drop.ghost, page.dragging != nil {
-                            Text("New Space").foregroundStyle(.secondary).padding(.leading, WorkspaceRow.textInset)
-                                .frame(maxWidth: .infinity, minHeight: 30, alignment: .leading)
-                                .background { DropIndicator() }
-                        }
-                        if rows.isEmpty, !store.workspaces.isEmpty {
-                            EmptyState(symbol: "magnifyingglass", title: "No matching spaces", compact: true)
-                                .frame(maxWidth: .infinity)
-                        }
+                            }
+                            .background {
+                                Color.clear.id("into view \(id)").padding(.top, -18).padding(.bottom, -18 - bottom)
+                            }
                     }
-                    .padding(Sidebar.rowInsets)
-                    .padding(.bottom, bottom)
-                    // The content's own space, which a scroll does not move: no frame changes at every scroll frame.
-                    .coordinateSpace(.named("rows"))
-                }
-                .onScrollGeometryChange(for: CGFloat.self) { $0.visibleRect.minY } action: {
-                    frames.top = $1
-                    frames.aim()
-                }
-                .onScrollPhaseChange { _, phase in
-                    frames.scrolling = phase != .idle
-                    frames.aim()
-                }
-                // Under the rows; a row's own menu wins on the row.
-                .contextMenu { sessionMenu }
-                .scrollIndicators(.never)
-                // Only asked, never told: the scroll view's writes made the page and the rows in view again.
-                .scrollPosition(.constant(position))
-                // The selected row and the fade's room round it (its background) into view, just enough, however
-                // it was selected; again once laid out, for a row new in this update (a new page).
-                // The lazy stack finds a row not made yet by its own id only.
-                .onChange(of: page.selectedWorkspaceID ?? "", initial: true) { _, id in
-                    withTransaction(\.animation, nil) { position.scrollTo(id: "into view \(id)") }
-                    // A new page's first ask can be dropped; then the row may not be made yet.
-                    Task {
-                        position.scrollTo(id: id)
-                        await Task.yield()
-                        position.scrollTo(id: "into view \(id)")
+                    if drop.ghost, page.dragging != nil {
+                        Text("New Space").foregroundStyle(.secondary).padding(.leading, WorkspaceRow.textInset)
+                            .frame(maxWidth: .infinity, minHeight: 30, alignment: .leading)
+                            .background { DropIndicator() }
+                    }
+                    if rows.isEmpty, !store.workspaces.isEmpty {
+                        EmptyState(symbol: "magnifyingglass", title: "No matching spaces", compact: true)
+                            .frame(maxWidth: .infinity)
                     }
                 }
-                .onDrop(of: [.ovviDrag], delegate: rowsDrop)
-                .clearsDrop(page) {
-                    drop.spring?.cancel()
-                    drop = RowsDrop.State()
+                .padding(Sidebar.rowInsets)
+                .padding(.bottom, bottom)
+                // The content's own space, which a scroll does not move: no frame changes at every scroll frame.
+                .coordinateSpace(.named("rows"))
+            }
+            .onScrollGeometryChange(for: CGFloat.self) { $0.visibleRect.minY } action: {
+                frames.top = $1
+                frames.aim()
+            }
+            .onScrollPhaseChange { _, phase in
+                frames.scrolling = phase != .idle
+                frames.aim()
+            }
+            // Under the rows; a row's own menu wins on the row.
+            .contextMenu { sessionMenu }
+            .scrollIndicators(.never)
+            // Only asked, never told: the scroll view's writes made the page and the rows in view again.
+            .scrollPosition(.constant(position))
+            // The selected row and the fade's room round it (its background) into view, just enough, however
+            // it was selected; again once laid out, for a row new in this update (a new page).
+            // The lazy stack finds a row not made yet by its own id only.
+            .onChange(of: page.selectedWorkspaceID ?? "", initial: true) { _, id in
+                withTransaction(\.animation, nil) { position.scrollTo(id: "into view \(id)") }
+                // A new page's first ask can be dropped; then the row may not be made yet.
+                Task {
+                    position.scrollTo(id: id)
+                    await Task.yield()
+                    position.scrollTo(id: "into view \(id)")
                 }
-                .fadesScrolledEdges(end: 18 + bottom)
-                .onContinuousHover { phase in
-                    switch phase {
-                    case let .active(point):
-                        if frames.point == nil {
-                            hovering = true
-                            held = held ?? Dictionary(uniqueKeysWithValues: store.workspaces.map { ($0.id, order($0)) })
-                        }
-                        frames.point = point
-                    case .ended:
-                        frames.point = nil
-                        hovering = false
-                        leaves += 1
+            }
+            .onDrop(of: [.ovviDrag], delegate: rowsDrop)
+            .clearsDrop(page) {
+                drop.spring?.cancel()
+                drop = RowsDrop.State()
+            }
+            .fadesScrolledEdges(end: 18 + bottom)
+            .onContinuousHover { phase in
+                switch phase {
+                case let .active(point):
+                    if frames.point == nil {
+                        hovering = true
+                        held = held ?? Dictionary(uniqueKeysWithValues: store.workspaces.map { ($0.id, order($0)) })
                     }
-                    frames.aim()
+                    frames.point = point
+                case .ended:
+                    frames.point = nil
+                    hovering = false
+                    leaves += 1
                 }
-                .task(id: leaves) {
-                    try? await Task.sleep(for: .seconds(1))
-                    if !Task.isCancelled, !hovering, held != nil {
-                        withAnimation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.2)) {
-                            held = nil
-                        }
+                frames.aim()
+            }
+            .task(id: leaves) {
+                try? await Task.sleep(for: .seconds(1))
+                if !Task.isCancelled, !hovering, held != nil {
+                    withAnimation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.2)) {
+                        held = nil
                     }
                 }
             }

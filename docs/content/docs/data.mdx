@@ -11,7 +11,9 @@ One rule decides where each new thing goes (D57):
   only.
 - **Per-device settings** live in app storage.
 
-The installed app is `Ovvi.app`, `dev.ovvi.app`. A Debug build (`make run`,
+The installed app is `Ovvi.app`, `dev.ovvi.app`, which only `make install`
+and `make dmg` build; any other Release build (`make app`, a measure) is
+`dev.ovvi.app.release`, with defaults and saved windows of its own. A Debug build (`make run`,
 the UI tests, CI) is `Ovvi Dev.app`, `dev.ovvi.app.debug`, so it has its own
 defaults, saved windows, notifications, login item and browser data, and it
 claims the `ovvi-dev://` scheme, not `ovvi://`. Its folders on This Mac are

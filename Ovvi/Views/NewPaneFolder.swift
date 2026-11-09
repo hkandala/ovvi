@@ -160,7 +160,7 @@ extension HostStore {
             let panel = NSOpenPanel()
             panel.canChooseDirectories = true
             panel.canChooseFiles = false
-            panel.directoryURL = URL(filePath: start)
+            panel.directoryURL = URL(filePath: (start as NSString).expandingTildeInPath)
             guard await panel.beginSheetModal(for: window) == .OK, let url = panel.url else { return nil }
             let path = url.path(percentEncoded: false)
             return path.count > 1 && path.hasSuffix("/") ? String(path.dropLast()) : path

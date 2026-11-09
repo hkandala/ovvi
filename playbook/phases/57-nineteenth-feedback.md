@@ -340,6 +340,18 @@ runs and on-demand on the final head.
   Machine and the machine menu's "Add Machine…" open its add form, "Edit Machines…" its list; the Add Remote Host
   overlay is gone.
 
+- **Round 7 (63), cause.** Not the code: every app with the installed bundle id shares its saved windows, and a Release
+  build an agent ran against a throwaway session (`-session`, a measure) quit last, so the user's next launch
+  restored that window (`ovvi-dev-p57t` here), whose session is gone, and showed the new-window view. The restore code
+  brings back two windows with their sessions (a new test). **Fix:** only `make install` and `make dmg` build the
+  installed bundle id; `make app` (a measure) builds `dev.ovvi.app.release`, and Debug builds have theirs. Rules kept: a restored
+  window opens its saved pages; a remote one whose machine needs an answer shows Disconnected with Connect, never a
+  prompt; only a launch with nothing saved shows the new-window view; ⌘N always does.
+- **Round 7 (64).** The sidebar's "No Spaces" and its New Space button are gone; the page stays quiet (the header's `+`
+  makes a space). The window's content: Ovvi's icon, "This session has no spaces", one line, New Space and Open
+  Folder…, then up to six Git projects of the session's machine (one shell run on This Mac or over SSH), newest change
+  first.
+
 ### Track B
 
 - **Built** (D111): one sidebar. Pinned tabs on top (a tab's hover pin before its ×, Pin Tab / Unpin Tab in its menu,

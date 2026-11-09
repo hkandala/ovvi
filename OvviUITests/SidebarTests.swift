@@ -207,11 +207,11 @@ extension OvviUITests {
             try await Self.call(five, "workspace.close", ["workspace_id": workspace["workspace_id"] ?? ""])
         }
         relaunch(five)
-        // The sidebar's page shows its button; the window's content says the session is empty, with its own.
-        let button = element("new-workspace")
+        // The window's content offers New Space and Open Folder…; the sidebar stays quiet, with no button of its own.
+        let button = element("detail.new-workspace")
         XCTAssertTrue(element("detail.empty").firstMatch.exists(within: connect))
-        XCTAssertTrue(app.staticTexts["This session is empty"].exists)
-        XCTAssertEqual(app.buttons.matching(identifier: "new-workspace").count, 1)
+        XCTAssertTrue(element("detail.open-folder").exists)
+        XCTAssertFalse(element("new-workspace").exists)
         XCTAssertFalse(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'workspace.'")).firstMatch
             .exists)
         keepScreenshot("empty page")

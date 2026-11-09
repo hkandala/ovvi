@@ -84,7 +84,7 @@ ON_DEMAND := testHundredsOfPanesStayQuick testOverviewOfManyTabsStaysBounded tes
 	testOverviewCostsAndLetsGoAfter testSessionSwipeIntoManyTabsDrawsThemWithTheSidebar \
 	testATabComesIntoViewWithoutAFlicker testACardNeverShowsTheOverviewsSmallSnapshot \
 	testScenesGlassDark testScenesGlassLight testScenesClassicDark testScenesClassicLight \
-	testKeptCardsCost testManyKeptCardsCost testSettingsScenes testStateScenes testNewWindowScenes testSplitsKeepTheDisplayRate \
+	testKeptCardsCost testManyKeptCardsCost testSettingsScenes testStateScenes testNewWindowScenes testEmptySessionScenes testSplitsKeepTheDisplayRate \
 	testHundredsOfSpacesKeepTheSidebarQuick testWebCardsDrawAgainAfterTheGPUProcessHangs
 ifdef ON_DEMAND_ONLY
 SHARD ?= 0/1
@@ -107,8 +107,12 @@ run: build
 
 # A Release Ovvi.app to copy into ~/Applications, and a disk image of it. Ad-hoc signed: fine on this Mac;
 # another Mac needs right-click > Open once, and notifications need a real signing identity.
+# Only install and dmg build the installed app's bundle id: a Release build run by hand (a measure) with it shared the
+# user's saved windows and defaults, and its windows came back at the user's next launch.
+BUNDLE_ID ?= dev.ovvi.app.release
+install dmg: BUNDLE_ID = dev.ovvi.app
 app: web
-	$(XCODEBUILD) $(MAC) -configuration Release build $(NOWARN) $(BEAUTIFY)
+	$(XCODEBUILD) $(MAC) -configuration Release PRODUCT_BUNDLE_IDENTIFIER=$(BUNDLE_ID) build $(NOWARN) $(BEAUTIFY)
 	@echo "$(DERIVED_DATA)/Build/Products/Release/Ovvi.app"
 
 # Also links the ovvi skill for pi and Codex (~/.agents/skills) and Claude Code (~/.claude/skills), where no ovvi
