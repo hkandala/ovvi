@@ -794,6 +794,18 @@ side.
   for the row; the two restore tests start from no saved windows (forget-windows, CI only) and skip on a Mac.
 - **Runs (follow-ups).** CI 42572730463 green (6 tests: both restore tests, the pinch, press, file drop and swipe
   tests); earlier dispatches failed in setup (GitHub's release download answered 504) or showed the Dock's window.
+- **Cause (Debug builds were the user's app).** Debug builds (`make run`, the UI tests, CI) carried the installed
+  app's bundle id, so they shared its defaults, saved windows, notifications, login item and `ovvi://` claim: tests
+  restored the user's windows, and Launch Services held 124 old DerivedData builds that could take the user's
+  `ovvi://` opens (now unregistered; only `~/Applications/Ovvi.app` handles `ovvi://`).
+- **Fix.** A Debug build is `Ovvi Dev.app`, `dev.ovvi.app.debug`: it claims `ovvi-dev://` (it still takes `ovvi://`
+  sent to it by path, as tests do) and keeps `~/.config/ovvi-dev` and `~/Library/Logs/Ovvi Dev`. The executable stays
+  `Ovvi`, so the menu bar reads Ovvi. The restore tests now clear the Debug build's saved windows on a Mac too and run
+  there. Shared on purpose: `~/.cache/ovvi` and `~/.local/state/ovvi` (the sessions' files), herdr's server jobs.
+- **Runs (bundle id).** CI 42577130231 green (6 tests: About, the Dock folder drop, the `ovvi://float` open, both
+  restore tests, the pinch); the same 6 green locally, the restore tests no longer skipped.
+- **For the user.** A Debug build now asks once for notifications as Ovvi Dev. Old copies of Ovvi built before this
+  keep the old id until deleted.
 
 ### Track B, round 4 (items 32–37, 41)
 
