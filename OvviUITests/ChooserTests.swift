@@ -242,7 +242,7 @@ extension OvviUITests {
         keepScreenshot("settings new panes open", of: settingsWindow)
         picker.click()
         XCTAssertTrue(picker.menuItems["File Explorer"].exists(within: 2))
-        let menu = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        let menu = XCTAttachment(screenshot: settingsWindow.screenshot())
         (menu.name, menu.lifetime) = ("settings new panes open menu", .keepAlways)
         add(menu)
         app.typeKey(.escape, modifierFlags: [])
