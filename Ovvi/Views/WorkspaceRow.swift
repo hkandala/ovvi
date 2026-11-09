@@ -18,14 +18,12 @@ struct WorkspaceRow: View {
     let guideBelow: Bool
     /// The first and the last group's workspace: they cannot move up or down.
     let ends: (first: String?, last: String?)
-    /// Its agent panes as shown, newest change first; empty: no chevron.
-    var agents: [HostStore.Pane] = []
+    /// Its agent panes shown under it, newest change first: none while folded.
+    let agents: [HostStore.Pane]
     /// It runs agents: a chevron.
-    var hasAgents = false
-    /// Unfolded: its agents show.
-    var open = false
+    let hasAgents: Bool
     /// Nil while the filter holds it open.
-    var fold: (() -> Void)?
+    let fold: (() -> Void)?
     @State private var renaming = false
     @Environment(\.look) private var look
 
@@ -135,6 +133,10 @@ struct WorkspaceRow: View {
                 .foregroundStyle(.secondary)
             }
         }
+    }
+
+    private var open: Bool {
+        !agents.isEmpty
     }
 
     /// The chevron's width.

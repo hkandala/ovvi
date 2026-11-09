@@ -19,13 +19,13 @@ struct PanelPlace {
 extension View {
     /// A panel that opens by this view after the pointer rests on it 0.25 s, stays while the pointer moves into
     /// it (0.15 s grace), and closes when the pointer leaves both, on a click or a scroll outside it, or with Esc.
-    /// Not while a mouse button is down (a drag), nor while `enabled` is false (nothing to show). In the window,
-    /// not a `.popover`: a popover is a window that takes the keyboard when it shows, and a resting pointer must
-    /// not take keys from the terminal. `action` names an accessibility action that opens it.
-    func hoverPanel(place: PanelPlace, action: String? = nil, enabled: Bool = true,
+    /// Not while a mouse button is down (a drag), nor while disabled. In the window, not a `.popover`: a popover is
+    /// a window that takes the keyboard when it shows, and a resting pointer must not take keys from the terminal.
+    /// `action` names an accessibility action that opens it.
+    func hoverPanel(place: PanelPlace, action: String? = nil,
                     @ViewBuilder _ panel: @escaping (_ close: @escaping () -> Void) -> some View) -> some View
     {
-        modifier(HoverPanel(place: place, action: action, wanted: enabled, panel: panel))
+        modifier(HoverPanel(place: place, action: action, panel: panel))
     }
 
     /// Draws the open hover panel over this view, the window's content: no scroll view or mask around its
@@ -102,7 +102,6 @@ private struct PanelLayout: Layout {
 private struct HoverPanel<Panel: View>: ViewModifier {
     let place: PanelPlace
     let action: String?
-    let wanted: Bool
     let panel: (_ close: @escaping () -> Void) -> Panel
     @State private var open = false
     @State private var overTrigger = false
@@ -114,7 +113,7 @@ private struct HoverPanel<Panel: View>: ViewModifier {
     /// The window it opened in, under the pointer: not the key one, whose Esc and pointer are not the panel's.
     @State private var window: NSWindow?
     /// Off under the overview, which hides its trigger (`underOverview`).
-    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.isEnabled) private var enabled
     @Environment(HoverPanels.self) private var panels: HoverPanels?
     @State private var id = UUID()
     /// The trigger's frame in the window, not observed: a write at every move (the tab bar's capsules while the row
@@ -122,10 +121,6 @@ private struct HoverPanel<Panel: View>: ViewModifier {
     @State private var trigger = Trigger()
     private final class Trigger {
         var frame = CGRect.zero
-    }
-
-    private var enabled: Bool {
-        wanted && isEnabled
     }
 
     func body(content: Content) -> some View {
@@ -149,7 +144,7 @@ private struct HoverPanel<Panel: View>: ViewModifier {
                     Button(action) { show(true) }
                 }
             }
-            // Nothing left to show: it goes at once. It opens only on a hover, never under a still pointer.
+            // Disabled: it goes at once. It opens only on a hover, never under a still pointer.
             .onChange(of: enabled) {
                 if !enabled {
                     show(false)

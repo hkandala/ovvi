@@ -26,7 +26,7 @@ struct Look {
     let dark: Bool
     /// Increase Contrast: the dim colors below are stronger. The system's own colors follow it by themselves.
     var contrast = false
-    /// Text on the accent pill of the new pane's list.
+    /// Text on the accent color: a lit row, a sent bubble.
     static let onAccent = Color.white
 
     /// Glass: over the behind-window blur, blended `overlay` under `window`; it darkens the blur in dark.
@@ -229,8 +229,8 @@ struct CardSurface: View {
 }
 
 /// The selected tab or row: a Liquid Glass capsule in Glass, a raised pill in Classic.
-struct Pill<S: InsettableShape>: View {
-    let shape: S
+struct Pill: View {
+    let shape: RoundedRectangle
     @Environment(\.look) private var look
 
     var body: some View {
@@ -348,5 +348,25 @@ extension View {
                     .frame(width: horizontal ? end : nil, height: horizontal ? nil : end)
             }
         }
+    }
+
+    /// A vertical scroll view fades 18 pt at an edge that rows lie past.
+    func fadesScrolledEdges() -> some View {
+        modifier(ScrolledFades())
+    }
+}
+
+private struct ScrolledFades: ViewModifier {
+    @State private var under = (top: false, bottom: false)
+
+    func body(content: Content) -> some View {
+        content
+            .onScrollGeometryChange(for: [Bool].self) { geometry in
+                [geometry.contentOffset.y > 0.5,
+                 geometry.contentOffset.y + geometry.containerSize.height < geometry.contentSize.height - 0.5]
+            } action: {
+                under = ($1[0], $1[1])
+            }
+            .fadeEdges(.vertical, start: under.top ? 18 : 0, end: under.bottom ? 18 : 0)
     }
 }

@@ -236,7 +236,7 @@ private struct Capped: Layout {
 }
 
 /// The workspace button's menu: every workspace of every page of the window under its session's header, with
-/// its branch; a typed name that matches none to make in the page in view; New Workspace and Open Session under the
+/// its branch; a typed name that matches none to make in the page in view; New Space and Open Session under the
 /// scrolled rows. With the sidebar collapsed it is there, hidden, through every drag of the page in view, until a
 /// hold over the button opens it: macOS 27 finds no drop target added after the drag entered the window (the rows
 /// in view take drops).

@@ -15,8 +15,6 @@ struct SidebarPage: View {
     @State private var hovering = false
     @State private var leaves = 0
 
-    /// Rows above or below the scrolled list's edges, for the fades.
-    @State private var under = (top: false, bottom: false)
     /// Each row's frame in the list's visible space, for drops; measured outside the slide and the glide, so a moving
     /// row reports its place.
     @State private var frames: [String: CGRect] = [:]
@@ -37,7 +35,6 @@ struct SidebarPage: View {
         }
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                // The rows' size, bold; a long session name gives way in its middle.
                 Text(store.title).truncationMode(.middle)
                     .font(.system(size: 13, weight: .bold)).foregroundStyle(.primary).lineLimit(1)
                     .accessibilityIdentifier("sidebar.header")
@@ -72,7 +69,7 @@ struct SidebarPage: View {
                     .contextMenu { Button("Detach Session") { pages.close(page) }.disabled(pages.list.count < 2) }
             }
             if store.state == .live, store.workspaces.isEmpty {
-                EmptyState(symbol: "square.dashed", title: "No Spaces", compact: true, id: "sidebar.empty") {
+                EmptyState(symbol: "square.dashed", title: "No Spaces", compact: true) {
                     Button("New Space") { Task { await page.newWorkspace() } }
                         .accessibilityIdentifier("new-workspace")
                 }
@@ -88,7 +85,7 @@ struct SidebarPage: View {
                                          guideBelow: rows.indices.contains(index + 1)
                                              && rows[index + 1].parent != nil,
                                          ends: (groups.first?.first?.id, groups.last?.first?.id),
-                                         agents: shown, hasAgents: hasAgents, open: !shown.isEmpty,
+                                         agents: shown, hasAgents: hasAgents,
                                          fold: filter.isEmpty ? { fold(id) } : nil)
                                 .overlay {
                                     if drop.over == id, page.dragging != nil {
@@ -112,8 +109,7 @@ struct SidebarPage: View {
                                 .background { DropIndicator() }
                         }
                         if rows.isEmpty, !store.workspaces.isEmpty {
-                            EmptyState(symbol: "magnifyingglass", title: "No matching spaces", compact: true,
-                                       id: "sidebar.no-match")
+                            EmptyState(symbol: "magnifyingglass", title: "No matching spaces", compact: true)
                                 .frame(maxWidth: .infinity)
                         }
                     }
@@ -133,13 +129,7 @@ struct SidebarPage: View {
                     drop.spring?.cancel()
                     drop = RowsDrop.State()
                 }
-                .onScrollGeometryChange(for: [Bool].self) { geometry in
-                    [geometry.contentOffset.y > 0.5,
-                     geometry.contentOffset.y + geometry.containerSize.height < geometry.contentSize.height - 0.5]
-                } action: {
-                    under = ($1[0], $1[1])
-                }
-                .fadeEdges(.vertical, start: under.top ? 18 : 0, end: under.bottom ? 18 : 0)
+                .fadesScrolledEdges()
                 .onHover { inside in
                     hovering = inside
                     if inside {

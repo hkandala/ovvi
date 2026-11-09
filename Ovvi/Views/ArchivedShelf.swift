@@ -21,7 +21,6 @@ struct ArchivedShelf: View {
     @State private var attempt = 0
     /// The search field's text: by title and folder.
     @State private var search = ""
-    @State private var under = (top: false, bottom: false)
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// UI tests' stores (`-archivedHome`), never the user's; the agents' session titles too.
@@ -61,13 +60,7 @@ struct ArchivedShelf: View {
                 .scrollIndicators(.never)
                 .frame(maxHeight: 5 * 48 + 4 * 4) // five 48 pt rows, 4 pt apart
                 .fixedSize(horizontal: false, vertical: true)
-                .onScrollGeometryChange(for: [Bool].self) { geometry in
-                    [geometry.contentOffset.y > 0.5,
-                     geometry.contentOffset.y + geometry.containerSize.height < geometry.contentSize.height - 0.5]
-                } action: {
-                    under = ($1[0], $1[1])
-                }
-                .fadeEdges(.vertical, start: under.top ? 18 : 0, end: under.bottom ? 18 : 0)
+                .fadesScrolledEdges()
                 .padding(.bottom, 4)
             }
         }
@@ -162,43 +155,35 @@ struct ArchivedShelf: View {
                 symbol: "exclamationmark.triangle",
                 title: "Could not read \(machine)'s sessions.",
                 compact: true,
-                id: "agents.archived.status",
             ) {
-                Button("Retry") { attempt += 1 }.accessibilityIdentifier("agents.archived.retry")
+                Button("Retry") { attempt += 1 }
             }
         } else if let problem = problem(shown) {
-            EmptyState(symbol: "exclamationmark.triangle", title: problem, compact: true, id: "agents.archived.status")
+            EmptyState(symbol: "exclamationmark.triangle", title: problem, compact: true)
         } else if more || !reading.isDisjoint(with: shown) {
             if slow {
-                Loader(text: "Reading sessions…", id: "agents.archived.status").padding(12)
+                Loader(text: "Reading sessions…").padding(12)
             }
         } else if !search.trimmingCharacters(in: .whitespaces).isEmpty {
-            EmptyState(symbol: "magnifyingglass", title: "No matching sessions.", compact: true,
-                       id: "agents.archived.status")
+            EmptyState(symbol: "magnifyingglass", title: "No matching sessions.", compact: true)
         } else {
             EmptyState(symbol: "archivebox", title: agent.isEmpty ? "No closed sessions on \(machine)."
-                : "No \(Chooser.name(agent)) sessions.", compact: true, id: "agents.archived.status")
+                : "No \(Chooser.name(agent)) sessions.", compact: true)
         }
     }
 
-    /// A click resumes it in a new tab of the workspace for its folder; ⌥-click beside the keyboard card.
     /// The page in view as an action runs: the shelf stays while the pages change.
     private var inView: Page {
         pages.current ?? page
     }
 
+    /// A click resumes it in a new tab of the workspace for its folder; ⌥-click beside the keyboard card.
     private func row(_ session: ClosedSession) -> some View {
         // pi's file by its name.
         let id = "agents.archived.\(session.agent).\((session.value as NSString).lastPathComponent)"
-        return AgentRow(icon: session.agent, title: session.title, line2: page.short(session.folder), id: id,
-                        action: { inView.resume(session) },
-                        hover: {
-                            IconButton(symbol: "arrow.uturn.backward", help: "Resume", size: 18) {
-                                inView.resume(session)
-                            }
-                            .accessibilityIdentifier(id + ".resume")
-                        },
-                        trailing: { AgeText(date: session.date) })
+        return ArchivedRow(icon: session.agent, title: session.title,
+                           line2: PathField.short(session.folder, remote: page.store.machine.isRemote),
+                           date: session.date, id: id) { inView.resume(session) }
             .contextMenu {
                 Button("Resume") { inView.resume(session, beside: false) }
                 Button("Resume to the Side") { inView.resume(session, beside: true) }
@@ -234,11 +219,6 @@ extension Page {
     /// ⌥: beside the keyboard card.
     func resume(_ session: ClosedSession) {
         resume(session, beside: NSEvent.modifierFlags.contains(.option))
-    }
-
-    /// A folder as line 2 shows it: the home folder as `~`.
-    func short(_ folder: String) -> String {
-        PathField.short(folder, remote: store.machine.isRemote)
     }
 
     /// The agents' sessions the panes of every open session of the machine run, or resume.

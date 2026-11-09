@@ -165,7 +165,6 @@ struct AskDialog: View {
                 Button("Cancel") { question.answer(nil) }
                     .keyboardShortcut(.cancelAction)
                     .buttonStyle(.glass)
-                    .accessibilityIdentifier("ask.cancel")
                 Button(hostKey ? "Connect" : "OK") { question.answer(hostKey ? "yes" : answer) }
                     .keyboardShortcut(.defaultAction)
                     .buttonStyle(.glassProminent)

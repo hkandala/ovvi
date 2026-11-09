@@ -35,7 +35,6 @@ struct SessionPicker: View {
             Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 80, height: 80)
                 .accessibilityHidden(true)
             Text("Ovvi").font(.system(size: 22, weight: .semibold)).padding(.top, 8)
-                .accessibilityIdentifier("picker.title")
             // The machine rows stay in view under the scrolled sessions; the panel's 8 pt goes round them too.
             FilterList(
                 prompt: "Find a session",

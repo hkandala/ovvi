@@ -89,7 +89,7 @@ struct Shortcuts: View {
             let caps = command.family.map { key.caps.dropLast() + [$0.keys] } ?? key.caps
             let seconds = KeyboardShortcut.seconds.filter { $0.first == key }.map(\.second.caps)
             rows.append(Row(group: command.group ?? command.section.group,
-                            title: command.family?.title ?? command.title.replacing("…", with: ""),
+                            title: command.family?.title ?? Palette.pageTitle(command),
                             keys: [caps] + seconds))
         }
         return rows

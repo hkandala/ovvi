@@ -23,7 +23,6 @@ struct Sidebar: View {
     var body: some View {
         HStack(spacing: 0) {
             pagesAndFooter
-                // On the window background, as in the reference: only the pane cards are lighter.
                 .frame(width: width - gap)
             ResizeHandle(width: $width)
         }

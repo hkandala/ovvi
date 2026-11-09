@@ -43,7 +43,7 @@ struct ProgramTile: View {
     }
 }
 
-/// A page's symbol on its tile, as Raycast draws its settings (the user's pick, option b): a lifted tile of the
+/// A page's symbol on its tile, as Raycast draws its settings: a lifted tile of the
 /// sidebar's own tone, lit from the top with a fine rim, and a filled two-tone symbol; dark tiles in dark, light tiles
 /// in light. Fixed colors (they change only with light and dark, never with the Look's style), drawn as one layer,
 /// which the sidebar's selection does not tint.
