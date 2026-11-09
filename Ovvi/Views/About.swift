@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// Ovvi's About window (the system panel showed the credits as a dump of text): the icon, name and version,
-/// and a button that opens every credit and license text, `Acknowledgements.txt` in the app.
+/// Our own About window: the system panel showed the credits as a dump of text.
 struct About: View {
     private var settings = AppSettings()
     @Environment(\.colorScheme) private var colorScheme

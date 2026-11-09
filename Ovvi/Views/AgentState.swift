@@ -22,7 +22,6 @@ extension AgentState {
         }
     }
 
-    /// Its `StateLabel`, none while idle.
     func label(_ look: Look) -> StateLabel? {
         self == .idle ? nil : StateLabel(text: title, icon: self, color: color(look))
     }
@@ -43,7 +42,6 @@ extension AgentState {
 }
 
 extension HostStore {
-    /// The agent panes in herdr's order of workspaces, tabs and panes.
     var agentPanes: [Pane] {
         workspaces.flatMap(\.tabs).flatMap { panes(in: $0.id).filter { $0.state != nil } }
     }

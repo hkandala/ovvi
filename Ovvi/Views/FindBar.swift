@@ -44,7 +44,6 @@ final class Find {
         self.store = store
     }
 
-    /// "3 of 12"; nothing before a query.
     var count: String {
         query.isEmpty ? "" : "\(current.map { $0 + 1 } ?? 0) of \(matches.count)"
     }
@@ -103,7 +102,6 @@ final class Find {
         current.map { lines.count - 1 - matches[$0] + blank }
     }
 
-    /// The match's line centered: its distance from the end, less half the screen.
     private func show() {
         if let distance {
             scroll(max(distance - rows / 2, 0))
@@ -201,7 +199,6 @@ final class Find {
     }
 }
 
-/// The find bar at a card's top right.
 struct FindBar: View {
     let find: Find
     let page: Page
@@ -247,8 +244,7 @@ struct FindBar: View {
     }
 }
 
-/// The matches on the terminal's screen: the selected one in the accent at 0.45, the others at 0.2. Cells from the
-/// surface's cell size; the terminal has no padding.
+/// The matches on the terminal's screen, placed by the surface's cell size: the terminal has no padding.
 struct FindHighlights: View {
     let find: Find
     let terminal: PaneTerminal

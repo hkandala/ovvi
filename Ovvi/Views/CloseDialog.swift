@@ -5,7 +5,7 @@ import SwiftUI
 /// its floating window (D50), every other in the main window.
 struct CloseDialog: ViewModifier {
     let page: Page
-    /// The floating window's pane.
+    /// The floating window's pane; nil in the main window.
     var floated: String?
 
     func body(content: Content) -> some View {
@@ -38,7 +38,6 @@ struct CloseDialog: ViewModifier {
         }
     }
 
-    /// The close dialog's text (design D41): what runs, and that a close ends it on every device for good.
     private func dialog(_ closing: HostStore.Closing?) -> (title: String, message: String)? {
         guard let closing else { return nil }
         let store = page.store

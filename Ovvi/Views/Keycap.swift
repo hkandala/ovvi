@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// A palette row's keys, one cap each.
 struct Keycap: View {
     let text: String
 

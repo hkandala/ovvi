@@ -78,7 +78,6 @@ struct OpenPanel {
     let content: AnyView
 }
 
-/// Puts the panel at its place by the trigger, kept inside the window.
 private struct PanelLayout: Layout {
     let trigger: CGRect
     let place: PanelPlace

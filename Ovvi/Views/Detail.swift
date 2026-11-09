@@ -2,10 +2,8 @@ import Foundation
 import HerdrKit
 import SwiftUI
 
-/// A short message at the bottom of the page (design: Notice).
 struct Notice {
     enum Tone {
-        /// `progress`: a spinner while a command runs; `success`: a green check when it ended.
         case error, warning, info, progress, success
     }
 
@@ -14,18 +12,15 @@ struct Notice {
     /// The terminal whose pane Show selects in the window (an agent's notice, agent-control/cli): a pane id can name
     /// another pane after a move.
     var show: String?
-    /// What its Retry does (Relaunch with Chat's), if it has one.
     var retry: (@MainActor @Sendable () -> Void)?
     let id = UUID()
 }
 
-/// A notice's glass capsule (design: Notice).
 struct NoticeCapsule<Action: View>: View {
     let tone: Notice.Tone
     let text: String
     /// Instead of the tone's symbol.
     var symbol: String?
-    /// A button, or the ✕.
     @ViewBuilder var action: Action
     @Environment(\.look) private var look
 
@@ -117,8 +112,6 @@ struct Detail: View {
         }
     }
 
-    /// The selected tab's page, the button that makes a missing tab, or that the session is empty: its page
-    /// header's `+` makes a workspace.
     @ViewBuilder private func tabs() -> some View {
         if let workspace = page.selectedWorkspace {
             if workspace.tabs.isEmpty {
@@ -198,8 +191,6 @@ struct Detail: View {
         .padding(.bottom, 30)
     }
 
-    /// A missing herdr, its install command and Install herdr; the installer's progress while it runs, its
-    /// output and Try Again when it failed (talking-to-herdr#install-herdr).
     @ViewBuilder private func install(_ store: HostStore) -> some View {
         let machine = store.machine, installs = HerdrInstall.shared
         let run = { _ = Task { await installs.install(on: machine, session: store.session) } }

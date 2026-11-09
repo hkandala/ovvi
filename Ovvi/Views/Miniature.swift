@@ -30,13 +30,12 @@ struct Miniature: View {
     }
 }
 
-/// A card at `scale`: its fill and edge, and what the page's card shows under its header: its terminal's snapshot
-/// (10 pt in, 8 pt up from the bottom), or the terminal live until it has one, or for a terminal never shown the fill;
-/// a web card's or a chat's last picture; else its kind's symbol. A floated pane's shows the float icon.
+/// A card at `scale`: its terminal's snapshot, or the terminal live until it has one, or for a terminal never shown
+/// the fill.
 private struct MiniCard: View {
     let id: String
     let page: Page
-    /// The card in the tab's page.
+    /// The card's size in the tab's page, before `scale`.
     let size: CGSize
     let scale: CGFloat
     let live: Set<String>

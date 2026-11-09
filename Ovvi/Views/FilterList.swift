@@ -27,7 +27,6 @@ struct FilterList: View {
         /// A second action, a button on the lit row's right end (Open Session's Stop, Delete and Detach). The list
         /// stays open.
         var button: (title: String, act: () -> Void)?
-        /// The button's role: red when destructive.
         var buttonRole: ButtonRole?
         /// Where a drop on the row moves the page's dragged pane or tab: a workspace, or a new one (the workspace
         /// menu).
@@ -210,7 +209,6 @@ struct FilterList: View {
             .accessibilityAddTraits(offset == index ? .isSelected : [])
             // After the row's accessibility, which would name this button too.
             .overlay(alignment: .trailing) {
-                // Not while its spinner shows.
                 if let button = item.button, offset == index, !item.busy {
                     Button(button.title, role: item.buttonRole, action: button.act)
                         .buttonStyle(RowButtonStyle())
@@ -219,7 +217,6 @@ struct FilterList: View {
                 }
             }
             .modifier(MenuRowDrop(target: item.drop))
-            // The light follows the pointer, as in a menu.
             .onContinuousHover { phase in
                 guard case .active = phase, NSEvent.mouseLocation != pointer else { return }
                 pointed = true
@@ -308,7 +305,6 @@ struct FilterField: View {
     }
 }
 
-/// A rename field, focused as it appears with the old name: Enter commits, Esc ends, a click elsewhere blurs it.
 struct RenameField: View {
     let prompt: String
     let initial: String
@@ -346,7 +342,6 @@ extension View {
         modifier(FieldCapsule(fill: fill))
     }
 
-    /// Focuses the field as it appears.
     func focusSoon(_ focused: FocusState<Bool>.Binding, _ asks: Bool = true) -> some View {
         task(id: asks) {
             guard asks else { return }

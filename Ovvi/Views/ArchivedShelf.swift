@@ -1,15 +1,14 @@
 import HerdrKit
 import SwiftUI
 
-/// The sidebar's Archived Sessions (ui/window#archived-sessions), at its foot under every page: the sessions of Claude
-/// Code, Codex, Pi and OpenCode on the window's machine that no pane runs, from the agents' own stores, newest first,
-/// in a border as a space row's. Folded at first; open, a search field (with a menu that shows one agent) over at most
-/// five rows that scroll. Read each time it opens; the next page of an agent as the list's end scrolls into view.
+/// The sidebar's Archived Sessions (ui/window#archived-sessions): the agents' sessions on the window's machine that no
+/// pane runs, from the agents' own stores. Read each time it opens; an agent's next page reads as the list's end
+/// scrolls into view.
 struct ArchivedShelf: View {
     let pages: WindowPages
     /// The page in view when drawn: its machine's sessions. A resume goes to the page in view when it runs.
     let page: Page
-    /// The agent the menu shows ("" for all), kept across relaunches.
+    /// The agent the menu shows, "" for all.
     @AppStorage("archivedAgent", store: .agents) private var agent = ""
     @AppStorage(Page.openShelves, store: .agents) private var opened = ""
     @State private var list = ClosedList()
@@ -19,7 +18,6 @@ struct ArchivedShelf: View {
     /// Each read anew (an open, Retry); an older one's pages land nowhere.
     @State private var generation = 0
     @State private var attempt = 0
-    /// The search field's text: by title and folder.
     @State private var search = ""
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -78,7 +76,6 @@ struct ArchivedShelf: View {
         }
     }
 
-    /// "Archived Sessions" and the chevron: a click folds or opens it.
     private func header(open: Bool, key: String) -> some View {
         Button {
             withAnimation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.2)) {
@@ -115,10 +112,8 @@ struct ArchivedShelf: View {
             .pickerStyle(.inline)
             .labelsHidden()
         } label: {
-            // Filled while it shows one agent.
             Image(systemName: agent.isEmpty ? "line.3.horizontal.decrease.circle"
                 : "line.3.horizontal.decrease.circle.fill")
-                // As the field's own symbol at its other end.
                 .foregroundStyle(.secondary)
         }
         .menuStyle(.button)
@@ -133,7 +128,6 @@ struct ArchivedShelf: View {
 
     static let label = "Archived Sessions"
 
-    /// The sessions shown: none a live pane runs, none resuming (on any page of the machine).
     private func rows(_ shown: [String]) -> [ClosedSession] {
         let live = page.liveSessions
         return list.sessions(of: shown).filter { session in
@@ -147,7 +141,6 @@ struct ArchivedShelf: View {
         }.first
     }
 
-    /// Why there is no row, or what is missing: the app's empty state and loader (ui/states), compact.
     @ViewBuilder private func status(_ shown: [String], more: Bool) -> some View {
         let machine = page.store.machine.name
         if !failed.isDisjoint(with: shown) {
@@ -177,9 +170,8 @@ struct ArchivedShelf: View {
         pages.current ?? page
     }
 
-    /// A click resumes it in a new tab of the workspace for its folder; ⌥-click beside the keyboard card.
     private func row(_ session: ClosedSession) -> some View {
-        // pi's file by its name.
+        // pi's session is a file path: its name is enough.
         let id = "agents.archived.\(session.agent).\((session.value as NSString).lastPathComponent)"
         return ArchivedRow(icon: session.agent, title: session.title,
                            line2: PathField.short(session.folder, remote: page.store.machine.isRemote),
@@ -190,7 +182,6 @@ struct ArchivedShelf: View {
             }
     }
 
-    /// The first page of each agent, else the next; each agent's rows show as they come.
     private func read(_ agents: [String]) async {
         // Marked as reading before the await: a second read meanwhile would read the same offset.
         let generation = generation

@@ -14,7 +14,6 @@ struct FadeText: View {
     }
 }
 
-/// An SF Symbol button. Its tooltip and VoiceOver label say the action and its shortcut ("New Tab ⌘T").
 struct IconButton: View {
     let symbol: String
     let help: String

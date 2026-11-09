@@ -1,8 +1,7 @@
 import SwiftUI
 
-/// An Archived Sessions row, a 48 pt button: the program tile on line 1, then the name, then its age; line 2 full
-/// width. Under the pointer Resume shows before the age, as a button of its own over the row: inside the row's
-/// label, it would be part of its one accessibility element.
+/// An Archived Sessions row. Under the pointer Resume shows before the age, as a button of its own over the row:
+/// inside the row's label, it would be part of its one accessibility element.
 struct ArchivedRow: View {
     let icon: String
     let title: String
@@ -65,7 +64,6 @@ struct ArchivedRow: View {
     }
 }
 
-/// An Archived Sessions row's age.
 struct AgeText: View {
     let date: Date
 
@@ -76,7 +74,6 @@ struct AgeText: View {
         }
     }
 
-    /// The time since `date` in a shelf: "5m", "5h", "2d", "1w".
     static func age(_ date: Date) -> String {
         let minutes = max(0, Int(Date.now.timeIntervalSince(date))) / 60
         return switch minutes {

@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The app's one look for an empty, failed or not-installed place (ui/states): a symbol, a title, one line, and at most
-/// two buttons, the first one prominent. `compact` in a list or a small panel.
+/// The app's one look for an empty, failed or not-installed place (ui/states): at most two buttons, the first one
+/// prominent. `compact` in a list or a small panel.
 struct EmptyState<Actions: View>: View {
     let symbol: String
     let title: String

@@ -37,7 +37,6 @@ enum DropTarget {
     /// A card: its center (nil) or an edge.
     case card(String, edge: Heading?)
     case tab(String)
-    /// A new tab or a new workspace.
     case move(Destination)
 }
 
@@ -186,7 +185,6 @@ struct SpringDrop: DropDelegate {
 }
 
 extension Animation {
-    /// A drop target's highlight.
     static let highlight = Animation.easeOut(duration: 0.12)
 
     /// Rex's insertion timing: 0.22 s on its "production" curve. Tabs and rows slide apart with it; none with

@@ -34,8 +34,7 @@ extension Page {
                          with: WindowPages.openWindow)
     }
 
-    /// "New Pane" while it asks what it runs (as the card's header says), a browser's "Browser" and its page, a
-    /// plugin's kind and title, an agent's name and session title; nil for a terminal.
+    /// The card header's kind and detail; nil for a terminal.
     func kindTitle(_ pane: HostStore.Pane) -> (name: String, detail: String?)? {
         if store.chooser(pane.id) != nil {
             return ("New Pane", nil)
@@ -88,17 +87,14 @@ extension WindowPages {
         window.showFloatPending()
     }
 
-    /// The terminal shows in a floating window (D50).
     func floats(_ terminalID: String) -> Bool {
         withFloats.contains { $0.floating[terminalID] != nil }
     }
 
-    /// The pages and the float-only ones.
     var withFloats: [Page] {
         list + floatOnly
     }
 
-    /// The session's page, else a new float-only one, its store connecting.
     private func pageToFloat(_ session: String) -> Page {
         if let page = withFloats.first(where: { $0.id == session }) {
             return page
@@ -149,9 +145,8 @@ extension WindowPages {
     }
 }
 
-/// The floating window: traffic lights, "session › workspace › tab", Stay on Top, Close and Detach, then the
-/// pane's terminal in a card. It closes when its page lets the pane go (Detach, herdr closed the pane, the main
-/// window closed).
+/// The floating window. It closes when its page lets the pane go (Detach, herdr closed the pane, the main window
+/// closed).
 struct FloatingWindow: View {
     let floating: Floating
     @State private var palette = false
@@ -324,7 +319,6 @@ struct FloatingWindow: View {
     }
 }
 
-/// A floated pane's icon, title and agent state, in its window's title row.
 private struct PaneInfo: View {
     let pane: HostStore.Pane
     let page: Page

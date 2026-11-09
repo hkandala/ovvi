@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// Rows, buttons and capsules: flat at rest, a soft fill under the pointer, a raised pill when selected.
 struct ChromeStyle: ButtonStyle {
     var selected = false
     var radius: CGFloat = 8
