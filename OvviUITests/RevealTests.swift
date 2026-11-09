@@ -133,17 +133,13 @@ extension OvviUITests {
             }),
             ("sidebar hidden", { self.element("titlebar.sidebar").click() }),
             ("sidebar shown", { self.element("titlebar.sidebar").click() }),
+            // Its text leaves the band as the card goes up: no ink check.
+            ("split down", { self.paneMenu(pane, "Split Down") }),
         ]
         for (step, act) in steps {
             XCTAssertTrue(host.exists(within: 3), step)
-            let sizes = Self.motion(host).sizes, slides = Self.slides(card)
-            // The screen, not the element, which moves: a band across the window through the middle of the terminal.
-            // Its text stays in the band while the card moves (no other card has text that low).
-            // The largest window: a tooltip or a hover card is a window too.
-            let frame = terminal.frame, window = app.windows.allElementsBoundByIndex.map(\.frame)
-                .max { $0.width * $0.height < $1.width * $1.height } ?? .zero
-            let band = CGRect(x: window.minX, y: frame.minY + frame.height * 0.45, width: window.width,
-                              height: frame.height * 0.2)
+            let sizes = Self.motion(host).sizes, slides = Self.slides(card), place = card.frame
+            let band = band(through: terminal)
             let before = Self.ink(Self.crop(XCUIScreen.main.screenshot().image, band))
             try await act()
             var inks: [Double] = []
@@ -151,12 +147,15 @@ extension OvviUITests {
             while Date.now < end {
                 inks.append(Self.ink(Self.crop(XCUIScreen.main.screenshot().image, band)))
             }
-            XCTAssertGreaterThan(inks.min() ?? 0, before / 3, "\(step): ink \(before) before, then \(inks)")
+            if step != "split down" {
+                XCTAssertGreaterThan(inks.min() ?? 0, before / 3, "\(step): ink \(before) before, then \(inks)")
+            }
             if step.hasPrefix("sidebar") {
                 XCTAssertGreaterThanOrEqual(Self.motion(host).sizes - sizes, 4,
                                             "\(step): sizes from \(sizes) to \(host.label)")
             } else {
                 XCTAssertGreaterThan(Self.slides(card), slides, "\(step): \(card.label)")
+                Self.expectBetween(card, from: place, step)
             }
             try await expectText([pane], step)
         }
@@ -239,6 +238,32 @@ extension OvviUITests {
         // The new surface draws, not the old picture held for good: a cleared screen has a prompt's ink only.
         try await send("clear\r", to: "w1:p1")
         try await expect("the cleared screen drawn") { Self.ink(terminal.screenshot().image) < (inks.min() ?? 0) / 3 }
+    }
+
+    /// The screen, not the element, which moves: a band across the window through the middle of the terminal. Its text
+    /// stays in the band while the card moves (no other card has text that low). The largest window: a tooltip or a
+    /// hover card is a window too.
+    private func band(through terminal: XCUIElement) -> CGRect {
+        let frame = terminal.frame, window = app.windows.allElementsBoundByIndex.map(\.frame)
+            .max { $0.width * $0.height < $1.width * $1.height } ?? .zero
+        return CGRect(x: window.minX, y: frame.minY + frame.height * 0.45, width: window.width,
+                      height: frame.height * 0.2)
+    }
+
+    /// Halfway through its motion each edge of the card lies between where it was and where it ends: "slides 3 mid x
+    /// y w h end x y w h" (`MovingCard.recordMid`), its end where XCUITest has it.
+    private static func expectBetween(_ card: XCUIElement, from old: CGRect, _ step: String) {
+        let numbers = card.label.split(separator: " ").compactMap { Double($0) }.map { CGFloat($0) }
+        guard numbers.count == 9 else { return XCTFail("\(step): \(card.label)") }
+        let mid = CGRect(x: numbers[1], y: numbers[2], width: numbers[3], height: numbers[4])
+        let end = CGRect(x: numbers[5], y: numbers[6], width: numbers[7], height: numbers[8]), new = card.frame
+        XCTAssertEqual(end.minX, new.minX, accuracy: 2, "\(step): \(card.label) at \(new)")
+        XCTAssertEqual(end.minY, new.minY, accuracy: 2, "\(step): \(card.label) at \(new)")
+        for (edge, name) in [(\CGRect.minX, "left"), (\.maxX, "right"), (\.minY, "top"), (\.maxY, "bottom")] {
+            let (low, high) = (min(old[keyPath: edge], new[keyPath: edge]), max(old[keyPath: edge], new[keyPath: edge]))
+            XCTAssertTrue((low - 3 ... high + 3).contains(mid[keyPath: edge]),
+                          "\(step): the \(name) edge at \(mid[keyPath: edge]), not from \(old) to \(new)")
+        }
     }
 
     /// `-recordMotion`'s label on a card: the motions Core Animation made of it ("slides 3").

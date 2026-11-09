@@ -78,7 +78,9 @@ private struct SplitLayout: View {
                     // A new card slides in from its side as the others make room, its edge on theirs.
                     let entering = placed != nil && views[card.id] == nil
                     let rect = zoomed == card.id ? area : entering ? card.start : card.rect
-                    CardMotion(rect: rect, move: move, entering: entering, hidden: hidden, id: card.id,
+                    let edge = look.edge(keyboard: false)
+                    CardMotion(rect: rect, move: move, entering: entering && move != 0, hidden: hidden, id: card.id,
+                               edge: (NSColor(edge.color), edge.width),
                                content: PaneCard(id: card.id, page: page, away: away)
                                    .overlay { CardFlash(store: page.store, id: card.id) }
                                    .environment(\.look, look).environment(\.pageHidden, hidden))
@@ -124,9 +126,7 @@ private struct SplitLayout: View {
             if moving {
                 page.terminals.pages?.window?.holdStill()
             }
-            withAnimation(motion) {
-                placed = tree.paneIDs.map { ($0, views[$0] ?? $0) }
-            }
+            placed = tree.paneIDs.map { ($0, views[$0] ?? $0) }
         }
     }
 
