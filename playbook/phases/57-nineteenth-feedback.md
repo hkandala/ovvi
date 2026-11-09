@@ -913,3 +913,26 @@ you did, no need of reverting them".
 - **For the user.** Pick a default, then ⌘D, ⌘T and New Space; ⌥-click a `+` or a split button for the chooser. With
   Terminal fixed on a remote machine, type right after ⌘D: keys typed before herdr made the pane go to the old pane
   (no chooser holds them then).
+
+### Track T (item 50)
+
+- **Cause.** Classic dark drew no edge round a card (the card #222 on the window #1e1e1e, +4 levels, 1.05:1), its
+  selected tab and row pill was a flat white 0.045 (+10, 1.13:1) and the tab bar had no track. Glass dark, which
+  reads well, measured: card edge +22 (1.31:1), track +8, selected pill rim +100.
+- **Fix.** Classic only, in the `Look` tokens: cards get a hairline outer stroke (dark white 0.1 at 0.7 pt, 0.16 at
+  0.8 pt on the keyboard card; light black 0.12 → 0.14); the dark pill is white 0.07 with a 1 pt edge at white 0.12;
+  the tab track shows in Classic dark too (primary 0.05). `ChromeStyle` moved to its own file (Style.swift was at 400
+  lines).
+- **Decisions.** Two strengths drawn: very subtle (card +14, 1.19:1) and subtle (card +23, 1.36:1, pill +49, track
+  +10); subtle picked in dark, as close to Glass's 1.31:1 card edge without passing it anywhere. Classic light already
+  read at Glass's level (card edge 1.31:1), so only its card stroke steps up (1.37:1). Unchanged after measuring:
+  space rows and Archived Sessions (primary 0.14: +20 in Classic dark, Glass +22), the filter field, panels, the
+  palette, hover card and notices (the shared system glass: fill 1.38:1 and a dark outline in Classic dark), the
+  floating window (its card fills the window) and Settings (system controls, pixel-identical). Glass's code paths
+  are untouched; its before and after pictures differ only by timing (badges, cursor).
+- **Runs.** CI 42568085283 (chosen: the four look tests, both Classic scene tests, the overview test): 7 executed,
+  green (two reruns of a 504 on herdr's download, no test ran then).
+- **Pictures.** `~/Downloads/ovvi-research/p57t/index.html`: the strengths sheet and before/after in all four looks
+  with the measured numbers; also a chat card's Chat | TUI switch and the overview.
+- **For the user.** In Classic dark: the cards, the selected tab and space row and the tab track should stand apart
+  from the window without looking heavy; Glass should look the same as before.
