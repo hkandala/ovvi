@@ -65,6 +65,9 @@ Problems that came back across phases, and the rule that stops each. How we work
   desktop. `ImageRenderer` in a `swiftc` script measures a view's pixels without the app.
 - **Never assert wall-clock time.** In unit tests compare against a ten times larger input or count the
   work.
+- **A pane's row that wraps at a space drops it.** herdr's `pane.read` keeps no trailing spaces, so a typed line
+  read across a wrap lost its space (`claude--resume`) and missed its match on CI's narrow cards only. Wait with
+  `waitFor(_:toShow:)`, which compares without whitespace.
 
 ## CI and git
 
@@ -158,6 +161,9 @@ Problems that came back across phases, and the rule that stops each. How we work
 - **A `ScrollViewReader`'s content runs again only when what its closure captures changes.** `@State` or an
   environment value read only inside it is no dependency of the body, so its change redraws nothing (a button that
   never showed). Read them into `let`s in the body and use those inside; observed models are tracked inside.
+- **A busy app's `DragGesture` reports its first change late,** after the pointer moved on. Take the grab from
+  `startLocation`, never the first `location`: the late one put a dragged row's image off the pointer and its drop a
+  row short (phase 57).
 - **Hover state is unreliable.** A view removed under the pointer gets no hover end, and a busy app runs
   hover late. Decide from the pointer's location when it matters.
 - **A web page takes the keyboard by itself.** WebKit makes its web view first responder when the page focuses an

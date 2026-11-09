@@ -1215,3 +1215,68 @@ you did, no need of reverting them".
   testPanelsAndSwitchesReactAtOnce's first letter 172 → 32 ms and ⌫ 121 → 20 ms; the stress session's first letter
   372 → 56 ms and its slowest ⌫ 575 → 51 ms.
 - **For the user.** With Raycast or another accessibility app running, open ⌘K and type: each key should draw at once.
+
+## The phase's end
+
+### Findings (finish)
+
+- **Docs pass.** The tracks had written their pages. The pass removed what was left of the two sidebar views (a "sidebar
+  view" in the window's state, the `agents` scene key), D111's pointer to a removed D109, the Agents row in the
+  glossary and the `settleAfter` history; Features gained Install herdr, the ⌘N picker, ⌘/⌥ link underlines, HTML in
+  the browser, Redraw Terminal, web cards that come back, chat times and ticks, and ⇧] ⇧[. Later checks for rounds
+  3–6 (spaces, the notices, the new-window view, the sidebar, pinch, padding, libghostty, Classic, Ovvi Dev, the
+  palette) found the pages current.
+- **Final review** (0 blockers, 3 shoulds, 11 nits; the shoulds and five nits fixed): ⇧, ⌃ or ⌘ pressed over a
+  terminal sent libghostty two made-up pointer moves (a program that tracks the mouse got motion reports); a ⌘N
+  picker window that macOS restored opened `default` by itself; the fold check was written three times.
+- **Cause, the space-row drag (CI, both full runs).** A busy app's `DragGesture` reports its first change after the
+  pointer moved on, and the drag took that late point as the grab: the image sat off the pointer and the dragged
+  row's middle fell short of the row it was let go on, so nothing moved. **Fix:** the grab is the gesture's
+  `startLocation` (a lesson).
+- **Cause, Archived's resume (CI).** A typed line wrapped at a space, and herdr's `pane.read` keeps no trailing space:
+  `claude--resume`. Every read of a typed line now goes through `waitFor(_:toShow:)`, which compares without
+  whitespace (a lesson). Pane ids can hold letters (`w2:pC`).
+- **Stale tests.** The ⌘ keycap sat beside the tab's new pin, not its × (then the keycaps went in round 4). The agent
+  start test skipped on every CI run, since CI's `claude` is the stand-in: it now skips only for a real one, and runs.
+  The sidebar stress test's ⌃⌘1 found its space selected already, so the list did not scroll to it.
+- **Not found.** One full run's shard hung from one test on: the runner never got the new app's pid, and every later
+  test waited on its screen recording until the job limit, with no assertion failing (`testmanagerd`; ci.md). One
+  palette scroll that never moved, and one stress-test ⌘D whose second card the accessibility query never counted
+  (the app split, the recording shows it), each once; neither came back in eight full runs and two on-demand runs.
+
+### Runs (finish)
+
+- Red, each fixed before the next: p57-final (132467f2) full runs 42548068295 and 42548074923 (the space drag, the
+  keycap, a palette scroll); p57-final2 (3c694fe2) full run 42554062143 (the runner's hang in shard 0) and on-demand
+  42554074138 (the stress ⌘D); p57-final4 (c7a4de17) full runs 42611892909 and 42611901292 and on-demand 42611908811
+  (the agent start's pane id, Archived's wrapped resume, the stress test's jump).
+- Green on the way: full 42554068412 and on-demand 42548082531; full 42587591358 and 42587598516 and on-demand
+  42587606624 on Track O's head (p57-final3, 20978ec8). Chosen tests 42546622667 (the review's fixes, 9 tests),
+  42560943755 (the stress test), 42595679366 (the agent start, no longer skipped), 42619945111 (8 tests on the fixes).
+- Green on p57-final5 (652da9ea), the final head: full run 42621495316 (Executed 55, 56, 56, 56 and 57 tests, 0
+  failures; shard 4's artifact upload failed on a DNS error after its tests passed), full run 42621503671 (the same
+  counts, 0 failures, no skips) and on-demand run 42621512673 (Executed 3, 5, 5 and 5 tests, 0 failures).
+- `scripts/test-times.tsv` from full runs 42587598516, 42621495316 and 42621503671 and on-demand runs 42587606624 and
+  42621512673.
+
+### For the user
+
+- Install a build of main (`make app`): File Explorer 1.10.14 and Git 1.10.5 replace your copies. A Debug build is now
+  Ovvi Dev (its own settings and notifications).
+- **Windows.** Launch, ⌘N and a Dock click with no window show the new-window view and connect to nothing; known
+  sessions show at once; Add Machine… opens Settings ▸ Machines. Install herdr on a Mac or host without it.
+- **Sidebar.** Spaces unfolded and bordered, their agents newest first, an untitled session's first prompt; fold one
+  and relaunch. Archived Sessions: search, the agent menu in the field, a loader then the whole list (twice on
+  devvm-aai), the dots over the fading rows. A session with hundreds of spaces: scroll, swipe, fold.
+- **Terminal.** Hold ⌥ over a link with the pointer still: the underline as with ⌘; ⌥-drag still selects a rectangle.
+  ⌘-click a deleted file's path: "File not found". ⌥⌘R redraws a garbled TUI (the `kq_dispatch` lines are Meta's
+  launchers').
+- **Cards.** An `.html` link opens in a browser card; a file card on HTML has Open in Browser. Leave a browser and a
+  Rich Text card idle overnight; Force Quit an "Ovvi Web Content" process: they come back where they were. Pinch a
+  browser page. A devvm-aai browser card after a sleep loads without closing the window.
+- **Keys.** ⌃- ⇧⌃- Back and Forward in File Explorer and Git; ⇧] ⇧[ by file in a diff; ⌘A in a locked Source view;
+  the Markdown pencil.
+- **Agents.** Relaunch with Chat on Claude Code and Codex, also on a Mac without Meta's launchers; chat times and
+  ticks; Settings ▸ New panes open.
+- **Speed and look.** ⌘D and ⇧⌘D beside a busy agent (Glass and Classic); ⌘K's first letter and ⌫ with Raycast
+  running; Classic dark's borders; floating panes' even top and bottom room.

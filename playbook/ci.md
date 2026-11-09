@@ -67,9 +67,12 @@ How CI runs, how to run part of it, and how to keep it green and fast.
    A recording gets a frame only when the screen changes (about 17 fps on CI, one every 0.3–0.6 s while a
    test takes screenshots in a loop), so a one-frame jump shows only by luck: use `FrameProbe` for that.
 3. Think of CI's machine ([Layout](#layout)); Option sends Alt there.
-4. Give it 20 minutes from the logs. Then simplify the test or the feature and write it down, or hand it on.
+4. A shard where every test from one point on runs out its 120 s with no assertion (the session log shows a launch
+   whose pid never came, then "requesting to start screen recording" with no answer) is the runner's
+   `testmanagerd`, not the tests: judge the tests before that point, and the next full run (phase 57).
+5. Give it 20 minutes from the logs. Then simplify the test or the feature and write it down, or hand it on.
    No debug branches.
-5. Never rerun to green: run again only after a code change. A flake fix is proven by two full runs in a
+6. Never rerun to green: run again only after a code change. A flake fix is proven by two full runs in a
    row green on the first try.
 
 ## Writing fast tests
