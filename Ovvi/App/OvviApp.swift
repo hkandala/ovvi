@@ -225,7 +225,7 @@ struct ContentView: View {
         }
         // A removed machine's window opens no page: its saved pages were the remote's sessions.
         let removed = machine == nil && !id.isEmpty
-        // A test run (`-defaultSession`) shares the developer's saved windows: it restores only throwaway sessions.
+        // A test run (`-defaultSession`) shares saved windows with Debug runs: it restores only throwaway sessions.
         let test = UserDefaults.standard.string(forKey: "defaultSession")
         let saved = argument == nil && !removed ? savedPages.split(separator: " ").map(String.init)
             .filter { test == nil || $0.hasPrefix("ovvi-e2e-") } : []

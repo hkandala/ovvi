@@ -93,9 +93,17 @@ enum Registry {
     /// plugins' source (`defaults/<id>`).
     static let folder = Bundle.main.resourceURL?.appending(path: "web")
 
-    /// `~/.config/ovvi`; a test points it elsewhere (`-configFolder`).
+    /// `~/.config/ovvi` (a Debug build's `~/.config/ovvi-dev`, never the installed app's); a test points it elsewhere
+    /// (`-configFolder`).
     static let config = UserDefaults.standard.string(forKey: "configFolder").map { URL(filePath: $0) }
-        ?? FileManager.default.homeDirectoryForCurrentUser.appending(path: ".config/ovvi")
+        ?? FileManager.default.homeDirectoryForCurrentUser.appending(path: ".config/" + Self.name)
+
+    // The folders' names: a Debug build (`dev.ovvi.app.debug`, `Ovvi Dev.app`) keeps apart from the installed app.
+    #if DEBUG
+        nonisolated static let name = "ovvi-dev", logs = "Ovvi Dev"
+    #else
+        nonisolated static let name = "ovvi", logs = "Ovvi"
+    #endif
 
     static let settings = config.appending(path: "settings.json")
 

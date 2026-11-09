@@ -31,8 +31,8 @@ POST /<session>/ssh-unforward with an SSH target as the body cancels the dynamic
 of the app's ControlMaster to it, on CI only, as a master that lost them; the ports come back, one per line.
 POST /<session>/web-kill kills the app's WebKit page processes (SIGKILL, as the system ends one), or with GPU or
 Networking as the body its GPU or network process, and gives back the pids it killed, one per line.
-POST /<session>/forget-windows removes the saved windows ($TMPDIR/dev.ovvi.app.savedState), on CI only: a test that
-restores windows starts from none, not from an earlier test's (on a Mac the user's own Ovvi keeps its windows there).
+POST /<session>/forget-windows removes the Debug build's saved windows ($TMPDIR/dev.ovvi.app.debug.savedState): a test
+that restores windows starts from none, not from an earlier test's.
 POST /<session>/ssh-forget with an SSH target as the body removes its host key from ~/.ssh/known_hosts, on CI only, so
 ssh asks for it again.
 POST /<session>/swipe with "x y step steps [pause [vertical [option]]]" as the body posts a two-finger trackpad swipe there (scripts/swipe.swift).
@@ -70,8 +70,8 @@ sessions, command = sys.argv[1:split], sys.argv[split + 1:]
 folders = []
 # Each session's drag that /press holds down until /release.
 held = {}
-# The tests' config folder (OvviUITests.noConfig): a launch from here installs the default plugins there, never in the
-# user's ~/.config/ovvi.
+# The tests' config folder (OvviUITests.noConfig): a launch from here installs the default plugins there, never in a
+# Debug build's ~/.config/ovvi-dev.
 NO_CONFIG = "/tmp/ovvi-e2e-no-config"
 # The tests' config folder and agents' stores, never the user's (OvviUITests.noConfig).
 ISOLATED = ["-configFolder", NO_CONFIG, "-archivedHome", "/tmp/ovvi-e2e-archived"]
@@ -118,7 +118,7 @@ def app_pid():
     """The tests' app: the newest Ovvi on one of the helper's sessions (a test launches it with -session or
     -defaultSession), never the user's own nor another run's; "" when none runs."""
     names = "|".join(map(re.escape, sessions))
-    pattern = f"/Ovvi.app/Contents/MacOS/Ovvi .*-(session|defaultSession) ({names})( |$)"
+    pattern = f"/Ovvi Dev.app/Contents/MacOS/Ovvi .*-(session|defaultSession) ({names})( |$)"
     found = subprocess.run(["pgrep", "-nf", pattern], capture_output=True, text=True)
     return found.stdout.strip()
 
@@ -247,10 +247,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             for pid in pids:
                 os.kill(pid, 9)
             status, reply = 200, "".join(f"{pid}\n" for pid in pids).encode()
-        elif action == "forget-windows" and os.environ.get("CI") != "true":
-            status, reply = 403, b"CI only: the user's own Ovvi keeps its windows there"
         elif action == "forget-windows":
-            shutil.rmtree(os.path.join(tempfile.gettempdir(), "dev.ovvi.app.savedState"), ignore_errors=True)
+            shutil.rmtree(os.path.join(tempfile.gettempdir(), "dev.ovvi.app.debug.savedState"), ignore_errors=True)
             status, reply = 200, b""
         elif action == "ssh-forget" and os.environ.get("CI") != "true":
             status, reply = 403, b"CI only: it writes ~/.ssh/known_hosts"

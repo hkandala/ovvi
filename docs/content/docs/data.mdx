@@ -11,6 +11,17 @@ One rule decides where each new thing goes (D57):
   only.
 - **Per-device settings** live in app storage.
 
+The installed app is `Ovvi.app`, `dev.ovvi.app`. A Debug build (`make run`,
+the UI tests, CI) is `Ovvi Dev.app`, `dev.ovvi.app.debug`, so it has its own
+defaults, saved windows, notifications, login item and browser data, and it
+claims the `ovvi-dev://` scheme, not `ovvi://`. Its folders on This Mac are
+`~/.config/ovvi-dev` and `~/Library/Logs/Ovvi Dev/plugins`. It never reads or
+writes the installed app's. What it shares are the files that belong to the
+sessions and panes both apps show: `~/.cache/ovvi` and `~/.local/state/ovvi`
+on each machine, and on This Mac the herdr server jobs with their logs
+(`~/Library/Logs/Ovvi/<session>.log`) and `~/Library/Caches/ovvi`, whose SSH
+sockets are per app.
+
 ## Every piece of data
 
 | Data | Owner | Where |
@@ -33,7 +44,7 @@ One rule decides where each new thing goes (D57):
 | Plugin cards, by terminal id: the page and its unsaved edits, the file's hash at the last read or save, Back and Forward, the header's values and the plugin's state as last set, the tree's filter, a diff's Viewed marks ([The plugin API](/docs/plugins/api)); a dropped web card's and a chat's last picture | app, per device | memory |
 | A plugin card's state and header values (Git's commit message, the diff's Side by Side, Word Wrap and file list; File Explorer's Show Hidden Files, File's Word Wrap, and Markdown's mode, lock and fold) | the pane's machine | `$HOME/.local/state/ovvi/<session>/<plugin>/<iid>.json` ([State](/docs/plugins/api#state)) |
 | Plugin packages, their list, the confirmed plugins and the defaults' install records | app, disk, This Mac | `~/.config/ovvi/plugins/`, `settings.json` (`packages`, `hideInNewPane` with the plugins and agents that New Pane leaves out, and `plugins` with each plugin's settings that differ from their defaults: [Plugin settings in settings.json](/docs/plugins/packages#plugin-settings-in-settingsjson)), `trust.json`, `plugins/.defaults.json` ([Packages and installs](/docs/plugins/packages)) |
-| The sidebar's folded spaces and open Archived Sessions (`agentsOpen`, a line each), Archived Sessions' agent (`archivedAgent`) and the time of each agent's last state change with its `state_change_seq` (`agentMarks.‹machine› ‹session›`) | app, disk, This Mac | `~/Library/Preferences/dev.ovvi.app.agents._Users_‹you›_.config_ovvi.plist`, a defaults domain named after the config folder, so a test's `-configFolder` keeps them apart |
+| The sidebar's folded spaces and open Archived Sessions (`agentsOpen`, a line each), Archived Sessions' agent (`archivedAgent`) and the time of each agent's last state change with its `state_change_seq` (`agentMarks.‹machine› ‹session›`) | app, disk, This Mac | `~/Library/Preferences/dev.ovvi.app.agents._Users_‹you›_.config_ovvi.plist`, a defaults domain named after the config folder, so a test's `-configFolder` and a Debug build (`~/.config/ovvi-dev`) keep them apart |
 | Plugin logs | app, disk, This Mac | `~/Library/Logs/Ovvi/plugins/<id>.log` ([Errors and logs](/docs/plugins/errors)) |
 | The files a plugin card shows and saves | the pane's machine | the files themselves; a save killed halfway leaves a `.ovvi-save.*` beside the file ([Edits, saves and reloads](/docs/plugins/default-plugins#edits-saves-and-reloads)) |
 | A chat per agent pane, by terminal id: its history, marks (how far each file was read), draft, messages on their way, and Chat or TUI | app, per device | memory, on the session's `HostStore` ([Chat view](/docs/ui/chat-view)) |

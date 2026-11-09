@@ -44,10 +44,15 @@ Problems that came back across phases, and the rule that stops each. How we work
   with no phases; a ⌘ key whose menu item is disabled is never delivered. Real trackpad gestures go
   through the e2e helper as HID events. It cannot read a menu checkmark (`isSelected` is false), hear an
   announcement or drive the Dock menu: check those by hand (`AXMenuItemMarkChar`, a screenshot).
-- **Tests share defaults and saved windows with the user's Ovvi (same bundle id).** Pin settings with
-  launch arguments, reset them in teardown, launch with `-ApplePersistenceIgnoreState`. Saved windows live in
-  `$TMPDIR/dev.ovvi.app.savedState` (not `~/Library/Saved Application State`): a restore check starts
-  the app with `open`, attaches with `XCUIApplication(bundleIdentifier:)`, and deletes that folder after.
+- **Debug builds are `Ovvi Dev.app`, `dev.ovvi.app.debug`, never the user's `Ovvi.app`, `dev.ovvi.app`.**
+  Anything keyed by the bundle id (defaults, saved windows, the URL scheme, notifications, Launch Services, an
+  `XCUIApplication(bundleIdentifier:)`) once reached the user's own Ovvi; keep new keys on the bundle id. The
+  executable is `Ovvi` in both: never find the tests' app by its process name (`pgrep Ovvi`), find it by its
+  session. An old Debug build on disk keeps its Launch Services registration (and `ovvi://`) until it is deleted
+  or unregistered (`lsregister -u`). Tests still share defaults and saved windows with each other and with dev runs: pin settings with
+  launch arguments, reset them in teardown, launch with `-ApplePersistenceIgnoreState` (which still writes saved
+  windows). Saved windows live in `$TMPDIR/dev.ovvi.app.debug.savedState`: a restore test clears them first
+  (`forget-windows`).
 - **The argument domain drops a value it cannot read as a property list** (`-machines []`, any JSON): read such
   arguments from `ProcessInfo.arguments`. The machine list's guard read the domain, so a test launched without
   `-session` loaded the user's machines, and the new-window view tried their SSH (phase 57).

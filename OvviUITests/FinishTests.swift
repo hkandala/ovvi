@@ -270,7 +270,7 @@ extension OvviUITests {
     func testFoldersDroppedOnTheDockOpenWorkspaces() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         // The app beside the test runner, as the Dock opens it.
-        let ovvi = Bundle.main.bundleURL.deletingLastPathComponent().appending(path: "Ovvi.app").path
+        let ovvi = Bundle.main.bundleURL.deletingLastPathComponent().appending(path: "Ovvi Dev.app").path
         let warm = try await dropFolder(ovvi)
         let opened = try await workspace(in: warm)
         XCTAssertTrue(element("workspace.\(opened)").has(\.isSelected, true, within: 3))
@@ -279,7 +279,8 @@ extension OvviUITests {
         // A drop that starts the app opens one window and the workspace in it.
         app.terminate()
         let cold = try await dropFolder(ovvi)
-        let relaunched = XCUIApplication(bundleIdentifier: "dev.ovvi.app")
+        // The Debug build's own id, never the installed app's.
+        let relaunched = XCUIApplication(bundleIdentifier: "dev.ovvi.app.debug")
         addTeardownBlock { relaunched.terminate() }
         // The launch connects first (login shell, herdr checks): slow on CI.
         let started = try await workspace(in: cold, times: Int(connect * 10))

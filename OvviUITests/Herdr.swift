@@ -193,15 +193,10 @@ extension OvviUITests {
         XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, true, within: 3))
     }
 
-    /// No saved windows (CI only: on a Mac the user's own Ovvi, dev apps and earlier tests share them through the
-    /// bundle id), with setUp's app gone first, as it saves its window too. A test that restores windows skips there.
+    /// No saved windows (an earlier test's), with setUp's app gone first, as it saves its window too.
     func forgetWindows() async throws {
         app.terminate()
-        do {
-            _ = try await Self.post("\(one)/forget-windows")
-        } catch {
-            throw XCTSkip("Saved windows are shared with the Mac's other Ovvi apps: \(error)")
-        }
+        _ = try await Self.post("\(one)/forget-windows")
     }
 
     /// The text in the result bundle, kept also when the test passes.

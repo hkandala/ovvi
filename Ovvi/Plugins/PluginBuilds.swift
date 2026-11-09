@@ -119,7 +119,7 @@ struct PluginProblem {
 enum PluginLog {
     nonisolated static let folder = UserDefaults.standard.string(forKey: "configFolder")
         .map { URL(filePath: $0).appending(path: "logs/plugins") }
-        ?? URL.homeDirectory.appending(path: "Library/Logs/Ovvi/plugins")
+        ?? URL.homeDirectory.appending(path: "Library/Logs/\(Registry.logs)/plugins")
     private nonisolated static let queue = DispatchQueue(label: "dev.ovvi.app.plugin-log")
 
     nonisolated static func file(_ id: String) -> URL {

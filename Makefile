@@ -100,7 +100,7 @@ e2e: web
 
 run: web
 	$(XCODEBUILD) $(MAC) build $(NOWARN) $(BEAUTIFY)
-	open $(DERIVED_DATA)/Build/Products/Debug/Ovvi.app $(if $(SESSION),--args -session $(SESSION))
+	open "$(DERIVED_DATA)/Build/Products/Debug/Ovvi Dev.app" $(if $(SESSION),--args -session $(SESSION))
 
 # A Release Ovvi.app to copy into ~/Applications, and a disk image of it. Ad-hoc signed: fine on this Mac;
 # another Mac needs right-click > Open once, and notifications need a real signing identity.
