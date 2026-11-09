@@ -37,7 +37,8 @@ final class HostStore {
     /// The closed sessions a Resume is starting: out of Archived, and not started twice.
     var resuming: Set<String> = []
     @ObservationIgnored var chats: [String: Chat] = [:]
-    /// The agents Ovvi typed with their chat flags, by terminal id (`Launch`).
+    /// The agents Ovvi typed with their chat flags, by terminal id (`Launch`). Not observed: an observed write
+    /// (`program`, `choosers`) follows each change.
     @ObservationIgnored var launches: [String: Launch] = [:]
     /// Writes, one at a time in order: a quick second close or split waits for the first (both show at once).
     @ObservationIgnored let writes = Gate(1)

@@ -63,10 +63,12 @@ extension HostStore {
     }
 
     /// A start that ended without its agent's processes leaves no launch: an agent started by hand later is not it.
+    /// Kept while its marker shows: a Node CLI can still overwrite it with its title.
     /// ponytail: after a 10 s timeout it stays and binds the next agent named so; bound it in time if that shows.
     func unlaunch(_ chooser: Chooser, unless ended: Started) {
-        guard ended != .timeout, let terminal = chooser.paneID.flatMap(pane)?.terminalID,
-              launches[terminal]?.token == chooser.token, launches[terminal]?.pids.isEmpty == true else { return }
+        guard ended != .timeout, let pane = chooser.paneID.flatMap(pane), let terminal = pane.terminalID,
+              launches[terminal]?.token == chooser.token, launches[terminal]?.pids.isEmpty == true,
+              adapter(pane) == nil else { return }
         launches[terminal] = nil
     }
 }

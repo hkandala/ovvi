@@ -316,7 +316,6 @@ extension HostStore {
                         program = try? await client?.program(pane.id)
                     }
                     // Its last answer, before it stops starting: a tab title shows "New Tab" until then.
-                    bind(pane, program, ask: pane.asks)
                     pane.program = program ?? pane.program
                     pane.starting = false
                     keepPlaceholder(pane)
