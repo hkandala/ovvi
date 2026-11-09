@@ -1075,3 +1075,23 @@ you did, no need of reverting them".
     our story or show where we are different and better" (Track V, new, report only).
 59. "in the cmd+n window add machine should open add machine section within settings window, do not open the overlay
     one" (Track A).
+
+### Track V (item 58, report only)
+
+- Report: `~/Downloads/ovvi-research/marketing-story.html`, one self-contained file with the pictures inlined. No app
+  code changed. Sections: the app's features in six user-facing groups plus the gaps, personas, a comparison of 14
+  products with sources, seven positioning angles (each with promise, proof, a 30 s shot list, what it says no to,
+  risks and a score), banned words and feature names in user terms, the recommended story, three headline pairs, a
+  3 min walkthrough outline, and open questions.
+- Recommendation: “Where the work lives”. Remote machines and persistence are the cover (“Your terminal, wherever
+  your code runs.”). TUI + GUI, agents driving cards and plugins are the three chapters inside. herdr is credited
+  only in How it works and the FAQ.
+- Findings: the closest rivals are Tern (Stencil: blocks, daemon-owned sessions, remote over QUIC, Luau plugins,
+  closed beta) and Rex (Superlogical: durable sessions, real login on remotes, terminals only so far, free). Claude
+  desktop now has SSH sessions with chat, diff, terminal and browser panes. Cursor's remote agent stops on sleep,
+  and Zed's agent stops when the client disconnects; both are proof for the persistence angle. Conductor says on its
+  home page that it is joining Meta.
+- Gaps the story must not hide: no iPhone app yet (say “any Mac”), plugins install per Mac, agents can't drive a
+  browser page yet, no team sharing, and herdr (plus Perl for the relay) must be on each machine.
+- Pictures: reused Track Q's captures from `ovvi-dev-p57q` (`landing/assets/`) and a crop of Track R's New Pane
+  chooser that leaves out the shell prompt. No new GUI runs.
