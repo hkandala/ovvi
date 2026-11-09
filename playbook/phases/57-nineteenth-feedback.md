@@ -871,3 +871,21 @@ you did, no need of reverting them".
     clearly distinct, but in classic view specfiically dark mode, like tabs, workspaces and panes can have may be very
     subtle borders to improve them? check all components in classic view and improve them overall and make the
     components better" (Track T).
+
+### Track Q (item 47, report only)
+
+- Report: `~/Downloads/ovvi-research/landing/index.html`, five pages beside it (`manual`, `window`, `terminal`,
+  `letter`, `spec`), shared media in `assets/`, renders in `renders/`. No app code changed.
+- The playbook (Dan Kulkov's X post) loaded without a login; its 21 steps and how each page meets them are in the
+  report. Ovvi has no testimonials yet: the pages use only true proof (herdr's GitHub stars, the four chat agents, the
+  UI test count, no servers) and dashed, labeled quote slots.
+- Pictures: a Debug build of `15310ee3` as its own instance on `ovvi-dev-p57q`, with `-configFolder`, `-machines
+  '[]'` and pinned settings. The agents are `scripts/claude-stand-in.py` with scripted turns (a copy in `/tmp`), so
+  the chat view, Git card and states are real app output but the replies are not a live model's. Recorded with
+  ScreenCaptureKit on that window only.
+- Found: ScreenCaptureKit's `SCScreenshotManager` hung after about 15 min of use (every later call); `screencapture
+  -l` kept working. A launch with `open -n` saves its windows into the shared `$TMPDIR/dev.ovvi.app.savedState`
+  even with `-NSQuitAlwaysKeepsWindows NO`; delete it after a run. A login shell under load missed the 3 s herdr
+  lookup ("herdr is not installed"); a fixture login shell (`SHELL=…`) fixed it for the run.
+- Incident: `pkill -f <pattern> -P 1` on macOS took `-P` and `1` as patterns and killed many of the user's
+  processes (lesson `eb845b4a`). Kill exact pids only.
