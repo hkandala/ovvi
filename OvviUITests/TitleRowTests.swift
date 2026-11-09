@@ -278,14 +278,14 @@ extension OvviUITests {
         XCTAssertTrue(tab.exists(within: connect))
         XCTAssertFalse(keycap.exists)
         tab.hover()
-        let close = element("tab.w1:t2.close")
-        XCTAssertTrue(close.exists(within: 2))
+        let pin = element("tab.w1:t2.pin")
+        XCTAssertTrue(pin.exists(within: 2))
         XCUIElement.perform(withKeyModifiers: .command) {
             XCTAssertTrue(keycap.exists(within: 3))
             XCTAssertEqual(keycap.stringValue, "⌘2")
-            // Right beside the ×, on its left: far from the icon.
-            let gap = close.frame.minX - keycap.frame.maxX
-            XCTAssertTrue((-1 ... 10).contains(gap), "\(keycap.frame) \(close.frame)")
+            // Right beside the pin, on its left (the × after it): far from the icon.
+            let gap = pin.frame.minX - keycap.frame.maxX
+            XCTAssertTrue((-1 ... 10).contains(gap), "\(keycap.frame) \(pin.frame)")
             XCTAssertEqual(element("tab.w1:t1.keycap").stringValue, "⌘1")
             XCTAssertEqual(element("workspace.w1.keycap").stringValue, "⌃⌘1")
             XCTAssertEqual(element("workspace.w2.keycap").stringValue, "⌃⌘2")
