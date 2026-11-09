@@ -116,6 +116,10 @@ private func snapshot() throws -> Snapshot {
     #expect(try info(#"{"pid":9,"name":"sleep"}"#).program?.foreground == [
         Program.Foreground(pid: 9, argv: [], name: "sleep"),
     ])
+    // npm's pi: Node with its title as argv[0], and no arguments.
+    #expect(try info(#"{"pid":9,"name":"node","argv0":"pi"}"#).program?.foreground == [
+        Program.Foreground(pid: 9, argv: [], name: "node", argv0: "pi"),
+    ])
     // While the shell starts, its rc files run in the foreground too.
     #expect(try info(#"{"pid":8,"name":"bash"},{"pid":7,"name":"zsh"}"#).program?.name == "bash")
     // A Node CLI: the script is the first argument that is not an option.

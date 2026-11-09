@@ -5,7 +5,7 @@ extension HostStore {
     /// The pane's chat when its agent carries an adapter's launch marker (ui/chat-view#which-panes-have-it),
     /// one per pane for every window of the session.
     func chat(_ pane: Pane) -> Chat? {
-        guard let terminalID = pane.terminalID, let adapter = pane.adapter else { return nil }
+        guard let terminalID = pane.terminalID, let adapter = adapter(pane) else { return nil }
         if let chat = chats[terminalID], chat.adapter.token == adapter.token {
             // Only a change: Observation reports equal writes too, and every card body asks.
             if chat.paneID != pane.id {

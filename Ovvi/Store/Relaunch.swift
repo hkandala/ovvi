@@ -96,15 +96,16 @@ extension HostStore {
     func relaunchFailed(_ text: String, _ agent: Chooser.Agent, _ chooser: Chooser, _ session: String,
                         late: Bool = false)
     {
-        guard let id = chooser.paneID else { return }
+        guard let terminal = chooser.terminalID ?? chooser.paneID.flatMap(pane)?.terminalID else { return }
         // Else no chat to open first: a later agent in the pane opens as Settings says.
         if !late {
-            pane(id)?.relaunched = false
+            chooser.paneID.flatMap(pane)?.relaunched = false
         }
+        // By terminal: a pane id can name another pane after a move. Not over another agent, nor a late chat.
         let retry: @MainActor @Sendable () -> Void = { [weak self] in
-            if let self, let pane = pane(id) {
-                enableChat(pane, agent, session: session)
-            }
+            guard let self, let pane = panes.first(where: { $0.terminalID == terminal }),
+                  pane.agent == nil || pane.agent == agent.command, adapter(pane) == nil else { return }
+            enableChat(pane, agent, session: session)
         }
         Task { await show(Notice(text: text, retry: retry), for: .seconds(10)) }
     }
@@ -112,7 +113,7 @@ extension HostStore {
     /// How a relaunch's start ended, said with Retry unless the chat is there (ui/chat-view#relaunch-with-chat).
     func relaunchEnded(_ ended: Started, _ agent: Chooser.Agent, _ chooser: Chooser, _ session: String) {
         let why: String? = switch ended {
-        case .agent: chooser.paneID.flatMap(pane)?.adapter == nil ? "started again without chat" : nil
+        case .agent: chooser.paneID.flatMap(pane).flatMap(adapter) == nil ? "started again without chat" : nil
         case .shell: "did not start again"
         case .timeout: "is not back after 10 s"
         case .gone: nil

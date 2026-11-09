@@ -92,8 +92,6 @@ extension HostStore {
         @ObservationIgnored var titleKey: String?
         /// What runs in the foreground (the shell when nothing else does), from the last `pane.process_info`.
         var program: Program?
-        /// The agent Ovvi last typed with its chat flags in this terminal (`Launch`).
-        var launch: Launch?
         /// The card of a plugin not on this Mac shows the pane's placeholder terminal: the user asked for it.
         var placeholder = false
         /// The shell process the placeholder was typed into, and the terminal looked at again (`keepPlaceholder`).
@@ -270,7 +268,7 @@ extension HostStore {
         do {
             let program = try await client.program(paneID)
             if ask == pane.asks {
-                pane.bind(program)
+                bind(pane, program, ask: ask)
                 pane.program = program
                 keepPlaceholder(pane)
             }
@@ -287,7 +285,6 @@ extension HostStore {
         watchTitle(pane, new)
         if new.terminalID != pane.terminalID {
             pane.program = nil
-            pane.launch = nil
             pane.asked = false
             pane.asks += 1 // the old terminal's answer in flight
             pane.drawnLabel = new.label
@@ -319,6 +316,7 @@ extension HostStore {
                         program = try? await client?.program(pane.id)
                     }
                     // Its last answer, before it stops starting: a tab title shows "New Tab" until then.
+                    bind(pane, program, ask: pane.asks)
                     pane.program = program ?? pane.program
                     pane.starting = false
                     keepPlaceholder(pane)

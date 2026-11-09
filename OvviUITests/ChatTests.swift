@@ -282,6 +282,7 @@ extension OvviUITests {
     /// launch it typed.
     func testRelaunchSaysWhyAndRetriesWithoutArguments() async throws {
         let failed = NSTemporaryDirectory() + "ovvi-fail-resume-" + UUID().uuidString
+        defer { try? FileManager.default.removeItem(atPath: failed) }
         let environment = "OVVI_STAND_IN_TITLE=1 OVVI_STAND_IN_FAIL_RESUME=\(failed) "
         let pane = try await startChat(environment: environment, chat: false, plain: true).pane
         let enable = element("pane.\(pane).enable-chat")

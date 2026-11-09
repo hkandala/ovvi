@@ -30,8 +30,10 @@ and
   process named as the agent's command (by its name, `claude.exe` too, or its
   `argv[0]`), the launch takes those processes. While they run, the pane is
   that launch's chat. An agent started again by hand in the terminal is not.
-  This one does not outlive the app: after a relaunch of the app, such a pane
-  shows Relaunch with Chat again.
+  The bare-command fallback has no launch, and a start that ends without the
+  agent (the shell came back, the pane closed) drops its launch. This one
+  does not outlive the app: after a relaunch of the app, such a pane shows
+  Relaunch with Chat again.
 - Every other pane shows only its terminal and no switch: plain terminals,
   agents started by hand or from herdr's TUI, and agents that herdr restores
   after a cold restart (herdr runs them again without the flags). An agent

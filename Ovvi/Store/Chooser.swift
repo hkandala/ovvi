@@ -184,6 +184,7 @@ extension HostStore {
         if chats.keys.contains(where: closed.contains) {
             chats = chats.filter { !closed.contains($0.key) }
         }
+        launches = launches.filter { !closed.contains($0.key) }
     }
 
     /// ↑ ↓ move through the rows and wrap at the ends, Return picks at once, → opens Agent, ← and Esc close it, Esc on
@@ -256,6 +257,7 @@ extension HostStore {
             let resumed = await resumed(agent, chooser, resume: resume, closed: closed)
             guard resume ?? closed == nil || resumed != nil else { return }
             let ended = await typeAndWait(agent, chooser, resumed, plain: resume ?? closed == nil)
+            unlaunch(chooser, unless: ended)
             if let resume, choosers.contains(where: { $0 === chooser }) {
                 relaunchEnded(ended, agent, chooser, resume)
             }

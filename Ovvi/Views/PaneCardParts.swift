@@ -19,7 +19,7 @@ extension Page {
         guard let pane, !floats(pane), store.chooser(pane.id) == nil else { return false }
         // The browser's toolbar (native: no entry); a plugin with pages has controls, a user's only with a header or
         // Back and Forward; a missing one none.
-        guard let label = pane.plugin else { return pane.agent != nil || pane.adapter != nil }
+        guard let label = pane.plugin else { return pane.agent != nil || store.adapter(pane) != nil }
         return label.manifest.map { plugin in
             plugin.entry == nil || plugin.hasRow
         } ?? false

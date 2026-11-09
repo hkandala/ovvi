@@ -79,7 +79,7 @@ final class Chat {
 
     /// Its pane still runs this launch of the agent.
     var live: Bool {
-        store?.pane(paneID)?.adapter?.token == adapter.token
+        store?.pane(paneID).flatMap { store?.adapter($0) }?.token == adapter.token
     }
 
     /// Waiting on something the chat cannot answer: the live terminal takes the bottom of the card.
