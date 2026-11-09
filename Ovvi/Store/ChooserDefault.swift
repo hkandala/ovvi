@@ -13,6 +13,11 @@ extension Chooser {
         [.terminal] + agents.indices.map(Row.start) + Registry.all.filter { $0.chooser != nil }.map { .plugin($0.id) }
     }
 
+    /// The setting's row (`fixedRow`).
+    static var fixed: Row? {
+        fixedRow(UserDefaults.standard.string(forKey: opensKey) ?? "")
+    }
+
     /// The row of a setting's id; nil: the chooser, also for an id no row has now (a plugin removed since).
     static func fixedRow(_ id: String) -> Row? {
         id.isEmpty ? nil : fixedRows.first { $0.id == id }
@@ -30,7 +35,7 @@ extension HostStore {
     /// machine does not have: the chooser shows it dimmed. A plugin opens through the key window's page of this
     /// session, else any window's; with none, the chooser stays.
     func pickDefault(_ chooser: Chooser) {
-        guard let row = Chooser.fixedRow(UserDefaults.standard.string(forKey: Chooser.opensKey) ?? "") else { return }
+        guard let row = Chooser.fixed else { return }
         let shown = WindowPages.windows.filter { $0.current?.store === self },
             page = (shown.first { $0.window?.isKeyWindow == true } ?? shown.first)?.current
         guard !Chooser.missing(row, page?.terminals.pages?.agents) else { return }

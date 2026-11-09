@@ -13,12 +13,15 @@ extension CommandList {
                  symbol: String? = nil, enabled: Bool = true, id: String? = nil, heading: String? = nil,
                  _ run: @escaping (Page, HostStore.Pane) async -> Void) -> Command
         {
-            Command(section: section, title: title, id: id, key: key, group: .panes, symbol: symbol,
-                    heading: heading, keywords: "pane", enabled: pane != nil && enabled, action: {
-                        if let page, let pane = target() {
-                            Task { await run(page, pane) }
-                        }
-                    })
+            // A split's ⌥ title, with a fixed pick: it shows the chooser.
+            let alternate = title.hasPrefix("Split") && Chooser.fixed != nil ? title + " and Choose…" : nil
+            return Command(section: section, title: title, id: id, key: key, group: .panes, symbol: symbol,
+                           heading: heading, keywords: "pane", enabled: pane != nil && enabled,
+                           alternate: alternate, action: {
+                               if let page, let pane = target() {
+                                   Task { await run(page, pane) }
+                               }
+                           })
         }
         // Every tab of the session, under its workspace's name, but the pane's own: herdr refuses
         // that move. A move into a tab lands right of its last card, as a drop on its capsule does: without a

@@ -244,11 +244,15 @@ struct Command {
     /// The palette's field page that opens what it names (Open File…): the field's prompt, and what Enter does with
     /// the field, as the key comes in.
     var field: (prompt: String, open: (String) -> Void)?
+    /// Its menu item's title while ⌥ is held: a split or a New Space that shows New Pane's chooser instead of the fixed
+    /// pick (ui/new-pane#a-fixed-pick). ⌥ is read as the pane is made, so both items run the same action.
+    var alternate: String?
     var action: () -> Void = {}
 
     /// What the menu bar shows of it.
     var shown: String {
         "\(title) \(enabled) \(String(describing: checked)) \(key?.glyphs ?? "") \(menu.map(\.shown))"
+            + (alternate ?? "")
     }
 }
 
@@ -342,11 +346,15 @@ struct CommandItems: View {
                     Toggle(command.title, isOn: Binding { checked } set: { _ in command.action() })
                 } else if !command.menu.isEmpty {
                     Menu(command.title) { CommandItems(commands: command.menu) }
+                } else if let alternate = command.alternate {
+                    // AppKit's alternate item: its key is the command's with ⌥ added.
+                    Button(command.title, action: command.action).keyboardShortcut(command.key)
+                        .modifierKeyAlternate(.option) { Button(alternate, action: command.action) }
                 } else {
                     Button(command.title, action: command.action)
                 }
             }
-            .keyboardShortcut(command.key)
+            .keyboardShortcut(command.alternate == nil ? command.key : nil)
             .disabled(!command.enabled)
         }
     }
