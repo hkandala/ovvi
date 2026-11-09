@@ -46,10 +46,9 @@ extension OvviUITests {
         XCTAssertTrue(terminal.vanishes(within: 2))
     }
 
-    /// New panes open Terminal: ⌘T gives a shell at once, with no chooser; keys typed before herdr made the pane go to
-    /// the new shell, none to the old one. A split's ⌥ menu item shows the chooser. Settings shows the pick and offers
-    /// every kind.
-    func testAFixedTerminalOpensAShellAndSettingsShowsIt() async throws {
+    /// New panes open Terminal: ⌘T and ⌘D give a shell at once, with no chooser. Keys typed before herdr made the pane
+    /// go to the new shell in the order typed (text, then ← ×3, then text), none to the old one.
+    func testAFixedTerminalTakesTheKeysTypedBeforeItsPane() async throws {
         relaunch(one, ["-newPaneOpens", "terminal"])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         element("workspace.w2").click()
@@ -69,7 +68,30 @@ extension OvviUITests {
         XCTAssertFalse(old.contains("ovvi-early"), old)
         XCTAssertTrue(hasKeyboard("terminal.\(shell)"))
 
-        // View ▸ Pane with ⌥ held: the split's alternate, which shows the chooser.
+        _ = try await Self.post("\(one)/pause")
+        app.typeKey("d", modifierFlags: .command)
+        app.typeText("echo ovvi-earl-$((6*7))")
+        for _ in 0 ..< 9 {
+            app.typeKey(.leftArrow, modifierFlags: [])
+        }
+        app.typeText("y\r")
+        _ = try await Self.post("\(one)/resume")
+        let split = try await replaced(shell, in: tab, besides: [shell])
+        try await waitFor(split) { $0.contains("\novvi-early-42") }
+        let before = try await read(shell)
+        XCTAssertFalse(before.contains("ovvi-earl-"), before)
+        XCTAssertTrue(hasKeyboard("terminal.\(split)"))
+    }
+
+    /// With a fixed pick, View ▸ Pane's splits have ⌥ items that show the chooser. Settings shows the pick and offers
+    /// every kind.
+    func testAFixedPicksMenuItemsAndSetting() async throws {
+        relaunch(one, ["-newPaneOpens", "terminal"])
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        let (tab, shell) = try await newTab("fixed menu")
+        element("tab.\(tab)").click()
+        element("terminal.\(shell)").click()
+        XCTAssertTrue(hasKeyboard("terminal.\(shell)"))
         app.menuBars.menuBarItems["View"].click()
         let submenu = app.menuBars.menuItems["Pane"]
         submenu.hover()

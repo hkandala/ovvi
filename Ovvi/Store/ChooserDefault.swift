@@ -52,36 +52,42 @@ extension HostStore {
         Task {
             // ponytail: polled every 50 ms for up to 10 s; a callback from the focus if the wait ever shows.
             let clock = ContinuousClock(), begun = clock.now
-            while !hasKeyboard(chooser), clock.now - begun < .seconds(10),
+            while keyboardTerminal(chooser) == nil, clock.now - begun < .seconds(10),
                   choosers.contains(where: { $0 === chooser })
             {
                 try? await Task.sleep(for: .milliseconds(50))
             }
-            if let command = chooser.cdCommand, let id = chooser.paneID {
+            // Not for a pane that closed meanwhile.
+            if let command = chooser.cdCommand, let id = chooser.paneID, choosers.contains(where: { $0 === chooser }) {
                 await write { try await $0.sendInput(command, keys: ["enter"], pane: id) }
             }
             release(chooser)
         }
     }
 
-    /// The chooser goes. The keys it held go to its terminal when that has the keyboard, as typed (an agent's once it
-    /// is
-    /// ready); else they are dropped with a beep.
+    /// The chooser goes. The keys it held go to its terminal when that has the keyboard (an agent's once it is ready),
+    /// into the terminal's one queue of input in the order typed: named keys as the terminal sends them, the rest as
+    /// their text (libghostty would send its text later than the keys). Else they are dropped with a beep.
     func release(_ chooser: Chooser) {
         drop(chooser)
         let held = chooser.held
         chooser.held = []
         guard !held.isEmpty else { return }
-        guard hasKeyboard(chooser) else { return NSSound.beep() }
-        held.forEach(NSApp.sendEvent)
+        guard let terminal = keyboardTerminal(chooser) else { return NSSound.beep() }
+        for event in held {
+            if let key = PaneSurfaceView.herdrKey(event) {
+                terminal.keys([key])
+            } else if !event.modifierFlags.contains(.command), let text = event.characters {
+                terminal.type(text)
+            }
+        }
     }
 
-    /// The chooser's terminal has the key window's keyboard.
-    private func hasKeyboard(_ chooser: Chooser) -> Bool {
-        guard let id = chooser.paneID, let view = NSApp.keyWindow?.firstResponder as? PaneSurfaceView else {
-            return false
-        }
-        return view.terminal?.paneID == id && view.store() === self
+    /// The chooser's terminal, when it has the key window's keyboard.
+    private func keyboardTerminal(_ chooser: Chooser) -> PaneTerminal? {
+        guard let id = chooser.paneID, let view = NSApp.keyWindow?.firstResponder as? PaneSurfaceView,
+              view.terminal?.paneID == id, view.store() === self else { return nil }
+        return view.terminal
     }
 }
 

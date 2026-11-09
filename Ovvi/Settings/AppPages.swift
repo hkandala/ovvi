@@ -23,7 +23,8 @@ struct GeneralPage: View {
                     }
                 } label: {
                     Text("New panes open")
-                    Text(opens.isEmpty ? "What ⌘T, ⌘D and New Space open." : "Hold ⌥ as you click to choose each time.")
+                    Text(opens
+                        .isEmpty ? "What ⌘T, ⌘D and New Space open." : "Hold ⌥ as you make a pane to choose each time.")
                 }
                 .accessibilityIdentifier("settings.general.new-pane").settingsRow("general.new-pane")
                 Toggle(isOn: settings.$followMouse) {

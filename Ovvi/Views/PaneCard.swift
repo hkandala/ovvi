@@ -91,8 +91,7 @@ struct PaneCard: View {
                         ) } }
                 } else if let terminal {
                     // Rex's text starts 12 pt in from the card's edge.
-                    TerminalCard(terminal: terminal, watched: page.watched,
-                                 alpha: chooser?.holding == false ? 0 : content)
+                    TerminalCard(terminal: terminal, watched: page.watched, alpha: chooser == nil ? content : 0)
                         .overlay {
                             if let find = page.find, find.paneID == id {
                                 FindHighlights(find: find, terminal: terminal)
@@ -110,7 +109,7 @@ struct PaneCard: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity).environment(\.litCard, lit)
             // The card's menu also over the chooser, which takes the terminal's clicks.
             .overlay {
-                NewPaneOverlay(chooser: floated || chooser?.holding == true ? nil : chooser, page: page, cardID: id)
+                NewPaneOverlay(chooser: floated ? nil : chooser, page: page, cardID: id)
                     .contextMenu { PaneItems(page: page, pane: pane) }
             }
             .overlay(alignment: .topTrailing) {

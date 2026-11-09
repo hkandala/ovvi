@@ -145,12 +145,13 @@ extension Chooser.Row {
 
 extension HostStore {
     /// The card's chooser: by its terminal, else by its stand-in (herdr's pane of a split's stand-in goes by the
-    /// stand-in until a snapshot has it).
-    func chooser(_ cardID: String) -> Chooser? {
+    /// stand-in until a snapshot has it). One `holding` keys counts only for them: the card shows its terminal.
+    func chooser(_ cardID: String, holding: Bool = false) -> Chooser? {
         guard !choosers.isEmpty else { return nil }
         let terminalID = pane(cardID)?.terminalID
         return choosers.first {
-            $0.standIn == cardID || $0.paneID == cardID || $0.terminalID != nil && $0.terminalID == terminalID
+            ($0.standIn == cardID || $0.paneID == cardID || $0.terminalID != nil && $0.terminalID == terminalID)
+                && (holding || !$0.holding)
         }
     }
 
@@ -203,7 +204,7 @@ extension HostStore {
     /// do nothing. After a Terminal or an agent pick the keys wait for the new pane (`release`); a plugin's beep.
     func key(_ event: NSEvent, _ chooser: Chooser, page: Page?) {
         if chooser.opening != nil {
-            return NSSound.beep()
+            return event.isARepeat ? () : NSSound.beep()
         }
         if chooser.holding || chooser.starting != nil {
             return chooser.held.append(event)
@@ -370,7 +371,7 @@ extension Page {
         } else {
             target = nil
         }
-        guard let (page, id) = target, let chooser = page.store.chooser(id) else { return false }
+        guard let (page, id) = target, let chooser = page.store.chooser(id, holding: true) else { return false }
         page.store.key(event, chooser, page: page)
         return true
     }

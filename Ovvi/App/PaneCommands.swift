@@ -8,13 +8,13 @@ extension CommandList {
     static func pane(_ page: Page?, tabs: Bool = true, _ target: @escaping @MainActor () -> HostStore.Pane?)
         -> [Command]
     {
-        let pane = target(), zoomed = pane.map { page?.zoomedPaneID == $0.id } ?? false
+        let pane = target(), zoomed = pane.map { page?.zoomedPaneID == $0.id } ?? false, fixed = Chooser.fixed != nil
         func act(_ title: String, _ key: KeyboardShortcut? = nil, _ section: Command.Section = .pane,
                  symbol: String? = nil, enabled: Bool = true, id: String? = nil, heading: String? = nil,
                  _ run: @escaping (Page, HostStore.Pane) async -> Void) -> Command
         {
             // A split's ⌥ title, with a fixed pick: it shows the chooser.
-            let alternate = title.hasPrefix("Split") && Chooser.fixed != nil ? title + " and Choose…" : nil
+            let alternate = fixed && section == .pane && title.hasPrefix("Split") ? title + " and Choose…" : nil
             return Command(section: section, title: title, id: id, key: key, group: .panes, symbol: symbol,
                            heading: heading, keywords: "pane", enabled: pane != nil && enabled,
                            alternate: alternate, action: {

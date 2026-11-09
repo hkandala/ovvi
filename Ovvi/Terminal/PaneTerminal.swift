@@ -355,6 +355,11 @@ extension PaneTerminal {
         enqueue(.keys(keys))
     }
 
+    /// Text as typed, after the input queued before it (New Pane's held keys).
+    func type(_ text: String) {
+        enqueue(.text(text))
+    }
+
     func scroll(lines: Int, column: Int, row: Int, modifiers: Int) {
         if state == .live {
             stream?.scroll(lines: lines, column: column, row: row, modifiers: modifiers)
