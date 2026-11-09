@@ -331,7 +331,11 @@ runs and on-demand on the final head.
   known keeps one empty, unlit row's room and shows the spinner only after 150 ms; a remote that needs a password
   again drops its known rows. No fade: it would only mask the change. The local read was one herdr call already (the
   path is cached after launch). Measured in CI's screen recording (about 16 frames a second) before: the spinner
-  rows showed for 3 frames (about 180 ms) after the window's first empty frame.
+  rows showed for 3 frames (about 180 ms) after the window's first empty frame, then the column jumped 53 px (in the
+  960 px wide frames of the 1024 pt screen) as the rows came; after: This Mac's rows in the first frame with content,
+  and the column stays put to the pixel over the next 9 frames. Runs: 42590576288 (the new test, red on the old code
+  at "the spinner row came first"), 42594833784 (9 tests and the scenes, green).
+- **Round 6 (59), Add.** Settings' Add closes Settings, so the new machine's window, where ssh asks, is in front.
 - **Round 6 (59), decision.** Settings ▸ Machines is the one place that adds and edits machines: the view's Add
   Machine and the machine menu's "Add Machine…" open its add form, "Edit Machines…" its list; the Add Remote Host
   overlay is gone.
