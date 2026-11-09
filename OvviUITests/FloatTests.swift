@@ -377,7 +377,8 @@ extension OvviUITests {
         let surface = element("float.\(pane)", in: window).frame
         let back = element("browser.\(pane).back", in: window).frame, page = window.webViews.firstMatch.frame
         XCTAssertEqual(back.minY - surface.minY, back.minX - surface.minX, accuracy: 0.5, "\(back) in \(surface)")
-        XCTAssertEqual(page.minY - back.maxY, back.minY - surface.minY, accuracy: 0.5, "\(back) over \(page)")
+        // 1 pt: on a 1x screen the card's frame rounds to a whole point.
+        XCTAssertEqual(page.minY - back.maxY, back.minY - surface.minY, accuracy: 1, "\(back) over \(page)")
         XCTAssertFalse(element("float.\(pane).place", in: window).exists)
         element("float.\(pane).detach").click()
         XCTAssertTrue(window.vanishes(within: 3))
