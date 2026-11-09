@@ -221,8 +221,8 @@ extension OvviUITests {
         XCTAssertTrue(terminal.vanishes(within: 2))
     }
 
-    /// New panes open Terminal: ⌘T gives a shell at once, with no chooser. Settings shows the pick and offers every
-    /// kind.
+    /// New panes open Terminal: ⌘T gives a shell at once, with no chooser; keys typed before herdr made the pane go to
+    /// the new shell, none to the old one. Settings shows the pick and offers every kind.
     func testAFixedTerminalOpensAShellAndSettingsShowsIt() async throws {
         relaunch(one, ["-newPaneOpens", "terminal"])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
@@ -230,12 +230,18 @@ extension OvviUITests {
         XCTAssertTrue(element("pane.w2:p1").has(\.isHittable, true, within: 2))
         let tabs = try await tabIDs()
         closeNew("tab", besides: tabs)
+        addTeardownBlock { [one] in _ = try? await Self.post("\(one)/resume") }
+        _ = try await Self.post("\(one)/pause")
         app.typeKey("t", modifierFlags: .command)
+        app.typeText("echo ovvi-early-$((6*7))\r")
+        _ = try await Self.post("\(one)/resume")
         let shell = try await pane(of: newTabID(after: tabs))
         XCTAssertTrue(element("terminal.\(shell)").exists(within: 3))
         XCTAssertFalse(element("pane.\(shell).chooser.terminal").exists)
-        try await waitForPrompt(shell)
-        try await typeAndRead(shell)
+        try await waitFor(shell) { $0.contains("\novvi-early-42") }
+        let old = try await read("w2:p1")
+        XCTAssertFalse(old.contains("ovvi-early"), old)
+        XCTAssertTrue(hasKeyboard("terminal.\(shell)"))
 
         openSettings("general")
         let picker = element("settings.general.new-pane", in: settingsWindow)

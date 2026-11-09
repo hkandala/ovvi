@@ -37,3 +37,67 @@ extension HostStore {
         pick(chooser, row, page: page)
     }
 }
+
+extension HostStore {
+    /// Terminal's pick: the shell shows at once, and the chooser stays and holds the keys typed until the new terminal
+    /// has the keyboard (herdr's pane, the snapshot that shows it, its focus), so none reaches the old card. Then the
+    /// folder line's `cd`, and the held keys.
+    func hold(_ chooser: Chooser) {
+        chooser.holding = true
+        Task {
+            // ponytail: polled every 50 ms for up to 10 s; a callback from the focus if the wait ever shows.
+            let clock = ContinuousClock(), begun = clock.now
+            while !hasKeyboard(chooser), clock.now - begun < .seconds(10),
+                  choosers.contains(where: { $0 === chooser })
+            {
+                try? await Task.sleep(for: .milliseconds(50))
+            }
+            if let command = chooser.cdCommand, let id = chooser.paneID {
+                await write { try await $0.sendInput(command, keys: ["enter"], pane: id) }
+            }
+            release(chooser)
+        }
+    }
+
+    /// The chooser goes. The keys it held go to its terminal when that has the keyboard, as typed (an agent's once it
+    /// is
+    /// ready); else they are dropped with a beep.
+    func release(_ chooser: Chooser) {
+        drop(chooser)
+        let held = chooser.held
+        chooser.held = []
+        guard !held.isEmpty else { return }
+        guard hasKeyboard(chooser) else { return NSSound.beep() }
+        held.forEach(NSApp.sendEvent)
+    }
+
+    /// The chooser's terminal has the key window's keyboard.
+    private func hasKeyboard(_ chooser: Chooser) -> Bool {
+        guard let id = chooser.paneID, let view = NSApp.keyWindow?.firstResponder as? PaneSurfaceView else {
+            return false
+        }
+        return view.terminal?.paneID == id && view.store() === self
+    }
+}
+
+extension WindowPages {
+    /// The window's one check for the agents on its machine (ui/new-pane#agent), in its login shell so its `PATH` and
+    /// aliases count. Kept for the window's life: a new window sees an agent installed since. One that failed (a
+    /// remote machine not connected yet, a shell that cannot run the loop) is asked again when the window connects.
+    func findAgents() {
+        guard agents == nil else { return }
+        let commands = Chooser.agents.map(\.command)
+        // The first `echo`: a startup file's text with no final newline would join the first agent's line. The end
+        // marker: a shell that ran the loop.
+        let script = "echo; for c in \(commands.joined(separator: " ")); do command -v $c >/dev/null && echo $c; done; "
+            + "echo ovvi-end"
+        Task {
+            let lines = try? await machine.exec().output(["sh", "-c", #"exec "${SHELL:-sh}" -ilc "$1""#, "sh",
+                                                          script], timeout: .seconds(3))
+                .split(separator: "\n").map(String.init)
+            if let lines, lines.last == "ovvi-end" {
+                agents = Set(lines).intersection(commands)
+            }
+        }
+    }
+}

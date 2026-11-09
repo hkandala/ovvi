@@ -70,6 +70,10 @@ final class Chooser {
     var starting: Agent?
     /// A kind was picked: the card shows its loader while its pane takes this one's place.
     var opening: PluginManifest?
+    /// Terminal was picked: the shell shows, and the chooser holds the typed keys until its terminal has the keyboard.
+    var holding = false
+    /// The keys typed while a pick waits for its pane (`release`).
+    @ObservationIgnored var held: [NSEvent] = []
     /// The agent's line went into the shell: `ovvi agent` and `ovvi chat` answer then.
     @ObservationIgnored var typed = false
     /// The folder its pick starts in, from its folder line (`NewPaneFolder`); nil: the pane's own.
@@ -196,11 +200,17 @@ extension HostStore {
 
     /// ↑ ↓ move through the rows and wrap at the ends, Return picks at once, → opens Agent, ← and Esc close it, Esc on
     /// a closed list picks Terminal. The number keys pick the top rows, or the agents while Agent is open. Other keys
-    /// do nothing, also while the loader shows.
+    /// do nothing. After a Terminal or an agent pick the keys wait for the new pane (`release`); a plugin's beep.
     func key(_ event: NSEvent, _ chooser: Chooser, page: Page?) {
-        // A held key moves on, but picks once: a held 2 would open Agent, then start Codex.
-        guard chooser.starting == nil, chooser.opening == nil,
-              !event.isARepeat || [125, 126].contains(event.keyCode) else { return }
+        if chooser.opening != nil {
+            return NSSound.beep()
+        }
+        if chooser.holding || chooser.starting != nil {
+            return chooser.held.append(event)
+        }
+        // A held key moves on, but picks once: a held 2 would open Agent, then start Codex. ⌘V pastes nothing here.
+        guard !event.modifierFlags.contains(.command), !event.isARepeat || [125, 126].contains(event.keyCode)
+        else { return }
         let installed = page?.terminals.pages?.agents
         let rows = chooser.rows.filter { !Chooser.missing($0, installed) },
             index = rows.firstIndex(of: chooser.selected) ?? 0
@@ -236,11 +246,7 @@ extension HostStore {
             if let plugin = Registry.plugin(id) {
                 page?.open(plugin, chooser)
             }
-        case .terminal:
-            if let command = chooser.cdCommand, let id = chooser.paneID {
-                Task { await write { try await $0.sendInput(command, keys: ["enter"], pane: id) } }
-            }
-            drop(chooser)
+        case .terminal: hold(chooser)
         }
     }
 
@@ -256,7 +262,7 @@ extension HostStore {
         chooser.starting = agent
         Task {
             defer {
-                drop(chooser)
+                release(chooser)
                 // Started or not: herdr reports a live one's session. ponytail: a session herdr reports a moment after
                 // the agent's status shows in Archived for that moment; hold it until it is live if that shows.
                 resuming.remove(closed ?? "")
@@ -323,28 +329,6 @@ extension HostStore {
     }
 }
 
-extension WindowPages {
-    /// The window's one check for the agents on its machine (ui/new-pane#agent), in its login shell so its `PATH` and
-    /// aliases count. Kept for the window's life: a new window sees an agent installed since. One that failed (a
-    /// remote machine not connected yet, a shell that cannot run the loop) is asked again when the window connects.
-    func findAgents() {
-        guard agents == nil else { return }
-        let commands = Chooser.agents.map(\.command)
-        // The first `echo`: a startup file's text with no final newline would join the first agent's line. The end
-        // marker: a shell that ran the loop.
-        let script = "echo; for c in \(commands.joined(separator: " ")); do command -v $c >/dev/null && echo $c; done; "
-            + "echo ovvi-end"
-        Task {
-            let lines = try? await machine.exec().output(["sh", "-c", #"exec "${SHELL:-sh}" -ilc "$1""#, "sh",
-                                                          script], timeout: .seconds(3))
-                .split(separator: "\n").map(String.init)
-            if let lines, lines.last == "ovvi-end" {
-                agents = Set(lines).intersection(commands)
-            }
-        }
-    }
-}
-
 extension Page {
     /// Start Agent Here: the chooser's pick on a pane that shows it, else a Replace Pane that starts the agent.
     func start(_ agent: Chooser.Agent, in pane: HostStore.Pane) {
@@ -387,9 +371,7 @@ extension Page {
             target = nil
         }
         guard let (page, id) = target, let chooser = page.store.chooser(id) else { return false }
-        if !paste {
-            page.store.key(event, chooser, page: page)
-        }
+        page.store.key(event, chooser, page: page)
         return true
     }
 }

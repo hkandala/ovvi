@@ -140,6 +140,13 @@ and Return never reaches the old card's shell.
 - 1 to 5 pick the top rows. While Agent is open, 1 to 4 pick the agents. The
   key of an agent that is not installed does nothing.
 - A held key moves on, but picks only once.
+- **Keys after a pick.** After Terminal or an agent is picked, the card
+  keeps the keys typed until the new pane's terminal has the keyboard, and
+  then sends them to it as typed: a fast ⌘T, `ls` and Return (also with a
+  [fixed pick](#a-fixed-pick)) runs `ls` in the new shell, never in the old
+  card. An agent gets them once it is ready. If the terminal does not get the
+  keyboard (the window went to the back), the keys are dropped with a beep.
+  While a browser or plugin pane opens, each key beeps.
 - The pointer selects a row once it moves, as in the palette. A click picks.
   A click beside the list gives the card the keyboard.
 - Other keys do nothing, also ⌃ and ⌥ chords, so ⌃D cannot end the hidden
@@ -194,7 +201,11 @@ herdr last reported it. The line can be edited once herdr has made the pane.
 
 The list fades out and the terminal fades in over 0.15 s, with the keyboard.
 The shell has run and streamed since the pane was made (the chooser hides it
-by the view's alpha), so there is no wait.
+by the view's alpha), so there is no wait. Picked before herdr has made the
+pane, the card shows the shell as it comes, and the chooser stays out of
+sight until the terminal has the keyboard, holding the typed keys
+([Keys after a pick](#keys-and-pointer)). Then the folder line's `cd` and the
+held keys go in.
 
 ## Agent
 
