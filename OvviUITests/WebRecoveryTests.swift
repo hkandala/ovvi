@@ -119,18 +119,21 @@ extension OvviUITests {
         {
             try await Self.call(one, "pane.rename", ["pane_id": pane, "label": "ovvi:\(label)"])
         }
-        try await show(kept)
-        let home = element("git.\(git).page")
-        let commit = { home.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", $0 + ",")).firstMatch }
-        XCTAssertTrue(drawn(commit("before"), in: home, within: 15), "the Git card at first")
         try await show(tab)
         let notes = element("markdown.\(markdown).page"), page = element("browser.\(browser)")
         let heading = { notes.staticTexts.matching(NSPredicate(format: "value == %@", $0)).firstMatch }
         XCTAssertTrue(drawn(pageText("Paragraph 1"), in: page, within: 15), "the browser at first")
         XCTAssertTrue(drawn(heading("Notes"), in: notes, within: 15), "the Markdown card at first")
+        let gpu = try await web("web-pids")
+        try XCTSkipIf(gpu.isEmpty, "no GPU process (CI's virtual Mac)")
+        // Made once, then kept out of view.
+        try await show(kept)
+        let home = element("git.\(git).page")
+        let commit = { home.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", $0 + ",")).firstMatch }
+        XCTAssertTrue(drawn(commit("before"), in: home, within: 15), "the Git card at first")
+        try await show(tab)
 
         let stopped = try await web("web-stop")
-        try XCTSkipIf(stopped.isEmpty, "no GPU process (CI's virtual Mac)")
         let ended = try await waitsOut(stopped, scrolling: page)
         XCTAssertTrue(ended, "the app ended the GPU process WebKit gave up on")
         // By themselves; the browser back at its top, which Reload keeps.
