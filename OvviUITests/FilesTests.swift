@@ -62,7 +62,20 @@ extension OvviUITests {
         try await labelEnds(card, " \(root)/")
 
         try await moveRoot(card, tree, root)
+        try floatsWithRoomUnderTheRow(card) { self.row("..", in: self.element("files.\(card).page", in: $0)) }
         try await send("rm -rf \(repo)\r", to: shell)
+    }
+
+    /// Floated, the page's `first` element sits as far under Back as Back under the card's top edge; then back in its
+    /// tab.
+    private func floatsWithRoomUnderTheRow(_ pane: String, first: (XCUIElement) -> XCUIElement) throws {
+        let window = try float(pane)
+        let surface = element("float.\(pane)", in: window).frame
+        let back = element("pane.\(pane).go-back", in: window).frame, row = first(window)
+        XCTAssertTrue(row.exists(within: 5))
+        XCTAssertEqual(row.frame.minY - back.maxY, back.minY - surface.minY, accuracy: 1, "\(back) over \(row.frame)")
+        element("float.\(pane).detach").click()
+        XCTAssertTrue(window.vanishes(within: 3))
     }
 
     /// In the editor ⌘[ is Select Previous Pane, not Back; Back is ⌃-. Then Forward (⌘→ over the tree): the file. ⌘←

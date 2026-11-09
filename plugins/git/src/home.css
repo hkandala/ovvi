@@ -2,11 +2,14 @@
 #home {
   height: 100%;
   overflow-y: auto;
+  /* 4 px on top, as every plugin page, also while it scrolls (a scroller's border stays): a floating card's row then
+     has as much room under its buttons as above them. */
+  box-sizing: border-box;
+  border-top: 4px solid transparent;
   cursor: default;
   #failure { position: fixed; inset: 0; margin: auto; height: fit-content; padding: 0 24px; text-align: center;
     color: var(--dim); }
-  /* 4 px on top, as every plugin page: a floating card's row then has as much room under its buttons as above. */
-  main { padding: 4px 0 10px; }
+  main { padding: 0 0 10px; }
   #commit { display: flex; align-items: flex-end; gap: 8px; margin: 0 2px 18px; }
   #message { flex: 1; box-sizing: border-box; min-height: 30px; max-height: calc(5 * 18px + 12px); resize: none;
     padding: 6px 10px; border: 0; border-radius: 8px; outline: none; font: inherit; line-height: 18px; color: var(--text);

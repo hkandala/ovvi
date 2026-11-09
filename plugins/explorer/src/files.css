@@ -37,7 +37,7 @@
 /* The find bar: the editor's (find.css), floating at the tree's top right as the terminal's; the rows stay put. */
 [data-place="files"] #find {
   position: absolute;
-  top: 6px;
+  top: 4px;
   right: 12px;
   z-index: 5;
   max-width: calc(100% - 24px);
