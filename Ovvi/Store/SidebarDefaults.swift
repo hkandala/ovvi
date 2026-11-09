@@ -32,13 +32,14 @@ extension UserDefaults {
 }
 
 extension Page {
-    /// The defaults key of the folded spaces and the open Archived Sessions, a line each.
+    /// The defaults key of the folded spaces ("‹machine› ‹session› folded ‹id›") and the open Archived Sessions
+    /// ("‹machine› archived-sessions"), a line each.
     /// ponytail: folds are never pruned, so a space herdr makes again with a folded one's id starts folded.
     static let openShelves = "agentsOpen"
 
-    /// "‹machine› ‹session› ‹label›".
-    func shelfKey(_ label: String) -> String {
-        "\(store.machine.id) \(id) \(label)"
+    /// The line of the space's fold.
+    func foldKey(_ workspace: String) -> String {
+        "\(store.machine.id) \(id) folded \(workspace)"
     }
 }
 

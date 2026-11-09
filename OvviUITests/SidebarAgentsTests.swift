@@ -60,8 +60,8 @@ extension OvviUITests {
         XCTAssertFalse(rows[2].exists)
     }
 
-    /// With two pages, the dots show under them, then Archived Sessions, which stays put and keeps its fold (it is
-    /// the machine's) as the pages change; open, its search field and menu.
+    /// With two pages, the dots show under them, then Archived Sessions, which keeps its place and its fold (it is the
+    /// machine's) as the pages change, and over a relaunch; open, its search field and menu.
     func testArchivedSessionsAndTheDotsStayUnderThePages() {
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
         let shelf = element("agents.shelf.Archived Sessions")
@@ -70,10 +70,13 @@ extension OvviUITests {
         let dots = [one, two].map { element("sidebar.dot.\($0)") }
         XCTAssertTrue(dots[1].has(\.isSelected, true, within: 2))
         XCTAssertLessThan(dots[1].frame.maxY, shelf.frame.minY)
-        let place = shelf.frame
-        if shelf.value as? String == "collapsed" {
+        // A failed run may have left it open.
+        if shelf.value as? String == "expanded" {
             shelf.click()
         }
+        XCTAssertTrue(shelf.has(\.stringValue, "collapsed", within: 2))
+        let place = shelf.frame
+        shelf.click()
         addTeardownBlock { @MainActor [self] in
             let shelf = element("agents.shelf.Archived Sessions")
             if shelf.exists, shelf.value as? String == "expanded" {
@@ -87,7 +90,12 @@ extension OvviUITests {
         XCTAssertEqual(shelf.value as? String, "expanded")
         XCTAssertTrue(element("agents.archived.search").exists)
         keepScreenshot("dots and Archived Sessions")
+        relaunch()
+        XCTAssertTrue(shelf.has(\.stringValue, "expanded", within: connect))
         shelf.click()
+        XCTAssertTrue(shelf.has(\.stringValue, "collapsed", within: 2))
+        // One page now: no dots; the shelf stays on the footer, where it was.
+        XCTAssertFalse(element("sidebar.dot.\(one)").exists)
         XCTAssertTrue(until(2) { shelf.frame == place }, "\(shelf.frame) \(place)")
     }
 

@@ -203,7 +203,7 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   other sessions by itself. The user adds pages with
   [Open Session](#open-session), as many as they like. Only open pages have a
   `HostStore`, snapshot reads and an event stream.
-- **Detach Session.** The context menu of the page header
+- **Detach Session.** The context menu of the page header and of its page dot
   has Detach Session (also in the File menu). It removes the page from this
   window. Its store disconnects, so its event stream and its terminal streams
   end. The herdr session keeps running and stays in the Open Session list.
@@ -222,8 +222,8 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   one ([Windows](#windows)).
 - **Pages.** A sideways swipe on the sidebar moves to the next or previous
   open page ([Swiping](/docs/ui/swiping)); so do ⌥⌘[ ], and ⌥⌘1–9 show a page by its place (Window menu).
-- **Page dots.** Under the pages, above Archived Sessions: one 6 pt dot per
-  open page, 6 pt apart. The current page's dot is in primary text color, the
+- **Page dots.** Under the pages, above Archived Sessions, centered on the rows: one 6 pt dot per
+  open page, 6 pt apart, 11 pt from the rows above and from Archived Sessions under them. The current page's dot is in primary text color, the
   others tertiary. A click on a dot shows its page; its context menu has Detach Session. Hidden while one page is
   open. VoiceOver reads each dot as its page's title (the page header's).
 - **Page header.** The session's name, the page's title (13 pt bold, the
@@ -243,8 +243,8 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   ⌥ + swipe, the palette, a notification), the list scrolls just
   enough to show its row, clear of the fade, without motion.
 - **Empty session.** A session with no space shows the compact empty state on its page
-  ([States](/docs/ui/states)): `square.dashed`, "No Spaces" and a New Space button. The window's content shows no button, only an icon and
-  "This session is empty".
+  ([States](/docs/ui/states)): `square.dashed`, "No Spaces" and a New Space button. The window's content shows no
+  button, only an icon and "This session is empty".
 - **Footer.** The filter field and one button, **Open Session** (⌥⌘T), which
   opens the [Open Session](#open-session) panel. The filter keeps the rows
   whose name or branch matches, and the rows with an agent whose name, agent, space or tab matches, unfolded to
@@ -272,8 +272,8 @@ Spaces panel.
   the name's line, 8 pt in; it turns down while the row is unfolded. A click on it folds or unfolds the row's
   [agents](#agent-rows) and does not select the row; "Show Agents" or "Hide Agents" is its tooltip and VoiceOver
   label, "collapsed" or "expanded" its value. Rows are unfolded at first; each one the user folds stays folded, per
-  machine and session, across relaunches (`agentsOpen`). The rename field hides it. While the footer filter
-  holds rows open, the chevron does nothing.
+  machine and session, across relaunches (`agentsOpen`). The rename field hides it. While the footer filter holds
+  rows open, the chevron does nothing.
 - **State icon.** At the end of the name's line, 8 pt in (6 pt before the chevron) and centered on
   that line: the state icon (12 pt, as a tab's) of the space's strongest agent, with no word and
   no time ([Status](/docs/ui/theme-and-accessibility#status)). An idle agent,
@@ -289,8 +289,8 @@ Spaces panel.
 - **Worktrees.** A space that herdr marks as a linked git worktree
   (`worktree.is_linked_worktree`) sits right after the space with the same
   `repo_key` that is not a linked worktree. It is indented 14 pt. A 1 pt
-  guide line in the separator color crosses the gap above it, 24 pt in, where its border's top turns straight
-  (its 14 pt indent and 10 pt corner).
+  guide line in the separator color crosses the gap above it, 24 pt in, about where its border's top turns
+  straight (its 14 pt indent and 10 pt corner), and runs 1 pt into that border.
   With no such space in the session, it is a normal row.
 - **Click** selects the space in the app only ([Selection and "seen" are
   the app's own](/docs/layout#selection-and-seen-are-the-apps-own)).
@@ -333,8 +333,8 @@ An unfolded [space row](#space-rows) lists its agent panes under its name, insid
 - **One line**, 28 pt, one per agent pane, even when several share a tab: the program tile (8 pt into the
   space row, on the names' edge), then the pane's name (13 pt; its label, else its session's title, else its
   session's first typed prompt cut at 100 characters with "…", else "Untitled":
-  [Session titles](/docs/ui/chat-view#session-titles)); the row's width cuts it further. Then at the line's end the state box: the state icon (12 pt) in the
-  state's color, on a 14 % tint of it with a 1 pt border at 45 % and 6 pt corners. Only a Working box adds a time
+  [Session titles](/docs/ui/chat-view#session-titles)); the row's width cuts it further. Then at the line's end
+  the state box: the state icon (12 pt) in the state's color, on a 14 % tint of it with a 1 pt border at 45 % and 6 pt corners. Only a Working box adds a time
   after the icon: how long since the agent started working, 11 pt semibold in the state's color with tabular
   digits. It shows "&lt;1m" for the first minute, then "1m", "2m", … and "1h 5m", and changes once a minute. Needs
   you shows its icon alone; a finish the user has not seen shows the green check (the unread mark) until the user
@@ -351,14 +351,15 @@ How it works: [Agents and notifications](/docs/status#agents-and-notifications).
 
 ## Archived Sessions
 
-A folded shelf at the sidebar's foot, under the pages and the page dots, above the footer (D110). It is the
+A folded shelf at the sidebar's foot, under the pages and the page dots, above the footer (D110), 10 pt under the
+rows with one page, as two rows are apart. It is the
 machine's, not a session's: it does not slide with the pages, and every page shows the same. Settings ▸ Agents ▸
 **Show closed sessions** (on by default) hides it, and then nothing is read.
 - **The shelf.** A 1 pt border round it (primary at 14 %, radius 10), as a space row that is not selected, and no
   glass. Its header is 30 pt tall: "Archived Sessions" (12 pt medium, secondary) 8 pt in, on the space names'
   edge, then at its end a chevron where a space row's is: right while folded, down while open. Under the pointer the
   header fills. A click folds or opens it; it is folded at first, and the fold is kept per machine across
-  relaunches. It has no count (it is not known without reading every store).
+  relaunches; a fold clears the search. It has no count (it is not known without reading every store).
 - **Search.** Open, a search field ("Search", `magnifyingglass`) sits under the header, 4 pt in from the border. It
   keeps the sessions whose title or folder matches; Esc clears it. At its trailing end a menu button
   (`line.3.horizontal.decrease.circle`, filled while it shows one agent, "Show Agent") opens a menu: **All

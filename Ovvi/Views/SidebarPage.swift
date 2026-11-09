@@ -7,7 +7,7 @@ struct SidebarPage: View {
     let pages: WindowPages
     let filter: String
     typealias Row = (workspace: HostStore.Workspace, parent: HostStore.Workspace?)
-    /// The folded spaces (`Page.shelfKey("folded ‹id›")`), with the open shelf; spaces start unfolded.
+    /// The folded spaces (`Page.foldKey`), with the open shelf; spaces start unfolded.
     @AppStorage(Page.openShelves, store: .agents) private var opened = ""
     /// Each workspace's agents in the order on screen while the pointer is over the rows: they hold still until it
     /// leaves, and 1 s more.
@@ -184,13 +184,13 @@ struct SidebarPage: View {
     }
 
     private func folds(_ workspace: String) -> Bool {
-        opened.hasLine(page.shelfKey("folded \(workspace)"))
+        opened.hasLine(page.foldKey(workspace))
     }
 
     /// Folds or unfolds the space's agents, kept per machine and session across relaunches.
     private func fold(_ workspace: String) {
         withAnimation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.2)) {
-            opened = opened.togglingLine(page.shelfKey("folded \(workspace)"))
+            opened = opened.togglingLine(page.foldKey(workspace))
         }
     }
 

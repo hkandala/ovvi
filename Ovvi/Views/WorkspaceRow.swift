@@ -59,7 +59,8 @@ struct WorkspaceRow: View {
         .background(alignment: .topLeading) {
             if guideBelow {
                 GeometryReader { geometry in
-                    Rectangle().fill(.separator).frame(width: 1, height: Self.gap)
+                    // 1 pt on, into the next row's border: a continuous corner turns straight just past 10 pt.
+                    Rectangle().fill(.separator).frame(width: 1, height: Self.gap + 1)
                         .offset(x: 24, y: geometry.size.height)
                 }
             }

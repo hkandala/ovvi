@@ -6,7 +6,8 @@ import SwiftUI
 /// in a border as a space row's. Folded at first; open, a search field (with a menu that shows one agent) over at most
 /// five rows that scroll. Read each time it opens; the next page of an agent as the list's end scrolls into view.
 struct ArchivedShelf: View {
-    /// The page in view: its machine's sessions; a resume goes to its session.
+    let pages: WindowPages
+    /// The page in view when drawn: its machine's sessions. A resume goes to the page in view when it runs.
     let page: Page
     /// The agent the menu shows ("" for all), kept across relaunches.
     @AppStorage("archivedAgent", store: .agents) private var agent = ""
@@ -28,7 +29,7 @@ struct ArchivedShelf: View {
 
     var body: some View {
         // The machine's, not the session's: every page shows the same.
-        let key = "\(page.store.machine.id) \(Self.label)"
+        let key = "\(page.store.machine.id) archived-sessions"
         let open = opened.hasLine(key)
         let shown = agent.isEmpty ? Chooser.agents.map(\.command) : [agent]
         let rows = open ? rows(shown) : []
@@ -90,6 +91,7 @@ struct ArchivedShelf: View {
             withAnimation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.2)) {
                 opened = opened.togglingLine(key)
             }
+            search = ""
         } label: {
             HStack(spacing: 6) {
                 Text(Self.label)
@@ -123,6 +125,8 @@ struct ArchivedShelf: View {
             // Filled while it shows one agent.
             Image(systemName: agent.isEmpty ? "line.3.horizontal.decrease.circle"
                 : "line.3.horizontal.decrease.circle.fill")
+                // As the field's own symbol at its other end.
+                .foregroundStyle(.secondary)
         }
         .menuStyle(.button)
         .buttonStyle(.plain)
@@ -136,9 +140,9 @@ struct ArchivedShelf: View {
 
     static let label = "Archived Sessions"
 
-    /// The sessions shown: none a live pane runs (on any page of the machine), none resuming.
+    /// The sessions shown: none a live pane runs, none resuming (on any page of the machine).
     private func rows(_ shown: [String]) -> [ClosedSession] {
-        let live = page.liveSessions.union(page.store.resuming)
+        let live = page.liveSessions
         return list.sessions(of: shown).filter { session in
             !live.contains(session.value) && (session.title.matches(search) || session.folder.matches(search))
         }
@@ -178,21 +182,26 @@ struct ArchivedShelf: View {
     }
 
     /// A click resumes it in a new tab of the workspace for its folder; ⌥-click beside the keyboard card.
+    /// The page in view as an action runs: the shelf stays while the pages change.
+    private var inView: Page {
+        pages.current ?? page
+    }
+
     private func row(_ session: ClosedSession) -> some View {
         // pi's file by its name.
         let id = "agents.archived.\(session.agent).\((session.value as NSString).lastPathComponent)"
         return AgentRow(icon: session.agent, title: session.title, line2: page.short(session.folder), id: id,
-                        action: { page.resume(session) },
+                        action: { inView.resume(session) },
                         hover: {
                             IconButton(symbol: "arrow.uturn.backward", help: "Resume", size: 18) {
-                                page.resume(session)
+                                inView.resume(session)
                             }
                             .accessibilityIdentifier(id + ".resume")
                         },
                         trailing: { AgeText(date: session.date) })
             .contextMenu {
-                Button("Resume") { page.resume(session, beside: false) }
-                Button("Resume to the Side") { page.resume(session, beside: true) }
+                Button("Resume") { inView.resume(session, beside: false) }
+                Button("Resume to the Side") { inView.resume(session, beside: true) }
             }
     }
 
@@ -232,9 +241,10 @@ extension Page {
         PathField.short(folder, remote: store.machine.isRemote)
     }
 
-    /// The agents' sessions the panes of every open session of the machine run.
+    /// The agents' sessions the panes of every open session of the machine run, or resume.
     var liveSessions: Set<String> {
-        Set(HostStore.all.filter { $0.machine.id == store.machine.id }.flatMap(\.agentPanes).compactMap(\.session))
+        let stores = HostStore.all.filter { $0.machine.id == store.machine.id }
+        return Set(stores.flatMap(\.agentPanes).compactMap(\.session)).union(stores.flatMap(\.resuming))
     }
 }
 

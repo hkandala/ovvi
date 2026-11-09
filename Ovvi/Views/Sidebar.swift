@@ -60,7 +60,7 @@ struct Sidebar: View {
                 lift: lift,
                 area: area,
             ))
-            // A key, a new page or the sheet: slide there with the session spring. A swipe is there already.
+            // A dot, a key, a new page or the sheet: slide there with the session spring. A swipe is there already.
             // Under the overview at once: hidden, it would draw both pages for 0.3 s.
             .onChange(of: pages.list.map(\.id) + [pages.current?.id ?? ""], initial: true) { old, new in
                 guard let index = pages.list.firstIndex(where: { $0 === pages.current }),
@@ -73,9 +73,10 @@ struct Sidebar: View {
             }
             // The machine's, the same on every page: it stays while the pages slide.
             if settings.showClosed, let page = pages.current {
-                ArchivedShelf(page: page)
+                ArchivedShelf(pages: pages, page: page)
                     .padding(.leading, Sidebar.rowInsets.leading).padding(.trailing, Sidebar.rowInsets.trailing)
-                    .padding(.top, 4)
+                    // 10 pt under the rows' 8 pt inset, as between two rows.
+                    .padding(.top, 2)
             }
             HStack(spacing: 2) {
                 FilterField(prompt: "Filter", text: $filter, identifier: "sidebar.filter")
@@ -111,7 +112,9 @@ private struct PageDots: View {
                 .accessibilityAddTraits(page === pages.current ? .isSelected : [])
             }
         }
-        .padding(.top, 4)
+        // Centered on the rows; as far from the rows above (their 8 pt inset) as from Archived Sessions under it.
+        .padding(.leading, Sidebar.rowInsets.leading).padding(.trailing, Sidebar.rowInsets.trailing)
+        .padding(.bottom, 6)
     }
 }
 

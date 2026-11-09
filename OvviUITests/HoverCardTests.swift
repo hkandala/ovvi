@@ -1,6 +1,6 @@
 import XCTest
 
-/// The hover card: a tab's panes on a capsule, a pinned tab or an agent row, and the chrome buttons' tooltips.
+/// The hover card: a tab's panes on a capsule or an agent row, and the chrome buttons' tooltips.
 extension OvviUITests {
     func testHoverCardShowsABlockedAgentsScreenAndEscClosesIt() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
