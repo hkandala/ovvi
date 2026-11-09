@@ -699,6 +699,6 @@ side.
 - **Decisions.** No magnification on plugin cards or `window.open` popups.
 - **Runs.** testAPinchMagnifiesABrowserPage (a synthesized trackpad pinch, `scripts/pinch.swift`): red on the old code
   (the text's frame stayed 93 x 18 pt), green after in 12 s. Pictures: a line pitch of 68 px at rest, 178 px after the
-  pinch (2.6x), 68 px after a pinch on the old build.
+  pinch (2.6x), 68 px after a pinch on the old build. CI 42559293377 green (3 tests).
 - **For the user.** Pinch a browser card's page and two-finger double tap a paragraph (Smart zoom on in System
   Settings ▸ Trackpad); ⌘0 undoes it, also in a floating browser window.
