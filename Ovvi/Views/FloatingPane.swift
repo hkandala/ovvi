@@ -73,8 +73,7 @@ extension WindowPages {
         }
         guard let window = over ?? windows.first(where: { $0.machine.id == machine }) else {
             if windows.isEmpty {
-                early = { float(session: session, pane: pane, machine: machine, agent: agent) }
-                asked = (machine, session)
+                ask(machine, session) { float(session: session, pane: pane, machine: machine, agent: agent) }
             } else {
                 windows.first?.cannotFloat(pane, of: session, "no window of machine \(machine).")
             }
@@ -357,4 +356,21 @@ extension WindowPages {
     /// for: the first window opens that session instead of the new-window view, then runs it.
     static var early: (() -> Void)?
     static var asked: (machine: String, session: String)?
+    /// The new-window view on screen, which takes an ask at once (`SessionPicker`).
+    static var takeAsked: (() -> Void)?
+
+    /// A click or URL with no window yet: it runs once a window joins, which opens its session.
+    static func ask(_ machine: String, _ session: String, then click: @escaping () -> Void) {
+        early = click
+        asked = (machine, session)
+        takeAsked?()
+    }
+
+    /// The click that came before any window, as one joins.
+    static func runEarly() {
+        guard let early else { return }
+        self.early = nil
+        asked = nil
+        early()
+    }
 }

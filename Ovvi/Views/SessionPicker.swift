@@ -5,8 +5,7 @@ import SwiftUI
 /// machine's sessions, running first, each machine's New Session, then Add Machine and Edit Machines. A window shows
 /// it whenever it would otherwise connect by itself: at launch with nothing to restore, on ⌘N, when the app reopens
 /// with no window. A pick opens that session as the window's first page. A machine whose sessions cannot be read lists
-/// the
-/// row that fixes it (Install herdr, Connect).
+/// the row that fixes it (Install herdr, Connect).
 struct SessionPicker: View {
     let pages: WindowPages
     /// Each machine's sessions by id, once read; an error when they could not be.
@@ -65,6 +64,9 @@ struct SessionPicker: View {
         .windowChrome(look)
         .background(WindowReader(pages: pages, fullScreen: $fullScreen, lightsOff: $lightsOff))
         .navigationTitle("Ovvi")
+        // A notification click or a float URL while no window has a page opens its session here.
+        .onAppear { WindowPages.takeAsked = takeAsked }
+        .onDisappear { WindowPages.takeAsked = nil }
         // A field's Esc goes on to here: the window closes, as nothing else in it has Esc.
         .onExitCommand { pages.window?.performClose(nil) }
     }
@@ -112,7 +114,7 @@ struct SessionPicker: View {
             let (rows, sessions) = group(machine, typed: typed)
             let kept = typed.isEmpty || machine.name.matches(filter) ? rows
                 : rows.filter { sessions.contains($0.id) || $0.id.hasSuffix(".+new") }
-            return (rows: kept, matched: !typed.isEmpty && !sessions.isEmpty)
+            return (rows: kept, matched: !typed.isEmpty && (!sessions.isEmpty || machine.name.matches(filter)))
         }
         // A stable sort: the machine order stays inside each half.
         let sessions = (groups.filter(\.matched) + groups.filter { !$0.matched }).flatMap(\.rows)
@@ -182,6 +184,11 @@ struct SessionPicker: View {
     {
         FilterList.Item(id: "\(machine.id).\(name)", symbol: symbol, title: title ?? name, detail: detail,
                         section: machine.name, busy: busy, act: act)
+    }
+
+    private func takeAsked() {
+        guard let asked = WindowPages.asked, let machine = MachineList.shared.machine(asked.machine) else { return }
+        pick(asked.session, on: machine)
     }
 
     /// The session opens in this window; on This Mac a stopped one starts, as Open Session does, and New Session

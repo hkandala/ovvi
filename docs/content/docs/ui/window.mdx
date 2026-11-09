@@ -931,7 +931,10 @@ clients see it there.
   and no page in view, and it disconnects when its last float goes (such a
   float does not come back after a relaunch). Open again for the same pane,
   it brings the window forward. A session or pane that is not there shows a
-  notice and no window.
+  notice and no window. With no window of a page yet (a URL that starts the
+  app, or only the [new-window view](#new-window) on screen), the window opens
+  that session as its page, then floats the pane; a notification click does
+  the same.
 - **From a pane, on any machine:** `ovvi float <pane>`
   ([CLI](/docs/agent-control/cli#float-and-unfloat)), run in a pane of a
   session the app follows, floats the pane it names the same way, over the

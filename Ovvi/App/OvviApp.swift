@@ -115,8 +115,6 @@ struct ContentView: View {
                 // Nothing to restore or asked for (a launch, a Dock reopen): never a session by itself.
                 picking = true
             } else {
-                // The ask, if any, is this window's now (its click runs as it joins).
-                WindowPages.asked = nil
                 pages.opened()
                 for page in pages.list {
                     for id in page.floating.keys {

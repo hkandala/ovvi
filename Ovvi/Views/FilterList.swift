@@ -130,7 +130,7 @@ struct FilterList: View {
                                 row(items, offset, index)
                             }
                             // The pinned rows are no match (the workspace menu's New Space, Add Machine).
-                            if items.count == pinned {
+                            if items.count == pinned, !filter.isEmpty {
                                 EmptyState(symbol: "magnifyingglass", title: "No matches", compact: true)
                                     .frame(maxWidth: .infinity)
                             }

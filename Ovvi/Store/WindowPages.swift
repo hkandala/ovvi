@@ -88,10 +88,7 @@ final class WindowPages {
             Self.windows.append(self)
         }
         findAgents()
-        if let early = Self.early {
-            Self.early = nil
-            early()
-        }
+        Self.runEarly()
     }
 
     /// Shows the session's page; one not open yet opens last, its store connecting (`start`:
@@ -306,8 +303,7 @@ final class WindowPages {
             ?? machines.first
         else {
             if windows.isEmpty, parts.count == 3 {
-                early = { go(to: id) }
-                asked = (parts[0], parts[1])
+                ask(parts[0], parts[1]) { go(to: id) }
             }
             return
         }
