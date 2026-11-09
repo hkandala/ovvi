@@ -277,7 +277,9 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   bottom of the space list when content is under them. When the selected space
   changes, however it changes (a click, the overview, ⌃⌘[ ], ⌃⌘1–9, a
   ⌥ + swipe, the palette, a notification), the list scrolls just
-  enough to show its row, clear of the fade, without motion.
+  enough to show its row, clear of the fade, without motion. The list is lazy: it
+  makes only the rows in view and a few round them, so a session of hundreds of spaces
+  and agents scrolls, swipes and folds at the display's rate.
 - **Empty session.** A session with no space shows the compact empty state on its page
   ([States](/docs/ui/states)): `square.dashed`, "No Spaces" and a New Space button. The window's content shows no
   button, only an icon and "This session is empty".

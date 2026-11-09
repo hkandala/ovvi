@@ -209,8 +209,23 @@ extension HostStore {
     }
 
     /// The sidebar's rows in groups: each workspace in herdr's order, its linked worktrees right after it.
+    /// One pass: a parent looked up for each workspace read every workspace's worktree for each, 40,000 observed reads
+    /// at 200 spaces in each sidebar update.
     var groups: [[Workspace]] {
-        workspaces.filter { parent(of: $0) == nil }.map { [$0] + worktrees(of: $0.id) }
+        var heads: [String: Workspace] = [:], tops: [Workspace] = [], under: [String: [Workspace]] = [:]
+        for workspace in workspaces {
+            if let worktree = workspace.worktree, !worktree.isLinkedWorktree, heads[worktree.repoKey] == nil {
+                heads[worktree.repoKey] = workspace
+            }
+        }
+        for workspace in workspaces {
+            if let worktree = workspace.worktree, worktree.isLinkedWorktree, let head = heads[worktree.repoKey] {
+                under[head.id, default: []].append(workspace)
+            } else {
+                tops.append(workspace)
+            }
+        }
+        return tops.map { [$0] + (under[$0.id] ?? []) }
     }
 }
 

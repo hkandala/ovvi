@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """Fills a throwaway herdr session with many workspaces, tabs and panes, some working like agents.
 
-Usage: scripts/stress.py <ovvi-dev-*|ovvi-e2e-*> [tabs=300] [workspaces=30] [--panes N] [--agents N]
+Usage: scripts/stress.py <ovvi-dev-*|ovvi-e2e-*> [tabs=300] [workspaces=30] [--panes N] [--agents N] [--still]
 Start the session first (scripts/herdr-session.sh up <name>); remove it after (… down <name>): hundreds of shells.
 Makes `tabs` tabs (herdr's own labels, so their titles come from their programs, as most tabs' do) over `workspaces`
 workspaces and `--panes` panes (default 400): the first tabs of each workspace split in two until the count is reached.
 macOS gives at most `kern.tty.ptmx_max` (511) terminals to all its programs together (999 with `sudo sysctl`).
 Every other pane prints a line a second. The first `--agents` panes (default 100, spread over the tabs) work like
 agents instead: a line every 0.2 s, a new terminal title every second (its first word stays, as an agent's does), and a
-new agent state (`pane report-agent`) every 5 s, mostly working, sometimes blocked or idle.
+new agent state (`pane report-agent`) every 5 s, mostly working, sometimes blocked or idle. With `--still` nothing runs
+or prints: each agent pane gets one state (working, blocked or idle in turn), for a sidebar of hundreds of agents
+without hundreds of busy programs.
 Then open Ovvi on the session (`-session <name>`).
 """
 
@@ -26,6 +28,7 @@ parser.add_argument("tabs", nargs="?", type=int, default=300)
 parser.add_argument("workspaces", nargs="?", type=int, default=30)
 parser.add_argument("--panes", type=int, default=400)
 parser.add_argument("--agents", type=int, default=100)
+parser.add_argument("--still", action="store_true")
 args = parser.parse_args()
 if not args.session.startswith(("ovvi-dev-", "ovvi-e2e-")):
     parser.error(f"refusing '{args.session}': only ovvi-e2e-* and ovvi-dev-* sessions are throwaway")
@@ -85,8 +88,13 @@ agent = ("i=$((RANDOM % 25)); s=working; while :; do i=$((i + 1)); echo \"$s $i 
          "--source ovvi-stress --agent claude --state $s --seq $i "
          ">/dev/null; sleep 0.2; done\r")
 printing = "while :; do echo output $RANDOM $RANDOM $RANDOM; sleep 1; done\r"
+states = ["working", "blocked", "idle"]
 for index, pane in enumerate(panes):
-    if pane in agents or index % 2 == 0:
+    if args.still:
+        if pane in agents:
+            call("pane.report_agent", pane_id=pane, source="ovvi-stress", agent="claude", state=states[index % 3],
+                 seq=index + 1)
+    elif pane in agents or index % 2 == 0:
         call("pane.send_text", pane_id=pane, text=agent if pane in agents else printing)
 print(f"{args.session}: {args.workspaces} workspaces, {args.tabs} tabs, {len(panes)} panes, "
-      f"{len(agents)} agents, {len(set(panes[::2]) | agents)} printing, in {time.time() - start:.0f} s")
+      f"{len(agents)} agents, {0 if args.still else len(set(panes[::2]) | agents)} printing, in {time.time() - start:.0f} s")

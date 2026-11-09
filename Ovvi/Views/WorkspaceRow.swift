@@ -5,7 +5,7 @@ import SwiftUI
 /// when it runs agents, a chevron at the end. Unfolded, its agents follow, one line each, inside the row's glass
 /// (selected) or its border (the others) (ui/window#space-rows). A linked worktree sits indented under its
 /// repository's row, on a guide line.
-struct WorkspaceRow: View {
+struct WorkspaceRow: View, Equatable {
     /// The text's inset in a row; the page header's text lines up.
     static let textInset: CGFloat = 8
     /// Between two rows.
@@ -27,7 +27,16 @@ struct WorkspaceRow: View {
     @State private var renaming = false
     @Environment(\.look) private var look
 
+    /// The same row when its parts are: the page's every update (a scroll's write, a hover's hold) made the rows in
+    /// view again, as `fold` is a new closure each time. What the row reads from the store it observes itself.
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.workspace === rhs.workspace && lhs.parent === rhs.parent && lhs.page === rhs.page
+            && lhs.guideBelow == rhs.guideBelow && lhs.ends == rhs.ends && lhs.hasAgents == rhs.hasAgents
+            && (lhs.fold == nil) == (rhs.fold == nil) && lhs.agents.elementsEqual(rhs.agents, by: ===)
+    }
+
     var body: some View {
+        let _ = Latency.madeRow() // swiftlint:disable:this redundant_discardable_let
         let selected = workspace.id == page.selectedWorkspaceID
         let state = workspace.state
         // The icon: not while idle, nor under the rename field.
@@ -215,6 +224,7 @@ struct AgentLine: View {
     @Environment(\.look) private var look
 
     var body: some View {
+        let _ = Latency.madeRow() // swiftlint:disable:this redundant_discardable_let
         let state = pane.state ?? .idle
         let lit = page.keyboardCard(page.selectedTab?.id) === pane
         let title = pane.agentTitle ?? "agent"

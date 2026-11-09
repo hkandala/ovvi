@@ -141,7 +141,7 @@ struct RowsDrop: DropDelegate {
     }
 
     let page: Page
-    let frames: [String: CGRect]
+    let rows: SidebarPage.RowFrames
     @Binding var state: State
     /// Not while the filter hides rows: a reorder needs them all.
     let reorders: Bool
@@ -159,11 +159,14 @@ struct RowsDrop: DropDelegate {
     func dropUpdated(info: DropInfo) -> DropProposal? {
         // A late update after the drag ended.
         guard page.dragging != nil else { return nil }
-        let pointY = info.location.y
+        let pointY = info.location.y + rows.top
         if case let .workspace(id) = page.dragging {
             // The place under the drag image's middle, where the rows glide in from, as a tab's.
             let imageY = pointY - DragSource.grabbed.y + (frames[id]?.height ?? 0) / 2
-            let index = blocks(id).count { block in middle(block) < imageY }
+            let blocks = blocks(id)
+            // The lazy stack makes the rows in view: one not made lies above them, or below.
+            let made = blocks.firstIndex { middle($0) != nil } ?? 0
+            let index = blocks.indices.count { index in middle(blocks[index]).map { $0 < imageY } ?? (index < made) }
             if state.slot != index {
                 withAnimation(.slide) { state.slot = index }
             }
@@ -231,7 +234,7 @@ struct RowsDrop: DropDelegate {
             page.dragging = nil
             page.lifted = nil
             DragSource.dropImage()
-            land(blocks[from].map(\.id), info.location.y - DragSource.grabbed.y - shifted)
+            land(blocks[from].map(\.id), info.location.y + rows.top - DragSource.grabbed.y - shifted)
         default:
             return false
         }
@@ -268,9 +271,14 @@ struct RowsDrop: DropDelegate {
         block.compactMap { frames[$0.id]?.height }.reduce(0, +) + 2 * CGFloat(block.count)
     }
 
-    private func middle(_ block: [HostStore.Workspace]) -> CGFloat {
+    private func middle(_ block: [HostStore.Workspace]) -> CGFloat? {
         let rows = block.compactMap { frames[$0.id] }
-        return ((rows.map(\.minY).min() ?? 0) + (rows.map(\.maxY).max() ?? 0)) / 2
+        guard let top = rows.map(\.minY).min(), let bottom = rows.map(\.maxY).max() else { return nil }
+        return (top + bottom) / 2
+    }
+
+    private var frames: [String: CGRect] {
+        rows.rows
     }
 
     /// The workspace a block dropped at `slot` goes before: the block there, else (last) none for groups, and for

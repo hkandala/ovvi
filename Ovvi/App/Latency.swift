@@ -25,6 +25,16 @@ func afterCommit(_ extra: CFRunLoopActivity = [], _ body: @escaping @MainActor (
 final class Latency {
     static let shared = Latency()
     static let isOn = UserDefaults.standard.bool(forKey: "recordLatency")
+    /// The sidebar's rows made (a space's or an agent's body), for the scroll and main records.
+    private(set) static var rows = 0
+
+    static func madeRow() -> Bool {
+        if isOn {
+            rows += 1
+        }
+        return true
+    }
+
     private(set) var recorded: [String] = []
     /// The window's open panel, as it was last drawn.
     @ObservationIgnored var panel = ""
@@ -71,11 +81,13 @@ final class Latency {
     }
 
     /// The main thread's work in the last 5 s: run loop turns from wake to sleep, the longest, the
-    /// snapshots applied and their own time: "main 812ms 120ms 34 210ms".
+    /// snapshots applied and their own time, and the sidebar's rows made: "main 812ms 120ms 34 210ms 40".
     private func recordMain() {
         // A turn still running counts up to now, so a main thread that never sleeps does not show as idle.
         endTurn(next: awake.map { _ in ProcessInfo.processInfo.systemUptime })
         let line = "main \(Int(busy * 1000))ms \(Int(longest * 1000))ms \(snapshots) \(Int(applying * 1000))ms"
+            + " \(Self.rows - rows)"
+        rows = Self.rows
         record(line)
         (busy, longest, snapshots, applying) = (0, 0, 0, 0)
     }
@@ -117,6 +129,7 @@ final class Latency {
     @ObservationIgnored private var longest = 0.0
     @ObservationIgnored private var applying = 0.0
     @ObservationIgnored private var snapshots = 0
+    @ObservationIgnored private var rows = 0
     @ObservationIgnored private lazy var meter = FrameMeter { self.record($0) }
 
     private func event(_ event: NSEvent) {
@@ -150,7 +163,9 @@ final class Latency {
         let workspace = page.selectedWorkspace, tab = page.selectedTab
         return [page.id, workspace?.id ?? "", tab?.id ?? "", workspace?.tabs.map(\.id).joined(separator: ",") ?? "",
                 tab?.tree?.paneIDs.joined(separator: ",") ?? "", page.zoomedPaneID ?? "",
-                page.closing == nil ? "" : "closing", panel, filter, pages.overview ? "overview" : ""]
+                page.closing == nil ? "" : "closing", panel, filter, pages.overview ? "overview" : "",
+                // A space's fold.
+                UserDefaults.agents.string(forKey: Page.openShelves) ?? ""]
             .joined(separator: " ")
     }
 
@@ -217,16 +232,16 @@ final class Latency {
 }
 
 /// Frames while the window scrolls or splits, at the display's full rate: a display link runs from a scroll event
-/// until 0.3 s after the last ("scroll <frames> <hitches> <ms>"; a hitch, a frame over 25 ms after the one before), or
-/// for 1.2 s from a split, its slide and what lands after ("split <frames> <hitches> <ms> <p50> <p95> <max> <the main
-/// thread's CPU> <each hitch: its end+gap/CPU> <each step: name@time/CPU>", in ms; a hitch, over one and a half
-/// display frames).
+/// until 0.3 s after the last ("scroll <frames> <hitches> <ms> <p50> <p95> <max> <the main thread's CPU> <the sidebar's
+/// rows made> <each hitch: its end+gap/CPU>"; a hitch, a frame over 25 ms after the one before), or for 1.2 s from a
+/// split, its slide and what lands after ("split <frames> <hitches> <ms> <p50> <p95> <max> <the main thread's CPU>
+/// <each hitch> <each step: name@time/CPU>", in ms; a hitch, over one and a half display frames).
 @MainActor
 private final class FrameMeter: NSObject {
     let record: (String) -> Void
     private var link: CADisplayLink?
     private var name = "", start = 0.0, last = 0.0, end = 0.0, cpu = 0.0
-    private var gaps: [Double] = [], cpus: [Double] = [], lastCPU = 0.0, steps: [(String, Double)] = []
+    private var gaps: [Double] = [], cpus: [Double] = [], lastCPU = 0.0, steps: [(String, Double)] = [], rows = 0
 
     init(record: @escaping (String) -> Void) {
         self.record = record
@@ -254,7 +269,7 @@ private final class FrameMeter: NSObject {
         let now = ProcessInfo.processInfo.systemUptime
         (self.name, self.end, start, last, gaps, steps) = (name, end, now, now, [], [])
         cpu = Latency.threadTime
-        (lastCPU, cpus) = (cpu, [])
+        (lastCPU, cpus, rows) = (cpu, [], Latency.rows)
         link = screen.displayLink(target: self, selector: #selector(frame))
         // The display's full rate: ProMotion runs at 60 Hz or less when nothing asks for more.
         link?.preferredFrameRateRange = CAFrameRateRange(minimum: 120, maximum: 120, preferred: 120)
@@ -272,20 +287,22 @@ private final class FrameMeter: NSObject {
         link.invalidate()
         self.link = nil
         let time = Int((now - start) * 1000)
-        if name == "scroll" {
-            record("scroll \(gaps.count) \(gaps.count { $0 > 0.025 }) \(time)ms")
-            return
-        }
         let sorted = gaps.sorted()
         let part = { (share: Double) in Int(sorted[Int(Double(sorted.count - 1) * share)] * 1000) }
-        // Each hitch's end from the split, its gap, and the main thread's CPU in it: "130+41/30". A gap with little CPU
+        // Each hitch's end from the start, its gap, and the main thread's CPU in it: "130+41/30". A gap with little CPU
         // waited on the render server.
         var elapsed = 0.0
+        let hitch = name == "scroll" ? 0.025 : link.duration * 1.5
         let hitches = zip(gaps, cpus).compactMap { gap, cpu in
             elapsed += gap
-            return gap > link.duration * 1.5 ? "\(Int(elapsed * 1000))+\(Int(gap * 1000))/\(Int(cpu * 1000))" : nil
+            return gap > hitch ? "\(Int(elapsed * 1000))+\(Int(gap * 1000))/\(Int(cpu * 1000))" : nil
         }
         let busy = Int((Latency.threadTime - cpu) * 1000)
+        if name == "scroll" {
+            record("scroll \(gaps.count) \(hitches.count) \(time)ms \(part(0.5)) \(part(0.95)) \(part(1)) \(busy)ms "
+                + "\(Latency.rows - rows) " + hitches.joined(separator: ","))
+            return
+        }
         record("split \(gaps.count) \(hitches.count) \(time)ms \(part(0.5)) \(part(0.95)) \(part(1)) \(busy)ms "
             + hitches.joined(separator: ",") + " " + steps.map { step, time in
                 // The CPU of the frame it fell in.

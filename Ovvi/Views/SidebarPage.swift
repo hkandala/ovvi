@@ -16,9 +16,8 @@ struct SidebarPage: View {
     @State private var hovering = false
     @State private var leaves = 0
 
-    /// Each row's frame in the list's visible space, for drops; measured outside the slide and the glide, so a moving
-    /// row reports its place.
-    @State private var frames: [String: CGRect] = [:]
+    /// The rows' frames, for drops; measured outside the slide and the glide, so a moving row reports its place.
+    @State private var frames = RowFrames()
     @State private var drop = RowsDrop.State()
     /// The workspace dropped last: its rows glide into their place.
     @State private var landing: Landing?
@@ -29,7 +28,7 @@ struct SidebarPage: View {
 
     var body: some View {
         let store = page.store
-        let rowsDrop = RowsDrop(page: page, frames: frames, state: $drop, reorders: filter.isEmpty) { rows, offset in
+        let rowsDrop = RowsDrop(page: page, rows: frames, state: $drop, reorders: filter.isEmpty) { rows, offset in
             if !reduceMotion || Animation.forceMotion {
                 landing = Landing(ids: rows, offset: offset, count: (landing?.count ?? 0) + 1)
             }
@@ -77,7 +76,8 @@ struct SidebarPage: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: WorkspaceRow.gap) {
+                    // Lazy: at hundreds of spaces and agents an eager stack made and laid out every row in each update.
+                    LazyVStack(alignment: .leading, spacing: WorkspaceRow.gap) {
                         let rows = rows, groups = store.groups
                         ForEach(Array(rows.enumerated()), id: \.element.workspace.id) { index, row in
                             let id = row.workspace.id, hasAgents = runsAgents(row.workspace)
@@ -88,6 +88,7 @@ struct SidebarPage: View {
                                          ends: (groups.first?.first?.id, groups.last?.first?.id),
                                          agents: shown, hasAgents: hasAgents,
                                          fold: filter.isEmpty ? { fold(id) } : nil)
+                                .equatable()
                                 .overlay {
                                     if drop.over == id, page.dragging != nil {
                                         DropIndicator()
@@ -98,10 +99,10 @@ struct SidebarPage: View {
                                 .lands(id, landing, axis: .vertical)
                                 // Its place in the list, outside the drag's slide and the drop's glide.
                                 .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("rows")) } action: {
-                                    frames[id] = $0
+                                    frames.rows[id] = $0
                                 }
-                                // Hidden by the filter or closed: no stale target.
-                                .onDisappear { frames[id] = nil }
+                                // Hidden by the filter, closed or out of the lazy stack: no stale target.
+                                .onDisappear { frames.rows[id] = nil }
                                 .background {
                                     Color.clear.id("into view \(id)").padding(.top, -18).padding(.bottom, -18 - bottom)
                                 }
@@ -118,16 +119,20 @@ struct SidebarPage: View {
                     }
                     .padding(Sidebar.rowInsets)
                     .padding(.bottom, bottom)
+                    // The content's own space, which a scroll does not move: no frame changes at every scroll frame.
+                    .coordinateSpace(.named("rows"))
                 }
+                .onScrollGeometryChange(for: CGFloat.self) { $0.visibleRect.minY } action: { frames.top = $1 }
                 .scrollIndicators(.never)
-                .scrollPosition($position)
+                // Only asked, never told: the scroll view's writes made the page and the rows in view again.
+                .scrollPosition(.constant(position))
                 // The selected row and the fade's room round it (its background) into view, just enough, however
                 // it was selected; again once laid out, for a row new in this update (a new page).
-                .onChange(of: "into view \(page.selectedWorkspaceID ?? "")", initial: true) { _, id in
+                // The lazy stack finds a row not made yet by its own id only.
+                .onChange(of: page.selectedWorkspaceID ?? "", initial: true) { _, id in
                     withTransaction(\.animation, nil) { position.scrollTo(id: id) }
-                    Task { position.scrollTo(id: id) }
+                    Task { position.scrollTo(id: "into view \(id)") }
                 }
-                .coordinateSpace(.named("rows"))
                 .onDrop(of: [.ovviDrag], delegate: rowsDrop)
                 .clearsDrop(page) {
                     drop.spring?.cancel()
@@ -156,6 +161,15 @@ struct SidebarPage: View {
 
     /// The workspace's agent panes, newest change of state first (herdr's `state_change_seq`, herdr's order among
     /// equals), as held while the pointer is over the rows; with a filter, those whose title, agent or tab matches.
+    /// Not observed: rows write their frames as the lazy stack makes them, and a body for each would make the rows in
+    /// view again.
+    final class RowFrames {
+        /// In the rows' content.
+        var rows: [String: CGRect] = [:]
+        /// The visible part's top in the content: a drop's point in the scroll view plus this.
+        var top: CGFloat = 0
+    }
+
     private func agents(of workspace: HostStore.Workspace) -> [HostStore.Pane] {
         let now = order(workspace)
         let ids = held?[workspace.id].map { held in held.filter(now.contains) + now.filter { !held.contains($0) } }

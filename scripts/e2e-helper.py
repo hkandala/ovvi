@@ -41,7 +41,7 @@ POST /<session>/drag with "x y (x y hold)..." as the body drags the mouse from t
 holding at each (scripts/drag.swift).
 POST /<session>/press with "x y (x y hold)... tx ty" as the body drags from x y through the others to tx ty and
 replies once it holds there; /<session>/release lets go.
-POST /<session>/stress with "tabs workspaces panes agents" as the body starts the session afresh and fills it with
+POST /<session>/stress with "tabs workspaces panes agents [still]" as the body starts the session afresh and fills it with
 scripts/stress.py; its summary comes back. With an empty body it removes the session, so the next tests do not run
 beside its shells.
 POST /<session>/sample with a number of seconds as the body gives back `sample`'s profile of the app over that time.
@@ -159,20 +159,21 @@ class Handler(http.server.BaseHTTPRequestHandler):
             status, reply = 400, b"the body must be x y step steps"
         elif action == "swipe" and not re.fullmatch(rb"-?[\d.]+( -?[\d.]+){3,6}", body):
             status, reply = 400, b"the body must be x y step steps [pause [vertical [option]]]"
-        elif action == "stress" and not re.fullmatch(rb"(\d+ \d+ \d+ \d+)?", body):
-            status, reply = 400, b"the body must be tabs workspaces panes agents, or empty"
+        elif action == "stress" and not re.fullmatch(rb"(\d+ \d+ \d+ \d+( still)?)?", body):
+            status, reply = 400, b"the body must be tabs workspaces panes agents [still], or empty"
         elif action == "stress":
             # Down first: a run cut short (a timeout, a test retried) may have left it.
             run = subprocess.run(["scripts/herdr-session.sh", "down", session], capture_output=True)
             if run.returncode == 0 and body:
                 run = subprocess.run(["scripts/herdr-session.sh", "up", session], capture_output=True)
             if run.returncode == 0 and body:
-                tabs, workspaces, panes, agents = body.decode().split()
+                tabs, workspaces, panes, agents, *still = body.decode().split()
                 # This Mac's 511 terminals are shared with the user's own herdr sessions and programs.
                 panes = panes if os.environ.get("CI") == "true" else str(min(int(panes), 200))
                 try:
                     run = subprocess.run(["python3", "scripts/stress.py", session, tabs, workspaces, "--panes",
-                                          panes, "--agents", agents], capture_output=True, timeout=280)
+                                          panes, "--agents", agents] + [f"--{word}" for word in still],
+                                         capture_output=True, timeout=280)
                 except subprocess.TimeoutExpired as error:
                     run = subprocess.CompletedProcess(error.cmd, 1, b"", b"stress.py took over 280 s")
             status, reply = (200, run.stdout) if run.returncode == 0 else (500, run.stderr)
