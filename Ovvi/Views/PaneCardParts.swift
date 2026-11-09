@@ -13,8 +13,6 @@ extension Page {
         return (pane.flatMap(browser), pane.flatMap(plugin))
     }
 
-    /// A browser's, a plugin's or an agent's card has a second header row; a terminal's, a floated or a choosing one
-    /// has one.
     func twoRows(_ pane: HostStore.Pane?) -> Bool {
         guard let pane, !floats(pane), store.chooser(pane.id) == nil else { return false }
         // The browser's toolbar (native: no entry); a plugin with pages has controls, a user's only with a header or
@@ -25,7 +23,6 @@ extension Page {
         } ?? false
     }
 
-    /// The keyboard goes to the previous or next card in the tab's tree, round the ends; not to a floated one.
     func stepCard(_ offset: Int) {
         guard let ids = selectedTab?.tree?.paneIDs.filter({ store.pane($0).map { !floats($0) } == true }),
               let from = keyboardPane,
@@ -128,7 +125,6 @@ struct PaneTitle: View {
     }
 }
 
-/// A floated pane's card in its tab, under its header.
 struct FloatedPlaceholder: View {
     let page: Page
     let pane: HostStore.Pane

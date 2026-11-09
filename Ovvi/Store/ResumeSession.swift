@@ -67,7 +67,6 @@ extension Page {
 }
 
 extension HostStore {
-    /// A workspace's folder: its worktree's, else its first pane's.
     func root(of workspace: Workspace) -> String? {
         workspace.worktree?.checkoutPath ?? workspace.tabs.first.flatMap { panes(in: $0.id).first?.cwd }
     }

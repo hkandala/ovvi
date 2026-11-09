@@ -64,7 +64,6 @@ struct HostDialog: View {
     }
 }
 
-/// The icon, as a button; its popover is a grid of SF Symbols with a search by symbol name.
 struct IconPicker: View {
     @Binding var icon: String
     @State private var open = false

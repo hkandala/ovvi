@@ -109,7 +109,6 @@ struct WorkspaceRow: View {
         .contextMenu { menu.disabled(page.store.state != .live) }
     }
 
-    /// The name, and the branch line in a repository.
     private func label(selected: Bool, state: AgentState?, git: GitStatus?) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 6) {
@@ -139,7 +138,6 @@ struct WorkspaceRow: View {
         !agents.isEmpty
     }
 
-    /// The chevron's width.
     private static let chevron: CGFloat = 12
 
     /// Folds or unfolds the agents, at the end of the name's line; none without agents. Its own button: a click on the
@@ -201,7 +199,6 @@ struct WorkspaceRow: View {
         renaming = true
     }
 
-    /// The keyboard goes back to the selected tab's card.
     private func stopRenaming() {
         guard renaming else { return }
         renaming = false

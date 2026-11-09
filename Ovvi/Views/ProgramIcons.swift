@@ -70,7 +70,7 @@ struct SettingsIcon: View {
     }
 }
 
-/// The program's glyph alone, for card headers, hover card rows and an empty chat.
+/// The program's glyph without its tile.
 struct ProgramGlyph: View {
     let icon: String
     var letter: String?

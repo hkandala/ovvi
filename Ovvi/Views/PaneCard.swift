@@ -254,8 +254,6 @@ struct PaneCard: View {
         .contextMenu { PaneItems(page: page, pane: pane) }
     }
 
-    /// Row 1's title: the rename field; else the browser's page with its icon, a plugin's title, the agent's session
-    /// title, or the terminal's glyph and title.
     @ViewBuilder
     private func title(_ pane: HostStore.Pane?, new: Bool, browser: Browser?, agent: Bool) -> some View {
         if let browser {
@@ -327,7 +325,6 @@ private extension PaneCard {
         .foregroundStyle(look.paneButton)
     }
 
-    /// The keyboard goes back to the card.
     func stopRenaming(_ pane: HostStore.Pane?) {
         guard page.renamingPaneID == id else { return }
         page.renamingPaneID = nil

@@ -13,7 +13,6 @@ extension Chooser {
         [.terminal] + agents.indices.map(Row.start) + Registry.all.filter { $0.chooser != nil }.map { .plugin($0.id) }
     }
 
-    /// The setting's row (`fixedRow`).
     static var fixed: Row? {
         fixedRow(UserDefaults.standard.string(forKey: opensKey) ?? "")
     }
@@ -89,7 +88,6 @@ extension HostStore {
         }
     }
 
-    /// The chooser's terminal, when it has the key window's keyboard.
     private func keyboardTerminal(_ chooser: Chooser) -> PaneTerminal? {
         guard let id = chooser.paneID, let view = NSApp.keyWindow?.firstResponder as? PaneSurfaceView,
               view.terminal?.paneID == id, view.store() === self else { return nil }

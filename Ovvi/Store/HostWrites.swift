@@ -28,7 +28,6 @@ extension HostStore {
         return created
     }
 
-    /// Trimmed; nothing when empty or the same.
     func rename(tab tabID: String, label: String) async {
         let label = label.trimmingCharacters(in: .whitespaces)
         guard !label.isEmpty,
@@ -36,7 +35,6 @@ extension HostStore {
         await write { try await $0.rename(tab: tabID, label: label) }
     }
 
-    /// Trimmed; nothing when empty or the same.
     func rename(workspace workspaceID: String, label: String) async {
         let label = label.trimmingCharacters(in: .whitespaces)
         guard !label.isEmpty, label != workspaces.first(where: { $0.id == workspaceID })?.label else { return }
@@ -108,7 +106,6 @@ extension HostStore {
         Task { await show(Notice(text: "File not found: \(shown)", tone: .warning)) }
     }
 
-    /// A notice for a few seconds (4 by default), unless a newer one replaced it.
     func show(_ new: Notice, for time: Duration = .seconds(4)) async {
         notice = new
         try? await Task.sleep(for: time)

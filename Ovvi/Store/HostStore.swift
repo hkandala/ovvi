@@ -22,7 +22,6 @@ final class HostStore {
     private(set) var panes: [Pane] = []
     /// Each tab's panes in herdr's order, set only when it changes: a view of one tab reads its own.
     private(set) var tabPanes: [String: [Pane]] = [:]
-    /// Its panes that need you.
     private(set) var waiting = 0
     /// herdr's focused workspace: a page's first selection.
     private(set) var focusedWorkspaceID: String?

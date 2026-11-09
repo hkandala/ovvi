@@ -55,7 +55,6 @@ final class Page: Identifiable {
         }
     }
 
-    /// The card whose header shows the rename field.
     var renamingPaneID: String?
     /// The open find bar (⌘F), on one card.
     var find: Find?
@@ -78,7 +77,6 @@ final class Page: Identifiable {
     /// A tab this page just moved a pane to or a workspace it made, selected once a snapshot shows it.
     @ObservationIgnored private var arriving: String?
 
-    /// The session's name.
     let id: String
 
     init(store: HostStore, terminals: PaneViewRegistry) {
@@ -270,7 +268,6 @@ final class Page: Identifiable {
         focusKeyboardCard()
     }
 
-    /// Selects the tab before or after the selected one, round the ends.
     func step(_ offset: Int) {
         guard let workspace = selectedWorkspace, !workspace.tabs.isEmpty else { return }
         let tabs = workspace.tabs

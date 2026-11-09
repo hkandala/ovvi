@@ -44,7 +44,6 @@ extension KeyboardShortcut {
         caps.joined()
     }
 
-    /// One glyph per modifier, then the key's: ["⌥", "⌘", "T"].
     var caps: [String] {
         let modifiers: [(EventModifiers, String)] = [(.control, "⌃"), (.option, "⌥"), (.shift, "⇧"), (.command, "⌘")]
         let keys: [Character: String] = [
@@ -147,7 +146,6 @@ extension CommandList {
 }
 
 extension [Command] {
-    /// Runs the command whose key `matches`, when enabled. Whether it ran.
     @discardableResult func run(_ matches: (KeyboardShortcut) -> Bool) -> Bool {
         guard let command = first(where: { $0.key.map(matches) == true }), command.enabled else { return false }
         command.action()

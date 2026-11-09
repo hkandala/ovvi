@@ -31,7 +31,6 @@ struct Palette: View {
         let made = made ?? make()
         let command = sub
         VStack(alignment: .leading, spacing: 2) {
-            // A sub-page says where you are.
             if let command {
                 Text(Self.pageTitle(command)).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
                     .padding(.horizontal, 8).padding(.bottom, 2)
@@ -155,7 +154,6 @@ struct Palette: View {
             }
     }
 
-    /// The selected workspace's tabs, the window's workspaces (with their session) and its pages.
     private func placeRows() -> [(item: FilterList.Item, keywords: String)] {
         let tabs = (page.selectedWorkspace?.tabs ?? []).map { tab in
             FilterList.Item(id: "tab.\(tab.id)", pane: page.stack(tab).first, title: page.titleText(tab),
@@ -188,7 +186,6 @@ struct Palette: View {
         return tabs.map { ($0, "") } + workspaces.map { ($0, $0.detail) } + sessions.map { ($0, "") }
     }
 
-    /// A sub-page: its choices, filtered; the current one has a checkmark. A name page has none.
     private func subItems(_ command: Command) -> (String) -> [FilterList.Item] {
         { filter in
             command.menu.filter { $0.enabled && $0.title.fuzzyScore(filter) != nil }.map { choice in
@@ -221,7 +218,6 @@ struct Palette: View {
         command.menu.filter(\.enabled).firstIndex { command.previews ? $0.title == kept : $0.checked == true } ?? 0
     }
 
-    /// Back to the root, putting back a choice being previewed.
     private func back() {
         putBack()
         sub = nil

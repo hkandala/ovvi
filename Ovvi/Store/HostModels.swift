@@ -4,7 +4,6 @@ import Observation
 
 /// The stable objects snapshots land on (see `HostStore`).
 extension HostStore {
-    /// A close (design D41).
     enum Close {
         case pane(String)
         case tab(String)

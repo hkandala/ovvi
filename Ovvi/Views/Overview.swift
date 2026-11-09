@@ -89,7 +89,6 @@ extension WindowPages {
         }
     }
 
-    /// The tab's page shows again, and the keyboard goes back to the tab's card.
     func closeOverview() {
         guard overview else { return }
         overview = false
@@ -146,7 +145,6 @@ extension WindowPages {
         }
     }
 
-    /// Each of these cards has a picture for its tile.
     func pictured(_ page: Page, _ cards: [(String, String)]) -> Bool {
         cards.allSatisfy { id, _ in page.terminals.terminals([id]).first?.pictured == true }
     }

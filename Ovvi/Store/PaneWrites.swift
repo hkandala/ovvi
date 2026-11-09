@@ -1,8 +1,6 @@
 import Foundation
 import HerdrKit
 
-/// Layout writes: panes and splits, tab and workspace order; each is one `write`,
-/// then a snapshot read.
 extension HostStore {
     /// Split Right or Down, or Left or Up (`before`): herdr splits only right and down, so a swap puts the new pane
     /// first. Then the run of same-direction splits holding the new pane is evened out, from herdr's tree after
@@ -189,7 +187,6 @@ extension HostStore {
         return moved
     }
 
-    /// Trimmed; an empty label clears it; nothing when the same.
     func rename(pane paneID: String, label: String) async {
         let label = label.trimmingCharacters(in: .whitespaces)
         guard label != pane(paneID)?.label ?? "" else { return }
@@ -264,7 +261,6 @@ extension HostStore {
 }
 
 extension Page {
-    /// The selected tab while it is a new tab's stand-in.
     var standIn: String? {
         selectedTab.flatMap { Ahead.isStandIn($0.id) ? $0.id : nil }
     }

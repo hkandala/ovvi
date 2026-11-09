@@ -103,7 +103,6 @@ struct TabButton: View {
         }
     }
 
-    /// The front icon bounces once and the title says what happened for 3 s.
     private func announce(_ text: String) {
         if !reduceMotion {
             bounces += 1
@@ -133,7 +132,6 @@ struct TabButton: View {
             .disabled(tabs.last?.id == tab.id)
     }
 
-    /// The keyboard goes back to the tab's card.
     private func stopRenaming() {
         guard renaming else { return }
         renaming = false
@@ -152,7 +150,6 @@ extension Page {
         }
     }
 
-    /// The title with its folder dimmed, for the capsule and the hover card.
     func titleLabel(_ tab: HostStore.Tab) -> Text {
         let title = title(tab)
         return Text("\(title.name)\(Text(title.folder.map { " \($0)" } ?? "").foregroundStyle(.secondary))")

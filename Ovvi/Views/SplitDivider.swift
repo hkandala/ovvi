@@ -93,7 +93,6 @@ struct SplitDivider: View {
         }
     }
 
-    /// The ratio the drag points at, from the ratio when it began.
     private func dragged(_ drag: DragGesture.Value) -> Double {
         let from = start ?? ratio
         start = from

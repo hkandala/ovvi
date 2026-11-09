@@ -33,7 +33,6 @@ extension Page {
         }
     }
 
-    /// A path `resolve` found, as `open(path:)` opens it.
     func open(resolved path: String) {
         let how = Self.how
         Task { await openAsCLI(path, [], how) }

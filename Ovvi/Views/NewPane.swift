@@ -7,7 +7,6 @@ import SwiftUI
 struct NewPane: View {
     let chooser: Chooser
     let page: Page
-    /// The card's id, which the identifiers start with.
     let cardID: String
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var fade: Animation? {
@@ -15,7 +14,6 @@ struct NewPane: View {
     }
 
     @Environment(\.look) private var look
-    /// VoiceOver goes to the selected row as the list shows.
     @AccessibilityFocusState private var focus: Chooser.Row?
     /// Where the pointer was when it showed or the selection last moved: only a pointer moved since selects, not a
     /// list that shows under a pointer at rest (as the palette's rows).
@@ -155,7 +153,6 @@ struct NewPane: View {
         .accessibilityIdentifier("pane.\(cardID).chooser.\(row.id)")
     }
 
-    /// The kind's symbol, or the agent's program tile.
     private func icon(_ row: Chooser.Row, selected: Bool) -> some View {
         Group {
             switch row {

@@ -184,7 +184,6 @@ struct TabBar: View {
 }
 
 extension Page {
-    /// The workspace's selected tab's index, 0 when none.
     func selectedIndex(in workspace: HostStore.Workspace) -> Int {
         workspace.tabs.firstIndex { $0.id == selectedTabIDs[workspace.id] } ?? 0
     }

@@ -248,8 +248,7 @@ struct Pill: View {
     }
 }
 
-/// A `FilterList` row: a symbol, a program tile or a state icon, a title, and a shortcut, a hint or a spinner on the
-/// right.
+/// A `FilterList` row.
 struct MenuRow: View {
     let item: FilterList.Item
     /// On the accent pill.

@@ -18,7 +18,6 @@ struct Machine: Codable, Hashable, Identifiable {
 
 extension Machine {
     static let thisMac = Machine(id: "local", name: "This Mac", target: "", icon: thisMacIcon)
-    /// A machine to add: a new id, no name or target yet.
     static var new: Machine {
         Machine(id: UUID().uuidString, name: "", target: "", icon: "server.rack")
     }
@@ -116,7 +115,6 @@ final class MachineList {
         return machine
     }
 
-    /// Off the list, with its browser data and approvals.
     func remove(_ machine: Machine) {
         list.removeAll { $0.id == machine.id }
         Browser.forget(machine)

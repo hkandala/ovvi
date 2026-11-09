@@ -89,7 +89,6 @@ extension HostStore {
         }
     }
 
-    /// Other tabs show as herdr has them.
     func dropBeside(_ id: UUID) {
         ahead.beside.removeAll { $0.id == id }
         redraw()

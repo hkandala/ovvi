@@ -89,7 +89,6 @@ enum SwipeRouter {
         return pager != nil || option
     }
 
-    /// Where the gesture goes, by its axis: see `SwipeRouter`.
     private static func pick(_ event: NSEvent) {
         if abs(event.scrollingDeltaX) > abs(event.scrollingDeltaY) {
             // With ⌥, the window's sidebar pages wherever the pointer is; with no sidebar (hidden, the overview's,

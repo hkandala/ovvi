@@ -1,7 +1,6 @@
 import HerdrKit
 import SwiftUI
 
-/// One session's page: its name and `+`, then its space rows, which scroll.
 struct SidebarPage: View {
     let page: Page
     let pages: WindowPages

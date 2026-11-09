@@ -96,7 +96,6 @@ extension CommandList {
             Command(section: .close, title: "Open Terminal Here", group: .panes, symbol: "terminal",
                     keywords: "pane shell kind") { page?.replacePane(target(), Replacement(button: "Open Terminal")) },
         ]
-        // Each kind with a chooser row, on every pane but one of its kind.
         let plugins = Registry.all.filter { $0.chooser != nil && pane?.plugin?.manifest?.id != $0.id }.map { plugin in
             let keywords = ["pane kind", plugin.description.lowercased()] + plugin.keywords
             return Command(section: .close, title: "Open \(plugin.chooser ?? plugin.name) Here", group: .panes,

@@ -151,7 +151,6 @@ extension Page {
         }
     }
 
-    /// A replaced pane's zoom goes to its new pane, after each snapshot.
     func zoomReplaced() {
         if let new = zoomedPaneID.flatMap({ store.ahead.replaced[$0]?.made?.id }) {
             zoomedPaneID = new

@@ -200,7 +200,6 @@ final class Latency {
         }
     }
 
-    /// A test's note in the record.
     func note(_ text: String) {
         if Self.isOn {
             record(text)

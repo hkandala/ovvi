@@ -5,7 +5,6 @@ import HerdrKit
 /// pane instead of opening herdr's popup (talking-to-herdr#agent-requests), and each workspace of a session it follows
 /// (`ovvi-open`), so `ovvi status` knows an Ovvi takes its requests (agent-control#is-my-pane-in-ovvi).
 extension HostStore {
-    /// The app quits: no pane is shown any more.
     private static var quitting = false
     /// Every store's marks again every 10 s, each store once however many windows show it, apart from git's
     /// pass, which can take longer (D67).

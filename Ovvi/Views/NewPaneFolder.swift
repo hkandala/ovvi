@@ -36,7 +36,6 @@ struct NewPaneFolder: View {
                     }
                 }
                 .frame(maxWidth: editing ? .infinity : nil)
-                // The path bar's capsule while editing, its padding at rest too.
                 .fieldCapsule(fill: editing)
                 .overlay { Capsule().strokeBorder(Color.accentColor, lineWidth: 1.5).opacity(editing ? 1 : 0) }
                 .font(.system(size: 12))
@@ -59,7 +58,6 @@ struct NewPaneFolder: View {
                     // Selected whole once the field has the keyboard, as the path bar.
                     DispatchQueue.main.async { (NSApp.keyWindow?.firstResponder as? NSText)?.selectAll(nil) }
                 } else {
-                    // A click elsewhere.
                     chooser.editing = false
                 }
             }
@@ -85,7 +83,6 @@ struct NewPaneFolder: View {
                 Text(PathField.short(folder, remote: remote)).fontWeight(.medium).lineLimit(1).truncationMode(.head)
             }
             .buttonStyle(.plain)
-            // Grey as "Opens in" until it is a field.
             .foregroundStyle(dim)
             .accessibilityLabel("Opens in")
             .accessibilityValue(folder)
@@ -107,7 +104,6 @@ struct NewPaneFolder: View {
             .focusSoon($focused)
     }
 
-    /// Choose Folder…: the system's folder panel at the folder.
     private func choose(_ folder: String) -> some View {
         Button {
             guard let window = NSApp.keyWindow else { return }
@@ -128,7 +124,6 @@ struct NewPaneFolder: View {
         .accessibilityIdentifier("pane.\(cardID).chooser.folder.choose")
     }
 
-    /// The typed folder as the machine resolves it, from the shown one; an empty field changes nothing.
     private func submit(from folder: String) {
         let typed = draft.trimmingCharacters(in: .whitespaces)
         guard !typed.isEmpty else { return stop() }
@@ -148,7 +143,6 @@ struct NewPaneFolder: View {
         }
     }
 
-    /// The line again, and the keyboard back to the card's chooser.
     private func stop() {
         chooser.editing = false
         if let pane = page.store.pane(cardID) {

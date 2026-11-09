@@ -37,19 +37,16 @@ extension Page {
     /// ponytail: folds are never pruned, so a space herdr makes again with a folded one's id starts folded.
     static let openShelves = "agentsOpen"
 
-    /// The line of the space's fold.
     func foldKey(_ workspace: String) -> String {
         "\(store.machine.id) \(id) folded \(workspace)"
     }
 }
 
 extension String {
-    /// This text of lines (`Page.openShelves`) has `line`.
     func hasLine(_ line: String) -> Bool {
         split(separator: "\n").contains { $0 == line }
     }
 
-    /// This text with `line` added, or taken out when it is there.
     func togglingLine(_ line: String) -> String {
         var lines = split(separator: "\n").map(String.init)
         if lines.contains(line) {

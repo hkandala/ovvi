@@ -8,11 +8,9 @@ import SwiftUI
 struct OpenSession: View {
     let pages: WindowPages
     @Binding var open: Bool
-    /// A name no session has, picked once.
     @State private var suggested: String
     /// The session a start, stop or delete runs on.
     @State private var busy: String?
-    /// The last start, stop or delete that failed: the notice, and the same again.
     @State private var failure: (text: String, retry: () -> Void)?
     /// The Stop or Delete waiting for the user's yes: `stop`, else `delete`, and its session.
     @State private var asking: (verb: String, session: String)?
@@ -85,7 +83,6 @@ struct OpenSession: View {
         pages.current?.store.sessions ?? []
     }
 
-    /// New, then Running and Stopped sessions not open in this window, then the ones open in it.
     private func items(_ filter: String) -> [FilterList.Item] {
         let shown = pages.list.map(\.id)
         let typed = filter.trimmingCharacters(in: .whitespaces)
@@ -140,7 +137,6 @@ struct OpenSession: View {
         }
     }
 
-    /// Starts the session when it is not running, then opens its page.
     private func start(_ session: String) {
         let machine = pages.machine
         run(session, "start") {
@@ -173,7 +169,6 @@ struct OpenSession: View {
 }
 
 extension [Session] {
-    /// A readable name no session has yet, like the references' `lunar-ridge`.
     var newName: String {
         let first = ["amber", "brisk", "calm", "early", "lunar", "misty", "quiet", "sunny"]
         let second = ["cedar", "dune", "grove", "harbor", "meadow", "peak", "ridge", "river"]

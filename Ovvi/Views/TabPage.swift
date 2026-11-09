@@ -32,7 +32,6 @@ struct TabPage: View {
     /// A page's cards inside its page: room for the cards' outer stroke and shadow.
     static let inset = EdgeInsets(top: 4, leading: gap, bottom: gap, trailing: gap)
 
-    /// The cards' area in a page of this size.
     static func area(_ size: CGSize) -> CGRect {
         CGRect(x: 0, y: 0, width: size.width - inset.leading - inset.trailing,
                height: size.height - inset.top - inset.bottom)

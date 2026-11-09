@@ -124,7 +124,6 @@ let thisMacIcon: String = {
     return battery ? "laptopcomputer" : "desktopcomputer"
 }()
 
-/// The machine's icon and its menu.
 private struct MachineButton: View {
     let pages: WindowPages
     @Binding var openSession: Bool
@@ -161,7 +160,6 @@ private struct MachineButton: View {
                 }
             }
         } label: {
-            // The icon alone: no chevron.
             Image(systemName: current.icon).fontWeight(.medium)
                 .frame(width: 28, height: 28)
         }

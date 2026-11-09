@@ -1,7 +1,6 @@
 import AppKit
 import SwiftUI
 
-/// Glass: the desktop blurred behind the window, under the look's tint. Classic: the look's opaque color.
 struct WindowBackground: View {
     let look: Look
 

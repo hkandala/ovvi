@@ -23,8 +23,6 @@ final class HerdrInstall {
         UserDefaults.standard.string(forKey: "herdrInstall") ?? "curl -fsSL https://herdr.dev/install.sh | sh"
     }
 
-    /// Runs the installer, then starts the page's session on This Mac (as a new window's first page does) and reads
-    /// every page of the machine again.
     func install(on machine: Machine, session: String) async {
         if case .running = steps[machine.id] {
             return

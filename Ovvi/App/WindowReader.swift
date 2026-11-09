@@ -64,7 +64,6 @@ struct WindowReader: NSViewRepresentable {
             }
         }
 
-        /// e2e (`-recordLights YES`): counts the run loop turns that drew a traffic light off its place.
         private func recordLights() {
             lightsObserver = afterCommit { [weak self] _ in
                 if let self, !self.moved().isEmpty {

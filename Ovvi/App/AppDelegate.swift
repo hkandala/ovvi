@@ -32,7 +32,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         return .terminateLater
     }
 
-    /// Each remote machine's master ends with the app (machines#the-ssh-connection).
     func applicationWillTerminate(_: Notification) {
         Machine.disconnectAll()
     }
@@ -209,7 +208,6 @@ enum Notifications {
 }
 
 extension HostStore {
-    /// Agents that need you over every open session, each once.
     static var needsYou: Int {
         all.reduce(0) { $0 + $1.waiting }
     }

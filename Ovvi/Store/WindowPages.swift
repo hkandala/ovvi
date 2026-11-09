@@ -43,7 +43,6 @@ final class WindowPages {
     @ObservationIgnored private var key = false
     /// A notification or Dock row clicked before its page or pane was there.
     @ObservationIgnored private var pending: String?
-    /// Its AppKit window, to bring it to the front.
     @ObservationIgnored weak var window: NSWindow?
 
     /// The open windows, the last key one first; added once its pages are restored (a `@State` is made per view).
@@ -191,7 +190,6 @@ final class WindowPages {
         leave(page.store)
     }
 
-    /// The window closed: every page leaves and every terminal closes.
     func closed() {
         gone = true
         Self.windows.removeAll { $0 === self }
