@@ -3,13 +3,13 @@ import SwiftUI
 
 /// A workspace: its name, and its branch with ahead and behind on a second line in a repository; its state's icon and,
 /// when it runs agents, a chevron at the end. Unfolded, its agents follow, one line each, inside the row's glass
-/// (selected) or a border (ui/window#space-rows). A linked worktree sits indented under its repository's row, on a
-/// guide line.
+/// (selected) or its border (the others) (ui/window#space-rows). A linked worktree sits indented under its
+/// repository's row, on a guide line.
 struct WorkspaceRow: View {
     /// The text's inset in a row; the page header's text lines up.
     static let textInset: CGFloat = 8
     /// Between two rows.
-    static let gap: CGFloat = 6
+    static let gap: CGFloat = 10
 
     let workspace: HostStore.Workspace
     let parent: HostStore.Workspace?
@@ -45,25 +45,22 @@ struct WorkspaceRow: View {
                 .padding([.horizontal, .bottom], 4)
             }
         }
-        // The selected row's glass, over its agents too; an unfolded one not selected has a border and no glass.
+        // The selected row's glass, over its agents too; the others' border, folded or not, and no glass.
         .background {
             if selected {
                 Pill(shape: shape)
-            } else if open {
+            } else {
                 shape.strokeBorder(.primary.opacity(0.14))
             }
         }
         .padding(.leading, parent == nil ? 0 : 14)
-        // From under the repository's row, 15 pt in, down along its worktrees; past an unfolded row, whose border or
-        // glass is there, only in the gaps.
+        // In the gap under a repository's row or a worktree's that another worktree follows, where the next row's
+        // top border starts its straight part (14 pt indent and 10 pt corner): the rows' borders carry it on.
         .background(alignment: .topLeading) {
-            if parent != nil || guideBelow {
+            if guideBelow {
                 GeometryReader { geometry in
-                    let total = geometry.size.height
-                    let top = parent == nil || open ? total : 0
-                    let bottom = guideBelow ? total + Self.gap : open ? total : height / 2
-                    Rectangle().fill(.separator).frame(width: 1, height: max(bottom - top, 0))
-                        .offset(x: 15, y: top)
+                    Rectangle().fill(.separator).frame(width: 1, height: Self.gap)
+                        .offset(x: 24, y: geometry.size.height)
                 }
             }
         }
@@ -239,6 +236,6 @@ struct AgentLine: View {
         .accessibilityLabel("\(title), \(page.place(pane))")
         .accessibilityValue(pane.state?.title ?? "")
         .accessibilityAddTraits(lit ? .isSelected : [])
-        .hoverPanel(place: .besideAgent) { close in HoverCard(tabID: pane.tabID, page: page, close: close) }
+        .hoverPanel(place: .beside) { close in HoverCard(tabID: pane.tabID, page: page, close: close) }
     }
 }

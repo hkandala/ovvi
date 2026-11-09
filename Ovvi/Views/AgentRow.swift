@@ -29,10 +29,11 @@ struct AgentRow<Hover: View, Trailing: View>: View {
                     trailing()
                 }
             }
-            .padding(.horizontal, 8)
+            // 4 pt inside the shelf's border: the tile on the space rows' names.
+            .padding(.horizontal, 4)
             .frame(height: 48)
         }
-        .buttonStyle(ChromeStyle(radius: 10))
+        .buttonStyle(ChromeStyle(radius: 7))
         .accessibilityIdentifier(id)
         .accessibilityLabel("\(title), \(line2)")
         // The same two lines, with only the hover buttons drawn, right before where `trailing` is.
@@ -43,7 +44,7 @@ struct AgentRow<Hover: View, Trailing: View>: View {
                     hover()
                     trailing().hidden().accessibilityHidden(true)
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, 4)
             }
         }
         .onHover { hovering = $0 }

@@ -1,8 +1,8 @@
 import HerdrKit
 import SwiftUI
 
-/// One tab's capsule: its program icons and title, Pin and × while hovered. Its own view, so a status change redraws
-/// this tab only (design D6).
+/// One tab's capsule: its program icons and title, × while hovered. Its own view, so a status change redraws this
+/// tab only (design D6).
 struct TabButton: View {
     let tab: HostStore.Tab
     let workspace: HostStore.Workspace
@@ -15,8 +15,6 @@ struct TabButton: View {
     @State private var announcement: String?
     @State private var announcing: Task<Void, Never>?
     @State private var bounces = 0
-    /// The pinned tabs (`TabPin`): Pin or Unpin.
-    @AppStorage(TabPin.key, store: .agents) private var pins = ""
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.look) private var look
 
@@ -47,9 +45,9 @@ struct TabButton: View {
                     .foregroundStyle(selected ? look.selected : look.chrome)
             }
             .padding(.leading, 11)
-            // The title fades out before the pin and the × (22 pt circles, 2 pt apart, ending 6 pt from the end) or the
-            // state icon, else at 12 pt.
-            .padding(.trailing, hovering && !renaming ? 52 : state != nil ? 28 : 12)
+            // The title fades out before the × (its 22 pt circle ends 28 pt from the end) or the state icon, else at
+            // 12 pt.
+            .padding(.trailing, hovering && !renaming || state != nil ? 28 : 12)
             .frame(width: TabBar.width, height: TabBar.height, alignment: .leading)
         }
         // The selection is the tab bar's marker.
@@ -87,25 +85,14 @@ struct TabButton: View {
         .overlay(alignment: .trailing) {
             // Over the capsule, so it never changes the tab's width.
             if hovering, !renaming {
-                let pinned = page.pinned(tab, in: pins)
-                HStack(spacing: 2) {
-                    Button { page.togglePin(tab) } label: {
-                        Image(systemName: pinned ? "pin.slash" : "pin").font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(.secondary).frame(width: 22, height: 22)
-                    }
-                    .buttonStyle(ChromeStyle(radius: 11))
-                    .help(pinned ? "Unpin Tab" : "Pin Tab")
-                    .accessibilityLabel(pinned ? "Unpin Tab" : "Pin Tab")
-                    .accessibilityIdentifier("tab.\(tab.id).pin")
-                    Button { page.close(.tab(tab.id)) } label: {
-                        Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(.secondary)
-                            .frame(width: 22, height: 22)
-                    }
-                    .buttonStyle(ChromeStyle(radius: 11))
-                    .help("Close Tab")
-                    .accessibilityLabel("Close Tab")
-                    .accessibilityIdentifier("tab.\(tab.id).close")
+                Button { page.close(.tab(tab.id)) } label: {
+                    Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(.secondary)
+                        .frame(width: 22, height: 22)
                 }
+                .buttonStyle(ChromeStyle(radius: 11))
+                .help("Close Tab")
+                .accessibilityLabel("Close Tab")
+                .accessibilityIdentifier("tab.\(tab.id).close")
                 .padding(.trailing, 6)
             }
         }
@@ -134,7 +121,6 @@ struct TabButton: View {
     private var menu: some View {
         let tabs = workspace.tabs, store = page.store
         Button("Rename Tab") { renaming = true }
-        Button(page.pinned(tab, in: pins) ? "Unpin Tab" : "Pin Tab") { page.togglePin(tab) }
         Button("Move Tab Left") { store.move(tab: tab.id, by: -1) }
             .disabled(tabs.first?.id == tab.id)
         Button("Move Tab Right") { store.move(tab: tab.id, by: 1) }

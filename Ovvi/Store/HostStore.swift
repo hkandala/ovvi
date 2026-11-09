@@ -85,8 +85,6 @@ final class HostStore {
     @ObservationIgnored private var connecting = false
     @ObservationIgnored private var connects = 0
     @ObservationIgnored private(set) var client: (any Multiplexer)?
-    /// Tabs moving to another workspace (`move(tab:to:)`): their pins wait for the new tab's id.
-    @ObservationIgnored var movingTabs: Set<String> = []
     @ObservationIgnored private var task: Task<Void, Never>?
     /// Workspaces with a git run in flight: one at a time each.
     @ObservationIgnored var gitRuns: Set<String> = []
@@ -336,7 +334,6 @@ extension HostStore {
         }
         showStrongest()
         keepMarks()
-        keepTabPins()
     }
 
     /// Each tab's strongest agent, each workspace's state and the panes that need you or are done, kept here: views

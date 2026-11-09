@@ -1,16 +1,13 @@
 import HerdrKit
 import SwiftUI
 
-/// One session's page: its name and `+`, its pinned tabs, then its workspace rows (the part that scrolls), then its
-/// Archived Sessions.
+/// One session's page: its name and `+`, then its space rows, which scroll.
 struct SidebarPage: View {
     let page: Page
     let pages: WindowPages
     let filter: String
     typealias Row = (workspace: HostStore.Workspace, parent: HostStore.Workspace?)
-    private var settings = AppSettings()
-    @AppStorage(TabPin.key, store: .agents) private var pins = ""
-    /// The unfolded workspaces (`Page.shelfKey("workspace ‹id›")`), with the open shelves.
+    /// The folded spaces (`Page.shelfKey("folded ‹id›")`), with the open shelf; spaces start unfolded.
     @AppStorage(Page.openShelves, store: .agents) private var opened = ""
     /// Each workspace's agents in the order on screen while the pointer is over the rows: they hold still until it
     /// leaves, and 1 s more.
@@ -62,7 +59,7 @@ struct SidebarPage: View {
                                                                 over: $plus))
                     .clearsDrop(page) { plus = false }
             }
-            // On one edge: the workspace rows' names, the pinned tabs' and agents' tiles, the shelf's label.
+            // On one edge: the space rows' names, the agents' tiles, the shelf's label.
             .padding(.leading, Sidebar.rowInsets.leading + WorkspaceRow.textInset)
             // The `+` ends where the rows do.
             .padding(.trailing, Sidebar.rowInsets.trailing)
@@ -74,7 +71,6 @@ struct SidebarPage: View {
                 Color.clear.contentShape(.rect)
                     .contextMenu { Button("Detach Session") { pages.close(page) }.disabled(pages.list.count < 2) }
             }
-            PinnedTabs(page: page, tabs: page.pinnedTabs(pins).filter(matches))
             if store.state == .live, store.workspaces.isEmpty {
                 EmptyState(symbol: "square.dashed", title: "No Spaces", compact: true, id: "sidebar.empty") {
                     Button("New Space") { Task { await page.newWorkspace() } }
@@ -87,7 +83,7 @@ struct SidebarPage: View {
                         let rows = rows, groups = store.groups
                         ForEach(Array(rows.enumerated()), id: \.element.workspace.id) { index, row in
                             let id = row.workspace.id, hasAgents = runsAgents(row.workspace)
-                            let shown = hasAgents && (opens(id) || !filter.isEmpty) ? agents(of: row.workspace) : []
+                            let shown = hasAgents && (!folds(id) || !filter.isEmpty) ? agents(of: row.workspace) : []
                             WorkspaceRow(workspace: row.workspace, parent: row.parent, page: page,
                                          guideBelow: rows.indices.contains(index + 1)
                                              && rows[index + 1].parent != nil,
@@ -161,11 +157,6 @@ struct SidebarPage: View {
                     }
                 }
             }
-            if settings.showClosed {
-                ArchivedShelf(page: page, filter: filter)
-                    .padding(.leading, Sidebar.rowInsets.leading).padding(.trailing, Sidebar.rowInsets.trailing)
-                    .padding(.top, 4)
-            }
         }
     }
 
@@ -192,20 +183,15 @@ struct SidebarPage: View {
             .map(\.element.id)
     }
 
-    private func opens(_ workspace: String) -> Bool {
-        page.opens("workspace \(workspace)", in: opened)
+    private func folds(_ workspace: String) -> Bool {
+        opened.hasLine(page.shelfKey("folded \(workspace)"))
     }
 
-    /// Unfolds or folds the workspace's agents, kept per machine and session across relaunches.
+    /// Folds or unfolds the space's agents, kept per machine and session across relaunches.
     private func fold(_ workspace: String) {
         withAnimation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.2)) {
-            opened = page.toggled("workspace \(workspace)", in: opened)
+            opened = opened.togglingLine(page.shelfKey("folded \(workspace)"))
         }
-    }
-
-    /// A pinned tab the filter keeps: by its title or its workspace's name.
-    private func matches(_ tab: HostStore.Tab) -> Bool {
-        page.titleText(tab).matches(filter) || (page.store.workspace(of: tab.id)?.label ?? "").matches(filter)
     }
 
     /// The rows that pass the filter by name or branch, or by an agent's, each with the workspace it sits under; a

@@ -262,6 +262,8 @@ struct FilterField: View {
     var autofocus = false
     /// Each new value gives the field the keyboard (a plugin's ⌘F).
     var focus = 0
+    /// Room at the end for a button the caller lays over it.
+    var trailing: CGFloat = 0
     @State private var editing = false
     @FocusState private var focused: Bool
 
@@ -286,6 +288,7 @@ struct FilterField: View {
                 .accessibilityIdentifier(identifier)
             }
         }
+        .padding(.trailing, trailing)
         .fieldCapsule()
         .contentShape(.capsule)
         .onTapGesture { editing = true }

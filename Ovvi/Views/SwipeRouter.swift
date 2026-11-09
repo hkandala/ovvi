@@ -149,7 +149,7 @@ enum SwipeRouter {
 
 /// Marks the sidebar's pages for the router: they take a sideways swipe's moves (`drag`, the first one of a gesture
 /// marked) and lift (with the fingers' speed), and a wheel's turn (`step`), within `area` (in the window, from its
-/// top left) and down to the window's bottom (the filter too).
+/// top left) and down to the window's bottom (the dots, Archived Sessions and the filter too).
 struct PagesAnchor: NSViewRepresentable {
     var step: ((Int) -> Void)?
     var drag: ((Double, Bool) -> Void)?

@@ -1,9 +1,9 @@
 import HerdrKit
 import SwiftUI
 
-/// Arc-style pages, one per session open in the window (D43), paged sideways; the filter and Open Session at the
-/// bottom. Each page lists its session's pinned tabs, its workspaces like herdr's Spaces panel, each unfolding to its
-/// agents, and its Archived Sessions (ui/window#sidebar).
+/// Arc-style pages, one per session open in the window (D43), paged sideways; under them the page dots, the machine's
+/// Archived Sessions, the filter and Open Session. Each page lists its session's spaces like herdr's Spaces panel, each
+/// unfolding to its agents (ui/window#sidebar).
 struct Sidebar: View {
     static let widths: ClosedRange<Double> = 227 ... 480
     /// Rex's rows: 10 pt in from the window's edge.
@@ -14,6 +14,7 @@ struct Sidebar: View {
     let openSession: () -> Void
     @State private var filter = ""
     @State private var swipe = Swipe()
+    private var settings = AppSettings()
     /// The pages' frame in the window, for the router.
     @State private var area = CGRect.zero
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -67,6 +68,15 @@ struct Sidebar: View {
                 let slides = old.last != new.last && !pages.overview && !(reduceMotion && !Animation.forceMotion)
                 slide(to: index, with: slides ? .session() : nil)
             }
+            if pages.list.count > 1 {
+                PageDots(pages: pages)
+            }
+            // The machine's, the same on every page: it stays while the pages slide.
+            if settings.showClosed, let page = pages.current {
+                ArchivedShelf(page: page)
+                    .padding(.leading, Sidebar.rowInsets.leading).padding(.trailing, Sidebar.rowInsets.trailing)
+                    .padding(.top, 4)
+            }
             HStack(spacing: 2) {
                 FilterField(prompt: "Filter", text: $filter, identifier: "sidebar.filter")
                     .onExitCommand { filter = "" }
@@ -78,6 +88,30 @@ struct Sidebar: View {
             .padding(Sidebar.rowInsets)
             .padding(.top, 8)
         }
+    }
+}
+
+private struct PageDots: View {
+    let pages: WindowPages
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(pages.list) { page in
+                Button { pages.show(page) } label: {
+                    Circle().fill(page === pages.current ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
+                        .frame(width: 6, height: 6)
+                        // The gap is part of each dot's click area.
+                        .frame(width: 12, height: 12)
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .contextMenu { Button("Detach Session") { pages.close(page) }.disabled(pages.list.count < 2) }
+                .accessibilityLabel(page.store.title)
+                .accessibilityIdentifier("sidebar.dot.\(page.id)")
+                .accessibilityAddTraits(page === pages.current ? .isSelected : [])
+            }
+        }
+        .padding(.top, 4)
     }
 }
 

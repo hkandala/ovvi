@@ -1,13 +1,13 @@
 import HerdrKit
 import SwiftUI
 
-/// The sidebar's Archived Sessions (ui/window#archived-sessions): the sessions of Claude Code, Codex, Pi and OpenCode
-/// on the page's machine that no pane runs, from the agents' own stores, newest first. Read each time it opens; the
-/// next page of an agent as the list's end scrolls into view. A menu in its header shows one agent.
+/// The sidebar's Archived Sessions (ui/window#archived-sessions), at its foot under every page: the sessions of Claude
+/// Code, Codex, Pi and OpenCode on the window's machine that no pane runs, from the agents' own stores, newest first,
+/// in a border as a space row's. Folded at first; open, a search field (with a menu that shows one agent) over at most
+/// five rows that scroll. Read each time it opens; the next page of an agent as the list's end scrolls into view.
 struct ArchivedShelf: View {
+    /// The page in view: its machine's sessions; a resume goes to its session.
     let page: Page
-    /// The footer's filter: by title and folder.
-    let filter: String
     /// The agent the menu shows ("" for all), kept across relaunches.
     @AppStorage("archivedAgent", store: .agents) private var agent = ""
     @AppStorage(Page.openShelves, store: .agents) private var opened = ""
@@ -18,29 +18,60 @@ struct ArchivedShelf: View {
     /// Each read anew (an open, Retry); an older one's pages land nowhere.
     @State private var generation = 0
     @State private var attempt = 0
+    /// The search field's text: by title and folder.
+    @State private var search = ""
+    @State private var under = (top: false, bottom: false)
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// UI tests' stores (`-archivedHome`), never the user's; the agents' session titles too.
     static let home = UserDefaults.standard.string(forKey: "archivedHome")
 
     var body: some View {
-        let open = page.opens(Self.label, in: opened)
+        // The machine's, not the session's: every page shows the same.
+        let key = "\(page.store.machine.id) \(Self.label)"
+        let open = opened.hasLine(key)
         let shown = agent.isEmpty ? Chooser.agents.map(\.command) : [agent]
         let rows = open ? rows(shown) : []
         let next = list.next(of: shown).filter { !failed.contains($0) }
-        Shelf(label: Self.label, page: page) {
-            menu
-        } content: {
-            ForEach(rows) { row($0) }
-            if !next.isEmpty {
-                // The list's end: anew after each page, so it reads on while it stays in view (a short filtered list,
-                // a page with nothing to show).
-                Color.clear.frame(height: 1).id(list.agents.values.map(\.looked).reduce(0, +))
-                    .onAppear { Task { await read(next) } }
-            }
-            if rows.isEmpty || !failed.isDisjoint(with: shown) || problem(shown) != nil {
-                status(shown, more: !next.isEmpty).frame(maxWidth: .infinity)
+        VStack(spacing: 4) {
+            header(open: open, key: key)
+            if open {
+                FilterField(prompt: "Search", text: $search, identifier: "agents.archived.search",
+                            symbol: "magnifyingglass", trailing: 22)
+                    .onExitCommand { search = "" }
+                    .overlay(alignment: .trailing) { menu.padding(.trailing, 8) }
+                    .padding(.horizontal, 4)
+                // Lazy, for the pages; as tall as its rows, up to five.
+                ScrollView {
+                    LazyVStack(spacing: 4) {
+                        ForEach(rows) { row($0) }
+                        if !next.isEmpty {
+                            // The list's end: anew after each page, so it reads on while it stays in view (a short
+                            // searched list, a page with nothing to show).
+                            Color.clear.frame(height: 1).id(list.agents.values.map(\.looked).reduce(0, +))
+                                .onAppear { Task { await read(next) } }
+                        }
+                        if rows.isEmpty || !failed.isDisjoint(with: shown) || problem(shown) != nil {
+                            status(shown, more: !next.isEmpty).frame(maxWidth: .infinity)
+                        }
+                    }
+                    .padding(.horizontal, 4)
+                }
+                .scrollIndicators(.never)
+                .frame(maxHeight: 5 * 48 + 4 * 4) // five 48 pt rows, 4 pt apart
+                .fixedSize(horizontal: false, vertical: true)
+                .onScrollGeometryChange(for: [Bool].self) { geometry in
+                    [geometry.contentOffset.y > 0.5,
+                     geometry.contentOffset.y + geometry.containerSize.height < geometry.contentSize.height - 0.5]
+                } action: {
+                    under = ($1[0], $1[1])
+                }
+                .fadeEdges(.vertical, start: under.top ? 18 : 0, end: under.bottom ? 18 : 0)
+                .padding(.bottom, 4)
             }
         }
+        // As a space row that is not selected: a border, no glass.
+        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(.primary.opacity(0.14)))
         .task(id: [open ? 1 : 0, attempt]) {
             (list, reading, failed, slow, generation) = (ClosedList(), [], [], false, generation + 1)
             guard open else { return }
@@ -51,6 +82,32 @@ struct ArchivedShelf: View {
             }
             await pages
         }
+    }
+
+    /// "Archived Sessions" and the chevron: a click folds or opens it.
+    private func header(open: Bool, key: String) -> some View {
+        Button {
+            withAnimation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.2)) {
+                opened = opened.togglingLine(key)
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Text(Self.label)
+                Spacer(minLength: 0)
+                // Where a space row's chevron is.
+                Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
+                    .rotationEffect(.degrees(open ? 90 : 0)).frame(width: 12)
+            }
+            .font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+            .padding(.leading, WorkspaceRow.textInset).padding(.trailing, 8)
+            .frame(height: 30)
+            .contentShape(.rect)
+        }
+        .buttonStyle(ChromeStyle(radius: 10))
+        .accessibilityLabel(Self.label)
+        .accessibilityAddTraits(.isHeader)
+        .accessibilityValue(open ? "expanded" : "collapsed")
+        .accessibilityIdentifier("agents.shelf.\(Self.label)")
     }
 
     private var menu: some View {
@@ -83,7 +140,7 @@ struct ArchivedShelf: View {
     private func rows(_ shown: [String]) -> [ClosedSession] {
         let live = page.liveSessions.union(page.store.resuming)
         return list.sessions(of: shown).filter { session in
-            !live.contains(session.value) && (session.title.matches(filter) || session.folder.matches(filter))
+            !live.contains(session.value) && (session.title.matches(search) || session.folder.matches(search))
         }
     }
 
@@ -111,7 +168,7 @@ struct ArchivedShelf: View {
             if slow {
                 Loader(text: "Reading sessions…", id: "agents.archived.status").padding(12)
             }
-        } else if !filter.trimmingCharacters(in: .whitespaces).isEmpty {
+        } else if !search.trimmingCharacters(in: .whitespaces).isEmpty {
             EmptyState(symbol: "magnifyingglass", title: "No matching sessions.", compact: true,
                        id: "agents.archived.status")
         } else {
