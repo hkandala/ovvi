@@ -21,8 +21,8 @@ description: "Windows, the title row, tab bar, sidebar pages with pinned tabs, w
   with `-session` lists only `ovvi-*` sessions. Two windows can show different
   machines or the same machine.
 - Two windows on the same machine share the live data of each session. Each
-  window keeps its own selection: page, workspace, tab, keyboard card, zoom,
-  sidebar view and sidebar width.
+  window keeps its own selection: page, workspace, tab, keyboard card, zoom
+  and sidebar width.
 - A new window opens in the middle of the screen at 90 % of its size, at
   least 1200 × 760 pt and at most the screen's size. A window macOS restores
   keeps its frame. Zooming the window (⌥-click on the green button) fills the
@@ -378,10 +378,9 @@ Agents ▸ **Show closed sessions** (on by default) hides it, and then nothing i
   do. A click folds or opens it; it is folded at first, and the fold is kept per machine and session across
   relaunches. Open, it is at most 5 rows tall (256 pt) and scrolls inside, with an 18 pt fade at an edge that has
   more rows; the workspaces above get the rest. It has no count (it is not known without reading every store).
-- **Filter.** At the header's end,
-  before the chevron, a filter button (`line.3.horizontal.decrease.circle`, filled while it
-shows one agent, "Show Agent") opens a menu: **All Agents**, then the four agents. The choice is
-kept across relaunches.
+- **Filter.** At the header's end, before the chevron, a filter button (`line.3.horizontal.decrease.circle`,
+  filled while it shows one agent, "Show Agent") opens a menu: **All Agents**, then the four agents. The choice is
+  kept across relaunches.
 - **Rows.** 48 pt, two lines, 3 pt apart: the agent's tile, the session's title, its folder on line 2 (`~` for
   the home folder), and its age at the end of line 1 ("5h", "2d", "1w"; 11 pt, secondary). Newest first, over the
   four agents. Left out: the sessions a pane of any open session of the machine runs, and one being resumed. The footer filter matches the title and the folder.

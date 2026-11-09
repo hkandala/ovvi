@@ -9,8 +9,9 @@ Each part of the window has its own page under UI design.
 
 - A machine is a computer: This Mac or a host you reach with `ssh`, each
   with its own icon. Add Remote Host in the machine menu adds one. herdr on
-  the Mac is needed only for This Mac.
-- Several windows (⌘N). Each window shows one machine and keeps its own
+  the Mac is needed only for This Mac. A machine without herdr gets an
+  **Install herdr** button, which runs herdr's own install command there.
+- Several windows (⌘N, which lists every machine's sessions to pick from). Each window shows one machine and keeps its own
   selection. When two windows show the same session, the one you last typed
   in controls it, and the other offers **Take Back**.
 - A sidebar page per herdr session you open in the window. Swipe the sidebar
@@ -58,8 +59,8 @@ Each part of the window has its own page under UI design.
   changes with Stage, Unstage, Revert and Commit, Fetch, Pull and Push, a branch
   menu, the history graph of every branch with Show More, a live Working
   Tree diff, each commit's page, and the diff of any change or commit,
-  unified or side by side, with Word Wrap, a filter of its files (⌘F), and ]
-  and [ to step through the changes). Edits show the Edited dot, ⌘S saves, and a file
+  unified or side by side, with Word Wrap, a filter of its files (⌘F), ] and
+  [ to step through the changes, ⇧] and ⇧[ through the files). Edits show the Edited dot, ⌘S saves, and a file
   changed on disk reloads, or asks when there are edits. Links and files
   open one way everywhere: a click in the card (or a new tab when the card
   cannot show it), ⌘-click in a new tab, ⌥-click in a pane to the side, both
@@ -88,7 +89,11 @@ Each part of the window has its own page under UI design.
   browser pages and chats too.
 - Find in a pane (⌘F) with the matches highlighted. ⌘-click a link or a path
   in a terminal to open it in a new tab in Ovvi, or ⌥-click it to open it to
-  the side.
+  the side; with ⌘ or ⌥ held a link underlines. A link to an HTML file opens
+  its page in a browser card, and a file card on HTML has Open in Browser.
+- Redraw Terminal (⌥⌘R) makes a TUI draw its whole screen again.
+- Browser and Markdown cards come back by themselves, where they were, when
+  the system ends their web process.
 - Drop files on a terminal to paste their paths (copied to the machine first
   on a remote card).
 - Drop folders on the Dock icon to open a workspace in each.
@@ -108,7 +113,8 @@ Each part of the window has its own page under UI design.
   Messages, on any machine, in a card or a floating window, with the whole
   session and full Markdown (tables, task lists). The agent keeps running.
   The user's messages and the agent's replies are blue and gray bubbles, as
-  in Messages. A long chat opens at the bottom with its newest turns, and
+  in Messages, each with its time; the user's add one tick once the agent
+  took them and two once its session has them. A long chat opens at the bottom with its newest turns, and
   Show Earlier loads the ones before.
   Every message of a turn shows; each run of tool calls between them is one
   line of counts that opens to its calls, and a call opens to its input and
