@@ -19,7 +19,6 @@ export interface Ovvi {
   readonly pages: Pages
   /** @since 3 */
   readonly settings: Settings
-  /** Needs `clipboard`. */
   readonly clipboard: { write(text: string): Promise<void> }
   /** The native context menu at the pointer. Resolves with the picked item's value, or undefined. */
   readonly menu: { show(items: MenuItem[]): Promise<string | undefined> }
@@ -28,7 +27,7 @@ export interface Ovvi {
   readonly pick: { folder(from?: string): Promise<string | undefined> }
 
   /** Runs argv on the card's machine, in the pane's folder unless `cwd` says otherwise: no shell, 30 s unless
-   *  `timeout` (ms) says otherwise, 4 MiB of stdout, two at a time per card. Needs `run`. */
+   *  `timeout` (ms) says otherwise, 4 MiB of stdout, two at a time per card. */
   run(argv: string[], options?: { cwd?: string; stdin?: string; timeout?: number }): Promise<RunResult>
   /** An open of a file, a folder (ends in `/`), a URL or a plugin's argument: in this card, in a new tab right after
    *  this card's tab (the default) or in a pane to its side. No `plugin`: the file's default plugin, the browser for
@@ -146,16 +145,15 @@ export interface Files {
    *  of names. */
   paths(root: string): Promise<string[]>
   /** Writes a new file beside the old one and moves it over. With `over`, fails with `changed` if the file's hash
-   *  differs. Needs `files:write`. */
+   *  differs. */
   write(path: string, data: string | Uint8Array, options?: { over?: string }): Promise<{ hash: string }>
-  /** @since 2. Renames or moves a file or a folder; never replaces: fails when something is at `to`. Needs
-   *  `files:write`. */
+  /** @since 2. Renames or moves a file or a folder; never replaces: fails when something is at `to`. */
   move(path: string, to: string): Promise<void>
   /** Calls fn after a change under path, only while the card shows, and once on showing again. */
   watch(path: string, fn: () => void): Off
 }
 
-/** Needs `git`. Writes run one at a time per card, and never ask for a password (they fail with git's message). */
+/** Writes run one at a time per card, and never ask for a password (they fail with git's message). */
 export interface Git {
   /** The repository's root of a folder, or null. */
   root(folder: string): Promise<string | null>

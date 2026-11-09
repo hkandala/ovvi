@@ -2,7 +2,7 @@
 // changes with Revert, Stage and Unstage (or "No changes"), then the history of every branch as a graph. Row 2 has the
 // branch, Working Tree, Fetch, Pull and Push. A folder that is no repository shows Initialize Repository instead.
 import type { Change, Commit, Page } from "@ovvi/plugin-api"
-import { element, failed, fileIcon, home, how, keep, menu, nameAndFolder, open, ovvi, symbol } from "./lib"
+import { element, failed, fileIcon, home, how, keep, kept, menu, nameAndFolder, open, ovvi, symbol } from "./lib"
 
 const WORDS: Record<string, string> = {
   M: "Modified", T: "Type changed", A: "Added", D: "Deleted", R: "Renamed", U: "Untracked", C: "Conflict",
@@ -440,7 +440,7 @@ export async function make(place: Page, root: string) {
 
   // While the page shows, a read after each change under the root; when it shows again, one for the changes meanwhile.
   api.files.watch(root, () => void load())
-  message.value = ovvi.state.get<{ draft?: string }>()?.draft ?? ""
+  message.value = kept().draft ?? ""
   await load()
   document.title = ""
   // Once its form shows: hidden, it has no height.

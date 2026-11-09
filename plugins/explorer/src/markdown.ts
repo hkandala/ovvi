@@ -44,7 +44,7 @@ const markdownMode = (edit: boolean) => [
 const modeClass = EditorView.editorAttributes.compute([EditorView.editable], (state) => ({
   class: editing(state) ? "" : "cm-reading",
 }))
-/** Rich Text's look, and Source's page: prose in the system font at the mockup's 14 pt (the app's
+/** Rich Text's look, and Source's page: prose in the system font at 14 pt (the app's
  *  13 pt text size plus one), over the shared monospace, in a 640 pt column. */
 const rendered = [
   live,

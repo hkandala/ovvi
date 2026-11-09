@@ -4,8 +4,8 @@ import type { OvviError } from "@ovvi/plugin-api"
 import { failed, info } from "./info"
 import { drawn, extension, type Place, type Reveal } from "./place"
 
-type Zoom = "fit" | "actual" | "in" | "out"
 const ZOOM = ["fit", "actual", "out", "in"] as const
+type Zoom = (typeof ZOOM)[number]
 /** pdf.js's viewer styles, loaded once, by the first PDF. */
 let styled: Promise<unknown> | undefined
 

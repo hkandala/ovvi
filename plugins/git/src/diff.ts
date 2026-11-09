@@ -41,7 +41,7 @@ function sums(file: FileDiffMetadata) {
   return { added, removed }
 }
 
-/** `+n −m`, as the spec writes them (the header's own counts are hidden). */
+/** `+n −m` (the header's own counts are hidden). */
 function counts(file: FileDiffMetadata) {
   const { added, removed } = sums(file)
   return [
@@ -232,7 +232,7 @@ export async function make(place: Page, root: string, source: string) {
   /** Viewed, and Open File but on a deleted file. */
   function actions(diff: FileDiffMetadata) {
     const box = element("span", "actions"), label = element("label", "mark")
-    const check = element("input", "")
+    const check = element("input")
     check.type = "checkbox"
     check.ariaLabel = `Viewed ${diff.name}`
     check.checked = viewed.has(diff.name)
@@ -240,7 +240,7 @@ export async function make(place: Page, root: string, source: string) {
       if (check.checked) viewed.set(diff.name, text(diff))
       else viewed.delete(diff.name)
       collapse(diff.name, check.checked)
-      row(diff.name)?.classList.toggle("viewed", check.checked)
+      nav.querySelector(`[data-id="${CSS.escape(diff.name)}"]`)?.classList.toggle("viewed", check.checked)
     }
     label.append(check, "Viewed")
     box.append(label)
@@ -482,10 +482,6 @@ export async function make(place: Page, root: string, source: string) {
     box.folded = folded
     show(box)
     if (folded && top(box.node) < main.scrollTop) main.scrollTop = top(box.node)
-  }
-
-  function row(id: string) {
-    return [...nav.children].find((node) => (node as HTMLElement).dataset.id === id)
   }
 
   function reveal(id: string) {

@@ -40,7 +40,7 @@ const language = (path: string) => {
   return languages[key]?.() ?? []
 }
 
-/** Nodes that name a scope in the spec's Lezer grammars, and the nodes that hold their names. */
+/** Nodes that name a scope in the Lezer grammars, and the nodes that hold their names. */
 const scopes = new Set([
   ...["Function", "Class", "Method", "Interface", "Enum", "TypeAlias", "Namespace", "Constructor", "Record"].map(
     (s) => `${s}Declaration`,

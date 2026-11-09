@@ -251,7 +251,7 @@ export async function show(place: Place): Promise<Reveal> {
   }
 
   /** The files whose name has the filter's text, with their folders, open.
-   *  ponytail: the first 5,000, as the native variant; a search on the machine when roots get bigger. */
+   *  ponytail: the first 5,000; a search on the machine when roots get bigger. */
   function match() {
     const text = filter.toLowerCase()
     const named = (path: string) => path.slice(path.lastIndexOf("/") + 1).toLowerCase().includes(text)

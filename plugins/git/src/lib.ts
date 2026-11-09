@@ -76,7 +76,7 @@ export function fileIcon(path: string) {
 
 /** The card's state: the commit message typed, and the diff's file list, layout and wrap as the user chose them in
  *  the card, which win over the settings. */
-export type Kept = { draft?: string; list?: boolean; layout?: string; wrap?: boolean }
+type Kept = { draft?: string; list?: boolean; layout?: string; wrap?: boolean }
 export const kept = () => ovvi.state.get<Kept>() ?? {}
 export const keep = (change: Kept) => ovvi.state.set({ ...ovvi.state.get<object>(), ...change })
 

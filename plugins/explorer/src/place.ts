@@ -26,7 +26,7 @@ export type Place = {
 }
 
 /** The card's own choices in its header, kept in its state: they win over the settings, which start new cards. */
-export type Own = { hiddenFiles?: boolean; mode?: string; locked?: boolean; preview?: boolean; wrap?: boolean }
+type Own = { hiddenFiles?: boolean; mode?: string; locked?: boolean; preview?: boolean; wrap?: boolean }
 export const own = (ovvi: Ovvi) => ovvi.state.get<Own>() ?? {}
 export const choose = (ovvi: Ovvi, change: Own) => ovvi.state.set({ ...ovvi.state.get<object>(), ...change })
 
@@ -63,7 +63,7 @@ export function kind(arg: string): "files" | "file" | "preview" | "markdown" {
 export type Reveal = ((at: string) => void) | undefined
 
 /** Where an open goes, by the modifier keys: ⌘ a new tab, ⌥ a pane to the side, else the card itself. */
-export type How = "card" | "tab" | "side"
+type How = "card" | "tab" | "side"
 export const how = (event: MouseEvent | KeyboardEvent): How => (event.metaKey ? "tab" : event.altKey ? "side" : "card")
 
 /** A file, or a folder (its path ends in `/`), in the card (its next place), or behind it in a new tab or a pane to
@@ -72,7 +72,7 @@ export const open = (ovvi: Ovvi, arg: string, how: How, plugin?: string) =>
   void ovvi.open(arg, { plugin, how, background: how !== "card" }).catch((error) => console.error(error))
 
 /** A row's or a link's menu at the pointer: Open (Open as Root for a folder), Open in New Tab, Open to the Side;
- *  Rename when the row can be renamed; a link's Copy Link (of `link`, its path or address), as WebKit's own menu had. */
+ *  Rename when the row can be renamed; a link's Copy Link (of `link`, its path or address). */
 export async function menu(ovvi: Ovvi, event: MouseEvent, arg: string,
   more: { rename?: () => void; link?: string; plugin?: string } = {}) {
   event.preventDefault()
