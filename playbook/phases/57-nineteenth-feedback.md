@@ -1022,3 +1022,21 @@ you did, no need of reverting them".
   `/private` prefix): those runs were dropped and run again.
 - **For the user.** ⌘D and ⇧⌘D: the New Pane list should slide in with the card, as a browser card does. On a short
   card (several ⇧⌘D), ↑ to the last row keeps it in view.
+
+### Track O (item 43)
+
+- **What went.** 59,679 → 58,920 lines (−759) over the app, HerdrKit, the UI tests, scripts and plugins: dead
+  defaults, parameters, inits and a `done` count no view read; 30 accessibility ids no test reads; one-caller generics
+  (`AgentRow<Hover, Trailing>` is `ArchivedRow`, `Pill<S>`); copies merged (the scroll-edge fade, `PluginInstalls.ask`
+  for three alerts, a plugin's version and busy line, eleven UI-test copies of a card's `layout.apply`, the text,
+  side-pane, tab and clipboard helpers); about 560 comments that restated the code or told history, and broken design
+  anchors. Dropped features left no code, only words (README, D45, D63, the plugin API's "Needs …" notes).
+- **Splits.** Only types that stand alone: `DragSource`, `BrowserToolbar`, the placeholder script, the program asks,
+  the UI tests' waits.
+- **No pattern kills.** `make lint` rejects `pkill` and `killall` (a SwiftLint rule for Swift, a `git grep` for shell,
+  Python, the Makefile and CI); the e2e helper and the follow test kill the pids `pgrep` found.
+- **Kept.** `dropAgentsView` (agent pins, Settled, pinned tabs and old folds, all phase 57: users have them), the old
+  trust.json and Markdown-mode reads (phase 55–56), and `ovvi:files`/`ovvi:diff` labels (they live in herdr sessions).
+- **Review.** Four reviewers, 0 blockers, 0 should, 18 nits; 13 fixed, 5 optional shrinks left (one place for the
+  lint rule, a pgrep-and-kill helper, small test-helper moves). One auditor removed `HostStore.needsYou`, which the
+  Dock badge reads: the build caught it and it stayed.
