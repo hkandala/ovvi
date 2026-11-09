@@ -255,10 +255,12 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   [new-window view](#new-window).
 - **Pages.** A sideways swipe on the sidebar moves to the next or previous
   open page ([Swiping](/docs/ui/swiping)); so do ⌥⌘[ ], and ⌥⌘1–9 show a page by its place (Window menu).
-- **Page dots.** Under the pages, above Archived Sessions, centered on the rows: one 6 pt dot per open page, 6 pt
-  apart, 11 pt from the rows above and from Archived Sessions under them. The current page's dot is in primary text
-  color, the others tertiary. A click on a dot shows its page; its context menu has Detach Session. Hidden while one
-  page is open. VoiceOver reads each dot as its page's title (the page header's).
+- **Page dots.** Over the pages' foot, above Archived Sessions, centered on the rows: one 6 pt dot per open page, 6
+  pt apart, 11 pt from Archived Sessions under them. The list's end has 18 pt more room for them, so its last row
+  ends 11 pt above the dots, and while rows lie under its end its fade runs 36 pt instead of 18, so the rows thin
+  out to nothing behind the dots, in both styles: the dots sit on the sidebar's own background. The current page's
+  dot is in primary text color, the others tertiary. A click on a dot shows its page; its context menu has Detach
+  Session. Hidden while one page is open. VoiceOver reads each dot as its page's title (the page header's).
 - **Page header.** The session's name, the page's title (13 pt bold, the
   rows' size, primary); for a machine's `default`
   session, the machine's name instead: This Mac's own name (System Settings,
@@ -389,34 +391,38 @@ A folded shelf at the sidebar's foot, under the pages and the page dots, above t
 rows with one page, as two rows are apart. It is the machine's, not a session's: it does not slide with the pages,
 and every page shows the same. Settings ▸ Agents ▸ **Show closed sessions** (on by default) hides it, and then
 nothing is read.
-- **The shelf.** A 1 pt border round it (primary at 14 %, radius 10), as a space row that is not selected, and no
-  glass. Its header is 30 pt tall: "Archived Sessions" (12 pt medium, secondary) 8 pt in, on the space names'
-  edge, then at its end a chevron where a space row's is: right while folded, down while open. Under the pointer the
-  header fills. A click folds or opens it; it is folded at first, and the fold is kept per machine across
-  relaunches; a fold clears the search. It has no count (it is not known without reading every store).
-- **Search.** Open, a search field ("Search", `magnifyingglass`) sits under the header, 4 pt in from the border. It
-  keeps the sessions whose title or folder matches; Esc clears it. At its trailing end a menu button
-  (`line.3.horizontal.decrease.circle`, filled while it shows one agent, "Show Agent") opens a menu: **All
-  Agents**, then the four agents. The choice is kept across relaunches. The footer's filter does not reach it.
+- **The shelf.** Open, a 1 pt border round it (primary at 14 %, radius 10), as a space row that is not selected, and
+  no glass; folded, no border, only its header. Its header is 30 pt tall: "Archived Sessions" (12 pt medium,
+  secondary) 8 pt in, on the space names' edge, then at its end a chevron where a space row's is: right while
+  folded, down while open. Under the pointer the header fills. A click folds or opens it; it is folded at first, and
+  the fold is kept per machine across relaunches; a fold clears the search. It has no count (it is not known without
+  reading every store).
+- **Search.** Open, a search field ("Search", `magnifyingglass`) sits under the header, 4 pt in from the border; a
+  click that opens the shelf puts the caret in it. It keeps the sessions whose title or folder matches; Esc clears
+  it. At its trailing end a menu button (`line.3.horizontal.decrease.circle`, filled while it shows one agent, "Show
+  Agent") opens a menu: **All Agents**, then the four agents. The choice is kept across relaunches. The footer's
+  filter does not reach it.
 - **List.** Under the search field, at most 5 rows tall (256 pt); it scrolls inside, with an 18 pt fade at an edge
   that has more rows; the spaces above get the rest.
 - **Rows.** 48 pt, two lines, 3 pt apart: the agent's tile, the session's title, its folder on line 2 (`~` for
   the home folder), and its age at the end of line 1 ("5h", "2d", "1w"; 11 pt, secondary). Newest first, over the
   four agents. The tile is 8 pt into the border, on the space names' edge. Left out: the sessions a pane of any
   open session of the machine runs, and one being resumed.
-- **Reading.** The shelf reads each time it opens, 50 sessions an agent a page, and the next page
-  when the list's end scrolls into view. One shell script an agent runs once a page on the machine
-  (never a process per file), and nothing writes to the stores. Pi and Claude Code keep a JSONL file a
-  session under `~/.pi/agent/sessions/` and `~/.claude/projects/`; the title is the last rename,
-  else Claude Code's own title, else the first typed prompt. Codex and OpenCode keep an SQLite
-  index, read with `sqlite3 -readonly`; without sqlite3 Codex reads its rollout files, and
-  OpenCode's line says "OpenCode needs sqlite3 on ‹machine›." Left out: subagents and child sessions,
+- **Reading.** The shelf reads each time it opens, 50 sessions an agent a page, and shows the list only once every
+  agent's page came: the first time the loader ("Reading sessions…", after 0.3 s) shows in the list's place; after
+  that, the machine's last list (kept for the app's run) shows at once and the new one takes its place when it
+  comes, so rows never come in one agent at a time. The next pages read when the list's end scrolls into view, and
+  come in together too. One shell script an agent runs once a page on the machine (never a process per file), and
+  nothing writes to the stores. Pi and Claude Code keep a JSONL file a session under `~/.pi/agent/sessions/` and
+  `~/.claude/projects/`; the title is the last rename, else Claude Code's own title, else the first typed prompt.
+  Codex and OpenCode keep an SQLite index, read with `sqlite3 -readonly`; without sqlite3 Codex reads its rollout
+  files, and OpenCode's line says "OpenCode needs sqlite3 on ‹machine›." Left out: subagents and child sessions,
   `codex exec` runs and Claude Code's Agent SDK sessions, archived ones, and sessions with no prompt.
-- **States** ([States](/docs/ui/states)). While a page takes over 0.3 s: the loader, "Reading sessions…". With no
-  row, the compact empty state: "No closed sessions on ‹machine›." or "No ‹Agent› sessions." (`archivebox`), or "No
-  matching sessions." (`magnifyingglass`). A machine that did not answer in 10 s: "Could not read ‹machine›'s
-  sessions." (`exclamationmark.triangle`) with **Retry**; so does a store the machine cannot read ("OpenCode needs
-  sqlite3 on ‹machine›.").
+- **States** ([States](/docs/ui/states)). While the first list or a next page takes over 0.3 s: the loader, "Reading
+  sessions…". With no row, the compact empty state: "No closed sessions on ‹machine›." or "No ‹Agent› sessions."
+  (`archivebox`), or "No matching sessions." (`magnifyingglass`). A machine that did not answer in 10 s: "Could not
+  read ‹machine›'s sessions." (`exclamationmark.triangle`) with **Retry**; so does a store the machine cannot read
+  ("OpenCode needs sqlite3 on ‹machine›.").
 - **Resume.** A click, or the hover **Resume** (`arrow.uturn.backward`, before the age),
   starts the agent with that session (the flags of [Relaunch with
   Chat](/docs/ui/chat-view#relaunch-with-chat)'s table) in a new pane in the session's
@@ -495,10 +501,11 @@ tab at once.
   in from 0.97 over 0.13 s.
 - **Content**, top to bottom:
   - The tab title (folder part dimmed), with no state.
-  - One row per pane, at most 6 and then "+N more": the program glyph, the
-    program or agent name, the folder in secondary text, and, for an agent
-    that is not idle, its state icon (12 pt) on the right, with no word.
-    Other panes show nothing there. Every line is one line: the title, a first prompt's too, fades at its end.
+  - One row per pane, at most 6 and then "+N more": the program glyph, the program or agent name, the folder in
+    secondary text; a plugin's, a browser's and New Pane's row has its icon, its name and what it shows (the file,
+    folder, diff or page), as its card header, never its placeholder's `cat`. For an agent that is not idle, its
+    state icon (12 pt) on the right, with no word. Other panes show nothing there. Every line is one line: the
+    title, a first prompt's too, fades at its end.
   - For a pane that needs you: the last 3 non-empty lines of its screen, in
     secondary monospaced text. The app reads them with `pane.read` when the
     card opens, one call per such pane, and shows nothing if the read fails.

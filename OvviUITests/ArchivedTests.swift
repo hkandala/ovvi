@@ -65,6 +65,8 @@ extension OvviUITests {
         XCTAssertTrue(shelf.exists(within: 3))
         if shelf.value as? String == "collapsed" {
             shelf.click()
+            // Opened, its search field takes the keyboard.
+            XCTAssertTrue(hasKeyboard("agents.archived.search"))
         }
         addTeardownBlock { @MainActor [self] in
             let shelf = element("agents.shelf.Archived Sessions")

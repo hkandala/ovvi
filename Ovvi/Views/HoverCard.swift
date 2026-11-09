@@ -269,7 +269,11 @@ struct HoverCard: View {
     }
 
     private func row(_ pane: HostStore.Pane) -> some View {
-        let shown = lines[pane.id] ?? [], name = pane.agentName ?? pane.programName ?? "terminal"
+        // A plugin's, a browser's or New Pane's own name and what it shows, as its card header says: their pane runs
+        // only a placeholder (`cat`).
+        let kind = pane.agent == nil ? page.kindTitle(pane) : nil
+        let shown = lines[pane.id] ?? [], name = kind?.name ?? pane.agentName ?? pane.programName ?? "terminal"
+        let detail = kind == nil ? pane.folder : kind?.detail
         let state = pane.state == .idle ? nil : pane.state
         return Button {
             page.go(to: pane)
@@ -279,7 +283,7 @@ struct HoverCard: View {
                 HStack(spacing: 6) {
                     ProgramGlyph(icon: pane.iconID, letter: pane.letter)
                     Text(name).lineLimit(1).layoutPriority(1)
-                    Text(pane.folder ?? "").foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                    Text(detail ?? "").foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                     Spacer(minLength: 0)
                 }
                 // The state icon's room.
@@ -295,7 +299,7 @@ struct HoverCard: View {
         }
         .buttonStyle(ChromeStyle(radius: 6))
         .accessibilityIdentifier("hovercard.\(pane.id)")
-        .accessibilityLabel([name, pane.folder].compactMap(\.self).joined(separator: ", "))
+        .accessibilityLabel([name, detail].compactMap(\.self).joined(separator: ", "))
         .accessibilityValue(([pane.state?.title].compactMap(\.self) + shown).joined(separator: "\n"))
         // On the first line's end. Over the button, so a test sees it.
         .overlay(alignment: .topTrailing) {

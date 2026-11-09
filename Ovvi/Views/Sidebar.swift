@@ -43,12 +43,19 @@ struct Sidebar: View {
                     // sidebar's accessibility frame (which takes in laid-out views past the clip) and in AppKit's
                     // hit tests.
                     ForEach(swipe.moving ? pages.list : pages.list.filter { $0 === pages.current }) { page in
-                        SidebarPage(page: page, pages: pages, filter: filter)
+                        SidebarPage(page: page, pages: pages, filter: filter,
+                                    bottom: pages.list.count > 1 ? PageDots.height : 0)
                             .frame(width: width - gap)
                             .accessibilityHidden(page !== pages.current)
                             .allowsHitTesting(page === pages.current)
                             .transition(.identity)
                     }
+                }
+            }
+            // Over the list's end, which fades away under them.
+            .overlay(alignment: .bottom) {
+                if pages.list.count > 1 {
+                    PageDots(pages: pages)
                 }
             }
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { area = $0 }
@@ -66,9 +73,6 @@ struct Sidebar: View {
                       swipe.slide != Double(index) else { return }
                 let slides = old.last != new.last && !pages.overview && !(reduceMotion && !Animation.forceMotion)
                 slide(to: index, with: slides ? .session() : nil)
-            }
-            if pages.list.count > 1 {
-                PageDots(pages: pages)
             }
             // The machine's, the same on every page: it stays while the pages slide.
             if settings.showClosed, let page = pages.current {
@@ -92,6 +96,8 @@ struct Sidebar: View {
 }
 
 private struct PageDots: View {
+    /// The dots' 12 pt and the 6 pt under them.
+    static let height: CGFloat = 18
     let pages: WindowPages
 
     var body: some View {
@@ -111,7 +117,7 @@ private struct PageDots: View {
                 .accessibilityAddTraits(page === pages.current ? .isSelected : [])
             }
         }
-        // Centered on the rows; as far from the rows above (their 8 pt inset) as from Archived Sessions under it.
+        // Centered on the rows; as far from the last row (its 8 pt inset) as from Archived Sessions under them.
         .padding(.leading, Sidebar.rowInsets.leading).padding(.trailing, Sidebar.rowInsets.trailing)
         .padding(.bottom, 6)
     }

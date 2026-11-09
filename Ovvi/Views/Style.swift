@@ -349,13 +349,14 @@ extension View {
         }
     }
 
-    /// A vertical scroll view fades 18 pt at an edge that rows lie past.
-    func fadesScrolledEdges() -> some View {
-        modifier(ScrolledFades())
+    /// A vertical scroll view fades 18 pt (`end` at its end) at an edge that rows lie past.
+    func fadesScrolledEdges(end: CGFloat = 18) -> some View {
+        modifier(ScrolledFades(end: end))
     }
 }
 
 private struct ScrolledFades: ViewModifier {
+    let end: CGFloat
     @State private var under = (top: false, bottom: false)
 
     func body(content: Content) -> some View {
@@ -366,6 +367,6 @@ private struct ScrolledFades: ViewModifier {
             } action: {
                 under = ($1[0], $1[1])
             }
-            .fadeEdges(.vertical, start: under.top ? 18 : 0, end: under.bottom ? 18 : 0)
+            .fadeEdges(.vertical, start: under.top ? 18 : 0, end: under.bottom ? end : 0)
     }
 }

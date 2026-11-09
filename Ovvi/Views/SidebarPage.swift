@@ -5,6 +5,8 @@ struct SidebarPage: View {
     let page: Page
     let pages: WindowPages
     let filter: String
+    /// Room under the rows for what lies over the list's end (the page dots), which the end's fade runs under too.
+    var bottom: CGFloat = 0
     typealias Row = (workspace: HostStore.Workspace, parent: HostStore.Workspace?)
     /// The folded spaces (`Page.foldKey`), with the open shelf; spaces start unfolded.
     @AppStorage(Page.openShelves, store: .agents) private var opened = ""
@@ -100,7 +102,9 @@ struct SidebarPage: View {
                                 }
                                 // Hidden by the filter or closed: no stale target.
                                 .onDisappear { frames[id] = nil }
-                                .background { Color.clear.id("into view \(id)").padding(.vertical, -18) }
+                                .background {
+                                    Color.clear.id("into view \(id)").padding(.top, -18).padding(.bottom, -18 - bottom)
+                                }
                         }
                         if drop.ghost, page.dragging != nil {
                             Text("New Space").foregroundStyle(.secondary).padding(.leading, WorkspaceRow.textInset)
@@ -113,6 +117,7 @@ struct SidebarPage: View {
                         }
                     }
                     .padding(Sidebar.rowInsets)
+                    .padding(.bottom, bottom)
                 }
                 .scrollIndicators(.never)
                 .scrollPosition($position)
@@ -128,7 +133,7 @@ struct SidebarPage: View {
                     drop.spring?.cancel()
                     drop = RowsDrop.State()
                 }
-                .fadesScrolledEdges()
+                .fadesScrolledEdges(end: 18 + bottom)
                 .onHover { inside in
                     hovering = inside
                     if inside {

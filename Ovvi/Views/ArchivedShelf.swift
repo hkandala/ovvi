@@ -2,8 +2,8 @@ import HerdrKit
 import SwiftUI
 
 /// The sidebar's Archived Sessions (ui/window#archived-sessions): the agents' sessions on the window's machine that no
-/// pane runs, from the agents' own stores. Read each time it opens; an agent's next page reads as the list's end
-/// scrolls into view.
+/// pane runs, from the agents' own stores. Read each time it opens, whole before it shows: the machine's last list at
+/// once, else a loader. The agents' next pages read as the list's end scrolls into view.
 struct ArchivedShelf: View {
     let pages: WindowPages
     /// The page in view when drawn: its machine's sessions. A resume goes to the page in view when it runs.
@@ -14,11 +14,15 @@ struct ArchivedShelf: View {
     @State private var list = ClosedList()
     @State private var reading: Set<String> = []
     @State private var failed: Set<String> = []
-    @State private var slow = false
+    /// No list yet: the loader shows.
+    @State private var loading = false
     /// Each read anew (an open, Retry); an older one's pages land nowhere.
     @State private var generation = 0
     @State private var attempt = 0
     @State private var search = ""
+    @State private var focusSearch = 0
+    /// Each machine's last list, shown as it opens again while it reads anew.
+    private static var lists: [String: ClosedList] = [:]
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// UI tests' stores (`-archivedHome`), never the user's; the agents' session titles too.
@@ -35,21 +39,24 @@ struct ArchivedShelf: View {
             header(open: open, key: key)
             if open {
                 FilterField(prompt: "Search", text: $search, identifier: "agents.archived.search",
-                            symbol: "magnifyingglass", trailing: 22)
+                            symbol: "magnifyingglass", focus: focusSearch, trailing: 22)
                     .onExitCommand { search = "" }
                     .overlay(alignment: .trailing) { menu.padding(.trailing, 8) }
                     .padding(.horizontal, 4)
                 // Lazy, for the pages; as tall as its rows, up to five.
                 ScrollView {
                     LazyVStack(spacing: 4) {
-                        ForEach(rows) { row($0) }
-                        if !next.isEmpty {
+                        ForEach(loading ? [] : rows) { row($0) }
+                        if !next.isEmpty, !loading {
                             // The list's end: anew after each page, so it reads on while it stays in view (a short
                             // searched list, a page with nothing to show).
                             Color.clear.frame(height: 1).id(list.agents.values.map(\.looked).reduce(0, +))
-                                .onAppear { Task { await read(next) } }
+                                .onAppear { Task { await readNext(next) } }
                         }
-                        if rows.isEmpty || !failed.isDisjoint(with: shown) || problem(shown) != nil {
+                        if loading {
+                            Loader(text: "Reading sessions…", delay: .milliseconds(300)).padding(12)
+                                .frame(maxWidth: .infinity)
+                        } else if rows.isEmpty || !failed.isDisjoint(with: shown) || problem(shown) != nil {
                             status(shown, more: !next.isEmpty).frame(maxWidth: .infinity)
                         }
                     }
@@ -62,17 +69,23 @@ struct ArchivedShelf: View {
                 .padding(.bottom, 4)
             }
         }
-        // As a space row that is not selected: a border, no glass.
-        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(.primary.opacity(0.14)))
-        .task(id: [open ? 1 : 0, attempt]) {
-            (list, reading, failed, slow, generation) = (ClosedList(), [], [], false, generation + 1)
-            guard open else { return }
-            async let pages: Void = read(Chooser.agents.map(\.command))
-            // No line while a page reads fast (This Mac).
-            if await (try? Task.sleep(for: .seconds(0.3))) != nil {
-                slow = true
+        // Open, as a space row that is not selected: a border, no glass.
+        .background {
+            if open {
+                RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(.primary.opacity(0.14))
             }
-            await pages
+        }
+        .task(id: [open ? 1 : 0, attempt]) {
+            let machine = page.store.machine.id
+            (reading, failed, generation) = ([], [], generation + 1)
+            guard open else { return }
+            list = Self.lists[machine] ?? ClosedList()
+            loading = Self.lists[machine] == nil
+            let generation = generation
+            let (fresh, missing) = await read(Chooser.agents.map(\.command), from: ClosedList())
+            guard generation == self.generation else { return }
+            (list, failed, loading) = (fresh, missing, false)
+            Self.lists[machine] = fresh
         }
     }
 
@@ -82,6 +95,10 @@ struct ArchivedShelf: View {
                 opened = opened.togglingLine(key)
             }
             search = ""
+            // Once the field is there.
+            if opened.hasLine(key) {
+                Task { focusSearch += 1 }
+            }
         } label: {
             HStack(spacing: 6) {
                 Text(Self.label)
@@ -154,9 +171,7 @@ struct ArchivedShelf: View {
         } else if let problem = problem(shown) {
             EmptyState(symbol: "exclamationmark.triangle", title: problem, compact: true)
         } else if more || !reading.isDisjoint(with: shown) {
-            if slow {
-                Loader(text: "Reading sessions…").padding(12)
-            }
+            Loader(text: "Reading sessions…", delay: .milliseconds(300)).padding(12)
         } else if !search.trimmingCharacters(in: .whitespaces).isEmpty {
             EmptyState(symbol: "magnifyingglass", title: "No matching sessions.", compact: true)
         } else {
@@ -182,27 +197,38 @@ struct ArchivedShelf: View {
             }
     }
 
-    private func read(_ agents: [String]) async {
-        // Marked as reading before the await: a second read meanwhile would read the same offset.
-        let generation = generation
-        let pages = agents.filter { !reading.contains($0) }.map { ($0, list.agents[$0]?.looked ?? 0) }
-        reading.formUnion(pages.map(\.0))
+    /// The next page of each of `agents`, added to `base` all at once; the agents whose page did not come.
+    private func read(_ agents: [String], from base: ClosedList) async -> (ClosedList, Set<String>) {
         let exec = await page.store.machine.exec()
+        var list = base, missing: Set<String> = []
         await withTaskGroup(of: (String, ClosedPage?).self) { group in
-            for (agent, offset) in pages {
+            for agent in agents {
+                let offset = base.agents[agent]?.looked ?? 0
                 group.addTask {
                     await (agent, try? exec.closedSessions(agent: agent, offset: offset, home: Self.home))
                 }
             }
-            for await (agent, page) in group where generation == self.generation {
-                reading.remove(agent)
+            for await (agent, page) in group {
                 if let page {
                     list.add(page, for: agent)
                 } else {
-                    failed.insert(agent)
+                    missing.insert(agent)
                 }
             }
         }
+        return (list, missing)
+    }
+
+    /// The pages after the list's end, for the agents that have more.
+    private func readNext(_ agents: [String]) async {
+        // Marked as reading before the await: a second read meanwhile would read the same offset.
+        let agents = agents.filter { !reading.contains($0) }, generation = generation
+        reading.formUnion(agents)
+        let (next, missing) = await read(agents, from: list)
+        guard generation == self.generation else { return }
+        reading.subtract(agents)
+        (list, failed) = (next, failed.union(missing))
+        Self.lists[page.store.machine.id] = list
     }
 }
 
