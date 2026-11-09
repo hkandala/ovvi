@@ -616,7 +616,7 @@ deleted; ⌘-click and ⌥-click on it opened nothing.
 - **Decisions.** Swift identifiers, accessibility identifiers (`workspace.w1`, `sidebar.new-workspace`, `workspaces.*`),
   herdr method and field names, `herdr workspace` commands and the playbook's history stay as they are. A ⌘K
   command's identifier is `palette.command.<title>`, so those follow the new titles in the tests. "Empty space" in
-  the drag docs became "empty area", so space means one thing. Typing "workspace" in ⌘K no longer finds the Space
-  commands ("space" still does).
+  the drag docs became "empty area", so space means one thing. New, Close and Rename Space keep "workspace" as a ⌘K
+  keyword, since herdr's CLI and skill still teach that word.
 - **For the user.** Look over the sidebar's right-click menu, File ▸ New Space / Close Space, ⌘K "space", and the close
   sheet of a space with worktrees.

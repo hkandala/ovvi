@@ -44,7 +44,7 @@ struct CommandList {
             Command(section: .file, title: "New Tab", key: .newTab, group: .tabs, symbol: "plus.square",
                     enabled: workspace != nil) { Task { await page?.newTab() } },
             Command(section: .file, title: "New Space", key: .newWorkspace,
-                    group: .workspaces, symbol: "folder.badge.plus",
+                    group: .workspaces, symbol: "folder.badge.plus", keywords: "workspace",
                     enabled: live) { Task { await page?.newWorkspace() } },
             Command(section: .file, title: "Open Session…", key: .openSession, group: .sessions,
                     symbol: "rectangle.stack.badge.plus",
@@ -80,7 +80,8 @@ struct CommandList {
                         }
                     }),
             Command(section: .close, title: "Close Space", key: .init("w", modifiers: [.command, .control]),
-                    group: .workspaces, symbol: "folder.badge.minus", enabled: workspace != nil, action: {
+                    group: .workspaces, symbol: "folder.badge.minus", keywords: "workspace", enabled: workspace != nil,
+                    action: {
                         if let page, let workspace = page.selectedWorkspace {
                             page.close(.workspace(workspace.id))
                         }
@@ -175,7 +176,7 @@ struct CommandList {
                         (tab.label, { await page?.store.rename(tab: tab.id, label: $0) })
                     }),
             Command(section: .palette, title: "Rename Space", group: .workspaces, symbol: "pencil",
-                    enabled: workspace != nil,
+                    keywords: "workspace", enabled: workspace != nil,
                     name: workspace.map { workspace in
                         (workspace.label, { await page?.store.rename(workspace: workspace.id, label: $0) })
                     }),
