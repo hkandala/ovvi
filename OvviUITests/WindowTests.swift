@@ -194,6 +194,10 @@ extension OvviUITests {
         XCTAssertTrue(element("picker.local.\(one)").exists(within: connect))
         XCTAssertTrue(app.staticTexts["Ovvi"].exists)
         XCTAssertFalse(element("sidebar").exists)
+        // `-machines []` holds without `-session` too: This Mac's group alone, never the user's machines.
+        let groups = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier BEGINSWITH 'picker.section.'"))
+        XCTAssertEqual(groups.count, 1)
         try await expect("no stream") { try await streams(one).isEmpty }
         keepScreenshot("new window")
     }
