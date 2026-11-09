@@ -369,7 +369,9 @@ private struct DragSourceModifier: ViewModifier {
         content
             .onGeometryChange(for: CGSize.self, of: \.size) { size = $0 }
             .simultaneousGesture(DragGesture(minimumDistance: 4).onChanged { value in
-                DragSource.begin(item, page: page, grabbed: value.location, size: previewSize ?? size)
+                // Where the mouse went down: a busy app's first change comes late, and the image then sat off the
+                // pointer's grab, and a row's drop above or below where it was let go.
+                DragSource.begin(item, page: page, grabbed: value.startLocation, size: previewSize ?? size)
             })
     }
 }
