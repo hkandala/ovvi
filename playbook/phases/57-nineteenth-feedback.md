@@ -720,6 +720,7 @@ side.
   pinch (2.6x), 68 px after a pinch on the old build. CI 42559293377 green (3 tests).
 - **For the user.** Pinch a browser card's page and two-finger double tap a paragraph (Smart zoom on in System
   Settings ▸ Trackpad); ⌘0 undoes it, also in a floating browser window.
+
 ### Track N (item 42)
 
 - **What 1.0 is.** libghostty 1.0 (tag `vt-1.0.0`) is libghostty-vt: a stable C ABI for a terminal's state (parse,
