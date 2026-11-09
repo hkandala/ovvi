@@ -151,6 +151,31 @@ runs and on-demand on the final head.
 - Not done: the polls while the shell is back but herdr still reports the agent sleep 2 s, not 0.3 s (fine for
   correctness).
 
+### Track G findings, round 5 (item 44)
+
+- **Spiked on plain installs** (npm into `/tmp`, an isolated `ZDOTDIR` shell with each agent's store in `/tmp`, in
+  `ovvi-dev-p57g`): npm's pi sets `process.title`, and on macOS libuv writes the title over the argv area. herdr's
+  `pane.process_info` then lists `name: node, argv0: pi` and no argv (`node -e 'process.title="pi"'` and `ps -o args`
+  show the same). Ovvi found a chat only by the marker in the argv, so the card stayed a TUI with Relaunch with Chat.
+  Claude Code before its native build did the same. npm's Claude Code 2.1.319 is now native (`claude.exe`, argv kept),
+  Codex's npm wrapper has a native child with the argv, OpenCode is native with the argv. Meta's launchers keep the
+  flags in a parent process, which hid it here. herdr's own pi integration works around it too (it reads the parent's
+  args). Track P's report (CH-1) came to the same cause.
+- **Fix:** the store keeps the launch Ovvi typed, by terminal (`Launch`), bound to the agent's processes the first
+  time herdr lists one named as the command (`claude.exe`, an `argv[0]` title), only from answers newer than the line.
+  While those run, the pane is that chat; a hand-started agent, the bare-command fallback and a start that ended
+  without its agent get none. The loader asks again for 10 s while neither marker nor launch shows. A relaunch that
+  ends without the chat says why for 10 s with **Retry** (did not quit, did not start again, started again without
+  chat, not back after 10 s), and no longer leaves the pane opening on its chat later.
+- **Tests:** stand-ins drop their arguments with `OVVI_STAND_IN_TITLE=1`, and Claude's refuses its first flagged
+  resume with `OVVI_STAND_IN_FAIL_RESUME`. `testRelaunchSaysWhyAndRetriesWithoutArguments` (notice, Retry, chat with
+  no argv) is new; `testAPiRunListsEveryKindOfTool` runs pi with no argv.
+- **Runs:** old detection with the new stand-ins and tests, run 42565388115: red, both new checks. The fix at
+  87825163, run 42565499077: green, executed 8 tests (one skipped by design, needs a real claude), covering the
+  launcher path's tests too. `make lint build test` green on the rebased tree.
+- Not done: the launch does not outlive the app (after an app relaunch an npm pi's pane shows Relaunch with Chat
+  again); keep it in defaults by machine|session|terminal if that shows.
+
 ## Track H: redraw a terminal's TUI (item 8)
 
 8. "one more feature i wanted, is to have a shortcut to refresh tui, what i mean is sometimes agent inputs will become
