@@ -348,6 +348,17 @@ runs and on-demand on the final head.
   (reads as New Note), eyeglasses / pencil.line. Lock Editing (⌘E) keeps its lock: its checkmark means locked.
 - **Runs, round 2.** Chosen tests 42527697268 green (3 tests: Markdown, the header's floating row, the floated
   browser).
+- **Decisions, item 38.** The ⌘ and ⌃⌘ keycap hints on tabs and spaces are gone with their monitor and tests; the
+  palette keeps its keycaps.
+- **Cause, item 40.** In a floating window Back has 11 pt above it, but under it the row's own 7 pt plus each page's
+  top padding: the browser's page 0 (7 pt), the tree 6 (13), a Git diff 8 (15), the Git home 10 (17); CodeMirror's 4
+  (11) was right. At 2x from the card's border: 22 px above Back, under it 14, 26, 30, 34 and 22 px.
+- **Fix, item 40.** Every plugin page starts its content 4 pt down (CodeMirror's), and the floated browser's row
+  has 4 pt under it: 22 px under Back on every card, and 18 px above and under the path and address fields. Rich
+  Text keeps its 28 pt page margin. In a pane the same pages now start 9 pt under Back (they had 11 to 17); Back
+  has 5 pt above it there, under row 1.
+- **Fix, item 40, chat.** A bubble had 8 pt above its text and under its time: 23 and 22 px to the letters at 2x, 38
+  px at the sides. 16 pt now: 39, 38, 38 and 38 px.
 - **Runs.** Chosen tests 42440766856 red on the first fix (line numbers only: Source's divider still ended Select All
   outside the editor; the diff lost the keyboard to row 2's button), 42442867391 green (6 tests). The floating header
   check in testAPluginsHeaderDrawsItsManifestsControls is not reached on CI: that test fails before it on main since

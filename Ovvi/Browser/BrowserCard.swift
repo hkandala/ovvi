@@ -376,7 +376,7 @@ struct FloatingBrowser: View {
     var body: some View {
         VStack(spacing: 0) {
             BrowserToolbar(browser: browser, page: page).padding(.horizontal, 11).frame(height: PaneCard.header)
-                .padding(.top, PaneCard.floatingTop)
+                .padding(.vertical, PaneCard.floatingTop)
             BrowserCard(browser: browser, page: page)
         }
         .onAppear { browser.takeKeyboard() }

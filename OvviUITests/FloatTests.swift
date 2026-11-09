@@ -373,10 +373,11 @@ extension OvviUITests {
         XCTAssertTrue(window.webViews.staticTexts.matching(NSPredicate(format: "value == 'ovvi-page-two'")).firstMatch
             .exists(within: 3))
         keepScreenshot("floated browser", of: window)
-        // Back as far from the card's top edge as from its left.
+        // Back as far from the card's top edge as from its left, and from the page under it.
         let surface = element("float.\(pane)", in: window).frame
-        let back = element("browser.\(pane).back", in: window).frame
+        let back = element("browser.\(pane).back", in: window).frame, page = window.webViews.firstMatch.frame
         XCTAssertEqual(back.minY - surface.minY, back.minX - surface.minX, accuracy: 0.5, "\(back) in \(surface)")
+        XCTAssertEqual(page.minY - back.maxY, back.minY - surface.minY, accuracy: 0.5, "\(back) over \(page)")
         XCTAssertFalse(element("float.\(pane).place", in: window).exists)
         element("float.\(pane).detach").click()
         XCTAssertTrue(window.vanishes(within: 3))

@@ -136,7 +136,9 @@ extension View {
     /// box's, and its outer side reaches as far out as the box: the caller pulls it out by `Composer.inset`, so its
     /// text keeps the messages' edge.
     func bubble(_ color: Color) -> some View {
-        padding(.horizontal, Composer.inset).padding(.vertical, 8).background(color, in: .rect(cornerRadius: 18))
+        // 16 pt: the first line's letters and the time sit as far from the top and bottom edges as the text from the
+        // sides (19 pt with its bearing).
+        padding(.horizontal, Composer.inset).padding(.vertical, 16).background(color, in: .rect(cornerRadius: 18))
     }
 
     /// The message with its `Stamp` under it, at the right; the text keeps the left of a bubble the stamp widens.

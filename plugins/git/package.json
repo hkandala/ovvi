@@ -1,6 +1,6 @@
 {
   "name": "@ovvi/git",
-  "version": "1.10.3",
+  "version": "1.10.4",
   "private": true,
   "description": "Changes and history",
   "keywords": ["diff", "changes", "commit", "uncommitted", "history"],

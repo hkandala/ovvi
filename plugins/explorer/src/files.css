@@ -3,7 +3,8 @@
 [data-place="files"] {
   display: flex;
   flex-direction: column;
-  padding-top: 6px;
+  /* As CodeMirror's: a floating card's row then has as much room under its buttons as above them. */
+  padding-top: 4px;
   box-sizing: border-box;
   /* `folder.fill`'s shape in the Finder's folder blue (NSWorkspace's folder icon, top to bottom, the same in light and
      dark), for the tree's folders (files.ts) and `..`. */
