@@ -198,14 +198,14 @@ the click.
   secondary), the title (cut in the middle when it does not fit), the
   Edited dot when there are unsaved edits, then the card buttons on the
   keyboard card and on a hovered card ([Pane card](/docs/ui/window#pane-card)).
-- **Row 2** (32 pt, then 2 pt before the page, whose content starts 4 pt down:
-  Back has 11 pt under it, as in a floating window) holds Back and Forward, then the page's controls,
+- **Row 2** (32 pt) holds Back and Forward, then the page's controls,
   described per page below. The app draws it from the manifest's `header`
   ([Header](/docs/plugins/manifest#header)): every place's controls start
   hidden, and the page shows its place's. So a new card shows only Back and
   Forward until its page runs, a moment. It starts at the row's left edge
   and ends where row 1 does. Its buttons are 22 × 22 pt in the card buttons'
-  color.
+  color. 2 pt stay under it, then the page starts its content 4 pt down: Back
+  has 11 pt under it, as in a floating window.
 - **Content.** The page fills the card under the header, 10 pt in from the
   card's sides and bottom. The card's own fill shows through the page.
 - **The loader.** Until the page drew its first rows or its file

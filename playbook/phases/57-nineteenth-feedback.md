@@ -432,15 +432,16 @@ runs and on-demand on the final head.
 - **Fix, item 40.** Every plugin page starts its content 4 pt down (CodeMirror's; the Git home's as a border of its
   scroller, so it stays while the home scrolls; a commit's subject too), and the floated browser's row has 4 pt under
   it: 22 px under Back on every card, and 18 px above and under the path and address fields. Rich
-  Text keeps its 28 pt page margin. In a pane the same pages now start 9 pt under Back (they had 11 to 17); Back
+  Text keeps its 28 pt page margin. In a pane the same pages then started 9 pt under Back (they had 11 to 17; 11 since
+  item 53); Back
   has 5 pt above it there, under row 1.
 - **Fix, item 40, chat.** A bubble had 8 pt above its text and under its time: 23 and 22 px to the letters at 2x, 38
   px at the sides. 16 pt now: 39, 38, 38 and 38 px.
 - **Runs, round 4.** Chosen tests 42557814388: 5 of 6 green, the floated browser's page gap read 11 vs 12 pt on CI's
   1x screen (the card's frame rounds; now 1 pt of slack); 42559159986 green (5 tests: browser, Git card and home, File
   Explorer's floated `..` row, floating chat).
-- **For the user, round 4.** Panes changed too: plugin pages start 9 pt under row 2's Back there (were 11 to 17 pt,
-  different per plugin). Markdown's Rich Text keeps its 28 pt page margin. Chat bubbles are taller (16 pt above the
+- **For the user, round 4.** Panes changed too: plugin pages started 9 pt under row 2's Back there (were 11 to 17
+  pt, different per plugin; 11 since item 53). Markdown's Rich Text keeps its 28 pt page margin. Chat bubbles are taller (16 pt above the
   text and under the time).
 
 ### Track F
