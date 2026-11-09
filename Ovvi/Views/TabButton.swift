@@ -8,8 +8,6 @@ struct TabButton: View {
     let workspace: HostStore.Workspace
     let page: Page
     let hovering: Bool
-    /// 1…9 while ⌘ is held: "⌘1" at the end.
-    let keycap: Int?
     /// Before a click selects it.
     let clicked: () -> Void
     @State private var renaming = false
@@ -47,15 +45,11 @@ struct TabButton: View {
                 FadeText(text: announcement.flatMap { selected ? nil : Text($0) } ?? page.titleLabel(tab))
                     .opacity(renaming ? 0 : 1)
                     .foregroundStyle(selected ? look.selected : look.chrome)
-                // The keycap's room: the title gives way to it.
-                if let keycap {
-                    Keycap(text: "⌘\(keycap)").hidden()
-                }
             }
             .padding(.leading, 11)
             // The title fades out before the pin and the × (22 pt circles, 2 pt apart, ending 6 pt from the end) or the
             // state icon, else at 12 pt.
-            .padding(.trailing, keycap != nil ? keycapInset : hovering && !renaming ? 52 : state != nil ? 28 : 12)
+            .padding(.trailing, hovering && !renaming ? 52 : state != nil ? 28 : 12)
             .frame(width: TabBar.width, height: TabBar.height, alignment: .leading)
         }
         // The selection is the tab bar's marker.
@@ -83,20 +77,11 @@ struct TabButton: View {
                     .accessibilityIdentifier("tab.\(tab.id).rename")
             }
         }
-        // The status slot: × while hovered, else the state icon of its strongest agent (the selected tab too) unless
-        // a keycap is in it; centered where the × is.
+        // The status slot: × while hovered, else the state icon of its strongest agent (the selected tab too);
+        // centered where the × is.
         .overlay(alignment: .trailing) {
-            if let state, keycap == nil, !hovering, !renaming {
+            if let state, !hovering, !renaming {
                 StateIcon(state: state).padding(.trailing, 11).stateElement(state, "tab.\(tab.id).state")
-            }
-        }
-        // At the end, beside the ×: never over the icon or the title. Over the button, so a test
-        // sees its frame.
-        .overlay(alignment: .trailing) {
-            if let keycap, !renaming {
-                Keycap(text: "⌘\(keycap)").padding(.trailing, keycapInset)
-                    .transition(Keycap.transition)
-                    .accessibilityIdentifier("tab.\(tab.id).keycap")
             }
         }
         .overlay(alignment: .trailing) {
@@ -129,11 +114,6 @@ struct TabButton: View {
             guard let new, new >= .finishedUnseen, !selected else { return }
             announce("\(agent?.agentName ?? "agent") \(new.word)")
         }
-    }
-
-    /// The keycap's end: the status slot, or left of the pin while hovered.
-    private var keycapInset: CGFloat {
-        hovering && !renaming ? 56 : 10
     }
 
     /// The front icon bounces once and the title says what happened for 3 s.

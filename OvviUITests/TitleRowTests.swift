@@ -271,29 +271,6 @@ extension OvviUITests {
         XCTAssertTrue(until(1) { element("tab.\(made)").frame.maxX <= rowEnd + 1 })
     }
 
-    /// The keycap sits at the capsule's end, beside the ×: never over the icon or the title. ⌘ shows
-    /// the workspace rows' keys too.
-    func testHoldingCommandShowsKeycaps() {
-        let tab = element("tab.w1:t2"), keycap = element("tab.w1:t2.keycap")
-        XCTAssertTrue(tab.exists(within: connect))
-        XCTAssertFalse(keycap.exists)
-        tab.hover()
-        let pin = element("tab.w1:t2.pin")
-        XCTAssertTrue(pin.exists(within: 2))
-        XCUIElement.perform(withKeyModifiers: .command) {
-            XCTAssertTrue(keycap.exists(within: 3))
-            XCTAssertEqual(keycap.stringValue, "⌘2")
-            // Right beside the pin, on its left (the × after it): far from the icon.
-            let gap = pin.frame.minX - keycap.frame.maxX
-            XCTAssertTrue((-1 ... 10).contains(gap), "\(keycap.frame) \(pin.frame)")
-            XCTAssertEqual(element("tab.w1:t1.keycap").stringValue, "⌘1")
-            XCTAssertEqual(element("workspace.w1.keycap").stringValue, "⌃⌘1")
-            XCTAssertEqual(element("workspace.w2.keycap").stringValue, "⌃⌘2")
-            keepScreenshot("keycap hints")
-        }
-        XCTAssertTrue(keycap.vanishes(within: 2))
-    }
-
     /// A labeled tab's title is its label (testShowsWorkspacesTabsAndSplits: "second - ‹session›").
     func testWindowTitleOfADefaultLabelIsTheProgramAndFolder() async throws {
         let window = app.windows.firstMatch

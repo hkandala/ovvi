@@ -18,8 +18,6 @@ struct WorkspaceRow: View {
     let guideBelow: Bool
     /// The first and the last group's workspace: they cannot move up or down.
     let ends: (first: String?, last: String?)
-    /// 1…9 while ⌃⌘ is held: "⌃⌘1" at the end of the name's line.
-    let keycap: Int?
     /// Its agent panes as shown, newest change first; empty: no chevron.
     var agents: [HostStore.Pane] = []
     /// It runs agents: a chevron.
@@ -34,8 +32,8 @@ struct WorkspaceRow: View {
     var body: some View {
         let selected = workspace.id == page.selectedWorkspaceID
         let state = workspace.state
-        // The icon: not while idle, nor under the keycap or the rename field.
-        let shown = state == .idle || keycap != nil || renaming ? nil : state
+        // The icon: not while idle, nor under the rename field.
+        let shown = state == .idle || renaming ? nil : state
         let height: CGFloat = workspace.git == nil ? 30 : 44
         let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
         VStack(spacing: 0) {
@@ -97,14 +95,6 @@ struct WorkspaceRow: View {
                              parent.map { "worktree of \($0.label)" }].compactMap(\.self).joined(separator: ", "))
         .overlay(alignment: .topTrailing) { stateIcon(shown).padding(.trailing, hasAgents ? Self.chevron + 6 : 0) }
         .overlay(alignment: .topTrailing) { chevron }
-        // At the end of the name's line, never over the name. Over the button, so a test sees it.
-        .overlay(alignment: .topTrailing) {
-            if let keycap, !renaming {
-                Keycap(text: "⌃⌘\(keycap)").frame(height: 30).padding(.trailing, 8)
-                    .transition(Keycap.transition)
-                    .accessibilityIdentifier("workspace.\(workspace.id).keycap")
-            }
-        }
         .overlay(alignment: .leading) {
             if renaming {
                 // Enter: herdr's label; the snapshot after it shows it.
@@ -131,10 +121,6 @@ struct WorkspaceRow: View {
                     .lineLimit(1).opacity(renaming ? 0 : 1)
                     .foregroundStyle(selected ? look.selected : look.chrome)
                 Spacer(minLength: 0)
-                // The keycap's room: the name gives way to it.
-                if let keycap {
-                    Keycap(text: "⌃⌘\(keycap)").hidden()
-                }
             }
             if let git {
                 HStack(spacing: 4) {
@@ -159,7 +145,7 @@ struct WorkspaceRow: View {
     /// Folds or unfolds the agents, at the end of the name's line; none without agents. Its own button: a click on the
     /// row selects it.
     @ViewBuilder private var chevron: some View {
-        if hasAgents, keycap == nil, !renaming {
+        if hasAgents, !renaming {
             Button { fold?() } label: {
                 Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(.secondary)
@@ -177,7 +163,7 @@ struct WorkspaceRow: View {
         }
     }
 
-    /// The state's icon (12 pt, as a tab's) at the end of the name's line, as the keycap; nothing with no agent. Over
+    /// The state's icon (12 pt, as a tab's) at the end of the name's line; nothing with no agent. Over
     /// the button, so a test sees it; the row's value has the state word for VoiceOver.
     @ViewBuilder
     private func stateIcon(_ state: AgentState?) -> some View {

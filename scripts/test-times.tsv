@@ -271,8 +271,6 @@
 6	testTabsStayInTheTitleRowWithTheSidebarOpenOrCollapsed
 6	testWorkspaceKeepsItsSelectedTab
 5	testEmptyPageOffersNewWorkspace
-5	testHoldingCommandShowsKeycaps
-5	testHoldingControlCommandShowsWorkspaceKeycaps
 5	testNewWindowListsTheSessionsToPickFrom
 5	testOptionTypesCharacters
 5	testPlusMakesATabAndSelectsIt

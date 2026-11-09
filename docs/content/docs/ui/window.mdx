@@ -189,11 +189,6 @@ One capsule per herdr tab of the selected space (D42).
   what runs and the total pane count, only when a program besides the shell
   runs in one of the panes. Rename (or a double-click anywhere on the capsule) puts a
   text field in place of the title: Enter saves, Esc cancels.
-- **Keycap hints.** If the user holds ⌘ for 0.7 s while the window is key,
-  each of the first nine capsules shows a keycap "⌘1"… at its end, where the
-  state icon sits, or left of the pin while hovered; the title fades out before
-  it, and never runs under it. The space rows show theirs at the same
-  time. The keycaps fade in over 0.13 s and out over 0.1 s when ⌘ is released.
 - Drag a capsule to reorder the tabs ([Drag and drop](/docs/ui/drag-and-drop)).
 - Rest the pointer on a capsule to see the [hover card](#hover-card).
 
@@ -289,13 +284,12 @@ Spaces panel.
   the name's line, 8 pt in; it turns down while the row is unfolded. A click on it folds or unfolds the row's
   [agents](#agent-rows) and does not select the row; "Show Agents" or "Hide Agents" is its tooltip and VoiceOver
   label, "collapsed" or "expanded" its value. Rows are folded at first; each one's fold is kept per machine and
-  session across relaunches (`agentsOpen`). The keycap hint and the rename field hide it. While the footer filter
+  session across relaunches (`agentsOpen`). The rename field hides it. While the footer filter
   holds rows open, the chevron does nothing.
 - **State icon.** At the end of the name's line, 8 pt in (6 pt before the chevron) and centered on
   that line: the state icon (12 pt, as a tab's) of the space's strongest agent, with no word and
   no time ([Status](/docs/ui/theme-and-accessibility#status)). An idle agent,
-  or no agent, shows nothing. The keycap hint and the rename field take its
-  place while they show. VoiceOver adds the state word to the row's value.
+  or no agent, shows nothing. The rename field takes its place while it shows. VoiceOver adds the state word to the row's value.
 - **Line 2**, only for a git repository, under the name and starting where it starts: a branch glyph, the branch, then
   ↑ahead in the finished color and ↓behind in the error color when they are
   not zero. All 11 pt, secondary. There is no changed-file count. A space
@@ -310,10 +304,6 @@ Spaces panel.
   guide line in the separator color, 15 pt in, from under its repository's
   row (under its agents when unfolded) down.
   With no such space in the session, it is a normal row.
-- **Keycap hints.** If the user holds ⌘ (with the tabs' keycaps) or ⌃⌘ for 0.7 s while the window is key,
-  each of the first nine rows (in the order ⌃⌘1–9 jumps) shows a keycap
-  "⌃⌘1"… at the end of its first line; the name
-  gives way to it and never runs under it. Same look and fades as the tabs' keycaps.
 - **Click** selects the space in the app only ([Selection and "seen" are
   the app's own](/docs/layout#selection-and-seen-are-the-apps-own)).
 - **Context menu.** New Tab, Rename Space, Move Up, Move Down, Close

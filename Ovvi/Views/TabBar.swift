@@ -31,8 +31,6 @@ struct TabBar: View {
     /// The row's visible part, in the tabs' space: its edges fade where tabs are out of view. No fade until the
     /// row has laid out.
     @State private var visible: ClosedRange<CGFloat> = 0 ... .infinity
-    /// ⌘ held for 0.7 s: keycaps on the first nine tabs.
-    @State private var hints = false
     /// e2e (`-recordMotion YES`): the capsules made so far.
     @State private var made = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -59,8 +57,7 @@ struct TabBar: View {
                                     .opacity(quiet ? 0 : 1)
                             }
                             TabButton(tab: tab, workspace: workspace, page: page,
-                                      hovering: hovered == tab.id, keycap: hints && index < 9 ? index + 1 : nil,
-                                      clicked: { clicked = tab.id })
+                                      hovering: hovered == tab.id, clicked: { clicked = tab.id })
                                 .onHover { hovered = $0 ? tab.id : hovered == tab.id ? nil : hovered }
                                 .overlay {
                                     if page.dragging?.paneID != nil, over == index {
@@ -161,7 +158,6 @@ struct TabBar: View {
         // The tests' count: the lazy row has no element for a tab out of view.
         .testValue("tabs.count", "Tab Count", "\(tabs.count)")
         .testValue("tabs.made", "Tabs Made", "\(made)", shown: SettlingHost.record)
-        .keycapHints(.command, shown: $hints)
         .onDisappear { spring?.cancel() }
     }
 

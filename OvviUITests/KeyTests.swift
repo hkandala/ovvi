@@ -164,25 +164,6 @@ extension OvviUITests {
         }
     }
 
-    /// Holding ⌃⌘ shows the workspaces' jump keys at the end of their rows, as ⌘ does on the tabs.
-    func testHoldingControlCommandShowsWorkspaceKeycaps() {
-        let row = element("workspace.w2"), keycap = element("workspace.w2.keycap")
-        XCTAssertTrue(row.exists(within: connect))
-        XCTAssertFalse(keycap.exists)
-        XCUIElement.perform(withKeyModifiers: [.command, .control]) {
-            XCTAssertTrue(keycap.exists(within: 3))
-            XCTAssertEqual(keycap.stringValue, "⌃⌘2")
-            XCTAssertEqual(element("workspace.w1.keycap").stringValue, "⌃⌘1")
-            // At the row's end, clear of the name.
-            XCTAssertEqual(keycap.frame.maxX, row.frame.maxX - 8, accuracy: 2)
-            XCTAssertGreaterThan(keycap.frame.minX, row.frame.midX)
-            // Not the tabs': those are ⌘'s.
-            XCTAssertFalse(element("tab.w1:t1.keycap").exists)
-            keepScreenshot("workspace keycaps")
-        }
-        XCTAssertTrue(keycap.vanishes(within: 2))
-    }
-
     func testKeyboardShortcutsPanelListsTheCommandsKeys() {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let panel = element("shortcuts")

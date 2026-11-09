@@ -120,7 +120,7 @@ extension OvviUITests {
         let selected = { () -> Int? in
             let capsules = self.app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'tab.'"))
                 .allElementsBoundByIndex.filter { capsule in
-                    ![".close", ".keycap", ".state", ".rename"].contains { capsule.identifier.hasSuffix($0) }
+                    ![".close", ".state", ".rename"].contains { capsule.identifier.hasSuffix($0) }
                 }.sorted { $0.frame.minX < $1.frame.minX }
             return capsules.firstIndex { $0.isSelected }
         }

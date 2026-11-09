@@ -29,8 +29,6 @@ struct SidebarPage: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// A pane or a tab dragged over the header's `+`.
     @State private var plus = false
-    /// ⌘ or ⌃⌘ held for 0.7 s: keycaps on the first nine workspaces (their jump keys).
-    @State private var hints = false
     @State private var position = ScrollPosition(idType: String.self)
 
     var body: some View {
@@ -94,8 +92,6 @@ struct SidebarPage: View {
                                          guideBelow: rows.indices.contains(index + 1)
                                              && rows[index + 1].parent != nil,
                                          ends: (groups.first?.first?.id, groups.last?.first?.id),
-                                         keycap: hints ? page.sidebarWorkspaces.prefix(9)
-                                             .firstIndex { $0.id == id }.map { $0 + 1 } : nil,
                                          agents: shown, hasAgents: hasAgents, open: !shown.isEmpty,
                                          fold: filter.isEmpty ? { fold(id) } : nil)
                                 .overlay {
@@ -135,7 +131,6 @@ struct SidebarPage: View {
                     withTransaction(\.animation, nil) { position.scrollTo(id: id) }
                     Task { position.scrollTo(id: id) }
                 }
-                .keycapHints(.command, [.command, .control], shown: $hints)
                 .coordinateSpace(.named("rows"))
                 .onDrop(of: [.ovviDrag], delegate: rowsDrop)
                 .clearsDrop(page) {
