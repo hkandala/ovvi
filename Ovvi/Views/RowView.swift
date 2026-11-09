@@ -1,12 +1,13 @@
 import AppKit
 import SwiftUI
 
-/// A `RowTable` row: its header or divider, the accent pill when lit, a light fill under the pointer, then a symbol or
-/// a program tile, the title, the note, the detail or › and the keycaps, placed as `MenuRow` lays them out.
+/// A `RowTable` row: its header, the accent pill when lit, a light fill under the pointer, then a symbol or a program
+/// tile, the title, the note, the detail or › and the keycaps, placed as `MenuRow` lays them out. For accessibility
+/// the header and the row are two elements, as SwiftUI's were.
 final class RowView: NSView {
     static let id = NSUserInterfaceItemIdentifier("row")
-    var act: () -> Void = {}
-    var hover: () -> Void = {}
+    private var act: () -> Void = {}
+    private var hover: () -> Void = {}
     private var item: FilterList.Item?
     private var header: String?
     private var first = false
@@ -15,11 +16,11 @@ final class RowView: NSView {
     private var gap: CGFloat = 0
     private var hovered = false
     private var pressed = false
-    private var icon: NSImage?
-    private var tint: NSColor?
-    /// The header's place, for accessibility; the row draws it.
+    private var symbol: NSImage?
     private let headerView = NSView()
+    private let press = Press()
     private static let title = NSFont.systemFont(ofSize: 13), note = NSFont.systemFont(ofSize: 12)
+    private static let headerFont = NSFont.systemFont(ofSize: 11, weight: .medium)
     private static let cap = NSFont.systemFont(ofSize: 10, weight: .semibold)
 
     init() {
@@ -27,11 +28,13 @@ final class RowView: NSView {
         identifier = Self.id
         addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .mouseMoved, .activeAlways,
                                                               .inVisibleRect], owner: self))
-        setAccessibilityElement(true)
-        setAccessibilityRole(.button)
+        setAccessibilityElement(false)
         headerView.setAccessibilityElement(true)
         headerView.setAccessibilityRole(.staticText)
+        press.setAccessibilityElement(true)
+        press.setAccessibilityRole(.button)
         addSubview(headerView)
+        addSubview(press)
     }
 
     @available(*, unavailable)
@@ -43,49 +46,41 @@ final class RowView: NSView {
         true
     }
 
-    func show(_ items: [FilterList.Item], _ row: Int, lit: Bool, name: String, size: (
-        height: CGFloat,
-        inset: CGFloat,
-    )) {
-        let (height, inset) = size
-        let item = items[row]
-        (self.item, header, first, self.lit, self.height) = (item, RowTable.header(items, row), row == 0, lit, height)
-        gap = row < items.count - 1 ? RowTable.spacing : inset
-        if let icon = item.pane?.iconID ?? item.program {
-            (self.icon, tint) = (
-                Tile.image(icon, letter: item.pane?.letter, scale: window?.backingScaleFactor ?? 2),
-                nil,
-            )
-        } else {
-            let image = item.symbol.flatMap(NSImage.symbol)
-            icon = image?.withSymbolConfiguration(.init(pointSize: 13, weight: .regular, scale: .medium)) ?? image
-            tint = lit ? RowInk.white(1) : RowInk.primary
-        }
-        setAccessibilityIdentifier("\(name).\(item.id)")
-        setAccessibilityLabel(item.title)
-        setAccessibilityValue(item.note ?? "")
-        setAccessibilitySelected(lit)
-        setAccessibilityElement(true)
-        headerView.isHidden = header?.isEmpty != false
-        headerView.setAccessibilityIdentifier(header.map { "\(name).section.\($0)" })
+    func show(_ table: RowTable, _ row: Int) {
+        let item = table.items[row]
+        (self.item, header, first, lit) = (item, RowTable.header(table.items, row), row == 0, row == table.lit)
+        (height, gap) = (table.rowHeight, row < table.items.count - 1 ? RowTable.spacing : table.inset)
+        act = { table.act(item) }
+        hover = { table.hover(item) }
+        symbol = item.pane?.iconID ?? item.program == nil ? item.symbol.flatMap(NSImage.symbol)
+            .map { image in
+                let image = image.withSymbolConfiguration(.init(pointSize: 13, weight: .regular, scale: .medium))
+                    ?? image
+                let tint = lit ? RowInk.white(1) : RowInk.primary
+                return NSImage(size: image.size, flipped: false) { bounds in
+                    image.draw(in: bounds)
+                    tint.set()
+                    bounds.fill(using: .sourceAtop)
+                    return true
+                }
+            } : nil
+        press.setAccessibilityIdentifier("\(table.name).\(item.id)")
+        press.setAccessibilityLabel([item.title, item.detail, item.keys.joined()].filter { !$0.isEmpty }
+            .joined(separator: ", "))
+        press.setAccessibilityValue(item.note ?? "")
+        press.setAccessibilitySelected(lit)
+        press.act = act
+        press.isHidden = false
+        headerView.isHidden = header == nil
+        headerView.setAccessibilityIdentifier(header.map { "\(table.name).section.\($0)" })
         headerView.setAccessibilityLabel(header)
         needsLayout = true
         needsDisplay = true
     }
 
-    /// The row's own, as a button's: not its header above nor the gap after it.
-    override func accessibilityFrame() -> NSRect {
-        window?.convertToScreen(convert(rowRect, to: nil)) ?? .zero
-    }
-
-    override func accessibilityChildren() -> [Any]? {
-        headerView.isHidden ? [] : [headerView]
-    }
-
-    /// Out of the table, kept for reuse: no element for a test or VoiceOver to find.
+    /// Out of the table, kept for reuse: no element for a test or VoiceOver to find, no pointer on it.
     func removed() {
-        setAccessibilityElement(false)
-        headerView.isHidden = true
+        (press.isHidden, headerView.isHidden, hovered, pressed) = (true, true, false, false)
     }
 
     /// The row under its header, above the gap to the next (the list's inset after the last).
@@ -96,30 +91,29 @@ final class RowView: NSView {
     override func layout() {
         super.layout()
         headerView.frame = NSRect(x: 8, y: 0, width: bounds.width - 16, height: rowRect.minY)
+        press.frame = rowRect
     }
 
     override func draw(_: NSRect) {
         guard let item else { return }
-        drawHeader()
+        if let header {
+            let font = Self.headerFont, line = font.ascender - font.descender + font.leading
+            (header as NSString).draw(at: NSPoint(x: 8, y: pixel((first ? 0 : 6) + (RowTable.headerHeight - line) / 2)),
+                                      withAttributes: [.font: font, .foregroundColor: RowInk.secondary])
+        }
         let row = rowRect
         if lit || hovered || pressed {
             (lit ? NSColor(Color.accentColor) : RowInk.primary.withAlphaComponent(pressed ? 0.08 : 0.05)).setFill()
             NSBezierPath(cgPath: Path(roundedRect: row, cornerRadius: 8, style: .continuous).cgPath).fill()
         }
+        // The tile at the window's scale, read as it draws: a row is made before it is in a window.
+        let icon = (item.pane?.iconID ?? item.program).flatMap {
+            Tile.image($0, letter: item.pane?.letter, scale: window?.backingScaleFactor ?? 2)
+        } ?? symbol
         if let icon {
-            let size = icon.size
-            let rect = NSRect(x: pixel(row.minX + 8 + (22 - size.width) / 2), y: pixel(row.midY - size.height / 2),
-                              width: size.width, height: size.height)
-            if let tint {
-                NSImage(size: size, flipped: false) { bounds in
-                    icon.draw(in: bounds)
-                    tint.set()
-                    bounds.fill(using: .sourceAtop)
-                    return true
-                }.draw(in: rect)
-            } else {
-                icon.draw(in: rect)
-            }
+            icon.draw(in: NSRect(x: pixel(row.minX + 8 + (22 - icon.size.width) / 2),
+                                 y: pixel(row.midY - icon.size.height / 2), width: icon.size.width,
+                                 height: icon.size.height))
         }
         var end = row.maxX - 8
         for key in item.keys.reversed() {
@@ -130,18 +124,6 @@ final class RowView: NSView {
             end -= 3
         }
         drawTexts(item, in: row, end: item.keys.isEmpty ? end : end + 3 - 8)
-    }
-
-    private func drawHeader() {
-        guard let header else { return }
-        if header.isEmpty {
-            NSColor.separatorColor.setFill()
-            NSRect(x: 4, y: 4, width: bounds.width - 8, height: 1).fill()
-        } else {
-            let font = RowTable.headerFont, line = font.ascender - font.descender + font.leading
-            (header as NSString).draw(at: NSPoint(x: 8, y: pixel((first ? 0 : 6) + (RowTable.headerHeight - line) / 2)),
-                                      withAttributes: [.font: font, .foregroundColor: RowInk.secondary])
-        }
     }
 
     /// The title takes the room it needs first, as `MenuRow`'s; the note and the detail get what is left.
@@ -176,15 +158,15 @@ final class RowView: NSView {
     private func draw(_ text: String, _ attributes: [NSAttributedString.Key: Any], left: CGFloat, room: CGFloat,
                       in row: NSRect)
     {
+        guard room > 0 else { return }
         let font = attributes[.font] as? NSFont ?? Self.title
-        let line = ceil(font.ascender - font.descender + font.leading)
+        let line = ceil(font.ascender - font.descender + font.leading), needed = width(text, attributes)
         let style = NSMutableParagraphStyle()
         style.lineBreakMode = .byTruncatingMiddle
         var attributes = attributes
         attributes[.paragraphStyle] = style
-        let width = room < width(text, attributes) ? max(0, room) : width(text, attributes) + 2
-        (text as NSString).draw(with: NSRect(x: pixel(left), y: (row.midY - line / 2).rounded(), width: width,
-                                             height: line),
+        (text as NSString).draw(with: NSRect(x: pixel(left), y: (row.midY - line / 2).rounded(),
+                                             width: room < needed ? room : needed + 2, height: line),
                                 options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine], attributes: attributes)
     }
 
@@ -232,14 +214,24 @@ final class RowView: NSView {
         return (value * scale).rounded() / scale
     }
 
-    override func mouseEntered(with _: NSEvent) {
-        hovered = true
-        needsDisplay = true
-        hover()
+    /// Only the row lights, not its header nor the gap after it.
+    private func point(_ event: NSEvent) {
+        let over = rowRect.contains(convert(event.locationInWindow, from: nil))
+        if over != hovered {
+            hovered = over
+            needsDisplay = true
+        }
+        if over {
+            hover()
+        }
     }
 
-    override func mouseMoved(with _: NSEvent) {
-        hover()
+    override func mouseEntered(with event: NSEvent) {
+        point(event)
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        point(event)
     }
 
     override func mouseExited(with _: NSEvent) {
@@ -247,26 +239,32 @@ final class RowView: NSView {
         needsDisplay = true
     }
 
-    override func mouseDown(with _: NSEvent) {
-        pressed = true
+    override func mouseDown(with event: NSEvent) {
+        pressed = rowRect.contains(convert(event.locationInWindow, from: nil))
         needsDisplay = true
     }
 
     override func mouseUp(with event: NSEvent) {
+        let acts = pressed && rowRect.contains(convert(event.locationInWindow, from: nil))
         pressed = false
         needsDisplay = true
-        if rowRect.contains(convert(event.locationInWindow, from: nil)) {
+        if acts {
             act()
         }
     }
 
-    override func accessibilityPerformPress() -> Bool {
-        act()
-        return true
+    /// The row's element, as the SwiftUI button was. Its clicks go on to the row, its next responder.
+    private final class Press: NSView {
+        var act: () -> Void = {}
+
+        override func accessibilityPerformPress() -> Bool {
+            act()
+            return true
+        }
     }
 }
 
-/// Program tiles as images, made once per icon by SwiftUI's own `ProgramTile`.
+/// Program tiles as images, made once per icon and scale by SwiftUI's own `ProgramTile`.
 @MainActor
 private enum Tile {
     private static var images: [String: NSImage] = [:]

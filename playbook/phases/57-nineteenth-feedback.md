@@ -1202,7 +1202,8 @@ you did, no need of reverting them".
   keycaps, the keycaps' glass drawn. The other lists keep their SwiftUI rows (state icons, spinners, buttons, drops).
 - **Numbers (warm, user's size, client attached).** ⌘K 69–86 → 15–18 ms (the first open of the app 64 ms); the first
   letter 136–173 → 25–28 ms; the other keys 12–195 → 14–47 ms (the longest, a list growing past the panel, 174–195 →
-  23–47 ms).
+  23–47 ms). The stress session (30 spaces, 120 tabs, 40 working agents), after: ⌘K 27–49 ms, the first letter
+  47–100 ms, the other keys 18–69 ms (round 2: 134–178 ms for the first letter).
 - **Look.** Measured on 2× pictures against the SwiftUI rows, dark and light: rows, texts, tiles and pill in place;
   SwiftUI's hierarchical styles draw fuller on the glass than AppKit's label colors (white 100/40/27 % in dark, black
   100/42/31 % in light, measured), so the rows use those. Left: 1 px (0.5 pt) on some symbols and the keycaps' glyphs,

@@ -375,14 +375,13 @@ private struct ScrolledFades: ViewModifier {
 /// its pixels): its hierarchical styles are fuller there than AppKit's label colors.
 @MainActor
 enum RowInk {
-    static let primary = ink(1, 1), secondary = ink(0.4, 0.42), tertiary = ink(0.27, 0.31)
-    /// On the accent pill, and the keycaps' rims.
+    static let primary = ink(1, 1, .labelColor), secondary = ink(0.4, 0.42, .secondaryLabelColor),
+               tertiary = ink(0.27, 0.31, .tertiaryLabelColor)
     static func white(_ alpha: CGFloat) -> NSColor {
         .white.withAlphaComponent(alpha)
     }
 
-    /// A keycap's fill, its rim's bands from the edge in (0.5 pt each, at the top and bottom; `sides` of them on the
-    /// sides) and its outline outside, in light.
+    /// A keycap's fill, its rim's 0.5 pt bands from the edge in (`sides` of each on the sides), its outline in light.
     struct Cap { let fill: NSColor, rim: [CGFloat], sides: CGFloat; var outline: NSColor? }
 
     static func cap(dark: Bool, lit: Bool) -> Cap {
@@ -391,9 +390,11 @@ enum RowInk {
             : Cap(fill: fill, rim: [1, 1, 0.6], sides: 0.3, outline: .black.withAlphaComponent(0.09))
     }
 
-    private static func ink(_ dark: CGFloat, _ light: CGFloat) -> NSColor {
+    /// With Increase Contrast, AppKit's own label color, which follows it.
+    private static func ink(_ dark: CGFloat, _ light: CGFloat, _ system: NSColor) -> NSColor {
         NSColor(name: nil) { appearance in
-            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? .white.withAlphaComponent(dark)
+            NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast ? system
+                : appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? .white.withAlphaComponent(dark)
                 : .black.withAlphaComponent(light)
         }
     }

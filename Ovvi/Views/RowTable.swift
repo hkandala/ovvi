@@ -4,7 +4,7 @@ import SwiftUI
 /// The palette's rows, drawn by AppKit in a table that reuses the few row views in view. As SwiftUI views each typed
 /// key made the rows in view anew, and with an accessibility client (Raycast, VoiceOver) each new row made SwiftUI
 /// walk every focusable view of the window; each keycap's live glass is a SwiftUI host of its own. The list took all
-/// of a key's 100–160 ms. Plain rows only: a symbol or a program tile, the title, a note, the detail or ›, keycaps.
+/// of a key's time. Plain rows only: a symbol or a program tile, the title, a note, the detail or ›, keycaps.
 struct RowTable: NSViewRepresentable {
     let name: String
     let items: [FilterList.Item]
@@ -19,8 +19,7 @@ struct RowTable: NSViewRepresentable {
     let hover: (FilterList.Item) -> Void
 
     static let spacing: CGFloat = 2
-    static let headerFont = NSFont.systemFont(ofSize: 11, weight: .medium)
-    /// SwiftUI's own height for the header's line, which the other lists lay out.
+    /// SwiftUI's own height for a header's line, which the other lists lay out.
     static let headerHeight = NSHostingView(rootView: Text(verbatim: "Tabs").font(.system(size: 11, weight: .medium)))
         .fittingSize.height
 
@@ -33,17 +32,13 @@ struct RowTable: NSViewRepresentable {
     /// above the first row, and scrolls short of a scroll view's inset.
     static func span(_ items: [FilterList.Item], _ row: Int, _ height: CGFloat, _ inset: CGFloat) -> CGFloat {
         let gap = row < items.count - 1 ? spacing : inset
-        return switch header(items, row) {
-        case nil: height + gap
-        case "": height + 9 + spacing + gap
-        default: height + headerHeight + (row > 0 ? 6 : 0) + spacing + gap
-        }
+        return height + gap + (header(items, row) == nil ? 0 : headerHeight + (row > 0 ? 6 : 0) + spacing)
     }
 
-    /// The section's name where it changes from the row before ("" for a divider).
+    /// The section's name where it changes from the row before.
     static func header(_ items: [FilterList.Item], _ row: Int) -> String? {
         let section = items[row].section
-        return section == (row > 0 ? items[row - 1].section : nil) ? nil : section
+        return section == (row > 0 ? items[row - 1].section : nil) || section?.isEmpty != false ? nil : section
     }
 
     func makeNSView(context: Context) -> NSScrollView {
@@ -74,16 +69,23 @@ struct RowTable: NSViewRepresentable {
         // Rows as tall as before keep their views and show the new rows: a light that moves, or a key that changes
         // only what the rows say. A reload makes them anew, and an element a test or VoiceOver holds goes with them.
         let spans = items.indices.map { Self.span(items, $0, rowHeight, inset) }
-        if spans == coordinator.spans {
-            table.enumerateAvailableRowViews { rowView, row in
-                (rowView.view(atColumn: 0) as? RowView).map { coordinator.show($0, row) }
-            }
-        } else {
+        let reloads = spans != coordinator.spans
+        if reloads {
             coordinator.spans = spans
             table.reloadData()
+        } else {
+            table.enumerateAvailableRowViews { rowView, row in
+                (rowView.view(atColumn: 0) as? RowView)?.show(self, row)
+            }
         }
-        if let reveal, items.indices.contains(reveal) {
+        // Only a new light or new rows: a wheel scroll under a still pointer stays where it went.
+        guard let reveal, items.indices.contains(reveal), reloads || reveal != coordinator.revealed else { return }
+        coordinator.revealed = reveal
+        if scroll.contentView.bounds.height > 0 {
             table.scrollRowToVisible(reveal)
+        } else {
+            // A sub-page's first light may sit below the fold (Font Size): once the list has its height.
+            DispatchQueue.main.async { table.scrollRowToVisible(reveal) }
         }
     }
 
@@ -91,7 +93,7 @@ struct RowTable: NSViewRepresentable {
         Coordinator(parent: self)
     }
 
-    /// The field keeps the keyboard: a click on a row must not take it.
+    /// Tab or a click on the table's own area must not move the keyboard from the field.
     private final class Table: NSTableView {
         override var acceptsFirstResponder: Bool {
             false
@@ -102,6 +104,7 @@ struct RowTable: NSViewRepresentable {
     final class Coordinator: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         var parent: RowTable
         var spans: [CGFloat] = []
+        var revealed: Int?
 
         init(parent: RowTable) {
             self.parent = parent
@@ -117,16 +120,8 @@ struct RowTable: NSViewRepresentable {
 
         func tableView(_ tableView: NSTableView, viewFor _: NSTableColumn?, row: Int) -> NSView? {
             let view = tableView.makeView(withIdentifier: RowView.id, owner: nil) as? RowView ?? RowView()
-            show(view, row)
+            view.show(parent, row)
             return view
-        }
-
-        func show(_ view: RowView, _ row: Int) {
-            let parent = parent, item = parent.items[row]
-            view.show(parent.items, row, lit: row == parent.lit, name: parent.name,
-                      size: (parent.rowHeight, parent.inset))
-            view.act = { parent.act(item) }
-            view.hover = { parent.hover(item) }
         }
 
         func tableView(_: NSTableView, didRemove rowView: NSTableRowView, forRow _: Int) {
