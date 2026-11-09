@@ -2,7 +2,7 @@ import HerdrKit
 import SwiftUI
 
 /// The selected tab's page: its cards in herdr's layout. A switch shows another tab's page at once (a view of its own
-/// per tab, made by `Detail`).
+/// per tab, made by `TabPages`).
 struct TabPage: View {
     let tab: HostStore.Tab
     let page: Page
@@ -41,8 +41,7 @@ struct TabPage: View {
 
 /// herdr's split tree, drawn flat: each card and divider is placed in the page by its rectangle, and keeps its view
 /// (by pane id, or the split's path) whatever the tree does. So a split, a close, a swap or a zoom moves and sizes
-/// the same cards: their frames animate, and no terminal view changes host. (Nested stacks, one per split, made a
-/// new card for a pane whose leaf became a split or whose sibling closed, so it jumped to its new size.)
+/// the same cards: their frames animate, and no terminal view changes host.
 private struct SplitLayout: View {
     let tree: SplitNode
     /// The tab's zoomed card (D11): it fills the page; the others stay at their size, hidden under it, so their

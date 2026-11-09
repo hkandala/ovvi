@@ -78,7 +78,6 @@ extension View {
 }
 
 extension WindowPages {
-    /// Opens the overview, or closes it.
     func toggleOverview() {
         if overview {
             closeOverview()
@@ -100,9 +99,7 @@ extension WindowPages {
         showTerminals()
         current?.focusKeyboardCard()
     }
-}
 
-extension WindowPages {
     /// The cards of the overview's tiles in view, whole tabs, the latest in first, up to a cap: each live card
     /// keeps a swap chain at its card's size, so a live tab costs about its page's pixels three times over (69 MB
     /// for a full window on Retina): at most 400 MB of tabs (16 tabs took 1.5 GB), and 16 cards

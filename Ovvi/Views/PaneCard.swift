@@ -5,6 +5,7 @@ import SwiftUI
 struct PaneCard: View {
     /// The header's height, and the terminal's inset from the card's sides (the overview's miniatures too).
     static let header: CGFloat = 36
+    static let inset: CGFloat = 10
     /// A browser's or an agent's second header row.
     static let row: CGFloat = 32
     /// A floating window's browser or plugin card: room above its row, which sits right under the title row. Its 22 pt
@@ -12,7 +13,6 @@ struct PaneCard: View {
     /// far from what is under the row: the browser's page after as much room again, a plugin's page after its own
     /// 4 pt at its top.
     static let floatingTop: CGFloat = 4
-    static let inset: CGFloat = 10
     let id: String
     let page: Page
     /// Under a zoomed card: hidden, but there, so its terminal keeps its size.
@@ -37,7 +37,7 @@ struct PaneCard: View {
         // The tab's keyboard card is lit, also while a text field has the keyboard; herdr's focus until one had it.
         // A split's new card at once, its stand-in too, among the shown tab's cards; a new tab's stand-in.
         // Not read in a kept page out of view: each split changes them (the shown tab's tree, its newest card, the
-        // keyboard), and ran every kept card's body again at each change.
+        // keyboard), which would run every kept card's body again at each change.
         let shown = hidden ? [] : page.selectedTab?.tree?.paneIDs ?? []
         let newest = hidden ? nil : page.newest.flatMap { newest in
             shown.contains(id) && shown.contains { $0 == newest.id || store.ahead.splitPanes[$0] == newest.id }
@@ -62,8 +62,8 @@ struct PaneCard: View {
                 chat: chat,
             )
             .opacity(content)
-            // A ZStack, not a Group: a Group's modifiers go on each child, so the chooser's overlay was made again
-            // (a fade out and in) as the terminal came, and dropped with no child (a stand-in's card).
+            // A ZStack, not a Group: a Group's modifiers go on each child, so the chooser's overlay would be made
+            // again (a fade out and in) as the terminal comes, and dropped with no child (a stand-in's card).
             ZStack {
                 if let pane, floated {
                     FloatedPlaceholder(page: page, pane: pane)
@@ -118,16 +118,16 @@ struct PaneCard: View {
                 }
             }
         }
-        // The whole card, also with no terminal (a split's stand-in): the empty content takes no room, and the card
-        // was a header-high band.
+        // The whole card, also with no terminal (a split's stand-in): else the empty content takes no room and the
+        // card is a header-high band.
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        // As the card shows: what runs in it now, for its icon (the snapshot's ask was when the pane was new). Not
-        // the view's task: a page that leaves at once (a quick switch) would cancel it. Hidden, it gets no hover end.
         .onChange(of: lit, initial: true) {
             if !hidden {
                 keptLit = lit
             }
         }
+        // As the card shows: what runs in it now, for its icon (the snapshot's ask was when the pane was new). Not
+        // the view's task: a page that leaves at once (a quick switch) would cancel it. Hidden, it gets no hover end.
         .onChange(of: hidden, initial: true) {
             if hidden {
                 hovering = false
@@ -226,7 +226,6 @@ struct PaneCard: View {
                     let name = pane.agentLabel ?? pane.programName ?? ""
                     Text("\(name) \(Text(pane.folder ?? "").foregroundStyle(.secondary))")
                         .fontWeight(.regular).lineLimit(1).truncationMode(.middle).allowsHitTesting(false)
-                        .accessibilityIdentifier("pane.\(id).program")
                     // The agent's state on this row, clear of the title and of the buttons that show on hover.
                     CardState(chat: chat, state: pane.state, paneID: id).padding(.leading, 4)
                     Spacer(minLength: 0)
@@ -335,20 +334,6 @@ private extension PaneCard {
         if let pane {
             page.go(to: pane)
         }
-    }
-}
-
-/// The label; else the program in primary text and the folder in secondary, as in Rex ("zsh ~"). A label keeps
-/// its start, a path its end. The card's header and the floating window's title row.
-struct PaneTitle: View {
-    let pane: HostStore.Pane?
-
-    var body: some View {
-        let (name, folder) = pane?.header ?? (nil, "terminal")
-        let lead = name.map { "\($0) " } ?? ""
-        Text("\(lead)\(Text(folder).foregroundStyle(name == nil ? .primary : .secondary))")
-            .lineLimit(1)
-            .truncationMode(pane?.label != nil ? .tail : name == nil ? .head : .middle)
     }
 }
 

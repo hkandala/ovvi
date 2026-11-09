@@ -284,7 +284,7 @@ struct FindHighlights: View {
 
 extension Page {
     /// ⌘F: the bar on the keyboard card (or a floating window's pane), its field focused; reads the pane's text.
-    func openFind(_ target: HostStore.Pane? = nil) {
+    func openFind(_ target: HostStore.Pane?) {
         guard let pane = target ?? keyboardPane else { return }
         if find?.paneID != pane.id {
             // The keyboard stays where it is: not `closeFind`.

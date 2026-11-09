@@ -144,7 +144,6 @@ struct Detail: View {
                     Text(KeyboardShortcut.newWorkspace.glyphs).foregroundStyle(.secondary)
                 }
                 .buttonStyle(.glassProminent)
-                .accessibilityIdentifier("detail.new-workspace")
             }
         } else {
             // Room for the Reconnecting overlay: on no view it never drew (a machine that failed its first connect).
@@ -214,7 +213,6 @@ struct Detail: View {
             }
         case nil:
             let title = "herdr is not installed" + (machine.isRemote ? " on \(machine.name)" : "")
-            // Why it is needed, in one line, over what Install runs.
             // One line about as wide as the command under it (332 and 326 pt), so the two read as a pair.
             let why = "Ovvi runs on herdr, which keeps your sessions running."
             EmptyState(symbol: "shippingbox", title: title, text: why, command: HerdrInstall.command, id: "detail") {

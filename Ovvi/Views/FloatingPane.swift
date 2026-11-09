@@ -324,7 +324,6 @@ struct FloatingWindow: View {
     }
 }
 
-/// The floating window's AppKit side: Stay on Top, and its close, which detaches the pane.
 /// A floated pane's icon, title and agent state, in its window's title row.
 private struct PaneInfo: View {
     let pane: HostStore.Pane

@@ -2,8 +2,8 @@ import AppKit
 import SwiftUI
 
 /// Where floating windows open: SwiftUI places a new one at the frame asked for with it (`defaultWindowPlacement`),
-/// so nothing sizes it after. (The app set the frame once the window showed, and SwiftUI's default size sometimes came
-/// after it: a replaced pane's window came back 46 pt short on CI.)
+/// so nothing sizes it after: a frame set once the window shows can lose to SwiftUI's default size, which sometimes
+/// comes after it (a replaced pane's window came back 46 pt short on CI).
 @MainActor
 enum FloatFrames {
     /// Each floated terminal's window.
@@ -79,6 +79,7 @@ enum FloatFrames {
     }
 }
 
+/// The floating window's AppKit side: Stay on Top, and its close, which detaches the pane.
 struct FloatReader: NSViewRepresentable {
     let terminalID: String
     let pinned: Bool

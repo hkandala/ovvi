@@ -5,7 +5,7 @@ extension Page {
     /// The pane's browser or plugin card, made on first use; `make` false: only one made before (a kept page out of
     /// view must not make again a card the registry dropped). ponytail: a hidden card holds a dropped card's web view
     /// until its next body, usually the next snapshot; make the registry observed if that wait matters.
-    func cards(_ pane: HostStore.Pane?, make: Bool = true) -> (Browser?, Plugin?) {
+    func cards(_ pane: HostStore.Pane?, make: Bool) -> (Browser?, Plugin?) {
         guard make else {
             let id = pane?.terminalID ?? ""
             return (terminals.built(id), terminals.builtPlugin(id))
@@ -44,7 +44,6 @@ extension Page {
         }
     }
 
-    /// The card's header: one row or two.
     func headerHeight(_ pane: HostStore.Pane?) -> CGFloat {
         PaneCard.header + (twoRows(pane) ? PaneCard.row : 0)
     }
@@ -78,15 +77,13 @@ struct ChatProbe: NSViewRepresentable {
         registry.chatViews[terminalID] = { [weak probe] in
             // Not one already out of view: a blank picture, or the page over it, would replace a good one.
             guard let probe, !probe.outOfView, let root = probe.window?.contentView?.superview?.layer,
-                  !probe.visibleRect.isEmpty, probe.window != nil else { return nil }
+                  !probe.visibleRect.isEmpty else { return nil }
             // At 1x, as web cards' pictures.
-            let rect = probe.convert(probe.bounds, to: nil), scale = 1.0
-            let size = CGSize(width: rect.width * scale, height: rect.height * scale)
-            guard let context = CGContext(data: nil, width: Int(size.width), height: Int(size.height),
+            let rect = probe.convert(probe.bounds, to: nil)
+            guard let context = CGContext(data: nil, width: Int(rect.width), height: Int(rect.height),
                                           bitsPerComponent: 8, bytesPerRow: 0,
                                           space: CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB(),
                                           bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue) else { return nil }
-            context.scaleBy(x: scale, y: scale)
             // The deepest layer that holds the chat's place (its rows, under 1 ms), not the window's (120 ms).
             var layer = root, area = rect
             while let next = layer.sublayers?
@@ -117,8 +114,21 @@ struct ChatProbe: NSViewRepresentable {
     }
 }
 
-/// A floated pane's card in its tab, under its header: a line that says where the pane is, Show Window, which
-/// brings its window to the front, and Bring Back Here, which detaches it into this card with the keyboard.
+/// The label; else the program in primary text and the folder in secondary, as in Rex ("zsh ~"). A label keeps
+/// its start, a path its end.
+struct PaneTitle: View {
+    let pane: HostStore.Pane?
+
+    var body: some View {
+        let (name, folder) = pane?.header ?? (nil, "terminal")
+        let lead = name.map { "\($0) " } ?? ""
+        Text("\(lead)\(Text(folder).foregroundStyle(name == nil ? .primary : .secondary))")
+            .lineLimit(1)
+            .truncationMode(pane?.label != nil ? .tail : name == nil ? .head : .middle)
+    }
+}
+
+/// A floated pane's card in its tab, under its header.
 struct FloatedPlaceholder: View {
     let page: Page
     let pane: HostStore.Pane
