@@ -116,6 +116,9 @@ private func snapshot() throws -> Snapshot {
     #expect(try info(#"{"pid":9,"name":"sleep"}"#).program?.foreground == [
         Program.Foreground(pid: 9, argv: [], name: "sleep"),
     ])
+    // Ovvi's chat launch, kept with the pane.
+    let pane = #"{"pane_id":"w1:p1","tab_id":"w1:t1","tokens":{"ovvi-chat":"pi 1 12,13"}}"#
+    #expect(try JSONDecoder().decode(Pane.self, from: Data(pane.utf8)).chat == "pi 1 12,13")
     // npm's pi: Node with its title as argv[0], and no arguments.
     #expect(try info(#"{"pid":9,"name":"node","argv0":"pi"}"#).program?.foreground == [
         Program.Foreground(pid: 9, argv: [], name: "node", argv0: "pi"),

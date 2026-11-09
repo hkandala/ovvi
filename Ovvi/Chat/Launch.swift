@@ -31,12 +31,15 @@ extension HostStore {
         launch.pids = Set(program?.foreground.filter { $0.runs(launch.command) }.map(\.pid) ?? [])
         guard !launch.pids.isEmpty else { return }
         launches[terminal] = launch
-        // Kept in herdr too, so the chat outlives the app (`restore`).
+        // Kept in herdr too, so the chat outlives the app (`restore`), when its marker is gone. Left when its agent
+        // ends: its pids no longer run.
+        guard ChatAdapters.recognize(program) == nil else { return }
         let chat = "\(launch.command) \(launch.token) " + launch.pids.sorted().map(String.init).joined(separator: ",")
         Task { [client, id = pane.id] in try? await client?.mark(id, chat: chat) }
     }
 
-    /// The launch herdr kept with the pane (`bind`), as the app starts again: its processes still have to run.
+    /// The launch herdr kept with the pane (`bind`), at the first sight of its terminal (the app starting again, a
+    /// reconnect): its processes still have to run. The token and the terminal go when herdr's server stops.
     /// ponytail: a pid alone, not its start time; the same pid named as the agent in the same terminal again would
     /// need the Mac's pids to wrap, check the start time if that shows.
     func restore(_ new: HerdrKit.Pane) {

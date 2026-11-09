@@ -77,7 +77,10 @@ extension OvviUITests {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         element("workspace.w2").click()
         element("tab.\(tab)").click()
-        XCTAssertTrue(element("pane.\(pane).view.chat").exists(within: 10))
+        let chat = element("pane.\(pane).view.chat")
+        XCTAssertTrue(chat.exists(within: 10))
+        chat.click()
+        XCTAssertTrue(row(pane, "reply", "All tools.").exists(within: 5))
     }
 
     /// The same chat on a remote machine: the extension written there, the state file and the transcript over the

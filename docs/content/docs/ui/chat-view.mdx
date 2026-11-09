@@ -31,11 +31,12 @@ and
   `argv[0]`), the launch takes those processes. While they run, the pane is
   that launch's chat. An agent started again by hand in the terminal is not.
   The bare-command fallback has no launch, and a start that ends without the
-  agent (the shell came back, the pane closed) drops its launch. Once bound,
-  the launch also goes to herdr as the pane token `ovvi-chat` (its command,
-  marker and process ids, no time limit), so it outlives the app and a
-  reconnect: the app reads it back when it has none for the terminal, and the
-  processes still have to run.
+  agent (the shell came back, the pane closed) drops its launch. Bound with
+  no marker in sight, the launch also goes to herdr as the pane token
+  `ovvi-chat` (its command, marker and process ids, no time limit), so it
+  outlives the app and a reconnect: the app reads it back at the first sight
+  of the terminal, and the processes still have to run. It goes when herdr's
+  server stops.
 - Every other pane shows only its terminal and no switch: plain terminals,
   agents started by hand or from herdr's TUI, and agents that herdr restores
   after a cold restart (herdr runs them again without the flags). An agent
