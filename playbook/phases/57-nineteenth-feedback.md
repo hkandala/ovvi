@@ -1040,3 +1040,8 @@ you did, no need of reverting them".
 - **Review.** Four reviewers, 0 blockers, 0 should, 18 nits; 13 fixed, 5 optional shrinks left (one place for the
   lint rule, a pgrep-and-kill helper, small test-helper moves). One auditor removed `HostStore.needsYou`, which the
   Dock badge reads: the build caught it and it stayed.
+- **Runs.** The UI tests the batches touch, 125 in four chosen-test runs: 42580993371 (30, one red),
+  42581000344 (32), 42584948783 (32), 42584952448 (32 with the red one) all green after one fix.
+  `testACardWhoseFolderWentComesBackWithItsPlaceholder` read herdr's snapshot just after the helper started the
+  server, before its socket was there, and the throw ended its wait: it waits out a missing socket now. GitHub's
+  release downloads gave 504s for an hour, so three runs ran again with no change.
