@@ -116,7 +116,9 @@ extension OvviUITests {
         try await waitFor(shell) { $0.contains("gone-42") }
         try await Self.post("\(five)/start")
         let made = try await poll("the card made again", times: 200) { () async throws -> String? in
-            let panes = try await Self.snapshot(five)["panes"] as? [[String: Any]] ?? []
+            // The started server's socket comes a moment after the start.
+            guard let snapshot = try? await Self.snapshot(five) else { return nil }
+            let panes = snapshot["panes"] as? [[String: Any]] ?? []
             let card = panes.first { $0["label"] as? String == label }
             guard panes.allSatisfy({ $0["pane_id"] as? String != old }),
                   card?["restore_error"] == nil else { return nil }
