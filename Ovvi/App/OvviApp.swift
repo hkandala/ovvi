@@ -98,6 +98,7 @@ struct ContentView: View {
     @SceneStorage("picking") private var picking = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Group {
@@ -106,8 +107,12 @@ struct ContentView: View {
                               sidebarWidth: $sidebarWidth)
             } else if picking {
                 SessionPicker(pages: pages)
+            } else {
+                WindowStart(pages: pages)
             }
         }
+        .animation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.2),
+                   value: pages.current == nil && !picking)
         .task {
             let opening = WindowPages.opening
             WindowPages.opening = nil

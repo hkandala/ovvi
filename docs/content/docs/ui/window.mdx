@@ -17,6 +17,10 @@ description: "Windows, the title row, tab bar, sidebar pages with spaces and the
 - Two windows on the same machine share the live data of each session. Each
   window keeps its own selection: page, space, tab, keyboard card, zoom
   and sidebar width.
+- Until a window shows its first page or the new-window view (a restore
+  reads herdr first), it already has its background and title row; the
+  launch's first window shows Ovvi's icon (96 pt) in the middle meanwhile.
+  The content then fades in over 0.2 s (at once with Reduce Motion).
 - A new window fills the screen's visible frame (the screen without the menu
   bar and the Dock), as a zoom does; it is not full screen. A window macOS
   restores keeps its frame.
