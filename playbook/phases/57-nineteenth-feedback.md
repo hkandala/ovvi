@@ -352,7 +352,13 @@ runs and on-demand on the final head.
 - **Round 7 (64).** The sidebar's "No Spaces" and its New Space button are gone; the page stays quiet (the header's `+`
   makes a space). The window's content: Ovvi's icon, "This session has no spaces", one line, New Space and Open
   Folder…, then up to six Git projects of the session's machine (one shell run on This Mac or over SSH), newest change
-  first.
+  first. Measured on CI's 1× picture: the icon's artwork y 285–336, the title 194 px wide at y 358–372,
+  the line 355 px at y 381–393, the two buttons 246 px wide, 28 px tall at y 410–437; before, only a 29 px dashed
+  square, a 154 px title and a 133 px button. Runs: 42706306015, 42708486361 (found the no-window launch),
+  42710210104 and 42711244306 green.
+- **For the user (round 7).** Quit with two windows open and launch: both come back with their sessions; close every
+  window, quit, launch: one new-window view. A session you stopped (a reboot) is still skipped, so a window of only
+  stopped sessions shows the view. An empty session: New Space, Open Folder…, and your Git projects under ~/code.
 
 ### Track B
 
