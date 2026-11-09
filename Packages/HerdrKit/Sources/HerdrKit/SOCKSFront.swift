@@ -188,13 +188,14 @@ final class SOCKSFront: Sendable {
     private static func greeting(_ reading: Task<Data?, Never>, within limit: Duration) async -> Bool? {
         await withCheckedContinuation { continuation in
             let waiting = Mutex<CheckedContinuation<Bool?, Never>?>(continuation)
-            Task {
-                let greeted = await reading.value == Data([5, 0])
-                waiting.withLock { $0.take() }?.resume(returning: greeted)
-            }
-            Task {
+            let timer = Task {
                 try? await Task.sleep(for: limit)
                 waiting.withLock { $0.take() }?.resume(returning: nil)
+            }
+            Task {
+                let greeted = await reading.value == Data([5, 0])
+                timer.cancel()
+                waiting.withLock { $0.take() }?.resume(returning: greeted)
             }
         }
     }

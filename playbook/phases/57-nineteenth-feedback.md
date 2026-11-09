@@ -404,7 +404,9 @@ runs and on-demand on the final head.
   (1 s) and a new master, and the page one more try; a slow machine gets 30 s more; then the error page. Measured
   here with a throwaway sshd: a stopped master's page came in 9.4 s, a stopped server side's in 9.7 s. devvm-aai's
   channel open was not measured: a new connection there asks keyboard-interactive, and the user's master is off
-  limits. A test stops the master on CI.
+  limits. A test stops the master on CI. Pages that stall together share one check. Not covered: a connection
+  WebKit already holds (a Reload of the same page) on a master that stays stopped waits WebKit's 60 s; a link that
+  hangs ends it sooner (`-O exit`, or ServerAlive in 15 s).
 - **For the user.** With a devvm-aai browser card open, sleep the Mac for a while, wake it, and reload: the page loads
   without closing the window.
 

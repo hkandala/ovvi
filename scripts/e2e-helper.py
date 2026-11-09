@@ -118,7 +118,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if session not in sessions:
             status, reply = 403, f"refusing session '{session}'".encode()
         elif action not in ("", "control", "takeover", "children", "stop", "start", "open-folder", "open-url",
-                            "file-drag", "temporary-file-drag", "usage", "ssh-drop", "ssh-stop", "ssh-forget", "ssh-unforward",
+                            "file-drag", "temporary-file-drag", "usage", "ssh-drop", "ssh-stop", "ssh-forget",
+                            "ssh-unforward",
                             "ssh-connections",
                             "swipe", "drag", "stress", "sample", "heap", "press", "release", "pause", "resume",
                             "web-kill"):
@@ -185,17 +186,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
             run = held.pop(session)
             _, error = run.communicate(b"\n", timeout=30)
             status, reply = (200, b"") if run.returncode == 0 else (500, error)
-        elif action == "ssh-drop":
-            pattern = f"ssh -M -N -f .* {body.decode()}$"
-            pids = subprocess.run(["pgrep", "-f", pattern], capture_output=True).stdout
-            subprocess.run(["pkill", "-9", "-f", pattern])
-            status, reply = 200, pids
         elif action == "ssh-stop" and os.environ.get("CI") != "true":
             status, reply = 403, b"CI only: it stops a live ControlMaster"
-        elif action == "ssh-stop":
+        elif action in ("ssh-drop", "ssh-stop"):
             pattern = f"ssh -M -N -f .* {body.decode()}$"
             pids = subprocess.run(["pgrep", "-f", pattern], capture_output=True).stdout
-            subprocess.run(["pkill", "-STOP", "-f", pattern])
+            subprocess.run(["pkill", "-9" if action == "ssh-drop" else "-STOP", "-f", pattern])
             status, reply = 200, pids
         elif action == "ssh-unforward" and os.environ.get("CI") != "true":
             status, reply = 403, b"CI only: it changes a live ControlMaster"

@@ -33,6 +33,8 @@ public actor SSHExec: Exec {
     /// ssh's `-D` port and the master it is on: a new master forwards it again.
     private var dynamic: (port: UInt16, pid: pid_t)?
     private var forwarding: Task<UInt16, Error>?
+    /// The check of a master that a page's connection found hung (`endHung`).
+    private var ending: Task<Void, Never>?
 
     public init(target: String, local: ProcessExec) {
         self.target = target
@@ -326,15 +328,13 @@ extension SSHExec {
         case let .gone(port) where dynamic?.port == port:
             dynamic = nil
         case let .stalled(port) where dynamic?.port == port:
-            // A relay run crosses the link too: none in 3 s, and the master or its link hangs (stopped, or a link
-            // half open after a sleep that ServerAlive has not caught yet). It ends if it still answers here (at once:
-            // a local reply), and a new one starts; a stopped one is left behind.
-            let hung = connection
-            guard await (try? output(["true"], timeout: .seconds(3))) == nil, connection == hung,
-                  dynamic?.port == port
-            else { break }
-            _ = await control(["-O", "exit"], within: .seconds(1))
-            (dynamic, connection) = (nil, nil)
+            // The pages that stalled together wait for one check.
+            let task = ending ?? Task { await endHung(port) }
+            ending = task
+            await task.value
+            if ending == task {
+                ending = nil
+            }
         default: break
         }
         try await up(nil)
@@ -352,6 +352,19 @@ extension SSHExec {
             }
         }
         return try await task.value
+    }
+
+    /// A relay run crosses the link too: none in 3 s (more when the relay must start), and the master or its link
+    /// hangs (stopped, or a link half open after a sleep that ServerAlive has not caught yet). It ends if it still
+    /// answers here (at once: a local reply), and the next `up` starts a new one; a stopped one is left behind.
+    private func endHung(_ port: UInt16) async {
+        let hung = connection
+        guard await (try? output(["true"], timeout: .seconds(3))) == nil, connection == hung, dynamic?.port == port
+        else { return }
+        _ = await control(["-O", "exit"], within: .seconds(1))
+        if connection == hung {
+            (dynamic, connection) = (nil, nil)
+        }
     }
 
     /// A port ssh found taken meanwhile is tried again with another. A master that does not answer is gone, though
