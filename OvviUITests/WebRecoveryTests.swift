@@ -120,12 +120,14 @@ extension OvviUITests {
             try await Self.call(one, "pane.rename", ["pane_id": pane, "label": "ovvi:\(label)"])
         }
         try await show(tab)
+        XCTAssertTrue(pageText("Paragraph 1").exists(within: 15))
+        // CI's virtual Mac has none (and its screen shows these pages blank).
+        let gpu = try? await poll("the app's GPU process", times: 50) { try await web("web-pids").first }
+        try XCTSkipIf(gpu == nil, "no GPU process")
         let notes = element("markdown.\(markdown).page"), page = element("browser.\(browser)")
         let heading = { notes.staticTexts.matching(NSPredicate(format: "value == %@", $0)).firstMatch }
         XCTAssertTrue(drawn(pageText("Paragraph 1"), in: page, within: 15), "the browser at first")
         XCTAssertTrue(drawn(heading("Notes"), in: notes, within: 15), "the Markdown card at first")
-        let gpu = try await web("web-pids")
-        try XCTSkipIf(gpu.isEmpty, "no GPU process (CI's virtual Mac)")
         // Made once, then kept out of view.
         try await show(kept)
         let home = element("git.\(git).page")
