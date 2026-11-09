@@ -56,9 +56,10 @@ extension OvviUITests {
     }
 
     /// An opened run lists every tool call in order, as pi writes them: read, write, edit, grep, find, ls, bash,
-    /// codemode with the read its script made, and agent_start.
+    /// codemode with the read its script made, and agent_start. Its process lists no arguments, as npm's pi, whose
+    /// process title overwrites them: the chat is Ovvi's launch's.
     func testAPiRunListsEveryKindOfTool() async throws {
-        let pane = try await startChat(agent: 2).pane
+        let pane = try await startChat(agent: 2, environment: "OVVI_STAND_IN_TITLE=1 ").pane
         try await say("tools", in: pane)
         XCTAssertTrue(row(pane, "reply", "All tools.").exists(within: 5))
         let stack = element("chat.\(pane).stack")

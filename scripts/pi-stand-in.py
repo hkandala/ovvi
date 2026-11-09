@@ -31,8 +31,12 @@ if os.environ.get("OVVI_STAND_IN") != "1":
     if os.path.islink(link):
         os.remove(link)
     os.symlink(app if os.path.exists(app) else os.path.realpath(sys.executable), link)
-    os.execv(link, [link, os.path.abspath(__file__)] + sys.argv[1:])
-args = sys.argv[1:]
+    # OVVI_STAND_IN_TITLE=1: no arguments in its process's own, as a Node CLI that sets its process title (npm's pi).
+    rest = sys.argv[1:]
+    if os.environ.get("OVVI_STAND_IN_TITLE") == "1":
+        os.environ["OVVI_STAND_IN_ARGS"], rest = json.dumps(rest), []
+    os.execv(link, [link, os.path.abspath(__file__)] + rest)
+args = json.loads(os.environ.pop("OVVI_STAND_IN_ARGS", "null")) or sys.argv[1:]
 extension, state = args[args.index("-e") + 1], args[args.index("--ovvi") + 1]
 if not os.path.isfile(extension):
     sys.exit("Failed to load extension: Extension path does not exist: " + extension)

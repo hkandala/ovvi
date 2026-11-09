@@ -36,14 +36,23 @@ if os.environ.get("OVVI_STAND_IN") != "1":
     if os.path.islink(link):
         os.remove(link)
     os.symlink(app if os.path.exists(app) else os.path.realpath(sys.executable), link)
-    os.execv(link, [link, os.path.abspath(__file__)] + sys.argv[1:])
-args = sys.argv[1:]
+    # OVVI_STAND_IN_TITLE=1: no arguments in its process's own, as a Node CLI that sets its process title (npm's pi).
+    rest = sys.argv[1:]
+    if os.environ.get("OVVI_STAND_IN_TITLE") == "1":
+        os.environ["OVVI_STAND_IN_ARGS"], rest = json.dumps(rest), []
+    os.execv(link, [link, os.path.abspath(__file__)] + rest)
+args = json.loads(os.environ.pop("OVVI_STAND_IN_ARGS", "null")) or sys.argv[1:]
 settings = args[args.index("--settings") + 1] if "--settings" in args else '{"hooks":{}}'
 hooks = json.loads(settings)["hooks"]
 resumed = "--resume" in args
 token = args[args.index("--resume" if resumed else "--session-id") + 1] if resumed or "--session-id" in args \
     else str(uuid.uuid4())
 transcript = os.path.join(folder, token + ".jsonl")
+# OVVI_STAND_IN_FAIL_RESUME=<file>: its first resume with Ovvi's flags exits at once (a build that refuses them).
+failed = os.environ.get("OVVI_STAND_IN_FAIL_RESUME")
+if failed and resumed and "--settings" in args and not os.path.exists(failed):
+    open(failed, "w").close()
+    sys.exit("error: unknown option")
 
 
 def hook(event, payload):

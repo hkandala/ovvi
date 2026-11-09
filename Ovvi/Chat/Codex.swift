@@ -40,6 +40,10 @@ struct Codex: ChatAdapter {
         guard let token = ChatAdapters.marked(foreground, { argv in
             argv.lazy.compactMap { $0.hasPrefix("hooks.SessionStart=") ? ChatAdapters.token(in: $0) : nil }.first
         })?.token else { return nil }
+        self.init(token: token, pids: [])
+    }
+
+    init(token: String, pids _: [Int]) {
         self.token = token
     }
 

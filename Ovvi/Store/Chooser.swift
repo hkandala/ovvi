@@ -58,6 +58,8 @@ final class Chooser {
     }
 
     @ObservationIgnored let standIn: String?
+    /// Its launch's marker (`Launch`).
+    @ObservationIgnored let token = UUID().uuidString.lowercased()
     /// herdr's pane, once it answered.
     var paneID: String?
     var terminalID: String?
@@ -253,63 +255,62 @@ extension HostStore {
             }
             let resumed = await resumed(agent, chooser, resume: resume, closed: closed)
             guard resume ?? closed == nil || resumed != nil else { return }
-            let clock = ContinuousClock(), begun = clock.now
-            var sent: ContinuousClock.Instant?, shells = 0, line: String?
-            // A new tab's stand-in waits for herdr's pane. A chooser dropped meanwhile (its pane closed) ends it.
-            while clock.now - begun < .seconds(10), choosers.contains(where: { $0 === chooser }) {
-                if let client, let id = chooser.paneID {
-                    guard let since = sent else {
-                        // With Ovvi's flags first; once more without them when the shell came back at once (a build
-                        // that refuses them starts with no chat rather than not at all).
-                        let next = line == nil
-                            ? await [chooser.cdCommand, firstLine(agent, resumed)].compactMap(\.self)
-                            .joined(separator: " && ")
-                            : agent.command
-                        // Its pane may have closed during the launch's run on the machine.
-                        guard choosers.contains(where: { $0 === chooser }),
-                              await (try? client.sendInput(next, keys: ["enter"], pane: id)) != nil
-                        else {
-                            return
-                        }
-                        line = next
-                        sent = clock.now
-                        chooser.typed = true
-                        opensOnChat(id)
-                        continue
-                    }
-                    if let pane = try? await client.pane(id), pane.agent != nil,
-                       pane.agentStatus.map({ $0 != .unknown }) == true
-                    {
-                        // Again: a new tab's pane may have been missing from the snapshot as its line went in.
-                        opensOnChat(id)
-                        // Its launch marker before the loader goes, so a chat pane shows its chat at once.
-                        await askProgram(id, soon: true)
-                        return
-                    }
-                    // Not while a new shell starts (`Pane.starting`): the command waits for its prompt. Twice in a row:
-                    // one answer can fall between two of its programs.
-                    if clock.now - since > .seconds(1), self.pane(id)?.starting == false {
-                        shells = await (try? client.program(id))?.isShell == true ? shells + 1 : 0
-                        if shells == 2 {
-                            // A resume's plain command would start another session.
-                            guard line != agent.command, resume ?? closed == nil else { return }
-                            (sent, shells) = (nil, 0)
-                        }
-                    }
-                }
-                try? await Task.sleep(for: .milliseconds(250))
+            let ended = await typeAndWait(agent, chooser, resumed, plain: resume ?? closed == nil)
+            if let resume, choosers.contains(where: { $0 === chooser }) {
+                relaunchEnded(ended, agent, chooser, resume)
             }
         }
     }
-}
 
-extension HostStore {
-    /// A new agent's card opens on its chat when Settings ▸ Agents says so, as after Relaunch with Chat. Set as its
-    /// line goes in: no card makes the chat while the chooser is there.
-    private func opensOnChat(_ paneID: String) {
-        if AppSettings().agentView == .chat {
-            pane(paneID)?.relaunched = true
+    /// `start`'s typing and wait. `plain`: once more without the flags when the shell came back at once.
+    private func typeAndWait(_ agent: Chooser.Agent, _ chooser: Chooser, _ resumed: String?,
+                             plain: Bool) async -> Started
+    {
+        let clock = ContinuousClock(), begun = clock.now
+        var sent: ContinuousClock.Instant?, shells = 0, line: String?
+        // A new tab's stand-in waits for herdr's pane. A chooser dropped meanwhile (its pane closed) ends it.
+        while clock.now - begun < .seconds(10), choosers.contains(where: { $0 === chooser }) {
+            if let client, let id = chooser.paneID {
+                guard let since = sent else {
+                    // With Ovvi's flags first; once more without them when the shell came back at once (a build
+                    // that refuses them starts with no chat rather than not at all).
+                    let next = line == nil
+                        ? await [chooser.cdCommand, firstLine(agent, chooser, resumed)].compactMap(\.self)
+                        .joined(separator: " && ")
+                        : agent.command
+                    // Its pane may have closed during the launch's run on the machine.
+                    guard choosers.contains(where: { $0 === chooser }),
+                          await (try? client.sendInput(next, keys: ["enter"], pane: id)) != nil
+                    else {
+                        return .gone
+                    }
+                    line = next
+                    sent = clock.now
+                    chooser.typed = true
+                    launched(id, agent, chooser, line: line)
+                    continue
+                }
+                if let pane = try? await client.pane(id), pane.agent != nil,
+                   pane.agentStatus.map({ $0 != .unknown }) == true
+                {
+                    launched(id, agent, chooser, line: line)
+                    await settle(id)
+                    return .agent
+                }
+                // Not while a new shell starts (`Pane.starting`): the command waits for its prompt. Twice in a row:
+                // one answer can fall between two of its programs.
+                if clock.now - since > .seconds(1), pane(id)?.starting == false {
+                    shells = await (try? client.program(id))?.isShell == true ? shells + 1 : 0
+                    if shells == 2 {
+                        // A resume's plain command would start another session.
+                        guard line != agent.command, plain else { return .shell }
+                        (sent, shells) = (nil, 0)
+                    }
+                }
+            }
+            try? await Task.sleep(for: .milliseconds(250))
         }
+        return choosers.contains(where: { $0 === chooser }) ? .timeout : .gone
     }
 }
 

@@ -113,7 +113,9 @@ private func snapshot() throws -> Snapshot {
         "vim",
         "vim",
     ])
-    #expect(try info(#"{"pid":9,"name":"sleep"}"#).program?.foreground == [Program.Foreground(pid: 9, argv: [])])
+    #expect(try info(#"{"pid":9,"name":"sleep"}"#).program?.foreground == [
+        Program.Foreground(pid: 9, argv: [], name: "sleep"),
+    ])
     // While the shell starts, its rc files run in the foreground too.
     #expect(try info(#"{"pid":8,"name":"bash"},{"pid":7,"name":"zsh"}"#).program?.name == "bash")
     // A Node CLI: the script is the first argument that is not an option.

@@ -14,6 +14,8 @@ struct Notice {
     /// The terminal whose pane Show selects in the window (an agent's notice, agent-control/cli): a pane id can name
     /// another pane after a move.
     var show: String?
+    /// What its Retry does (Relaunch with Chat's), if it has one.
+    var retry: (@MainActor @Sendable () -> Void)?
     let id = UUID()
 }
 
@@ -162,6 +164,13 @@ struct Detail: View {
                             }
                         }
                         .accessibilityIdentifier("notice.show")
+                    }
+                    if let retry = notice.retry {
+                        Button("Retry") {
+                            store.notice = nil
+                            retry()
+                        }
+                        .accessibilityIdentifier("notice.retry")
                     }
                     Button("Close", systemImage: "xmark") { store.notice = nil }
                         .labelStyle(.iconOnly).buttonStyle(.plain).foregroundStyle(.secondary)

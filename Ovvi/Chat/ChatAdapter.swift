@@ -21,6 +21,8 @@ protocol ChatAdapter: Sendable {
     static var stopKeys: [String] { get }
     /// The adapter of the launch whose marker is in the pane's foreground processes (`pane.process_info`), else nil.
     init?(_ foreground: [Program.Foreground])
+    /// The launch Ovvi typed (`Launch`), for processes whose arguments are gone: its processes.
+    init(token: String, pids: [Int])
     /// The launch's marker: a new launch in the same pane is a new chat.
     var token: String { get }
     /// Follows the agent on its machine until cancelled: the history, the phase it records, its questions and
@@ -275,13 +277,14 @@ enum ChatAdapters {
     /// `resume`: herdr's session of the agent, for Relaunch with Chat (nil also when the agent does not take it).
     /// `arguments`: the user's extra ones (`Chooser.arguments`), after the command and before Ovvi's flags, as
     /// OpenCode ignores what follows its `--`.
-    static func launch(_ command: String, resume: String? = nil, arguments: String = "",
+    /// `token`: the launch's marker (`Chooser.token`).
+    static func launch(_ command: String, token: String, resume: String? = nil, arguments: String = "",
                        on exec: any Exec) async -> String?
     {
         guard let adapter = adapter(command) else { return nil }
         let resumed = resume.flatMap(adapter.resume)
         guard resume == nil || resumed != nil else { return nil }
-        let token = UUID().uuidString.lowercased(), flags = adapter.flags(token, resume: resumed)
+        let flags = adapter.flags(token, resume: resumed)
         // Every `prepare` ends with the command and its flags.
         return await adapter.prepare(token, resume: resumed, on: exec)?
             .replacing(command + " " + flags, with: command + arguments + " " + flags)

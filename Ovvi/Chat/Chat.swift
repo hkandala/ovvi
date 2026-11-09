@@ -79,7 +79,7 @@ final class Chat {
 
     /// Its pane still runs this launch of the agent.
     var live: Bool {
-        ChatAdapters.recognize(store?.pane(paneID)?.program)?.token == adapter.token
+        store?.pane(paneID)?.adapter?.token == adapter.token
     }
 
     /// Waiting on something the chat cannot answer: the live terminal takes the bottom of the card.

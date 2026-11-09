@@ -11,7 +11,7 @@ struct EnableChat: View {
 
     /// An agent with a chat adapter whose session herdr knows, once its processes are known to carry no marker.
     static func offered(_ pane: HostStore.Pane, _ store: HostStore) -> Bool {
-        guard pane.program != nil, ChatAdapters.recognize(pane.program) == nil, let session = pane.session,
+        guard pane.program != nil, pane.adapter == nil, let session = pane.session,
               let adapter = ChatAdapters.adapter(pane.agent) else { return false }
         return adapter.resume(session) != nil && store.chooser(pane.id) == nil
     }

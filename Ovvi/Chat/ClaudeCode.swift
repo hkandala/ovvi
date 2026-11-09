@@ -42,6 +42,10 @@ struct ClaudeCode: ChatAdapter {
     init?(_ foreground: [Program.Foreground]) {
         let marked = ChatAdapters.marked(foreground) { $0.after("--settings").flatMap(ChatAdapters.token(in:)) }
         guard let (token, pids) = marked else { return nil }
+        self.init(token: token, pids: pids)
+    }
+
+    init(token: String, pids: [Int]) {
         self.token = token
         self.pids = pids
     }

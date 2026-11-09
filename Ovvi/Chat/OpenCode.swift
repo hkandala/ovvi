@@ -74,6 +74,10 @@ struct OpenCode: ChatAdapter {
             guard argv.contains("--port"), let marker = argv.after("--"), marker.hasPrefix("ovvi-") else { return nil }
             return ChatAdapters.token(marker.dropFirst(5))
         }) else { return nil }
+        self.init(token: token, pids: pids)
+    }
+
+    init(token: String, pids: [Int]) {
         self.token = token
         self.pids = pids
     }

@@ -254,6 +254,10 @@ public struct Program: Equatable, Sendable {
     public struct Foreground: Equatable, Sendable {
         public let pid: Int
         public let argv: [String]
+        /// Its name and `argv[0]`: a Node CLI that sets its process title (npm's pi) is `node` with the title as
+        /// `argv[0]`, and macOS lists no other argument for it.
+        public var name = ""
+        public var argv0: String?
     }
 
     init(name: String, argv0: String? = nil, script: String? = nil, isShell: Bool = false) {
@@ -302,7 +306,9 @@ struct PaneProcesses: Decodable {
         return (program ?? foregroundProcesses.first).map { process in
             var found = Program(name: process.name, argv0: process.argv0,
                                 script: process.argv?.dropFirst().first { !$0.hasPrefix("-") }, isShell: program == nil)
-            found.foreground = foregroundProcesses.map { Program.Foreground(pid: $0.pid, argv: $0.argv ?? []) }
+            found.foreground = foregroundProcesses.map {
+                Program.Foreground(pid: $0.pid, argv: $0.argv ?? [], name: $0.name, argv0: $0.argv0)
+            }
             return found
         }
     }

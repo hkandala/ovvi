@@ -277,6 +277,28 @@ extension OvviUITests {
         XCTAssertFalse(enable.exists)
     }
 
+    /// A relaunch whose agent ends at once (a build that refuses Ovvi's flags) says why, with Retry. The retry's agent
+    /// lists no arguments, as npm's pi whose process title overwrites them, and its chat still opens: Ovvi knows the
+    /// launch it typed.
+    func testRelaunchSaysWhyAndRetriesWithoutArguments() async throws {
+        let failed = NSTemporaryDirectory() + "ovvi-fail-resume-" + UUID().uuidString
+        let environment = "OVVI_STAND_IN_TITLE=1 OVVI_STAND_IN_FAIL_RESUME=\(failed) "
+        let pane = try await startChat(environment: environment, chat: false, plain: true).pane
+        let enable = element("pane.\(pane).enable-chat")
+        XCTAssertTrue(enable.exists(within: 10))
+        try await send("hello\r", to: pane)
+        try await waitFor(pane) { $0.contains("Echo: **hello**") }
+        enable.click()
+        let notice = element("detail.notice")
+        XCTAssertTrue(notice.staticTexts.matching(NSPredicate(format: "value == 'Claude Code did not start again'"))
+            .firstMatch.exists(within: 20))
+        keepScreenshot("relaunch failed")
+        notice.buttons["notice.retry"].click()
+        XCTAssertTrue(element("chat.\(pane).composer").exists(within: 20))
+        XCTAssertTrue(row(pane, "reply", "Echo: **hello**").exists(within: 5))
+        XCTAssertFalse(enable.exists)
+    }
+
     /// A new tab of w2 whose chooser starts the agent at `agent` (its place in the chooser) as its stand-in,
     /// `scripts/<command>-stand-in.py`, once its TUI showed first and then, switched to, the chat with the keyboard in
     /// its reply box.

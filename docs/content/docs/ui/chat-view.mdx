@@ -24,6 +24,14 @@ and
   ([Program icons](/docs/ui/program-icons#when-the-app-asks-herdr)). This
   also works after the app relaunches, with no state kept in the app. A new
   launch in the same pane is a new chat.
+- Some agents drop their arguments: a Node CLI that sets its process title
+  (pi from npm) overwrites them on macOS, and herdr lists none. So the app
+  also keeps the launch it typed, per terminal. The first time herdr lists a
+  process named as the agent's command (by its name, `claude.exe` too, or its
+  `argv[0]`), the launch takes those processes. While they run, the pane is
+  that launch's chat. An agent started again by hand in the terminal is not.
+  This one does not outlive the app: after a relaunch of the app, such a pane
+  shows Relaunch with Chat again.
 - Every other pane shows only its terminal and no switch: plain terminals,
   agents started by hand or from herdr's TUI, and agents that herdr restores
   after a cold restart (herdr runs them again without the flags). An agent
@@ -79,6 +87,18 @@ which never asks: it refuses a working or waiting agent with `busy`
    ([New pane](/docs/ui/new-pane#agent)). There is no bare-command fallback:
    a plain command would start a new session.
 6. The card opens on the chat, because the user asked for it.
+
+When a step fails, a notice says why for 10 s, with **Retry**, which runs
+Relaunch with Chat again with the same agent and session (also when the
+agent has ended and the shell is in front):
+
+| Notice | When |
+|---|---|
+| "‹agent› could not start with chat" | step 2 failed |
+| "‹agent› did not quit" | step 4 ran out |
+| "‹agent› did not start again" | the shell came back at once after the line (the agent refused it, or the command is not found in the pane's shell) |
+| "‹agent› started again without chat" | herdr reports the agent, but none of its processes carries the marker or is named as the agent |
+| "‹agent› is not back after 10 s" | herdr reports no agent yet; the chat still opens if it comes |
 
 - Codex shows its old messages only after the first message, when its hook
   runs.

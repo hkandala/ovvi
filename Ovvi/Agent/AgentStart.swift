@@ -95,7 +95,7 @@ extension AgentCommand {
                 throw AgentError(code: "busy", message: "\(name) in pane \(target.id) is starting again")
             }
             let why = ChatAdapters.adapter(pane.agent) == nil ? "runs no agent with a chat view"
-                : ChatAdapters.recognize(pane.program) != nil ? "shows the chat view already"
+                : pane.adapter != nil ? "shows the chat view already"
                 : "has no agent session that herdr knows"
             throw AgentError(code: "bad_argument", message: "pane \(target.id) \(why)")
         }

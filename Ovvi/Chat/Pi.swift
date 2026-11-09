@@ -68,6 +68,10 @@ struct PiAgent: ChatAdapter {
                 ChatAdapters.token(in: path).flatMap { path.hasSuffix("/\($0)/pi.jsonl") ? $0 : nil }
             }
         })?.token else { return nil }
+        self.init(token: token, pids: [])
+    }
+
+    init(token: String, pids _: [Int]) {
         self.token = token
     }
 
