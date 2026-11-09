@@ -1100,6 +1100,32 @@ you did, no need of reverting them".
 59. "in the cmd+n window add machine should open add machine section within settings window, do not open the overlay
     one" (Track A).
 
+### Track B, round 6 (items 51, 52, 55)
+
+- **Cause (51).** Each agent's first page landed in the list as it came, with the empty state's line between, and
+  the loader waited 0.3 s on its own: on a slow remote the shelf grew in steps. The border drew while folded too.
+- **Fix (51).** The shelf reads every agent's first page, then shows them together; the first time a loader
+  ("Reading sessions…", after 0.3 s) stands in the list's place, later opens show the machine's last list that read
+  whole at once and swap in the new one when it comes. The next pages come in together too. The border shows only
+  while open, and a click that opens it puts the caret in Search.
+- **Fix (52).** A hover card's row for a plugin, a browser or New Pane names it and what it shows, as its card
+  header does (File Explorer ovvi, Git ovvi, Browser example.com), never its placeholder's `cat`; terminals and
+  agents are as before.
+- **Fix (55).** The dots lie over the pages' foot: the list has 18 pt more room at its end (its last row still
+  ends 11 pt above the dots) and, while rows lie under its end, fades over 36 pt, so rows thin out behind the dots
+  in Glass and Classic alike. A mask, not a painted gradient: Glass's sidebar is a blur, which a color would band.
+- **Measured** (2x pictures): folded, no border lines (before: 2 px = 1 pt at y 2004 and 2062); open, the border at
+  y 1416 and 2062; at the list's end the last row 22 px = 11 pt above the dots, as before.
+- **Review.** Six should-fix items (a first-frame "No closed sessions" flash, a next page over the fresh list, a
+  failed read cached, the loader inside the lazy stack, the focus timing, the fade's docs) and four nits, fixed.
+- **Runs.** CI 42595067474: 12 of 13 chosen tests green (Archived, hover card, dots, swipes, scroll into view); the new
+  plugin row test made its card in beta without showing beta first, fixed. CI 42596360702: it and two more, 3
+  executed, green.
+- **Pictures**, before and after, dark and light: `~/Downloads/ovvi-research/p57b/r6/index.html`.
+- **For the user.** On a remote machine, open Archived Sessions twice: a loader, then the whole list at once; the
+  second time the list at once. Hover a tab with File Explorer, Git and a browser. With two sessions, scroll a long
+  list: the rows fade out behind the dots.
+
 ### Track V (item 58, report only)
 
 - Report: `~/Downloads/ovvi-research/marketing-story.html`, one self-contained file with the pictures inlined. No app
