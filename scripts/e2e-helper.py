@@ -25,6 +25,8 @@ that time: its footprint (`footprint`'s summary), its CPU and the session's `ter
 and the app's, WebKit's and all its processes' count, footprint, CPU, threads and interrupt wake-ups (scripts/usage.swift).
 POST /<session>/ssh-drop with an SSH target as the body kills the app's ControlMaster to it (SIGKILL, as a crash
 would), and gives back the pids it killed, one per line.
+POST /<session>/ssh-stop with an SSH target as the body stops the app's ControlMaster to it (SIGSTOP, as a master that
+hangs), on CI only; ssh-drop ends it. The pids come back, one per line.
 POST /<session>/ssh-unforward with an SSH target as the body cancels the dynamic forwards (the browser proxy's `-D`)
 of the app's ControlMaster to it, on CI only, as a master that lost them; the ports come back, one per line.
 POST /<session>/web-kill kills the app's WebKit page processes (SIGKILL, as the system ends one), or with GPU or
@@ -116,14 +118,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if session not in sessions:
             status, reply = 403, f"refusing session '{session}'".encode()
         elif action not in ("", "control", "takeover", "children", "stop", "start", "open-folder", "open-url",
-                            "file-drag", "temporary-file-drag", "usage", "ssh-drop", "ssh-forget", "ssh-unforward",
+                            "file-drag", "temporary-file-drag", "usage", "ssh-drop", "ssh-stop", "ssh-forget", "ssh-unforward",
                             "ssh-connections",
                             "swipe", "drag", "stress", "sample", "heap", "press", "release", "pause", "resume",
                             "web-kill"):
             status, reply = 404, f"no action '{action}'".encode()
         elif action in ("control", "takeover") and not re.fullmatch(rb"\w[\w-]*", body):
             status, reply = 400, b"the body must be a terminal id"
-        elif action in ("ssh-drop", "ssh-forget", "ssh-unforward") and not re.fullmatch(rb"\w[\w-]*", body):
+        elif action in ("ssh-drop", "ssh-stop", "ssh-forget", "ssh-unforward") and not re.fullmatch(rb"\w[\w-]*", body):
             status, reply = 400, b"the body must be an SSH target"
         elif action == "swipe" and not re.fullmatch(rb"-?[\d.]+( -?[\d.]+){3,6}", body):
             status, reply = 400, b"the body must be x y step steps [pause [vertical [option]]]"
@@ -187,6 +189,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
             pattern = f"ssh -M -N -f .* {body.decode()}$"
             pids = subprocess.run(["pgrep", "-f", pattern], capture_output=True).stdout
             subprocess.run(["pkill", "-9", "-f", pattern])
+            status, reply = 200, pids
+        elif action == "ssh-stop" and os.environ.get("CI") != "true":
+            status, reply = 403, b"CI only: it stops a live ControlMaster"
+        elif action == "ssh-stop":
+            pattern = f"ssh -M -N -f .* {body.decode()}$"
+            pids = subprocess.run(["pgrep", "-f", pattern], capture_output=True).stdout
+            subprocess.run(["pkill", "-STOP", "-f", pattern])
             status, reply = 200, pids
         elif action == "ssh-unforward" and os.environ.get("CI") != "true":
             status, reply = 403, b"CI only: it changes a live ControlMaster"

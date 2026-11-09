@@ -366,7 +366,14 @@ connection. Nothing is installed on the machine.
   `-D` port, the front asks for a new forward once and tries again. A front
   whose listener ends by itself listens again on the same port, every 2 s until
   it can. A card whose proxy did not start tries again on Reload. So a page
-  that failed loads again on Reload, without closing the window. A connection
+  that failed loads again on Reload, without closing the window.
+- No page waits for ever. ssh answers a page's connection once the machine
+  opened it. With no answer in 5 s, the app sends a command over the relay. If
+  that command gets no answer in 3 s, the master or its link hangs: a stopped
+  master, or a link left half open by a sleep. The app ends the master if it
+  still answers `-O exit`, starts a new one, and tries the page once on it.
+  If the relay answers, the machine is only slow, and the page waits 30 s more.
+  A page that still gets no answer shows its error and Reload. A connection
   the front already
   carries (a dev server's live-reload websocket) lives on after the last card
   until WebKit drops it. Two machines with one SSH target share one proxy.

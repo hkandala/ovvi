@@ -397,6 +397,14 @@ runs and on-demand on the final head.
   for (the who server got no request). The drop shows Reconnecting over the page for 0.8 s, which takes no clicks;
   the test's click on the address field fell in it, and the typed address went to the page. The test now clicks
   until the field has the keyboard. A stopped master still holds a page until WebKit's 60 s, then it fails.
+- **The endless spinner (the user's answer).** ssh's `-D` holds a page's greeting until the machine opened the
+  connection, and nothing bounded that wait: with the master or its link hung, the page spun for ever. A stopped
+  master never runs ServerAlive, and a master whose keepalives still pass can leave a channel open unanswered. Now
+  the greeting gets 5 s; then a relay run (3 s) tells a hung master from a slow machine. A hung one gets `-O exit`
+  (1 s) and a new master, and the page one more try; a slow machine gets 30 s more; then the error page. Measured
+  here with a throwaway sshd: a stopped master's page came in 9.4 s, a stopped server side's in 9.7 s. devvm-aai's
+  channel open was not measured: a new connection there asks keyboard-interactive, and the user's master is off
+  limits. A test stops the master on CI.
 - **For the user.** With a devvm-aai browser card open, sleep the Mac for a while, wake it, and reload: the page loads
   without closing the window.
 

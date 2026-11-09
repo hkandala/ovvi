@@ -256,14 +256,16 @@ public actor SSHExec: Exec {
             .flatMap { pid_t($0.prefix { $0.isNumber }) }
     }
 
-    /// An `ssh -O` command to the master; nil when it did not answer within 5 s (a master stopped with SIGSTOP never
-    /// does).
-    private func control(_ command: [String]) async -> (status: Int32, stderr: String)? {
+    /// An `ssh -O` command to the master; nil when it did not answer within `limit` (a master stopped with SIGSTOP
+    /// never does).
+    private func control(_ command: [String], within limit: Duration = .seconds(5)) async
+        -> (status: Int32, stderr: String)?
+    {
         guard let channel = try? ProcessExec.spawn(["/usr/bin/ssh", "-F", "/dev/null", "-S", socket] + command
             + ["--", target], environment)
         else { return nil }
         channel.closeInput()
-        return try? await withTimeout(.seconds(5), onTimeout: channel.terminate) { await channel.exit() }
+        return try? await withTimeout(limit, onTimeout: channel.terminate) { await channel.exit() }
     }
 
     /// The last absolute path the login shell prints after our marker (an rc file may print first).
@@ -285,9 +287,9 @@ extension SSHExec {
     /// machine that needs one fails the page until Connect.
     public func openProxy() async throws -> NWEndpoint.Port {
         if proxy == nil {
-            let front = try await SOCKSFront.start { [weak self] dead in
+            let front = try await SOCKSFront.start { [weak self] trouble in
                 guard let self else { throw HerdrError.disconnected("Closed") }
-                return try await dynamicPort(dead: dead)
+                return try await dynamicPort(after: trouble)
             }
             // Another card's start may have won meanwhile.
             if proxy == nil {
@@ -318,10 +320,22 @@ extension SSHExec {
         _ = await control(["-O", "cancel", "-D", "127.0.0.1:\(dynamic.port)"])
     }
 
-    /// ssh's `-D` port on the live master, forwarded once per master (one at a time), and again after `dead`.
-    private func dynamicPort(dead: UInt16?) async throws -> UInt16 {
-        if let dead, dynamic?.port == dead {
+    /// ssh's `-D` port on the live master, forwarded once per master (one at a time), and again after a trouble.
+    private func dynamicPort(after trouble: SOCKSFront.Trouble?) async throws -> UInt16 {
+        switch trouble {
+        case let .gone(port) where dynamic?.port == port:
             dynamic = nil
+        case let .stalled(port) where dynamic?.port == port:
+            // A relay run crosses the link too: none in 3 s, and the master or its link hangs (stopped, or a link
+            // half open after a sleep that ServerAlive has not caught yet). It ends if it still answers here (at once:
+            // a local reply), and a new one starts; a stopped one is left behind.
+            let hung = connection
+            guard await (try? output(["true"], timeout: .seconds(3))) == nil, connection == hung,
+                  dynamic?.port == port
+            else { break }
+            _ = await control(["-O", "exit"], within: .seconds(1))
+            (dynamic, connection) = (nil, nil)
+        default: break
         }
         try await up(nil)
         if let dynamic, dynamic.pid == connection {

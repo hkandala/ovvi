@@ -11,10 +11,10 @@ import Testing
     let ssh = try await standIn { host in asked.withLock { $0.append(host) } }
     defer { ssh.cancel() }
     let upstream = try #require(ssh.port?.rawValue)
-    let dead = Mutex<[UInt16]>([])
-    let front = try await SOCKSFront.start { port in
-        if let port {
-            dead.withLock { $0.append(port) }
+    let troubles = Mutex<[SOCKSFront.Trouble]>([])
+    let front = try await SOCKSFront.start { trouble in
+        if let trouble {
+            troubles.withLock { $0.append(trouble) }
         }
         return upstream
     }
@@ -31,7 +31,7 @@ import Testing
     #expect(other == 5)
     #expect(asked.withLock { $0 } == ["localhost", "localhost", "db.internal"])
     // ssh's close is the machine's answer, not a lost forward.
-    #expect(dead.withLock { $0 }.isEmpty)
+    #expect(troubles.withLock { $0 }.isEmpty)
 }
 
 /// ssh's `-D` port that nothing answers on (its master gone, or the forward lost): the front asks for a new one, once.
@@ -39,14 +39,34 @@ import Testing
     let ssh = try await standIn()
     defer { ssh.cancel() }
     let live = try #require(ssh.port?.rawValue), gone = try #require(SOCKSFront.freePort())
-    let calls = Mutex<[UInt16?]>([])
-    let front = try await SOCKSFront.start { dead in
-        calls.withLock { $0.append(dead) }
-        return dead == nil ? gone : live
+    let calls = Mutex<[SOCKSFront.Trouble?]>([])
+    let front = try await SOCKSFront.start { trouble in
+        calls.withLock { $0.append(trouble) }
+        return trouble == nil ? gone : live
     }
     defer { front.stop() }
     #expect(await connect(front, "devbox.localhost", 7).0 == 0)
-    #expect(calls.withLock { $0 } == [nil, gone])
+    #expect(calls.withLock { $0 } == [nil, .gone(gone)])
+}
+
+/// ssh's `-D` that takes the request and never answers (a stopped master, a link that hangs): after `patience` the
+/// front asks for a new port (a new master's) and the page gets it, instead of waiting for ever.
+@Test(.timeLimit(.minutes(1))) func `front leaves a -D that hangs`() async throws {
+    let hung = try NWListener(using: .tcp, on: .any)
+    hung.newConnectionHandler = { $0.start(queue: .global()) }
+    try await ready(hung)
+    defer { hung.cancel() }
+    let ssh = try await standIn()
+    defer { ssh.cancel() }
+    let stalled = try #require(hung.port?.rawValue), live = try #require(ssh.port?.rawValue)
+    let calls = Mutex<[SOCKSFront.Trouble?]>([])
+    let front = try await SOCKSFront.start { trouble in
+        calls.withLock { $0.append(trouble) }
+        return trouble == nil ? stalled : live
+    }
+    defer { front.stop() }
+    #expect(await connect(front, "devbox.localhost", 7).0 == 0)
+    #expect(calls.withLock { $0 } == [nil, .stalled(stalled)])
 }
 
 /// A listener that ends by itself (a failure) listens again on the same port, which the cards' store keeps; one
@@ -102,16 +122,21 @@ private func standIn(_ asked: @escaping @Sendable (String) -> Void = { _ in }) a
             }
         }
     }
+    try await ready(ssh)
+    return ssh
+}
+
+/// Started, once it listens.
+private func ready(_ listener: NWListener) async throws {
     let ready = AsyncStream<Void> { continuation in
-        ssh.stateUpdateHandler = {
+        listener.stateUpdateHandler = {
             if $0 == .ready {
                 continuation.finish()
             }
         }
     }
-    ssh.start(queue: .global())
+    listener.start(queue: .global())
     for await _ in ready {}
-    return ssh
 }
 
 /// A page's CONNECT through the front (on `port`, else its own): its reply code, nil when nothing answers there,

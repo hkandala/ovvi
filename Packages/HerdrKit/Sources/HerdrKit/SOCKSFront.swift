@@ -18,17 +18,23 @@ final class SOCKSFront: Sendable {
         var stopped = false
     }
 
-    /// ssh's `-D` port on the live master; given the port that did not answer, a new forward's.
-    private let upstream: @Sendable (_ dead: UInt16?) async throws -> UInt16
+    /// Why the front asks for ssh's port again.
+    enum Trouble: Sendable, Equatable {
+        /// Nothing listens on it: the forward is gone.
+        case gone(UInt16)
+        /// ssh took a request there and did not answer within `patience`.
+        case stalled(UInt16)
+    }
 
-    private init(upstream: @escaping @Sendable (_ dead: UInt16?) async throws -> UInt16) {
+    /// ssh's `-D` port on the live master; after a trouble with it, the port to try next.
+    private let upstream: @Sendable (Trouble?) async throws -> UInt16
+
+    private init(upstream: @escaping @Sendable (Trouble?) async throws -> UInt16) {
         self.upstream = upstream
     }
 
     /// Listens on a free loopback port.
-    static func start(upstream: @escaping @Sendable (_ dead: UInt16?) async throws -> UInt16) async throws
-        -> SOCKSFront
-    {
+    static func start(upstream: @escaping @Sendable (Trouble?) async throws -> UInt16) async throws -> SOCKSFront {
         let front = SOCKSFront(upstream: upstream)
         try await front.listen(on: .any)
         return front
@@ -130,24 +136,41 @@ final class SOCKSFront: Sendable {
         guard let head = await client.read(4), head[0] == 5, head[1] == 1, let address = await address(client, head[3]),
               let port = await client.read(2)
         else { return client.cancel() }
-        guard let local = try? await upstream(nil) else { return Self.answer(client, Self.failed) }
+        guard var local = try? await upstream(nil) else { return Self.answer(client, Self.failed) }
         // Nothing listens on ssh's `-D` port: the forward is gone (its master ended, or lost it). Forwarded again,
         // once.
         var connected = await Self.connect(local)
-        if connected == nil, let again = try? await upstream(local) {
+        if connected == nil, let again = try? await upstream(.gone(local)) {
             Self.log.error("ssh's forward on \(local) was gone: forwarded again on \(again)")
-            connected = await Self.connect(again)
+            (local, connected) = await (again, Self.connect(again))
         }
-        guard let ssh = connected else { return Self.answer(client, Self.refused) }
+        guard var ssh = connected else { return Self.answer(client, Self.refused) }
         // ssh holds its greeting until the machine opened the connection, and closes without it when it cannot.
-        ssh.send(content: Data([5, 1, 0]) + head + address + port, completion: .idempotent)
-        guard await ssh.read(2) == Data([5, 0]), let reply = await ssh.readSome() else {
+        let request = Data([5, 1, 0]) + head + address + port
+        ssh.send(content: request, completion: .idempotent)
+        var reading = Task { [ssh] in await ssh.read(2) }
+        var greeted = await Self.greeting(reading, within: Self.patience)
+        // No answer in time: a hung master or link gets a new master, and the page one more try on it; a master that
+        // answers has a slow machine, which gets longer. Never a page that waits for ever.
+        if greeted == nil {
+            if let again = try? await upstream(.stalled(local)), again != local, let fresh = await Self.connect(again) {
+                Self.log.error("ssh did not answer on \(local): a new master forwards on \(again)")
+                ssh.cancel()
+                ssh = fresh
+                fresh.send(content: request, completion: .idempotent)
+                reading = Task { await fresh.read(2) }
+                greeted = await Self.greeting(reading, within: Self.patience)
+            } else {
+                greeted = await Self.greeting(reading, within: .seconds(30))
+            }
+        }
+        guard greeted == true, let reply = await ssh.readSome() else {
             ssh.cancel()
             return Self.answer(client, Self.refused)
         }
         client.send(content: reply, completion: .idempotent)
         let open = Mutex(2)
-        let done: @Sendable () -> Void = {
+        let done: @Sendable () -> Void = { [ssh] in
             if open.withLock({ $0 -= 1; return $0 == 0 }) {
                 client.cancel()
                 ssh.cancel()
@@ -155,6 +178,25 @@ final class SOCKSFront: Sendable {
         }
         Self.pump(client, ssh, done)
         Self.pump(ssh, client, done)
+    }
+
+    /// How long ssh may take to open a page's connection on the machine: one round trip there, well under a second
+    /// (CI's localhost: milliseconds).
+    static let patience = Duration.seconds(5)
+
+    /// Whether ssh greeted on `reading`; nil while it still waits after `limit` (the read goes on).
+    private static func greeting(_ reading: Task<Data?, Never>, within limit: Duration) async -> Bool? {
+        await withCheckedContinuation { continuation in
+            let waiting = Mutex<CheckedContinuation<Bool?, Never>?>(continuation)
+            Task {
+                let greeted = await reading.value == Data([5, 0])
+                waiting.withLock { $0.take() }?.resume(returning: greeted)
+            }
+            Task {
+                try? await Task.sleep(for: limit)
+                waiting.withLock { $0.take() }?.resume(returning: nil)
+            }
+        }
     }
 
     /// A connection to ssh's `-D` port, once open; nil when nothing listens there.
