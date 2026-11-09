@@ -98,7 +98,9 @@ extension OvviUITests {
 
     /// Two floating windows, one on top, its own ⌘K, and both back after ⌘Q and a relaunch.
     func testFloatingWindowsHaveTheirOwnCommandsAndComeBackAfterRelaunch() async throws {
-        // As testRelaunchRestoresThePagesThatStillRun: ⌘Q saves the window.
+        // As testRelaunchRestoresThePagesThatStillRun: ⌘Q saves the window. From no saved windows: each came back
+        // as a window of its own on -session.
+        try await forgetWindows()
         app.launchArguments = ["-session", one, "-NSQuitAlwaysKeepsWindows", "YES"] + Self.noConfig
         app.launch()
         let (tab, first) = try await newTab("float-keep")

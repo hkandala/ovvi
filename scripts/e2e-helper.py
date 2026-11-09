@@ -31,6 +31,8 @@ POST /<session>/ssh-unforward with an SSH target as the body cancels the dynamic
 of the app's ControlMaster to it, on CI only, as a master that lost them; the ports come back, one per line.
 POST /<session>/web-kill kills the app's WebKit page processes (SIGKILL, as the system ends one), or with GPU or
 Networking as the body its GPU or network process, and gives back the pids it killed, one per line.
+POST /<session>/forget-windows removes the saved windows ($TMPDIR/dev.ovvi.app.savedState), on CI only: a test that
+restores windows starts from none, not from an earlier test's (on a Mac the user's own Ovvi keeps its windows there).
 POST /<session>/ssh-forget with an SSH target as the body removes its host key from ~/.ssh/known_hosts, on CI only, so
 ssh asks for it again.
 POST /<session>/swipe with "x y step steps [pause [vertical [option]]]" as the body posts a two-finger trackpad swipe there (scripts/swipe.swift).
@@ -48,6 +50,7 @@ POST /<session>/pause stops the session's server (SIGSTOP), so the app's writes 
 /<session>/resume lets it go on (SIGCONT), as the helper's exit does for every session.
 POST /<session>/ssh-connections gives back how many connections the CI sshd (scripts/ci-sshd.sh) has seen.
 Any session not named on the command line is refused.
+Every script that posts events gets the tests' app's pid (OVVI_APP_PID) and refuses a point outside its windows.
 """
 
 import ctypes
@@ -75,8 +78,12 @@ ISOLATED = ["-configFolder", NO_CONFIG, "-archivedHome", "/tmp/ovvi-e2e-archived
 # Compiled once, beside the app's build: `swift` interpreting the script again took up to 10 s a swipe on CI.
 tools = tempfile.mkdtemp()
 folders.append(tools)
-builds = {name: subprocess.Popen(["swiftc", f"scripts/{name}.swift", "-o", f"{tools}/{name}"],
-                                 stderr=open(f"{tools}/{name}.log", "wb"))
+# The scripts that post events each start with scripts/posting.swift's check (one file, top-level code is main's).
+for name in ("swipe", "pinch", "drag", "file-drag"):
+    with open(f"{tools}/{name}.swift", "w") as joined:
+        joined.write(open("scripts/posting.swift").read() + open(f"scripts/{name}.swift").read())
+builds = {name: subprocess.Popen(["swiftc", f"{tools}/{name}.swift" if name != "usage" else "scripts/usage.swift",
+                                  "-o", f"{tools}/{name}"], stderr=open(f"{tools}/{name}.log", "wb"))
           for name in ("swipe", "pinch", "drag", "file-drag", "usage")}
 
 
@@ -91,7 +98,7 @@ def cpu_seconds(pids):
 
 def usage(session, seconds):
     builds["usage"].wait()
-    pid = subprocess.run(["pgrep", "-nx", "Ovvi"], capture_output=True, text=True).stdout.strip()
+    pid = app_pid()
     pattern = f"^[^ ]*herdr --session {session} terminal session"
     helpers = subprocess.run(["pgrep", "-f", pattern], capture_output=True, text=True).stdout.split()
     start, app_start, helpers_start = time.time(), cpu_seconds([pid]), cpu_seconds(helpers)
@@ -107,6 +114,20 @@ def usage(session, seconds):
                       f"{100 * helpers_cpu / wall:.1f}%"] + processes.splitlines() + summary[:16]).encode()
 
 
+def app_pid():
+    """The tests' app: the newest Ovvi on one of the helper's sessions (a test launches it with -session or
+    -defaultSession), never the user's own nor another run's; "" when none runs."""
+    names = "|".join(map(re.escape, sessions))
+    pattern = f"/Ovvi.app/Contents/MacOS/Ovvi .*-(session|defaultSession) ({names})( |$)"
+    found = subprocess.run(["pgrep", "-nf", pattern], capture_output=True, text=True)
+    return found.stdout.strip()
+
+
+def app_env():
+    """The environment for a script that posts events: the tests' app's pid, which it requires under its points."""
+    return {**os.environ, "OVVI_APP_PID": app_pid()}
+
+
 def signal_server(session, action):
     """Stops (`pause`) the session's server or lets it go on (`resume`); false when no server matched."""
     return subprocess.run(["pkill", "-STOP" if action == "pause" else "-CONT", "-f",
@@ -120,8 +141,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if session not in sessions:
             status, reply = 403, f"refusing session '{session}'".encode()
         elif action not in ("", "control", "takeover", "children", "stop", "start", "open-folder", "open-url",
-                            "file-drag", "temporary-file-drag", "text-drag", "usage", "ssh-drop", "ssh-stop", "ssh-forget",
-                            "ssh-unforward",
+                            "file-drag", "temporary-file-drag", "text-drag", "usage", "ssh-drop", "ssh-stop",
+                            "ssh-forget", "forget-windows", "ssh-unforward",
                             "ssh-connections",
                             "swipe", "pinch", "drag", "stress", "sample", "heap", "press", "release", "pause", "resume",
                             "web-kill"):
@@ -154,7 +175,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif action == "sample" and not re.fullmatch(rb"\d+", body):
             status, reply = 400, b"the body must be seconds"
         elif action in ("sample", "heap"):
-            pid = subprocess.run(["pgrep", "-nx", "Ovvi"], capture_output=True, text=True).stdout.strip()
+            pid = app_pid()
             argv = ["sample", pid, body.decode()] if action == "sample" else ["heap", "-s", "-H", "-q", pid]
             # A bound for a hung tool, not a measure: `heap` walks every malloc node, 37 s at the stress test's 400
             # panes on CI, and over 60 s on a runner half as fast.
@@ -177,11 +198,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif action in (*builds, "press") and any([build.wait() for build in builds.values()]):
             status, reply = 500, b"".join(open(f"{tools}/{name}.log", "rb").read() for name in builds)
         elif action in ("swipe", "pinch", "drag"):
-            run = subprocess.run([f"{tools}/{action}"] + body.decode().split(), capture_output=True, timeout=120)
+            run = subprocess.run([f"{tools}/{action}"] + body.decode().split(), capture_output=True, timeout=120,
+                                 env=app_env())
             status, reply = (200, b"") if run.returncode == 0 else (500, run.stderr)
         elif action == "press":
-            run = subprocess.Popen([f"{tools}/drag"] + body.decode().split() + ["-1"], stdin=subprocess.PIPE,
-                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            run = subprocess.Popen([f"{tools}/drag"] + body.decode().split() + ["-1"], env=app_env(),
+                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if run.stdout.readline():  # "held": over tx ty
                 held[session] = run
                 status, reply = 200, b""
@@ -216,9 +238,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif action == "web-kill" and body not in (b"", b"GPU", b"Networking"):
             status, reply = 400, b"the body must be empty (page processes), GPU or Networking"
         elif action == "web-kill":
-            # The tests' app, by its session (never the user's own Ovvi), and WebKit's processes it is responsible for.
-            app = int(subprocess.run(["pgrep", "-nf", f"/Ovvi -session {re.escape(session)}( |$)"], capture_output=True,
-                                     text=True).stdout.strip() or 0)
+            # WebKit's processes the tests' app is responsible for.
+            app = int(app_pid() or 0)
             responsible = ctypes.CDLL(None).responsibility_get_pid_responsible_for_pid
             kind = f"com.apple.WebKit.{body.decode() or 'WebContent'}"
             found = subprocess.run(["pgrep", "-f", f"{kind}.xpc/"], capture_output=True, text=True).stdout
@@ -226,6 +247,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
             for pid in pids:
                 os.kill(pid, 9)
             status, reply = 200, "".join(f"{pid}\n" for pid in pids).encode()
+        elif action == "forget-windows" and os.environ.get("CI") != "true":
+            status, reply = 403, b"CI only: the user's own Ovvi keeps its windows there"
+        elif action == "forget-windows":
+            shutil.rmtree(os.path.join(tempfile.gettempdir(), "dev.ovvi.app.savedState"), ignore_errors=True)
+            status, reply = 200, b""
         elif action == "ssh-forget" and os.environ.get("CI") != "true":
             status, reply = 403, b"CI only: it writes ~/.ssh/known_hosts"
         elif action == "ssh-forget":
@@ -268,12 +294,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
             with open(path, "w") as file:
                 file.write("ovvi-e2e-dropped\n")
             x, y, tx, ty = body.decode().split()
-            source = subprocess.run([f"{tools}/file-drag", path, x, y, tx, ty], capture_output=True, timeout=30)
+            source = subprocess.run([f"{tools}/file-drag", path, x, y, tx, ty], capture_output=True, timeout=30,
+                                    env=app_env())
             status, reply = (200, path.encode()) if source.returncode == 0 else (
                 500, source.stderr or b"the drop was refused")
         elif action == "text-drag":
             x, y, tx, ty, text = body.decode().split(" ", 4)
-            source = subprocess.run([f"{tools}/file-drag", f"text:{text}", x, y, tx, ty], capture_output=True, timeout=30)
+            source = subprocess.run([f"{tools}/file-drag", f"text:{text}", x, y, tx, ty], capture_output=True,
+                                    timeout=30, env=app_env())
             status, reply = (200, b"") if source.returncode == 0 else (500, source.stderr or b"the drop was refused")
         elif action in ("pause", "resume"):
             status, reply = (200, b"") if signal_server(session, action) else (500, b"no server")

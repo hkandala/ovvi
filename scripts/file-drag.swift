@@ -1,7 +1,7 @@
 // A file's icon in a small window of its own, for the file drop tests: a drag from Finder now and then started nothing
-// on CI. Shows the icon at x y (screen points, top left) and drags it to tx ty, both points in an Ovvi window, as
-// scripts/drag.swift posts its drags. Exits 0 when a drop took the file, 1 when the drop was refused, 2 when no drag
-// began within 5 s or ended within 10 s. A path `text:<text>` drags that text instead.
+// on CI. Shows the icon at x y (screen points, top left) and drags it to tx ty, both points in the tests' app's
+// windows, as scripts/drag.swift posts its drags. Exits 0 when a drop took the file, 1 when the drop was refused, 2
+// when no drag began within 5 s or ended within 10 s. A path `text:<text>` drags that text instead.
 // Usage: file-drag <path> <x> <y> <tx> <ty>
 import AppKit
 
@@ -10,16 +10,9 @@ guard args.count == 4 else { fatalError("usage: file-drag <path> <x> <y> <tx> <t
 let url = URL(filePath: CommandLine.arguments[1])
 let text = CommandLine.arguments[1].hasPrefix("text:") ? String(CommandLine.arguments[1].dropFirst(5)) : nil
 let start = CGPoint(x: args[0], y: args[1]), end = CGPoint(x: args[2], y: args[3])
-func frame(_ window: [String: Any]?) -> CGRect {
-    (window?[kCGWindowBounds as String] as? NSDictionary)
-        .flatMap { CGRect(dictionaryRepresentation: $0 as CFDictionary) } ?? .null
-}
 
-/// Only into the Ovvi window in front at the start, as drag.swift: never into another app.
-let front = (CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID) as? [[String: Any]] ?? [])
-    .first { $0[kCGWindowLayer as String] as? Int == 0 && frame($0).contains(start) }
-guard front?[kCGWindowOwnerName as String] as? String == "Ovvi", frame(front).contains(end)
-else { fatalError("not both of \(start) and \(end) in the Ovvi window at \(start)") }
+// Before its own window shows over the start.
+onlyIntoTheApp([start, end])
 /// The moves and the release wait for it.
 let began = DispatchSemaphore(value: 0)
 

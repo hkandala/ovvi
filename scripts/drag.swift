@@ -2,7 +2,7 @@
 // workspace button opens its menu, then drops on a row there): XCUITest drags to one point only. Presses at x y (screen
 // points, top left) for 0.3 s, then moves to each next point over 0.3 s and holds there for its seconds, then lets go.
 // A negative hold prints "held" and holds until a line on stdin (at most 30 s): the test lets go once it saw what the
-// hold did. Posted to the HID system, as scripts/swipe.swift does. Only from an Ovvi window: never into another app.
+// hold did. Posted to the HID system, as scripts/swipe.swift does. Only in the tests' app's windows.
 // Usage: swift scripts/drag.swift <x> <y> (<x> <y> <hold>)...
 import CoreGraphics
 import Foundation
@@ -11,18 +11,8 @@ let args = CommandLine.arguments.dropFirst().compactMap { Double($0) }
 guard args.count >= 5, (args.count - 2) % 3 == 0 else { fatalError("usage: drag.swift <x> <y> (<x> <y> <hold>)...") }
 let start = CGPoint(x: args[0], y: args[1])
 let points = [start] + stride(from: 2, to: args.count, by: 3).map { CGPoint(x: args[$0], y: args[$0 + 1]) }
-let windows = CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID) as? [[String: Any]] ?? []
-let front = windows.first { window in
-    let bounds = (window[kCGWindowBounds as String] as? NSDictionary)
-        .flatMap { CGRect(dictionaryRepresentation: $0 as CFDictionary) }
-    return window[kCGWindowLayer as String] as? Int == 0 && bounds?.contains(start) == true
-}
 
-let frame = (front?[kCGWindowBounds as String] as? NSDictionary)
-    .flatMap { CGRect(dictionaryRepresentation: $0 as CFDictionary) } ?? .null
-
-guard front?[kCGWindowOwnerName as String] as? String == "Ovvi", points.allSatisfy({ frame.contains($0) })
-else { fatalError("not all of \(points) in the Ovvi window at \(start)") }
+onlyIntoTheApp(points)
 
 func post(_ type: CGEventType, _ point: CGPoint) {
     CGEvent(mouseEventSource: nil, mouseType: type, mouseCursorPosition: point, mouseButton: .left)?

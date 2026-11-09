@@ -150,6 +150,7 @@ extension OvviUITests {
         try await running(five)
         // Not relaunch: a launch with -ApplePersistenceIgnoreState saves no state at ⌘Q (CI 39902793320). -session
         // keeps any saved pages out; ⌘Q saves whatever the Mac's "close windows when quitting" setting says.
+        try await forgetWindows()
         app.launchArguments = ["-session", one, "-NSQuitAlwaysKeepsWindows", "YES"] + Self.noConfig
         app.launch()
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
