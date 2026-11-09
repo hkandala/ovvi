@@ -222,10 +222,10 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   one ([Windows](#windows)).
 - **Pages.** A sideways swipe on the sidebar moves to the next or previous
   open page ([Swiping](/docs/ui/swiping)); so do ⌥⌘[ ], and ⌥⌘1–9 show a page by its place (Window menu).
-- **Page dots.** Under the pages, above Archived Sessions, centered on the rows: one 6 pt dot per
-  open page, 6 pt apart, 11 pt from the rows above and from Archived Sessions under them. The current page's dot is in primary text color, the
-  others tertiary. A click on a dot shows its page; its context menu has Detach Session. Hidden while one page is
-  open. VoiceOver reads each dot as its page's title (the page header's).
+- **Page dots.** Under the pages, above Archived Sessions, centered on the rows: one 6 pt dot per open page, 6 pt
+  apart, 11 pt from the rows above and from Archived Sessions under them. The current page's dot is in primary text
+  color, the others tertiary. A click on a dot shows its page; its context menu has Detach Session. Hidden while one
+  page is open. VoiceOver reads each dot as its page's title (the page header's).
 - **Page header.** The session's name, the page's title (13 pt bold, the
   rows' size, primary); for a machine's `default`
   session, the machine's name instead: This Mac's own name (System Settings,
@@ -330,15 +330,16 @@ An unfolded [space row](#space-rows) lists its agent panes under its name, insid
   While the pointer is over the space rows they hold still: a state, a time and a title change at once, and the
   rows move 1 s after the pointer leaves, sliding in 0.2 s (no motion with Reduce Motion). A new agent waits at the
   end until then.
-- **One line**, 28 pt, one per agent pane, even when several share a tab: the program tile (8 pt into the
-  space row, on the names' edge), then the pane's name (13 pt; its label, else its session's title, else its
-  session's first typed prompt cut at 100 characters with "…", else "Untitled":
-  [Session titles](/docs/ui/chat-view#session-titles)); the row's width cuts it further. Then at the line's end
-  the state box: the state icon (12 pt) in the state's color, on a 14 % tint of it with a 1 pt border at 45 % and 6 pt corners. Only a Working box adds a time
-  after the icon: how long since the agent started working, 11 pt semibold in the state's color with tabular
-  digits. It shows "&lt;1m" for the first minute, then "1m", "2m", … and "1h 5m", and changes once a minute. Needs
-  you shows its icon alone; a finish the user has not seen shows the green check (the unread mark) until the user
-  leaves that pane. An idle agent shows no box. The name is medium weight for needs you and an unseen finish.
+- **One line**, 28 pt, one per agent pane, even when several share a tab: the program tile (8 pt into the space row,
+  on the names' edge), then the pane's name (13 pt; its label, else its session's title, else its session's first
+  typed prompt cut at 100 characters with "…", else "Untitled":
+  [Session titles](/docs/ui/chat-view#session-titles)); the row's width cuts it further. Then at the line's end the
+  state box: the state icon (12 pt) in the state's color, on a 14 % tint of it with a 1 pt border at 45 % and 6 pt
+  corners. Only a Working box adds a time after the icon: how long since the agent started working, 11 pt semibold
+  in the state's color with tabular digits. It shows "&lt;1m" for the first minute, then "1m", "2m", … and "1h 5m",
+  and changes once a minute. Needs you shows its icon alone; a finish the user has not seen shows the green check
+  (the unread mark) until the user leaves that pane. An idle agent shows no box. The name is medium weight for needs
+  you and an unseen finish.
 - **Times.** herdr gives no times. The app records when it saw each agent's state change, with its
   `state_change_seq`, per machine and session, across relaunches: an agent whose number did not change keeps its
   time. An agent first seen after a launch counts from then.
@@ -352,9 +353,9 @@ How it works: [Agents and notifications](/docs/status#agents-and-notifications).
 ## Archived Sessions
 
 A folded shelf at the sidebar's foot, under the pages and the page dots, above the footer (D110), 10 pt under the
-rows with one page, as two rows are apart. It is the
-machine's, not a session's: it does not slide with the pages, and every page shows the same. Settings ▸ Agents ▸
-**Show closed sessions** (on by default) hides it, and then nothing is read.
+rows with one page, as two rows are apart. It is the machine's, not a session's: it does not slide with the pages,
+and every page shows the same. Settings ▸ Agents ▸ **Show closed sessions** (on by default) hides it, and then
+nothing is read.
 - **The shelf.** A 1 pt border round it (primary at 14 %, radius 10), as a space row that is not selected, and no
   glass. Its header is 30 pt tall: "Archived Sessions" (12 pt medium, secondary) 8 pt in, on the space names'
   edge, then at its end a chevron where a space row's is: right while folded, down while open. Under the pointer the
