@@ -83,10 +83,15 @@ public struct Pane: Decodable, Sendable, Identifiable {
     public let agentStatus: AgentStatus?
     /// The agent's session, as its herdr integration reported it.
     public let agentSession: AgentSession?
-    /// Of its tokens only the `ovvi` command's ring.
+    /// Of its tokens only the `ovvi` command's ring and the chat launch.
     let tokens: Ring?
     /// Why herdr brought the pane back from its saved session without a program: its saved folder is gone.
     public let restoreError: String?
+
+    /// Ovvi's chat launch in it (`mark(_:chat:)`).
+    public var chat: String? {
+        tokens?.chat
+    }
 
     enum CodingKeys: String, CodingKey {
         case id = "pane_id", terminalID = "terminal_id", tabID = "tab_id", label, cwd, agent
@@ -97,8 +102,9 @@ public struct Pane: Decodable, Sendable, Identifiable {
 
 struct Ring: Decodable {
     let request: String?
+    let chat: String?
 
-    enum CodingKeys: String, CodingKey { case request = "ovvi-req" }
+    enum CodingKeys: String, CodingKey { case request = "ovvi-req", chat = "ovvi-chat" }
 }
 
 /// herdr's `agent_session`: `value` is the session's id (Claude Code, Codex, OpenCode) or its file (pi). It can be an

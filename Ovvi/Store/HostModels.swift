@@ -283,6 +283,7 @@ extension HostStore {
     /// changes. A progress title ("build 51%") changes on and on; its first word does not.
     func watchProgram(_ pane: Pane, _ new: HerdrKit.Pane) {
         watchTitle(pane, new)
+        restore(new)
         if new.terminalID != pane.terminalID {
             pane.program = nil
             pane.asked = false

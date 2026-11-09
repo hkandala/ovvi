@@ -26,6 +26,8 @@ public protocol Multiplexer: Sendable {
     func mark(_ paneID: String, shown: Bool) async throws
     /// Marks the workspace as followed by Ovvi, for 30 s, or clears the mark (agent-control#is-my-pane-in-ovvi).
     func mark(workspace workspaceID: String, open: Bool) async throws
+    /// The pane's chat launch (`ovvi-chat`), kept by herdr with the pane, past the app: no time limit.
+    func mark(_ paneID: String, chat: String) async throws
     /// What the pane runs besides its shell, else the shell (`isShell`, design D41).
     func program(_ paneID: String) async throws -> Program?
     /// A pane's terminal by its terminal id: control it, or only watch it.
@@ -169,6 +171,11 @@ extension HerdrClient: Multiplexer {
         let tokens: [String: any Sendable] = ["ovvi-shown": shown ? (exec is SSHExec ? "remote" : "1") : NSNull()]
         let _: Created = try await call("pane.report_metadata", ["pane_id": paneID, "source": "ovvi",
                                                                  "tokens": tokens, "ttl_ms": 30000])
+    }
+
+    public nonisolated func mark(_ paneID: String, chat: String) async throws {
+        let _: Created = try await call("pane.report_metadata", ["pane_id": paneID, "source": "ovvi-chat",
+                                                                 "tokens": ["ovvi-chat": chat]])
     }
 
     public nonisolated func mark(workspace workspaceID: String, open: Bool) async throws {

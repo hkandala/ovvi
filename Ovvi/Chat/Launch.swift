@@ -29,9 +29,22 @@ extension HostStore {
         guard let terminal = pane.terminalID, var launch = launches[terminal], launch.pids.isEmpty,
               ask > launch.after else { return }
         launch.pids = Set(program?.foreground.filter { $0.runs(launch.command) }.map(\.pid) ?? [])
-        if !launch.pids.isEmpty {
-            launches[terminal] = launch
-        }
+        guard !launch.pids.isEmpty else { return }
+        launches[terminal] = launch
+        // Kept in herdr too, so the chat outlives the app (`restore`).
+        let chat = "\(launch.command) \(launch.token) " + launch.pids.sorted().map(String.init).joined(separator: ",")
+        Task { [client, id = pane.id] in try? await client?.mark(id, chat: chat) }
+    }
+
+    /// The launch herdr kept with the pane (`bind`), as the app starts again: its processes still have to run.
+    /// ponytail: a pid alone, not its start time; the same pid named as the agent in the same terminal again would
+    /// need the Mac's pids to wrap, check the start time if that shows.
+    func restore(_ new: HerdrKit.Pane) {
+        guard let terminal = new.terminalID, launches[terminal] == nil,
+              let parts = new.chat?.split(separator: " ").map(String.init), parts.count == 3,
+              ChatAdapters.adapter(parts[0]) != nil, let token = ChatAdapters.token(parts[1]) else { return }
+        let pids = Set(parts[2].split(separator: ",").compactMap { Int($0) })
+        launches[terminal] = Launch(command: parts[0], token: token, after: 0, pids: pids)
     }
 
     /// Its marker or its launch's processes before the loader goes, so a chat pane shows its chat at once: asked
