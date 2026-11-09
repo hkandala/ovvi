@@ -1419,3 +1419,8 @@ you did, no need of reverting them".
 - **Pictures**, before and after, dark and light: `~/Downloads/ovvi-research/p57b/r7/index.html`.
 - **For the user.** Open Archived Sessions on devvm-aai: rows within about 2 s, the rest come in. Right-click the
   sidebar under the spaces.
+69. "can we have a splash screen or something on the first start of app, like right now when ovvi is started for the
+    first time, it shows some blank window with no liquid glass effect or anything and then it flickers and changes to
+    our app. can we make that smoother, may be we can use splashscreen showing our logo or something while the window
+    is getting loaded, but we shouldn't show this for consecutive windows later, only on the first start. can we do
+    that?" (Track A).
