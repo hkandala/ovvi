@@ -127,7 +127,6 @@ export async function make(place: Page, root: string, source: string) {
   /** The patch drawn, "" before the first; a failed read is undefined. */
   let patch: string | undefined
   let files: FileDiffMetadata[] = []
-  /** Each file's box, by its name. */
   let boxes = new Map<string, Box>()
   // Each change block's first line, in order, for previous / next; the last one stepped to, or half a step before
   // the next one after a pick in the list.
@@ -214,8 +213,6 @@ export async function make(place: Page, root: string, source: string) {
     }
   }
 
-  /** The file's own row, as the card's rows: the disclosure, its icon, name and folder, its counts and letter, then
-   *  Viewed and Open File. */
   function fileRow(box: Box) {
     const diff = box.diff, row = element("div", "file"), disclosure = element("button", "disclosure", "›")
     disclosure.ariaLabel = "Show or hide the file"
@@ -229,7 +226,6 @@ export async function make(place: Page, root: string, source: string) {
     return row
   }
 
-  /** Viewed, and Open File but on a deleted file. */
   function actions(diff: FileDiffMetadata) {
     const box = element("span", "actions"), label = element("label", "mark")
     const check = element("input")
@@ -396,7 +392,6 @@ export async function make(place: Page, root: string, source: string) {
     for (const box of drawn) box.view?.render({ fileDiff: box.diff, fileContainer: box.lines })
   }
 
-  /** The file list: as the Git home's lists, a title with its count, then a row per file. */
   function listFiles(files: FileDiffMetadata[]) {
     const title = element("header", "title")
     title.append(element("h2", "", "Files"), element("span", "count", files.length ? String(files.length) : ""))
@@ -607,7 +602,6 @@ export async function make(place: Page, root: string, source: string) {
   // ⌘G and ⇧⌘G, which the card takes with ⌘F: Next and Previous Change.
   api.on("findNext", () => step(1))
   api.on("findPrevious", () => step(-1))
-  /** ⌘F: the find bar, its text selected. */
   api.on("find", () => {
     find.hidden = false
     field.select()

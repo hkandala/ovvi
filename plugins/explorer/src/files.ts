@@ -266,7 +266,6 @@ export async function show(place: Place): Promise<Reveal> {
     show()
   }
 
-  /** The folders above a path. */
   function folders(path: string): string[] {
     const above = parent(path)
     return above ? [above, ...folders(above)] : []
@@ -416,7 +415,6 @@ export async function show(place: Place): Promise<Reveal> {
   function showDotfiles(yes: boolean) {
     dotfiles = yes
     run(refresh).catch(console.error)
-    // The filter's paths again, with the dotfiles or without.
     paths = filter ? run(loadPaths).catch(() => {}) : undefined
     void (paths ?? queue).then(match).catch(console.error)
   }
@@ -453,7 +451,6 @@ export async function show(place: Place): Promise<Reveal> {
     void (paths ?? queue).then(match).catch(console.error)
   }
   field.oninput = filtered
-  // Esc closes the bar; Return and ↓ go to the matches.
   field.onkeydown = (event) => {
     if (event.key === "Escape") closeFind()
     else if (event.key === "Enter" || event.key === "ArrowDown") take()
@@ -582,7 +579,6 @@ export async function show(place: Place): Promise<Reveal> {
     })
   }
 
-  /** No row selected, in either tree. */
   function clear() {
     for (const each of [tree, results]) for (const at of each.getSelectedPaths()) each.getItem(at)?.deselect()
   }

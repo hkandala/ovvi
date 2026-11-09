@@ -16,7 +16,6 @@
     background: color-mix(in srgb, var(--text) 6%, transparent); }
   #message::placeholder { color: var(--dim); }
   #message:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent); }
-  /* Commit and Initialize Repository: on the accent. */
   #commit-button, #initialize { all: unset; height: 30px; padding: 0 16px; border-radius: 15px; font-weight: 500;
     color: var(--on-accent); background: var(--accent); }
   :is(#commit-button, #initialize):hover { filter: brightness(1.08); }
@@ -25,7 +24,6 @@
     filter: none; }
   :is(#commit-button, #initialize):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   section { margin-bottom: 16px; }
-  /* The history apart from the changes above it. */
   #history { margin: 26px 0 0; padding-top: 10px; border-top: 0.5px solid var(--divider); }
   .title .all { all: unset; padding: 2px 7px; border-radius: 5px; font-size: 11px; color: var(--dim); }
   .title .all:first-of-type { margin-left: auto; }

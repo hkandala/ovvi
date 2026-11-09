@@ -185,8 +185,6 @@ export async function make(place: Page, root: string) {
     enable()
   }
 
-  /** A list's header with its count, Revert All, and Stage All or Unstage All, then a row per file; only when it has
-   *  files. */
   function section(id: string, title: string, changes: Change[], staged: boolean) {
     const node = page.querySelector<HTMLElement>(`#${id}`)!
     node.hidden = !changes.length
@@ -263,7 +261,6 @@ export async function make(place: Page, root: string) {
     return node
   }
 
-  /** A change's path, and a rename's old one. */
   const paths = (change: Change) => [change.path, ...(change.oldPath ? [change.oldPath] : [])]
 
   /** Asks, then puts the files back as HEAD has them (both lists'). The question names the new files (untracked, or
@@ -375,13 +372,11 @@ export async function make(place: Page, root: string) {
     return [node]
   }
 
-  // A new history length from Settings.
   api.on("settings", ({ commits }) => {
     if (typeof commits !== "number") return
     limit = commits
     void load()
   })
-  // The header's picks on the home: a branch, Working Tree, Fetch, Pull, Push.
   api.on("control", ({ id, value }) => {
     if (id === "git.working") ovvi.card.go(`${home(root)} uncommitted`)
     else if (id === "git.branch") {

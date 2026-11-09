@@ -1,4 +1,3 @@
-/* The diff (diff.ts). */
 /* A 4 pt gap under row 2, as every plugin page: the file list's line starts below it, and a file header sticks below it. */
 #diff { position: absolute; inset: 0; box-sizing: border-box; padding-top: 4px; display: flex; overflow: hidden; --diffs-font-family: ui-monospace, monospace; --diffs-font-size: var(--font-size);
   --diffs-header-font-family: system-ui;

@@ -88,7 +88,7 @@ export interface Pages {
   route(draw: (page: Page) => Promise<void>): Promise<void>
 }
 
-/** @since 2. One place's page. */
+/** @since 2 */
 export interface Page {
   readonly arg: string
   /** The landing of the move that drew it. */
@@ -155,7 +155,6 @@ export interface Files {
 
 /** Writes run one at a time per card, and never ask for a password (they fail with git's message). */
 export interface Git {
-  /** The repository's root of a folder, or null. */
   root(folder: string): Promise<string | null>
   /** The changed files from the root, each untracked file on its own: the work tree's letter, else the index's. */
   status(root: string): Promise<Change[]>
@@ -191,7 +190,6 @@ export interface Git {
   push(root: string): Promise<void>
   /** A remote branch (`origin/x`) makes a local one that tracks it. */
   switch(root: string, branch: string): Promise<void>
-  /** `git init` in the folder. */
   init(folder: string): Promise<void>
 }
 
@@ -233,7 +231,6 @@ export interface State {
 }
 
 export interface Controls {
-  /** A header control's current value. */
   get(id: string): string | boolean | string[] | undefined
   /** Changes a header control or a command. `badge` "" or 0 clears; `busy` shows a spinner in a button or a menu and
    *  disables the control. A field's value changes as the user types: set it only to replace or clear it (after

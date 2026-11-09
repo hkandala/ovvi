@@ -33,7 +33,6 @@ export const choose = (ovvi: Ovvi, change: Own) => ovvi.state.set({ ...ovvi.stat
 /** A file's extension, lowercased; "" for none, also for a dotfile's name (as `NSString.pathExtension`). */
 export const extension = (path: string) => (/[^/]\.([^./]+)$/.exec(path)?.[1] ?? "").toLowerCase()
 
-/** A path's `file:` address. */
 export const fileURL = (path: string) => `file://${path.split("/").map(encodeURIComponent).join("/")}`
 
 /** An HTML file's `file:` page, which opens in the browser: on This Mac only, as a remote card never shows a file over
@@ -62,7 +61,6 @@ export function kind(arg: string): "files" | "file" | "preview" | "markdown" {
 /** A place's own handling of a landing when the card comes back to it. */
 export type Reveal = ((at: string) => void) | undefined
 
-/** Where an open goes, by the modifier keys: ⌘ a new tab, ⌥ a pane to the side, else the card itself. */
 type How = "card" | "tab" | "side"
 export const how = (event: MouseEvent | KeyboardEvent): How => (event.metaKey ? "tab" : event.altKey ? "side" : "card")
 
@@ -71,8 +69,7 @@ export const how = (event: MouseEvent | KeyboardEvent): How => (event.metaKey ? 
 export const open = (ovvi: Ovvi, arg: string, how: How, plugin?: string) =>
   void ovvi.open(arg, { plugin, how, background: how !== "card" }).catch((error) => console.error(error))
 
-/** A row's or a link's menu at the pointer: Open (Open as Root for a folder), Open in New Tab, Open to the Side;
- *  Rename when the row can be renamed; a link's Copy Link (of `link`, its path or address). */
+/** A row's or a link's menu at the pointer; `link` is what Copy Link copies, a path or an address. */
 export async function menu(ovvi: Ovvi, event: MouseEvent, arg: string,
   more: { rename?: () => void; link?: string; plugin?: string } = {}) {
   event.preventDefault()

@@ -33,7 +33,6 @@ const aliases: Record<string, string> = {
   hpp: "cpp", hh: "cpp", m: "cpp", mm: "cpp", kts: "kt", rake: "rb", gemspec: "rb", bash: "sh", zsh: "sh",
   zshrc: "sh", bashrc: "sh", profile: "sh", jsonc: "json", yml: "yaml", htm: "html",
 }
-/** The file's language, by its extension, or its name for a dotfile, a Gemfile or a Rakefile. */
 const language = (path: string) => {
   const file = name(path), ext = file.includes(".") ? (file.split(".").pop() ?? "").toLowerCase() : file
   const key = aliases[ext] ?? (ext === "Gemfile" || ext === "Rakefile" ? "rb" : ext)
@@ -121,7 +120,6 @@ const hanging = ViewPlugin.fromClass(
 
 export async function show(place: Place): Promise<Reveal> {
   const { ovvi, arg, trail } = place
-  /** The breadcrumbs, then the scopes around the caret after `{}`. */
   const jump = (scope: string) =>
     ovvi.controls.set("jump", { value: [...trail, ...(scope ? [scope] : [])], symbol: scope ? "curlybraces" : "" })
   let last = ""

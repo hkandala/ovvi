@@ -327,7 +327,6 @@ function present(kept: Kept, again?: { arg: string; at?: string }) {
   const old = current
   if (old) {
     old.page.element.inert = true
-    // Its sound stops with it.
     old.page.element.querySelectorAll<HTMLMediaElement>("audio, video").forEach((media) => media.pause())
     // Left with unsaved edits, which the user chose to discard.
     if (dirty) drop(old)
@@ -434,7 +433,6 @@ HTMLElement.prototype.focus = function (options) {
   if (context.keyboard || pressed || document.hasFocus()) focus.call(this, options)
 }
 
-// The card is ready when `main` returns or calls `card.ready()`; an error from it shows in the card.
 try {
   // Not a literal: the build leaves it to the page, which loads the plugin's own file.
   const entry = `./${context.entry}`

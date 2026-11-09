@@ -89,7 +89,7 @@ const highlight = HighlightStyle.define([
   { tag: tags.invalid, color: "var(--error)" },
 ])
 
-/** Code as File draws it: line numbers, the caret's line number lit, the colors. Markdown's Source too. */
+/** Code as File and Markdown's Source draw it. */
 export const code = [lineNumbers(), highlightActiveLineGutter(), syntaxHighlighting(highlight)]
 
 const theme = EditorView.theme({

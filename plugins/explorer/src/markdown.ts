@@ -285,7 +285,6 @@ export async function show(place: Place): Promise<Reveal> {
       return true
     },
   })
-  /** Source: the file as code cards draw it. */
   const source = [code, Prec.highest(EditorView.theme({ ".cm-content": { paddingBottom: "48px" } }))]
   /** Source's page: Rich Text's look, locked, with its links and its ticks. */
   const page = [language, rendered, selected, markdownMode(false), EditorView.lineWrapping, links]

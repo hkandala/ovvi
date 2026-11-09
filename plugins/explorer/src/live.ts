@@ -387,7 +387,6 @@ function preview(view: EditorView): DecorationSet {
           return false
         }
         if (!raw(node.from)) {
-          // An escape's backslash, a hard break's backslash, an entity's name, an inline comment.
           if (name === "Escape" || (name === "HardBreak" && slice(node).startsWith("\\"))) {
             ranges.push(hide.range(node.from, node.from + 1))
           }
@@ -505,5 +504,4 @@ const look = HighlightStyle.define([
   { tag: tags.monospace, fontFamily: "ui-monospace, monospace", fontSize: "0.9em" },
 ])
 
-/** The live preview's extensions. */
 export const live = [syntaxHighlighting(look), referenceField, blockField, livePreview]

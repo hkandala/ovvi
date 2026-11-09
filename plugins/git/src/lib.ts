@@ -19,7 +19,6 @@ export function parse(arg: string) {
 
 export const home = (root: string) => (root.endsWith("/") ? root : `${root}/`)
 
-/** Where an open goes, by the modifier keys: ⌘ a new tab, ⌥ a pane to the side, else the card itself. */
 export type How = "card" | "tab" | "side"
 export const how = (event: MouseEvent | KeyboardEvent): How => (event.metaKey ? "tab" : event.altKey ? "side" : "card")
 
@@ -28,7 +27,6 @@ export const how = (event: MouseEvent | KeyboardEvent): How => (event.metaKey ? 
 export const open = (arg: string, options: { how: How; at?: string; plugin?: string }) =>
   void ovvi.open(arg, { ...options, background: options.how !== "card" }).catch((error) => console.error(error))
 
-/** A row's or a button's menu at the pointer: Open, Open in New Tab, Open to the Side. */
 export async function menu(event: MouseEvent, arg: string, options: { at?: string; plugin?: string }) {
   event.preventDefault()
   const picked = await ovvi.menu.show([

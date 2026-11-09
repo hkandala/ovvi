@@ -81,13 +81,11 @@ export function finder(ovvi: Ovvi) {
     const dom = make("div", { className: "find" })
     dom.append(findRow, replaceRow)
 
-    /** The query with the fields' text and `change`, in the editor's state. */
     function commit(change: Partial<Record<Flag, boolean>> = {}) {
       const old = getSearchQuery(view.state)
       const query = new SearchQuery({ ...old, search: field.value, replace: swap.value, ...change })
       if (!query.eq(old)) view.dispatch({ effects: setSearchQuery.of(query) })
     }
-    /** The fields and toggles as the query is, and the count. */
     function draw(state: EditorState) {
       const query = getSearchQuery(state)
       if (field.value !== query.search) field.value = query.search
