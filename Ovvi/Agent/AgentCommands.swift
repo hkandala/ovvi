@@ -1,8 +1,7 @@
 import AppKit
 import HerdrKit
 
-/// The commands of `ovvi` that Ovvi answers (agent-control/cli). A track adds a command in its own file as a
-/// `static let` on `AgentCommand` and one line in `AgentCommands.all`; its usage and help live with it.
+/// The commands of `ovvi` that Ovvi answers (agent-control/cli).
 struct AgentCommand {
     let name: String
     /// The synopsis after `ovvi`, the name first: `float <pane> [--on-top]`.
@@ -48,7 +47,6 @@ enum AgentCommands {
         let json = argv.contains("--json")
         var call = AgentCall(store: store, pane: pane, cwd: cwd, id: id, args: argv.filter { $0 != "--json" })
         do {
-            // No arguments: help.
             let name = call.args.isEmpty ? "help" : call.args.removeFirst()
             guard let command = all.first(where: { $0.name == name }) else {
                 throw AgentError.unknownCommand(name)

@@ -41,13 +41,6 @@ struct ChatMessages: View, Equatable {
     private static let block = 34
     private static let budget = 120
 
-    init(chat: Chat, page: Page, floats: Bool, composing: FocusState<Bool>.Binding) {
-        self.chat = chat
-        self.page = page
-        self.floats = floats
-        self.composing = composing
-    }
-
     /// The focus binding stays the same for a card. Not built again for the store's other changes: the rows are
     /// worked out in the body (3–4 ms for a 3,900-entry history).
     nonisolated static func == (lhs: Self, rhs: Self) -> Bool {

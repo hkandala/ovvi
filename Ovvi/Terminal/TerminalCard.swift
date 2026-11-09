@@ -10,7 +10,7 @@ struct TerminalHost: NSViewRepresentable {
     let alpha: CGFloat
     /// In a kept page out of view: an input, not read from the environment in `updateNSView`, which SwiftUI does not
     /// call for an environment change alone.
-    var hidden = false
+    let hidden: Bool
 
     func makeNSView(context _: Context) -> SettlingHost {
         let host = SettlingHost()

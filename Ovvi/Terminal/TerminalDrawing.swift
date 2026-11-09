@@ -122,7 +122,7 @@ extension PaneTerminal {
 /// view shows at once, with no fade, until it is live. An IOSurface: Core Animation shows it without a copy of its
 /// own (a `CGImage` doubled the memory).
 extension PaneTerminal {
-    /// Least recently taken first out, past 100 MB (lane P): a full-window card's is about 1.3–1.7 MB on Retina.
+    /// Least recently taken first out, past 100 MB: a full-window card's is about 1.3–1.7 MB on Retina.
     static var snapshots: [PaneTerminal] = []
     private static let context = CIContext(options: [.cacheIntermediates: false])
 

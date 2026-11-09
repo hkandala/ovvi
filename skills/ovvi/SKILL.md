@@ -56,8 +56,8 @@ git diff | ovvi copy                      # the Mac's clipboard, at most 1 MiB
   a notice that offers Show. Do not call herdr's focus commands: they move the user's view.
 - Put no secrets in an argument (no `?token=`). Every device that follows the session sees it.
 - `notify` sends at most one notification per pane every 10 seconds (`rate_limited`). It answers
-  `"notified": false` when the user turned off Ovvi ▸ Notifications ▸ From Agents. A click on it brings Ovvi to
-  the front and shows your pane, or the pane of `ovvi notify <title> [<body>] --pane <pane>`.
+  `"notified": false` when the user turned off Settings ▸ Agents ▸ When an agent sends one. A click on it brings
+  Ovvi to the front and shows your pane, or the pane of `ovvi notify <title> [<body>] --pane <pane>`.
 
 ## When you need more
 

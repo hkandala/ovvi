@@ -15,8 +15,8 @@ final class PaneViewRegistry {
     /// The design's bound on terminals kept out of view, over all windows (D46). Each keeps its surface, about
     /// 6 MB (libghostty frees the swap chain while it does not draw and makes it again in under a millisecond when
     /// shown), a copy of its last picture (17 MB for a full-window card on Retina) and a herdr run of 7 MB. On
-    /// Retina: 405 MB with 16 terminals in splits, 653 MB with 33 full-window tabs (190 MB before,
-    /// with 4). One evicted comes back under its last picture if the system kept it, else it fades in.
+    /// Retina: 405 MB with 16 terminals in splits, 653 MB with 33 full-window tabs. One evicted comes back under its
+    /// last picture if the system kept it, else it fades in.
     /// `-spareTerminals N` (defaults `spareTerminals`).
     static let spare = UserDefaults.standard.string(forKey: "spareTerminals").flatMap { Int($0) } ?? 25
     /// The bound on web cards kept out of view, over all windows: each keeps its web view and WebKit's process for
@@ -258,7 +258,6 @@ final class PaneViewRegistry {
         showWeb(web)
     }
 
-    /// The terminals of these terminal ids that this window has.
     func terminals(_ ids: Set<String>) -> [PaneTerminal] {
         ids.compactMap { terminals[$0] }
     }

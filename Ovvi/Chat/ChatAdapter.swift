@@ -278,7 +278,7 @@ enum ChatAdapters {
     /// `arguments`: the user's extra ones (`Chooser.arguments`), after the command and before Ovvi's flags, as
     /// OpenCode ignores what follows its `--`.
     /// `token`: the launch's marker (`Chooser.token`).
-    static func launch(_ command: String, token: String, resume: String? = nil, arguments: String = "",
+    static func launch(_ command: String, token: String, resume: String? = nil, arguments: String,
                        on exec: any Exec) async -> String?
     {
         guard let adapter = adapter(command) else { return nil }
