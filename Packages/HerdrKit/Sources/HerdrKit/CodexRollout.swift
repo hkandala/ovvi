@@ -2,7 +2,7 @@ import CryptoKit
 import Foundation
 
 /// Codex's rollout (`~/.codex/sessions/…/rollout-….jsonl`), one JSON object per line
-/// (resources/research/agents/codex.md#3-file-watching-and-the-parser). The parser reads the typed items of
+/// (resources/research/agents/codex.md#3-file-watching-and-parser). The parser reads the typed items of
 /// `item_completed` events, which are whole when written, and the turn's end; anything else is skipped.
 public enum CodexRollout {
     /// The lines `read` skips, as an awk pattern for `Exec.follow`: every top-level `type` but `event_msg` and

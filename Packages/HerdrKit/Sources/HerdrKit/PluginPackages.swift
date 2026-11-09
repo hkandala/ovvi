@@ -193,7 +193,6 @@ public enum PluginPackages {
         return file
     }
 
-    /// Whether the package has a `build` script.
     public static func builds(_ folder: URL) -> Bool {
         (package(folder)["scripts"] as? [String: Any])?["build"] is String
     }

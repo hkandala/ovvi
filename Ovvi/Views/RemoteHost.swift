@@ -130,8 +130,8 @@ struct IconPicker: View {
     ]
 }
 
-/// One of ssh's questions (machines#macos): its text, and a hidden answer field (a password, a passcode, any
-/// code). A new host key asks only yes or no, with its fingerprint in the text.
+/// One of ssh's questions (machines#the-ssh-connection): its text, and a hidden answer field (a password, a passcode,
+/// any code). A new host key asks only yes or no, with its fingerprint in the text.
 struct AskDialog: View {
     let question: WindowPages.Question
     let machine: Machine

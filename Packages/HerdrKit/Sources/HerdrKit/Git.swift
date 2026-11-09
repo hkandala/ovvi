@@ -157,7 +157,6 @@ extension Git.Change {
         return entries
     }
 
-    /// From the index's and the work tree's letters.
     private static func letter(_ index: Character, _ tree: Character) -> Character {
         switch (index, tree) {
         case ("?", "?"): "U"

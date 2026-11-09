@@ -42,10 +42,7 @@ public struct PluginManifest: Decodable, Sendable, Equatable {
         /// `option`: only from Open With, never a file's default.
         public var priority = "default"
 
-        public init(files: [String] = [], folders: Bool = false, git: Bool = false, urls: [String] = []) {
-            self.files = files
-            self.folders = folders
-            self.git = git
+        public init(urls: [String] = []) {
             self.urls = urls
         }
 
@@ -111,7 +108,7 @@ public struct PluginManifest: Decodable, Sendable, Equatable {
         public let title: String?
         public let symbol: String?
 
-        public init(value: String?, title: String?, symbol: String? = nil) {
+        public init(value: String?, title: String?, symbol: String?) {
             (self.value, self.title, self.symbol) = (value, title, symbol)
         }
 
@@ -143,7 +140,7 @@ public struct PluginManifest: Decodable, Sendable, Equatable {
 
     /// A kind the app writes itself (the browser): no entry, header or commands.
     public init(id: String, name: String, icon: String, description: String, keywords: [String], opens: Opens,
-                chooser: String?, settings: [PluginSetting] = [])
+                chooser: String?, settings: [PluginSetting])
     {
         self.settings = settings
         (self.id, self.name, version, api, entry, self.icon) = (id, name, "1.0.0", 1, nil, icon)

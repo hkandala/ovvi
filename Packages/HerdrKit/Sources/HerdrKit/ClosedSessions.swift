@@ -16,10 +16,6 @@ public struct ClosedSession: Sendable, Hashable, Identifiable {
     public var id: String {
         agent + " " + value
     }
-
-    public init(agent: String, value: String, title: String, folder: String, date: Date) {
-        (self.agent, self.value, self.title, self.folder, self.date) = (agent, value, title, folder, date)
-    }
 }
 
 /// One agent's page of sessions, newest first.
@@ -33,10 +29,6 @@ public struct ClosedPage: Sendable, Equatable {
     public var looked = 0
     /// The last activity of the oldest one looked at.
     public var oldest: Date?
-
-    public init(sessions: [ClosedSession] = [], more: Bool = false, problem: String? = nil) {
-        (self.sessions, self.more, self.problem) = (sessions, more, problem)
-    }
 }
 
 /// The pages read so far of each agent, as one list newest first.

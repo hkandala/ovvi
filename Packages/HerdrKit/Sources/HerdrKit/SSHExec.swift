@@ -3,8 +3,8 @@ import Foundation
 import Network
 
 /// Runs commands on a remote machine through its one ControlMaster, with the system `ssh`: the user's config,
-/// agent and keys work unchanged (machines#macos). A run starts the master when none lives, never with a prompt;
-/// only `connect(ask:)` may ask.
+/// agent and keys work unchanged (machines#the-ssh-connection). A run starts the master when none lives, never with
+/// a prompt; only `connect(ask:)` may ask.
 public actor SSHExec: Exec {
     /// What ssh asks (a host key, a password, a code), answered by the user; nil cancels.
     public typealias Ask = @Sendable (String) async -> String?
@@ -96,7 +96,7 @@ public actor SSHExec: Exec {
 
     /// One SSH session on the master that runs the command. Without a master it fails at once instead of opening
     /// its own connection and prompting again, and it sends none of the user's configured forwards
-    /// (machines#macos).
+    /// (machines#the-ssh-connection).
     private func session(_ argv: [String]) throws -> Channel {
         try ProcessExec.spawn(["/usr/bin/ssh", "-F", "/dev/null", "-o", "ControlMaster=no", "-o", "BatchMode=yes",
                                "-o", "ProxyCommand=/usr/bin/false", "-S", socket, "--", target,

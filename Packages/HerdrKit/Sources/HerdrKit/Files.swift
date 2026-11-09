@@ -60,17 +60,17 @@ public enum Files {
         }
     }
 
-    /// Every file under `root`, from it, for the filter; with a `repo` (only whether there is one counts) the files git
-    /// does not ignore, and tracked files deleted since.
+    /// Every file under `root`, from it, for the filter; with `git` the files git does not ignore, and tracked files
+    /// deleted since.
     /// ponytail: the first 8 MB of names (about 150,000 files); a search on the machine when roots get bigger.
-    public static func paths(_ root: String, repo: String?, exec: any Exec) async throws -> [String] {
+    public static func paths(_ root: String, git: Bool, exec: any Exec) async throws -> [String] {
         let script = #"""
         cd "$1" || exit
         if [ "$2" ]; then git ls-files -z -co --exclude-standard; else find . -name .git -prune -o -type f -print0; fi |
           head -c 8388608
         """#
         // The last name is cut short, or empty after the last NUL.
-        return try await exec.checkedOutput(["sh", "-c", script, "sh", root, repo == nil ? "" : "git"],
+        return try await exec.checkedOutput(["sh", "-c", script, "sh", root, git ? "git" : ""],
                                             timeout: .seconds(30))
             .split(separator: "\0", omittingEmptySubsequences: false).dropLast()
             .map { String($0.hasPrefix("./") ? $0.dropFirst(2) : $0) }

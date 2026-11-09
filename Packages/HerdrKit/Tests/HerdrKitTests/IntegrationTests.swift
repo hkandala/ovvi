@@ -8,8 +8,7 @@ let repoRoot = URL(filePath: #filePath).appending(path: "../../../../..").standa
 private let script = repoRoot.appending(path: "scripts/herdr-session.sh").path
 
 /// Awaits the command's exit instead of blocking a thread: tests run in parallel on Swift's cooperative pool, which
-/// has one thread per core, and a session start in `waitUntilExit` (up to seconds) held them; the timing test of
-/// the snapshot pacing then saw its read start 100 ms late on CI's small VM.
+/// has one thread per core, and a session start takes up to seconds.
 @discardableResult
 private func shell(_ argv: String...) async -> Int32 {
     await withCheckedContinuation { continuation in
@@ -273,7 +272,7 @@ private func control(_ client: HerdrClient) async throws {
 }
 
 /// The server the app starts gets the CLI's user keys: with `XDG_CONFIG_HOME` elsewhere, both find the session
-/// there (design: XDG fix). The app's own keys stay out (D47), and herdr runs by its absolute path.
+/// there. The app's own keys stay out (D47), and herdr runs by its absolute path.
 @Test(.enabled("herdr is not on PATH", herdrInstalled))
 func `a started server shares the CLI's paths`() async throws {
     struct Moved: Exec {

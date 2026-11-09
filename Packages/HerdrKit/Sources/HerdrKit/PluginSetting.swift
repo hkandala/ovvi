@@ -69,8 +69,8 @@ public struct PluginSetting: Decodable, Sendable, Equatable {
     }
 
     /// A setting the app writes itself (the browser's).
-    public init(id: String, type: String, title: String, default value: Value, description: String? = nil,
-                options: [Option]? = nil)
+    public init(id: String, type: String, title: String, default value: Value, description: String?,
+                options: [Option]?)
     {
         (self.id, self.type, self.title, self.default) = (id, type, title, value)
         (self.description, self.options) = (description, options)

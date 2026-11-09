@@ -7,8 +7,7 @@ public enum AgentState: Comparable, Sendable {
 
 /// The app's own "seen" (D14, design: layout, Selection and "seen"): herdr's statuses plus which finishes the user
 /// has not looked at and left yet, from `completion_seq`. herdr's `done` is not used. Keyed by terminal (else pane id):
-/// a moved
-/// pane gets a new pane id and keeps its terminal, and herdr reuses pane ids for new terminals.
+/// a moved pane gets a new pane id and keeps its terminal, and herdr reuses pane ids for new terminals.
 public struct Seen: Sendable {
     public struct Change: Equatable, Sendable {
         public let paneID: String

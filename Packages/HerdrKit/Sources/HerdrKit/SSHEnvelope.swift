@@ -1,7 +1,7 @@
 import Foundation
 
 extension SSHExec {
-    /// The remote command envelope (talking-to-herdr#run-and-dial): the machine's login shell may be bash, zsh or
+    /// The remote command envelope (talking-to-herdr#running-commands): the machine's login shell may be bash, zsh or
     /// fish, so it gets only base64, which every shell passes through; `sh` decodes and runs the quoted argv.
     public static func envelope(_ argv: [String]) -> String {
         #"sh -c 'eval "$(printf %s "$1" | base64 -d)"' sh "# + Data(quoted(argv).utf8).base64EncodedString()

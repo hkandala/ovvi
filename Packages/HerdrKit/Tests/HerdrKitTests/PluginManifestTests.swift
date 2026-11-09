@@ -20,7 +20,7 @@ private func error(_ ovvi: String, package: String = #""version": "0.1.0""#) -> 
 }
 
 @Test func `a package's ovvi key is its manifest, with the package's version and description`() throws {
-    // An old manifest's `permissions`, even one this app never knew, and a newer app's field load and are ignored.
+    // `permissions` (D108) and a newer app's field load and are ignored.
     let csv = try manifest(base + #""#
         + #", "opens": {"files": ["*.csv", "public.comma-separated-values-text"]}, "permissions": ["network"],"#
         + #""header": [{"id": "rows", "type": "text", "style": "dim"}, {"type": "spacer"},"#

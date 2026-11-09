@@ -104,12 +104,12 @@ private func execs() async throws -> [any Exec] {
 @Test func `every file for the filter, git's or all`() async throws {
     let repo = try await scratchRepo.value
     for exec in try await execs() {
-        #expect(try await Files.paths(repo.path, repo: repo.path, exec: exec).sorted() == [
+        #expect(try await Files.paths(repo.path, git: true, exec: exec).sorted() == [
             ".gitignore", "bin.dat", "crlf.txt", "link", "side.txt", "sub/a.txt", "sub/line\nbreak",
             "sub/moved/sp ace.txt",
             "sub/new/f.txt", "sub/tab\t\"x", "two.txt",
         ])
-        let all = try await Files.paths(repo.path + "/sub", repo: nil, exec: exec)
+        let all = try await Files.paths(repo.path + "/sub", git: false, exec: exec)
         #expect(all.sorted() == ["a.txt", "line\nbreak", "moved/sp ace.txt", "new/f.txt", "tab\t\"x"])
     }
 }

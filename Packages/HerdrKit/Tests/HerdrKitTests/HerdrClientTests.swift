@@ -94,7 +94,7 @@ final class FakeExec: Exec {
     }
 }
 
-/// A bound for a failure only: the 140 HerdrKit tests start together, many spawning processes, and on CI's 3 cores a
+/// A bound for a failure only: the HerdrKit tests start together, many spawning processes, and on CI's 3 cores a
 /// client's first reads took over 3 s.
 func eventually(within timeout: Duration = .seconds(20), _ condition: () async -> Bool) async -> Bool {
     let deadline = ContinuousClock.now + timeout

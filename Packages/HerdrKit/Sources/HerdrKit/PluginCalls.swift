@@ -96,7 +96,8 @@ public struct PluginCalls: Sendable {
             return try await Files.list(path, git: gitRuns, exec: exec)
                 .map { ["name": $0.name, "folder": $0.isFolder, "ignored": $0.ignored] }
         case "files.paths":
-            return try await Files.paths(path, repo: repo(path), exec: exec)
+            let git = gitRuns ? await Git.root(path, exec: exec) != nil : false
+            return try await Files.paths(path, git: git, exec: exec)
         case "files.write":
             let data = try args.base64.flatMap { Data(base64Encoded: $0) } ?? Data(args.need(\.text, "text").utf8)
             return try await ["hash": Files.save(data, to: path, replacing: args.over, exec: exec)]
@@ -124,11 +125,6 @@ public struct PluginCalls: Sendable {
     mv -- "$1" "$2"
     """#
 
-    /// The repository a folder is in, for the filter's paths.
-    private func repo(_ folder: String) async -> String? {
-        gitRuns ? await Git.root(folder, exec: exec) : nil
-    }
-
     private func git(_ name: String, _ args: Args) async throws -> Any? {
         let root = try name == "git.root" ? args.path(\.folder, "folder") : args.path(\.root, "root")
         if name == "git.revert" {
@@ -144,7 +140,6 @@ public struct PluginCalls: Sendable {
         return try await read(name, root, args)
     }
 
-    /// A git read's reply.
     private func read(_ name: String, _ root: String, _ args: Args) async throws -> Any? {
         switch name {
         case "git.root": return await Git.root(root, exec: exec)

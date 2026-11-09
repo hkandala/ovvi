@@ -1,8 +1,7 @@
 import Foundation
 
 /// One session of a terminal multiplexer, as the app uses it (design D49): the app talks to this, never to
-/// herdr's methods or argv. `HerdrClient` is the only implementation. It grows a requirement when the app uses
-/// a new feature, not before.
+/// herdr's methods or argv. `HerdrClient` is the only implementation.
 public protocol Multiplexer: Sendable {
     /// Every session on this machine, running or not.
     func sessions() async throws -> [Session]
@@ -60,7 +59,6 @@ public protocol Multiplexer: Sendable {
     /// path's folder (it survives a restart better than the folder it was asked from), else in `cwd`; returns its pane
     /// id.
     func newTab(workspace workspaceID: String, cwd: String, label: PaneLabel, command: [String]) async throws -> String?
-    /// Returns the new tab's pane.
     func newTab(workspace workspaceID: String, cwd: String) async throws -> Pane?
     /// Returns the new workspace's first pane. Without a label the multiplexer names it.
     func newWorkspace(label: String?, cwd: String) async throws -> Pane?

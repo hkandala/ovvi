@@ -136,7 +136,7 @@ public actor HerdrClient {
 
     // MARK: Updates
 
-    /// Paced as talking-to-herdr, Events says; a precondition holds it to one call.
+    /// Paced as talking-to-herdr, Events says.
     public func updates() -> AsyncStream<Update> {
         precondition(out == nil, "updates() is called once per client")
         let (stream, out) = AsyncStream<Update>.makeStream()
