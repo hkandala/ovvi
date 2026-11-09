@@ -56,7 +56,7 @@ extension OvviUITests {
         try await diskChangesWhileDirty(card, file: file, shell: left)
 
         findKeys(card)
-        tiled(card, "explorer")
+        tiled(card)
         try await keysStayInTheEditor(card, shell: left)
         // Closing it with edits asks; Discard closes it.
         element("file.\(card).page").textViews.firstMatch.click()
@@ -129,9 +129,9 @@ extension OvviUITests {
     }
 
     /// The card's page shows in its overview tile.
-    private func tiled(_ card: String, _ kind: String) {
+    private func tiled(_ card: String) {
         app.typeKey("o", modifierFlags: [.command, .control])
-        XCTAssertTrue(element("overview.card.\(card)").has(\.stringValue, kind, within: 3))
+        XCTAssertTrue(element("overview.card.\(card)").has(\.stringValue, "explorer", within: 3))
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(element("overview").vanishes(within: 2))
     }
@@ -272,6 +272,6 @@ extension OvviUITests {
         // Audio in WebKit's player.
         try await relabel(card, label + "hi.m4a")
         XCTAssertTrue(until(10) { page.buttons.firstMatch.exists })
-        tiled(card, "explorer")
+        tiled(card)
     }
 }

@@ -134,10 +134,6 @@ extension OvviUITests {
         return try XCTUnwrap(pane["pane_id"] as? String)
     }
 
-    private func tabOf(_ pane: String) async throws -> String {
-        try await field(self.pane(pane)["tab_id"], "\(pane)'s tab")
-    }
-
     func testNewWorkspaceAppearsSelected() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         // From the second tab, after the sidebar was hidden and shown: a new workspace once came up blank then.

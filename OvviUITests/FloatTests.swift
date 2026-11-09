@@ -126,7 +126,7 @@ extension OvviUITests {
         XCTAssertTrue(hasKeyboard("terminal.\(second)", in: pinned))
         openPalette()
         XCTAssertTrue(element("palette.command.Detach Pane", in: pinned).exists(within: 2))
-        // Its first row is lit, not the row at the main window's selected tab's index (3f24e30).
+        // Its first row is lit, not the row at the main window's selected tab's index.
         XCTAssertTrue(element("palette.command.Detach Pane", in: pinned).has(\.isSelected, true, within: 2))
         XCTAssertFalse(element("palette.command.New Tab", in: pinned).exists)
         XCTAssertFalse(element("palette.tab.\(tab)", in: pinned).exists)
@@ -235,8 +235,8 @@ extension OvviUITests {
         app.typeKey(.return, modifierFlags: [])
         try await expect("the keys in two's pane") { try await read(pane, in: two).contains("\nurl-42") }
 
-        // Again, with the main window in front, as `ovvi://float/?…`: the same window comes forward. That path ("/")
-        // once opened a workspace too, as a dropped folder (429a02c): checked after the next steps.
+        // Again, with the main window in front, as `ovvi://float/?…`: the same window comes forward, and that path
+        // ("/") opens no workspace, as a dropped folder would: checked after the next steps.
         element("workspace.w1").click()
         let workspaces = try await workspaceIDs()
         try await openFloatURL("session=\(two)&pane=\(pane)", path: "/")

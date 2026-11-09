@@ -45,8 +45,8 @@ extension OvviUITests {
     }
 
     /// A card never shows a picture smaller than its pixels: a tab only the overview showed keeps the overview's small
-    /// snapshot (its tile's picture, D70), and shown afterwards (by its capsule, or by its tile), it showed that
-    /// blurred until it drew. Now it shows its fill and fades in.
+    /// snapshot (its tile's picture, D70); shown afterwards (by its capsule, or by its tile), it shows its fill and
+    /// fades in, not that snapshot blurred.
     func testACardNeverShowsTheOverviewsSmallSnapshot() async throws {
         relaunch(one, ["-recordFrames", "YES", "-forceMotion", "YES"])
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))

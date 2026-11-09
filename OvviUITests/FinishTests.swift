@@ -180,22 +180,18 @@ extension OvviUITests {
             link(row).hover()
             XCUIElement.perform(withKeyModifiers: .command) { link(row).click() }
         }
-        try await expectLabel(newTabID(after: before), " \(address)", "ovvi:browser#")
+        try await expectBrowser(newTabID(after: before), " \(address)")
         let tabs = try await tabIDs()
         XCTAssertEqual(tabs.count, before.count + 1, "\(tabs)")
         XCTAssertTrue(element("tab.\(tab)").isSelected)
         XCUIElement.perform(withKeyModifiers: .command) { link(4).click() }
-        try await expectLabel(newTabID(after: tabs), "\(folder)/page.html", "ovvi:browser#")
+        try await expectBrowser(newTabID(after: tabs), "\(folder)/page.html")
 
         optionShowsLinks(terminal, link(1), address, link(4), "page.html")
 
         // ⌥-click: Markdown beside the card, without the period.
         XCUIElement.perform(withKeyModifiers: .option) { link(3).click() }
-        let side = try await poll("a pane beside the card") { () async throws -> String? in
-            try await (snapshot()["panes"] as? [[String: Any]] ?? []).first {
-                $0["tab_id"] as? String == tab && $0["pane_id"] as? String != pane
-            }?["pane_id"] as? String
-        }
+        let side = try await sidePane(in: tab, besides: [pane])
         try await labelEnds(side, " \(folder)/notes.md")
 
         link(1).rightClick()
@@ -220,13 +216,13 @@ extension OvviUITests {
         XCTAssertTrue(until(3) { terminal.title.isEmpty }, terminal.title)
     }
 
-    /// The new tab's pane's label: its kind and its end.
-    private func expectLabel(_ tab: String, _ end: String, _ kind: String) async throws {
+    /// The new tab's pane is a browser whose label ends so.
+    private func expectBrowser(_ tab: String, _ end: String) async throws {
         closeAfter("tab", tab)
         let pane = try await pane(of: tab)
-        try await expect("\(kind)…\(end) in \(tab)") {
+        try await expect("ovvi:browser#…\(end) in \(tab)") {
             let label = try await paneLabel(pane)
-            return label.hasPrefix(kind) && label.hasSuffix(end)
+            return label.hasPrefix("ovvi:browser#") && label.hasSuffix(end)
         }
     }
 

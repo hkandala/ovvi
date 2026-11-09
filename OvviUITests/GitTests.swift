@@ -204,11 +204,6 @@ extension OvviUITests {
         element("pane.\(card).diff.home").click()
     }
 
-    /// A web page's text, by its value: a plain text's label is empty.
-    private func text(_ value: String, in page: XCUIElement) -> XCUIElement {
-        page.staticTexts.matching(NSPredicate(format: "value == %@", value)).firstMatch
-    }
-
     /// Stage moves b.md to the staged list, Commit commits it with the typed message, Push sends it to the remote.
     private func commitAndPush(_ home: XCUIElement, card: String, shell left: String, repo: String) async throws {
         // Stage shows under the pointer.

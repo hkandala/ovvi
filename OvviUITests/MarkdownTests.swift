@@ -229,7 +229,7 @@ extension OvviUITests {
     /// The find bar works while locked, and Esc gives the keyboard back to the page: Select All and Copy there give the
     /// whole source, past the lines drawn.
     private func copyAll(_ page: XCUIElement) {
-        keepPasteboard()
+        keepClipboard()
         NSPasteboard.general.clearContents()
         page.staticTexts.matching(NSPredicate(format: "value == 'Third'")).firstMatch.click()
         app.typeKey("f", modifierFlags: .command)

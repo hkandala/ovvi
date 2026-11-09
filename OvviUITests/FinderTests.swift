@@ -1,6 +1,6 @@
 import XCTest
 
-/// The File Explorer behaves as the Finder's list (phase 53): the find bar, the keys, the selection, `..` as a row, the
+/// The File Explorer behaves as the Finder's list: the find bar, the keys, the selection, `..` as a row, the
 /// change dots and the Git status bar, against FilesTests' small repository.
 extension OvviUITests {
     /// Row 2's Filter opens the find bar with the keyboard, and a second click closes it; a letter typed in the tree
@@ -13,8 +13,7 @@ extension OvviUITests {
         try await waitForPrompt(shell)
         let repo = "/tmp/ovvi-e2e-files-finder", root = "/private/tmp/ovvi-e2e-files-finder"
         try await makeTreeRepo(repo, in: shell)
-        let (tab, card) = try await explorer(root, in: repo)
-        try await show(tab)
+        let (tab, card) = try await newCard("ovvi:explorer#e2efil \(root)/", cwd: repo)
         let tree = element("files.\(card).page"), field = tree.textFields["Filter"]
         // The first card of a run waits for the default plugins to install and build.
         XCTAssertTrue(row("a.txt", in: tree).exists(within: 30))
@@ -128,7 +127,7 @@ extension OvviUITests {
         }
     }
 
-    /// A clean folder shows no change dot, also with a folder git ignores in it (they showed one once opened); a new
+    /// A clean folder shows no change dot, also with a folder git ignores in it; a new
     /// file shows one on its folder. The status bar shows the root's folders and files and its Git part
     /// (`statusBar`); Git opens Git on the repository in a new tab. A folder outside a repository has no Git part.
     func testFileExplorerChangeDotsAndGitBar() async throws {
@@ -142,8 +141,7 @@ extension OvviUITests {
         git -c user.name=e2e -c user.email=e2e@ovvi commit -qm third && clear && echo dots-$((6*7))\r
         """, to: shell)
         try await waitFor(shell) { $0.contains("dots-42") }
-        let (tab, card) = try await explorer(root, in: repo)
-        try await show(tab)
+        let (tab, card) = try await newCard("ovvi:explorer#e2efil \(root)/", cwd: repo)
         let tree = element("files.\(card).page")
         // The first card of a run waits for the default plugins to install and build.
         XCTAssertTrue(row("web", in: tree).exists(within: 30))
@@ -205,9 +203,5 @@ extension OvviUITests {
         XCTAssertTrue(pull.exists(within: 10))
         pull.click()
         XCTAssertTrue(pull.vanishes(within: 10))
-    }
-
-    private func text(_ value: String, in page: XCUIElement) -> XCUIElement {
-        page.staticTexts.matching(NSPredicate(format: "value == %@", value)).firstMatch
     }
 }

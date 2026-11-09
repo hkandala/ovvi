@@ -30,7 +30,7 @@ extension OvviUITests {
         XCTAssertTrue(element("git.\(diff).card").exists(within: 3))
         // The Git home, titled by its root.
         XCTAssertTrue(element("pane.\(diff).title").has(\.stringValue, "ovvi-e2e-plugins", within: 3))
-        try await waitFor(diff, in: nil) { $0.contains("Git") && $0.contains("Shown in Ovvi") }
+        try await waitFor(diff) { $0.contains("Git") && $0.contains("Shown in Ovvi") }
 
         element("terminal.\(left)").click()
         openPalette()
@@ -63,7 +63,7 @@ extension OvviUITests {
         let tab: String = try field(layout?["tab_id"], "layout's tab")
         let pane: String = try field((layout?["root"] as? [String: Any])?["pane_id"], "layout's pane")
         closeAfter("tab", tab)
-        try await waitFor(pane, in: nil) { $0.contains("File Explorer") && $0.contains("Shown in Ovvi") }
+        try await waitFor(pane) { $0.contains("File Explorer") && $0.contains("Shown in Ovvi") }
         let info = try await Self.call(one, "pane.process_info", ["pane_id": pane])
         let names = ((info["process_info"] as? [String: Any])?["foreground_processes"] as? [[String: Any]] ?? [])
             .compactMap { $0["name"] as? String }
@@ -87,7 +87,7 @@ extension OvviUITests {
         try await Self.call(one, "pane.rename", ["pane_id": shell, "label": "ovvi:explorer#e2epl2 /tmp/"])
         try await Self.call(one, "pane.report_metadata", ["pane_id": shell, "source": "ovvi-panes",
                                                           "tokens": ["ovvi-label": "1"], "ttl_ms": 1000])
-        try await waitFor(shell, in: nil) { $0.contains("Shown in Ovvi") }
+        try await waitFor(shell) { $0.contains("Shown in Ovvi") }
     }
 
     /// A card pane whose saved folder went while herdr was stopped comes back with no program ("Saved directory is
@@ -138,24 +138,6 @@ extension OvviUITests {
             XCTAssertTrue(element("pane.\(pane).open-with").exists)
             XCTAssertTrue(element("tab.\(tab)").has(\.label, "File Explorer \(name)", within: 3))
         }
-    }
-
-    /// A new tab in w2 whose pane has this label, made as Ovvi makes a card (a placeholder), shown.
-    func newCard(_ label: String, cwd: String = "/tmp") async throws -> (tab: String, pane: String) {
-        let reply = try await Self.call(one, "layout.apply", ["workspace_id": "w2", "focus": false, "root": [
-            "type": "pane", "cwd": cwd, "label": label, "command": ["sh", "-c", "cat", "sh"],
-        ]])
-        let layout = reply["layout"] as? [String: Any]
-        let tab: String = try field(layout?["tab_id"], "layout's tab")
-        closeAfter("tab", tab)
-        let pane: String = try field((layout?["root"] as? [String: Any])?["pane_id"], "layout's pane")
-        try await show(tab)
-        return (tab, pane)
-    }
-
-    /// Text a page shows, by its value: a plain text's label is empty.
-    func text(_ value: String) -> XCUIElement {
-        app.staticTexts.matching(NSPredicate(format: "value == %@", value)).firstMatch
     }
 }
 

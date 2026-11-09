@@ -45,7 +45,7 @@ extension OvviUITests {
         notice.buttons["notice.show"].click()
         try await waitFor(first) { $0.contains("tab-42-0") }
         let tabbed = try await answered(first)
-        let opened: String = try await field(pane(tabbed)["tab_id"], "the Git card's tab")
+        let opened = try await tabOf(tabbed)
         XCTAssertTrue(element("tab.\(opened)").has(\.isSelected, true, within: 3))
         try await expectBeside(opened, tab)
 

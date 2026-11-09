@@ -13,6 +13,10 @@ extension OvviUITests {
         try await field(Self.call(session ?? one, "pane.get", ["pane_id": id])["pane"], "pane \(id)")
     }
 
+    func tabOf(_ pane: String, in session: String? = nil) async throws -> String {
+        try await field(self.pane(pane, in: session)["tab_id"], "\(pane)'s tab")
+    }
+
     func terminalID(_ pane: String, in session: String? = nil) async throws -> String {
         try await field(self.pane(pane, in: session)["terminal_id"], "\(pane)'s terminal")
     }
@@ -85,6 +89,33 @@ extension OvviUITests {
     func pane(of tab: String) async throws -> String {
         try await field((snapshot()["panes"] as? [[String: Any]])?.first { $0["tab_id"] as? String == tab }?["pane_id"],
                         "a pane of \(tab)")
+    }
+
+    /// The pane herdr has in the tab besides these.
+    func sidePane(in tab: String, besides panes: [String]) async throws -> String {
+        try await poll("a pane beside the card") { () async throws -> String? in
+            try await (snapshot()["panes"] as? [[String: Any]] ?? []).first {
+                $0["tab_id"] as? String == tab && !panes.contains($0["pane_id"] as? String ?? "")
+            }?["pane_id"] as? String
+        }
+    }
+
+    /// A card's pane in a tab of its own in w2, made as Ovvi makes one (a placeholder), closed after the test; shown
+    /// unless `show` is false.
+    func newCard(_ label: String, cwd: String = "/tmp", show shown: Bool = true) async throws
+        -> (tab: String, pane: String)
+    {
+        let reply = try await Self.call(one, "layout.apply", ["workspace_id": "w2", "focus": false, "root": [
+            "type": "pane", "cwd": cwd, "label": label, "command": ["sh", "-c", "cat", "sh"],
+        ]])
+        let layout = reply["layout"] as? [String: Any]
+        let tab: String = try field(layout?["tab_id"], "layout's tab")
+        closeAfter("tab", tab)
+        let pane: String = try field((layout?["root"] as? [String: Any])?["pane_id"], "layout's pane")
+        if shown {
+            try await show(tab)
+        }
+        return (tab, pane)
     }
 
     /// Waits for the prompt in every pane of the tabs: a shell's startup runs programs (`path_helper`, nvm's `ls`),

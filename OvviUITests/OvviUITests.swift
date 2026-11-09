@@ -165,17 +165,19 @@ extension OvviUITests {
         }
     }
 
-    func waitForPrompt(_ pane: String) async throws {
-        try await waitFor(pane) { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    func waitForPrompt(_ pane: String, in session: String? = nil) async throws {
+        try await waitFor(pane, in: session) { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
 
     /// Polls the pane's text until `done` passes. Escaping: the compiler rejects it otherwise across files.
     /// The failure says what the pane showed last.
-    func waitFor(_ pane: String, times: Int = 50, _ done: @escaping (String) -> Bool) async throws {
+    func waitFor(_ pane: String, in session: String? = nil, times: Int = 50,
+                 _ done: @escaping (String) -> Bool) async throws
+    {
         var last = ""
         do {
             try await poll("pane \(pane) to show it", times: times) { () async throws -> String? in
-                last = try await read(pane)
+                last = try await read(pane, in: session)
                 return done(last) ? last : nil
             }
         } catch is Waited {
@@ -224,9 +226,9 @@ extension OvviUITests {
                        "copyOnSelect": "NO", "agentView": "terminal", "agentArguments.claude": "",
                        "agentArguments.codex": "", "agentArguments.pi": "", "agentArguments.opencode": "",
                        "showClosedSessions": "YES", "newPaneOpens": ""]
-        let notify = pin ? shipped.sorted { $0.key < $1.key }.filter { !args.contains("-\($0.key)") }
+        let pinned = pin ? shipped.sorted { $0.key < $1.key }.filter { !args.contains("-\($0.key)") }
             .flatMap { ["-\($0.key)", $0.value] } : []
-        app.launchArguments = ["-session", session ?? one, "-ApplePersistenceIgnoreState", "YES"] + config + notify
+        app.launchArguments = ["-session", session ?? one, "-ApplePersistenceIgnoreState", "YES"] + config + pinned
             + args
         // The default plugins install from npm's cache (`make web` fills it), never the network.
         app.launchEnvironment["npm_config_offline"] = "true"
@@ -357,42 +359,13 @@ extension OvviUITests {
         return until(2) { element.exists && focus.evaluate(with: element) }
     }
 
+    /// The static text with this value, in this element when given.
+    func text(_ value: String, in page: XCUIElement? = nil) -> XCUIElement {
+        (page ?? app).staticTexts.matching(NSPredicate(format: "value == %@", value)).firstMatch
+    }
+
     /// In this window when there are several.
     func element(_ identifier: String, in window: XCUIElement? = nil) -> XCUIElement {
         (window ?? app).descendants(matching: .any)[identifier]
     }
-}
-
-/// XCTest's own waits (waitForExistence, wait(for:toEqual:), predicate expectations) check about once a second
-/// and take over a second even when the condition already holds; these check every 100 ms
-/// (playbook/ci.md, Writing fast tests).
-extension XCUIElement {
-    func exists(within timeout: TimeInterval) -> Bool {
-        until(timeout) { exists }
-    }
-
-    func vanishes(within timeout: TimeInterval) -> Bool {
-        until(timeout) { !exists }
-    }
-
-    /// Reading a property of a missing element fails the test, so it waits for the element first.
-    func has<Value: Equatable>(_ property: KeyPath<XCUIElement, Value>, _ value: Value,
-                               within timeout: TimeInterval) -> Bool
-    {
-        until(timeout) { exists && self[keyPath: property] == value }
-    }
-
-    var stringValue: String {
-        value as? String ?? ""
-    }
-}
-
-/// Checks every 100 ms until `check` passes; false when `timeout` runs out first.
-func until(_ timeout: TimeInterval, _ check: () -> Bool) -> Bool {
-    let end = Date.now + timeout
-    while !check() {
-        guard Date.now < end else { return false }
-        Thread.sleep(forTimeInterval: 0.1)
-    }
-    return true
 }

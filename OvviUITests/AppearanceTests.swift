@@ -130,7 +130,7 @@ extension OvviUITests {
                     forDuration: 0.2,
                     thenDragTo: terminal.coordinate(withNormalizedOffset: CGVector(dx: 0.99, dy: 0.5)),
                 )
-            // WCAG's 4.5 for text; the old default drew 1.2 in dark, 1.4 in light. The selection shows on the card
+            // WCAG's 4.5 for text; libghostty's default is 1.2 in dark, 1.4 in light. The selection shows on the card
             // (about 1.0 when no selection was drawn). The terminal takes the look a frame or two after the window.
             var last = (text: 0.0, selection: 0.0)
             do {

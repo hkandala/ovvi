@@ -19,10 +19,6 @@ extension OvviUITests {
         return "file://\(folder)/one.html"
     }
 
-    func waitFor(_ pane: String, in session: String?, _ done: @escaping (String) -> Bool) async throws {
-        try await poll("\(pane)'s screen") { try await done(read(pane, in: session)) ? true : nil }
-    }
-
     /// The page's text, in its web view.
     func pageText(_ text: String) -> XCUIElement {
         app.webViews.staticTexts.matching(NSPredicate(format: "value == %@", text)).firstMatch
@@ -72,7 +68,7 @@ extension OvviUITests {
         element("terminal.\(left)").click()
         XCTAssertTrue(hasKeyboard("terminal.\(left)"))
         let (browser, made) = try await chooseBrowser(besides: left, in: tab)
-        try await waitFor(browser, in: nil) { $0.contains("Browser") && $0.contains("Shown in Ovvi") }
+        try await waitFor(browser) { $0.contains("Browser") && $0.contains("Shown in Ovvi") }
         XCTAssertTrue(element("browser.\(browser).empty").exists)
         keepScreenshot("browser card, empty")
 
@@ -84,7 +80,7 @@ extension OvviUITests {
         try await expect("the typed address in the label") { try await paneLabel(browser) == "\(made) \(page)" }
         // The placeholder in herdr follows the label: the address without its scheme.
         let short = page.replacing("file://", with: "")
-        try await waitFor(browser, in: nil) { $0.contains(short) && !$0.contains("file:") }
+        try await waitFor(browser) { $0.contains(short) && !$0.contains("file:") }
         keepScreenshot("browser card")
         // window.open: over the card, gone on window.close().
         app.webViews.buttons["Pop"].click()
@@ -187,11 +183,7 @@ extension OvviUITests {
     /// ⌥-click on a link: a browser pane on it beside the card, the card's page still shown.
     private func openBeside(in tab: String, besides panes: [String], _ two: String) async throws {
         XCUIElement.perform(withKeyModifiers: .option) { app.webViews.links["Two"].click() }
-        let side = try await poll("a pane beside the card") { () async throws -> String? in
-            try await (snapshot()["panes"] as? [[String: Any]] ?? []).first {
-                $0["tab_id"] as? String == tab && !panes.contains($0["pane_id"] as? String ?? "")
-            }?["pane_id"] as? String
-        }
+        let side = try await sidePane(in: tab, besides: panes)
         try await expect("two.html beside the card") { try await paneLabel(side).hasSuffix(" \(two)") }
         XCTAssertTrue(pageText("ovvi-page-one").exists)
     }
@@ -268,7 +260,7 @@ extension OvviUITests {
             "pane.rename",
             ["pane_id": site, "label": "ovvi:browser#e2e5ac https://ovvi.invalid/"],
         )
-        let tab: String = try await field(self.pane(pane, in: five)["tab_id"], "\(pane)'s tab")
+        let tab = try await tabOf(pane, in: five)
         // The question in both appearances, for people reviewing a run.
         relaunch(five, ["-appearance", "light"])
         XCTAssertTrue(element("browser.\(site).open").exists(within: connect))
@@ -308,10 +300,6 @@ extension OvviUITests {
     func twoRows(_ pane: String, title: String? = nil, above control: String) -> Bool {
         let row1 = element("pane.\(pane).title")
         return title.map { row1.stringValue == $0 } != false && element(control).frame.minY >= row1.frame.maxY
-    }
-
-    func waitForPrompt(_ pane: String, in session: String) async throws {
-        try await waitFor(pane, in: session) { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
 }
 
@@ -361,12 +349,7 @@ extension OvviUITests {
         try await send("rm -rf \(repo) && mkdir -p \(repo) && cd \(repo) && touch \(names.joined(separator: " ")) "
             + "&& clear && echo ready-$((6*7))\r", to: shell)
         try await waitFor(shell) { $0.contains("ready-42") }
-        let reply = try await Self.call(one, "layout.apply", ["workspace_id": "w2", "focus": false, "root": [
-            "type": "pane", "cwd": repo, "label": "ovvi:explorer#e2eops /private\(repo)/",
-            "command": ["sh", "-c", "cat", "sh"],
-        ]])
-        let tab: String = try field((reply["layout"] as? [String: Any])?["tab_id"], "layout's tab")
-        closeAfter("tab", tab)
+        let tab = try await newCard("ovvi:explorer#e2eops /private\(repo)/", cwd: repo, show: false).tab
         for name in names {
             try await show(tab)
             let row = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", name)).firstMatch

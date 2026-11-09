@@ -11,7 +11,7 @@ extension OvviUITests {
         try await waitForPrompt(shell)
         let config = "/tmp/ovvi-e2e-api-config", folder = "/tmp/ovvi-e2e-api", root = "/private/tmp/ovvi-e2e-api"
         try await writeConfig(config, folder: folder, shell: shell)
-        keepPasteboard()
+        keepClipboard()
         relaunch(nil, ["-configFolder", config])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         element("workspace.w2").click()
@@ -141,23 +141,6 @@ extension OvviUITests {
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "value BEGINSWITH 'asked to fail'")).firstMatch
             .exists)
         XCTAssertTrue(element("pane.\(pane).reload").exists)
-    }
-
-    /// The user's clipboard, every type of it, back after the test (a test that writes it).
-    func keepPasteboard() {
-        let saved = (NSPasteboard.general.pasteboardItems ?? []).map { item in
-            item.types.compactMap { type in item.data(forType: type).map { (type, $0) } }
-        }
-        addTeardownBlock {
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.writeObjects(saved.map { types in
-                let item = NSPasteboardItem()
-                for (type, data) in types {
-                    item.setData(data, forType: type)
-                }
-                return item
-            })
-        }
     }
 
     /// The number at the end of the line that starts with `prefix`; 0 for none.

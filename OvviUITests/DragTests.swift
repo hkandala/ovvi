@@ -17,7 +17,7 @@ extension OvviUITests {
 
         drag(first, to: card(second, 0.5, 0.6))
         try await expect("the two swapped") { try await order(tab) == [second, first, third] }
-        // No highlight stays on the card now under the pointer (a hand check saw one).
+        // No highlight stays on the card now under the pointer.
         XCTAssertTrue(element("drop.indicator").vanishes(within: 2))
 
         // Its own tab's capsule is not a target: no write, so no refusal shows; the drop below checks nothing moved

@@ -1,6 +1,6 @@
 import XCTest
 
-/// The File Explorer (phase 46): the root's tree from `@pierre/trees`, the filter, files shown in the card with Back
+/// The File Explorer: the root's tree from `@pierre/trees`, the filter, files shown in the card with Back
 /// and Forward, the open gestures and the row menu, against a small repository.
 extension OvviUITests {
     /// The tree lists the root and a folder as it opens (a click on its name only selects it; → opens it); a new file
@@ -14,8 +14,7 @@ extension OvviUITests {
         try await waitForPrompt(shell)
         let repo = "/tmp/ovvi-e2e-files", root = "/private/tmp/ovvi-e2e-files"
         try await makeTreeRepo(repo, in: shell)
-        let (tab, card) = try await explorer(root, in: repo)
-        try await show(tab)
+        let (tab, card) = try await newCard("ovvi:explorer#e2efil \(root)/", cwd: repo)
 
         let tree = element("files.\(card).page")
         XCTAssertTrue(row("a.txt", in: tree).exists(within: 10))
@@ -169,8 +168,7 @@ extension OvviUITests {
         try await waitForPrompt(shell)
         let repo = "/tmp/ovvi-e2e-files-keys", root = "/private/tmp/ovvi-e2e-files-keys"
         try await makeTreeRepo(repo, in: shell)
-        let (tab, card) = try await explorer(root, in: repo)
-        try await show(tab)
+        let (tab, card) = try await newCard("ovvi:explorer#e2efil \(root)/", cwd: repo)
         let tree = element("files.\(card).page")
         XCTAssertTrue(row("a.txt", in: tree).exists(within: 10))
         XCTAssertFalse(row(".gitignore", in: tree).exists)
@@ -228,7 +226,7 @@ extension OvviUITests {
         try await waitForPrompt(shell)
         let repo = "/tmp/ovvi-e2e-files-keyboard", root = "/private/tmp/ovvi-e2e-files-keyboard"
         try await makeTreeRepo(repo, in: shell)
-        let (tab, card) = try await explorer(root, in: repo)
+        let (tab, card) = try await newCard("ovvi:explorer#e2efil \(root)/", cwd: repo, show: false)
         let beside = try await split(card)
         try await show(tab)
         let tree = element("files.\(card).page")
@@ -261,17 +259,12 @@ extension OvviUITests {
             + "&& clear && echo ready-$((6*7))\r", to: shell)
         try await waitFor(shell) { $0.contains("ready-42") }
         // An old Files label, its root without the `/`, still opens the tree.
-        let (tab, card) = try await explorer(root, in: repo, label: "ovvi:files#e2efio \(root)")
-        try await show(tab)
+        let (tab, card) = try await newCard("ovvi:files#e2efio \(root)", cwd: repo)
         let tree = element("files.\(card).page")
         XCTAssertTrue(row("four.txt", in: tree).exists(within: 10))
 
         XCUIElement.perform(withKeyModifiers: .option) { row("one.txt", in: tree).click() }
-        let side = try await poll("a pane beside the card") { () async throws -> String? in
-            try await (snapshot()["panes"] as? [[String: Any]] ?? []).first {
-                $0["tab_id"] as? String == tab && $0["pane_id"] as? String != card
-            }?["pane_id"] as? String
-        }
+        let side = try await sidePane(in: tab, besides: [card])
         try await labelEnds(side, " \(root)/one.txt")
         XCTAssertTrue(element("file.\(side).page").exists(within: 10))
         XCTAssertTrue(hasKeyboard(row("one.txt", in: tree)))
@@ -291,21 +284,6 @@ extension OvviUITests {
             XCTAssertTrue(hasKeyboard(row(name, in: tree)), name)
         }
         try await send("rm -rf \(repo)\r", to: shell)
-    }
-
-    /// A File Explorer card at the folder, in a tab of its own, made as Ovvi makes one.
-    func explorer(_ root: String, in repo: String,
-                  label: String? = nil) async throws -> (tab: String, pane: String)
-    {
-        let label = label ?? "ovvi:explorer#e2efil \(root)/", command = ["sh", "-c", "cat", "sh"]
-        let reply = try await Self.call(one, "layout.apply", ["workspace_id": "w2", "focus": false, "root": [
-            "type": "pane", "cwd": repo, "label": label, "command": command,
-        ]])
-        let layout = reply["layout"] as? [String: Any]
-        let tab: String = try field(layout?["tab_id"], "layout's tab")
-        let card: String = try field((layout?["root"] as? [String: Any])?["pane_id"], "layout's pane")
-        closeAfter("tab", tab)
-        return (tab, card)
     }
 
     func row(_ name: String, in page: XCUIElement) -> XCUIElement {

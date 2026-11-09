@@ -28,11 +28,7 @@ extension OvviUITests {
         try await browserLabel(pane(of: behind), html)
         XCTAssertTrue(element("tab.\(tab)").isSelected)
         XCUIElement.perform(withKeyModifiers: .option) { link.click() }
-        let side = try await poll("a pane beside the card") { () async throws -> String? in
-            try await (snapshot()["panes"] as? [[String: Any]] ?? []).first {
-                $0["tab_id"] as? String == tab && $0["pane_id"] as? String != notes
-            }?["pane_id"] as? String
-        }
+        let side = try await sidePane(in: tab, besides: [notes])
         try await browserLabel(side, html)
 
         let (_, file) = try await newCard("ovvi:explorer#e2eht2 \(html)")
