@@ -150,7 +150,6 @@ private final class Relay: NSObject, WKScriptMessageHandlerWithReply, WKNavigati
     }
 }
 
-/// Takes the keyboard as a browser's page does.
 final class WebCardView: BrowserView {
     /// The ⇧⌘← or ⇧⌘→ the menu handed to the page: WebKit sends it again when the page leaves it, for Move Tab.
     var handed: NSEvent?
@@ -197,8 +196,6 @@ final class WebCardView: BrowserView {
     }
 }
 
-/// A card's page in the card, with the app's colors and text size: CSS variables on the page's root, and a plugin's
-/// `ovvi.theme`.
 struct WebCardContent: View {
     let card: WebCard
     @Environment(\.self) private var environment

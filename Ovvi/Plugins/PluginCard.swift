@@ -10,7 +10,6 @@ extension Page {
     }
 }
 
-/// The card's content under its header, its plugin's page, with the toast at its top.
 struct PluginCard: View {
     let plugin: Plugin
     let page: Page
@@ -59,7 +58,6 @@ struct PluginCard: View {
     }
 }
 
-/// One line and two buttons over the card's top, on glass.
 private struct ToastView: View {
     let toast: Toast
     let plugin: Plugin
@@ -95,8 +93,6 @@ private struct ToastView: View {
     }
 }
 
-/// Why a plugin's page cannot load (`PluginProblem`): the title, the error's lines, its fix (Reload, Try Again or
-/// Build) and Show Log.
 private struct PluginFailure: View {
     let plugin: Plugin
     let problem: PluginProblem
@@ -126,7 +122,6 @@ private struct PluginFailure: View {
         .background(look.cardSolid(keyboard: lit))
     }
 
-    /// Build runs the package's build script first; Reload and Try Again load the page again.
     private func fix() {
         guard problem.builds else { return plugin.web.reload() }
         building = true
@@ -141,7 +136,6 @@ private struct PluginFailure: View {
     }
 }
 
-/// While a browser or a plugin pane takes the chooser's place, or a browser card is built.
 struct PluginLoader: View {
     let plugin: PluginManifest
     var verb = "Opening"
@@ -185,14 +179,12 @@ struct MissingPlugin: View {
     }
 }
 
-/// A floated plugin pane: its second row under the floating window's title row, then its content.
 struct FloatingPlugin: View {
     let plugin: Plugin
     let page: Page
 
     var body: some View {
         VStack(spacing: 0) {
-            // A plugin with no header and no Back and Forward has no row, as in a pane.
             if plugin.manifest.hasRow {
                 PluginHeader(plugin: plugin, page: page).padding(.horizontal, 11).frame(height: PaneCard.header)
                     .padding(.top, PaneCard.floatingTop)
@@ -202,8 +194,7 @@ struct FloatingPlugin: View {
     }
 }
 
-/// Unsaved edits, after the title in the card's header and the floating window's title row: 7 pt, centered on the
-/// title's x-height (a little under the line's middle), as a document window's.
+/// Centered on the title's x-height (a little under the line's middle), as a document window's.
 struct DirtyDot: View {
     let paneID: String
     private nonisolated static let drop: CGFloat = {

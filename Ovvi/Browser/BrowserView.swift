@@ -20,7 +20,6 @@ class BrowserView: WKWebView {
         var image: CGImage?
     }
 
-    /// A browser card's, on its machine's store (or This Mac's).
     convenience init(store: WKWebsiteDataStore) {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = store
@@ -32,8 +31,6 @@ class BrowserView: WKWebView {
         // Safari's Develop menu reaches every card.
         isInspectable = true
         allowsBackForwardNavigationGestures = true
-        // A pinch magnifies the page around the fingers and a two-finger double tap zooms to what is under them, as in
-        // Safari.
         allowsMagnification = true
     }
 

@@ -10,7 +10,6 @@ final class PluginTrust {
     private var trusted: Set<String>
     private static let file = Registry.config.appending(path: "trust.json")
 
-    /// What the confirmation says, at install and in a card.
     static let warning = "Plugins run code as you on this Mac and on the machines whose cards you open, including "
         + "their build script. Install plugins only from sources you trust."
 
@@ -49,7 +48,6 @@ final class PluginTrust {
         try? JSONEncoder().encode(trusted.sorted()).write(to: Self.file, options: .atomic)
     }
 
-    /// Which plugin, and where from: its npm or git source, if it has one, and its folder.
     static func origin(_ manifest: PluginManifest, source: String?, folder: URL?) -> String {
         let folder = folder.map { ($0.path as NSString).abbreviatingWithTildeInPath } ?? ""
         return "\(manifest.id) \(manifest.version) \(source.map { "from \($0) " } ?? "")in \(folder)".shown
@@ -65,8 +63,6 @@ extension String {
     }
 }
 
-/// In the card's middle, before the plugin's code first runs: which plugin and where from, what it says it is, the
-/// warning, and Cancel (closes the pane) or Install.
 struct TrustPrompt: View {
     let plugin: Plugin
     let page: Page

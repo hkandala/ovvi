@@ -20,7 +20,6 @@ extension CommandList {
         ]
     }
 
-    /// ⌘K's: every plugin read and built again.
     static let reloadPlugins = Command(section: .palette, title: "Reload Plugins", group: .plugins,
                                        symbol: "arrow.clockwise",
                                        keywords: "plugin build refresh packages") { Task { await Plugin.reloadAll() } }

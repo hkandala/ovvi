@@ -46,7 +46,6 @@ final class PluginBuilds {
         await running[id]?.value
     }
 
-    /// The entry the build writes is there; else the card says it is not built, with Build when there is a script.
     static func built(_ manifest: PluginManifest) -> PluginProblem? {
         guard let package = Registry.package(manifest.id), let entry = manifest.entry,
               !FileManager.default.fileExists(atPath: package.appending(path: entry).path) else { return nil }
@@ -106,7 +105,6 @@ struct PluginProblem {
                                              builds: builds))
     }
 
-    /// The same words in the plugin's log.
     static func noted(_ manifest: PluginManifest, _ problem: PluginProblem) -> PluginProblem {
         PluginLog.add(manifest.id, "\(problem.title): \(problem.text)")
         return problem

@@ -2,11 +2,8 @@ import AppKit
 import HerdrKit
 import SwiftUI
 
-/// A `field` with `"style": "path"` (File Explorer's root), as the browser's address: at rest the value short
-/// (`short`), its last parts when long; a click shows the whole path selected, to edit. Return sends it
-/// (`submit`), tidied (`..`, `.` and `//` resolved; `~` on This Mac), Esc puts it back. A path the page refuses shakes
-/// the field (a beep with Reduce Motion), which keeps the typed text. Its symbol is a button that sends no value
-/// (Choose Folder…).
+/// A `field` with `"style": "path"` (File Explorer's root), edited as the browser's address is. A path the page
+/// refuses keeps the typed text.
 struct PathField: View {
     let control: PluginManifest.Control
     let plugin: Plugin

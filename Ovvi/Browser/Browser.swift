@@ -3,8 +3,8 @@ import HerdrKit
 import Observation
 import WebKit
 
-/// A browser pane's card (ui/browser): its web view and what the toolbar shows. Built once from the label; the
-/// registry keeps it, so a tab shown again does not reload it.
+/// A browser pane's card (ui/browser). Built once from the label; the registry keeps it, so a tab shown again does
+/// not reload it.
 @MainActor @Observable
 final class Browser: NSObject {
     let terminalID: String
@@ -22,7 +22,6 @@ final class Browser: NSObject {
     private(set) var progress = 0.0
     private(set) var canGoBack = false
     private(set) var canGoForward = false
-    /// A failed load, in the app's words, and the line under it.
     var failure: (text: String, hint: String?)?
     /// A page from an origin not approved, which the machine put in the label or the state file: "Open ‹url›?".
     private(set) var asking: URL?
@@ -30,7 +29,7 @@ final class Browser: NSObject {
     var loaded = false
     /// The loader shows until the first page drew, or at once with nothing to load.
     var ready = false
-    /// A `window.open` page (OAuth needs its opener) over the card, and its host.
+    /// A `window.open` page over the card (OAuth needs its opener).
     var popup: (view: WKWebView, host: String)?
     /// The address field takes the keyboard when it shows, or now (⌘L, a new empty card).
     var wantsAddress = false
@@ -52,7 +51,6 @@ final class Browser: NSObject {
     @ObservationIgnored private var proxy: Task<SSHExec?, Never>?
     /// A remote machine's card that loads through This Mac's network (ui/browser#this-macs-network).
     private(set) var viaMac: Bool
-    /// The alias its loads use: none on This Mac's network.
     var alias: String? {
         viaMac ? nil : remoteAlias
     }
@@ -99,7 +97,7 @@ final class Browser: NSObject {
         ]
     }
 
-    /// The page's address in the field. A failed load keeps its own: WebKit goes back to the last page's.
+    /// A failed load keeps its own address: WebKit goes back to the last page's.
     func showAddress() {
         guard failure == nil, let url = view.url, url.absoluteString != "about:blank" else { return }
         address = Self.shown(url, alias).absoluteString
@@ -138,7 +136,6 @@ final class Browser: NSObject {
         }
     }
 
-    /// The address field's Return; the label gets the typed address.
     func go(_ text: String) {
         guard let store, let url = Self.url(Self.typed(text), local: !store.machine.isRemote) else { return }
         asking = nil
@@ -155,7 +152,6 @@ final class Browser: NSObject {
         view.takeKeyboard()
     }
 
-    /// The "Open ‹url›?" answer.
     func open() {
         guard let url = asking else { return }
         asking = nil
@@ -178,7 +174,6 @@ final class Browser: NSObject {
         return true
     }
 
-    /// "Not now": the page it had, or none.
     func notNow() {
         asking = nil
         history = nil
@@ -200,7 +195,6 @@ final class Browser: NSObject {
         }
     }
 
-    /// The saved page with its back and forward list, else the address alone.
     /// The history's current page must pass the load rule too: a process on the machine writes the state file.
     private func restore(_ url: URL) {
         if let history {
@@ -254,7 +248,6 @@ final class Browser: NSObject {
         }
     }
 
-    /// The pane's keyboard: the page, or the address field while there is no page.
     func takeKeyboard() {
         if reading {
             claimed = true
@@ -265,7 +258,6 @@ final class Browser: NSObject {
         }
     }
 
-    /// Another card of the window asked for the keyboard.
     func dropClaim() {
         view.dropClaim()
         claimed = false
@@ -303,9 +295,7 @@ final class Browser: NSObject {
     }
 }
 
-/// Its web view, which a network switch makes again.
 extension Browser {
-    /// The web view's delegates and watches, and its machine's proxy when it loads through the machine.
     private func wire() {
         view.navigationDelegate = self
         view.uiDelegate = self

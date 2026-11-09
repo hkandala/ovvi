@@ -1,10 +1,8 @@
 import HerdrKit
 import SwiftUI
 
-/// The place a File Explorer card shows: its card's and tab's icon, its page's identifier, and whether it takes ⌘S
-/// and ⌘F. By the rule and the extensions its page picks it by (`kind` in plugins/explorer/place.ts, places.json): a
-/// folder's tree; Markdown; text (no extension too); Preview for the kinds it draws and the known kinds that are not
-/// text; else File.
+/// The place a File Explorer card shows, by the rule and the extensions its page picks it by (`kind` in
+/// plugins/explorer/place.ts, places.json).
 enum ExplorerPlace: String, CaseIterable {
     case files, file, preview, markdown
 
@@ -33,7 +31,6 @@ enum ExplorerPlace: String, CaseIterable {
 }
 
 extension PaneLabel {
-    /// Its program icon: the place a File Explorer shows, else its plugin's; a missing plugin's.
     var symbol: String {
         manifest.map { $0.id == "explorer" ? ExplorerPlace(place).symbol : $0.icon } ?? Registry.missing
     }
@@ -55,13 +52,11 @@ extension PaneLabel {
 }
 
 extension Page {
-    /// A plugin card's title: its page's `document.title` once its card is made, else the label's.
     func pluginTitle(_ pane: HostStore.Pane, _ label: PaneLabel) -> String {
         let title = pane.terminalID.flatMap(terminals.builtPlugin)?.web.title ?? ""
         return title.isEmpty ? label.title : title
     }
 
-    /// What VoiceOver reads for a card: a plugin card's title (Git's commit subject), as its header shows it.
     func cardLabel(_ pane: HostStore.Pane?) -> String {
         pane.map { pane in
             pane.plugin.flatMap { pane.browser == nil ? pluginTitle(pane, $0) : nil } ?? pane.cardTitle
@@ -123,7 +118,6 @@ final class Plugin {
         }
     }
 
-    /// The page's identifier names its plugin, a File Explorer's its place: `git.<pane>.page`, `file.<pane>.page`.
     func name() {
         let page = manifest.id == "explorer" ? ExplorerPlace(web.arg).rawValue : manifest.id
         web.view.setAccessibilityIdentifier("\(page).\(paneID).page")
@@ -145,7 +139,6 @@ final class Plugin {
         web.bridge?.event(name, NSNull())
     }
 
-    /// Unsaved edits, as the page reports them: the dot after the title.
     var dirty: Bool {
         web.dirty
     }
@@ -252,7 +245,6 @@ final class Plugin {
     }
 }
 
-/// Back and Forward at the left of row 2.
 struct BackForward: View {
     let plugin: Plugin
     @Environment(\.look) private var look
@@ -280,7 +272,6 @@ struct Toast {
 
     struct Action {
         let title: String
-        /// `.destructive` for a button that deletes or discards: red.
         var role: ButtonRole?
         let run: () -> Void
     }

@@ -80,7 +80,6 @@ final class PluginInstalls {
         }
     }
 
-    /// What Remove does to its folder, for the question and the plugin's page.
     static func removal(_ row: InstalledPlugin) -> String {
         if case .local = row.kind {
             return "Its folder stays where it is; Ovvi stops loading it."
@@ -88,8 +87,6 @@ final class PluginInstalls {
         return "Its folder in the plugins folder goes to the Trash."
     }
 
-    /// Remove: off the list, its trust forgotten, and an installed or hand-made folder to the Trash. A local path's
-    /// folder stays where it is.
     func remove(_ row: InstalledPlugin) async {
         guard row.kind != .bundled, await Self.ask(
             "Remove “\((row.manifest?.name ?? row.id).shown)”?",
@@ -117,7 +114,6 @@ final class PluginInstalls {
         }
     }
 
-    /// New Plugin…: the name asked, then `create(named:)`.
     func create() async {
         guard let typed = await askName() else { return }
         _ = try? await create(named: typed)
@@ -163,7 +159,6 @@ final class PluginInstalls {
         }
     }
 
-    /// New Plugin's name, or nil on Cancel.
     private func askName() async -> String? {
         let alert = NSAlert(), field = NSTextField(string: "")
         field.frame.size.width = 260
@@ -211,7 +206,6 @@ final class PluginInstalls {
         }
     }
 
-    /// Listed and trusted once it is in place, then its cards load again.
     private func installed(_ manifest: PluginManifest, _ source: String) throws {
         try PluginPackages.list(source, in: Registry.settings, add: true)
         PluginTrust.shared.allow(manifest)
@@ -330,7 +324,6 @@ struct InstalledPlugin: Identifiable {
         return manifest.entry == nil ? nil : manifest.version.shown
     }
 
-    /// What it is doing (`Installing…`), if anything.
     @MainActor var busy: String? {
         PluginInstalls.shared.busy[id] ?? (DefaultPlugins.shared.installing.contains(id) ? "Installing…" : nil)
     }

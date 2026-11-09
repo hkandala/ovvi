@@ -1,12 +1,9 @@
 import HerdrKit
 import SwiftUI
 
-/// Settings ▸ Plugins (plugins/packages#the-plugins-page): a source to install (`npm:`, `git:` or a folder's path), New
-/// Plugin…, Reload All, and every plugin with its icon, name, version and source. A row opens the plugin's page.
 struct PluginsPage: View {
     @State private var source = ""
 
-    /// Each plugin's settings and Show in New Pane, for the sidebar's search.
     static var searchRows: [SettingsSearch] {
         Registry.all.flatMap { manifest in
             let place = "Plugins › \(manifest.name.shown)", detail = SettingsDetail.plugin(manifest.id)
@@ -80,7 +77,6 @@ struct PluginsPage: View {
     }
 }
 
-/// A plugin's row: its icon, name and version, its source, and what it is doing.
 private struct PluginLink: View {
     let row: InstalledPlugin
 

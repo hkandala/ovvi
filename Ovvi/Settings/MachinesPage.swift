@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Settings ▸ Machines: This Mac and the remote machines, in the machine menu's order. A row opens its page.
+/// The machines in the machine menu's order.
 /// ponytail: no drag to reorder (a grouped form takes no `onMove`); a List section if users ask.
 struct MachinesPage: View {
     var body: some View {
@@ -30,7 +30,6 @@ struct MachinesPage: View {
     }
 }
 
-/// A machine's icon, name, a line under it, and whether a window is connected to it.
 private struct MachineLabel: View {
     let machine: Machine
     let detail: String
@@ -65,8 +64,7 @@ private struct MachineLabel: View {
     }
 }
 
-/// Settings ▸ Privacy: the websites each machine's browser cards load by themselves, a section per machine, with Add,
-/// Remove and Clear All. It shows with none too: a site can be added before any card opens it.
+/// A machine's section shows with no approved site too: a site can be added before any card opens it.
 struct PrivacyPage: View {
     /// Read again after a change: the approvals are plain defaults.
     @State private var version = 0

@@ -22,7 +22,6 @@ enum SettingsPage: String, CaseIterable, Hashable {
     }
 }
 
-/// A page under Machines or Plugins: a machine's by its id, a plugin's by its id.
 enum SettingsDetail: Hashable {
     case machine(String), plugin(String)
 }
@@ -42,7 +41,6 @@ final class SettingsRoute {
     }
 }
 
-/// Ovvi ▸ Settings… (⌘,): a sidebar of pages, as macOS System Settings, each page a grouped form.
 struct SettingsWindow: View {
     @State private var search = ""
     private var settings = AppSettings()
@@ -169,7 +167,6 @@ private struct RingScroll: ViewModifier {
 }
 
 extension View {
-    /// A page that a search pick scrolls (`settingsRow`).
     func scrollsToRing() -> some View {
         modifier(RingScroll())
     }
@@ -192,7 +189,6 @@ private struct SettingsRow: ViewModifier {
     }
 }
 
-/// The rows a search finds: each setting's title and more words, its page, and its row.
 struct SettingsSearch: Identifiable {
     let id: String, title: String, page: SettingsPage
     var words = ""
@@ -234,7 +230,6 @@ struct SettingsSearch: Identifiable {
                        words: "browser sites privacy allowlist add"),
     ]
 
-    /// The rows whose title, words or page hold every typed word.
     static func matches(_ text: String) -> [SettingsSearch] {
         let typed = text.lowercased().split(separator: " ")
         return (app + PluginsPage.searchRows).filter { row in
@@ -244,8 +239,7 @@ struct SettingsSearch: Identifiable {
     }
 }
 
-/// A pushed page's first card, as System Settings' detail pages: a large icon, the name (and a version), a line or two
-/// under it, and the page's own small buttons on the trailing edge.
+/// A pushed page's first card, as System Settings' detail pages have it.
 struct SettingsHeader<Icon: View, Actions: View>: View {
     let title: String
     var note: String?

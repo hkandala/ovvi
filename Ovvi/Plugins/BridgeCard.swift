@@ -3,8 +3,6 @@ import HerdrKit
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// The page's calls that the app answers itself: opens, the toast, the native menu, Choose Folder…, SF Symbols, its
-/// page in Settings and the clipboard.
 extension Bridge {
     func card(_ name: String, _ args: [String: Any], _ plugin: Plugin) async throws -> Any? {
         switch name {
@@ -117,7 +115,6 @@ extension Bridge {
         return picked
     }
 
-    /// Choose Folder… (`HostStore.chooseFolder`) over the card's window.
     private func folder(from start: String, _ plugin: Plugin) async -> String? {
         guard let store = plugin.web.store, let window = plugin.web.view.window else { return nil }
         return await store.chooseFolder(from: start, in: window)

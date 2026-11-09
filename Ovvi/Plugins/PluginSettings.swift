@@ -22,7 +22,6 @@ final class PluginSettings {
         })
     }
 
-    /// The saved value when it fits the setting, else its default.
     func value(_ setting: PluginSetting, of id: String) -> PluginSetting.Value {
         saved[id]?[setting.id].flatMap { setting.fits($0) ? $0 : nil } ?? setting.default
     }

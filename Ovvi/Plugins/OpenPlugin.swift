@@ -7,7 +7,6 @@ enum Opening {
     case here, tab, side
 }
 
-/// The ways a browser or plugin pane opens: the chooser's rows, Open ‹Kind› Here and linked opens.
 extension Page {
     /// A browser or plugin pane takes the chooser's pane's place, with Replace Pane's steps (ui/new-pane#browser). It
     /// waits for a snapshot that has the pane: herdr's split or tab answer comes before one, and a fast pick (⌘D,
@@ -35,7 +34,6 @@ extension Page {
         }
     }
 
-    /// Open ‹chooser› Here: the chooser's pick on a pane that shows it, else a Replace Pane.
     func open(_ plugin: PluginManifest, in pane: HostStore.Pane) {
         if let chooser = store.chooser(pane.id) {
             open(plugin, chooser)
@@ -44,11 +42,9 @@ extension Page {
         }
     }
 
-    /// An open from the card of terminal `source`: in the card itself when it is of that kind (`Plugin.go`); else a
-    /// linked open, a new herdr tab right after the card's tab, in its folder (also from a floating window),
-    /// or a pane to the card's side, which the snapshot after it selects with the keyboard unless it opens in the
-    /// `background`; in the selected tab's workspace once the card is gone. Its card lands at a line of a file or a
-    /// diff's file, once (not in the label).
+    /// An open from the card of terminal `source`. A new pane gets the keyboard from the snapshot after it unless it
+    /// opens in the `background`; once the card is gone it opens in the selected tab's workspace. Its card lands at
+    /// `place` (a line of a file or a diff's file) once: the place is not in the label.
     func open(_ plugin: PluginManifest, arg: String, at place: String? = nil, from source: String,
               how: Opening, background: Bool = false) async
     {
@@ -79,7 +75,6 @@ extension Page {
     }
 }
 
-/// Where a new pane goes: a new tab right after a tab of the workspace, or a split of a pane.
 enum PanePlace {
     case tab(after: String)
     case split(tab: String, pane: String, SplitNode.Direction)

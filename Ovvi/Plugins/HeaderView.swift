@@ -2,8 +2,6 @@ import AppKit
 import HerdrKit
 import SwiftUI
 
-/// A plugin card's second header row from its manifest (`Header`): Back and Forward when it keeps a history, then its
-/// controls, left to right, from the row's left edge; the same in a pane and in a floating window.
 struct PluginHeader: View {
     let plugin: Plugin
     let page: Page
@@ -47,7 +45,6 @@ struct PluginHeader: View {
     }
 }
 
-/// One control as its type draws it (plugins/manifest#header); its identifier is `pane.<pane>.<id>`.
 private struct HeaderItem: View {
     let control: PluginManifest.Control
     let plugin: Plugin
@@ -83,10 +80,7 @@ private struct HeaderItem: View {
         }
     }
 
-    /// A 22 pt icon button, as `IconButton` draws one; with a badge, its count after the symbol; busy, a spinner in its
-    /// place (Git's Pull and Push). `bordered`: the system's small bordered button with the symbol and the title (Git's
-    /// Fetch, Pull and Push) while the row has room for every bordered title. A button is one view whatever its state,
-    /// so a click under way keeps its pressed state.
+    /// One view whatever its state, so a click under way keeps its pressed state.
     private func button(_ id: String) -> some View {
         let title = control.title ?? ""
         return Group {
@@ -101,7 +95,6 @@ private struct HeaderItem: View {
         .accessibilityLabel(control.label ?? control.badge.map { "\(title), \($0)" } ?? title)
     }
 
-    /// The symbol (or the spinner), the words when `words`, the badge; an icon button's 22 pt box when `icon`.
     private func labeled(_ id: String, words: Bool = false, icon: Bool = false) -> some View {
         Button { plugin.header.pick(id, nil) } label: {
             HStack(spacing: words ? 4 : 2) {
@@ -122,7 +115,6 @@ private struct HeaderItem: View {
         }
     }
 
-    /// An icon button in the accent while on.
     private func toggle(_ id: String) -> some View {
         let isOn = control.value == .bool(true)
         return IconButton(symbol: control.symbol ?? "questionmark", help: control.title ?? "", size: 22) {
@@ -133,8 +125,6 @@ private struct HeaderItem: View {
         .accessibilityLabel(control.label ?? control.title ?? "")
     }
 
-    /// Plain, dim, or a path: its parts with `›` between them, the first dim. The symbol, dim, before the last part
-    /// (File's `{}` before the scope around the caret). Cut in the middle.
     private var text: some View {
         let path = control.style == "path"
         let parts: [String] = switch control.value {
@@ -159,8 +149,6 @@ private struct HeaderItem: View {
             .accessibilityValue(parts.joined(separator: " › "))
     }
 
-    /// Open With for the path the page set; none without one. The Mac's apps on This Mac only, the other plugins that
-    /// open the file on every machine.
     @ViewBuilder
     private var openWith: some View {
         if let path = control.value?.text, !path.isEmpty {
@@ -172,9 +160,8 @@ private struct HeaderItem: View {
     }
 }
 
-/// A borderless pop-up: the picked item's title and symbol (else the control's), a spinner while busy; the picked
-/// item checked. `"style": "icon"` shows the symbol alone, the title as its help (Markdown's mode, which leaves the row
-/// to the breadcrumbs). A `{ title }` item starts a section, `"-"` is a divider.
+/// `"style": "icon"` shows the symbol alone (Markdown's mode, which leaves the row to the breadcrumbs). A `{ title }`
+/// item starts a section, `"-"` is a divider.
 private struct HeaderMenu: View {
     let control: PluginManifest.Control
     let header: Header
@@ -213,7 +200,6 @@ private struct HeaderMenu: View {
         .accessibilityValue(shown)
     }
 
-    /// The items split at each heading.
     private func sections(_ items: [PluginManifest.Item]) -> [(String?, [PluginManifest.Item])] {
         items.reduce(into: [(nil, [])]) { sections, item in
             if item.value == nil, let title = item.title {
@@ -249,9 +235,7 @@ private struct HeaderMenu: View {
     }
 }
 
-/// Open With, as other editors draw it: the default app's icon and name open the file in it; its menu lists that app,
-/// then the others that open the file, each with its icon, then the other plugins that open it, whose pick turns the
-/// card into theirs.
+/// Open With, as other editors draw it. A plugin's pick turns the card into that plugin's.
 private struct OpenWith: View {
     let path: String
     /// The Mac's apps: on This Mac.

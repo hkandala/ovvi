@@ -2,7 +2,6 @@ import AppKit
 import HerdrKit
 import WebKit
 
-/// How a card's pages load, fail and follow links.
 extension Browser: WKNavigationDelegate {
     /// The card shows the page once its document is parsed and drew, not when it finished: an image, a font or a fetch
     /// that never answers (a stalled server, a dead connection after a sleep) kept the loader over a page that was
@@ -100,7 +99,6 @@ extension Browser: WKNavigationDelegate {
     }
 }
 
-/// What a page asks of its card: new windows, dialogs and file panels.
 extension Browser: WKUIDelegate {
     /// `window.open` (an OAuth popup keeps its opener) in a sheet over the card. A link that asks for a new window
     /// (`target=_blank`, also `rel=opener`: WebKit does not say) and Open Link in New Tab open a tab; a form that
@@ -134,7 +132,6 @@ extension Browser: WKUIDelegate {
         }
     }
 
-    /// Page dialogs as a sheet on the window, labeled with the origin.
     func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String,
                  initiatedByFrame frame: WKFrameInfo) async
     {
@@ -180,10 +177,8 @@ extension Browser {
         }
     }
 
-    /// Open Link in New Tab, ⌘-click and `target=_blank`: a browser pane on the link in a new tab right after
-    /// the card's, left in the background as Safari does; Open Link to the Side and ⌥-click: beside the card. The
-    /// user picked the link: its origin is approved, so the new card loads it. False for an address a label cannot
-    /// hold.
+    /// A new tab is left in the background, as Safari does. The user picked the link: its origin is approved, so the
+    /// new card loads it. False for an address a label cannot hold.
     func openTab(_ link: URL, side: Bool) -> Bool {
         // Not `mailto:`: `url` reads an address without `://` as a host.
         guard ["http", "https", "file"].contains(link.scheme?.lowercased() ?? ""), let store,

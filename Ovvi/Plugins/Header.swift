@@ -38,8 +38,7 @@ final class Header {
         }
     }
 
-    /// The page's `ovvi.controls.set(id, change)`: value, title, label, symbol, badge, items, hidden, enabled, busy;
-    /// focus and refused once. A wrong type leaves that field; an unknown id changes nothing.
+    /// The page's `ovvi.controls.set(id, change)`. A wrong type leaves that field; an unknown id changes nothing.
     func set(_ id: String, _ change: [String: Any]) {
         guard let index = controls.firstIndex(where: { $0.id == id }) else { return }
         var control = controls[index]

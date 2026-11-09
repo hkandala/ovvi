@@ -2,7 +2,6 @@ import HerdrKit
 import Network
 import WebKit
 
-/// What a browser card takes from its machine: its addresses and its data store.
 extension Browser {
     static let loopback = ["localhost", "127.0.0.1", "::1"]
 
@@ -87,7 +86,6 @@ extension Browser {
             || host.hasSuffix(".vercel.app") || host.hasSuffix(".netlify.app") || approvals.contains(Self.origin(url))
     }
 
-    /// Web origins only, the newest 200.
     func approve(_ url: URL) {
         guard ["http", "https"].contains(url.scheme?.lowercased()), !approved(url) else { return }
         UserDefaults.standard.set(Array((approvals + [Self.origin(url)]).suffix(200)), forKey: approvalsKey)
@@ -108,8 +106,7 @@ extension Browser {
 
     // MARK: Remote localhost
 
-    /// The `<machine>` of `<machine>.localhost` (ui/browser#remote-localhost): the name in lowercase
-    /// letters, digits and dashes.
+    /// The `<machine>` of `<machine>.localhost` (ui/browser#remote-localhost).
     static func alias(_ name: String) -> String {
         let words = name.lowercased().split { !($0.isASCII && ($0.isLetter || $0.isNumber)) }
         return words.isEmpty ? "machine" : words.joined(separator: "-")
@@ -165,8 +162,8 @@ extension Browser {
             )
     }
 
-    /// A failed load in the app's words, and the line under it. The proxy refuses a port that does not answer and a
-    /// name the machine cannot reach; WebKit reports either code for it.
+    /// The proxy refuses a port that does not answer and a name the machine cannot reach; WebKit reports either code
+    /// for it.
     func failureText(_ error: NSError, _ url: URL?) -> (text: String, hint: String?) {
         let place = url.map { [$0.host, $0.port.map(String.init)].compactMap(\.self).joined(separator: ":") } ?? ""
         let local = url?.host.map { Self.loopback.contains($0) } ?? false

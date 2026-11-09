@@ -1,13 +1,10 @@
 import HerdrKit
 import SwiftUI
 
-/// A plugin's page under Settings ▸ Plugins (plugins/packages#a-plugins-page): its header with what it can do here, its
-/// settings drawn from its manifest, and Show in New Pane.
 struct PluginPage: View {
     let id: String
     @Environment(\.dismiss) private var dismiss
 
-    /// A search row's id, and the row it rings.
     static func row(_ plugin: String, _ setting: String) -> String {
         "plugin.\(plugin).\(setting)"
     }
@@ -60,7 +57,6 @@ struct PluginPage: View {
         .scrollsToRing()
     }
 
-    /// Show in New Pane, and the browser's link to its approved websites.
     @ViewBuilder
     private func inOvvi(_ manifest: PluginManifest) -> some View {
         if manifest.chooser != nil {
@@ -89,8 +85,6 @@ struct PluginPage: View {
     }
 }
 
-/// The header: icon, name and version, description and source, and Update, Reset to Default or Update to Version, Show
-/// Log and Reload as each applies (Remove is at the bottom of the page).
 private struct PluginSummary: View {
     let row: InstalledPlugin
     /// Its row went: installed under its manifest's id.
@@ -133,7 +127,6 @@ private struct PluginSummary: View {
     }
 }
 
-/// Remove, at the bottom of a page of a plugin that is not the app's own.
 private struct PluginRemove: View {
     let row: InstalledPlugin
     let gone: () -> Void
@@ -160,8 +153,6 @@ private struct PluginRemove: View {
     }
 }
 
-/// A setting drawn by its type: a switch, a segmented control for up to 4 short options or a pop-up menu, a number
-/// field with a stepper held in the range, a text or path field saved on Return or when it loses the keyboard.
 private struct SettingRow: View {
     let setting: PluginSetting
     let plugin: String
@@ -242,7 +233,6 @@ private struct SettingRow: View {
     }
 }
 
-/// Whether the New Pane chooser shows a plugin's row, in `settings.json`.
 struct NewPaneSwitch: View {
     let manifest: PluginManifest
 

@@ -10,7 +10,6 @@ struct AppSettings: DynamicProperty {
     @AppStorage("focusFollowsMouse") var followMouse = false
     /// What a new pane opens: New Pane's chooser (empty), or a row's id (ui/new-pane#a-fixed-pick).
     @AppStorage(Chooser.opensKey) var newPaneOpens = ""
-    /// The notifications' switches (status#notifications), all on by default.
     @AppStorage(Notifications.needsYou) var notifyNeedsYou = true
     @AppStorage(Notifications.finished) var notifyFinished = true
     @AppStorage(Notifications.fromAgents) var notifyFromAgents = true

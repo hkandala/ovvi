@@ -3,15 +3,14 @@ import HerdrKit
 import Observation
 import WebKit
 
-/// The app's side of a plugin page's `ovvi` object (web/ovvi/runtime.ts, plugins/api): the page's
-/// calls, the events it hears, and the card's state. Bound to its card when the card is made, so no message names a
-/// machine or another card.
+/// The app's side of a plugin page's `ovvi` object (web/ovvi/runtime.ts, plugins/api). Bound to its card when the
+/// card is made, so no message names a machine or another card.
 @MainActor @Observable
 final class Bridge {
     @ObservationIgnored private(set) weak var plugin: Plugin?
     /// The page's changes of its commands (`controls.set` of a command's id): `title`, `checked`, `enabled`.
     private(set) var commands: [String: [String: Any]] = [:]
-    /// Why the page cannot run (`PluginProblem`: it stopped, is not built, ...): the card shows it with its fix.
+    /// Why the page cannot run: the card shows it with its fix.
     var failure: PluginProblem?
     /// The plugin's state value as last set (JSON), kept beside the header's values.
     @ObservationIgnored private var state: Any?
@@ -208,7 +207,6 @@ final class Bridge {
         return nil
     }
 
-    /// The card's own calls: its place, loader, Edited dot and failure; its state; its header.
     private func own(_ name: String, _ args: [String: Any], _ plugin: Plugin) throws {
         switch name {
         case "card.go":
@@ -241,7 +239,6 @@ final class Bridge {
         }
     }
 
-    /// The page's `state.set`: kept in the state file.
     private func keep(_ value: Any) throws {
         guard let data = try? JSONSerialization.data(withJSONObject: [value]), data.count <= 256 << 10 else {
             throw PluginError("tooLarge", "The state is over 256 KiB, or not JSON")
@@ -250,7 +247,6 @@ final class Bridge {
         save()
     }
 
-    /// A watch from the page, or its end.
     private func watch(_ name: String, _ args: [String: Any]) throws {
         guard let id = args["id"] as? Int else { throw PluginError("failed", "id is missing") }
         guard name == "files.watch" else {
@@ -265,7 +261,6 @@ final class Bridge {
         watch(id)
     }
 
-    /// A call on the card's machine (HerdrKit's `PluginCalls`).
     func calls(_ name: String, _ args: [String: Any]) async throws -> Data {
         guard let plugin, let store = plugin.web.store else { throw PluginError("closed", "Closed") }
         let data = try JSONSerialization.data(withJSONObject: args)
@@ -274,7 +269,7 @@ final class Bridge {
         return try await calls.call(name, data)
     }
 
-    /// Two at a time per card; the rest wait in order. In the pane's folder unless the page says otherwise.
+    /// In the pane's folder unless the page says otherwise.
     private func run(_ args: [String: Any]) async throws -> Data {
         while runs >= 2 {
             await withCheckedContinuation { waiting.append($0) }

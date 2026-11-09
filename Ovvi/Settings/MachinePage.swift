@@ -2,9 +2,7 @@ import HerdrKit
 import SwiftUI
 import WebKit
 
-/// A machine's page, as System Settings' detail pages: a header with its icon, name and state; its connection (Add
-/// Remote Host's fields) with Save; its website data; and Remove at the bottom. This Mac has the header and its website
-/// data. `new`: Add Machine's page, with Cancel and Add.
+/// A machine's page; the id `new` is Add Machine's.
 struct MachinePage: View {
     static let new = "new"
     let id: String
@@ -17,7 +15,6 @@ struct MachinePage: View {
         case clear, remove
     }
 
-    /// A window of it is connected.
     static func isLive(_ machine: Machine) -> Bool {
         HostStore.all.contains { $0.machine.id == machine.id && $0.state == .live }
     }
@@ -103,8 +100,6 @@ struct MachinePage: View {
         }
     }
 
-    /// Name, SSH target and icon in the form's own fields, then what is wrong with the target, and Cancel and Add (or
-    /// Save) on the trailing edge, as a macOS dialog has them.
     private func connection(_ saved: Machine?, target: String) -> some View {
         Section {
             // A set width: a form's text field asks for all the room, which narrowed the sidebar.
@@ -151,7 +146,6 @@ struct MachinePage: View {
         }
     }
 
-    /// Its browser cards' cookies, storage and cache, and its approved websites.
     private static func clear(_ machine: Machine) {
         UserDefaults.standard.removeObject(forKey: "browserApprovals.\(machine.id)")
         Browser.dataStore(machine).removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(),

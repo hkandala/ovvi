@@ -38,7 +38,6 @@ enum Registry {
 
     private static let current = Current()
 
-    /// Reads every package again: after an install, a removal, or Reload Plugins.
     static func reload() {
         current.loaded = load()
         current.hidden = hidden()
@@ -200,7 +199,6 @@ enum Registry {
             problems: leftOut.filter { problem in !manifests.contains { $0.id == problem.key } })
     }
 
-    /// Each subfolder's package, by folder name.
     private static func packages(in folder: URL?) -> [(manifest: PluginManifest, url: URL)] {
         guard let folder, let names = try? FileManager.default.contentsOfDirectory(atPath: folder.path) else {
             return []
@@ -238,18 +236,15 @@ enum Registry {
     /// Why a package with this id was left out (a bad manifest), while the list is read; `Loaded.problems` after.
     private static var leftOut: [String: Problem] = [:]
 
-    /// A package left out for its manifest: its folder, and the error in it.
     struct Problem {
         let folder: URL
         let error: String
     }
 
-    /// Every package with an id that was left out, by that id.
     static var problems: [String: Problem] {
         current.loaded.problems
     }
 
-    /// Why the plugin of a label did not load: its manifest's error.
     static func problem(_ id: String) -> String? {
         current.loaded.problems[id].map { "\($0.folder.path)/\($0.error)" }
     }

@@ -71,7 +71,6 @@ final class DefaultPlugins {
         await check()
     }
 
-    /// What the pages offer for each installed default.
     func check() async {
         let records = Self.read()
         var offers: [String: String?] = [:]

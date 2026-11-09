@@ -2,7 +2,6 @@ import HerdrKit
 import SwiftUI
 import WebKit
 
-/// The card header's second row.
 struct BrowserToolbar: View {
     let browser: Browser
     let page: Page
@@ -39,8 +38,6 @@ struct BrowserToolbar: View {
         .blursWhenHidden($editing)
     }
 
-    /// The host in full and the rest at half while not editing; a click or ⌘L selects it all. Return and Esc give the
-    /// keyboard to the page.
     private func address(_ id: String) -> some View {
         TextField("Ask Google or type a URL", text: $text)
             .textFieldStyle(.plain)
@@ -104,7 +101,6 @@ struct BrowserToolbar: View {
         page.store.machine.isRemote
     }
 
-    /// The machine's name in its color, or a plain "This Mac" while the card loads through This Mac's network.
     private var machine: some View {
         let name = page.store.machine.name, mac = browser.viaMac
         return Button(action: browser.toggleNetwork) {
@@ -145,7 +141,6 @@ struct BrowserToolbar: View {
     }
 }
 
-/// An address as the toolbar and "Open this page?" show it: "localhost:3000" in full, "/dashboard" at half.
 func addressText(_ address: String) -> Text {
     let url = URL(string: address)
     let host = url.flatMap { url in url.host.map { $0 + (url.port.map { ":\($0)" } ?? "") } }

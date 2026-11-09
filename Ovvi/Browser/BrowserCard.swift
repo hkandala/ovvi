@@ -39,7 +39,6 @@ extension CommandList {
     }
 }
 
-/// The card's page (ui/browser#the-card).
 struct BrowserCard: View {
     let browser: Browser
     let page: Page
@@ -114,7 +113,6 @@ struct BrowserCard: View {
     }
 }
 
-/// "Open this page?" (ui/browser#when-a-page-loads-by-itself).
 private struct Asking: View {
     let browser: Browser
     let url: URL
@@ -196,7 +194,6 @@ struct WebHost: NSViewRepresentable {
     }
 }
 
-/// Row 1's icon: the page's, else the globe (also over a failed load).
 struct BrowserIcon: View {
     let browser: Browser
 
@@ -216,7 +213,6 @@ struct BrowserIcon: View {
     }
 }
 
-/// A floated browser pane: the toolbar without the card buttons, under the floating window's title row.
 struct FloatingBrowser: View {
     let browser: Browser
     let page: Page

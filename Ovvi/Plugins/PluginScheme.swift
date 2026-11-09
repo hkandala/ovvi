@@ -10,7 +10,6 @@ final class PluginScheme: NSObject, WKURLSchemeHandler {
     static let shared = PluginScheme()
     static let name = "ovvi-plugin"
 
-    /// A plugin's page: its entry's.
     static func url(_ plugin: String) -> URL {
         URL(string: "\(name)://\(plugin)/main") ?? URL(filePath: "/")
     }

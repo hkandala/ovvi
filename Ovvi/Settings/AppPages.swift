@@ -3,7 +3,6 @@ import HerdrKit
 import ServiceManagement
 import SwiftUI
 
-/// Settings ▸ General: opening at login, what new panes open, how panes take the keyboard, and the shortcuts.
 struct GeneralPage: View {
     private var settings = AppSettings()
     private static let chooserNote = "What ⌘T, ⌘D and New Space open."
@@ -103,7 +102,6 @@ private struct OpenAtLogin: View {
     }
 }
 
-/// Settings ▸ Appearance: the look as picture tiles, and the text size.
 struct AppearancePage: View {
     private var settings = AppSettings()
     @Environment(\.colorScheme) private var colorScheme
@@ -154,7 +152,6 @@ struct AppearancePage: View {
     }
 }
 
-/// A choice drawn as a small window picture with its name under it.
 private struct LookTile: View {
     let title: String
     let selected: Bool
@@ -181,7 +178,6 @@ private struct LookTile: View {
     }
 }
 
-/// A window drawn small: a sidebar and two cards, in light or dark, half and half for Auto, over a desktop for Glass.
 private struct LookPicture: View {
     let dark: Bool, split: Bool, glass: Bool
 
@@ -211,7 +207,6 @@ private struct LookPicture: View {
     }
 }
 
-/// Settings ▸ Terminal: libghostty's font, cursor, Option key and copy on select, for every terminal at once.
 struct TerminalPage: View {
     private var settings = AppSettings()
     @State private var fonts: [String] = []
@@ -258,7 +253,6 @@ struct TerminalPage: View {
     }
 }
 
-/// Settings ▸ Agents: the first view of new agents, Archived Sessions, the agents in New Pane, and the notifications.
 struct AgentsPage: View {
     private var settings = AppSettings()
 
@@ -315,7 +309,6 @@ struct AgentsPage: View {
     }
 }
 
-/// An agent's tile, name and command, its extra arguments, and whether New Pane lists it.
 private struct AgentSettingsRow: View {
     let agent: Chooser.Agent
     @AppStorage private var arguments: String
@@ -349,7 +342,6 @@ private struct AgentSettingsRow: View {
 }
 
 extension View {
-    /// A section's footer, in System Settings' small grey text.
     func settingsFooter() -> some View {
         font(.system(size: 11)).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
     }
