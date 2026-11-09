@@ -253,6 +253,8 @@ extension OvviUITests {
         app.launchArguments = ["-defaultSession", one, "-machines", "[]"] + Self.noConfig
         app.launch()
         XCTAssertTrue(until(connect) { headers.sorted() == [one, two].sorted() }, "\(headers)")
+        try await Task.sleep(for: .seconds(1))
+        XCTAssertEqual(main.count, 2)
         XCTAssertFalse(element("picker.title").exists)
 
         // Every window closed, then ⌘Q: the next launch shows the view, connected to nothing.
@@ -265,6 +267,7 @@ extension OvviUITests {
         app.launch()
         XCTAssertTrue(element("picker.local.\(one)").exists(within: connect))
         XCTAssertTrue(headers.isEmpty)
+        try await Task.sleep(for: .seconds(1))
         XCTAssertEqual(main.count, 1)
     }
 
