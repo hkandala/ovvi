@@ -50,10 +50,9 @@ extension HostStore {
         launches[terminal] = Launch(command: parts[0], token: token, after: 0, pids: pids)
     }
 
-    /// Its marker or its launch's processes before the loader goes, so a chat pane shows its chat at once: asked
-    /// again every 0.5 s, 10 s at most, while neither shows (an agent whose process comes after its status).
+    /// After the loader went: asked again every 0.5 s, 10 s at most, while neither its marker nor its launch's
+    /// processes show (an agent whose process comes after its status, or one never named as its command).
     func settle(_ paneID: String) async {
-        await askProgram(paneID, soon: true)
         for _ in 0 ..< 20 {
             guard let pane = pane(paneID), let terminal = pane.terminalID, launches[terminal]?.pids.isEmpty == true,
                   adapter(pane) == nil else { return }

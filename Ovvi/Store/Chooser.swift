@@ -271,8 +271,14 @@ extension HostStore {
             let resumed = await resumed(agent, chooser, resume: resume, closed: closed)
             guard resume ?? closed == nil || resumed != nil else { return }
             let ended = await typeAndWait(agent, chooser, resumed, plain: resume ?? closed == nil)
+            let live = choosers.contains { $0 === chooser }
+            // The loader goes as herdr reports the agent; its launch's processes are looked for behind it.
+            release(chooser)
+            if ended == .agent, let id = chooser.paneID {
+                await settle(id)
+            }
             unlaunch(chooser, unless: ended)
-            if let resume, choosers.contains(where: { $0 === chooser }) {
+            if let resume, live {
                 relaunchEnded(ended, agent, chooser, resume)
             }
         }
@@ -310,7 +316,8 @@ extension HostStore {
                    pane.agentStatus.map({ $0 != .unknown }) == true
                 {
                     launched(id, agent, chooser, line: line)
-                    await settle(id)
+                    // Its launch marker before the loader goes, so a chat pane shows its chat at once.
+                    await askProgram(id, soon: true)
                     return .agent
                 }
                 // Not while a new shell starts (`Pane.starting`): the command waits for its prompt. Twice in a row:

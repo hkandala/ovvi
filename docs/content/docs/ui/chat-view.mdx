@@ -30,6 +30,8 @@ and
   process named as the agent's command (by its name, `claude.exe` too, or its
   `argv[0]`), the launch takes those processes. While they run, the pane is
   that launch's chat. An agent started again by hand in the terminal is not.
+  The loader goes as soon as herdr reports the agent; the app looks for the
+  launch's processes behind it, every 0.5 s for 10 s at most.
   The bare-command fallback has no launch, and a start that ends without the
   agent (the shell came back, the pane closed) drops its launch. Bound with
   no marker in sight, the launch also goes to herdr as the pane token
