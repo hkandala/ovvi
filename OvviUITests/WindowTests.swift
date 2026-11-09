@@ -265,6 +265,7 @@ extension OvviUITests {
         app.launch()
         XCTAssertTrue(element("picker.local.\(one)").exists(within: connect))
         XCTAssertTrue(headers.isEmpty)
+        XCTAssertEqual(main.count, 1)
     }
 
     /// Each main window's page header, the session in view.
@@ -291,9 +292,10 @@ extension OvviUITests {
         let groups = app.descendants(matching: .any)
             .matching(NSPredicate(format: "identifier BEGINSWITH 'picker.section.'"))
         XCTAssertEqual(groups.count, 1)
-        // Still no page a moment later.
+        // Still no page a moment later, and one window.
         try await Task.sleep(for: .seconds(1))
         XCTAssertFalse(element("sidebar").exists)
+        XCTAssertEqual(app.windows.matching(NSPredicate(format: "identifier BEGINSWITH 'main-'")).count, 1)
         keepScreenshot("new window")
     }
 

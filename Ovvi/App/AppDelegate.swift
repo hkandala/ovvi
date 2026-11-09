@@ -21,6 +21,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             .map(ObjectIdentifier.init))
         PluginBuilds.writeTypes()
         Task { await DefaultPlugins.shared.install() }
+        // A quit with no window open saves none, and macOS then opens none: one new-window view.
+        DispatchQueue.main.async {
+            if !NSApp.windows.contains(where: \.canBecomeMain) {
+                WindowPages.openWindow?(id: "main")
+            }
+        }
     }
 
     /// Ovvi's marks on the panes it shows go first (talking-to-herdr#agent-requests).

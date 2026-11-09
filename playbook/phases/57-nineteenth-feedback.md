@@ -344,7 +344,9 @@ runs and on-demand on the final head.
   build an agent ran against a throwaway session (`-session`, a measure) quit last, so the user's next launch
   restored that window (`ovvi-dev-p57t` here), whose session is gone, and showed the new-window view. The restore code
   brings back two windows with their sessions (a new test). **Fix:** only `make install` and `make dmg` build the
-  installed bundle id; `make app` (a measure) builds `dev.ovvi.app.release`, and Debug builds have theirs. Rules kept: a restored
+  installed bundle id; `make app` (a measure) builds `dev.ovvi.app.release` (`ovvi-release://`), and Debug builds
+  have theirs. Also a code cause: a quit with no window open saved none, and the next launch opened no window at all;
+  now launch opens one new-window view then. Rules kept: a restored
   window opens its saved pages; a remote one whose machine needs an answer shows Disconnected with Connect, never a
   prompt; only a launch with nothing saved shows the new-window view; ⌘N always does.
 - **Round 7 (64).** The sidebar's "No Spaces" and its New Space button are gone; the page stays quiet (the header's `+`
