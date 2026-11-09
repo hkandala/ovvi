@@ -2,10 +2,10 @@ import AppKit
 import HerdrKit
 import SwiftUI
 
-/// New Pane's folder line under the list (ui/new-pane#folder): "Opens in ~/code/ovvi", the folder its pick starts in.
-/// A click on the path, ⌘L or Tab makes it a field with the whole path selected, as File Explorer's path bar: Return
-/// takes a folder of the pane's machine (`~` and relative paths too), and one that is not there shows an error and
-/// keeps the old folder, under the field; Esc puts it back. The icon before the path opens the system's folder
+/// New Pane's folder line under the list (ui/new-pane#the-folder): "Opens in ~/code/ovvi", the folder its pick starts
+/// in. A click on the path, ⌘L or Tab makes it a field with the whole path selected, as File Explorer's path bar:
+/// Return takes a folder of the pane's machine (`~` and relative paths too), and one that is not there shows an error
+/// and keeps the old folder, under the field; Esc puts it back. The icon before the path opens the system's folder
 /// panel, on This Mac only, as the path bar's.
 struct NewPaneFolder: View {
     let chooser: Chooser

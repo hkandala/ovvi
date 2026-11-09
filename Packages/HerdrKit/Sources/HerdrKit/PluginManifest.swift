@@ -108,10 +108,6 @@ public struct PluginManifest: Decodable, Sendable, Equatable {
         public let title: String?
         public let symbol: String?
 
-        public init(value: String?, title: String?, symbol: String?) {
-            (self.value, self.title, self.symbol) = (value, title, symbol)
-        }
-
         public init(from decoder: any Decoder) throws {
             if let divider = try? decoder.singleValueContainer().decode(String.self), divider == "-" {
                 (value, title, symbol) = (nil, nil, nil)
@@ -341,6 +337,6 @@ public extension PluginManifest.Item {
     /// From the page's JSON: `{ value, title, symbol }`, `{ title }` (a section heading) or `"-"` (a divider).
     init(json: Any) {
         let item = json as? [String: Any] ?? [:]
-        self.init(value: item["value"] as? String, title: item["title"] as? String, symbol: item["symbol"] as? String)
+        (value, title, symbol) = (item["value"] as? String, item["title"] as? String, item["symbol"] as? String)
     }
 }

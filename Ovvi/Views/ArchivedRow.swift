@@ -64,7 +64,7 @@ struct ArchivedRow: View {
     }
 }
 
-struct AgeText: View {
+private struct AgeText: View {
     let date: Date
 
     var body: some View {

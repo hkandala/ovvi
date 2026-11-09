@@ -8,7 +8,7 @@ let repoRoot = URL(filePath: #filePath).appending(path: "../../../../..").standa
 private let script = repoRoot.appending(path: "scripts/herdr-session.sh").path
 
 /// Awaits the command's exit instead of blocking a thread: tests run in parallel on Swift's cooperative pool, which
-/// has one thread per core, and a session start takes up to seconds.
+/// has one thread per core, and a session start blocking one for seconds delays the timing tests.
 @discardableResult
 private func shell(_ argv: String...) async -> Int32 {
     await withCheckedContinuation { continuation in
