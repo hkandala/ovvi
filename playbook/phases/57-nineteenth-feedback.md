@@ -1184,3 +1184,27 @@ you did, no need of reverting them".
   CI 42609498951 on the fixed test: it and the stress test, 2 executed, green.
 - **For the user.** In a session with hundreds of spaces: scroll fast, swipe to another session and back, fold a
   space, and rest the pointer on an agent row for its card.
+
+### Track K, round 6 (item 56)
+
+- **Measure.** A Release build on a session of the user's size (6 spaces, 30 tabs, 6 working agents, Archived Sessions
+  open), XCUITest attached as the accessibility client, keys posted inside the app, Time Profiler and lldb. The Mac's
+  load was 50–80.
+- **Cause.** The list was all of a key's time: with the rows not drawn at all every key took 7–17 ms and ⌘K 19–23 ms;
+  with them the first letter took 136–173 ms. Two parts. SwiftUI rows in the window's graph: each new or changed row's
+  accessibility made SwiftUI walk all the window's focusable views, and the lazy stack diffed and placed every row.
+  And each keycap's live glass, which is a SwiftUI host of its own: AppKit rows with glass keycaps still took
+  105–125 ms for the first letter, 25–46 ms with drawn ones. SwiftUI rows hosted in a table's cells were worse
+  (40 ms for a one-row change): each hosting view is a graph of its own. Scoring is under 1 ms; no other view of the
+  window runs a body per key (Latency's own record aside).
+- **Fix.** The palette's rows are drawn by AppKit in a table that reuses the few row views in view (`RowTable`,
+  `RowView`): the symbol or a tile (SwiftUI's `ProgramTile`, rendered once per icon), the texts, the pill and the
+  keycaps, the keycaps' glass drawn. The other lists keep their SwiftUI rows (state icons, spinners, buttons, drops).
+- **Numbers (warm, user's size, client attached).** ⌘K 69–86 → 15–18 ms (the first open of the app 64 ms); the first
+  letter 136–173 → 25–28 ms; the other keys 12–195 → 14–47 ms (the longest, a list growing past the panel, 174–195 →
+  23–47 ms).
+- **Look.** Measured on 2× pictures against the SwiftUI rows, dark and light: rows, texts, tiles and pill in place;
+  SwiftUI's hierarchical styles draw fuller on the glass than AppKit's label colors (white 100/40/27 % in dark, black
+  100/42/31 % in light, measured), so the rows use those. Left: 1 px (0.5 pt) on some symbols and the keycaps' glyphs,
+  and the drawn glass is close to, not the same as, live glass.
+- **For the user.** With Raycast or another accessibility app running, open ⌘K and type: each key should draw at once.

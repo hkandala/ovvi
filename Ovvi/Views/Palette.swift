@@ -70,6 +70,7 @@ struct Palette: View {
             typed: command == nil && commands.floating == nil ? { await check($0) } : nil,
             back: sub == nil ? nil : { back() },
             rowHeight: 32,
+            table: true,
             inset: 10,
         ) { open = false }
             .controlSize(.large)

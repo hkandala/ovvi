@@ -370,3 +370,31 @@ private struct ScrolledFades: ViewModifier {
             .fadeEdges(.vertical, start: under.top ? 18 : 0, end: under.bottom ? end : 0)
     }
 }
+
+/// The palette's AppKit rows (`RowView`), as SwiftUI draws `MenuRow` and `Keycap` on the panel's glass (measured on
+/// its pixels): its hierarchical styles are fuller there than AppKit's label colors.
+@MainActor
+enum RowInk {
+    static let primary = ink(1, 1), secondary = ink(0.4, 0.42), tertiary = ink(0.27, 0.31)
+    /// On the accent pill, and the keycaps' rims.
+    static func white(_ alpha: CGFloat) -> NSColor {
+        .white.withAlphaComponent(alpha)
+    }
+
+    /// A keycap's fill, its rim's bands from the edge in (0.5 pt each, at the top and bottom; `sides` of them on the
+    /// sides) and its outline outside, in light.
+    struct Cap { let fill: NSColor, rim: [CGFloat], sides: CGFloat; var outline: NSColor? }
+
+    static func cap(dark: Bool, lit: Bool) -> Cap {
+        let fill = NSColor.white.withAlphaComponent(lit ? dark ? 0.07 : 0.4 : dark ? 0.13 : 0)
+        return dark ? Cap(fill: fill, rim: [0.42, 0.2, 0.07], sides: 0)
+            : Cap(fill: fill, rim: [1, 1, 0.6], sides: 0.3, outline: .black.withAlphaComponent(0.09))
+    }
+
+    private static func ink(_ dark: CGFloat, _ light: CGFloat) -> NSColor {
+        NSColor(name: nil) { appearance in
+            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? .white.withAlphaComponent(dark)
+                : .black.withAlphaComponent(light)
+        }
+    }
+}

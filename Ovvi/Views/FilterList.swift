@@ -54,6 +54,8 @@ struct FilterList: View {
     /// ⌫ on an empty field, or Esc: back a page. Without it Esc goes on to close the panel.
     var back: (() -> Void)?
     var rowHeight: CGFloat = 26
+    /// The rows drawn by AppKit (`RowTable`): plain rows only, no state icons, spinners, buttons, drops or pinned rows.
+    var table = false
     /// The last rows sit under the scrolled ones, always in view: the workspace menu's New Space is a drop target
     /// only in view as a drag starts (macOS 27, `MenuRowDrop`).
     var pinned = 0
@@ -116,7 +118,20 @@ struct FilterList: View {
                 }
                 .padding(.bottom, 4)
             // A name page has no rows.
-            if submit == nil {
+            if submit == nil, table {
+                if items.isEmpty, !filter.isEmpty {
+                    EmptyState(symbol: "magnifyingglass", title: "No matches", compact: true)
+                        .frame(maxWidth: .infinity).padding(.bottom, inset)
+                } else {
+                    RowTable(name: name, items: items, lit: index, reveal: pointed ? nil : index, rowHeight: rowHeight,
+                             inset: inset, act: act, hover: { item in
+                                 guard NSEvent.mouseLocation != pointer else { return }
+                                 pointed = true
+                                 litID = item.id
+                             })
+                             .frame(height: min(RowTable.height(items, rowHeight: rowHeight, inset: inset), maxHeight))
+                }
+            } else if submit == nil {
                 ScrollViewReader { proxy in
                     ScrollView {
                         // Lazy: the palette's 100 rows took 230 ms to build and lay out on CI as it opened. By place,

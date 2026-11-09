@@ -129,6 +129,10 @@ Problems that came back across phases, and the rule that stops each. How we work
 - **A new or lazy scroll view's first layout lies.** The first scroll position gets dropped,
   `containerRelativeFrame` resolves to the window, `.task` in a lazy stack is cancelled, and overlays get
   clipped. Use `defaultScrollAnchor(_:for: .initialOffset)`, a GeometryReader, or `onAppear` plus a Task.
+- **A list typed into stays in AppKit.** With an accessibility client attached (Raycast, VoiceOver, XCUITest), every
+  SwiftUI row made or changed walks all the window's focusable views; each live glass element (a keycap) is a SwiftUI
+  host of its own, and so is a hosting view per table cell. The palette's rows took 136–173 ms a key that way and
+  25–28 ms drawn in a reused `NSTableView` (phase 57). Time a list with its rows hidden first: that is its floor.
 - **A lazy stack's height is a guess** from the rows it built, often 2–3× off, and it changes as it measures more.
   Anchored at the bottom, a resize jumps to the end, or past it to a blank view: lay out a short plain stack instead
   (the chat, D95), and test a one-step resize too (Reduce Motion). Fed back into its own frame (`onGeometryChange` into
