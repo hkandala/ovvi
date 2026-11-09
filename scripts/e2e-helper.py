@@ -19,7 +19,7 @@ POST /<session>/file-drag with "x y tx ty" (screen points) as the body makes a f
 a new folder in /tmp (its one line: ovvi-e2e-dropped), shows its icon at x y in a window of scripts/file-drag.swift
 and drags it to tx ty (both points in an Ovvi window). The file's path comes back once a drop took it.
 POST /<session>/temporary-file-drag does the same from a new NSIRD_ folder in $TMPDIR/TemporaryItems, as a
-screenshot's floating thumbnail drops one.
+screenshot's floating thumbnail drops one. POST /<session>/text-drag drags the text after the points instead.
 POST /<session>/usage with a number of seconds as the body measures the app (the one process named Ovvi, on CI) over
 that time: its footprint (`footprint`'s summary), its CPU and the session's `terminal session` runs, count and memory;
 and the app's, WebKit's and all its processes' count, footprint, CPU, threads and interrupt wake-ups (scripts/usage.swift).
@@ -120,7 +120,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if session not in sessions:
             status, reply = 403, f"refusing session '{session}'".encode()
         elif action not in ("", "control", "takeover", "children", "stop", "start", "open-folder", "open-url",
-                            "file-drag", "temporary-file-drag", "usage", "ssh-drop", "ssh-stop", "ssh-forget",
+                            "file-drag", "temporary-file-drag", "text-drag", "usage", "ssh-drop", "ssh-stop", "ssh-forget",
                             "ssh-unforward",
                             "ssh-connections",
                             "swipe", "pinch", "drag", "stress", "sample", "heap", "press", "release", "pause", "resume",
@@ -166,7 +166,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 status, reply = 500, f"{action} took over {limit} s".encode()
         elif action == "drag" and not re.fullmatch(rb"-?[\d.]+ -?[\d.]+( -?[\d.]+ -?[\d.]+ [\d.]+)+", body):
             status, reply = 400, b"the body must be x y (x y hold)..."
-        elif action in ("file-drag", "temporary-file-drag") and not re.fullmatch(rb"-?[\d.]+( -?[\d.]+){3}", body):
+        elif action in ("file-drag", "temporary-file-drag", "text-drag") and not re.fullmatch(
+                rb"-?[\d.]+( -?[\d.]+){3}" + (rb" .+" if action == "text-drag" else b""), body):
             status, reply = 400, b"the body must be x y tx ty"
         elif action == "press" and not re.fullmatch(rb"-?[\d.]+ -?[\d.]+( -?[\d.]+ -?[\d.]+ [\d.]+)* -?[\d.]+ -?[\d.]+",
                                                     body):
@@ -270,6 +271,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
             source = subprocess.run([f"{tools}/file-drag", path, x, y, tx, ty], capture_output=True, timeout=30)
             status, reply = (200, path.encode()) if source.returncode == 0 else (
                 500, source.stderr or b"the drop was refused")
+        elif action == "text-drag":
+            x, y, tx, ty, text = body.decode().split(" ", 4)
+            source = subprocess.run([f"{tools}/file-drag", f"text:{text}", x, y, tx, ty], capture_output=True, timeout=30)
+            status, reply = (200, b"") if source.returncode == 0 else (500, source.stderr or b"the drop was refused")
         elif action in ("pause", "resume"):
             status, reply = (200, b"") if signal_server(session, action) else (500, b"no server")
         elif action == "usage":

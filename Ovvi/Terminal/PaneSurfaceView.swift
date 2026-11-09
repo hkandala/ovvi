@@ -48,6 +48,9 @@ final class PaneSurfaceView: AppTerminalView {
         setAccessibilityRole(.group)
         setAccessibilityLabel("Terminal")
         registerForDraggedTypes(Self.dropTypes)
+        // Files and images are this card's (`FileDrop`): libghostty-spm would paste a path on This Mac, also on a
+        // remote card.
+        acceptsFileDrops = false
     }
 
     /// Gives this terminal the keyboard, now or once it is in a window.

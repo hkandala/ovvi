@@ -1,13 +1,14 @@
 // A file's icon in a small window of its own, for the file drop tests: a drag from Finder now and then started nothing
 // on CI. Shows the icon at x y (screen points, top left) and drags it to tx ty, both points in an Ovvi window, as
 // scripts/drag.swift posts its drags. Exits 0 when a drop took the file, 1 when the drop was refused, 2 when no drag
-// began within 5 s or ended within 10 s.
+// began within 5 s or ended within 10 s. A path `text:<text>` drags that text instead.
 // Usage: file-drag <path> <x> <y> <tx> <ty>
 import AppKit
 
 let args = CommandLine.arguments.dropFirst(2).compactMap { Double($0) }
 guard args.count == 4 else { fatalError("usage: file-drag <path> <x> <y> <tx> <ty>") }
 let url = URL(filePath: CommandLine.arguments[1])
+let text = CommandLine.arguments[1].hasPrefix("text:") ? String(CommandLine.arguments[1].dropFirst(5)) : nil
 let start = CGPoint(x: args[0], y: args[1]), end = CGPoint(x: args[2], y: args[3])
 func frame(_ window: [String: Any]?) -> CGRect {
     (window?[kCGWindowBounds as String] as? NSDictionary)
@@ -32,7 +33,7 @@ final class Source: NSView, NSDraggingSource {
     override func mouseDragged(with event: NSEvent) {
         guard !dragging else { return }
         dragging = true
-        let item = NSDraggingItem(pasteboardWriter: url as NSURL)
+        let item = NSDraggingItem(pasteboardWriter: text.map { $0 as NSString } ?? url as NSURL)
         item.setDraggingFrame(bounds, contents: layer?.contents)
         beginDraggingSession(with: [item], event: event, source: self)
     }
@@ -63,7 +64,8 @@ let panel = NSPanel(
 panel.level = .floating
 let source = Source()
 source.wantsLayer = true
-source.layer?.contents = NSWorkspace.shared.icon(forFile: url.path)
+source.layer?.contents = text == nil ? NSWorkspace.shared.icon(forFile: url.path)
+    : NSWorkspace.shared.icon(for: .plainText)
 panel.contentView = source
 panel.orderFrontRegardless()
 

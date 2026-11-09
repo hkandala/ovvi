@@ -1,6 +1,7 @@
 import AppKit
 import GhosttyTerminal
 import HerdrKit
+import UniformTypeIdentifiers
 
 /// Drops paste their paths shell-escaped, as Ghostty (herdr's usual terminal) does; an image with no file is saved
 /// as a PNG first, or received from its source (a browser's image may be only a file promise). On a remote machine
@@ -15,7 +16,7 @@ extension PaneSurfaceView {
         .copy
     }
 
-    /// libghostty-spm's refuses a file promise.
+    /// libghostty-spm's own refuses a drag that carries only a file promise.
     override func draggingUpdated(_: any NSDraggingInfo) -> NSDragOperation {
         .copy
     }
@@ -97,9 +98,11 @@ extension PaneSurfaceView {
 
     /// The dragged image as a PNG. Not `NSImage(pasteboard:)`, which would load a dragged web link.
     private static func savedImage(_ board: NSPasteboard) -> URL? {
-        guard let type = board.availableType(from: [.png, .tiff]), let data = board.data(forType: type),
-              let png = NSBitmapImageRep(data: data)?.representation(using: .png, properties: [:]),
-              let file = newFolder()?.appending(path: "image.png")
+        guard let type = board
+            .availableType(from: [.png, .tiff] + [UTType.jpeg, .gif, .webP].map { .init($0.identifier) }),
+            let data = board.data(forType: type),
+            let png = NSBitmapImageRep(data: data)?.representation(using: .png, properties: [:]),
+            let file = newFolder()?.appending(path: "image.png")
         else { return nil }
         return (try? png.write(to: file)).map { file }
     }

@@ -52,7 +52,8 @@ extension OvviUITests {
 
     /// A dragged file pastes its shell-escaped path, as a drop on Ghostty (herdr's usual terminal) does. The drag comes
     /// from a window of the helper's: from Finder, now and then no drag started on CI. A file in a `TemporaryItems`
-    /// folder (a screenshot's thumbnail) pastes the path of a copy the pane's programs can read.
+    /// folder (a screenshot's thumbnail) pastes the path of a copy the pane's programs can read. Dragged text pastes as
+    /// it is.
     func testDroppingAFilePastesItsPath() async throws {
         let (tab, pane) = try await newTab("drop")
         // A later tab's page, kept hidden over this one (TabPages).
@@ -88,6 +89,12 @@ extension OvviUITests {
         XCTAssertTrue(line.contains("/ovvi-"), "pasted \(line) for \(temporary)")
         try await Self.call(one, "pane.send_keys", ["pane_id": pane, "keys": ["enter"]])
         try await waitFor(pane) { $0.components(separatedBy: "ovvi-e2e-dropped").count == 3 }
+
+        // Text pastes as it is (libghostty-spm's drop).
+        _ = try await Self.post("\(one)/text-drag", Data("\(points) echo ovvi-e2e-$((6*7))".utf8))
+        try await waitFor(pane) { $0.contains("echo ovvi-e2e-$((6*7))") }
+        try await Self.call(one, "pane.send_keys", ["pane_id": pane, "keys": ["enter"]])
+        try await waitFor(pane) { $0.contains("ovvi-e2e-42") }
     }
 
     /// A click on a card that has not drawn yet (its stream waits on a stopped server) keeps the keyboard once the
