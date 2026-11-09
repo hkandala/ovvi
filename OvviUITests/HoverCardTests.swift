@@ -55,10 +55,13 @@ extension OvviUITests {
     /// A plugin pane's row names the plugin and what it shows, as its card header does, never its placeholder's `cat`.
     func testAPluginPanesRowNamesThePlugin() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        // `newCard` makes its tab in beta and shows it from the tab bar.
+        element("workspace.w2").click()
         let (tab, pane) = try await newCard("ovvi:explorer#e2ehov /tmp/")
         element("tab.\(tab)").hover()
+        XCTAssertTrue(element("hovercard").exists(within: 3))
         let row = element("hovercard.\(pane)")
-        XCTAssertTrue(row.exists(within: 3))
+        XCTAssertTrue(row.exists(within: 2))
         XCTAssertTrue(row.label.hasPrefix("File Explorer, "), row.label)
         XCTAssertFalse(row.label.contains("cat"), row.label)
         keepScreenshot("plugin pane's hover card")
