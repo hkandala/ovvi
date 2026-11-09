@@ -606,7 +606,7 @@ deleted; ⌘-click and ⌥-click on it opened nothing.
 
 ### Track L
 
-- **herdr's words.** the herdr 0.9.5 TUI says Spaces (its sidebar, `ui.sidebar.spaces`, "grouped by space"); its
+- **herdr's words.** The herdr 0.9.5 TUI says Spaces (its sidebar, `ui.sidebar.spaces`, "grouped by space"); its
   CLI, API, config keys and skill still say workspace. Ovvi follows the TUI: Space(s) in every surface the
   user sees, workspace only where herdr's API is named.
 - **Fix.** Menus, ⌘K commands and their group, the title-row button's help and accessibility label, the sidebar's
@@ -618,5 +618,7 @@ deleted; ⌘-click and ⌥-click on it opened nothing.
   command's identifier is `palette.command.<title>`, so those follow the new titles in the tests. "Empty space" in
   the drag docs became "empty area", so space means one thing. New, Close and Rename Space keep "workspace" as a ⌘K
   keyword, since herdr's CLI and skill still teach that word.
+- **Runs.** Chosen tests 42551254721 green, executed 6 (the tests that click the renamed menu items, palette
+  commands and Keyboard Shortcuts rows).
 - **For the user.** Look over the sidebar's right-click menu, File ▸ New Space / Close Space, ⌘K "space", and the close
   sheet of a space with worktrees.
