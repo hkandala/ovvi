@@ -144,10 +144,11 @@ final class PaneViewRegistry {
         plugin.web.open = { [weak self] opener, arg, place, how, background in
             guard let page = self?.pages?.page(of: terminalID) else { return }
             Task {
-                // A file or folder gone since the page drew its link or row, also an HTML file's `file:` page (a Git
-                // diff's arg is a root and a source).
-                let path = arg.hasPrefix("file:") ? URL(string: arg)?.path ?? "" : arg
-                if !opener.opens.git, path.hasPrefix("/"), await page.store.there(path, from: "/") == nil {
+                // A file or folder gone since the page drew its link or row, also an HTML file's `file:` page.
+                let file = arg.hasPrefix("file:"), path = file ? URL(string: arg)?.path ?? "" : arg
+                if file || opener.opens.folders || !opener.opens.files.isEmpty, path.hasPrefix("/"),
+                   await page.store.there(path, from: "/") == nil
+                {
                     return page.store.notFound(path)
                 }
                 await page.open(opener, arg: arg, at: place, from: terminalID, how: how, background: background)

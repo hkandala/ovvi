@@ -68,7 +68,10 @@ enum Links {
         guard named != nil || likely(text, remote: page.store.machine.isRemote, cwd: cwd) else { return false }
         Task {
             guard let target = await target(text, store: page.store, cwd: cwd) else {
-                return named.map(page.store.notFound) ?? ()
+                if let named {
+                    page.store.notFound(named)
+                }
+                return
             }
             await page.open(target.plugin, arg: target.arg, at: target.line, from: terminalID, how: how,
                             background: true)
@@ -81,7 +84,7 @@ enum Links {
     private static func file(_ text: String) -> String? {
         let scheme = scheme(text), path = text.replacing(/:\d+(?::\d+)?$/, with: "")
         if scheme == "file" {
-            return URL(string: text)?.path
+            return URL(string: path)?.path
         }
         guard scheme == nil, path.hasPrefix("/") || path.hasPrefix("~/"), !(path as NSString).pathExtension.isEmpty
         else { return nil }

@@ -600,6 +600,6 @@ deleted; ⌘-click and ⌥-click on it opened nothing.
   extension; a plain word (`/reload`) stays the program's. A plugin's open of a path (or of an HTML file's `file:`
   page) checks the path on the card's machine first. ⌘K's Open File and `ovvi open` say the same.
 - **Decisions.** A relative path in the terminal (`notes.md`) stays inert when gone: libghostty links many plain words.
-  `ovvi open` from an agent also shows the notice in the session's windows, besides its CLI error.
+  `ovvi open` shows the notice only when typed in a shell: an agent's open (often a probe) gets its CLI error alone.
 - **For the user.** ⌘-click and ⌥-click a terminal path to a deleted file, and a Markdown link to one: a notice says
   "File not found: ~/…".

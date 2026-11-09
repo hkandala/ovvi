@@ -266,8 +266,10 @@ extension AgentCall {
         let exec = await store.machine.exec()
         async let exists = exec.succeeds(#"[ -e "$1" ]"#, [path]), folder = exec.succeeds(#"[ -d "$1" ]"#, [path])
         guard await exists else {
-            // Also in the user's view: `ovvi open` typed in a shell, or an agent's open of a file that is gone.
-            store.notFound(path)
+            // Also in the user's view for `ovvi open` typed in a shell; an agent's open (a probe) answers it alone.
+            if store.pane(pane)?.agent == nil {
+                store.notFound(path)
+            }
             throw AgentError(code: "bad_argument", message: "no file or folder \(path)")
         }
         return await folder

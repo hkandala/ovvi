@@ -51,8 +51,9 @@ extension OvviUITests {
         XCTAssertFalse(element("pane.\(plain).browser").exists)
     }
 
-    /// A file that is gone says so in a notice, "File not found: ‹path›": a terminal link (⌘-click on an absolute path
-    /// with an extension), `ovvi open` and a Markdown link. A word that only looks like a path opens nothing, silently.
+    /// A file that is gone says so in a notice, "File not found: ‹path›": a terminal link (⌥-click on an absolute path
+    /// with an extension), `ovvi open` from a shell and a Markdown link. A word that only looks like a path opens
+    /// nothing, silently.
     func testGoneFilesSayFileNotFound() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, shell) = try await newTab("gone")
@@ -75,7 +76,7 @@ extension OvviUITests {
         let notice = element("detail.notice")
         XCUIElement.perform(withKeyModifiers: .command) { link(0).click() }
         XCTAssertFalse(notice.exists(within: 1))
-        XCUIElement.perform(withKeyModifiers: .command) { link(1).click() }
+        XCUIElement.perform(withKeyModifiers: .option) { link(1).click() }
         notFound(notice, "/tmp/ovvi-e2e-gone/gone.md")
         keepScreenshot("file not found notice")
 

@@ -281,10 +281,10 @@ ovvi open explorer . --float                      # a file tree in a floating wi
   `ovvi plugins --for`. An `http` or `https` URL opens with a plugin whose
   `urls` match it, else in the browser. A `file://` URL opens in the
   browser. A path must exist on the asking machine. A missing one is
-  `bad_argument`, and the windows that show the session say "File not
-  found: ‹path›" ([Opening links and
-  files](/docs/ui/window#opening-links-and-files)). A file that no plugin
-  opens is `bad_argument` too.
+  `bad_argument`. Typed in a shell (a pane with no agent), it also makes
+  the windows that show the session say "File not found: ‹path›"
+  ([Opening links and files](/docs/ui/window#opening-links-and-files)). A
+  file that no plugin opens is `bad_argument` too.
 - **Paths** are read from the command's folder, and the card gets the
   absolute path.
 - **The argument** follows the kind's `opens`: a URL, a file's path or a
