@@ -1372,3 +1372,30 @@ you did, no need of reverting them".
   sessions (plus a stopped `default` row herdr always lists); a picture pipeline can use it for clean session names.
   The file card's Open With shows the Mac's default app for the file (a `.css` showed a competitor's app); pick files
   whose default is a system app for pictures.
+
+### Track B, round 7 (items 61, 65)
+
+- **Cause (61).** A page of 50 counted every session it looked at, the left-out ones too (Agent SDK runs, `codex
+  exec` runs), and Claude Code's reader read each SDK run's 256 KB tail. On a machine full of runs each page held no
+  row and said more, so the shelf read page after page under "Reading sessions…" with no row. Round 6's first list
+  also waited for every agent, so one slow agent held all. Measured here: 3000 SDK runs took 61 pages (13 s) before
+  the one real session showed; over SSH far longer. The user's devvm could not be reached (its sshd refuses a new
+  session on their ControlMaster, and a new connection asks for interactive auth), so the cause is from the code and
+  local runs; the reviewer found no likelier one and checked every read is bounded (relay start 10 s, `Exec` 10 s).
+- **Fix (61).** A page holds 50 sessions with a prompt and looks at 2000 files at most (`ClosedSessions.files`);
+  Claude Code's reader stops at an SDK run's first line. The first list shows once every agent's page came or 2 s
+  after the first did; a slow agent comes in after it, under "Reading sessions…", a failed one is named ("Could not
+  read Claude Code sessions on ‹machine›.") with Retry. The readers are `exec`'d, so a timed-out read leaves nothing
+  running, and a run that exits non-zero throws (Retry, not "No closed sessions").
+- **Fix (65).** A right-click on the page header or under the rows shows the session's menu: New Space, Open
+  Session…, Show/Hide Archived Sessions, Detach Session (off on the last page; it takes the page out of the window
+  and the herdr session keeps running). Ovvi has no Rename Session, so none. On the ScrollView itself: a background
+  behind it never got the click.
+- **Review.** One blocker (a straggler and a next page wrote whole values over each other), three should (`more` on
+  a store's end, readers not exec'd, exit status ignored), nine nits, fixed; then one should (a wall-clock check in the
+  new test, now an order check), fixed.
+- **Runs.** CI 42705568583: 15 chosen tests green (Archived, the remote stuck agent over the relay, the session menu,
+  Detach, row and tab drags, swipes).
+- **Pictures**, before and after, dark and light: `~/Downloads/ovvi-research/p57b/r7/index.html`.
+- **For the user.** Open Archived Sessions on devvm-aai: rows within about 2 s, the rest come in. Right-click the
+  sidebar under the spaces.
