@@ -448,7 +448,8 @@ runs and on-demand on the final head.
   in a floating window. At 2x from Back's bottom edge, before and after: the browser's page 10 and 22 px; the tree's
   first row, a Git diff's box, the Git home's Message field and its scrolled history, a file's first line 18 and
   22 px; a commit's subject line 18 and 22 px (its letters 26 and 30). Agent cards are unchanged.
-- **Runs, round 6.** RUNS6.
+- **Runs, round 6.** Chosen tests 42590765920 green (6 tests: both File Explorer tests, the browser, Git, Markdown,
+  the plugin header).
 
 ### Track F
 
