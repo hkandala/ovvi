@@ -913,6 +913,9 @@ you did, no need of reverting them".
 - **For the user.** Pick a default, then ⌘D, ⌘T and New Space; ⌥-click a `+` or a split button for the chooser. With
   Terminal fixed on a remote machine, type right after ⌘D: keys typed before herdr made the pane go to the old pane
   (no chooser holds them then).
+- **Runs.** Chosen tests on main 54759f43 (run 42569693100): 4 green, the fixed-pick test red on a test race (the
+  chooser's pane closed as its label was read); fixed, green on 62d86ca2 (run 42570554962). Earlier attempts died on
+  GitHub's 504s for herdr's and libghostty's downloads.
 
 ### Track T (item 50)
 
