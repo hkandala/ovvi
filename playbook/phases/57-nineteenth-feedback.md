@@ -1181,5 +1181,6 @@ you did, no need of reverting them".
 - **Runs.** CI 42606451106: 34 of 35 chosen tests green (sidebar, agents, hover cards, drags, swipes, the stress
   tests); `testTheSelectedRowScrollsIntoView` waited for a row out of view to exist, which a lazy list does not make.
   CI 42606461976 on an eager `VStack` tag: the new stress test red (a 20 s frame, 1,000 rows made in one swipe).
+  CI 42609498951 on the fixed test: it and the stress test, 2 executed, green.
 - **For the user.** In a session with hundreds of spaces: scroll fast, swipe to another session and back, fold a
   space, and rest the pointer on an agent row for its card.
