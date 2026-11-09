@@ -269,8 +269,8 @@ struct HoverCard: View {
     }
 
     private func row(_ pane: HostStore.Pane) -> some View {
-        // A plugin's, a browser's or New Pane's own name and what it shows, as its card header says: their pane runs
-        // only a placeholder (`cat`).
+        // A plugin's, a browser's or New Pane's own name and what it shows, as its card header says: a plugin's and a
+        // browser's pane runs only a placeholder (`cat`), New Pane's the shell it replaces.
         let kind = pane.agent == nil ? page.kindTitle(pane) : nil
         let shown = lines[pane.id] ?? [], name = kind?.name ?? pane.agentName ?? pane.programName ?? "terminal"
         let detail = kind == nil ? pane.folder : kind?.detail

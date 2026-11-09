@@ -257,10 +257,11 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   open page ([Swiping](/docs/ui/swiping)); so do ⌥⌘[ ], and ⌥⌘1–9 show a page by its place (Window menu).
 - **Page dots.** Over the pages' foot, above Archived Sessions, centered on the rows: one 6 pt dot per open page, 6
   pt apart, 11 pt from Archived Sessions under them. The list's end has 18 pt more room for them, so its last row
-  ends 11 pt above the dots, and while rows lie under its end its fade runs 36 pt instead of 18, so the rows thin
-  out to nothing behind the dots, in both styles: the dots sit on the sidebar's own background. The current page's
-  dot is in primary text color, the others tertiary. A click on a dot shows its page; its context menu has Detach
-  Session. Hidden while one page is open. VoiceOver reads each dot as its page's title (the page header's).
+  ends 11 pt above the dots. While rows lie under the list's end, its fade runs 36 pt instead of 18: the rows thin
+  out from full to clear over it, and the dots lie over its faint end (rows at about a third behind them), in both
+  styles, with no color painted. The current page's dot is in primary text color, the others tertiary. A click on a
+  dot shows its page; its context menu has Detach Session. Hidden while one page is open. VoiceOver reads each dot
+  as its page's title (the page header's).
 - **Page header.** The session's name, the page's title (13 pt bold, the
   rows' size, primary); for a machine's `default`
   session, the machine's name instead: This Mac's own name (System Settings,
@@ -410,14 +411,15 @@ nothing is read.
   open session of the machine runs, and one being resumed.
 - **Reading.** The shelf reads each time it opens, 50 sessions an agent a page, and shows the list only once every
   agent's page came: the first time the loader ("Reading sessions…", after 0.3 s) shows in the list's place; after
-  that, the machine's last list (kept for the app's run) shows at once and the new one takes its place when it
-  comes, so rows never come in one agent at a time. The next pages read when the list's end scrolls into view, and
-  come in together too. One shell script an agent runs once a page on the machine (never a process per file), and
-  nothing writes to the stores. Pi and Claude Code keep a JSONL file a session under `~/.pi/agent/sessions/` and
-  `~/.claude/projects/`; the title is the last rename, else Claude Code's own title, else the first typed prompt.
-  Codex and OpenCode keep an SQLite index, read with `sqlite3 -readonly`; without sqlite3 Codex reads its rollout
-  files, and OpenCode's line says "OpenCode needs sqlite3 on ‹machine›." Left out: subagents and child sessions,
-  `codex exec` runs and Claude Code's Agent SDK sessions, archived ones, and sessions with no prompt.
+  that, the machine's last list that read whole (kept for the app's run) shows at once and the new one takes its
+  place when it comes, so rows never come in one agent at a time. The next pages read when the list's end scrolls
+  into view, and come in together too. One shell script an agent runs once a page on the machine (never a process
+  per file), and nothing writes to the stores. Pi and Claude Code keep a JSONL file a session under
+  `~/.pi/agent/sessions/` and `~/.claude/projects/`; the title is the last rename, else Claude Code's own title,
+  else the first typed prompt. Codex and OpenCode keep an SQLite index, read with `sqlite3 -readonly`; without
+  sqlite3 Codex reads its rollout files, and OpenCode's line says "OpenCode needs sqlite3 on ‹machine›." Left out:
+  subagents and child sessions, `codex exec` runs and Claude Code's Agent SDK sessions, archived ones, and sessions
+  with no prompt.
 - **States** ([States](/docs/ui/states)). While the first list or a next page takes over 0.3 s: the loader, "Reading
   sessions…". With no row, the compact empty state: "No closed sessions on ‹machine›." or "No ‹Agent› sessions."
   (`archivebox`), or "No matching sessions." (`magnifyingglass`). A machine that did not answer in 10 s: "Could not

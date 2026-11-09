@@ -15,12 +15,14 @@ struct ArchivedShelf: View {
     @State private var reading: Set<String> = []
     @State private var failed: Set<String> = []
     /// No list yet: the loader shows.
-    @State private var loading = false
+    @State private var loading = true
     /// Each read anew (an open, Retry); an older one's pages land nowhere.
     @State private var generation = 0
     @State private var attempt = 0
     @State private var search = ""
     @State private var focusSearch = 0
+    /// The user opened it: its search field takes the keyboard as it appears.
+    @State private var opening = false
     /// Each machine's last list, shown as it opens again while it reads anew.
     private static var lists: [String: ClosedList] = [:]
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -40,32 +42,42 @@ struct ArchivedShelf: View {
             if open {
                 FilterField(prompt: "Search", text: $search, identifier: "agents.archived.search",
                             symbol: "magnifyingglass", focus: focusSearch, trailing: 22)
+                    .onAppear {
+                        if opening {
+                            opening = false
+                            focusSearch += 1
+                        }
+                    }
                     .onExitCommand { search = "" }
                     .overlay(alignment: .trailing) { menu.padding(.trailing, 8) }
                     .padding(.horizontal, 4)
-                // Lazy, for the pages; as tall as its rows, up to five.
-                ScrollView {
-                    LazyVStack(spacing: 4) {
-                        ForEach(loading ? [] : rows) { row($0) }
-                        if !next.isEmpty, !loading {
-                            // The list's end: anew after each page, so it reads on while it stays in view (a short
-                            // searched list, a page with nothing to show).
-                            Color.clear.frame(height: 1).id(list.agents.values.map(\.looked).reduce(0, +))
-                                .onAppear { Task { await readNext(next) } }
+                Group {
+                    if loading {
+                        Loader(text: "Reading sessions…", delay: .milliseconds(300)).padding(12)
+                            .frame(maxWidth: .infinity)
+                    } else {
+                        // Lazy, for the pages; as tall as its rows, up to five.
+                        ScrollView {
+                            LazyVStack(spacing: 4) {
+                                ForEach(rows) { row($0) }
+                                if !next.isEmpty {
+                                    // The list's end: anew after each page, so it reads on while it stays in view
+                                    // (a short searched list, a page with nothing to show).
+                                    Color.clear.frame(height: 1).id(list.agents.values.map(\.looked).reduce(0, +))
+                                        .onAppear { Task { await readNext(next) } }
+                                }
+                                if rows.isEmpty || !failed.isDisjoint(with: shown) || problem(shown) != nil {
+                                    status(shown, more: !next.isEmpty).frame(maxWidth: .infinity)
+                                }
+                            }
+                            .padding(.horizontal, 4)
                         }
-                        if loading {
-                            Loader(text: "Reading sessions…", delay: .milliseconds(300)).padding(12)
-                                .frame(maxWidth: .infinity)
-                        } else if rows.isEmpty || !failed.isDisjoint(with: shown) || problem(shown) != nil {
-                            status(shown, more: !next.isEmpty).frame(maxWidth: .infinity)
-                        }
+                        .scrollIndicators(.never)
+                        .frame(maxHeight: 5 * 48 + 4 * 4) // five 48 pt rows, 4 pt apart
+                        .fixedSize(horizontal: false, vertical: true)
+                        .fadesScrolledEdges()
                     }
-                    .padding(.horizontal, 4)
                 }
-                .scrollIndicators(.never)
-                .frame(maxHeight: 5 * 48 + 4 * 4) // five 48 pt rows, 4 pt apart
-                .fixedSize(horizontal: false, vertical: true)
-                .fadesScrolledEdges()
                 .padding(.bottom, 4)
             }
         }
@@ -76,16 +88,19 @@ struct ArchivedShelf: View {
             }
         }
         .task(id: [open ? 1 : 0, attempt]) {
+            // Also while folded, for the next open's first frame.
             let machine = page.store.machine.id
+            (list, loading) = (Self.lists[machine] ?? ClosedList(), Self.lists[machine] == nil)
             (reading, failed, generation) = ([], [], generation + 1)
             guard open else { return }
-            list = Self.lists[machine] ?? ClosedList()
-            loading = Self.lists[machine] == nil
             let generation = generation
             let (fresh, missing) = await read(Chooser.agents.map(\.command), from: ClosedList())
             guard generation == self.generation else { return }
-            (list, failed, loading) = (fresh, missing, false)
-            Self.lists[machine] = fresh
+            // A next page read meanwhile from the last list lands nowhere.
+            (list, failed, reading, loading, self.generation) = (fresh, missing, [], false, generation + 1)
+            if missing.isEmpty {
+                Self.lists[machine] = fresh
+            }
         }
     }
 
@@ -95,10 +110,7 @@ struct ArchivedShelf: View {
                 opened = opened.togglingLine(key)
             }
             search = ""
-            // Once the field is there.
-            if opened.hasLine(key) {
-                Task { focusSearch += 1 }
-            }
+            opening = opened.hasLine(key)
         } label: {
             HStack(spacing: 6) {
                 Text(Self.label)
