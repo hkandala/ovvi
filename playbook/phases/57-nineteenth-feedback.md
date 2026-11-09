@@ -937,6 +937,9 @@ you did, no need of reverting them".
 - **Runs.** Chosen tests on main 54759f43 (run 42569693100): 4 green, the fixed-pick test red on a test race (the
   chooser's pane closed as its label was read); fixed, green on 62d86ca2 (run 42570554962). Earlier attempts died on
   GitHub's 504s for herdr's and libghostty's downloads.
+  Follow-ups: chosen tests on 962c41cc (run 42575992688), 7 of 8 green; testPickingAnAgentStartsItBehindTheLoader red
+  with herdr reporting the stand-in: chat's `settle` (2459900a) waits up to 10 s for launch pids a shell-function
+  stand-in never has (Track G's). All 8 green locally.
 
 ### Track T (item 50)
 
