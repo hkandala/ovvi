@@ -792,6 +792,8 @@ side.
   Ovvi saved (the bundle id's saved state is shared by every Ovvi on the Mac and by earlier tests, also ones launched
   with -ApplePersistenceIgnoreState), each as its own window on -session, so the row showed twice. newTab now waits
   for the row; the two restore tests start from no saved windows (forget-windows, CI only) and skip on a Mac.
+- **Runs (follow-ups).** CI 42572730463 green (6 tests: both restore tests, the pinch, press, file drop and swipe
+  tests); earlier dispatches failed in setup (GitHub's release download answered 504) or showed the Dock's window.
 
 ### Track B, round 4 (items 32–37, 41)
 
