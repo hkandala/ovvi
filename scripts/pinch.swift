@@ -20,7 +20,7 @@ guard front?[kCGWindowOwnerName as String] as? String == "Ovvi" else { fatalErro
 /// A gesture event (type 29) of HID type zoom (8) with its magnification (field 113) and phase (field 132: 1 began, 2
 /// changed, 4 ended).
 func post(_ phase: Int64, _ magnification: Double) {
-    guard let event = CGEvent(source: nil), let type = CGEventType(rawValue: 29) else { return }
+    guard let event = CGEvent(source: nil), let type = CGEventType(rawValue: 29) else { fatalError("no gesture event") }
     event.type = type
     event.location = point
     event.setIntegerValueField(CGEventField(rawValue: 110)!, value: 8)

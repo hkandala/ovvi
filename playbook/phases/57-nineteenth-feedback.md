@@ -687,3 +687,18 @@ side.
     cannot be explained by code and needs there to avoid confusion, let's avoid random unnecessary comments or
     unnecessary or weird abstractions and once all done, do a full ci runs and make sure everything is good" (Track O,
     new, after every other track lands; then the phase's full runs).
+
+### Track D, round 4 (item 39)
+
+- **Cause.** Browser cards never turned on WebKit's `allowsMagnification`, so a pinch and a two-finger double tap did
+  nothing. Nothing of the app's takes magnify events: the session swipes watch scroll events only, and overview tiles
+  show pictures.
+- **Fix.** Browser cards magnify on a pinch around the fingers, and smart zoom works with the trackpad's Smart zoom
+  setting; the layout stays (no reflow), as in Safari. ⌘0 resets the magnification with the page zoom, also in a
+  floating window, whose ⌘+ ⌘− ⌘0 now act on its own browser card (they took the main window's keyboard card).
+- **Decisions.** No magnification on plugin cards or `window.open` popups.
+- **Runs.** testAPinchMagnifiesABrowserPage (a synthesized trackpad pinch, `scripts/pinch.swift`): red on the old code
+  (the text's frame stayed 93 x 18 pt), green after in 12 s. Pictures: a line pitch of 68 px at rest, 178 px after the
+  pinch (2.6x), 68 px after a pinch on the old build.
+- **For the user.** Pinch a browser card's page and two-finger double tap a paragraph (Smart zoom on in System
+  Settings ▸ Trackpad); ⌘0 undoes it, also in a floating browser window.

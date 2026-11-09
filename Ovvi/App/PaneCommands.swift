@@ -129,7 +129,16 @@ extension CommandList {
         let terminal = pane.flatMap(page.terminal), editor = page.editor(pane)
         var main = self
         main.floating = nil
-        let sizes = main.all.filter { $0.section == .size || $0.title == "Font Size" }
+        let browser = pane.flatMap(page.browser)
+        // A floating browser zooms its own page and undoes its pinch, whatever the main window's keyboard card is.
+        let steps = ["Increase Font Size": 1, "Decrease Font Size": -1, "Reset Font Size": 0]
+        let sizes = main.all.filter { $0.section == .size || $0.title == "Font Size" }.map { size in
+            guard let browser, let step = steps[size.title] else { return size }
+            var zoom = size
+            zoom.enabled = true
+            zoom.action = { browser.view.zoom(step) }
+            return zoom
+        }
         func edit(_ title: String, _ action: Selector, _ symbol: String) -> Command {
             Command(section: .palette, title: title, group: .edit, symbol: symbol, enabled: terminal != nil) {
                 if let terminal {
@@ -154,7 +163,7 @@ extension CommandList {
                 var command = $0
                 command.key = command.key == .closePane ? .closeTab : command.key
                 return command
-            } + sizes + Self.browser(pane.flatMap(page.browser), chooser: pane.flatMap { page.store.chooser($0.id) })
+            } + sizes + Self.browser(browser, chooser: pane.flatMap { page.store.chooser($0.id) })
         return list + Self.plugin(pane?.terminalID.flatMap(page.terminals.builtPlugin), besides: list)
     }
 }
