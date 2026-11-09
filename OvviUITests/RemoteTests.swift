@@ -185,6 +185,16 @@ extension OvviUITests {
         try await markAndFloat()
     }
 
+    /// Archived Sessions over the relay: Key Host's stores (this Mac's fixture home, as it is localhost) show past a
+    /// stuck agent, never an endless loader.
+    func testARemoteMachinesArchivedSessionsShowPastAStuckAgent() async throws {
+        try await skipWithoutSSH()
+        try await writeStuckStores()
+        relaunch(one, ["-machines", Self.keyHost, "-machine", "e2e-key"])
+        XCTAssertTrue(element("workspace.w1").exists(within: connect))
+        showsTheOthersPastAStuckAgent(on: "Key Host")
+    }
+
     /// A file dropped on Key Host's card is copied there, as herdr's remote client does, and the copy's path is pasted:
     /// `cat` reads it on the machine. The machine is this Mac, so the path must also not be the dropped file's own.
     func testAFileDroppedOnARemoteCardPastesItsCopysPath() async throws {

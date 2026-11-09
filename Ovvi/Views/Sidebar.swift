@@ -44,7 +44,7 @@ struct Sidebar: View {
                     // hit tests.
                     ForEach(swipe.moving ? pages.list : pages.list.filter { $0 === pages.current }) { page in
                         SidebarPage(page: page, pages: pages, filter: filter,
-                                    bottom: pages.list.count > 1 ? PageDots.height : 0)
+                                    bottom: pages.list.count > 1 ? PageDots.height : 0, openSession: openSession)
                             .frame(width: width - gap)
                             .accessibilityHidden(page !== pages.current)
                             .allowsHitTesting(page === pages.current)

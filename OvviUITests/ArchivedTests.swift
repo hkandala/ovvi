@@ -58,16 +58,53 @@ extension OvviUITests {
         }, "the 55th session never came")
     }
 
-    /// Opens Archived Sessions at the sidebar's foot, showing all agents; folded again after the test.
+    /// An agent that does not answer holds the others back 2 s at most: their rows show, then its own line with Retry
+    /// once its 10 s run out.
+    func testArchivedShowsTheOthersPastAStuckAgent() async throws {
+        XCTAssertTrue(element("workspace.w1").exists(within: connect))
+        try await writeStuckStores()
+        showsTheOthersPastAStuckAgent(on: "This Mac")
+    }
+
+    /// A pi session, and a FIFO in Claude Code's store, whose open never returns.
+    func writeStuckStores() async throws {
+        let (_, shell) = try await newTab("archived-stuck")
+        try await waitForPrompt(shell)
+        let piStore = "\(Self.archivedHome)/.pi/agent/sessions/--s--"
+        let claudeStore = "\(Self.archivedHome)/.claude/projects/s"
+        let line = #"{"type":"session","version":3,"cwd":"/tmp"}"#
+        let prompt = #"{"type":"message","message":{"role":"user","content":[{"type":"text","text":"Read on"}]}}"#
+        try await send("rm -rf \(Self.archivedHome) && mkdir -p \(piStore) \(claudeStore) && "
+            + "printf '%s\\n' '\(line)' '\(prompt)' >\(piStore)/stuck.jsonl && mkfifo \(claudeStore)/stuck.jsonl && "
+            + "clear && echo ready-$((6*7))\r", to: shell)
+        try await waitFor(shell) { $0.contains("ready-42") }
+    }
+
+    func showsTheOthersPastAStuckAgent(on machine: String) {
+        openArchived()
+        let row = element("agents.archived.pi.stuck.jsonl"), window = app.windows.firstMatch
+        let failure = window.staticTexts["Could not read Claude Code sessions on \(machine)."]
+        XCTAssertTrue(row.exists(within: 15))
+        XCTAssertFalse(failure.exists, "the rows waited for Claude Code's 10 s")
+        XCTAssertTrue(failure.exists(within: 15))
+        XCTAssertTrue(window.buttons["Retry"].exists)
+        XCTAssertTrue(row.exists)
+        keepScreenshot("archived stuck agent")
+    }
+
+    /// Opens Archived Sessions at the sidebar's foot, showing all agents, read anew (one left open read before the
+    /// test's stores); folded again after the test.
     @discardableResult
-    private func openArchived() -> XCUIElement {
+    func openArchived() -> XCUIElement {
         let shelf = element("agents.shelf.Archived Sessions")
         XCTAssertTrue(shelf.exists(within: 3))
-        if shelf.value as? String == "collapsed" {
+        if shelf.value as? String == "expanded" {
             shelf.click()
-            // Opened, its search field takes the keyboard.
-            XCTAssertTrue(hasKeyboard("agents.archived.search"))
+            XCTAssertTrue(shelf.has(\.stringValue, "collapsed", within: 2))
         }
+        shelf.click()
+        // Opened, its search field takes the keyboard.
+        XCTAssertTrue(hasKeyboard("agents.archived.search"))
         addTeardownBlock { @MainActor [self] in
             let shelf = element("agents.shelf.Archived Sessions")
             if shelf.exists, shelf.value as? String == "expanded" {

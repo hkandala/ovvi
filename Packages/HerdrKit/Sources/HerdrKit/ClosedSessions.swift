@@ -65,13 +65,14 @@ public struct ClosedList: Sendable, Equatable {
     }
 }
 
-/// One script per agent, one process for a page of 50, never one per session file (a process costs about 20 ms on a
-/// Mac with endpoint security). `$1` the page's size, `$2` how many newer ones to skip, `$3` the perl prelude. Each
-/// prints a JSON line per session it looked at, `{"t": seconds, "v": value, "c": folder, "n": title}`, with an empty
-/// title for one with no prompt (left out here, but counted, so a page of noise still has a next one). pi and Claude
-/// Code keep a JSONL file a session, newest by its modification time; their strings are cut from the JSON as they are
-/// (still escaped), so perl decodes nothing. Codex and OpenCode keep an SQLite index, sorted on its own index. Only
-/// reads.
+/// One script per agent, one process for a page, never one per session file (a process costs about 20 ms on a Mac with
+/// endpoint security). `$1` how many sessions with a prompt a page holds (the perl readers look at `files` at
+/// most, so a store of left-out runs still answers within the read's 10 s), `$2` how many newer ones to skip, `$3` the
+/// perl prelude. Each prints a JSON line per session it looked at, `{"t": seconds, "v": value, "c": folder, "n":
+/// title}`, with an empty title for one with no prompt (left out here, but counted, so a page of noise still has a next
+/// one). pi and Claude Code keep a JSONL file a session, newest by its modification time; their strings are cut from
+/// the JSON as they are (still escaped), so perl decodes nothing. Codex and OpenCode keep an SQLite index, sorted on
+/// its own index. Only reads.
 /// ponytail: pages are offsets into lists that change while the shelf is open: a session that moves to the top shifts
 /// the next page (`ClosedList.add` drops the repeat), and one deleted between pages hides one row until a new open.
 enum ClosedSessions {
@@ -81,10 +82,12 @@ enum ClosedSessions {
     use File::Glob ':bsd_glob';
     sub cut { my $s = shift // ""; $s =~ s/(?<!\\)((?:\\\\)*)\\u[0-9a-fA-F]{0,3}$/$1/;
       $s =~ s/(?<!\\)((?:\\\\)*)\\u[dD][89abAB][0-9a-fA-F]{2}$/$1/; $s }
-    sub row { my ($t, $v, $c, $n) = @_; $v =~ s/(["\\])/\\$1/g;
+    my ($shown, $looked) = (0, 0);
+    sub row { my ($t, $v, $c, $n) = @_; $v =~ s/(["\\])/\\$1/g; $shown++ if $n ne "";
       print qq({"t":$t,"v":"$v","c":"), cut($c), qq(","n":"), cut($n), qq("}\n) }
-    sub newest { my ($n, $k, @f) = @_; @f = sort { $b->[1] <=> $a->[1] } map { [$_, (stat)[9]] } @f;
-      $k > $#f ? () : @f[$k .. ($k + $n - 1 > $#f ? $#f : $k + $n - 1)] }
+    sub full { $shown >= $ARGV[0] || ++$looked >= \#(files) }
+    sub newest { my ($k, @f) = @_; @f = sort { $b->[1] <=> $a->[1] } map { [$_, (stat)[9]] } @f;
+      $k > $#f ? () : @f[$k .. $#f] }
     sub tail { my $h = shift; if (-s $h > tell($h) + 262144) { seek $h, -262144, 2; <$h> } }
     my $S = qr/((?:[^"\\]|\\.){0,300})/;
     """#
@@ -92,31 +95,31 @@ enum ClosedSessions {
     static let scripts = [
         // Line 1 holds the folder, the next 40 the first prompt; the title is the last `/name`, else the first prompt.
         "pi": #"""
-        perl -e "$3"'
-        for (newest(@ARGV, glob("$ENV{HOME}/.pi/agent/sessions/*/*.jsonl"))) { my ($p, $m) = @$_;
+        exec perl -e "$3"'
+        for (newest($ARGV[1], glob("$ENV{HOME}/.pi/agent/sessions/*/*.jsonl"))) { my ($p, $m) = @$_;
           open my $h, "<", $p; my $l = <$h> // ""; my ($c) = $l =~ /"cwd":"((?:[^"\\]|\\.)*)"/;
           my ($u, $s, $i) = ("", "", 0);
           my $name = sub { $s = $1 if index($_, q({"type":"session_info")) == 0 && /"name":"$S"/ };
           while ($i++ < 40 && defined($_ = <$h>)) { $name->();
             $u = $2 if $u eq "" && /"message":\{"role":"user","content":(\[\{"type":"text","text":)?"$S/ }
           tail($h); while (<$h>) { $name->() }
-          row($m, $p, $c, $s ne "" ? $s : $u) }' "$1" "$2"
+          row($m, $p, $c, $s ne "" ? $s : $u); last if full() }' "$1" "$2"
         """#,
         // The id is the file's name; the folder and the first typed prompt (not its commands' wrappers, which start
         // with `<`) in the first 100 lines; the title the last `/rename`, else Claude Code's own, else the prompt. Left
         // out: the Agent SDK's sessions, as Codex's exec runs.
         "claude": #"""
-        perl -e "$3"'
-        for (newest(@ARGV, glob("$ENV{HOME}/.claude/projects/*/*.jsonl"))) { my ($p, $m) = @$_;
+        exec perl -e "$3"'
+        for (newest($ARGV[1], glob("$ENV{HOME}/.claude/projects/*/*.jsonl"))) { my ($p, $m) = @$_;
           my ($id) = $p =~ m{([^/]+)\.jsonl$}; open my $h, "<", $p;
           my ($c, $u, $a, $r, $sdk, $i) = ("", "", "", "", 0, 0);
           my $title = sub { $r = $1 if /^\{"type":"custom-title","customTitle":"$S/;
             $a = $1 if /^\{"type":"ai-title","aiTitle":"$S/ };
           while ($i++ < 100 && defined($_ = <$h>)) { $title->(); $c = $1 if $c eq "" && /"cwd":"((?:[^"\\]|\\.)*)"/;
-            $sdk ||= /"entrypoint":"sdk-/; $u = $2 if $u eq "" && !/"isMeta":true/
+            $sdk ||= /"entrypoint":"sdk-/; last if $sdk; $u = $2 if $u eq "" && !/"isMeta":true/
               && /"message":\{"role":"user","content":(\[\{"type":"text","text":)?"(?!<)$S/ }
-          tail($h); while (<$h>) { $title->() }
-          row($m, $id, $c, $sdk ? "" : $r || $a || $u) }' "$1" "$2"
+          unless ($sdk) { tail($h); while (<$h>) { $title->() } }
+          row($m, $id, $c, $sdk ? "" : $r || $a || $u); last if full() }' "$1" "$2"
         """#,
         // The newest state database (its number is a schema version). Left out: subagents, `codex exec` runs and
         // empty threads. With no sqlite3, or a schema without these columns: the rollout files, whose line 1 holds the
@@ -128,33 +131,37 @@ enum ClosedSessions {
         [ -n "$d" ] && sqlite3 -readonly -cmd '.timeout 1000' "$d" "select json_object('t', recency_at_ms / 1000,
           'v', id, 'c', cwd, 'n', substr(coalesce(nullif(name, ''), nullif(title, ''), preview), 1, 300)) from threads
           where archived = 0 and source not like '{%' and source <> 'exec' and preview <> ''
-          order by recency_at_ms desc limit $1 offset $2" || perl -e "$3"'
+          order by recency_at_ms desc limit $1 offset $2" || exec perl -e "$3"'
         my %name; if (open my $i, "<", "$ENV{HOME}/.codex/session_index.jsonl") { while (<$i>) {
           $name{$1} = $2 if /"id":"([^"]+)","thread_name":"$S"/ } }
-        for (newest(@ARGV, glob("$ENV{HOME}/.codex/sessions/*/*/*/rollout-*.jsonl"))) { my ($p, $m) = @$_;
+        for (newest($ARGV[1], glob("$ENV{HOME}/.codex/sessions/*/*/*/rollout-*.jsonl"))) { my ($p, $m) = @$_;
           open my $h, "<", $p; my $l = <$h> // "";
           my ($id) = $l =~ /"payload":\{(?:"session_id":"[^"]*",)?"id":"([^"]+)"/;
           my ($c) = $l =~ /"cwd":"((?:[^"\\]|\\.)*)"/; my $u = $name{$id // ""} // ""; my $i = 0;
           my $skip = $l =~ /"source":(\{|"exec")/;
-          while ($u eq "" && ++$i < 400 && defined($_ = <$h>)) {
+          while (!$skip && $u eq "" && ++$i < 400 && defined($_ = <$h>)) {
             $u = $1 if /"type":"user_message","message":"$S/ || /"type":"UserMessage".*?"text":"$S/ }
-          row($m, $id // "", $c, $skip ? "" : $u) }' "$1" "$2"
+          row($m, $id // "", $c, $skip ? "" : $u); last if full() }' "$1" "$2"
         """#,
         // Left out: child sessions (a task's), archived ones, and OpenCode's placeholder titles (no prompt yet).
         "opencode": #"""
-        d=${XDG_DATA_HOME:-$HOME/.local/share}/opencode/opencode.db; [ -e "$d" ] || exit
+        d=${XDG_DATA_HOME:-$HOME/.local/share}/opencode/opencode.db; [ -e "$d" ] || exit 0
         command -v sqlite3 >/dev/null || { echo '{"problem":"needs sqlite3"}'; exit; }
-        sqlite3 -readonly -cmd '.timeout 1000' "$d" "select json_object('t', time_updated / 1000, 'v', id,
+        exec sqlite3 -readonly -cmd '.timeout 1000' "$d" "select json_object('t', time_updated / 1000, 'v', id,
           'c', directory, 'n', substr(title, 1, 300)) from session
           where parent_id is null and time_archived is null and title not like 'New session - %'
           order by time_updated desc limit $1 offset $2"
         """#,
     ]
 
-    /// The page in a script's output: `limit` lines looked at means there may be more.
+    /// The files a page of a perl reader looks at, at most.
+    static let files = 2000
+
+    /// The page in a script's output: `limit` sessions with a prompt, or `files` looked at, means there may be more.
     static func parse(agent: String, _ text: String, limit: Int) -> ClosedPage {
         var page = ClosedPage()
         let lines = text.split(separator: "\n")
+        var titled = 0
         for line in lines {
             guard let object = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any] else {
                 continue
@@ -162,6 +169,9 @@ enum ClosedSessions {
             page.problem = object["problem"] as? String ?? page.problem
             guard let time = object["t"] as? Double else { continue }
             page.oldest = min(page.oldest ?? .distantFuture, Date(timeIntervalSince1970: time))
+            if object["n"] as? String != "" {
+                titled += 1
+            }
             guard let value = object["v"] as? String, !value.isEmpty,
                   let folder = object["c"] as? String, folder.hasPrefix("/"),
                   let title = (object["n"] as? String).flatMap(clean) else { continue }
@@ -169,7 +179,7 @@ enum ClosedSessions {
                                                date: Date(timeIntervalSince1970: time)))
         }
         page.looked = lines.count
-        page.more = lines.count >= limit && page.problem == nil
+        page.more = page.problem == nil && (titled >= limit || lines.count >= files)
         return page
     }
 
@@ -188,8 +198,16 @@ public extension Exec {
     func closedSessions(agent: String, offset: Int, limit: Int = 50, home: String? = nil) async throws -> ClosedPage {
         guard let script = ClosedSessions.scripts[agent] else { return ClosedPage() }
         let reset = "[ -z \"$4\" ] || { HOME=$4; unset XDG_DATA_HOME; }"
-        let text = try await output(["sh", "-c", "{ \(reset)\n\(script)\n} 2>/dev/null", "sh", "\(limit)", "\(offset)",
-                                     ClosedSessions.perl, home ?? ""])
+        let text = try await checkedOutput([
+            "sh",
+            "-c",
+            "{ \(reset)\n\(script)\n} 2>/dev/null",
+            "sh",
+            "\(limit)",
+            "\(offset)",
+            ClosedSessions.perl,
+            home ?? "",
+        ])
         return ClosedSessions.parse(agent: agent, text, limit: limit)
     }
 }

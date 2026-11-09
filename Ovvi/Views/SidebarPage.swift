@@ -7,6 +7,8 @@ struct SidebarPage: View {
     let filter: String
     /// Room under the rows for what lies over the list's end (the page dots), which the end's fade runs under too.
     var bottom: CGFloat = 0
+    var openSession: () -> Void = {}
+    private var settings = AppSettings()
     typealias Row = (workspace: HostStore.Workspace, parent: HostStore.Workspace?)
     /// The folded spaces (`Page.foldKey`), with the open shelf; spaces start unfolded.
     @AppStorage(Page.openShelves, store: .agents) private var opened = ""
@@ -62,12 +64,8 @@ struct SidebarPage: View {
             .padding(.trailing, Sidebar.rowInsets.trailing)
             // Rex's first row sits 31.5 pt below the header's baseline.
             .padding(.bottom, 3)
-            // The herdr session keeps running. Behind the row: on the row, a menu takes the row's frame for the name
-            // when it is the row's only element.
-            .background {
-                Color.clear.contentShape(.rect)
-                    .contextMenu { Button("Detach Session") { pages.close(page) }.disabled(pages.list.count < 2) }
-            }
+            // Behind the row: on the row, a menu takes the row's frame for the name when it is the row's only element.
+            .background { Color.clear.contentShape(.rect).contextMenu { sessionMenu } }
             if store.state == .live, store.workspaces.isEmpty {
                 EmptyState(symbol: "square.dashed", title: "No Spaces", compact: true) {
                     Button("New Space") { Task { await page.newWorkspace() } }
@@ -135,6 +133,8 @@ struct SidebarPage: View {
                     frames.scrolling = phase != .idle
                     frames.aim()
                 }
+                // Under the rows; a row's own menu wins on the row.
+                .contextMenu { sessionMenu }
                 .scrollIndicators(.never)
                 // Only asked, never told: the scroll view's writes made the page and the rows in view again.
                 .scrollPosition(.constant(position))
@@ -222,6 +222,23 @@ struct SidebarPage: View {
             let point = scrolling ? nil : point.map { CGPoint(x: $0.x, y: $0.y + top) }
             pointer = point.flatMap { point in targets.first { $0.value.contains(point) }?.key }
         }
+    }
+
+    /// The page header's and the empty sidebar's menu: the session's own actions, as the menu bar has them. Detach
+    /// Session takes the page out of this window; the herdr session keeps running.
+    @ViewBuilder private var sessionMenu: some View {
+        Button("New Space") { Task { await page.newWorkspace() } }
+            .disabled(page.store.state != .live)
+        Button("Open Session…", action: openSession)
+        if settings.showClosed {
+            Button(opened.hasLine(page.archivedKey) ? "Hide Archived Sessions" : "Show Archived Sessions") {
+                withAnimation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.2)) {
+                    opened = opened.togglingLine(page.archivedKey)
+                }
+            }
+        }
+        Divider()
+        Button("Detach Session") { pages.close(page) }.disabled(pages.list.count < 2)
     }
 
     /// The workspace's agent panes, newest change of state first (herdr's `state_change_seq`, herdr's order among

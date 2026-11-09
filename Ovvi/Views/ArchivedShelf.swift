@@ -2,8 +2,8 @@ import HerdrKit
 import SwiftUI
 
 /// The sidebar's Archived Sessions (ui/window#archived-sessions): the agents' sessions on the window's machine that no
-/// pane runs, from the agents' own stores. Read each time it opens, whole before it shows: the machine's last list at
-/// once, else a loader. The agents' next pages read as the list's end scrolls into view.
+/// pane runs, from the agents' own stores. Read each time it opens: the machine's last list at once, else a loader,
+/// until every agent's first page came or 2 s after the first did. The next pages read as the list's end scrolls in.
 struct ArchivedShelf: View {
     let pages: WindowPages
     /// The page in view when drawn: its machine's sessions. A resume goes to the page in view when it runs.
@@ -31,8 +31,7 @@ struct ArchivedShelf: View {
     static let home = UserDefaults.standard.string(forKey: "archivedHome")
 
     var body: some View {
-        // The machine's, not the session's: every page shows the same.
-        let key = "\(page.store.machine.id) archived-sessions"
+        let key = page.archivedKey
         let open = opened.hasLine(key)
         let shown = agent.isEmpty ? Chooser.agents.map(\.command) : [agent]
         let rows = open ? rows(shown) : []
@@ -66,7 +65,9 @@ struct ArchivedShelf: View {
                                     Color.clear.frame(height: 1).id(list.agents.values.map(\.looked).reduce(0, +))
                                         .onAppear { Task { await readNext(next) } }
                                 }
-                                if rows.isEmpty || !failed.isDisjoint(with: shown) || problem(shown) != nil {
+                                if rows.isEmpty || !failed.isDisjoint(with: shown) || !reading.isDisjoint(with: shown)
+                                    || problem(shown) != nil
+                                {
                                     status(shown, more: !next.isEmpty).frame(maxWidth: .infinity)
                                 }
                             }
@@ -93,14 +94,7 @@ struct ArchivedShelf: View {
             (list, loading) = (Self.lists[machine] ?? ClosedList(), Self.lists[machine] == nil)
             (reading, failed, generation) = ([], [], generation + 1)
             guard open else { return }
-            let generation = generation
-            let (fresh, missing) = await read(Chooser.agents.map(\.command), from: ClosedList())
-            guard generation == self.generation else { return }
-            // A next page read meanwhile from the last list lands nowhere.
-            (list, failed, reading, loading, self.generation) = (fresh, missing, [], false, generation + 1)
-            if missing.isEmpty {
-                Self.lists[machine] = fresh
-            }
+            await readFirst()
         }
     }
 
@@ -173,9 +167,11 @@ struct ArchivedShelf: View {
     @ViewBuilder private func status(_ shown: [String], more: Bool) -> some View {
         let machine = page.store.machine.name
         if !failed.isDisjoint(with: shown) {
+            let names = shown.filter(failed.contains).map(Chooser.name).formatted(.list(type: .and))
             EmptyState(
                 symbol: "exclamationmark.triangle",
-                title: "Could not read \(machine)'s sessions.",
+                title: failed.isSuperset(of: shown) ? "Could not read \(machine)'s sessions."
+                    : "Could not read \(names) sessions on \(machine).",
                 compact: true,
             ) {
                 Button("Retry") { attempt += 1 }
@@ -208,39 +204,94 @@ struct ArchivedShelf: View {
                 Button("Resume to the Side") { inView.resume(session, beside: true) }
             }
     }
+}
 
-    /// The next page of each of `agents`, added to `base` all at once; the agents whose page did not come.
-    private func read(_ agents: [String], from base: ClosedList) async -> (ClosedList, Set<String>) {
-        let exec = await page.store.machine.exec()
-        var list = base, missing: Set<String> = []
+private extension ArchivedShelf {
+    /// Every agent's first page, shown together once all came, or 2 s after the first one did: a slow agent is read
+    /// on (`reading`) and comes in when it does, a failed one is marked (`failed`).
+    func readFirst() async {
+        var generation = generation
+        let agents = Chooser.agents.map(\.command), exec = await page.store.machine.exec()
+        var staged = ClosedList(), missing: Set<String> = [], waiting = Set(agents), shown = false
         await withTaskGroup(of: (String, ClosedPage?).self) { group in
+            for agent in agents {
+                group.addTask {
+                    await (agent, try? exec.closedSessions(agent: agent, offset: 0, home: Self.home))
+                }
+            }
+            for await (agent, page) in group where generation == self.generation {
+                if !agent.isEmpty {
+                    waiting.remove(agent)
+                    if shown {
+                        reading.remove(agent)
+                        if let page {
+                            list.add(page, for: agent)
+                        } else {
+                            failed.insert(agent)
+                        }
+                    } else if let page {
+                        staged.add(page, for: agent)
+                    } else {
+                        missing.insert(agent)
+                    }
+                    if waiting.isEmpty {
+                        group.cancelAll()
+                    } else if waiting.count == agents.count - 1 {
+                        group.addTask {
+                            try? await Task.sleep(for: .seconds(2))
+                            return ("", nil)
+                        }
+                    }
+                }
+                if !shown, agent.isEmpty || waiting.isEmpty {
+                    // A next page read meanwhile from the last list lands nowhere.
+                    (shown, self.generation) = (true, self.generation + 1)
+                    generation = self.generation
+                    (list, failed, reading, loading) = (staged, missing, waiting, false)
+                }
+                if shown {
+                    keep()
+                }
+            }
+        }
+    }
+
+    /// The pages after the list's end, for the agents that have more, added all at once.
+    func readNext(_ agents: [String]) async {
+        // Marked as reading before the await: a second read meanwhile would read the same offset.
+        let agents = agents.filter { !reading.contains($0) }, generation = generation, base = list
+        reading.formUnion(agents)
+        let exec = await page.store.machine.exec()
+        let pages = await withTaskGroup(of: (String, ClosedPage?).self) { group in
             for agent in agents {
                 let offset = base.agents[agent]?.looked ?? 0
                 group.addTask {
                     await (agent, try? exec.closedSessions(agent: agent, offset: offset, home: Self.home))
                 }
             }
-            for await (agent, page) in group {
-                if let page {
-                    list.add(page, for: agent)
-                } else {
-                    missing.insert(agent)
-                }
+            var pages: [(String, ClosedPage?)] = []
+            for await page in group {
+                pages.append(page)
+            }
+            return pages
+        }
+        guard generation == self.generation else { return }
+        for (agent, page) in pages {
+            if let page {
+                list.add(page, for: agent)
+            } else {
+                failed.insert(agent)
             }
         }
-        return (list, missing)
+        reading.subtract(agents)
+        keep()
     }
 
-    /// The pages after the list's end, for the agents that have more.
-    private func readNext(_ agents: [String]) async {
-        // Marked as reading before the await: a second read meanwhile would read the same offset.
-        let agents = agents.filter { !reading.contains($0) }, generation = generation
-        reading.formUnion(agents)
-        let (next, missing) = await read(agents, from: list)
-        guard generation == self.generation else { return }
-        reading.subtract(agents)
-        (list, failed) = (next, failed.union(missing))
-        Self.lists[page.store.machine.id] = list
+    /// A list that read whole is the machine's next first frame.
+    func keep() {
+        if reading.isEmpty, failed.isEmpty {
+            Self.lists[page.store.machine.id] = list
+        }
     }
 }
 

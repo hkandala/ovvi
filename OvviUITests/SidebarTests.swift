@@ -5,6 +5,34 @@ import XCTest
 /// "gamma"; three is stopped; four is made by a test; five is stopped and started by tests; seven is stopped and
 /// deleted by a test.
 extension OvviUITests {
+    /// A right-click under the rows, or on the page header, has the session's menu: New Space, Open Session…, Show or
+    /// Hide Archived Sessions and Detach Session (off on the last page).
+    func testTheSidebarsEmptyAreaHasTheSessionMenu() {
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        let shelf = element("agents.shelf.Archived Sessions")
+        if shelf.value as? String == "expanded" {
+            shelf.click()
+            addTeardownBlock { @MainActor in shelf.click() }
+        }
+        let below = element("workspace.w2").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            .withOffset(CGVector(dx: 0, dy: 120))
+        below.rightClick()
+        let menu = app.windows.firstMatch.menuItems
+        XCTAssertTrue(menu["New Space"].exists(within: 2))
+        XCTAssertTrue(menu["Open Session…"].exists)
+        XCTAssertFalse(menu["Detach Session"].isEnabled)
+        keepScreenshot("sidebar menu")
+        menu["Show Archived Sessions"].click()
+        XCTAssertTrue(shelf.has(\.stringValue, "expanded", within: 2))
+        element("sidebar.header").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).rightClick()
+        menu["Hide Archived Sessions"].click()
+        XCTAssertTrue(shelf.has(\.stringValue, "collapsed", within: 2))
+        below.rightClick()
+        menu["Open Session…"].click()
+        XCTAssertTrue(element("open-session.filter").exists(within: 2))
+        app.typeKey(.escape, modifierFlags: [])
+    }
+
     func testLaunchOpensOnePageAndNoOtherSession() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         XCTAssertEqual(header, one)

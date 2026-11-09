@@ -236,8 +236,12 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   never loads other sessions by itself. The user adds pages with
   [Open Session](#open-session), as many as they like. Only open pages have a
   `HostStore`, snapshot reads and an event stream.
-- **Detach Session.** The context menu of the page header and of its page dot
-  has Detach Session (also in the File menu). It removes the page from this
+- **Session menu.** A right-click on the page header or on the sidebar's empty area under the rows shows the
+  session's menu: New Space, Open Session…, Show Archived Sessions (Hide while it is open; not there while Settings
+  hides it), then Detach Session. New Space, Open Session… and Detach Session do what their menu bar items do; Show
+  Archived Sessions opens the shelf, Hide folds it.
+- **Detach Session.** The session menu and the context menu of its page dot
+  have Detach Session (also in the File menu). It removes the page from this
   window. Its store disconnects, so its event stream and its terminal streams
   end. The herdr session keeps running and stays in the Open Session list.
   Detach Session is disabled on the last page. The UI says "session", never
@@ -414,22 +418,25 @@ nothing is read.
   the home folder), and its age at the end of line 1 ("5h", "2d", "1w"; 11 pt, secondary). Newest first, over the
   four agents. The tile is 8 pt into the border, on the space names' edge. Left out: the sessions a pane of any
   open session of the machine runs, and one being resumed.
-- **Reading.** The shelf reads each time it opens, 50 sessions an agent a page, and shows the list only once every
-  agent's page came: the first time the loader ("Reading sessions…", after 0.3 s) shows in the list's place; after
-  that, the machine's last list that read whole (kept for the app's run) shows at once and the new one takes its
-  place when it comes, so rows never come in one agent at a time. The next pages read when the list's end scrolls
-  into view, and come in together too. One shell script an agent runs once a page on the machine (never a process
-  per file), and nothing writes to the stores. Pi and Claude Code keep a JSONL file a session under
-  `~/.pi/agent/sessions/` and `~/.claude/projects/`; the title is the last rename, else Claude Code's own title,
-  else the first typed prompt. Codex and OpenCode keep an SQLite index, read with `sqlite3 -readonly`; without
-  sqlite3 Codex reads its rollout files, and OpenCode's line says "OpenCode needs sqlite3 on ‹machine›." Left out:
-  subagents and child sessions, `codex exec` runs and Claude Code's Agent SDK sessions, archived ones, and sessions
-  with no prompt.
+- **Reading.** The shelf reads each time it opens, 50 sessions with a prompt an agent a page (a page looks past the
+  sessions it leaves out, at most 2000 files, so a machine full of Agent SDK runs or `codex exec` runs still fills
+  one), and shows the list once every agent's page came, or 2 s after the first one did: an agent still reading then
+  comes in by itself, with "Reading sessions…" under the rows meanwhile. A page that takes over 10 s fails. The
+  first time, the loader ("Reading sessions…", after 0.3 s) shows in the list's place; after that, the machine's
+  last list that read whole (kept for the app's run) shows at once and the new one takes its place when it comes.
+  The next pages read when the list's end scrolls into view, and come in together. One shell script an agent runs
+  once a page on the machine (never a process per file), and nothing writes to the stores. Pi and Claude Code keep a
+  JSONL file a session under `~/.pi/agent/sessions/` and `~/.claude/projects/`; the title is the last rename, else
+  Claude Code's own title, else the first typed prompt. Codex and OpenCode keep an SQLite index, read with `sqlite3
+  -readonly`; without sqlite3 Codex reads its rollout files, and OpenCode's line says "OpenCode needs sqlite3 on
+  ‹machine›." Left out: subagents and child sessions, `codex exec` runs and Claude Code's Agent SDK sessions,
+  archived ones, and sessions with no prompt.
 - **States** ([States](/docs/ui/states)). While the first list or a next page takes over 0.3 s: the loader, "Reading
   sessions…". With no row, the compact empty state: "No closed sessions on ‹machine›." or "No ‹Agent› sessions."
   (`archivebox`), or "No matching sessions." (`magnifyingglass`). A machine that did not answer in 10 s: "Could not
-  read ‹machine›'s sessions." (`exclamationmark.triangle`) with **Retry**; so does a store the machine cannot read
-  ("OpenCode needs sqlite3 on ‹machine›.").
+  read ‹machine›'s sessions." (`exclamationmark.triangle`) with **Retry**, or "Could not read ‹Agent› sessions on
+  ‹machine›." under the rows of the others when only some did not. A store the machine cannot read shows its own
+  line ("OpenCode needs sqlite3 on ‹machine›.").
 - **Resume.** A click, or the hover **Resume** (`arrow.uturn.backward`, before the age),
   starts the agent with that session (the flags of [Relaunch with
   Chat](/docs/ui/chat-view#relaunch-with-chat)'s table) in a new pane in the session's

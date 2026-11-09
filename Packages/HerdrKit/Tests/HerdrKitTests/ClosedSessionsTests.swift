@@ -47,16 +47,17 @@ private struct Fixture {
     // Started and quit with no prompt.
     try fixture.write(folder + "3.jsonl", #"{"type":"session","version":3,"id":"01a3","cwd":"/tmp/a"}"#, age: 5)
 
+    // A page holds `limit` sessions with a prompt: it looks past the one without.
     let first = try await fixture.exec.closedSessions(agent: "pi", offset: 0, limit: 2)
     let path = fixture.home.path + "/" + folder
-    #expect(first.sessions.map(\.value) == [path + "2.jsonl"])
-    #expect(first.sessions.map(\.title) == ["Trip notes"])
+    #expect(first.sessions.map(\.value) == [path + "2.jsonl", path + "1.jsonl"])
+    #expect(first.sessions.map(\.title) == ["Trip notes", #"fix the "tab" drag please, café"#])
     #expect(first.sessions.first?.folder == "/tmp/a")
-    #expect(first.more)
-    let second = try await fixture.exec.closedSessions(agent: "pi", offset: 2, limit: 2)
-    #expect(second.sessions.map(\.title) == [#"fix the "tab" drag please, café"#])
-    #expect(!second.more)
-    #expect(try await fixture.exec.closedSessions(agent: "pi", offset: 4, limit: 2) == ClosedPage())
+    #expect(first.looked == 3)
+    #expect(try await fixture.exec.closedSessions(agent: "pi", offset: 3, limit: 2) == ClosedPage())
+    let one = try await fixture.exec.closedSessions(agent: "pi", offset: 0, limit: 1)
+    #expect(one.sessions.map(\.title) == ["Trip notes"])
+    #expect(one.more)
 }
 
 @Test func `claude: a rename over its own title over the first typed prompt; the id is the file's name`(
@@ -219,4 +220,21 @@ private struct Fixture {
     // A session that moved up comes again on the next page: once.
     list.add(page("pi", [95], more: false), for: "pi")
     #expect(list.sessions(of: ["pi"]).map(\.value) == ["pi95", "pi50", "pi10"])
+}
+
+/// Many newer sessions that are left out (the Agent SDK's, as a busy machine's runs leave them) do not leave a page
+/// empty: it looks on, past them, to the sessions with a prompt.
+@Test func `a page looks past the sessions it leaves out`() async throws {
+    let fixture = Fixture()
+    defer { fixture.remove() }
+    let run = #"{"type":"user","message":{"role":"user","content":"run"},"cwd":"/tmp/e","entrypoint":"sdk-py"}"#
+    for index in 0 ..< 60 {
+        try fixture.write(".claude/projects/-tmp-e/\(UUID().uuidString.lowercased()).jsonl", run, age: Double(index))
+    }
+    try fixture.write(".claude/projects/-tmp-e/5fbbe3d7-2c69-4a57-d8e9-6d9e4591bb1c.jsonl",
+                      #"{"type":"user","message":{"role":"user","content":"the real one"},"cwd":"/tmp/e"}"#, age: 100)
+    let page = try await fixture.exec.closedSessions(agent: "claude", offset: 0)
+    #expect(page.sessions.map(\.title) == ["the real one"])
+    #expect(page.looked == 61)
+    #expect(!page.more)
 }

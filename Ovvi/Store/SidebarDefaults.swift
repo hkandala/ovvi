@@ -37,6 +37,11 @@ extension Page {
     /// ponytail: folds are never pruned, so a space herdr makes again with a folded one's id starts folded.
     static let openShelves = "agentsOpen"
 
+    /// The open Archived Sessions' line: the machine's, every page shows the same.
+    var archivedKey: String {
+        "\(store.machine.id) archived-sessions"
+    }
+
     func foldKey(_ workspace: String) -> String {
         "\(store.machine.id) \(id) folded \(workspace)"
     }
