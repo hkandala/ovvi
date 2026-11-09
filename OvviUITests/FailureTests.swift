@@ -13,7 +13,6 @@ extension OvviUITests {
         try await expect("its stream") { try await streams(five).count == 1 }
 
         try await Self.post("\(five)/stop")
-        // The "not running" page: its Start button.
         XCTAssertTrue(element("detail.start").exists(within: 10))
         XCTAssertFalse(terminal.exists)
         // Its last rows stay, without writes.

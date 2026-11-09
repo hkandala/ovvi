@@ -122,7 +122,6 @@ extension OvviUITests {
         try await closeAfter("tab", tabOf(pane))
     }
 
-    /// ⌘T, then the new tab's pane once herdr has it; its cwd must be /usr.
     private func commandT() async throws -> String {
         let before = try await tabIDs()
         app.typeKey("t", modifierFlags: .command)
@@ -148,7 +147,6 @@ extension OvviUITests {
         let workspace = workspace(of: tab)
         closeAfter("workspace", workspace)
         XCTAssertTrue(element("workspace.\(workspace)").exists(within: 3))
-        // Only the selected tab's page shows.
         XCTAssertTrue(element("page.\(tab)").exists(within: 3))
         XCTAssertFalse(element("page.w1:t1").exists)
         let pane = "\(workspace):p1"
@@ -205,7 +203,6 @@ extension OvviUITests {
         XCTAssertTrue(filter.vanishes(within: 2))
         XCTAssertTrue(element("tab.w1:t2").has(\.isSelected, true, within: 2))
 
-        // A workspace of the window, from the title-row button.
         element("titlebar.palette").click()
         XCTAssertTrue(hasKeyboard(filter))
         app.typeText("beta")

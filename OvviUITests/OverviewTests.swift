@@ -172,7 +172,6 @@ extension OvviUITests {
         XCTAssertTrue(overview.vanishes(within: 2))
         XCTAssertTrue(until(3) { header == two })
 
-        // Esc leaves at once and the keyboard is back in the card.
         app.typeKey("o", modifierFlags: [.command, .control])
         XCTAssertTrue(overview.exists(within: 2))
         app.typeKey(.escape, modifierFlags: [])
@@ -273,7 +272,6 @@ extension OvviUITests {
             }
             most = try await max(most, streams(eight).count)
         }
-        // The main thread's profile while it scrolls back.
         async let profile = Self.post("\(eight)/sample", Data("3".utf8))
         for _ in 0 ..< 4 {
             try await Self.post("\(one)/swipe", Data("\(frame.midX) \(frame.midY) \(-30 * sign) 20 0 1".utf8))

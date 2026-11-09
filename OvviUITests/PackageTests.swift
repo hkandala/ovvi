@@ -90,7 +90,6 @@ extension OvviUITests {
         XCTAssertTrue(text("CSV Table two").exists(within: 10))
         XCTAssertTrue(rows.has(\.stringValue, "4 rows", within: 5))
 
-        // A build that fails, with a new version: the card made again from it loads the last good page and says why.
         element("tab.\(tab)").click()
         try await send(
             "echo 'export default {' >> \(csv)/src/main.ts && sed -i '' 's/0.1.0/0.1.1/' \(csv)/package.json "

@@ -44,7 +44,6 @@ extension OvviUITests {
             XCTAssertEqual(entry.turns, 0, entry.name)
             XCTAssertLessThanOrEqual(entry.lists, 3, entry.name)
         }
-        // Each drawn in the key's own turn.
         let keys = recorded().filter { ["⌘", "⌃", "⇧", "⌥"].contains($0.name.first.map(String.init)) }
         // ⌥⌘1 first: `showPage` above.
         XCTAssertEqual(keys.map(\.name), ["⌥⌘1", "⌘K", "⌘K", "⌥⌘T", "⌘2", "⌘1", "⌃⌘]", "⌃⌘[", "⌥⌘]", "⌥⌘["])
@@ -89,7 +88,6 @@ extension OvviUITests {
         for entry in keys {
             XCTAssertLessThanOrEqual(entry.turns, 1, entry.name)
         }
-        // herdr closed it, and it stays closed.
         try await expect("herdr closed the tab") { try await !tabIDs().contains(made) }
         XCTAssertFalse(element("tab.\(made)").exists)
     }

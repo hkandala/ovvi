@@ -35,7 +35,7 @@ extension OvviUITests {
         app.typeKey(.escape, modifierFlags: [])
 
         // A file in a folder never opened: a letter typed in the tree opens the find bar, whose filter loads every
-        // path. A double-click shows it in the card.
+        // path.
         app.typeText("main")
         XCTAssertTrue(row("main.swift", in: tree).exists(within: 5))
         XCTAssertFalse(row("a.txt", in: tree).exists)
@@ -106,7 +106,6 @@ extension OvviUITests {
         XCTAssertFalse(tree.textFields["Filter"].exists)
     }
 
-    /// A click on src's name selects it and → opens it; Collapse All closes it; build stays open.
     private func openAndCollapse(_ card: String, _ tree: XCUIElement) {
         row("src", in: tree).click()
         XCTAssertTrue(hasKeyboard(row("src", in: tree)))
@@ -119,8 +118,6 @@ extension OvviUITests {
         XCTAssertTrue(row("out.o", in: tree).exists(within: 3))
     }
 
-    /// The row menu's Open as Root, `..` back up, a double-click on a folder, then the path field: a path that is no
-    /// folder stays and Esc puts the root back; a folder's path goes there.
     private func moveRoot(_ card: String, _ tree: XCUIElement, _ root: String) async throws {
         row("src", in: tree).rightClick()
         app.menuItems["Open as Root"].click()
@@ -201,7 +198,6 @@ extension OvviUITests {
         eye.click()
         XCTAssertTrue(row(".gitignore", in: tree).vanishes(within: 5))
 
-        // An empty folder shows its placeholder.
         try await send("mkdir \(repo)/empty\r", to: shell)
         XCTAssertTrue(row("empty", in: tree).exists(within: 5))
         row("empty", in: tree).doubleClick()
@@ -230,7 +226,6 @@ extension OvviUITests {
         let beside = try await split(card)
         try await show(tab)
         let tree = element("files.\(card).page")
-        // The tree has the keyboard on a.txt, then the terminal.
         row("a.txt", in: tree).click()
         XCTAssertTrue(hasKeyboard(row("a.txt", in: tree)))
         element("terminal.\(beside)").click()
@@ -290,7 +285,6 @@ extension OvviUITests {
         page.descendants(matching: .any).matching(NSPredicate(format: "label == %@", name)).firstMatch
     }
 
-    /// The card's label follows the place it shows.
     func labelEnds(_ pane: String, _ end: String) async throws {
         _ = try await poll("the label ending in \(end)") { () async throws -> String? in
             let label = try await paneLabel(pane)

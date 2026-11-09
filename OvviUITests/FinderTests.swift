@@ -60,14 +60,12 @@ extension OvviUITests {
         // Its name is selected, not its extension, as in the Finder.
         app.typeText("b\r")
         XCTAssertTrue(row("b.txt", in: tree).exists(within: 5))
-        // A name the tree refuses keeps the row's name and says why.
         row("b.txt", in: tree).click()
         app.typeKey(.return, modifierFlags: [])
         app.typeText("x/y\r")
         XCTAssertTrue(element("pane.\(card).toast").exists(within: 3))
         element("pane.\(card).toast.main").click()
         XCTAssertTrue(row("b.txt", in: tree).exists)
-        // A folder's menu renames it.
         row("build", in: tree).rightClick()
         app.menuItems["Rename"].click()
         XCTAssertTrue(tree.textFields.matching(NSPredicate(format: "value == 'build'")).firstMatch.exists(within: 3))
@@ -191,7 +189,6 @@ extension OvviUITests {
         XCTAssertFalse(text("+1", in: tree).exists)
         push.click()
         XCTAssertTrue(push.vanishes(within: 10))
-        // A commit elsewhere: Fetch shows Pull, and Pull brings it.
         try await send("""
         git clone -q \(repo)-remote \(repo)-other && cd \(repo)-other && touch c && git add c && \
         git -c user.name=e2e -c user.email=e2e@ovvi commit -qm c && git push -q && cd \(repo) && echo pushed-$((6*7))\r

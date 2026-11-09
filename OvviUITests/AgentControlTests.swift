@@ -118,7 +118,6 @@ extension OvviUITests {
         }
     }
 
-    /// The workspace carries Ovvi's `ovvi-open` mark, or not.
     func expectOpen(_ workspace: String, _ open: Bool = true, in session: String? = nil) async throws {
         try await expect("\(workspace) marked \(open ? "" : "not ")open") {
             let info = try await Self.call(session ?? one, "workspace.get", ["workspace_id": workspace])["workspace"]

@@ -67,8 +67,6 @@ extension OvviUITests {
         try await expect("the card's pane closed") { try await !Self.ids("pane", in: one).contains(card) }
     }
 
-    /// ⌘F opens the editor's search with the keyboard; ⌘G and ⇧⌘G (Find Next and Previous) reach it too, and open
-    /// it again. ⌥⌘F adds Replace's row; the count reads the matches; ⌘Return replaces them all; Esc closes the bar.
     private func findKeys(_ card: String) {
         let editor = element("file.\(card).page").textViews.firstMatch
         // WebKit takes CodeMirror's `name="search"` field for a search field.
@@ -115,7 +113,6 @@ extension OvviUITests {
         XCTAssertTrue(until(3) { editor.frame.width < width }, "\(editor.frame.width) in \(width)")
     }
 
-    /// The card's breadcrumbs read `value` within 3 s.
     private func crumbs(_ card: String, _ value: String) -> Bool {
         element("pane.\(card).jump").has(\.stringValue, value, within: 3)
     }
@@ -213,8 +210,7 @@ extension OvviUITests {
     }
 
     /// An image at Fit, Actual Size and zoomed in, and again after a change on disk; a PDF's page `n of m`, which
-    /// follows a scroll; the info view of
-    /// another file and of an image that does not decode; audio's player; the overview's tile shows it.
+    /// follows a scroll; the info view of another file and of an image that does not decode; audio's player.
     func testAPreviewCardShowsImagesPDFsAndOtherFiles() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("preview")

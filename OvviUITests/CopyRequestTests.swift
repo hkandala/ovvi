@@ -9,7 +9,6 @@ extension OvviUITests {
         try await requestCopy(on: "w1:p1", marked: "1")
     }
 
-    /// The pane carries the mark, then writes the text to the request's file on its machine, and the request names it.
     func requestCopy(on pane: String, marked mark: String) async throws {
         try await expect("\(pane) marked \(mark)") {
             let info = try await Self.call(one, "pane.get", ["pane_id": pane])["pane"] as? [String: Any]

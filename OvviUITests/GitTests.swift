@@ -38,11 +38,9 @@ extension OvviUITests {
         app.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(element("pane.\(card).title").has(\.stringValue, "e2e commit", within: 10))
         element("pane.\(card).go-back").click()
-        // A double-click opens its diff in the card; Back and Forward walk the card's places.
         XCTAssertTrue(commit("second", in: home).has(\.isHittable, true, within: 10))
         commit("second", in: home).doubleClick()
         try await expect("the label names the commit") { try await paneLabel(card).hasSuffix(" \(root)/ \(hash)") }
-        // The commit's subject is the title.
         XCTAssertTrue(element("pane.\(card).title").has(\.stringValue, "second", within: 10))
         let page = element("git.\(card).page")
         XCTAssertTrue(page.buttons["Open a.txt"].exists(within: 10))
@@ -126,17 +124,14 @@ extension OvviUITests {
         try await expect("the label is Working Tree's") { try await paneLabel(card).hasSuffix(" \(root)/ uncommitted") }
         XCTAssertTrue(page.buttons["Open a.txt"].exists(within: 10))
         XCTAssertTrue(element("pane.\(card).title").has(\.stringValue, "Working Tree", within: 3))
-        // It follows the work tree.
         try await send("seq 300 | sed 's/^/new /' >c.txt\r", to: left)
         XCTAssertTrue(page.buttons["Open c.txt"].exists(within: 10))
-        // A file already shown draws its new text.
         try await send("sed -i '' 's/^changed 200$/live 200/' a.txt\r", to: left)
         XCTAssertTrue(page.staticTexts.matching(NSPredicate(format: "value CONTAINS 'live 200'")).firstMatch
             .exists(within: 10))
         try await holdsItsPlace(page, card: card, shell: left)
         stepsByFile(page)
 
-        // Row 2's Working Tree opens it too, from the home.
         element("pane.\(card).diff.home").click()
         try await expect("back home") { try await paneLabel(card).hasSuffix("e2egit \(root)/") }
         element("pane.\(card).git.working").click()
@@ -312,7 +307,6 @@ extension OvviUITests {
             old.exists && abs(old.frame.minY - far.frame.minY) < 2 && old.frame.maxX < far.frame.minX
         }, "old \(old.exists ? old.frame : .zero), new \(far.exists ? far.frame : .zero)")
         keepScreenshot("diff card, side by side")
-        // The file list starts closed, opens and closes again.
         XCTAssertFalse(page.buttons["a.txt"].exists)
         element("pane.\(card).diff.file-list").click()
         XCTAssertTrue(page.buttons["a.txt"].exists(within: 3))

@@ -82,7 +82,6 @@ extension OvviUITests {
         XCTAssertTrue(blurred.isEmpty, "\(blurred) of \(records)")
     }
 
-    /// Each way to show another tab, recorded (`frames`): none may flicker.
     private func expectNoFlicker() async throws {
         var records: [String] = []
         let option: XCUIElement.KeyModifierFlags = [.command, .option]

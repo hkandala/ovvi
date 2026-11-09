@@ -9,7 +9,6 @@ extension OvviUITests {
         // Window 1 opened the session first: it controls, window 2 watches.
         XCTAssertTrue(element("notice.controlled", in: second).exists(within: connect))
         XCTAssertFalse(element("notice.controlled", in: first).exists)
-        // The notice look, in the info tone, with no ✕.
         XCTAssertEqual(element("notice.controlled", in: second).images["notice.symbol"].label, "Information")
         XCTAssertFalse(element("notice.controlled", in: second).buttons["notice.close"].exists)
         let terminal = try await terminalID("w1:p1")
@@ -34,7 +33,6 @@ extension OvviUITests {
         try await expectStreams(terminal, control: 1, observe: 1)
         try await expectPTYSize("w1:p1", in: second)
 
-        // Take Back in window 1: the capsule moves to window 2.
         raise(first)
         element("notice.controlled.take-back", in: first).click()
         XCTAssertTrue(element("notice.controlled", in: second).exists(within: 3))
@@ -80,7 +78,6 @@ extension OvviUITests {
         XCTAssertTrue(element("notice.controlled", in: second).exists(within: connect))
         app.typeKey("s", modifierFlags: [.command, .control])
 
-        // Window 1 controls, opens session two and closes its page of session one: window 2 takes over.
         raise(first)
         openPage(two, in: first)
         // Still window 1's until its page closes.
@@ -96,7 +93,6 @@ extension OvviUITests {
         let (first, second) = try newWindow()
         XCTAssertTrue(element("notice.controlled", in: second).exists(within: connect))
 
-        // Window 2 opens session two and closes its page of session one.
         openPage(two, in: second)
         // The capsule shows only while the page in view is watched.
         XCTAssertTrue(element("notice.controlled", in: second).vanishes(within: 3))

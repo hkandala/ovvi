@@ -34,7 +34,6 @@ extension OvviUITests {
         XCTAssertTrue(hasKeyboard(element("browser.\(browser).address")))
         keepScreenshot("fixed pick browser")
 
-        // ⌥ held: the chooser.
         let split = element("pane.\(browser).split-right")
         XCTAssertTrue(split.exists(within: 2))
         XCUIElement.perform(withKeyModifiers: .option) { split.click() }

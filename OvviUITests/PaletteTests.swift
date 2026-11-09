@@ -145,7 +145,6 @@ extension OvviUITests {
         XCTAssertTrue(element("palette.command.Appearance").has(\.isSelected, true, within: 2))
         app.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(pageTitle(is: "Appearance"))
-        // The current choice is lit first; ↑ lights Light, which shows after the delay.
         XCTAssertTrue(element("palette.choice.Dark").has(\.isSelected, true, within: 2))
         app.typeKey(.upArrow, modifierFlags: [])
         XCTAssertTrue(element("palette.choice.Light").has(\.isSelected, true, within: 2))
@@ -357,7 +356,6 @@ extension OvviUITests {
         XCTAssertFalse(bar.menuItems["second"].exists)
         XCTAssertFalse(bar.menuItems["alpha"].exists)
         app.menuBars.menuBarItems["View"].click()
-        // The palette's Move Pane to Tab › moves the keyboard card to a new tab.
         let before = try await tabIDs()
         openPalette()
         app.typeText("move pane to")

@@ -51,7 +51,6 @@ extension OvviUITests {
         XCTAssertTrue(until(3) { abs(composer.frame.minY - last.frame.maxY - gap) < 2 },
                       "\(gap) \(composer.frame.minY - last.frame.maxY)")
         XCTAssertTrue(bottom.vanishes(within: 2))
-        // At the bottom, it stays there as the card narrows and widens.
         let beside = try await split(pane, in: tab)
         XCTAssertTrue(until(3) { chat.frame.width < 600 && last.exists && last.isHittable }, "\(chat.frame)")
         _ = try await Self.call(one, "pane.close", ["pane_id": beside])

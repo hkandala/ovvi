@@ -336,7 +336,6 @@ extension OvviUITests {
         try await expectShown(one, pane, false)
     }
 
-    /// The pane carries Ovvi's mark, or not.
     func expectShown(_ session: String, _ pane: String, _ shown: Bool = true) async throws {
         try await expect("\(session)'s \(pane) \(shown ? "" : "not ")marked shown") {
             let info = try await Self.call(session, "pane.get", ["pane_id": pane])["pane"] as? [String: Any]
@@ -360,7 +359,6 @@ extension OvviUITests {
         _ = try await Self.post("\(one)/open-url", Data("\(ovvi)\novvi://float\(path)?\(query)".utf8))
     }
 
-    /// The card's Float button; its window, once it shows.
     func float(_ pane: String) throws -> XCUIElement {
         hoverHeader(pane)
         element("pane.\(pane).float").click()

@@ -72,7 +72,6 @@ extension OvviUITests {
         XCTAssertTrue(web.hasSuffix(" file://\(folder)/one.html"), web)
         // Another page in the same card, after the first loaded: Back returns.
         XCTAssertTrue(pageText("ovvi-cards-one").exists(within: 10))
-        // A path's query and fragment stay the URL's.
         _ = try await open("browser './two.html?v=2#x' --replace \(browser)", from: first, "page", ["kind: browser"])
         XCTAssertTrue(pageText("ovvi-cards-two").exists(within: 10))
         let query = try await paneLabel(browser)
@@ -92,7 +91,6 @@ extension OvviUITests {
         try await run("clear; \(ovvi) reveal \(browser)", in: first, "flash", 0, "shown: true")
         XCTAssertTrue(element("pane.\(browser).flash").exists(within: 3))
 
-        // Out of view: the notice, whose Show brings the tab back.
         let other = try await field(tabIDs().first { $0.hasPrefix("w2:") && $0 != tab }, "another tab of w2") as String
         element("tab.\(other)").click()
         XCTAssertTrue(element("tab.\(other)").has(\.isSelected, true, within: 3))

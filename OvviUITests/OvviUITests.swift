@@ -117,7 +117,6 @@ final class OvviUITests: XCTestCase {
         hoverHeader(pane)
         element("pane.\(pane).split-right").click()
 
-        // The app draws a second card to the right of the first, and herdr has two panes in the tab.
         let cards = element("page.\(tab)").descendants(matching: .any)
             .matching(NSPredicate(format: "identifier MATCHES %@", #"pane\.[^.]+"#))
         XCTAssertTrue(cards.element(boundBy: 1).exists(within: 2))
@@ -169,8 +168,7 @@ extension OvviUITests {
         try await waitFor(pane, in: session) { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
 
-    /// Polls the pane's text until `done` passes. Escaping: the compiler rejects it otherwise across files.
-    /// The failure says what the pane showed last.
+    /// `done` is escaping: the compiler rejects it otherwise across files.
     func waitFor(_ pane: String, in session: String? = nil, times: Int = 50,
                  _ done: @escaping (String) -> Bool) async throws
     {
@@ -202,7 +200,6 @@ extension OvviUITests {
         throw Waited(description: "waited for \(what)")
     }
 
-    /// Polls until `check` passes.
     func expect(_ what: String, times: Int = 50, _ check: () async throws -> Bool) async throws {
         try await poll(what, times: times) { try await check() ? true : nil }
     }
@@ -312,7 +309,6 @@ extension OvviUITests {
         return (tabs, pane)
     }
 
-    /// Types a command into the pane once its terminal has the keyboard, and waits for the output.
     func typeAndRead(_ pane: String) async throws {
         XCTAssertTrue(hasKeyboard("terminal.\(pane)"))
         app.typeText("echo ovvi-keys-$((6*7))")
@@ -320,7 +316,6 @@ extension OvviUITests {
         try await waitFor(pane) { $0.contains("\novvi-keys-42") }
     }
 
-    /// ⌘K; the palette's filter has the keyboard.
     @discardableResult
     func openPalette() -> XCUIElement {
         app.typeKey("k", modifierFlags: .command)
@@ -329,7 +324,6 @@ extension OvviUITests {
         return filter
     }
 
-    /// What has the keyboard, for a failure's message: its type and identifier.
     func keyboardOwner() -> String {
         let owner = app.descendants(matching: .any).matching(NSPredicate(format: "hasKeyboardFocus == true")).firstMatch
         return owner.exists ? "\(owner.elementType.rawValue) '\(owner.identifier)' '\(owner.label)'" : "nothing"
@@ -359,12 +353,10 @@ extension OvviUITests {
         return until(2) { element.exists && focus.evaluate(with: element) }
     }
 
-    /// The static text with this value, in this element when given.
     func text(_ value: String, in page: XCUIElement? = nil) -> XCUIElement {
         (page ?? app).staticTexts.matching(NSPredicate(format: "value == %@", value)).firstMatch
     }
 
-    /// In this window when there are several.
     func element(_ identifier: String, in window: XCUIElement? = nil) -> XCUIElement {
         (window ?? app).descendants(matching: .any)[identifier]
     }

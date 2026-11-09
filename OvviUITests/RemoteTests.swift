@@ -347,7 +347,6 @@ extension OvviUITests {
         app.typeKey(.escape, modifierFlags: [])
     }
 
-    /// The machine menu's Edit Remote Host ▸ ‹name›.
     private func editHost(_ name: String, menu: () -> Void = {}) {
         // The remote page connected and drawn first: opened while its cards loaded, the menu closed under XCUITest's
         // click into its submenu (the CI recording).
@@ -362,7 +361,6 @@ extension OvviUITests {
         XCTAssertTrue(element("host.name").exists(within: 3))
     }
 
-    /// The window's machine, by name.
     private func machine(of window: XCUIElement) -> String {
         element("window.machine", in: window).value as? String ?? ""
     }

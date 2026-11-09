@@ -12,7 +12,6 @@ extension OvviUITests {
         element("tab.\(tab)").click()
         element("terminal.\(first)").click()
         XCTAssertTrue(hasKeyboard("terminal.\(first)"))
-        // One card: no border.
         XCTAssertTrue(element("pane.\(first)").exists)
         XCTAssertFalse(element("pane.\(first).border").exists)
         let cards = element("cards.\(tab)")

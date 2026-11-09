@@ -29,7 +29,6 @@ extension OvviUITests {
         try await expect("each row's state") {
             rows.map { $0.value as? String } == ["Done", "Needs you", "Working", "Idle"]
         }
-        // Each workspace's agents under its row, newest change first.
         try await expectOrder([element("workspace.w1"), rows[2], rows[3], element("workspace.w2"), rows[0], rows[1]],
                               "newest change first, under each workspace")
         try await expect("the pane's name as the title") { rows[2].label.hasPrefix("fixer, alpha · ") }
@@ -50,7 +49,6 @@ extension OvviUITests {
 
         filter("beta", keeps: rows, [true, true, false, false])
         filter("fixer", keeps: rows, [false, false, true, false])
-        // The chevron folds them away, and the fold stays over a relaunch.
         fold("w1")
         XCTAssertTrue(rows[2].vanishes(within: 2))
         XCTAssertTrue(rows[0].exists)
@@ -154,7 +152,6 @@ extension OvviUITests {
         }
     }
 
-    /// The rows' tops are in this order.
     private func expectOrder(_ rows: [XCUIElement], _ what: String) async throws {
         try await expect(what) {
             guard rows.allSatisfy(\.exists) else { return false }

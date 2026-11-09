@@ -83,7 +83,6 @@ extension OvviUITests {
         app.typeKey(.leftArrow, modifierFlags: [])
         XCTAssertTrue(selected(1))
         XCTAssertTrue(options[5].vanishes(within: 2))
-        // The ends wrap.
         for (key, count, index) in [(XCUIKeyboardKey.downArrow, 3, 4), (.downArrow, 1, 0), (.upArrow, 1, 4),
                                     (.upArrow, 4, 0)]
         {

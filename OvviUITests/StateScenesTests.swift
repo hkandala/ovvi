@@ -21,7 +21,6 @@ extension OvviUITests {
         }
     }
 
-    /// The live window's own states: a filter, the palette, Open Session, cards, ⌘N.
     private func liveScenes(_ look: String, _ base: [String]) async {
         relaunch(one, base)
         _ = element("workspace.w2").exists(within: connect)
@@ -38,7 +37,6 @@ extension OvviUITests {
         try? await Task.sleep(for: .seconds(1))
         await stateShot(look, "P1 open session")
         app.typeKey(.escape, modifierFlags: [])
-        // A blank browser and a failed one.
         if let (tab, left) = try? await newTab("scenes") {
             try? await waitForPrompt(left)
             element("tab.\(tab)").click()
@@ -129,7 +127,6 @@ extension OvviUITests {
         await stateShot(look, "W4 herdr not installed on a remote machine")
     }
 
-    /// Settings: a search with no result.
     private func settingsScene(_ look: String, _ base: [String]) async {
         relaunch(one, base)
         _ = element("workspace.w2").exists(within: connect)

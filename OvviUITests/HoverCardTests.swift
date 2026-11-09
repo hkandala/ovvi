@@ -70,7 +70,6 @@ extension OvviUITests {
         // Beside the row, 6 pt past the sidebar's edge.
         XCTAssertEqual(card.frame.minY, row.frame.minY, accuracy: 1.5)
         XCTAssertEqual(card.frame.minX - element("sidebar").frame.maxX, 6, accuracy: 1.5)
-        // A click on the title selects the tab and its workspace.
         element("hovercard.title").click()
         XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, true, within: 2))
         XCTAssertTrue(card.vanishes(within: 2))
@@ -143,7 +142,6 @@ extension OvviUITests {
         XCTAssertEqual(element("sidebar.open-session").label, "Open Session ⌥⌘T")
     }
 
-    /// The card's pane rows.
     private func rows(of card: XCUIElement) -> [XCUIElement] {
         card.descendants(matching: .button)
             .matching(NSPredicate(format: "identifier BEGINSWITH 'hovercard.' AND identifier != 'hovercard.title'"))

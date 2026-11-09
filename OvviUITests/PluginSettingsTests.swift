@@ -26,7 +26,6 @@ extension OvviUITests {
         element("pane.\(card.pane).trust.install").click()
         XCTAssertTrue(text("Shout false at load listed").exists(within: 10))
 
-        // ⌘, opens the window; the Plugins page lists the browser and the plugin.
         app.typeKey(",", modifierFlags: .command)
         let page = element("settings.page.plugins")
         XCTAssertTrue(page.exists(within: 5))
@@ -43,7 +42,6 @@ extension OvviUITests {
         XCTAssertTrue(remove.exists)
         XCTAssertFalse(element("plugins.ovvi-e2e-shout.forget").exists, "a trust row on the plugin's page")
 
-        // The setting reaches the card at once, and settings.json keeps it with the id in trust.json.
         shout.click()
         XCTAssertTrue(text("Shout true listed").exists(within: 3))
         try await send("clear; tr -d ' \\n' < \(config)/settings.json | grep -q "
@@ -65,7 +63,6 @@ extension OvviUITests {
         settingsWindow.buttons["_XCUI:CloseWindow"].click()
     }
 
-    /// A second card of the plugin, in a tab of its own: Cancel in its confirmation closes its pane.
     private func cancelsASecondCard() async throws {
         let pane = try await newCard("ovvi:ovvi-e2e-shout#e2eshv /tmp").pane
         let cancel = element("pane.\(pane).trust.cancel")

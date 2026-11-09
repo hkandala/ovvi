@@ -280,7 +280,6 @@ extension OvviUITests {
         try await expect("the window title ‹shell› | tmp - ‹session›") { window.title.hasSuffix("sh | tmp - \(one)") }
     }
 
-    /// Opens the workspace menu; its filter has the keyboard.
     @discardableResult
     private func openWorkspaceMenu() -> XCUIElement {
         element("titlebar.workspace").click()

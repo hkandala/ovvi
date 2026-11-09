@@ -85,7 +85,6 @@ extension OvviUITests {
         XCTAssertTrue(count.has(\.stringValue, "1 of 1", within: 2), count.stringValue)
         // line 42 sits 158 lines above the bottom line: herdr's viewport scrolled to it.
         try await expect("herdr to scroll") { try await scrollOffset(pane) > 100 }
-        // Its highlight is on the row herdr shows it on.
         try await expectHighlight("line 42", in: pane)
         keepScreenshot("find bar")
 
@@ -93,7 +92,6 @@ extension OvviUITests {
         XCTAssertTrue(field.vanishes(within: 2))
         try await expect("herdr back at the bottom") { try await scrollOffset(pane) == 0 }
         XCTAssertTrue(hasKeyboard("terminal.\(pane)"))
-        // Its ✕ closes it too.
         app.typeKey("f", modifierFlags: .command)
         XCTAssertTrue(hasKeyboard(field))
         element("find.close").click()

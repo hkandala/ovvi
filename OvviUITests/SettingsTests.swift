@@ -58,7 +58,6 @@ extension OvviUITests {
         openSettings("general")
         turn("settings.general.open-at-login", true)
         turn("settings.general.open-at-login", false)
-        // A search lists the rows it finds; a pick opens their page.
         let search = settingsWindow.searchFields.firstMatch
         search.click()
         search.typeText("blink")
@@ -82,7 +81,6 @@ extension OvviUITests {
         XCTAssertTrue(element("window.look").has(\.stringValue, "glass light", within: 3))
         element("settings.style.classic", in: settingsWindow).click()
         XCTAssertTrue(element("window.look").has(\.stringValue, "classic light", within: 3))
-        // ⌘W closes Settings.
         settingsWindow.typeKey("w", modifierFlags: .command)
         XCTAssertTrue(settingsWindow.vanishes(within: 2))
     }

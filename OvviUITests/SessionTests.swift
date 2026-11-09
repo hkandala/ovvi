@@ -197,7 +197,6 @@ extension OvviUITests {
         try await type("next", into: theirs, of: two)
     }
 
-    /// Runs an echo by typing it; the session's pane prints its output.
     private func type(_ word: String, into pane: String, of session: String) async throws {
         app.typeText("echo \(word)-$((6*7))")
         app.typeKey(.return, modifierFlags: [])
@@ -206,7 +205,6 @@ extension OvviUITests {
         }
     }
 
-    /// The panel's row sits in this group: below its header, above the next one.
     private func expectRow(_ row: String, under section: String, above next: String?) {
         let frame = element(row).frame
         XCTAssertGreaterThan(frame.minY, element("open-session.section.\(section)").frame.maxY, row)
@@ -215,7 +213,6 @@ extension OvviUITests {
         }
     }
 
-    /// Opens the session's page through the panel, in this window when there are several.
     func openPage(_ session: String, in window: XCUIElement? = nil) {
         openSessionPanel(in: window)
         element("open-session.session.\(session)", in: window).click()
@@ -238,7 +235,6 @@ extension OvviUITests {
         element("sidebar.sessions", in: window).stringValue.split(separator: " ").map(String.init)
     }
 
-    /// Shows the session's page with its ⌥⌘1–9, in this window when there are several.
     func showPage(_ session: String, in window: XCUIElement? = nil) {
         if let window {
             raise(window)
@@ -249,7 +245,6 @@ extension OvviUITests {
         app.typeKey("\(index + 1)", modifierFlags: [.command, .option])
     }
 
-    /// The footer's Open Session; the panel's field has the keyboard.
     @discardableResult
     func openSessionPanel(in window: XCUIElement? = nil) -> XCUIElement {
         element("sidebar.open-session", in: window).click()

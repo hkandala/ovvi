@@ -79,7 +79,6 @@ extension OvviUITests {
         XCTAssertEqual(chip.label, "Key Host")
         keepScreenshot("remote browser card", of: remote)
 
-        // The chip loads the page again on This Mac's network, and back through Key Host.
         chip.click()
         let mac = whoText("via=com.apple.WebKit", in: remote)
         XCTAssertTrue(mac.exists(within: 10))
@@ -96,7 +95,6 @@ extension OvviUITests {
         let message = element("browser.\(browser).message", in: remote)
         XCTAssertTrue(until(5) { message.value as? String == "Nothing answers on localhost:\(port + 1) on Key Host" },
                       "\(message.value ?? "")")
-        // The field keeps the address that failed.
         let address = element("browser.\(browser).address", in: remote).value as? String ?? ""
         XCTAssertTrue(address.hasPrefix("http://localhost:\(port + 1)"), address)
 

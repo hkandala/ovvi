@@ -153,7 +153,7 @@ extension OvviUITests {
         ])
     }
 
-    /// The agent works, the app sees it, then it finishes: an unseen finish. Gives back the pane.
+    /// The agent works, the app sees it, then it finishes: an unseen finish.
     private func finish(_ created: (tab: String, pane: String)) async throws -> String {
         try await report(created.pane, "working")
         try await waitForValue("tab.\(created.tab)", containing: "working")

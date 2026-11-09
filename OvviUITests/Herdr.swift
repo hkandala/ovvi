@@ -30,7 +30,6 @@ extension OvviUITests {
         let description: String
     }
 
-    /// The value as `T`, or Failed naming it.
     func field<T>(_ value: Any?, _ what: String) throws -> T {
         guard let value = value as? T else { throw Failed(description: "no \(what)") }
         return value
@@ -85,13 +84,11 @@ extension OvviUITests {
         return try (id(created, "tab"), id(created, "root_pane"))
     }
 
-    /// A pane of the tab, from herdr's snapshot.
     func pane(of tab: String) async throws -> String {
         try await field((snapshot()["panes"] as? [[String: Any]])?.first { $0["tab_id"] as? String == tab }?["pane_id"],
                         "a pane of \(tab)")
     }
 
-    /// The pane herdr has in the tab besides these.
     func sidePane(in tab: String, besides panes: [String]) async throws -> String {
         try await poll("a pane beside the card") { () async throws -> String? in
             try await (snapshot()["panes"] as? [[String: Any]] ?? []).first {
@@ -135,7 +132,6 @@ extension OvviUITests {
         try await expect("sleep in \(pane)") { try await foreground(pane).contains("sleep") }
     }
 
-    /// The names of the pane's foreground processes.
     func foreground(_ pane: String) async throws -> [String] {
         let info = try await Self.call(one, "pane.process_info", ["pane_id": pane])["process_info"]
         let processes = (info as? [String: Any])?["foreground_processes"] as? [[String: Any]] ?? []
@@ -187,7 +183,6 @@ extension OvviUITests {
         try await (snapshot(session)[kind + "s"] as? [[String: Any]] ?? []).compactMap { $0[kind + "_id"] as? String }
     }
 
-    /// The tab herdr has now and did not have `before`.
     func newTabID(after before: [String], in session: String? = nil) async throws -> String {
         try await poll("a new tab in herdr") { () async throws -> String? in
             try await tabIDs(in: session).first { !before.contains($0) }
@@ -244,7 +239,6 @@ extension OvviUITests {
             .map(String.init)
     }
 
-    /// The session's `terminal session` runs.
     func streams(_ session: String) async throws -> [String] {
         try await runs(session).filter { $0.contains("terminal session") }
     }

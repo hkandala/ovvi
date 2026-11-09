@@ -36,7 +36,6 @@ extension OvviUITests {
         app.typeKey("w", modifierFlags: [.command, .shift])
         XCTAssertTrue(element("tab.\(plus)").vanishes(within: 3))
         XCTAssertTrue(shows("w1:t2"))
-        // One from ⌘T, closed by herdr.
         app.typeKey("t", modifierFlags: .command)
         let made = try await newTabID(after: before)
         XCTAssertTrue(shows(made))

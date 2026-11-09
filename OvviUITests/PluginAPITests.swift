@@ -101,7 +101,7 @@ extension OvviUITests {
 
         app.typeKey("s", modifierFlags: .command)
         XCTAssertTrue(text("save: heard").exists(within: 3))
-        // The manifest's commands while the card has the keyboard; one with a key the app uses goes without it.
+        // The manifest's commands while the card has the keyboard.
         app.typeKey("y", modifierFlags: [.command, .shift])
         XCTAssertTrue(text("control: shout").exists(within: 3))
         // A header button of the manifest; the header's text the page set.

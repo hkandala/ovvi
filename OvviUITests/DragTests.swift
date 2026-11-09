@@ -30,7 +30,7 @@ extension OvviUITests {
         try await expect("the pane left of its neighbor") { try await order(tab) == [third, second, first] }
         let after = try await tabIDs()
         XCTAssertEqual(after, before)
-        // Its tab stayed selected, its card has the keyboard, and the three share the width, as after a split.
+        // The three share the width, as after a split.
         XCTAssertTrue(element("tab.\(tab)").isSelected)
         XCTAssertTrue(hasKeyboard("terminal.\(third)"))
         try await expectWidths(tab, [third: 1 / 3, second: 1 / 3, first: 1 / 3])
@@ -57,7 +57,6 @@ extension OvviUITests {
             && element("pane.\(third)").has(\.isHittable, true, within: 2)
         try await release()
         XCTAssertTrue(sprung)
-        // The failed write's notice: a red symbol and a ✕ that closes it.
         let notice = element("detail.notice")
         XCTAssertTrue(notice.staticTexts["The tab is zoomed in herdr"].exists(within: 3))
         XCTAssertEqual(notice.images["notice.symbol"].label, "Error")

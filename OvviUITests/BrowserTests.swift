@@ -19,7 +19,6 @@ extension OvviUITests {
         return "file://\(folder)/one.html"
     }
 
-    /// The page's text, in its web view.
     func pageText(_ text: String) -> XCUIElement {
         app.webViews.staticTexts.matching(NSPredicate(format: "value == %@", text)).firstMatch
     }
@@ -82,7 +81,6 @@ extension OvviUITests {
         let short = page.replacing("file://", with: "")
         try await waitFor(browser) { $0.contains(short) && !$0.contains("file:") }
         keepScreenshot("browser card")
-        // window.open: over the card, gone on window.close().
         app.webViews.buttons["Pop"].click()
         let popup = element("browser.\(browser).popup")
         // Over the accessibility timeout (6 s), as in testLinksOpenInNewTabsAndPopupsClose.
@@ -112,7 +110,6 @@ extension OvviUITests {
         XCTAssertTrue(element("browser.\(browser).back").has(\.isEnabled, true, within: 3))
         element("browser.\(browser).back").click()
         XCTAssertTrue(pageText("ovvi-page-one").exists(within: 5))
-        // Words that are no address search Google.
         address.click()
         app.typeText("ovvi words")
         app.typeKey(.return, modifierFlags: [])
@@ -223,13 +220,11 @@ extension OvviUITests {
         let otherLabel = try await paneLabel(other)
         XCTAssertTrue(otherLabel.hasPrefix("ovvi:browser#"), otherLabel)
         XCTAssertTrue(hasKeyboard("browser.\(other).address"), "the keyboard is on \(keyboardOwner())")
-        // Not on a browser pane, where Open Terminal Here is.
         openPalette()
         app.typeText("here")
         XCTAssertTrue(element("palette.command.Open Terminal Here").exists(within: 2))
         XCTAssertFalse(element("palette.command.Open Browser Here").exists)
         app.typeKey(.escape, modifierFlags: [])
-        // ⇧⌘R on a browser card: a shell with the chooser.
         XCTAssertTrue(hasKeyboard("browser.\(other).address"), "the keyboard is on \(keyboardOwner())")
         app.typeKey("r", modifierFlags: [.command, .shift])
         let shell = try await replaced(other, in: tab, besides: [browser])
@@ -249,8 +244,7 @@ extension OvviUITests {
                                                                "cwd": "/tmp", "focus": false]), "pane")
         addTeardownBlock { _ = try? await Self.call(five, "pane.close", ["pane_id": pane]) }
         try await Self.call(five, "pane.rename", ["pane_id": pane, "label": "ovvi:browser#e2e5ab \(page)"])
-        // A site a machine put in a label waits for Open (ui/browser#when-a-page-loads-by-itself);
-        // `.invalid`:
+        // A site a machine put in a label waits for Open (ui/browser#when-a-page-loads-by-itself); `.invalid`:
         // approvals live in the defaults the tests share with the user's Ovvi.
         let site = try await id(Self.call(five, "pane.split", ["target_pane_id": pane, "direction": "down",
                                                                "cwd": "/tmp", "focus": false]), "pane")

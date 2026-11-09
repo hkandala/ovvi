@@ -25,7 +25,6 @@ extension OvviUITests {
         app.typeKey("-", modifierFlags: .command)
         try await expectGrid(terminal, actual)
         try await expectPTYSize("w1:p1")
-        // Below the default size too.
         app.typeKey("-", modifierFlags: .command)
         try await expectGrid(terminal, >=, actual)
         let after = try await pid(of: "w1:p1")

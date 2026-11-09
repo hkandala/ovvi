@@ -82,8 +82,6 @@ extension OvviUITests {
         return shelf
     }
 
-    /// The search field keeps the sessions whose title or folder matches, Esc clears it; the menu in it shows Pi's
-    /// sessions only, then all again.
     private func filters(_ claude: XCUIElement, _ piRow: XCUIElement) {
         let search = element("agents.archived.search")
         search.click()
@@ -103,8 +101,7 @@ extension OvviUITests {
         XCTAssertTrue(claude.exists(within: 2))
     }
 
-    /// A Claude Code session two hours old and a pi session two days old, in the folder, written by the shell (the
-    /// test runner may not write to /tmp).
+    /// Written by the shell: the test runner may not write to /tmp.
     private func writeSessions(_ id: String, in folder: String, _ shell: String) async throws {
         let home = Self.archivedHome
         let files = [

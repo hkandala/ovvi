@@ -183,7 +183,6 @@ extension OvviUITests {
         guard let width = image.cgImage(forProposedRect: nil, context: nil, hints: nil)?.width, width > 0,
               brightness.count > width * 40 else { return (0, 0) }
         let height = brightness.count / width
-        // The mean of 20 pixels, by their offsets in the image.
         func mean(_ offsets: [Int]) -> Int {
             offsets.map { brightness[$0] }.reduce(0, +) / offsets.count
         }

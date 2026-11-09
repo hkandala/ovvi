@@ -42,7 +42,6 @@ extension OvviUITests {
         run.click()
         XCTAssertTrue(tools.firstMatch.vanishes(within: 2))
 
-        // Esc anywhere in the chat stops it while it works, as Stop does.
         try await say("slow", in: pane)
         XCTAssertTrue(element("chat.\(pane).stop").exists(within: 5))
         app.typeKey(.escape, modifierFlags: [])
@@ -53,13 +52,11 @@ extension OvviUITests {
         try await say("mute", in: pane)
         app.typeText("lost\r")
         XCTAssertTrue(element("chat.\(pane).not-sent").exists(within: 8))
-        // Not sent: no tick.
         XCTAssertEqual(stamps(pane, ", Sent").count, 0)
         XCTAssertEqual(element("chat.\(pane).composer").stringValue, "lost")
         app.typeKey("a", modifierFlags: .command)
         app.typeKey(.delete, modifierFlags: [])
 
-        // Slash text goes to the terminal, which the card shows.
         app.typeText("/help\r")
         XCTAssertTrue(element("chat.\(pane).composer").vanishes(within: 3))
         try await waitFor(pane) { $0.contains("/help") }
@@ -111,7 +108,6 @@ extension OvviUITests {
         let reply = row(pane, "reply", "Echo: **hello**")
         XCTAssertTrue(reply.exists(within: 5))
         XCTAssertEqual(composer.placeholderValue, "Ask Anything")
-        // Its text on the reply's left edge.
         XCTAssertEqual(composer.frame.minX, reply.frame.minX, accuracy: 1)
         // Grown to 5 lines, it keeps the last message clear of it.
         for _ in 1 ... 4 {
@@ -203,7 +199,6 @@ extension OvviUITests {
         let drawer = element("chat.\(pane).drawer")
         XCTAssertTrue(drawer.exists(within: 5))
         XCTAssertFalse(element("chat.\(pane).composer").exists)
-        // The state on row 2, under the title.
         let state = element("pane.\(pane).state")
         XCTAssertEqual(state.stringValue, "Needs you")
         XCTAssertGreaterThanOrEqual(state.frame.minY, element("pane.\(pane).title").frame.maxY)
@@ -272,7 +267,6 @@ extension OvviUITests {
         // Asked for, the chat shows first.
         XCTAssertTrue(element("chat.\(pane).composer").exists(within: 35))
         XCTAssertTrue(row(pane, "reply", "Echo: **hello**").exists(within: 5))
-        // The reply's model and effort, from the transcript.
         XCTAssertEqual(element("chat.\(pane).model").stringValue, "claude-stand-in · high")
         XCTAssertFalse(enable.exists)
     }
@@ -356,7 +350,6 @@ extension OvviUITests {
         return end.isEmpty ? stamps : stamps.matching(NSPredicate(format: "value ENDSWITH %@", end))
     }
 
-    /// The chat's row of this kind with this text.
     func row(_ pane: String, _ kind: String, _ value: String) -> XCUIElement {
         app.descendants(matching: .any)
             .matching(NSPredicate(format: "identifier == %@ AND value == %@", "chat.\(pane).\(kind)", value)).firstMatch

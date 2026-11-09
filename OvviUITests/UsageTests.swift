@@ -46,7 +46,6 @@ extension OvviUITests {
         XCTAssertTrue((13 ... 17).contains(helpers(busy)), busy)
     }
 
-    /// Every card of the tab drew herdr's frames.
     private func drawn(_ panes: [String]) {
         for pane in panes {
             XCTAssertTrue(drawn(pane), "\(pane) drew")

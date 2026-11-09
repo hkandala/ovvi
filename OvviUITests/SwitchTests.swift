@@ -45,7 +45,6 @@ extension OvviUITests {
         })
         let built = try rows()
 
-        // To each other tab and back, then to another workspace and back.
         for tab in tabs + [chatTab] {
             element("tab.\(tab)").click()
             XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, true, within: 3), tab)
@@ -60,7 +59,6 @@ extension OvviUITests {
         }
         try same()
         XCTAssertTrue(element("chat.\(pane).bottom").exists)
-        // The overview's round trip.
         app.typeKey("o", modifierFlags: [.command, .control])
         XCTAssertTrue(element("overview").exists(within: 5))
         app.typeKey(.escape, modifierFlags: [])

@@ -19,7 +19,6 @@ extension OvviUITests {
         app.typeKey("2", modifierFlags: [.command, .control])
         XCTAssertTrue(beta.has(\.isSelected, true, within: 2))
 
-        // ⌃⌘T: a new workspace, shown.
         let before = try await Self.ids("workspace", in: one)
         closeNew("workspace", besides: before)
         app.typeKey("t", modifierFlags: [.command, .control])
@@ -33,7 +32,6 @@ extension OvviUITests {
         app.typeKey("w", modifierFlags: [.command, .control])
         XCTAssertTrue(element("workspace.\(made)").vanishes(within: 3))
 
-        // A second page; ⌥⌘ steps and jumps between the window's sessions.
         openSessionPanel()
         element("open-session.session.\(two)").click()
         let header = element("sidebar.header")
@@ -46,7 +44,6 @@ extension OvviUITests {
         XCTAssertTrue(header.has(\.stringValue, one, within: 3))
         app.typeKey("2", modifierFlags: [.command, .option])
         XCTAssertTrue(header.has(\.stringValue, two, within: 3))
-        // ⌥⌘W detaches it: the window shows the other.
         app.typeKey("w", modifierFlags: [.command, .option])
         XCTAssertTrue(header.has(\.stringValue, one, within: 3))
         XCTAssertTrue(until(2) { !pageList().contains(two) })
@@ -195,17 +192,14 @@ extension OvviUITests {
         keepScreenshot("keyboard shortcuts")
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(panel.vanishes(within: 2))
-        // The keyboard is back on the card.
         XCTAssertTrue(hasKeyboard("terminal.w1:p1"))
 
-        // Help ▸ Keyboard Shortcuts; ⌘/ closes it.
         app.menuBars.menuBarItems["Help"].click()
         app.menuBars.menuItems["Keyboard Shortcuts"].click()
         XCTAssertTrue(panel.exists(within: 2))
         app.typeKey("/", modifierFlags: .command)
         XCTAssertTrue(panel.vanishes(within: 2))
 
-        // The palette has it too.
         openPalette()
         app.typeText("keyboard shortcuts")
         app.typeKey(.return, modifierFlags: [])

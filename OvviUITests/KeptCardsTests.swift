@@ -40,7 +40,6 @@ extension OvviUITests {
         XCTAssertTrue(element("tab.\(opened[0].0)").has(\.isSelected, true, within: 5))
         try await Task.sleep(for: .seconds(10))
         _ = try await measure("at rest, \(kept) + \(kept) kept")
-        // In use: a tab switch every half second.
         let use = Task { try await measure("in use, \(kept) + \(kept) kept", seconds: 10) }
         for step in 0 ..< 20 {
             app.typeKey(step % 4 < 2 ? "]" : "[", modifierFlags: [.command, .shift])
@@ -79,7 +78,6 @@ extension OvviUITests {
         let browser = try await split(shell)
         try await Self.call(one, "pane.rename", ["pane_id": browser,
                                                  "label": leaf("browser", "file://\(folder)/0.html")["label"] ?? ""])
-        // Terminals and web cards in turn.
         var opened = [(first, browser)], titles: [String: String] = [:]
         for index in 1 ... 2 * kept {
             let web = index.isMultiple(of: 2), page = (index + 1) / 2

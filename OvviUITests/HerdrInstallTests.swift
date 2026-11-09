@@ -51,7 +51,6 @@ extension OvviUITests {
         XCTAssertTrue(element("detail.installing").exists(within: 3))
     }
 
-    /// The machine button's Add Remote Host, filled and added.
     func addHost(_ name: String, _ target: String) {
         // At rest first, as newTab's capsule: right after a launch the title row lays out again, and a click on an
         // earlier frame opened no menu (on CI).
@@ -73,7 +72,6 @@ extension OvviUITests {
         element("host.save").click()
     }
 
-    /// ovvi-pw's password (or another), in the hidden field of ssh's question; Return answers.
     func typePassword(_ password: String = "ovvi-e2e-pw") {
         let answer = element("ask.answer")
         XCTAssertTrue(answer.exists(within: connect))
