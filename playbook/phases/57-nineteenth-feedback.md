@@ -571,3 +571,21 @@ chat bubble's time close to its text).
 - **For the user.** Split with ⌘D and ⇧⌘D in Glass and in Classic, beside a busy agent: the slide should start at once
   and the chooser fade in as the card lands. If Glass still stutters where Classic does not, its blurs are the cost:
   a lighter Glass while cards move is a look decision.
+
+## Round 3 (items 28–30)
+
+Screenshot `.build/fb57/r3-6.05.46.png`: a terminal line naming `~/Downloads/ovvi-checklist-57.md`, a file the user had
+deleted; ⌘-click and ⌥-click on it opened nothing.
+
+28. "so i started doing cmd+click and option+click, on the md file but nothing opened, then i realised i removed that
+    file. we should probably show a toast saying file not found or something like that, instead of silently not
+    opening the pane" (Track C).
+29. "on the fetch, pull and push on the workspaces part, where you can right click and do right, it does show the toast
+    pulling etc, but that goes away instantly as soon as pull is done, so its usually like stays for less than a sec,
+    and i think the toast would be better, if it shows like pulling with a spinner on its left and that spinner turns
+    to green checkmark icon or something when fetch/pull/push is finished, and stays there for a couple of seconds and
+    then hides, that would give better overview to user, instead of quickly showing and hiding" (Track M).
+30. "let's rebrand workspaces to spaces, so herdr recently calling workspaces as just spaces and i like that, so let's
+    check in all our ui where we refer it as workspaces and update it to space(s)" (Track L, new).
+    - Every user-facing string (menus, ⌘K, tooltips, empty states, Settings, help, the `ovvi` CLI's help, the skill)
+      and the design docs say space(s). herdr's API names (`workspace_id`, `workspace.*`) and code identifiers stay.
