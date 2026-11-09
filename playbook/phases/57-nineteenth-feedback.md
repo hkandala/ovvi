@@ -274,7 +274,10 @@ runs and on-demand on the final head.
   This Mac session; the fix rows and spinner rows hide unless the machine's name matches; New Session picks a free
   name as it starts, and a throwaway run offers it only for typed `ovvi-` names; Add Machine opens the machine in the
   same window when it has no page; a notification click or a float URL that starts the app opens its session in the
-  first window, not the view; `-defaultSession` isolates the machine list too.
+  first window, not the view; `-defaultSession` isolates the machine list too. The view on screen takes such an ask at once. The app's
+  Appearance setting was applied only by a window with a page, so a view alone (a cold launch) followed the Mac's
+  appearance: it is applied at the scene now.
+- **Round 4, runs.** CI 42559510070 (12 tests), 42561224398 (14) and 42562294731 (12, with both scenes) green.
 - **For the user (round 4).** Quit with no window and launch, ⌘N, close every window and click the Dock icon: each shows
   the view, connects to nothing, and fills the screen. Type part of a session's name and press Return; type a new name
   and press Return (New Session); Add Machine…; Edit Machines….
