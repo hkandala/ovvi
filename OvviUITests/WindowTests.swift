@@ -235,7 +235,7 @@ extension OvviUITests {
         try await forgetWindows()
         app.launchArguments = ["-session", one, "-NSQuitAlwaysKeepsWindows", "YES"] + Self.noConfig
         app.launch()
-        XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
+        XCTAssertTrue(element("workspace.w1").exists(within: connect))
         // One window to start from: a window an earlier run saved may come back too.
         let main = app.windows.matching(NSPredicate(format: "identifier BEGINSWITH 'main-'"))
         while main.count > 1 {
