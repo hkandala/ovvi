@@ -469,6 +469,10 @@ runs and on-demand on the final head.
   Tried and no gain: one kept page instead of 8, the sidebar hidden from accessibility or from hits while the
   palette is open, a typed list cut to 30 rows, a list height known without a measure. Hiding the sidebar itself
   took a further 35–40 % off (its rows' responders are walked too); that is Track B's sidebar, left as it is.
+- **Runs (round 2).** CI 42543823173: the same tests and the Open Session ones, 29 green. On CI (Debug, XCUITest
+  attached) testPanelsAndSwitchesReactAtOnce's first letter went 535 → 172 ms and its ⌫ 461 → 121 ms; the stress
+  session's last ⌫ 375 → 162 ms. A review caught `scrollTo` by place finding a keycap's Int id first: keycaps are
+  keyed by their text.
 - **Left (round 2).** A list that grows past the panel's height ("spl" → "sp", ⌫ from 12 rows to 45) still costs
   about 200 ms with a client and 70 ms without; the other keys cost 25–160 ms and 20–110 ms. Without a client the
   Mac's load (60–85) and the 40 agents' redraws set a floor of 20–30 ms even for a one-row change.
