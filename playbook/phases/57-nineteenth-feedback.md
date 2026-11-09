@@ -182,6 +182,11 @@ runs and on-demand on the final head.
   `testAPiRunListsEveryKindOfTool` now relaunches the app and opens the restored chat. Old launch, run 42567656627:
   red at the relaunch check. The fix at ea2bfcc1, run 42567956216: executed 4 tests, 0 failures (its artifact upload
   then hit a network error; two earlier tries died downloading herdr and libghostty).
+- **Regression fixed: the loader waited for the tie.** `settle` ran inside the chooser's wait, so an agent whose
+  processes are never named as its command (a shell function, a wrapper; `testPickingAnAgentStartsItBehindTheLoader`'s
+  `sleep`) held New Pane's loader up to 10 s (p57r's run 42575992688). The loader goes again after one ask; the tie is
+  looked for behind it, and a relaunch's notice waits for it. Run 42577364363 at 92e81ace: executed 5 tests (that one,
+  the pi relaunch-of-the-app test and the three relaunch tests), 0 failures.
 
 ## Track H: redraw a terminal's TUI (item 8)
 
