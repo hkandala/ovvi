@@ -115,11 +115,13 @@ In Glass the two are close: the keyboard card is only a little brighter.
   whose leaf became a split or whose sibling closed, so it jumped.
 - Core Animation moves the cards, in the render server: each card is its own
   hosting view, and its frame takes its new place at once while an animation
-  of its layer goes from the old place to the new one. The main thread does no
-  work at the motion's frames, so herdr's answer, a new terminal or a web page
-  that loads meanwhile drops none of them. During the motion a card keeps the
-  larger of its two sizes, clipped by its moving frame (rounded, 10 pt), and
-  lays out at its new size once it ends. Its terminal resizes 150 ms after
+  of its layer goes from the old place to the new one. The main thread draws
+  none of the slide's frames (only the fades of a closed card and of a zoom's
+  other cards run there), so herdr's answer, a new terminal or a web page that
+  loads meanwhile drops none of them. During the motion a card keeps the
+  larger of its two sizes, clipped by its moving frame (rounded, 10 pt), with
+  its edge drawn by its layer; the light Glass shadow shows again as it lands.
+  It lays out at its new size once the motion ends. Its terminal resizes 150 ms after
   that, as for any change of the card's size
   ([Size](/docs/talking-to-herdr#size)). A window resize and the sidebar size
   the cards at every step, with no animation of their own.
@@ -143,7 +145,9 @@ with its CPU time, and the steps in that time, each with the CPU time of its
 frame: a snapshot applied (`apply:‹its own ms›`), the chooser's list shown
 (`list`), a terminal surface made (`surface`), a terminal shown at its size
 (`ready`, one for each terminal) and a pane's program known (`program`). A
-hitch with little CPU time waited on the render server. The on-demand UI
+hitch with little CPU time waited on the render server. The record's frames
+are the main thread's: the slide's own frames, in the render server, show in
+a screen capture or Instruments' hitches. The on-demand UI
 test `testSplitsKeepTheDisplayRate` splits beside a shell, a program that redraws all of its screen 30 times a second, File
 Explorer, Git, Markdown and a browser, and among six panes. It runs under
 XCUITest, whose accessibility client takes about a quarter more of the main

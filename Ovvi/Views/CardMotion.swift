@@ -121,13 +121,16 @@ final class MovingCard: NSView {
         if SettlingHost.record {
             slides += 1
             setAccessibilityLabel("slides \(slides)")
-            DispatchQueue.main.asyncAfter(deadline: .now() + TabPage.slide / 2) { [weak self] in self?.recordMid() }
+            let start = ProcessInfo.processInfo.systemUptime
+            DispatchQueue.main.asyncAfter(deadline: .now() + TabPage.slide / 2) { [weak self] in
+                self?.recordMid(since: start)
+            }
         }
     }
 
-    /// e2e: where the card shows halfway through its motion and where it ends, on screen with y down:
-    /// "slides 3 mid x y w h end x y w h".
-    private func recordMid() {
+    /// e2e: where the card shows halfway through its motion, the ms since it started, and where it ends, on screen with
+    /// y down: "slides 3 mid x y w h at 70 end x y w h".
+    private func recordMid(since start: TimeInterval) {
         guard let layer, let shown = layer.presentation(), let window, let content = window.contentView,
               let root = content.layer, let rootShown = root.presentation() else { return }
         let top = NSScreen.screens.first?.frame.maxY ?? 0
@@ -137,7 +140,8 @@ final class MovingCard: NSView {
                 .joined(separator: " ")
         }
         let mid = shown.convert(shown.bounds, to: rootShown), end = layer.convert(layer.bounds, to: root)
-        setAccessibilityLabel("slides \(slides) mid \(onScreen(mid)) end \(onScreen(end))")
+        let time = Int((ProcessInfo.processInfo.systemUptime - start) * 1000)
+        setAccessibilityLabel("slides \(slides) mid \(onScreen(mid)) at \(time) end \(onScreen(end))")
     }
 
     override func setFrameSize(_ size: NSSize) {

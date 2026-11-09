@@ -133,14 +133,14 @@ extension OvviUITests {
             }),
             ("sidebar hidden", { self.element("titlebar.sidebar").click() }),
             ("sidebar shown", { self.element("titlebar.sidebar").click() }),
-            // Its text leaves the band as the card goes up: no ink check.
+            // Its text leaves the band as the card's bottom rises: no ink check.
             ("split down", { self.paneMenu(pane, "Split Down") }),
         ]
+        var sampled = 0
         for (step, act) in steps {
             XCTAssertTrue(host.exists(within: 3), step)
             let sizes = Self.motion(host).sizes, slides = Self.slides(card), place = card.frame
-            let band = band(through: terminal)
-            let before = Self.ink(Self.crop(XCUIScreen.main.screenshot().image, band))
+            let band = band(through: terminal), before = Self.ink(Self.crop(XCUIScreen.main.screenshot().image, band))
             try await act()
             var inks: [Double] = []
             let end = Date.now + 1
@@ -155,10 +155,11 @@ extension OvviUITests {
                                             "\(step): sizes from \(sizes) to \(host.label)")
             } else {
                 XCTAssertGreaterThan(Self.slides(card), slides, "\(step): \(card.label)")
-                Self.expectBetween(card, from: place, step)
+                sampled += Self.expectBetween(card, from: place, step) ? 1 : 0
             }
             try await expectText([pane], step)
         }
+        XCTAssertGreaterThan(sampled, 0, "no motion sampled while it ran")
     }
 
     /// A visited card keeps its stream and its surface out of view: back after 6 other tabs,
@@ -251,12 +252,17 @@ extension OvviUITests {
     }
 
     /// Halfway through its motion each edge of the card lies between where it was and where it ends: "slides 3 mid x
-    /// y w h end x y w h" (`MovingCard.recordMid`), its end where XCUITest has it.
-    private static func expectBetween(_ card: XCUIElement, from old: CGRect, _ step: String) {
+    /// y w h at ms end x y w h" (`MovingCard.recordMid`), its end where XCUITest has it. A sample a busy main thread
+    /// took after the motion (0.13 s) tests nothing: false then.
+    @discardableResult
+    private static func expectBetween(_ card: XCUIElement, from old: CGRect, _ step: String) -> Bool {
         let numbers = card.label.split(separator: " ").compactMap { Double($0) }.map { CGFloat($0) }
-        guard numbers.count == 9 else { return XCTFail("\(step): \(card.label)") }
+        guard numbers.count == 10 else {
+            XCTFail("\(step): \(card.label)")
+            return false
+        }
         let mid = CGRect(x: numbers[1], y: numbers[2], width: numbers[3], height: numbers[4])
-        let end = CGRect(x: numbers[5], y: numbers[6], width: numbers[7], height: numbers[8]), new = card.frame
+        let end = CGRect(x: numbers[6], y: numbers[7], width: numbers[8], height: numbers[9]), new = card.frame
         XCTAssertEqual(end.minX, new.minX, accuracy: 2, "\(step): \(card.label) at \(new)")
         XCTAssertEqual(end.minY, new.minY, accuracy: 2, "\(step): \(card.label) at \(new)")
         for (edge, name) in [(\CGRect.minX, "left"), (\.maxX, "right"), (\.minY, "top"), (\.maxY, "bottom")] {
@@ -264,6 +270,7 @@ extension OvviUITests {
             XCTAssertTrue((low - 3 ... high + 3).contains(mid[keyPath: edge]),
                           "\(step): the \(name) edge at \(mid[keyPath: edge]), not from \(old) to \(new)")
         }
+        return numbers[5] < 130
     }
 
     /// `-recordMotion`'s label on a card: the motions Core Animation made of it ("slides 3").
