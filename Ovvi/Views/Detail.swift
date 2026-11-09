@@ -205,7 +205,9 @@ struct Detail: View {
             }
         case nil:
             let title = "herdr is not installed" + (machine.isRemote ? " on \(machine.name)" : "")
-            EmptyState(symbol: "shippingbox", title: title, text: HerdrInstall.command, code: true, id: "detail") {
+            // Why it is needed, in one line, over what Install runs.
+            let why = "Ovvi runs on herdr, which keeps your terminals, panes and agents running."
+            EmptyState(symbol: "shippingbox", title: title, text: why, command: HerdrInstall.command, id: "detail") {
                 Button("Install herdr") { run() }.buttonStyle(.glassProminent)
                     .accessibilityIdentifier("detail.install")
             }

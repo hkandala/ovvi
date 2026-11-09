@@ -278,6 +278,8 @@ runs and on-demand on the final head.
 - **For the user (round 4).** Quit with no window and launch, ⌘N, close every window and click the Dock icon: each shows
   the view, connects to nothing, and fills the screen. Type part of a session's name and press Return; type a new name
   and press Return (New Session); Add Machine…; Edit Machines….
+- **Round 5 (49).** "herdr is not installed" (This Mac and remote) says why in one line, "Ovvi runs on herdr, which
+  keeps your terminals, panes and agents running.", over the install command, now a quieter tertiary line under it.
 
 ### Track B
 

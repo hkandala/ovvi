@@ -8,6 +8,8 @@ struct EmptyState<Actions: View>: View {
     var text: String?
     /// The line is a command or a program's output: monospaced, selectable, up to 12 lines.
     var code = false
+    /// A command under the line, monospaced and selectable (`<id>.command`): what the first button runs.
+    var command: String?
     var compact = false
     /// The title's identifier; the line's is `<id>.text`.
     var id: String?
@@ -24,6 +26,10 @@ struct EmptyState<Actions: View>: View {
                     Text(text).font(code ? .system(size: 12).monospaced() : .system(size: compact ? 12 : 13))
                         .foregroundStyle(.secondary).lineLimit(code ? 12 : 3).textSelection(.enabled)
                         .identifier(id.map { "\($0).text" })
+                }
+                if let command {
+                    Text(command).font(.system(size: 12).monospaced()).foregroundStyle(.tertiary).lineLimit(2)
+                        .textSelection(.enabled).padding(.top, 4).identifier(id.map { "\($0).command" })
                 }
             }
             HStack(spacing: 8) { actions }
