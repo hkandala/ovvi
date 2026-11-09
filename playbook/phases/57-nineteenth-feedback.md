@@ -320,7 +320,9 @@ runs and on-demand on the final head.
   and press Return (New Session); Add Machine…; Edit Machines….
 - **Round 5 (49).** "herdr is not installed" (This Mac and remote) says why in one line, "Ovvi runs on herdr, which
   keeps your sessions running." (332 pt, as wide as the 326 pt command under it), over the install command, now a
-  quieter tertiary line under it.
+  quieter tertiary line under it. Measured on CI's 1× pictures: the line is 332 px, the install command under it 324
+  px (remote), 310 px for the tests' fake command on This Mac; the old 451 pt sentence wrapped at 420 pt into one long
+  and one short line. Run 42580014495 green (scenes, both install tests).
 
 ### Track B
 
