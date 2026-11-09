@@ -923,9 +923,17 @@ you did, no need of reverting them".
   pane gives the chooser. ⌥ is read as the pane is made, before any await (New Space: before herdr's answer). Not for
   Replace Pane, Open … Here, Start Agent Here, Resume (it picks its own agent) or the CLI (no plain new pane). An agent
   the machine lacks, or a plugin removed since, gives the chooser.
-- **For the user.** Pick a default, then ⌘D, ⌘T and New Space; ⌥-click a `+` or a split button for the chooser. With
-  Terminal fixed on a remote machine, type right after ⌘D: keys typed before herdr made the pane go to the old pane
-  (no chooser holds them then).
+- **Fix (follow-ups).** Keys typed after a Terminal or agent pick, before the new terminal has the keyboard (herdr's
+  answer, the snapshot, the focus), wait on the card (`holding`) and then go into that terminal's own ordered input
+  queue: none reaches the old card, also after a fast ⌘D or ⌘T with a fixed Terminal. A holding chooser counts only
+  for the keys: every view shows the made pane. A plugin pick beeps. With a fixed pick, the splits and New Space have
+  ⌥ alternate menu items ("Split Right and Choose…"), and the setting's note says to hold ⌥.
+- **Decisions.** SwiftUI's `modifierKeyAlternate` gives an alternate the item's key plus ⌥: ⌥⇧⌘D and ⌃⌥⌘T work,
+  macOS takes ⌥⌘D while its Dock shortcut is on, and New Tab has none (⌥⌘T is Open Session). Replaying the held
+  NSEvents reordered them (libghostty sends text later than named keys) and ran the key monitor again: they go in as
+  herdr keys and text instead, so dead keys and Option as Meta do not apply to them.
+- **For the user.** Pick a default, then ⌘D, ⌘T and New Space; ⌥-click a `+` or a split button, or hold ⌥ over View
+  ▸ Pane, for the chooser. With Terminal fixed on a remote machine, type right after ⌘D: the keys land in the new pane.
 - **Runs.** Chosen tests on main 54759f43 (run 42569693100): 4 green, the fixed-pick test red on a test race (the
   chooser's pane closed as its label was read); fixed, green on 62d86ca2 (run 42570554962). Earlier attempts died on
   GitHub's 504s for herdr's and libghostty's downloads.
