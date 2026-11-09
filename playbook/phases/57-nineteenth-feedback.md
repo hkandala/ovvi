@@ -537,6 +537,9 @@ chat bubble's time close to its text).
   The slide starts 12–14 ms sooner and its worst steps are a little shorter; the hitch counts barely move, since most
   are the render server and per-frame framework work, and the load of other agents moved them by as much. With kept
   pages (the UI test, 7 kept pages by the last scenario) the CPU went 234–364 → 210–328 ms.
+- **CI.** Chosen tests 42544067365 green, executed 8 (the chooser, quick splits, ⌘D latency, layout motion, the
+  flicker check and the new measurement test). The review's one should: a hidden card keeps its last lit look, so a
+  kept web card's theme does not change at each tab switch.
 - **Tried and dropped.** Making the cards' per-frame size writes stateless (no fewer bodies); a render-only slide
   (offset and an animated clip, layout once at the end) in the probe: no clear gain for a rewrite of the layout and
   its motion tests.
