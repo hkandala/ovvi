@@ -1434,3 +1434,28 @@ you did, no need of reverting them".
     its sorted based on activity i guess, let's change that" (Track B).
     Follow-up: "in recent, leaving should just remove the done status but that shouldn't move the sorting, even after
     leaving, done to idle is not considered as change of status" and "disable dragging a row while in recent mode".
+
+### Track J, round 7 (item 62)
+
+- **Cause.** A split's slide ran on the main thread: SwiftUI laid out the resizing cards at every frame, so anything
+  else the main thread did in those 130 ms dropped frames. That was the split's own turn (the stand-in card and its
+  chooser, 20–60 ms), herdr's answer (snapshot apply, the new card's terminal surface, menus: 30–60 ms), the old
+  card's web views, and other apps' load. Rounds 2 and 5 trimmed that work and moved it out of the slide, but any
+  stall still showed. Instruments on the realistic session (Release, a shell with 20 000 lines of scrollback beside a
+  browser and File Explorer, four tabs visited) had main with one 42–71 ms hitch and 5–9 one-frame hitches in
+  each split's first 0.35 s, for ⌘D and ⇧⌘D on the terminal and on File Explorer alike. libghostty (the new
+  surface, its Metal layer), the PTY resize and web views were not resized per frame: they already held their size
+  until the slide ended.
+- **Fix.** Core Animation moves the cards. Each card is its own hosting view (`CardMotion`): its frame takes its new
+  place at once, and an animation of its layer goes from the old place in the render server, clipped (10 pt,
+  continuous) with the card's edge drawn by the layer. The card keeps the larger of its two sizes until it lands,
+  then lays out once. A stall on the main thread no longer reaches the slide. The sidebar's slide and window
+  resizes still size the cards at every step. Under Reduce Motion nothing moves.
+- **Runs.** A probe with an 80 ms main-thread stall mid-slide: SwiftUI's slide froze for about 75 ms and jumped
+  (60 fps capture: 298 → 414, four frames still, → 589); Core Animation's kept even 16.7 ms steps
+  (346, 403, 453, 497, 537, 566, 588). The motion test now checks each card's edges halfway through its slide
+  against its old and new places: red on the first version (a vertical motion the wrong way: "split down: the
+  top edge at -193", run 42721181130), green after (42721187078). A wide chosen set (dividers, drops, context menus,
+  zoom, keys, float, kept cards, web drags; 42719328846) passed.
+- **For the user.** ⌘D and ⇧⌘D, on a terminal and on File Explorer, while an agent works: the slide should not
+  stutter. During the 0.13 s a light Glass card shows no shadow, which comes back as it lands.
