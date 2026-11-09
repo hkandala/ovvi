@@ -1350,3 +1350,25 @@ you did, no need of reverting them".
   shown; Reload works too. If one stays blank, tell us and send `log show --last 2h --style compact --predicate
   'process == "Ovvi" AND eventMessage CONTAINS "GPU"'` ("Ended the GPU process … WebKit gave up on" is the fix at
   work).
+
+### Track X (item 68, report only)
+
+- Report: `~/Downloads/ovvi-research/onboarding-plan.html`, one self-contained file (pictures inlined), replacing the five
+  practice-window flows (the old file is `onboarding-src/onboarding-plan-v1.html`). No app code changed.
+- Five designs of a small welcome window, each a clickable prototype in light and dark: A Picture book (7 pages, a ring
+  per picture), B Building up (5 pages; frames of one window as it grows, words in a glass card), C Setup assistant (7
+  steps in a sidebar, numbered marks), D Four cards (4 sliding pages of three pictures), E Spotlight tour (6 steps, a
+  moving spotlight and callout). One set of words in the user's order; no herdr; spaces are always "spaces".
+- **Decisions.** Recommended B (the incremental story in 5 pages), runner-up E (the tour the user liked in the first
+  report). Estimates: A 11, B 14, C 12, D 11, E 14 agent hours, with a UI test that
+  takes the pictures again and writes the marks' frames. A reviewer's two rounds fixed the welcome copy (no "close the lid"
+  for This Mac), prototype bugs after Skip, marks off target and Reduce Motion.
+- **Pictures.** Ovvi Dev of `9205ad6b` on `ovvi-dev-p57x-a`, in a herdr setup of its own (`XDG_CONFIG_HOME` in `/tmp`,
+  which herdr and Ovvi's launchd start both honor), `-configFolder`, `-archivedHome`, a clean shell (`ZDOTDIR`). Layout
+  through herdr's CLI and `ovvi` (`agent claude`, `open git|browser|explorer`, `plugins new`) run as a pane of that
+  session with a clean environment; clicks posted only into that window under the GUI lock. Claude Code is the
+  repository's stand-in with a scripted turn. Machines in the new-window view are made-up names on 192.0.2.x.
+- **Found.** A separate `XDG_CONFIG_HOME` gives a throwaway herdr world where the new-window view lists only its own
+  sessions (plus a stopped `default` row herdr always lists); a picture pipeline can use it for clean session names.
+  The file card's Open With shows the Mac's default app for the file (a `.css` showed a competitor's app); pick files
+  whose default is a system app for pictures.
