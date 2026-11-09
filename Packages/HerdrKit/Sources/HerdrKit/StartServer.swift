@@ -42,7 +42,6 @@ public extension HerdrClient {
         throw HerdrError.failed("The server did not answer within \(timeout)")
     }
 
-    /// This Mac's server as a one-shot launchd job.
     private nonisolated func bootstrap() async throws {
         // The CLI's user keys, so the server and the CLI agree on paths (XDG_CONFIG_HOME moves herdr's
         // sessions).

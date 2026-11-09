@@ -1,6 +1,5 @@
 import Foundation
 
-/// A file or folder in a listing.
 public struct FileEntry: Equatable, Sendable {
     public let name: String
     public let isFolder: Bool

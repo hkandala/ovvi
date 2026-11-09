@@ -229,7 +229,6 @@ private func snapshot(version: String) -> String {
     withExtendedLifetime(updates) {}
 }
 
-/// Events every 10 ms until the task is cancelled.
 private func keepComing(_ exec: FakeExec) -> Task<Void, Never> {
     Task {
         while !Task.isCancelled {

@@ -2,7 +2,6 @@ import Foundation
 @testable import HerdrKit
 import Testing
 
-/// The files of a patch, as its `diff --git` lines name them.
 private func files(_ patch: String) -> [String] {
     patch.split(whereSeparator: \.isNewline).filter { $0.hasPrefix("diff --git ") }.map { String($0.dropFirst(11)) }
 }

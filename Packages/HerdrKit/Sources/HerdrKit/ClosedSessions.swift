@@ -173,7 +173,6 @@ enum ClosedSessions {
         return page
     }
 
-    /// One line, no control characters, at most 200 characters; nil when nothing is left.
     static func clean(_ text: String) -> String? {
         let line = text.map { $0.isNewline || $0 == "\t" ? " " : $0 }.filter { !$0.isControl }
         // A 300-byte cut can end inside a character.

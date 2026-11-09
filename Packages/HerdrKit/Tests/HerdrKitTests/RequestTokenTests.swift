@@ -2,8 +2,6 @@ import Foundation
 @testable import HerdrKit
 import Testing
 
-// The tokens a pane carries for Ovvi: float, copy and `ovvi` requests, each delivered once.
-
 @Test func `a pane's float tokens deliver one request per nonce, never again`() async throws {
     let exec = FakeExec()
     let client = client(exec)

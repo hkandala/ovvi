@@ -43,7 +43,6 @@ public struct AgentRequest: Equatable, Sendable {
     }
 }
 
-/// The mailbox runs, each one run on the request's machine.
 public extension Exec {
     /// When a session opens on the machine: makes the folders, removes mailbox files older than 60 minutes and reads
     /// the script's version; a second run writes `script` when the machine's is missing or older, never over a newer

@@ -8,7 +8,6 @@ import Foundation
 /// its own sessions. Each script prints the lines `parse` reads, on the pane's machine.
 enum SessionTitle {
     static let scripts = [
-        // The id's transcript, in any project folder.
         // The prompt's lines only with no title line: a transcript's first user lines can be long.
         "claude": #"f=$(ls "$HOME"/.claude/projects/*/"$1".jsonl | head -n 1); "#
             + #"t=$(grep -a '"type":"custom-title"' "$f" | tail -n 1; grep -a '"type":"ai-title"' "$f" | tail -n 1); "#

@@ -23,7 +23,6 @@ public struct Seen: Sendable {
 
     /// Each agent's state by key (`key(terminalID:paneID:)`).
     public private(set) var states: [String: AgentState] = [:]
-    /// When each agent's state last changed, for the ages.
     public private(set) var since: [String: Date] = [:]
     private var agents: [Agent] = []
     /// The keys of the panes the user looks at: a finish counts as seen once the user leaves its pane.

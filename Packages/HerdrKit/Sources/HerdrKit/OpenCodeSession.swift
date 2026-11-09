@@ -126,7 +126,6 @@ public struct OpenCodeSession: @unchecked Sendable {
         }
     }
 
-    /// A tool part: its call, and its result once it completed or failed.
     private static func tool(_ part: [String: Any], id: String, cwd: String?, into history: inout ChatHistory) {
         let state = part["state"] as? [String: Any] ?? [:], input = state["input"] as? [String: Any] ?? [:]
         let times = state["time"] as? [String: Any], started = date(times?["start"])

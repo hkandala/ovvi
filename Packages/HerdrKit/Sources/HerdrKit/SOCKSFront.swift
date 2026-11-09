@@ -33,7 +33,6 @@ final class SOCKSFront: Sendable {
         self.upstream = upstream
     }
 
-    /// Listens on a free loopback port.
     static func start(upstream: @escaping @Sendable (Trouble?) async throws -> UInt16) async throws -> SOCKSFront {
         let front = SOCKSFront(upstream: upstream)
         try await front.listen(on: .any)
@@ -277,7 +276,6 @@ final class SOCKSFront: Sendable {
         }
     }
 
-    /// A free loopback port, as the system picks one for a socket bound to port 0; nil if none.
     static func freePort() -> UInt16? {
         let handle = socket(AF_INET, SOCK_STREAM, 0)
         guard handle >= 0 else { return nil }

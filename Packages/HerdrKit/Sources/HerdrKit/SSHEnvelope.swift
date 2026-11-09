@@ -7,7 +7,6 @@ extension SSHExec {
         #"sh -c 'eval "$(printf %s "$1" | base64 -d)"' sh "# + Data(quoted(argv).utf8).base64EncodedString()
     }
 
-    /// The argv as one POSIX `sh` command, every element single-quoted.
     static func quoted(_ argv: [String]) -> String {
         argv.map { "'" + $0.replacingOccurrences(of: "'", with: #"'\''"#) + "'" }.joined(separator: " ")
     }

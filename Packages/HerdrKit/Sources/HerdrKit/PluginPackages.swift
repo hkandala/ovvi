@@ -64,7 +64,6 @@ public enum PluginPackages {
     public struct Staged: Sendable {
         public let source: PluginSource
         public let manifest: PluginManifest
-        /// The package's folder.
         public let folder: URL
         let staging: URL
     }

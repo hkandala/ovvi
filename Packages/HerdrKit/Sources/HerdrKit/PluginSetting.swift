@@ -119,7 +119,6 @@ public struct PluginSetting: Decodable, Sendable, Equatable {
 }
 
 extension PluginManifest {
-    /// At most 16 settings, each id once.
     static func check(settings: [PluginSetting], _ bad: (String, String) -> ManifestError) throws(ManifestError) {
         guard settings.count <= 16 else { throw bad("settings", "has over 16 settings") }
         var ids = Set<String>()

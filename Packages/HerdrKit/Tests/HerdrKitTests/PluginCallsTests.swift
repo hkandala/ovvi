@@ -2,10 +2,8 @@ import Foundation
 @testable import HerdrKit
 import Testing
 
-/// On This Mac.
 private let all = PluginCalls(exec: localExec, remote: false, gitRuns: true)
 
-/// The call's reply as JSON values.
 private func call(_ name: String, _ args: [String: Any], _ calls: PluginCalls = all) async throws -> Any? {
     let data = try await calls.call(name, JSONSerialization.data(withJSONObject: args))
     return try JSONSerialization.jsonObject(with: data, options: .fragmentsAllowed)

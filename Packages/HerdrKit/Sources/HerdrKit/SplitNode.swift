@@ -206,7 +206,6 @@ public extension SplitNode {
         return along.max { shared($0.rect) + near < shared($1.rect) }?.id
     }
 
-    /// Each pane's rectangle in this one, divided by the ratios.
     private func rects(in rect: CGRect) -> [(id: String, rect: CGRect)] {
         switch self {
         case let .leaf(id): return [(id, rect)]

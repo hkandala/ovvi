@@ -10,7 +10,6 @@ public extension String {
         let text = fold(self), letters = fold(filter).filter { $0 != " " }
         guard let first = letters.first else { return 0 }
         let wordStart = { (index: Int) in index == 0 || !(text[index - 1].isLetter || text[index - 1].isNumber) }
-        // Greedy from each place the first letter appears; the best of them.
         return text.indices.filter { text[$0] == first }.compactMap { start -> Int? in
             var score = wordStart(start) ? 0 : 1, last = start
             for letter in letters.dropFirst() {

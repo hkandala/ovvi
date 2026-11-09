@@ -1,7 +1,5 @@
 import Foundation
 
-/// The Git card's reads and writes beyond `Git.swift`'s: the changes as the index keeps them, the branches, and the
-/// commands its buttons run.
 public extension Git {
     /// The changes in two lists: staged (the index against HEAD) and unstaged (the work tree against the index,
     /// untracked files included). A file can be in both. A conflict is unstaged only.
@@ -12,7 +10,6 @@ public extension Git {
                                                    "--porcelain=v1", "-z", "--untracked-files=all"]))
     }
 
-    /// A branch to switch to.
     struct Branch: Equatable, Sendable {
         /// `main`, or `origin/main` for a remote one.
         public let name: String
@@ -61,7 +58,6 @@ public extension Git {
         }
     }
 
-    /// Fetch, Pull and Push: the Git card's buttons and a workspace's menu.
     enum Sync: String, Sendable {
         case fetch, pull, push
 

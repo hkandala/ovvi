@@ -50,7 +50,6 @@ private func history() throws -> ChatHistory {
     #expect(history.entries.contains { $0.kind == .turnEnd(seconds: 8.355) })
 }
 
-/// A row's kind.
 private extension ChatRow {
     var kind: String {
         String(describing: self).prefix { $0 != "(" }.description

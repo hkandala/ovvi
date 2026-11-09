@@ -281,7 +281,6 @@ public actor SSHExec: Exec {
     }
 }
 
-/// The browser's proxy.
 extension SSHExec {
     /// The local port of the machine's SOCKS proxy for its browser cards (ui/browser#remote-localhost),
     /// started by the first card; each call is balanced by a `closeProxy`. The proxy forwards through ssh's `-D` on

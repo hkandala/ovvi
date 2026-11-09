@@ -94,7 +94,6 @@ public enum Git {
 }
 
 public extension Git {
-    /// A file in `git status`.
     struct Change: Equatable, Sendable {
         /// `M`, `A` (also a copy), `D`, `R`, `T`, `U` (untracked), `C` (conflict), or `!` (ignored).
         public let letter: Character
@@ -104,7 +103,6 @@ public extension Git {
         public let oldPath: String?
     }
 
-    /// A commit in the history graph.
     struct Commit: Equatable, Sendable {
         public let hash: String
         public let parents: [String]

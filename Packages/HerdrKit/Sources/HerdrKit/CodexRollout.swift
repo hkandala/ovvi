@@ -106,7 +106,6 @@ public enum CodexRollout {
         history.append(ChatEntry(id: id, .tool(tool), time: time))
     }
 
-    /// One file's change: an added file's lines, or an update's unified diff.
     private static func edit(_ path: String, _ change: [String: Any], id: String, time: Date?,
                              into history: inout ChatHistory)
     {
