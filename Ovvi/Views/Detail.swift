@@ -37,7 +37,7 @@ struct NoticeCapsule<Action: View>: View {
         }
         HStack(spacing: 8) {
             Group {
-                if tone == .progress, symbol == nil {
+                if tone == .progress {
                     ProgressView().controlSize(.small)
                 } else {
                     Image(systemName: symbol ?? toneSymbol).foregroundStyle(color)

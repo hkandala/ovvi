@@ -76,8 +76,7 @@ extension HostStore {
 
     /// Fetch, Pull or Push in the workspace's repository on its machine: a spinner's notice while git runs, then the
     /// workspace's git line read again, then a check for 2 s, or git's message when it fails. The 10 s refresh skips it
-    /// meanwhile, so no older read lands
-    /// after that one.
+    /// meanwhile, so no older read lands after that one.
     func sync(_ workspace: Workspace, _ sync: Git.Sync) async {
         guard let root = workspace.gitRoot else { return }
         gitRuns.insert(workspace.id)
@@ -95,9 +94,10 @@ extension HostStore {
             done = Notice(text: lines.suffix(2).joined(separator: "\n"))
         }
         workspace.git = await GitStatus.of(root, exec: exec)
-        // A newer notice stays over a success, not over an error.
-        if done.tone == .error || notice?.id == running.id {
-            Task { [done] in await show(done, for: .seconds(done.tone == .error ? 4 : 2)) }
+        // A newer notice, or a closed one, stays over a success, not over an error.
+        let failed = done.tone == .error
+        if failed || notice?.id == running.id {
+            Task { [done] in await show(done, for: .seconds(failed ? 4 : 2)) }
         }
     }
 

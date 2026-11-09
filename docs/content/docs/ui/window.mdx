@@ -329,8 +329,9 @@ Spaces panel.
     it fails instead. While git runs, a [notice](#notice) with a spinner says
     "Pulling ‹name›…". When git ends, the git line is read again, and the
     notice turns to a green check and "Pulled ‹name›" for 2 s, or to git's own
-    message in the error tone for 4 s. Pull and Push stay enabled at zero behind or ahead: the counts
-    are from the last fetch, and Pull fetches first.
+    message in the error tone for 4 s. Pull and Push stay enabled at zero
+    behind or ahead: the counts are from the last fetch, and Pull fetches
+    first.
   - Close Space asks only when a program besides the shell runs in one of
     its panes, with what runs and the tab and pane count. On a repository
     with worktrees it also closes their spaces, and the dialog says so.
@@ -952,7 +953,8 @@ A short message after a failed action or a refused move, or from an agent.
   Show selects the pane's space, tab and card in that window. Ovvi does
   not come to the front for it.
 - It goes after 4 s (a check after 2 s; a spinner when its command ends), or
-  at ×. A newer notice replaces it.
+  at ×. A newer notice replaces it. After × or a newer notice, a command's
+  check does not show; its error does.
 
 ## Control capsule
 
