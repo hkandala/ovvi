@@ -56,8 +56,8 @@ extension OvviUITests {
                 grids.append(terminal.stringValue)
             }
         }
-        // The check that tells this from a resize at every frame: herdr's one resize (the winch count) comes with a
-        // 100 ms settle too. A stall over 150 ms inside the slide would give a real third grid.
+        // The check that tells this from a resize at every frame: herdr's one resize (the winch count). A stall over
+        // 150 ms inside the slide would give a real third grid.
         XCTAssertEqual(grids.count, 2, "grids while the sidebar slid: \(grids)")
         // bash prints it after its prompt, on the prompt's line.
         let winches = { (screen: String) in screen.split(separator: "\n").count { $0.hasSuffix("winch") } }

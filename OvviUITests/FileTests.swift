@@ -261,7 +261,7 @@ extension OvviUITests {
         // The info view: another file, and an image that does not decode (never an empty card).
         for file in ["notes.bin", "broken.png"] {
             try await relabel(card, label + file)
-            let name = page.staticTexts.matching(NSPredicate(format: "value == %@", file)).firstMatch
+            let name = text(file, in: page)
             XCTAssertTrue(name.exists(within: 10), file)
         }
         XCTAssertFalse(pages.exists)

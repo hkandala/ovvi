@@ -353,6 +353,7 @@ extension OvviUITests {
         return until(2) { element.exists && focus.evaluate(with: element) }
     }
 
+    /// By its value: a plain text's label is empty.
     func text(_ value: String, in page: XCUIElement? = nil) -> XCUIElement {
         (page ?? app).staticTexts.matching(NSPredicate(format: "value == %@", value)).firstMatch
     }

@@ -21,7 +21,7 @@ extension OvviUITests {
         let card = try await split(left)
         try await Self.call(one, "pane.rename", ["pane_id": card, "label": "ovvi:git#e2ekey \(root)/ uncommitted"])
         let page = element("git.\(card).page")
-        let line = { (text: String) in page.staticTexts.matching(NSPredicate(format: "value == %@", text)).firstMatch }
+        let line = { (value: String) in self.text(value, in: page) }
         // The first card of a run waits for the default plugins to install and build.
         XCTAssertTrue(line("ten").has(\.isHittable, true, within: 30))
 

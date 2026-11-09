@@ -5,7 +5,7 @@ import XCTest
 /// while a busy one does (the e2e helper's `usage`, kept in the result bundle and printed).
 extension OvviUITests {
     func testMemoryAndCPUOverManyTabs() async throws {
-        // Motion on, as on a Mac without Reduce Motion (CI has it on).
+        // The working dots move, as on a Mac without Reduce Motion (CI has it on).
         relaunch(nil, ["-forceMotion", "YES"])
         let (tabs, _) = try await newWorkspace("usage", tabs: 6)
         var panes: [[String]] = []

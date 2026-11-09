@@ -137,8 +137,8 @@ private struct SettingsPageView: View {
         }
         .formStyle(.grouped)
         .navigationTitle(page.title)
-        // A toolbar item, so the window has a toolbar as System Settings: with none (the sidebar toggle is off), the
-        // window has a bare title bar, its traffic lights in the corner and its corners square. A pushed page has
+        // A toolbar item, so the window has a toolbar as System Settings: with none (the sidebar toggle is removed),
+        // the window has a bare title bar, its traffic lights in the corner and its corners square. A pushed page has
         // its Back button.
         .toolbar { ToolbarSpacer(.fixed) }
         .scrollsToRing()

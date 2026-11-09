@@ -318,7 +318,7 @@ struct InstalledPlugin: Identifiable {
     let manifest: PluginManifest?
     let kind: Kind
 
-    /// Its version; none for the browser, the app's own.
+    /// Its version, "Not installed" with no manifest; none for the browser, the app's own.
     var version: String? {
         guard let manifest else { return "Not installed" }
         return manifest.entry == nil ? nil : manifest.version.shown

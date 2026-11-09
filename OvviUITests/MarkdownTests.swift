@@ -154,9 +154,7 @@ extension OvviUITests {
     /// Rich Text renders what Markdown means, not what it says: `1. 1.` counts up, an item's second paragraph hangs at
     /// its text, a reference link is a link (its definition hidden), an entity is its character.
     private func constructs(_ page: XCUIElement) {
-        let text = { (value: String) in
-            page.staticTexts.matching(NSPredicate(format: "value == %@", value)).firstMatch
-        }
+        let text = { (value: String) in self.text(value, in: page) }
         XCTAssertTrue(text("2.").exists(within: 3))
         let beta = text("Beta"), more = text("More of beta.")
         XCTAssertTrue(more.exists)
