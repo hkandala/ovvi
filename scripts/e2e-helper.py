@@ -53,11 +53,13 @@ Any session not named on the command line is refused.
 Every script that posts events gets the tests' app's pid (OVVI_APP_PID) and refuses a point outside its windows.
 """
 
+import contextlib
 import ctypes
 import http.server
 import os
 import re
 import shutil
+import signal
 import socketserver
 import subprocess
 import sys
@@ -130,8 +132,12 @@ def app_env():
 
 def signal_server(session, action):
     """Stops (`pause`) the session's server or lets it go on (`resume`); false when no server matched."""
-    return subprocess.run(["pkill", "-STOP" if action == "pause" else "-CONT", "-f",
-                           f"^[^ ]*herdr --session {re.escape(session)} server$"], capture_output=True).returncode == 0
+    pids = subprocess.run(["pgrep", "-f", f"^[^ ]*herdr --session {re.escape(session)} server$"],
+                          capture_output=True, text=True).stdout.split()
+    for pid in pids:
+        with contextlib.suppress(ProcessLookupError):
+            os.kill(int(pid), signal.SIGSTOP if action == "pause" else signal.SIGCONT)
+    return bool(pids)
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -218,7 +224,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif action in ("ssh-drop", "ssh-stop"):
             pattern = f"ssh -M -N -f .* {body.decode()}$"
             pids = subprocess.run(["pgrep", "-f", pattern], capture_output=True).stdout
-            subprocess.run(["pkill", "-9" if action == "ssh-drop" else "-STOP", "-f", pattern])
+            for pid in pids.split():
+                with contextlib.suppress(ProcessLookupError):
+                    os.kill(int(pid), signal.SIGKILL if action == "ssh-drop" else signal.SIGSTOP)
             status, reply = 200, pids
         elif action == "ssh-unforward" and os.environ.get("CI") != "true":
             status, reply = 403, b"CI only: it changes a live ControlMaster"

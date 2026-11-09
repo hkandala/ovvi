@@ -37,3 +37,7 @@ custom_rules:
     regex: '\.waitFor(Non)?Existence\(|\.wait\(for: \\\.|XCTNSPredicateExpectation|XCTWaiter'
     message: 'Wait with exists(within:), vanishes(within:), has(_:_:within:), until or poll'
     severity: error
+  no_pattern_kills: # playbook/lessons.md: macOS pkill once read its flags as patterns and killed the user's apps
+    regex: '\b(pkill|killall)\b'
+    message: 'No pattern kills: kill the exact pids you started'
+    severity: error

@@ -27,6 +27,9 @@ format:
 lint:
 	swiftformat --lint .
 	swiftlint lint --strict --quiet
+	@# No pattern kills in scripts and tests (playbook/lessons.md): kill the exact pids you started.
+	@if git grep -nwE 'p[k]ill|kill[a]ll' -- '*.sh' '*.py' '*.bash' '*.zsh' Makefile '.github/*' '.githooks/*'; then \
+		echo 'No pattern kills: kill the exact pids you started'; exit 1; fi
 
 # What the app carries for its plugins (.build/web, copied into its resources): the plugin API's runtime (ovvi.js,
 # checked against its types) and card.css, which every plugin's page loads; the host types package (plugin-api), which

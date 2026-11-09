@@ -77,10 +77,10 @@ Problems that came back across phases, and the rule that stops each. How we work
   `uptime` shows a load in the hundreds, run `make test` again once before you chase a HerdrKit timeout.
 - **Automated rewrites change meaning.** Formatter rules and scripted replaces have flipped logic or matched
   nothing. Read the diff; make every scripted edit fail loudly when it matches nothing.
-
 - **No pattern kills on the user's Mac.** macOS `pkill -f "x" -P 1` read `-P` and `1` as more patterns and sent
   SIGTERM to every process whose command line held a "1": the user's apps, other agents, two builds (phase 57).
   Kill the exact pids you started; a pattern only when anchored to a full path of your own, checked with `ps` first.
+  `make lint` rejects `pkill` and `killall`.
 
 ## herdr
 

@@ -134,9 +134,9 @@ func `a dropped follow leaves no process`(awk: Bool) async throws {
         }
         // A left process lives forever; the wait covers a starved Mac, where a retry's `sleep` takes seconds to start.
         let end = ContinuousClock.now + .seconds(45)
-        while try await !localExec.output(["pgrep", "-f", file.lastPathComponent]).isEmpty {
+        while case let pids = try await localExec.output(["pgrep", "-f", file.lastPathComponent]), !pids.isEmpty {
             guard ContinuousClock.now < end else {
-                _ = try? await localExec.output(["pkill", "-f", file.lastPathComponent])
+                _ = try? await localExec.output(["kill"] + pids.split(separator: "\n").map(String.init))
                 Issue.record("the follow's processes outlived the drop")
                 return
             }
