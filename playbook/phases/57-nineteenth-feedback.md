@@ -1045,3 +1045,33 @@ you did, no need of reverting them".
   `testACardWhoseFolderWentComesBackWithItsPlaceholder` read herdr's snapshot just after the helper started the
   server, before its socket was there, and the throw ended its wait: it waits out a missing socket now. GitHub's
   release downloads gave 504s for an hour, so three runs ran again with no change.
+
+## Round 6 (items 51–59)
+
+51. "with archived sessions, let's not show border whenits collaped, show border only when its expanded, and when
+    expanded currently it flickers while the sessions are loading, let's make sure we show loader, load everything and
+    then display avoid flickers, i am seeing this more in remote sessions, when archived sessions is opened, cursor
+    should be activated on search input" (Track B).
+52. "on tab hover with plugins in it, it shows cat command as the tui placeholder is basically cat, but we we should
+    show correct plugin details on the hover, don't show cat or terminal ones for plugin panes" (Track B).
+53. "so the bottom padding adjustments we did right, they look good, and can be applied to even in non floating panel
+    view as well, only the top paddings are flaoting panel specific ones" (Track E).
+54. "when cm+n is pressed the new view is much better, however, those sessions load in split seconds, so the sessions
+    kinda flicker, can we fix that flicker? improve session loading, either cache things or may be make it faster so it
+    doesn't flicker" (Track A).
+55. "for the dots indicating the sessions in sidebar, let's make the background gradient, like after archived sessions
+    we should see the gradient like thing making its background transparent, so the dots blend well if that makes
+    sense." (Track B).
+56. "cmd+k is still very laggy man, can we improve and make it more snappy, what makes it very slow? its just a list
+    right? understand the core issue better and improve it" (Track K).
+57. "stress test the sidebar with multiple sessions and one sessions with way too many workspaces and agents, in order
+    of 100s, i see sidebar swipe and scroll is getting laggy in that order, can we virtualise the list when the sidebar
+    list gets long and optimse its performance overall? figure out what's the best way to improve it" (Track U, new).
+58. "i don't like any of your landing page mockups, let's do one thing, let's not focus on landing pages for now, come
+    up with research on marketing view of this product like how we sell this to users, we shouldn't ideally focus on
+    herdr for our app. goal is more of tui + gui thing, with custom plugins that can be controlled by agents or humans,
+    and sessions persists, like you can even connect from any device and all restore as expected, we should focus on
+    remote connections, idk, think through all features our app provides, give me multiple views on how we should put
+    our story or show where we are different and better" (Track V, new, report only).
+59. "in the cmd+n window add machine should open add machine section within settings window, do not open the overlay
+    one" (Track A).
