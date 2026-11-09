@@ -187,7 +187,6 @@ final class HostStore {
                 state = .live
                 snapshotted(changes)
                 Latency.shared.applied(since: start)
-                Latency.shared.step("apply\(Int((Latency.threadTime - start) * 1000))")
                 // After the first snapshot, so the session list never delays the layout.
                 if !loadedSessions {
                     loadedSessions = true

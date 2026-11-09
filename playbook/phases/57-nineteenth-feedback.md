@@ -952,3 +952,42 @@ you did, no need of reverting them".
   with the measured numbers; also a chat card's Chat | TUI switch and the overview.
 - **For the user.** In Classic dark: the cards, the selected tab and space row and the tab track should stand apart
   from the window without looking heavy; Glass should look the same as before.
+
+### Track J, round 5 (item 45)
+
+- **Cause.** New Pane's list waited for the 130 ms slide and then faded in over 0.15 s (round 2 had moved it out of
+  the split's turn). It showed 0.25–0.3 s after ⌘D, on a card that slid in empty, while a browser card slides in with
+  its page: the lag the user saw. Nothing else in New Pane is heavy on appear: the agents are found once per window,
+  in the background; rows, numbers and labels are microseconds; program icons show only with Agent open; the folder
+  line reads no disk; no herdr call waits on it. The list's dearest part was its scroll view (an AppKit view of its
+  own): a probe app put it at a third of the list's cost; tooltips, hover and VoiceOver focus at about 5 % each.
+- **Fix.** The list comes with the card from the split's turn. A scroll view only on a card lower than the list (at
+  once, no cross-fade, when Agent's opening crosses that height). A test splits a chooser card until it is short
+  and checks its selected last row stays in view (it passes without a scroll on the new scroll view's appear too, so
+  there is none).
+  herdr's snapshot still waits for the slide. The split record gains the steps after the key (snapshot applied,
+  list, surface, ready, program) with the CPU of their frame.
+- **Runs, without an accessibility client** (Release, clicked by a script, before and after in turns, 8 splits each, Glass,
+  a load of 330 falling to 40). Before → after; the browser row is `ovvi open --beside`, for reference.
+
+  | Scenario | first frame ms (its CPU) | list shows | worst gap 0–0.6 s ms | hitches 0–0.6 s | CPU 1.2 s ms |
+  |---|---|---|---|---|---|
+  | shell | 24 (20) → 35 (34) | ~0.3 s → first frame | 36 → 36 | 11.5 → 10.1 | 229 → 226 |
+  | File Explorer | 20 (19) → 34 (32) | ~0.3 s → first frame | 32 → 26 | 11.0 → 9.9 | 236 → 246 |
+  | six panes | 31 (28) → 46 (43) | ~0.3 s → first frame | 40 → 42 | 10.2 → 9.9 | 254 → 256 |
+  | browser beside | 35–42 (32–39) | its page with the card | 24–28 | 8.5–8.8 | 174–181 |
+
+  The first frame now costs what a browser split's costs; the list's own frame (21–25 ms CPU here) is gone from
+  after the slide. The hidden shell's terminal surface (16–27 ms) lands after the slide, with herdr's snapshot; its
+  `ready` frames cost 2–4 ms.
+- **Runs, with an accessibility client** (CI's VM under XCUITest, 60 Hz, `testSplitsKeepTheDisplayRate`): main
+  42573608915 and this change 42573612578 (green, 7 tests). The first frame comes later on the VM (shell 99 → 156 ms,
+  the list built with the card), and the slide's hitches went down (shell 1.0 → 0.2, File Explorer 0.8 → 0). The
+  record window grew from 0.8 to 1.2 s, so totals do not compare.
+- **Pictures.** `~/Downloads/ovvi-research/p57j/r5/`: `before.mov`, `after.mov` (two Split Right each) and
+  `compare.png` (frames 50 ms apart: before, the card slides in empty and the list fades in by 0.3 s; after, the list
+  slides in with the card).
+- **Measurement note.** Between 20:45 and 22:35 my harness left its test apps running (an exact-pid check missed the
+  `/private` prefix): those runs were dropped and run again.
+- **For the user.** ⌘D and ⇧⌘D: the New Pane list should slide in with the card, as a browser card does. On a short
+  card (several ⇧⌘D), ↑ to the last row keeps it in view.

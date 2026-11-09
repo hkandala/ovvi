@@ -76,8 +76,8 @@ struct NewPane: View {
         page.store.pane(cardID).map { $0.agent != nil || $0.program?.isShell == false && !$0.starting } ?? false
     }
 
-    /// A scroll view only on a card lower than the list: an AppKit scroll view of its own, it was the list's dearest
-    /// part to make.
+    /// A scroll view only on a card lower than the list: an AppKit view of its own, it is the list's dearest part to
+    /// make.
     @ViewBuilder
     private func list(_ rows: [Chooser.Row], details: Bool, scrolls: Bool) -> some View {
         let stack = VStack(spacing: Self.spacing) {
@@ -97,6 +97,8 @@ struct NewPane: View {
                 stack
             }
         }
+        // At once, not crossfaded under Agent's opening.
+        .animation(nil, value: scrolls)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("New Pane")
     }
@@ -176,8 +178,7 @@ struct NewPane: View {
 }
 
 /// The chooser on a card, fading out over 0.15 s after a pick as the terminal fades in (`TerminalHost`). A split's
-/// new card slides in with its list: held back until the card landed, the list showed 0.25 s or more after the key,
-/// and the split felt slow.
+/// new card slides in with its list: a list that shows only once the card landed makes the split feel slow.
 struct NewPaneOverlay: View {
     let chooser: Chooser?
     let page: Page

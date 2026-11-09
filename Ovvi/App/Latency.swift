@@ -106,8 +106,10 @@ final class Latency {
     /// A snapshot's apply on the main thread, from `start` (`threadTime`) on.
     func applied(since start: TimeInterval) {
         guard Self.isOn else { return }
+        let time = Self.threadTime - start
         snapshots += 1
-        applying += Self.threadTime - start
+        applying += time
+        meter.step("apply:\(Int(time * 1000))")
     }
 
     @ObservationIgnored private var awake: TimeInterval?
@@ -190,7 +192,8 @@ final class Latency {
         }
     }
 
-    /// A step of the split being recorded, at its time from the split: "made@95".
+    /// A step of the split being recorded: its name, its time from the split and the CPU of the frame it fell in,
+    /// "list@12/9".
     func step(_ name: String) {
         if Self.isOn {
             meter.step(name)
@@ -217,7 +220,8 @@ final class Latency {
 /// Frames while the window scrolls or splits, at the display's full rate: a display link runs from a scroll event
 /// until 0.3 s after the last ("scroll <frames> <hitches> <ms>"; a hitch, a frame over 25 ms after the one before), or
 /// for 1.2 s from a split, its slide and what lands after ("split <frames> <hitches> <ms> <p50> <p95> <max> <the main
-/// thread's CPU> <each hitch: its end+gap/CPU>", in ms; a hitch, over one and a half display frames).
+/// thread's CPU> <each hitch: its end+gap/CPU> <each step: name@time/CPU>", in ms; a hitch, over one and a half
+/// display frames).
 @MainActor
 private final class FrameMeter: NSObject {
     let record: (String) -> Void

@@ -3,7 +3,8 @@ import XCTest
 /// ⌘D and ⇧⌘D slide at the display rate (on demand): a split beside a shell, a full-screen program that redraws all
 /// the time, File Explorer, Git, Markdown and browser cards, and among six panes. Each split's frames are a "split
 /// ‹frames› ‹hitches› ‹ms› ‹p50› ‹p95› ‹max›" record in `app.latency` (the app's `FrameMeter`), kept in the result
-/// bundle as "splits" with its scenario. Run it on a Release build for the numbers that count.
+/// bundle as "splits" with its scenario. Run it on a Release build for the numbers that count. And a short card's New
+/// Pane list keeps its selected row in view.
 extension OvviUITests {
     func testSplitsKeepTheDisplayRate() async throws {
         executionTimeAllowance = 900
@@ -33,6 +34,32 @@ extension OvviUITests {
             print(records.last ?? "")
         }
         keep(records.joined(separator: "\n"), as: "splits")
+    }
+
+    /// A card lower than its chooser's list scrolls it to the selected row: the last row, picked on a half-high card,
+    /// stays in view as more ⇧⌘D splits make that card short and its list a scroll view.
+    func testAShortChoosersListKeepsTheSelectedRowInView() async throws {
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        let (tab, top) = try await newTab("chooser short")
+        element("tab.\(tab)").click()
+        element("terminal.\(top)").click()
+        XCTAssertTrue(hasKeyboard("terminal.\(top)"))
+        app.typeKey("d", modifierFlags: [.command, .shift])
+        let card = try await replaced(top, in: tab, besides: [top]), last = element("pane.\(card).chooser.git")
+        XCTAssertTrue(last.exists(within: 3))
+        // ↑ wraps to the last row.
+        app.typeKey(.upArrow, modifierFlags: [])
+        XCTAssertTrue(last.has(\.isSelected, true, within: 2))
+        // Short enough that the last row's center (134 pt into the list, under a 36 pt header and a 16 pt margin) is
+        // 30 pt out of view without a scroll: splits of the newest card, evened with it, shrink it.
+        let frame = element("pane.\(card)")
+        for _ in 0 ..< 8 where frame.frame.height >= 150 {
+            let count = try await order(tab).count
+            app.typeKey("d", modifierFlags: [.command, .shift])
+            try await expect("one more split") { try await order(tab).count == count + 1 }
+        }
+        XCTAssertLessThan(frame.frame.height, 150)
+        XCTAssertTrue(last.has(\.isHittable, true, within: 2), "\(last.frame) in \(frame.frame)")
     }
 
     private static let splits = "/tmp/ovvi-e2e-splits"
