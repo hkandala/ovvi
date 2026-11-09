@@ -29,15 +29,10 @@ struct OvviApp: App {
             ContentView()
         }
         .windowToolbarStyle(.unifiedCompact)
-        // 90 % of the screen, centered (1200 × 760 was small on a large screen), at least
-        // 1200 × 760 and at most the screen; a zoom fills the screen. A larger window AppKit shrank to fit came
-        // back at its full size on a zoom, past the screen's edges (CI's 1024 pt screen). A restored window keeps
+        // A new window fills the screen's visible frame, as a zoom does (not full screen); a restored window keeps
         // its frame.
         .defaultWindowPlacement { _, context in
-            let screen = context.defaultDisplay.visibleRect.size
-            let size = { (side: CGFloat, least: CGFloat) in min(side, max(least, side * 0.9)) }
-            return WindowPlacement(.center, size: CGSize(width: size(screen.width, 1200),
-                                                         height: size(screen.height, 760)))
+            WindowPlacement(.center, size: context.defaultDisplay.visibleRect.size)
         }
         .windowIdealSize(.maximum)
         // Content never grows the window (the title-bar tabs would, when the sidebar hides).
@@ -90,8 +85,8 @@ struct ContentView: View {
     @SceneStorage("selection") private var savedSelection = ""
     @SceneStorage("sidebar") private var sidebar = true
     @SceneStorage("sidebarWidth") private var sidebarWidth = 300.0
-    /// A new window (⌘N) shows the sessions to pick from until a pick opens its first page, also when macOS restores
-    /// it.
+    /// The window shows the sessions to pick from until a pick opens its first page (`SessionPicker`), also when macOS
+    /// restores it.
     @SceneStorage("picking") private var picking = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openWindow) private var openWindow
@@ -117,6 +112,10 @@ struct ContentView: View {
             // Closed while it restored: nothing of it may stay.
             if Task.isCancelled {
                 pages.closed()
+            } else if pages.list.isEmpty {
+                // Nothing to restore and nothing asked for (a launch, a reopen from the Dock): never a session by
+                // itself.
+                picking = true
             } else {
                 pages.opened()
                 for page in pages.list {
@@ -186,8 +185,8 @@ struct ContentView: View {
     }
 
     /// The machine: `opening`, else `-machine <id>`, else the saved one. Pages: `-session`, else the saved ones
-    /// that still run, else `default` (`-defaultSession` for tests); This Mac's first page starts when stopped.
-    /// Never another session by itself.
+    /// that still run, else a machine's `default` when the window opened for that machine (the machine menu, Add
+    /// Machine); This Mac's first page starts when stopped. None by itself: then the window shows `SessionPicker`.
     private func restore(_ opening: Machine?) async {
         guard pages.list.isEmpty else { return }
         // A window macOS restores gets its scene storage a moment after it first shows; a restored window always
@@ -207,7 +206,7 @@ struct ContentView: View {
         if let machine {
             pages.machine = machine
         }
-        // A removed machine's window opens This Mac's `default`: its saved pages were the remote's sessions.
+        // A removed machine's window opens no page: its saved pages were the remote's sessions.
         let removed = machine == nil && !id.isEmpty
         // A test run (`-defaultSession`) shares the developer's saved windows: it restores only throwaway sessions.
         let test = UserDefaults.standard.string(forKey: "defaultSession")
@@ -226,8 +225,8 @@ struct ContentView: View {
                 pages.show(page)
             }
         }
-        if pages.list.isEmpty {
-            pages.open(argument ?? test ?? "default", start: !pages.machine.isRemote)
+        if pages.list.isEmpty, let name = argument ?? (opening == nil ? nil : "default") {
+            pages.open(name, start: !pages.machine.isRemote)
         }
         restoreSelection()
         pages.showTerminals() // The restored tab streams now, not at the next snapshot.

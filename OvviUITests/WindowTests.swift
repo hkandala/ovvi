@@ -172,20 +172,30 @@ extension OvviUITests {
         XCTAssertTrue(waiting.vanishes(within: 20))
     }
 
-    /// ⌘N opens a big window in the middle of the screen: 90 % of it, 1200 × 760 at least, the
-    /// screen at most.
-    func testNewWindowFillsMostOfTheScreen() throws {
+    /// ⌘N opens a window that fills the screen's visible frame, as a zoom does.
+    func testNewWindowFillsTheScreen() throws {
         let (_, window) = try newWindow()
         let screen = try XCTUnwrap(NSScreen.screens.first).visibleFrame
-        func side(_ length: CGFloat, _ least: CGFloat) -> CGFloat {
-            min(length, max(least, length * 0.9))
-        }
-        XCTAssertEqual(window.frame.width, side(screen.width, 1200), accuracy: 2, "\(window.frame) in \(screen)")
+        XCTAssertEqual(window.frame.width, screen.width, accuracy: 2, "\(window.frame) in \(screen)")
         // A window as tall as the screen comes out a few points taller, its bottom under the Dock's top edge: 677 and
         // 679 in 674 on CI, the second window only (the first comes out at 674), from one run to the next.
-        let height = side(screen.height, 760)
-        XCTAssertTrue((height - 2 ... height + 8).contains(window.frame.height), "\(window.frame) in \(screen)")
+        XCTAssertTrue((screen.height - 2 ... screen.height + 8).contains(window.frame.height),
+                      "\(window.frame) in \(screen)")
         XCTAssertEqual(window.frame.midX, screen.midX, accuracy: 2, "\(window.frame) in \(screen)")
+    }
+
+    /// A launch with no window to restore and no `-session` connects to nothing: the window lists the sessions to pick
+    /// from, and no card streams.
+    func testALaunchWithNothingToRestoreConnectsToNothing() async throws {
+        app.terminate()
+        app.launchArguments = ["-defaultSession", one, "-machines", "[]", "-ApplePersistenceIgnoreState", "YES"]
+            + Self.noConfig
+        app.launch()
+        XCTAssertTrue(element("picker.local.\(one)").exists(within: connect))
+        XCTAssertTrue(app.staticTexts["Ovvi"].exists)
+        XCTAssertFalse(element("sidebar").exists)
+        try await expect("no stream") { try await streams(one).isEmpty }
+        keepScreenshot("new window")
     }
 
     /// The window that is not this one, once there are two; it shows session one.

@@ -59,12 +59,12 @@ every space, tab and pane from herdr.
 - With `-session` on the command line, every window restores only that session
   (a run against a throwaway session never reopens another), with its saved
   selection, and a new window (⌘N) lists only `ovvi-*` sessions.
-- With none left, or in the first window, the first page is the session named by
-  the `-session` launch argument, else `default`. On This Mac the app starts
-  it when it is stopped (a launchd job, D47). It never opens another session
-  by itself.
+- With none left, the first page is the session named by the `-session`
+  launch argument (a test's), else none: the window shows the
+  [new-window view](/docs/ui/window#new-window). On This Mac the app starts
+  `-session`'s session when it is stopped (a launchd job, D47). It never opens
+  a session by itself.
 - A new window opened for a machine (the machine menu, Add Remote Host) is on
-  that machine. File ▸ New Window (⌘N) opens no page: the user picks a
-  machine's session ([Windows](/docs/ui/window#windows)).
+  that machine and opens its `default`. File ▸ New Window (⌘N) opens no page.
 - Nothing writes a session name to `UserDefaults`. `-session` is read from
   the argument domain only.

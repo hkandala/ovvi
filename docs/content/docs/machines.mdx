@@ -14,8 +14,8 @@ description: "What a machine is, its sessions, the SSH connection, the health ch
   and state folder.
 - A window shows one machine. Sessions open as pages: its sidebar has one
   page per session the user opened in that window
-  ([Sidebar](/docs/ui/window#sidebar)). The first window opens one page, the
-  `default` session; a new window (⌘N) lets the user pick a machine's session
+  ([Sidebar](/docs/ui/window#sidebar)). A window with nothing to restore opens no
+  page: the user picks a machine's session
   ([Windows](/docs/ui/window#windows)).
 
 ## The machine list
@@ -252,8 +252,8 @@ One loop per open session checks that it answers.
        out: the app uses it.
    - **A remote machine:** the same **Start** button runs
      `sh -c 'nohup <herdr path> --session S server </dev/null >/dev/null 2>&1 &'`
-     over SSH and polls `session.snapshot` as This Mac's start does. A new
-     window on a remote machine opens its `default` session without starting
+     over SSH and polls `session.snapshot` as This Mac's start does. A window
+     opened for a remote machine opens its `default` session without starting
      it.
 2. Open the event stream. Its `subscription_started` reply counts as an
    event, so the app reads the snapshot once more and misses nothing between

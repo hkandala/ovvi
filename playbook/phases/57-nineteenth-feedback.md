@@ -254,6 +254,22 @@ runs and on-demand on the final head.
 - **Round 2, runs.** testNewWindowRowsResolveWhileAnotherConnectAsks (Password Host's Connect left asking, then ⌘N):
   red on the old code at its 20 s wait for the row to go (run 42527933646), green on the fix with the scenes, the
   picker's and Password Host's tests (run 42527936883).
+- **Round 4 (31), decisions.** Ovvi opens a session only when asked: `-session` (tests), a restored window, or a
+  window opened for a machine (the machine menu, Add Remote Host). Anything else (a launch with nothing to restore,
+  ⌘N, a Dock reopen) shows the new-window view. Of three drawn variants (one list, a card per machine, machines left
+  and sessions right; `~/Downloads/ovvi-research/p57a/r4/variants.png`) the one list won: one field and one keyboard
+  path (type, arrows, Return) over every machine, the Open Session panel's look, and it grows down with more machines.
+  Install herdr in the list opens the page and installs at once; Connect opens the page and asks there. Add Machine is
+  the Add Remote Host dialog in the same window, Edit Machines opens Settings ▸ Machines. New windows fill the screen's
+  visible frame.
+- **Round 4, measured** (the dark picture, 2× pixels): the window is 3456 × 2168 px (1728 × 1084 pt, the visible
+  frame); the icon's artwork is 126 px wide in its 160 px (80 pt) frame; "Ovvi"'s cap top 703 px; the panel spans x
+  1288–2171 (884 px: 440 pt plus its 1 pt edges), y 795–1555; the field starts 17 px under the panel's top edge, and the
+  last row (Edit Machines) ends 21 px over its bottom edge.
+- **Round 4, cause found on the way.** `-machines []` never reached the argument domain (it drops a value it cannot
+  read as a property list), so the machine list's isolation guard saw only `-session`: a test launched without it read
+  the user's machine list, and the new-window view tried their SSH under BatchMode once (it failed). The guard reads
+  the raw arguments now.
 
 ### Track B
 

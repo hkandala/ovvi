@@ -57,8 +57,9 @@ final class MachineList {
         }
     }
 
-    private static let isolated = UserDefaults.standard.volatileDomain(forName: UserDefaults.argumentDomain)
-        .keys.contains { $0 == "session" || $0 == "machines" }
+    /// The raw arguments: the argument domain drops a JSON value it cannot read as a property list (`-machines []`),
+    /// and a test's launch without `-session` then read the user's machines.
+    private static let isolated = ProcessInfo.processInfo.arguments.contains { $0 == "-session" || $0 == "-machines" }
 
     private init() {
         // The argument as given: the argument domain reads a JSON array as something else.

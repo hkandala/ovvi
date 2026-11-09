@@ -161,8 +161,7 @@ extension OvviUITests {
         XCTAssertTrue(app.wait(for: .notRunning, timeout: 5))
         try await Self.post("\(five)/stop")
 
-        // No -session, which wins over the saved pages; if they did not come back, the window opens one, never the
-        // user's default.
+        // No -session, which wins over the saved pages; if they did not come back, the window opens none.
         // -machines: none of the user's machines, whose masters a test must not touch.
         app.launchArguments = ["-defaultSession", one, "-machines", "[]"] + Self.noConfig
         app.launch()

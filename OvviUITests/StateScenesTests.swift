@@ -144,6 +144,41 @@ extension OvviUITests {
         app.typeKey("w", modifierFlags: .command)
     }
 
+    /// The new-window view in each look: This Mac's sessions with Password Host not connected (CI's sshd), a typed
+    /// name, and This Mac without herdr.
+    func testNewWindowScenes() async {
+        let ssh = await (try? Self.post("\(one)/ssh-connections")) != nil
+        let host = #"[{"id":"e2e-pw","name":"Password Host","target":"ovvi-pw","icon":"cpu"}]"#
+        for look in ["dark", "light"] {
+            relaunch(one, ["-appearance", look, "-machines", ssh ? host : "[]"])
+            _ = element("terminal.w1:p1").exists(within: connect)
+            app.typeKey("n", modifierFlags: .command)
+            _ = element("picker.local.\(one)").exists(within: connect)
+            _ = element(ssh ? "picker.e2e-pw.connect" : "picker.local.new").exists(within: 20)
+            await newWindowShot(look, "N1 new window")
+            app.typeText("build")
+            await newWindowShot(look, "N2 new window, a typed name")
+            app.launchEnvironment["SHELL"] = "\(Self.fixtures)/no-herdr/login-shell"
+            app.launchEnvironment["PATH"] = "/usr/bin:/bin"
+            app.terminate()
+            app.launchArguments = ["-defaultSession", one, "-machines", "[]", "-appearance", look,
+                                   "-ApplePersistenceIgnoreState", "YES"] + Self.noConfig
+            app.launch()
+            _ = element("picker.local.install").exists(within: connect)
+            await newWindowShot(look, "N3 new window, no herdr")
+            app.launchEnvironment["SHELL"] = nil
+            app.launchEnvironment["PATH"] = nil
+        }
+    }
+
+    /// The front window, the pointer off it.
+    private func newWindowShot(_ look: String, _ name: String) async {
+        let window = app.windows.firstMatch
+        window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1.3)).hover()
+        try? await Task.sleep(for: .seconds(0.6))
+        keepScreenshot("\(look) \(name)", of: window)
+    }
+
     /// The main window, the pointer off it.
     private func stateShot(_ look: String, _ name: String) async {
         let main = app.windows.matching(NSPredicate(format: "identifier BEGINSWITH 'main-'")).firstMatch

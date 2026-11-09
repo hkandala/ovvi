@@ -276,7 +276,7 @@
 5	testPlusMakesATabAndSelectsIt
 4	testACopyRequestReachesTheClipboard
 4	testNeverShownTabsCardNamesItsProgram
-4	testNewWindowFillsMostOfTheScreen
+4	testNewWindowFillsTheScreen
 4	testResizingACardResizesThePTY
 4	testSidebarFilterNarrowsTheWorkspaces
 3	testChromeButtonsNameTheirShortcuts

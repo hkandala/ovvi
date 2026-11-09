@@ -48,6 +48,9 @@ Problems that came back across phases, and the rule that stops each. How we work
   launch arguments, reset them in teardown, launch with `-ApplePersistenceIgnoreState`. Saved windows live in
   `$TMPDIR/dev.ovvi.app.savedState` (not `~/Library/Saved Application State`): a restore check starts
   the app with `open`, attaches with `XCUIApplication(bundleIdentifier:)`, and deletes that folder after.
+- **The argument domain drops a value it cannot read as a property list** (`-machines []`, any JSON): read such
+  arguments from `ProcessInfo.arguments`. The machine list's guard read the domain, so a test launched without
+  `-session` loaded the user's machines, and the new-window view tried their SSH (phase 57).
 - **Each test restores what it changes** (defaults, herdr focus, the pointer, leftover sessions) and reads
   fixture ids from herdr instead of assuming them; otherwise it passes alone and fails in its shard.
 - **Convert a screenshot to sRGB before you read its pixels.** Screenshots come in the display's profile
