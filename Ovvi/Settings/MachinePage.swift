@@ -44,7 +44,7 @@ struct MachinePage: View {
     init(id: String) {
         self.id = id
         _draft = State(initialValue: MachineList.shared.machine(id)
-            ?? Machine(id: UUID().uuidString, name: "", target: "", icon: "server.rack"))
+            ?? .new)
     }
 
     var body: some View {

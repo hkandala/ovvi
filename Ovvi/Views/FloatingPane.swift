@@ -74,6 +74,7 @@ extension WindowPages {
         guard let window = over ?? windows.first(where: { $0.machine.id == machine }) else {
             if windows.isEmpty {
                 early = { float(session: session, pane: pane, machine: machine, agent: agent) }
+                asked = (machine, session)
             } else {
                 windows.first?.cannotFloat(pane, of: session, "no window of machine \(machine).")
             }
@@ -349,4 +350,11 @@ private struct PaneInfo: View {
         }
         .accessibilityElement(children: .combine)
     }
+}
+
+extension WindowPages {
+    /// A click or URL that came before any window (one that started the app), and the machine id and session it asks
+    /// for: the first window opens that session instead of the new-window view, then runs it.
+    static var early: (() -> Void)?
+    static var asked: (machine: String, session: String)?
 }

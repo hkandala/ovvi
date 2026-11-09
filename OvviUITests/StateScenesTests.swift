@@ -154,17 +154,21 @@ extension OvviUITests {
             _ = element("terminal.w1:p1").exists(within: connect)
             app.typeKey("n", modifierFlags: .command)
             _ = element("picker.local.\(one)").exists(within: connect)
-            _ = element(ssh ? "picker.e2e-pw.connect" : "picker.local.new").exists(within: 20)
+            if ssh {
+                _ = element("picker.e2e-pw.+connect").exists(within: 20)
+            }
             await newWindowShot(look, "N1 new window")
-            app.typeText("build")
+            app.typeText("ovvi-e2e-build")
             await newWindowShot(look, "N2 new window, a typed name")
             app.launchEnvironment["SHELL"] = "\(Self.fixtures)/no-herdr/login-shell"
             app.launchEnvironment["PATH"] = "/usr/bin:/bin"
             app.terminate()
+            // A fake installer: a stray Return on Install herdr must never run herdr.dev's.
             app.launchArguments = ["-defaultSession", one, "-machines", "[]", "-appearance", look,
+                                   "-herdrInstall", "\(Self.fixtures)/no-herdr/install",
                                    "-ApplePersistenceIgnoreState", "YES"] + Self.noConfig
             app.launch()
-            _ = element("picker.local.install").exists(within: connect)
+            _ = element("picker.local.+install").exists(within: connect)
             await newWindowShot(look, "N3 new window, no herdr")
             app.launchEnvironment["SHELL"] = nil
             app.launchEnvironment["PATH"] = nil

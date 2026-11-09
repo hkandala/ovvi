@@ -29,8 +29,7 @@ struct OvviApp: App {
             ContentView()
         }
         .windowToolbarStyle(.unifiedCompact)
-        // A new window fills the screen's visible frame, as a zoom does (not full screen); a restored window keeps
-        // its frame.
+        // The screen's visible frame, as a zoom (not full screen); a restored window keeps its frame.
         .defaultWindowPlacement { _, context in
             WindowPlacement(.center, size: context.defaultDisplay.visibleRect.size)
         }
@@ -112,11 +111,12 @@ struct ContentView: View {
             // Closed while it restored: nothing of it may stay.
             if Task.isCancelled {
                 pages.closed()
-            } else if pages.list.isEmpty {
-                // Nothing to restore and nothing asked for (a launch, a reopen from the Dock): never a session by
-                // itself.
+            } else if pages.list.isEmpty, !openAsked() {
+                // Nothing to restore or asked for (a launch, a Dock reopen): never a session by itself.
                 picking = true
             } else {
+                // The ask, if any, is this window's now (its click runs as it joins).
+                WindowPages.asked = nil
                 pages.opened()
                 for page in pages.list {
                     for id in page.floating.keys {
@@ -148,6 +148,15 @@ struct ContentView: View {
                 await store.updateGit(all: true)
             } while await (try? Task.sleep(for: .seconds(10))) != nil
         }
+    }
+
+    /// A notification click or a float URL that started the app: its session opens, as the user asked for it.
+    private func openAsked() -> Bool {
+        guard let asked = WindowPages.asked,
+              let machine = MachineList.shared.machine(asked.machine) else { return false }
+        pages.machine = machine
+        pages.open(asked.session)
+        return true
     }
 
     /// Each page's selection, for `savedSelection`; sorted keys, so the same selection is the same text.
@@ -186,7 +195,8 @@ struct ContentView: View {
 
     /// The machine: `opening`, else `-machine <id>`, else the saved one. Pages: `-session`, else the saved ones
     /// that still run, else a machine's `default` when the window opened for that machine (the machine menu, Add
-    /// Machine); This Mac's first page starts when stopped. None by itself: then the window shows `SessionPicker`.
+    /// Machine); This Mac's first page starts when stopped. None by itself: then the window shows `SessionPicker`, or
+    /// the session a click or URL that started the app asks for.
     private func restore(_ opening: Machine?) async {
         guard pages.list.isEmpty else { return }
         // A window macOS restores gets its scene storage a moment after it first shows; a restored window always

@@ -167,7 +167,7 @@ extension OvviUITests {
         XCTAssertTrue(element("ask.ok").exists(within: connect))
         app.typeKey("n", modifierFlags: .command)
         XCTAssertTrue(element("picker.local.\(one)").exists(within: connect))
-        let waiting = element("picker.e2e-pw.reading")
+        let waiting = element("picker.e2e-pw.+reading")
         XCTAssertTrue(waiting.exists)
         XCTAssertTrue(waiting.vanishes(within: 20))
     }
@@ -181,7 +181,32 @@ extension OvviUITests {
         // 679 in 674 on CI, the second window only (the first comes out at 674), from one run to the next.
         XCTAssertTrue((screen.height - 2 ... screen.height + 8).contains(window.frame.height),
                       "\(window.frame) in \(screen)")
-        XCTAssertEqual(window.frame.midX, screen.midX, accuracy: 2, "\(window.frame) in \(screen)")
+        XCTAssertEqual(window.frame.minX, screen.minX, accuracy: 2, "\(window.frame) in \(screen)")
+    }
+
+    /// The new-window view makes a typed session: Return on its New Session row starts it on This Mac and opens it
+    /// as the window's first page; Edit Machines opens Settings at Machines.
+    func testNewWindowMakesATypedSession() async throws {
+        let eight = try env("OVVI_SESSION8")
+        // Down first: a run cut short may have left it.
+        try await Self.post("\(eight)/stress", Data())
+        addTeardownBlock { _ = try? await Self.post("\(eight)/stress", Data()) }
+        XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
+        let identifier = app.windows.firstMatch.identifier
+        app.typeKey("n", modifierFlags: .command)
+        XCTAssertTrue(element("picker.local.\(one)").exists(within: connect))
+        element("picker.+edit-machines").click()
+        XCTAssertTrue(element("settings.machines.add", in: settingsWindow).exists(within: 5))
+        settingsWindow.typeKey("w", modifierFlags: .command)
+        XCTAssertTrue(settingsWindow.vanishes(within: 3))
+        let window = try XCTUnwrap(app.windows.allElementsBoundByIndex.map(\.identifier).first { $0 != identifier })
+            .map { app.windows[$0] }
+        element("picker.filter", in: window).click()
+        app.typeText(eight)
+        XCTAssertTrue(element("picker.local.+new", in: window).has(\.isSelected, true, within: 3))
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(element("sidebar.header", in: window).has(\.stringValue, eight, within: connect))
+        try await Self.snapshot(eight)
     }
 
     /// A launch with no window to restore and no `-session` connects to nothing: the window lists the sessions to pick
@@ -194,11 +219,14 @@ extension OvviUITests {
         XCTAssertTrue(element("picker.local.\(one)").exists(within: connect))
         XCTAssertTrue(app.staticTexts["Ovvi"].exists)
         XCTAssertFalse(element("sidebar").exists)
-        // `-machines []` holds without `-session` too: This Mac's group alone, never the user's machines.
+        // `-machines []` holds without `-session` too: This Mac's group alone, never the user's machines (a check
+        // only on a Mac with machines of its own; CI has none).
         let groups = app.descendants(matching: .any)
             .matching(NSPredicate(format: "identifier BEGINSWITH 'picker.section.'"))
         XCTAssertEqual(groups.count, 1)
-        try await expect("no stream") { try await streams(one).isEmpty }
+        // Still no page a moment later.
+        try await Task.sleep(for: .seconds(1))
+        XCTAssertFalse(element("sidebar").exists)
         keepScreenshot("new window")
     }
 

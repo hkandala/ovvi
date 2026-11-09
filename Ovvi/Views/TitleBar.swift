@@ -151,7 +151,7 @@ private struct MachineButton: View {
             Button("Open Session…", systemImage: "plus.square.on.square") { openSession = true }
             Divider()
             Button("Add Remote Host…", systemImage: "plus") {
-                pages.hostDialog = Machine(id: UUID().uuidString, name: "", target: "", icon: "server.rack")
+                pages.hostDialog = .new
             }
             if !MachineList.shared.list.isEmpty {
                 Menu("Edit Remote Host", systemImage: "pencil") {

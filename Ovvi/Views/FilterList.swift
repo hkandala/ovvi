@@ -129,7 +129,8 @@ struct FilterList: View {
                             ForEach(Array(items.enumerated().dropLast(pinned)), id: \.offset) { offset, _ in
                                 row(items, offset, index)
                             }
-                            if items.isEmpty {
+                            // The pinned rows are no match (the workspace menu's New Space, Add Machine).
+                            if items.count == pinned {
                                 EmptyState(symbol: "magnifyingglass", title: "No matches", compact: true)
                                     .frame(maxWidth: .infinity)
                             }

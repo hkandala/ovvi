@@ -29,12 +29,15 @@ background, its column centered in the room under the title row:
   then 24 pt lower one glass list (the Open Session panel's look, 440 pt wide,
   its list at most 420 pt tall, then it scrolls).
 - The list's field is "Find a session", with the keyboard. Typing filters the
-  sessions; the arrows or the pointer move the light, Return or a click opens
-  the lit row, Esc closes the window.
+  sessions (a machine's other rows stay only when its name matches), and the
+  machines with a matching session come first, so Return opens the first
+  match; the arrows or the pointer move the light, a click opens a row, Esc
+  closes the window.
 - One group per machine, This Mac first, under the machine's name: its running
   sessions, then its stopped ones ("Running", "Stopped"), then **New Session**,
   which starts a session of a free name (or "New Session “‹typed name›”") on
-  that machine and opens it. A pick opens the session as the window's first
+  that machine and opens it (in a run with `-session`, only for a typed
+  `ovvi-` name). A pick opens the session as the window's first
   page; on This Mac a stopped one starts.
 - A machine that is still reading shows "Reading sessions…" with a spinner.
   Each machine reads on its own and answers within 15 s, whatever the others
@@ -45,7 +48,10 @@ background, its column centered in the room under the title row:
   what ssh asks in this window), or `default` with the error (`network.slash`
   on a remote machine, a warning triangle on This Mac).
 - At the list's foot, always in view: **Add Machine…** (the Add Remote Host
-  dialog, in this window) and **Edit Machines…** (Settings ▸ Machines).
+  dialog, in this window; Add opens the machine's `default` in this window and
+  connects) and **Edit Machines…** (Settings ▸ Machines). The list is at most
+  as tall as the window leaves room for (its height less 400 pt, at least
+  120 pt).
 - A window that macOS restores before its pick shows the view again. A run
   with `-session` (or a test's `-defaultSession`) lists only `ovvi-*`
   sessions, and its fix rows open that session, not `default`.

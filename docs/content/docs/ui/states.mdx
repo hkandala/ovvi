@@ -54,7 +54,8 @@ and under it at most one line of what the work is doing.
 | A card comes back after it let go of its stream and surface (past the 25 most recently shown, D46) | its last picture shows over a new surface until herdr's frames settle, then the new picture; if the system took the picture back, as a pane opened for the first time (above) |
 | A card's size keeps changing (a window drag, a divider drag, the sidebar, layout motion) | its terminal keeps its grid, clipped at the top left; 150 ms after the last change (or when a window drag ends) it takes the new size and keeps showing its last picture until herdr's frames at the new grid settle (as above), then shows them at once, never blank. The same for a new text size (⌘+, ⌘-) |
 | Find with no match | "0 of 0", nothing highlighted, no scroll |
-| A folder dropped on the Dock icon with no window | a window opens, and the space opens in it once its page is live |
+| A folder dropped on the Dock icon with no window | a window opens on the [new-window view](/docs/ui/window#new-window); the space opens once the user picks a session of This Mac and its page is live |
+| A notification click or an `ovvi://float` URL that starts the app (no window) | the first window opens that session instead of the new-window view, then selects or floats the pane |
 | A folder dropped on the Dock icon while the page in view is not live | the folders wait for a live page in view |
 | A done agent the user opens | it stays Done (the green check on its agent row, its icon on the tab and the space) while its pane has the keyboard, also with the app in the background; once another pane, tab, space or session gets the keyboard, it is Idle; its row stays in place |
 | A space with no agents | no chevron: nothing to unfold |

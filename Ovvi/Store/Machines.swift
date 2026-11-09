@@ -18,6 +18,11 @@ struct Machine: Codable, Hashable, Identifiable {
 
 extension Machine {
     static let thisMac = Machine(id: "local", name: "This Mac", target: "", icon: thisMacIcon)
+    /// A machine to add: a new id, no name or target yet.
+    static var new: Machine {
+        Machine(id: UUID().uuidString, name: "", target: "", icon: "server.rack")
+    }
+
     /// This Mac's own name, as set in System Settings ("Hari's MacBook Pro"). Read once: a rename shows after a
     /// relaunch.
     static let computerName = SCDynamicStoreCopyComputerName(nil, nil) as String? ?? thisMac.name
@@ -59,7 +64,8 @@ final class MachineList {
 
     /// The raw arguments: the argument domain drops a JSON value it cannot read as a property list (`-machines []`),
     /// and a test's launch without `-session` then read the user's machines.
-    private static let isolated = ProcessInfo.processInfo.arguments.contains { $0 == "-session" || $0 == "-machines" }
+    private static let isolated = ProcessInfo.processInfo.arguments
+        .contains { ["-session", "-defaultSession", "-machines"].contains($0) }
 
     private init() {
         // The argument as given: the argument domain reads a JSON array as something else.
@@ -85,8 +91,9 @@ final class MachineList {
     }
 
     /// Add Remote Host's or Settings' Add or Save: the name is the target when empty. A new machine opens in a new
-    /// window, which connects.
-    func keep(_ draft: Machine, target: String) -> Machine {
+    /// window, which connects; in `pages`, a window with no page yet (the new-window view's Add Machine), it opens
+    /// there.
+    func keep(_ draft: Machine, target: String, in pages: WindowPages? = nil) -> Machine {
         var machine = draft
         let name = machine.name.trimmingCharacters(in: .whitespaces)
         machine.name = name.isEmpty ? target : name
@@ -95,7 +102,16 @@ final class MachineList {
             save(machine)
         } else {
             list.append(machine)
-            WindowPages.open(machine: machine, connect: true)
+            if let pages, pages.current == nil {
+                pages.machine = machine
+                pages.open("default")
+                pages.opened()
+                if let store = pages.current?.store {
+                    Task { await store.connect(in: pages) }
+                }
+            } else {
+                WindowPages.open(machine: machine, connect: true)
+            }
         }
         return machine
     }

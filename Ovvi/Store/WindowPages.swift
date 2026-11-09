@@ -50,8 +50,6 @@ final class WindowPages {
     static var windows: [WindowPages] = []
     /// The window closed.
     @ObservationIgnored private var gone = false
-    /// A click or URL that came before any window (one that started the app).
-    static var early: (() -> Void)?
     /// Folders dropped on the Dock icon, waiting for a live page (a drop can start the app).
     private static var folders: [URL] = []
     /// SwiftUI's window opener, from the menu bar's commands (they exist with no window).
@@ -307,8 +305,9 @@ final class WindowPages {
         guard let window = machines.first(where: { $0.list.contains { $0.id == parts.dropFirst().first } })
             ?? machines.first
         else {
-            if windows.isEmpty {
+            if windows.isEmpty, parts.count == 3 {
                 early = { go(to: id) }
+                asked = (parts[0], parts[1])
             }
             return
         }

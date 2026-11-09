@@ -2,7 +2,8 @@ import HerdrKit
 import SwiftUI
 
 /// The machine menu's remote host dialog (ui/add-a-machine): a name, the SSH target and an icon. Add saves a new
-/// machine and opens it in a new window, which connects and asks what ssh asks; Save keeps an edit, Remove takes
+/// machine and opens it in a new window (in this one when it has no page yet), which connects and asks what ssh asks;
+/// Save keeps an edit, Remove takes
 /// the machine off the list.
 struct HostDialog: View {
     let pages: WindowPages
@@ -53,7 +54,7 @@ struct HostDialog: View {
                     .buttonStyle(.glass)
                 Button(editing ? "Save" : "Add") {
                     pages.hostDialog = nil
-                    _ = MachineList.shared.keep(draft, target: target)
+                    _ = MachineList.shared.keep(draft, target: target, in: pages)
                 }
                 .keyboardShortcut(.defaultAction)
                 .buttonStyle(.glassProminent)

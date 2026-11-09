@@ -270,6 +270,14 @@ runs and on-demand on the final head.
   read as a property list), so the machine list's isolation guard saw only `-session`: a test launched without it read
   the user's machine list, and the new-window view tried their SSH under BatchMode once (it failed). The guard reads
   the raw arguments now.
+- **Round 4, review.** Typed text puts the machines with a matching session first, so Return opens a match, not a new
+  This Mac session; the fix rows and spinner rows hide unless the machine's name matches; New Session picks a free
+  name as it starts, and a throwaway run offers it only for typed `ovvi-` names; Add Machine opens the machine in the
+  same window when it has no page; a notification click or a float URL that starts the app opens its session in the
+  first window, not the view; `-defaultSession` isolates the machine list too.
+- **For the user (round 4).** Quit with no window and launch, ⌘N, close every window and click the Dock icon: each shows
+  the view, connects to nothing, and fills the screen. Type part of a session's name and press Return; type a new name
+  and press Return (New Session); Add Machine…; Edit Machines….
 
 ### Track B
 
