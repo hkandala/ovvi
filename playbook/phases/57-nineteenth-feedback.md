@@ -1424,3 +1424,11 @@ you did, no need of reverting them".
     our app. can we make that smoother, may be we can use splashscreen showing our logo or something while the window
     is getting loaded, but we shouldn't show this for consecutive windows later, only on the first start. can we do
     that?" (Track A).
+70. "in the sidebar can we add sorting button beside the + icon, and have two options like manual vs recently active
+    or something like that, basically default is manual sorting, and the workspaces which has recent agent activity,
+    that will be moved up in other sorting if that makes sense, basically if there is a workspace with one agent and
+    its at the bottom and then that agent is finished then that workspace should be moved up coz it has recent agent
+    activity, come up with better shorter name for this sorting, so we will have two options of manual vs recent
+    activity one and also within a workspace, always sort the agents based on their tab positions, if in same tab then
+    based on pane positions, basically fixed sorting withing workspace and you cannot change that, i think right now
+    its sorted based on activity i guess, let's change that" (Track B).
