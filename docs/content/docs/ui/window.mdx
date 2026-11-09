@@ -701,8 +701,11 @@ terminal.
     or from the card's folder) opens only when a file or folder is there on
     the card's machine, so text that only looks like a path (`/reload your
     open pi`) opens nothing. libghostty still underlines it while ⌘ or ⌥ is
-    down: the app cannot veto its highlight. A `:line` after the path lands
-    on that line. Other schemes (`ftp:`) open nothing.
+    down: the app cannot veto its highlight. A `file:` link, or an absolute
+    or `~` path whose name has an extension (`~/notes.md`), names a file for
+    sure: when it is gone, the click shows "File not found" instead. A
+    `:line` after the path lands on that line. Other schemes (`ftp:`) open
+    nothing.
   - Markdown opens in File Explorer's Markdown, HTML as above, other files
     with their default plugin.
   - libghostty underlines a link and reports it only while ⌘ is down, so the
@@ -713,6 +716,11 @@ terminal.
     machine a ⌥-click on any path is taken, and the open checks the path
     there. The card's accessibility title is the link under the pointer.
 - A `mailto:` or an app's link in a page or a chat reply opens its app.
+- **A file that is gone.** A click, ⌘-click, ⌥-click or menu item on a file
+  or folder that is no longer there (a terminal link, a Markdown link, a Git
+  diff's file, a row of File Explorer's tree, ⌘K's Open File, `ovvi open`)
+  opens nothing and shows a [notice](#notice) in the warning tone: "File not
+  found: ‹path›", with the home folder as `~`.
 
 ## Find bar
 

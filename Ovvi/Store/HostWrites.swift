@@ -97,6 +97,12 @@ extension HostStore {
         workspace.git = await GitStatus.of(root, exec: exec)
     }
 
+    /// A file or folder that a click, a link or a command named is gone (ui/window#opening-links-and-files).
+    func notFound(_ path: String) {
+        let shown = PathField.short(path, remote: machine.isRemote)
+        Task { await show(Notice(text: "File not found: \(shown)", tone: .warning)) }
+    }
+
     /// A notice for a few seconds (4 by default), unless a newer one replaced it.
     func show(_ new: Notice, for time: Duration = .seconds(4)) async {
         notice = new

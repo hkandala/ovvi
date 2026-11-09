@@ -589,3 +589,17 @@ deleted; ⌘-click and ⌥-click on it opened nothing.
     check in all our ui where we refer it as workspaces and update it to space(s)" (Track L, new).
     - Every user-facing string (menus, ⌘K, tooltips, empty states, Settings, help, the `ovvi` CLI's help, the skill)
       and the design docs say space(s). herdr's API names (`workspace_id`, `workspace.*`) and code identifiers stay.
+
+### Track C, round 3 (item 28)
+
+- **Cause.** Every open of a file that is gone stopped silently: the terminal let a path that is not there go to the
+  program (so a word that only looks like a path stays inert), and a plugin's open (a Markdown link, a Git diff's file,
+  a tree row) went on to a card on a missing file. `ovvi open` answered the CLI only.
+- **Fix.** One notice, "File not found: ‹path›" (warning tone, the home folder as `~`), from the store. The terminal
+  gives it for a link that names a file for sure: a `file:` link, or an absolute or `~` path whose name has an
+  extension; a plain word (`/reload`) stays the program's. A plugin's open of a path (or of an HTML file's `file:`
+  page) checks the path on the card's machine first. ⌘K's Open File and `ovvi open` say the same.
+- **Decisions.** A relative path in the terminal (`notes.md`) stays inert when gone: libghostty links many plain words.
+  `ovvi open` from an agent also shows the notice in the session's windows, besides its CLI error.
+- **For the user.** ⌘-click and ⌥-click a terminal path to a deleted file, and a Markdown link to one: a notice says
+  "File not found: ~/…".

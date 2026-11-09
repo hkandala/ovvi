@@ -51,6 +51,56 @@ extension OvviUITests {
         XCTAssertFalse(element("pane.\(plain).browser").exists)
     }
 
+    /// A file that is gone says so in a notice, "File not found: ‹path›": a terminal link (⌘-click on an absolute path
+    /// with an extension), `ovvi open` and a Markdown link. A word that only looks like a path opens nothing, silently.
+    func testGoneFilesSayFileNotFound() async throws {
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        let (tab, shell) = try await newTab("gone")
+        element("tab.\(tab)").click()
+        let folder = "/tmp/ovvi-e2e-gone"
+        try await waitForPrompt(shell)
+        addTeardownBlock { [one] in
+            _ = try? await Self.call(one, "pane.send_text", ["pane_id": shell, "text": "rm -rf \(folder)\r"])
+        }
+        try await send("mkdir -p \(folder) && cd \(folder) && printf '[Gone](gone.md)\\n' >notes.md && clear; "
+            + "echo /reload your open pi; echo \(folder)/gone.md\r", to: shell)
+        try await waitFor(shell) { $0.hasPrefix("/reload your open pi\n") }
+        let terminal = element("terminal.\(shell)")
+        let grid = try XCTUnwrap(terminal.value as? String).split(separator: " ").compactMap { Double($0) }
+        let link = { (row: Double) in
+            terminal.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(
+                dx: terminal.frame.width / grid[1] * 5.5, dy: terminal.frame.height / grid[0] * (row + 0.5),
+            ))
+        }
+        let notice = element("detail.notice")
+        XCUIElement.perform(withKeyModifiers: .command) { link(0).click() }
+        XCTAssertFalse(notice.exists(within: 1))
+        XCUIElement.perform(withKeyModifiers: .command) { link(1).click() }
+        notFound(notice, "/tmp/ovvi-e2e-gone/gone.md")
+        keepScreenshot("file not found notice")
+
+        try await send("clear; \(Self.ovviCommand) open gone.md\r", to: shell)
+        notFound(notice, "gone.md")
+
+        let (_, notes) = try await explorerCard("\(folder)/notes.md", "e2egn1")
+        let gone = element("markdown.\(notes).page").links["Gone"]
+        XCTAssertTrue(gone.exists(within: 10))
+        gone.click()
+        notFound(notice, "/tmp/ovvi-e2e-gone/gone.md")
+        XCTAssertEqual(element("pane.\(notes).title").stringValue, "notes.md")
+    }
+
+    /// The notice says the file is not found, then closes with its ✕.
+    private func notFound(_ notice: XCUIElement, _ end: String) {
+        let text = notice.staticTexts.matching(NSPredicate(
+            format: "value BEGINSWITH 'File not found: ' AND value ENDSWITH %@",
+            end,
+        ))
+        XCTAssertTrue(text.firstMatch.exists(within: 10), notice.debugDescription)
+        notice.buttons["notice.close"].click()
+        XCTAssertTrue(notice.vanishes(within: 3))
+    }
+
     /// A File Explorer card on `path` in a tab of its own, shown.
     private func explorerCard(_ path: String, _ iid: String) async throws -> (tab: String, pane: String) {
         let root: [String: Any] = ["type": "pane", "cwd": "/tmp", "label": "ovvi:explorer#\(iid) \(path)",

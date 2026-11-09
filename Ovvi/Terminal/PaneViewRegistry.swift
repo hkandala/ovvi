@@ -142,8 +142,16 @@ final class PaneViewRegistry {
         plugin.web.view.shot.image = keptPicture(terminalID)
         plugin.web.bridge?.shown(webInView.contains(terminalID))
         plugin.web.open = { [weak self] opener, arg, place, how, background in
-            let page = self?.pages?.page(of: terminalID)
-            Task { await page?.open(opener, arg: arg, at: place, from: terminalID, how: how, background: background) }
+            guard let page = self?.pages?.page(of: terminalID) else { return }
+            Task {
+                // A file or folder gone since the page drew its link or row, also an HTML file's `file:` page (a Git
+                // diff's arg is a root and a source).
+                let path = arg.hasPrefix("file:") ? URL(string: arg)?.path ?? "" : arg
+                if !opener.opens.git, path.hasPrefix("/"), await page.store.there(path, from: "/") == nil {
+                    return page.store.notFound(path)
+                }
+                await page.open(opener, arg: arg, at: place, from: terminalID, how: how, background: background)
+            }
         }
         plugins[terminalID] = plugin
         return plugin

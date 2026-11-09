@@ -27,7 +27,7 @@ extension Page {
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         Task {
             guard let path = await resolve(text) else {
-                return await store.show(Notice(text: "No file or folder \(text)", tone: .warning))
+                return store.notFound(text)
             }
             await openAsCLI(path, [], how)
         }

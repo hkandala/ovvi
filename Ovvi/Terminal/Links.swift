@@ -58,19 +58,34 @@ enum Links {
         text.contains("://") ? URL(string: text)?.scheme?.lowercased() : nil
     }
 
-    /// Opens a link of terminal `terminalID`'s card as every link opens, behind the card. False for one that opens
-    /// nothing for sure (a path not on This Mac): a ⌥-click on it is the program's.
+    /// Opens a link of terminal `terminalID`'s card as every link opens, behind the card; a file that is gone says so
+    /// in a notice. False for one that opens nothing for sure (a word that looks like a path, not on This Mac): a
+    /// ⌥-click on it is the program's.
     static func open(_ text: String, how: Opening, from terminalID: String, page: Page?) -> Bool {
         guard let page else { return false }
-        let text = trimmed(text)
+        let text = trimmed(text), named = file(text)
         let cwd = page.store.panes.first { $0.terminalID == terminalID }?.cwd ?? "/"
-        guard likely(text, remote: page.store.machine.isRemote, cwd: cwd) else { return false }
+        guard named != nil || likely(text, remote: page.store.machine.isRemote, cwd: cwd) else { return false }
         Task {
-            guard let target = await target(text, store: page.store, cwd: cwd) else { return }
+            guard let target = await target(text, store: page.store, cwd: cwd) else {
+                return named.map(page.store.notFound) ?? ()
+            }
             await page.open(target.plugin, arg: target.arg, at: target.line, from: terminalID, how: how,
                             background: true)
         }
         return true
+    }
+
+    /// The path of a link that names a file for sure, there or gone: a `file:` URL, or an absolute or `~` path whose
+    /// name has an extension (`~/notes.md:12`). A word that only looks like a path (`/reload`) names none.
+    private static func file(_ text: String) -> String? {
+        let scheme = scheme(text), path = text.replacing(/:\d+(?::\d+)?$/, with: "")
+        if scheme == "file" {
+            return URL(string: text)?.path
+        }
+        guard scheme == nil, path.hasPrefix("/") || path.hasPrefix("~/"), !(path as NSString).pathExtension.isEmpty
+        else { return nil }
+        return path
     }
 
     /// The link may open, at once: a web address, a path on This Mac that is there, any path on a remote machine
