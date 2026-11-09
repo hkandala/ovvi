@@ -89,11 +89,12 @@ struct Look {
         )
     }
 
-    /// The stroke just outside the card's edge.
+    /// The stroke just outside the card's edge. Glass: the same on every card. Classic: a hairline that sets the card
+    /// off the window about as far as Glass's stroke does (1.3:1 in dark), a step stronger on the keyboard card.
     func edge(keyboard: Bool) -> (color: Color, width: CGFloat) {
-        // Glass: the same on every card.
-        pick((.black.opacity(0.5), 1), (.black.opacity(0.1), 1), keyboard ? (.white.opacity(0.1), 0.8) : (.clear, 0),
-             keyboard ? (.black.opacity(0.18), 0.8) : (.black.opacity(0.12), 0.7))
+        pick((.black.opacity(0.5), 1), (.black.opacity(0.1), 1),
+             keyboard ? (.white.opacity(0.16), 0.8) : (.white.opacity(0.1), 0.7),
+             keyboard ? (.black.opacity(0.18), 0.8) : (.black.opacity(0.14), 0.7))
     }
 
     /// A 1 pt line inside the keyboard card's edge while its tab shows two or more cards: the label color, dimmed.
@@ -111,9 +112,9 @@ struct Look {
         style == .glass && !dark ? .drop(color: .black.opacity(0.1), radius: 5, y: 2) : nil
     }
 
-    /// The tab bar's track; none in Classic dark, as in Rex.
+    /// The tab bar's track.
     var track: Color {
-        style == .classic && dark ? .clear : .primary.opacity(contrast ? 0.1 : 0.05)
+        .primary.opacity(contrast ? 0.1 : 0.05)
     }
 
     /// Text and glyphs of the title row and the sidebar, a step dimmer than primary text as in Rex.
@@ -237,8 +238,8 @@ struct Pill<S: InsettableShape>: View {
         case (.glass, _):
             Color.clear.glassEffect(.regular, in: shape)
         case (.classic, true):
-            // Rex's flat #292929 on #1e1e1e.
-            shape.fill(.white.opacity(0.045))
+            // Flat, with a hairline edge: a fill alone (Rex's #292929 on #1e1e1e) hardly showed.
+            shape.fill(.white.opacity(0.07)).overlay(shape.strokeBorder(.white.opacity(0.12)))
         case (.classic, false):
             shape.fill(.white)
                 .overlay(shape.strokeBorder(.black.opacity(0.1)))
