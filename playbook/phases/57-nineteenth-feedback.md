@@ -173,6 +173,8 @@ runs and on-demand on the final head.
 - **Runs:** old detection with the new stand-ins and tests, run 42565388115: red, both new checks. The fix at
   87825163, run 42565499077: green, executed 8 tests (one skipped by design, needs a real claude), covering the
   launcher path's tests too. `make lint build test` green on the rebased tree.
+- **By hand** (the dev app on `ovvi-dev-p57g`, real npm agents): Relaunch with Chat of npm Claude Code opens its chat
+  before and after (native, argv kept); `ovvi agent pi` with npm pi had `chat: false` before and `chat: true` after.
 - Not done: the launch does not outlive the app (after an app relaunch an npm pi's pane shows Relaunch with Chat
   again); keep it in defaults by machine|session|terminal if that shows.
 
