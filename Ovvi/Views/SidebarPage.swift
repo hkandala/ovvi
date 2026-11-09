@@ -82,7 +82,7 @@ struct SidebarPage: View {
                         ForEach(Array(rows.enumerated()), id: \.element.workspace.id) { index, row in
                             let id = row.workspace.id, hasAgents = runsAgents(row.workspace)
                             let shown = hasAgents && (!folds(id) || !filter.isEmpty) ? agents(of: row.workspace) : []
-                            WorkspaceRow(workspace: row.workspace, parent: row.parent, page: page,
+                            WorkspaceRow(workspace: row.workspace, parent: row.parent, page: page, frames: frames,
                                          guideBelow: rows.indices.contains(index + 1)
                                              && rows[index + 1].parent != nil,
                                          ends: (groups.first?.first?.id, groups.last?.first?.id),
@@ -122,7 +122,18 @@ struct SidebarPage: View {
                     // The content's own space, which a scroll does not move: no frame changes at every scroll frame.
                     .coordinateSpace(.named("rows"))
                 }
-                .onScrollGeometryChange(for: CGFloat.self) { $0.visibleRect.minY } action: { frames.top = $1 }
+                .onScrollGeometryChange(for: CGFloat.self) { $0.visibleRect.minY } action: {
+                    frames.top = $1
+                    // No light while the rows move under a still pointer; again once they stop.
+                    if frames.pointer != nil {
+                        frames.pointer = nil
+                    }
+                }
+                .onScrollPhaseChange { _, phase in
+                    if phase == .idle {
+                        aim()
+                    }
+                }
                 .scrollIndicators(.never)
                 // Only asked, never told: the scroll view's writes made the page and the rows in view again.
                 .scrollPosition(.constant(position))
@@ -139,13 +150,20 @@ struct SidebarPage: View {
                     drop = RowsDrop.State()
                 }
                 .fadesScrolledEdges(end: 18 + bottom)
-                .onHover { inside in
-                    hovering = inside
-                    if inside {
-                        held = held ?? Dictionary(uniqueKeysWithValues: store.workspaces.map { ($0.id, order($0)) })
-                    } else {
+                .onContinuousHover { phase in
+                    switch phase {
+                    case let .active(point):
+                        if frames.point == nil {
+                            hovering = true
+                            held = held ?? Dictionary(uniqueKeysWithValues: store.workspaces.map { ($0.id, order($0)) })
+                        }
+                        frames.point = point
+                    case .ended:
+                        frames.point = nil
+                        hovering = false
                         leaves += 1
                     }
+                    aim()
                 }
                 .task(id: leaves) {
                     try? await Task.sleep(for: .seconds(1))
@@ -159,17 +177,53 @@ struct SidebarPage: View {
         }
     }
 
-    /// The workspace's agent panes, newest change of state first (herdr's `state_change_seq`, herdr's order among
-    /// equals), as held while the pointer is over the rows; with a filter, those whose title, agent or tab matches.
     /// Not observed: rows write their frames as the lazy stack makes them, and a body for each would make the rows in
     /// view again.
     final class RowFrames {
-        /// In the rows' content.
+        /// The rows' frames in the content.
         var rows: [String: CGRect] = [:]
         /// The visible part's top in the content: a drop's point in the scroll view plus this.
         var top: CGFloat = 0
+        /// The space headers' and agent lines' frames in the content, for the pointer.
+        var targets: [String: CGRect] = [:]
+        /// The pointer in the scroll view, while it is over it.
+        var point: CGPoint?
+        /// The space header or agent line under the pointer, found from the pointer's place: one hover for the list,
+        /// where a hover region in each row cost every scroll frame a hit test of each (half the frames at 200
+        /// spaces). Each target observes its own light: one value all observed lit every made button again.
+        var pointer: String? {
+            didSet {
+                if pointer != oldValue {
+                    oldValue.map { light($0).lit = false }
+                    pointer.map { light($0).lit = true }
+                }
+            }
+        }
+
+        private var lights: [String: RowLight] = [:]
+
+        /// ponytail: a light per target made, kept with the page (a few hundred); prune with the targets if it grows.
+        func light(_ id: String) -> RowLight {
+            if let light = lights[id] {
+                return light
+            }
+            let light = RowLight()
+            lights[id] = light
+            return light
+        }
     }
 
+    /// The header or line under the pointer lights (`RowFrames.pointer`).
+    private func aim() {
+        let point = frames.point.map { CGPoint(x: $0.x, y: $0.y + frames.top) }
+        let under = point.flatMap { point in frames.targets.first { $0.value.contains(point) }?.key }
+        if under != frames.pointer {
+            frames.pointer = under
+        }
+    }
+
+    /// The workspace's agent panes, newest change of state first (herdr's `state_change_seq`, herdr's order among
+    /// equals), as held while the pointer is over the rows; with a filter, those whose title, agent or tab matches.
     private func agents(of workspace: HostStore.Workspace) -> [HostStore.Pane] {
         let now = order(workspace)
         let ids = held?[workspace.id].map { held in held.filter(now.contains) + now.filter { !held.contains($0) } }
@@ -214,4 +268,10 @@ struct SidebarPage: View {
             return (shown.first === head ? shown : [head] + shown).map { Row($0, $0 === head ? nil : head) }
         }
     }
+}
+
+/// A space header's or an agent line's light under the pointer (`SidebarPage.RowFrames.pointer`).
+@Observable
+final class RowLight {
+    var lit = false
 }

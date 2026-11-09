@@ -9,6 +9,9 @@ struct ChromeStyle: ButtonStyle {
     var tint: Color?
     /// The owner's hover, for a view that moves under the pointer (a dropped tab), which sends no hover event.
     var hovered: Bool?
+    /// Under the pointer, for a list that finds the row under the pointer itself, read in the button's own update; then
+    /// the button has no hover region of its own.
+    var pointer: (() -> Bool)?
 
     func makeBody(configuration: Configuration) -> some View {
         Chrome(style: self, configuration: configuration)
@@ -28,7 +31,7 @@ struct ChromeStyle: ButtonStyle {
                     Group {
                         if !style.selected {
                             // The same in both styles, and they follow the appearance by themselves (D44).
-                            let lit = style.hovered ?? hovering
+                            let lit = style.hovered ?? style.pointer?() ?? hovering
                             let strength = configuration.isPressed ? 0.08 : lit && enabled ? 0.05 : 0
                             // On the tint alone: on the whole label it also faded a menu's light from row to row
                             // (FilterList lights the hovered row).
@@ -42,7 +45,7 @@ struct ChromeStyle: ButtonStyle {
                     .padding(.vertical, style.inset)
                 }
                 .opacity(enabled ? 1 : 0.4)
-                .onHover { hovering = $0 }
+                .onHover(if: style.hovered == nil && style.pointer == nil) { hovering = $0 }
         }
     }
 }

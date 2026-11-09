@@ -21,11 +21,22 @@ extension View {
     /// it (0.15 s grace), and closes when the pointer leaves both, on a click or a scroll outside it, or with Esc.
     /// Not while a mouse button is down (a drag), nor while disabled. In the window, not a `.popover`: a popover is
     /// a window that takes the keyboard when it shows, and a resting pointer must not take keys from the terminal.
-    /// `action` names an accessibility action that opens it.
-    func hoverPanel(place: PanelPlace, action: String? = nil,
+    /// `action` names an accessibility action that opens it. `pointer`: the pointer is over it, for a list that finds
+    /// the row under the pointer itself (read in the panel's own update); then the view has no hover region of its own.
+    func hoverPanel(place: PanelPlace, action: String? = nil, pointer: (() -> Bool)? = nil,
                     @ViewBuilder _ panel: @escaping (_ close: @escaping () -> Void) -> some View) -> some View
     {
-        modifier(HoverPanel(place: place, action: action, panel: panel))
+        modifier(HoverPanel(place: place, action: action, pointer: pointer, panel: panel))
+    }
+
+    /// `onHover`, only when `tracks`.
+    @ViewBuilder
+    func onHover(if tracks: Bool, perform action: @escaping (Bool) -> Void) -> some View {
+        if tracks {
+            onHover(perform: action)
+        } else {
+            self
+        }
     }
 
     /// Draws the open hover panel over this view, the window's content: no scroll view or mask around its
@@ -101,6 +112,7 @@ private struct PanelLayout: Layout {
 private struct HoverPanel<Panel: View>: ViewModifier {
     let place: PanelPlace
     let action: String?
+    let pointer: (() -> Bool)?
     let panel: (_ close: @escaping () -> Void) -> Panel
     @State private var open = false
     @State private var overTrigger = false
@@ -123,8 +135,13 @@ private struct HoverPanel<Panel: View>: ViewModifier {
     }
 
     func body(content: Content) -> some View {
+        let over = pointer?()
         content
-            .onHover { overTrigger = $0
+            .onHover(if: pointer == nil) { overTrigger = $0
+                hovered()
+            }
+            .onChange(of: over) {
+                overTrigger = over ?? false
                 hovered()
             }
             // A click is not a rest: no panel until the pointer comes back (onHover fires only on entering).

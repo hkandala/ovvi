@@ -14,6 +14,8 @@ struct WorkspaceRow: View, Equatable {
     let workspace: HostStore.Workspace
     let parent: HostStore.Workspace?
     let page: Page
+    /// The rows' frames: the header's and the agent lines' go there, for the pointer.
+    let frames: SidebarPage.RowFrames
     /// A worktree row follows: the guide line starts under this row.
     let guideBelow: Bool
     /// The first and the last group's workspace: they cannot move up or down.
@@ -31,7 +33,8 @@ struct WorkspaceRow: View, Equatable {
     /// view again, as `fold` is a new closure each time. What the row reads from the store it observes itself.
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.workspace === rhs.workspace && lhs.parent === rhs.parent && lhs.page === rhs.page
-            && lhs.guideBelow == rhs.guideBelow && lhs.ends == rhs.ends && lhs.hasAgents == rhs.hasAgents
+            && lhs.frames === rhs.frames && lhs.guideBelow == rhs.guideBelow && lhs
+            .ends == rhs.ends && lhs.hasAgents == rhs.hasAgents
             && (lhs.fold == nil) == (rhs.fold == nil) && lhs.agents.elementsEqual(rhs.agents, by: ===)
     }
 
@@ -47,7 +50,7 @@ struct WorkspaceRow: View, Equatable {
             header(selected: selected, shown: shown, height: height)
             if open {
                 VStack(spacing: 0) {
-                    ForEach(agents) { AgentLine(pane: $0, page: page) }
+                    ForEach(agents) { AgentLine(pane: $0, page: page, frames: frames) }
                 }
                 .padding([.horizontal, .bottom], 4)
             }
@@ -92,7 +95,10 @@ struct WorkspaceRow: View, Equatable {
                 .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .leading)
         }
         // The row's glass is the whole row's (`body`); under the pointer only an unselected one fills.
-        .buttonStyle(ChromeStyle(radius: 10, hovered: selected ? false : nil))
+        .buttonStyle(ChromeStyle(radius: 10, hovered: selected ? false : nil) { [frames, id = workspace.id] in
+            frames.light(id).lit
+        })
+        .target(workspace.id, in: frames)
         .dragSource(.workspace(workspace.id), page: page)
         .accessibilityIdentifier("workspace.\(workspace.id)")
         .accessibilityAddTraits(selected ? .isSelected : [])
@@ -221,6 +227,7 @@ struct WorkspaceRow: View, Equatable {
 struct AgentLine: View {
     let pane: HostStore.Pane
     let page: Page
+    let frames: SidebarPage.RowFrames
     @Environment(\.look) private var look
 
     var body: some View {
@@ -241,11 +248,23 @@ struct AgentLine: View {
             .padding(.horizontal, 4)
             .frame(height: 28)
         }
-        .buttonStyle(ChromeStyle(selected: lit, radius: 7, tint: .primary.opacity(0.08)))
+        .buttonStyle(ChromeStyle(selected: lit, radius: 7, tint: .primary.opacity(0.08)) { [frames, id = pane.id] in
+            frames.light(id).lit
+        })
+        .target(pane.id, in: frames)
         .accessibilityIdentifier("agent.\(pane.id)")
         .accessibilityLabel("\(title), \(page.place(pane))")
         .accessibilityValue(pane.state?.title ?? "")
         .accessibilityAddTraits(lit ? .isSelected : [])
-        .hoverPanel(place: .beside) { close in HoverCard(tabID: pane.tabID, page: page, close: close) }
+        .hoverPanel(place: .beside, pointer: { [frames, id = pane.id] in frames.light(id).lit },
+                    { close in HoverCard(tabID: pane.tabID, page: page, close: close) })
+    }
+}
+
+private extension View {
+    /// Its frame in the rows' content, for the pointer, while it is made.
+    func target(_ id: String, in frames: SidebarPage.RowFrames) -> some View {
+        onGeometryChange(for: CGRect.self) { $0.frame(in: .named("rows")) } action: { frames.targets[id] = $0 }
+            .onDisappear { frames.targets[id] = nil }
     }
 }
