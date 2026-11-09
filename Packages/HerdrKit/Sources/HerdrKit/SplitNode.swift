@@ -1,11 +1,11 @@
 import CoreGraphics
 
 /// One tab's split tree, as herdr stores it.
-public indirect enum SplitNode: Equatable, Sendable {
+public indirect enum SplitNode: Hashable, Sendable {
     case leaf(paneID: String)
     case split(Direction, ratio: Double, first: SplitNode, second: SplitNode)
 
-    public enum Direction: String, Decodable, Sendable {
+    public enum Direction: String, Decodable, Hashable, Sendable {
         case right, down
 
         /// herdr has only these two; anything else draws side by side rather than failing the snapshot.

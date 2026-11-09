@@ -103,7 +103,7 @@ In Glass the two are close: the keyboard card is only a little brighter.
 ## Layout motion
 
 - When the tree changes (a split, a close, a move, a ratio from herdr) or a
-  card zooms or restores, card frames animate over 0.13 s, ease-out (0.2 s
+  card zooms or restores, the cards move and size over 0.13 s, ease-out (0.2 s
   felt slow). A new card slides in from its side and fades in
   over half the slide (0.06 s) as the others make room, its edge on theirs; a
   closed card fades away as the others grow (a scale would leave its terminal
@@ -113,11 +113,17 @@ In Glass the two are close: the keyboard card is only a little brighter.
   gives it, and keeps its view (by pane id, or the split's path) whatever
   the tree does. Nested stacks, one per split, made a new card for a pane
   whose leaf became a split or whose sibling closed, so it jumped.
-- During the motion each terminal keeps its size, clipped by its card, and
-  resizes once 150 ms after it ends, as for any change of the card's size
-  ([Size](/docs/talking-to-herdr#size)): resized at every frame, a terminal
-  went blank for most of the motion.
-- The slide has the main thread to itself
+- Core Animation moves the cards, in the render server: each card is its own
+  hosting view, and its frame takes its new place at once while an animation
+  of its layer goes from the old place to the new one. The main thread does no
+  work at the motion's frames, so herdr's answer, a new terminal or a web page
+  that loads meanwhile drops none of them. During the motion a card keeps the
+  larger of its two sizes, clipped by its moving frame (rounded, 10 pt), and
+  lays out at its new size once it ends. Its terminal resizes 150 ms after
+  that, as for any change of the card's size
+  ([Size](/docs/talking-to-herdr#size)). A window resize and the sidebar size
+  the cards at every step, with no animation of their own.
+- The main thread stays free around the slide
   ([Measuring](#measuring-the-slide)). A split's new card slides in with its
   chooser already drawn, and herdr's answer to the split (its snapshot) is
   drawn after the slide. The window cannot be dragged during the slide:

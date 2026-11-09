@@ -101,9 +101,10 @@ extension OvviUITests {
         }
     }
 
-    /// Split, zoom, close and the sidebar animate the card that stays: its host goes through the
-    /// sizes in between (`-recordMotion YES` counts them; a card made again or one that jumps takes one or two), and
-    /// its text never blanks on the way (CI has Reduce Motion on, so this forces motion).
+    /// Split, zoom, close and the sidebar animate the card that stays, and its text never blanks on the way (CI has
+    /// Reduce Motion on, so this forces motion). A split, a zoom or a close moves the card by Core Animation, one
+    /// slide (`-recordMotion YES` counts them on the card); the sidebar sizes its host through the sizes in between
+    /// (counted on the host; a card made again or one that jumps takes one or two).
     /// Under Reduce Motion the card jumps.
     func testLayoutMotionAnimatesWithoutBlanking() async throws {
         relaunch(one, ["-recordMotion", "YES"])
@@ -111,7 +112,7 @@ extension OvviUITests {
         restoreHerdrFocusAfter()
         let (tab, pane) = try await newTab("motion")
         element("tab.\(tab)").click()
-        let host = element("host.\(pane)"), terminal = element("terminal.\(pane)")
+        let host = element("host.\(pane)"), terminal = element("terminal.\(pane)"), card = element("motion.\(pane)")
         if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
             try await expectJump(tab, pane)
         }
@@ -135,7 +136,7 @@ extension OvviUITests {
         ]
         for (step, act) in steps {
             XCTAssertTrue(host.exists(within: 3), step)
-            let sizes = Self.motion(host).sizes
+            let sizes = Self.motion(host).sizes, slides = Self.slides(card)
             // The screen, not the element, which moves: a band across the window through the middle of the terminal.
             // Its text stays in the band while the card moves (no other card has text that low).
             // The largest window: a tooltip or a hover card is a window too.
@@ -151,15 +152,11 @@ extension OvviUITests {
                 inks.append(Self.ink(Self.crop(XCUIScreen.main.screenshot().image, band)))
             }
             XCTAssertGreaterThan(inks.min() ?? 0, before / 3, "\(step): ink \(before) before, then \(inks)")
-            XCTAssertGreaterThanOrEqual(
-                Self.motion(host).sizes - sizes,
-                4,
-                "\(step): sizes from \(sizes) to \(host.label)",
-            )
-            // 0.13 s, a third shorter than 0.2 s: its sizes span 0.13 s less a frame here, up to 0.153 s
-            // on CI's slower frames (0.2 s gave 0.18 here). Zoom and restore only: herdr answers during the others.
-            if ["zoom", "restore"].contains(step) {
-                XCTAssertLessThan(Self.motion(host).ms, 175, "\(step): \(host.label)")
+            if step.hasPrefix("sidebar") {
+                XCTAssertGreaterThanOrEqual(Self.motion(host).sizes - sizes, 4,
+                                            "\(step): sizes from \(sizes) to \(host.label)")
+            } else {
+                XCTAssertGreaterThan(Self.slides(card), slides, "\(step): \(card.label)")
             }
             try await expectText([pane], step)
         }
@@ -242,6 +239,11 @@ extension OvviUITests {
         // The new surface draws, not the old picture held for good: a cleared screen has a prompt's ink only.
         try await send("clear\r", to: "w1:p1")
         try await expect("the cleared screen drawn") { Self.ink(terminal.screenshot().image) < (inks.min() ?? 0) / 3 }
+    }
+
+    /// `-recordMotion`'s label on a card: the motions Core Animation made of it ("slides 3").
+    private static func slides(_ card: XCUIElement) -> Int {
+        Int(card.label.split(separator: " ").last ?? "") ?? 0
     }
 
     /// `-recordMotion`'s label: the sizes the host took, and the ms its latest motion's sizes spanned.

@@ -40,7 +40,7 @@ struct TabPage: View {
 
 /// herdr's split tree, drawn flat: each card and divider is placed in the page by its rectangle, and keeps its view
 /// (by pane id, or the split's path) whatever the tree does. So a split, a close, a swap or a zoom moves and sizes
-/// the same cards: their frames animate, and no terminal view changes host.
+/// the same cards: Core Animation moves them (`CardMotion`), and no terminal view changes host.
 private struct SplitLayout: View {
     let tree: SplitNode
     /// The tab's zoomed card (D11): it fills the page; the others stay at their size, hidden under it, so their
@@ -59,6 +59,7 @@ private struct SplitLayout: View {
     @State private var cards = (came: 0, went: 0)
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.pageHidden) private var hidden
+    @Environment(\.look) private var look
 
     /// A split, a close, a swap or a zoom; the terminals keep their size until it ends (`TerminalHost`).
     private var motion: Animation? {
@@ -66,6 +67,7 @@ private struct SplitLayout: View {
     }
 
     var body: some View {
+        let move = motion == nil || hidden ? 0 : tree.hashValue &+ (zoomed?.hashValue ?? 0)
         GeometryReader { geometry in
             let area = CGRect(origin: .zero, size: geometry.size)
             let parts = Parts(tree, in: area, held: held)
@@ -76,13 +78,16 @@ private struct SplitLayout: View {
                     // A new card slides in from its side as the others make room, its edge on theirs.
                     let entering = placed != nil && views[card.id] == nil
                     let rect = zoomed == card.id ? area : entering ? card.start : card.rect
-                    PaneCard(id: card.id, page: page, away: away)
-                        .overlay { CardFlash(store: page.store, id: card.id) }
+                    CardMotion(rect: rect, move: move, entering: entering, hidden: hidden, id: card.id,
+                               content: PaneCard(id: card.id, page: page, away: away)
+                                   .overlay { CardFlash(store: page.store, id: card.id) }
+                                   .environment(\.look, look).environment(\.pageHidden, hidden))
                         .place(rect)
+                        // A move's frame jumps to its place, and `CardMotion` animates it; the sidebar's slide and a
+                        // window resize size it at every step.
+                        .transaction(value: move) { $0.animation = nil }
                         // Under the zoomed card, which covers it, so its terminal views get no clicks.
-                        .opacity(away ? 0 : 1)
-                        // A new card fades in over half its slide: a longer fade made the panes feel slow.
-                        .animation(motion.map { _ in .easeOut(duration: 0.06) }) { $0.opacity(entering ? 0 : 1) }
+                        .animation(motion) { $0.opacity(away ? 0 : 1) }
                         .zIndex(away ? 0 : 1)
                         .allowsHitTesting(!away)
                         // A closed card fades as the others grow. A new one fades in with its slide (`entering`).
@@ -115,12 +120,12 @@ private struct SplitLayout: View {
         .animation(motion, value: tree)
         .animation(motion, value: zoomed)
         .onChange(of: tree, initial: true) {
-            let views = views(tree.paneIDs), moves = placed != nil && motion != nil && !hidden
+            let views = views(tree.paneIDs), moving = placed != nil && motion != nil && !hidden
+            if moving {
+                page.terminals.pages?.window?.holdStill()
+            }
             withAnimation(motion) {
                 placed = tree.paneIDs.map { ($0, views[$0] ?? $0) }
-            }
-            if moves {
-                page.terminals.pages?.window?.holdStill()
             }
         }
     }
