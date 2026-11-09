@@ -759,3 +759,32 @@ side.
 - **For the user.** Look at the font sheets: `$0.withFontThicken(true)` in `TerminalFont.swift` brings the heavier text
   back. Drop text, a link and a browser image (a file promise) on a terminal, and a file on a remote card. With "Left
   acts as Meta", the right Option types characters.
+
+## Round 5 (items 44–49)
+
+The user keeps round 4's pane padding and the thinner terminal text (no font-thicken): "i am okay to keep the changes
+you did, no need of reverting them".
+
+44. "chat view sometimes doesn't work with relaunch with caht, like i do relaunch with caht, and it still relaunch with
+    caht button instead of opening in chat view, this doesn't happen on this device, i installed ovvi on non meta device
+    where the agents don't have any meta launchers there i noticed this issue, make the relaunch with caht and detecting
+    chat options more robust and improve it better" (Track G).
+45. "and the cmd+d is still lagging man, like its very evident you know, can we figure out better way to improve it? at
+    least one point i noticed is this happens mostly when our new pane thing opens up, when some other browser pane or
+    something i open i don't generally notice, check if there's anything heavy in our new pane view etc and improve it"
+    (Track J).
+46. "so work on this: \"Find all of the implicit state machines in my app. Make the best decision that will elevate all
+    three: the user experience (UX), developer experience (DX), and agent experience (AX) always, without breaking
+    anything.\" go deep and give me a detialed html report on what changes we can make overall, do not make any
+    changes, just analyse and report" (Track P, report only).
+47. "help me build another report showing multiple ui mockups for landing page for ovvi, follow this playbook:
+    https://x.com/DanKulkov/status/1955909008973513043?a=85jZfizHnUSgpyZGmHE. give me at least 5 variations, all have to
+    be minimal, developer focused, with screenshots or video recordings etc. make it modern and minimal without slop
+    like look, only html report with all mockups again, no code changes" (Track Q, report only).
+48. "can we have an option in settings to provide an option on what to open on new pane, default is our new pane view,
+    or user can select different options as default, can be agent, file explorer or git etc plugins" (Track R).
+49. "one more thing when herdr is not installed, we currenly show empty state with install button right, let's have
+    some short info on why herdr has to be installed, like ovvi relies on herdr as runtime or something like that, keep
+    it concise and fit well to the overall ui" (Track A).
+- "only once all these are done, invoke our cleanup things and ci check i mentioned earlier": Track O (item 43) starts
+  after every track of rounds 4 and 5 has landed.
