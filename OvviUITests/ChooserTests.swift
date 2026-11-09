@@ -202,8 +202,9 @@ extension OvviUITests {
         XCTAssertTrue(loading)
         XCTAssertFalse(asked, "the chooser showed")
         let browser = try await poll("a browser pane") { () async throws -> String? in
+            // The chooser's pane closes as the browser's takes its place: read again then.
             let new = try await self.replaced(left, in: tab, besides: [left])
-            return try await self.paneLabel(new).hasPrefix("ovvi:browser#") ? new : nil
+            return try? await self.paneLabel(new).hasPrefix("ovvi:browser#") == true ? new : nil
         }
         XCTAssertTrue(hasKeyboard(element("browser.\(browser).address")))
         keepScreenshot("fixed pick browser")
