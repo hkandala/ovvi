@@ -420,9 +420,14 @@ machine again.
 | ⌘R | Reload Page (enabled once there is a page) | View |
 | ⌘L | Open Location: the address field, all selected | Edit |
 | ⌥⌘I | Show Web Inspector | Edit |
-| ⌘+ ⌘− ⌘0 | zoom the page, 50 to 300 % in 10 % steps, while the card has the keyboard | View |
+| ⌘+ ⌘− ⌘0 | zoom the page, 50 to 300 % in 10 % steps, while the card has the keyboard; ⌘0 also undoes a pinch | View |
 | ⇧⌘R | Replace Pane: a fresh shell with the [New pane](/docs/ui/new-pane) chooser, with no question | File |
 
+- A trackpad pinch magnifies the page around the fingers, and a two-finger
+  double tap zooms to the block under them and back, as in Safari
+  (`allowsMagnification`). The text keeps its size: the page grows, and
+  scrolls inside the card. Overview tiles show pictures, so a pinch over one
+  does nothing.
 - Open Browser Here is hidden. Open Terminal Here and Start Agent Here replace
   the pane with no question while it runs only its placeholder or a plain
   shell, and closing it asks nothing then either. Any other program asks, as

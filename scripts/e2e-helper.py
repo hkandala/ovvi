@@ -34,6 +34,7 @@ Networking as the body its GPU or network process, and gives back the pids it ki
 POST /<session>/ssh-forget with an SSH target as the body removes its host key from ~/.ssh/known_hosts, on CI only, so
 ssh asks for it again.
 POST /<session>/swipe with "x y step steps [pause [vertical [option]]]" as the body posts a two-finger trackpad swipe there (scripts/swipe.swift).
+POST /<session>/pinch with "x y step steps" as the body posts a trackpad pinch there (scripts/pinch.swift).
 POST /<session>/drag with "x y (x y hold)..." as the body drags the mouse from the first point through the others,
 holding at each (scripts/drag.swift).
 POST /<session>/press with "x y (x y hold)... tx ty" as the body drags from x y through the others to tx ty and
@@ -75,7 +76,8 @@ ISOLATED = ["-configFolder", NO_CONFIG, "-archivedHome", "/tmp/ovvi-e2e-archived
 tools = tempfile.mkdtemp()
 folders.append(tools)
 builds = {name: subprocess.Popen(["swiftc", f"scripts/{name}.swift", "-o", f"{tools}/{name}"],
-                                 stderr=open(f"{tools}/{name}.log", "wb")) for name in ("swipe", "drag", "file-drag", "usage")}
+                                 stderr=open(f"{tools}/{name}.log", "wb"))
+          for name in ("swipe", "pinch", "drag", "file-drag", "usage")}
 
 
 def cpu_seconds(pids):
@@ -121,13 +123,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
                             "file-drag", "temporary-file-drag", "usage", "ssh-drop", "ssh-stop", "ssh-forget",
                             "ssh-unforward",
                             "ssh-connections",
-                            "swipe", "drag", "stress", "sample", "heap", "press", "release", "pause", "resume",
+                            "swipe", "pinch", "drag", "stress", "sample", "heap", "press", "release", "pause", "resume",
                             "web-kill"):
             status, reply = 404, f"no action '{action}'".encode()
         elif action in ("control", "takeover") and not re.fullmatch(rb"\w[\w-]*", body):
             status, reply = 400, b"the body must be a terminal id"
         elif action in ("ssh-drop", "ssh-stop", "ssh-forget", "ssh-unforward") and not re.fullmatch(rb"\w[\w-]*", body):
             status, reply = 400, b"the body must be an SSH target"
+        elif action == "pinch" and not re.fullmatch(rb"-?[\d.]+( -?[\d.]+){3}", body):
+            status, reply = 400, b"the body must be x y step steps"
         elif action == "swipe" and not re.fullmatch(rb"-?[\d.]+( -?[\d.]+){3,6}", body):
             status, reply = 400, b"the body must be x y step steps [pause [vertical [option]]]"
         elif action == "stress" and not re.fullmatch(rb"(\d+ \d+ \d+ \d+)?", body):
@@ -171,7 +175,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             status, reply = 400, b"no drag held"
         elif action in (*builds, "press") and any([build.wait() for build in builds.values()]):
             status, reply = 500, b"".join(open(f"{tools}/{name}.log", "rb").read() for name in builds)
-        elif action in ("swipe", "drag"):
+        elif action in ("swipe", "pinch", "drag"):
             run = subprocess.run([f"{tools}/{action}"] + body.decode().split(), capture_output=True, timeout=120)
             status, reply = (200, b"") if run.returncode == 0 else (500, run.stderr)
         elif action == "press":

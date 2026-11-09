@@ -32,6 +32,9 @@ class BrowserView: WKWebView {
         // Safari's Develop menu reaches every card.
         isInspectable = true
         allowsBackForwardNavigationGestures = true
+        // A pinch magnifies the page around the fingers and a two-finger double tap zooms to what is under them, as in
+        // Safari.
+        allowsMagnification = true
     }
 
     /// The key window's browser that has the keyboard: ⌘+ ⌘− ⌘0 zoom its page.
@@ -63,9 +66,12 @@ class BrowserView: WKWebView {
             || super.performKeyEquivalent(with: event)
     }
 
-    /// Per card, ⌘+ ⌘− ⌘0 while it has the keyboard (the font size items); 0 resets.
+    /// Per card, ⌘+ ⌘− ⌘0 while it has the keyboard (the font size items); 0 resets, the pinch's magnification too.
     func zoom(_ step: Int) {
         pageZoom = step == 0 ? 1 : min(3, max(0.5, pageZoom + CGFloat(step) * 0.1))
+        if step == 0 {
+            magnification = 1
+        }
     }
 
     /// The menu holds no address: a New Tab item (and a link's to the Side) sends its New Window item's action, which
