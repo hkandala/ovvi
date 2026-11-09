@@ -83,8 +83,10 @@ public enum PluginPackages {
                 }
                 let packed = try await exec.checkedOutput(["npm", "pack", spec, "--pack-destination", staging.path,
                                                            "--json", "--ignore-scripts"], timeout: .seconds(300))
-                let json = try? JSONSerialization.jsonObject(with: Data(packed.utf8)) as? [[String: Any]]
-                guard let file = json?.first?["filename"] as? String else {
+                let json = try? JSONSerialization.jsonObject(with: Data(packed.utf8))
+                // npm 12 keys the result by package name; earlier versions return an array.
+                let package = (json as? [[String: Any]])?.first ?? (json as? [String: [String: Any]])?.values.first
+                guard let file = package?["filename"] as? String else {
                     throw HerdrError.failed("npm pack printed no package")
                 }
                 // A scoped package's tarball name has no folder in it.

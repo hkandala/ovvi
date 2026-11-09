@@ -95,6 +95,50 @@ private func package(_ folder: URL, version: String, extra: [String: Any] = [:])
     #expect(!FileManager.default.fileExists(atPath: folder.appending(path: "node_modules/@ovvi").path))
 }
 
+private struct PackOutput: Exec {
+    let output: String
+
+    func herdr() async -> String? {
+        nil
+    }
+
+    func run(_ argv: [String]) async throws -> Channel {
+        if argv.starts(with: ["npm", "pack"]) {
+            let staging = URL(filePath: argv[4])
+            try package(staging.appending(path: "package"), version: "1.0.0")
+            return try await offline.run(["printf", "%s", output])
+        }
+        if argv.first == "tar" {
+            #expect(argv == ["tar", "-xzf", argv[4] + "/csv-table-1.0.0.tgz", "-C", argv[4]])
+            return try await offline.run(["true"])
+        }
+        return try await offline.run(argv)
+    }
+}
+
+@Test(arguments: [
+    #"[{"filename":"csv-table-1.0.0.tgz"}]"#,
+    #"{"csv-table":{"filename":"csv-table-1.0.0.tgz"}}"#,
+])
+func `npm pack accepts array and package keyed output`(_ output: String) async throws {
+    let scratch = try scratchFolder()
+    defer { try? FileManager.default.removeItem(at: scratch) }
+    let staged = try await PluginPackages.fetch(.npm("csv-table"), into: scratch, exec: PackOutput(output: output))
+    defer { PluginPackages.discard(staged) }
+    #expect(staged.manifest.id == "csv-table")
+}
+
+@Test(arguments: ["not json", "[]", "{}", "[{}]", #"{"csv-table":{}}"#,
+                  #"[{"filename":42}]"#, #"{"csv-table":{"filename":42}}"#])
+func `npm pack rejects output without a package filename`(_ output: String) async throws {
+    let scratch = try scratchFolder()
+    defer { try? FileManager.default.removeItem(at: scratch) }
+    await #expect(throws: HerdrError.failed("npm pack printed no package")) {
+        try await PluginPackages.fetch(.npm("csv-table"), into: scratch, exec: PackOutput(output: output))
+    }
+    #expect(try FileManager.default.contentsOfDirectory(atPath: scratch.path).isEmpty)
+}
+
 @Test func `a package that is not a plugin is left out of the plugins folder`() async throws {
     let scratch = try scratchFolder()
     defer { try? FileManager.default.removeItem(at: scratch) }
