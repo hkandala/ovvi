@@ -175,8 +175,13 @@ runs and on-demand on the final head.
   launcher path's tests too. `make lint build test` green on the rebased tree.
 - **By hand** (the dev app on `ovvi-dev-p57g`, real npm agents): Relaunch with Chat of npm Claude Code opens its chat
   before and after (native, argv kept); `ovvi agent pi` with npm pi had `chat: false` before and `chat: true` after.
-- Not done: the launch does not outlive the app (after an app relaunch an npm pi's pane shows Relaunch with Chat
-  again); keep it in defaults by machine|session|terminal if that shows.
+- **Follow-up: the chat outlives the app.** A bound launch with no marker in sight goes to herdr as the pane token
+  `ovvi-chat` (command, marker, pids; no `ttl_ms`), read back at the first sight of a terminal. Spiked: such a token
+  merges per key with `ovvi`'s timed ones and stays while herdr's server runs; a server restart gives the pane a new
+  terminal id and no token. The pids must still run in that terminal; their start time is not checked (ponytail note).
+  `testAPiRunListsEveryKindOfTool` now relaunches the app and opens the restored chat. Old launch, run 42567656627:
+  red at the relaunch check. The fix at ea2bfcc1, run 42567956216: executed 4 tests, 0 failures (its artifact upload
+  then hit a network error; two earlier tries died downloading herdr and libghostty).
 
 ## Track H: redraw a terminal's TUI (item 8)
 
