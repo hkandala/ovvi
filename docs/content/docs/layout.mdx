@@ -140,13 +140,6 @@ XCUITest, whose accessibility client takes about a quarter more of the main
 thread. A Release build that a script clicks, with no XCUITest, gives the
 numbers that count.
 
-- Most of a split's main thread time is SwiftUI and AppKit work at each
-  frame of the slide: the layout of the cards that resize, hover and the
-  tracking areas. No code of the app's own stands out.
-- The Glass look composites the window's two blurs (the desktop behind the
-  window and the system glass under its tint) again under every card that
-  moves. With Classic the slide has about half the hitches.
-
 ## Moving the keyboard
 
 The keyboard card is the app's own (see below). Keys move it, and never call

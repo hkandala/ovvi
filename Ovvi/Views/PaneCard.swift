@@ -19,6 +19,8 @@ struct PaneCard: View {
     /// A dragged pane over this card: an edge, or the center (`.some(nil)`).
     @State private var zone: Heading??
     @State private var size = CGSize.zero
+    /// Lit when its page last showed: a kept page out of view keeps it, so showing again changes no web card's theme.
+    @State private var keptLit = false
     @Environment(\.appearsActive) private var active
     @Environment(\.look) private var look
     /// In a kept page out of view (`TabPages`).
@@ -32,15 +34,15 @@ struct PaneCard: View {
         let terminal = pane.flatMap(page.terminal)
         // The tab's keyboard card is lit, also while a text field has the keyboard; herdr's focus until one had it.
         // A split's new card at once, its stand-in too, among the shown tab's cards; a new tab's stand-in.
-        // Not in a kept page out of view: each split changes these (the shown tab's tree, its newest card, the
+        // Not read in a kept page out of view: each split changes them (the shown tab's tree, its newest card, the
         // keyboard), and ran every kept card's body again at each change.
         let shown = hidden ? [] : page.selectedTab?.tree?.paneIDs ?? []
         let newest = hidden ? nil : page.newest.flatMap { newest in
             shown.contains(id) && shown.contains { $0 == newest.id || store.ahead.splitPanes[$0] == newest.id }
                 ? newest.id : nil
         }
-        let lit = !hidden && (newest.map { $0 == id || store.ahead.splitPanes[id] == $0 }
-            ?? pane.map { page.keyboardCard($0.tabID) === $0 } ?? (id == page.standIn))
+        let lit = hidden ? keptLit : newest.map { $0 == id || store.ahead.splitPanes[id] == $0 }
+            ?? pane.map { page.keyboardCard($0.tabID) === $0 } ?? (id == page.standIn)
         let floated = pane.map(page.floats) ?? false
         let follow = hovering && settings.followMouse && !away && active && !floated
         // The watching window's dim (D66), on the header and the terminal.
@@ -119,6 +121,11 @@ struct PaneCard: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         // As the card shows: what runs in it now, for its icon (the snapshot's ask was when the pane was new). Not
         // the view's task: a page that leaves at once (a quick switch) would cancel it. Hidden, it gets no hover end.
+        .onChange(of: lit, initial: true) {
+            if !hidden {
+                keptLit = lit
+            }
+        }
         .onChange(of: hidden, initial: true) {
             if hidden {
                 hovering = false

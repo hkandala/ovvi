@@ -157,7 +157,8 @@ extension HostStore {
     /// Once a split's slide ended: herdr's answer comes during it, and its apply and the views it changes (the new
     /// pane's card and terminal, the menus) took 30–60 ms of the main thread, frames the slide lost.
     func slid() async {
-        if sliding > .now {
+        // A quick second split slides on.
+        while sliding > .now, !Task.isCancelled {
             try? await Task.sleep(until: sliding)
         }
     }

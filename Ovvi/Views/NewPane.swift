@@ -188,10 +188,11 @@ struct NewPaneOverlay: View {
         .animation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.15),
                    value: chooser == nil || waiting)
         .task {
-            if waiting {
+            guard waiting else { return }
+            while page.store.sliding > .now, !Task.isCancelled {
                 try? await Task.sleep(until: page.store.sliding)
-                waiting = false
             }
+            waiting = false
         }
     }
 }

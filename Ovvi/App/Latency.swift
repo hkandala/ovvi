@@ -231,10 +231,12 @@ private final class FrameMeter: NSObject {
     }
 
     private func run(_ name: String, until end: TimeInterval) {
-        self.end = end
-        guard link == nil, let screen = NSScreen.main else { return }
-        self.name = name
-        (start, last, gaps) = (ProcessInfo.processInfo.systemUptime, ProcessInfo.processInfo.systemUptime, [])
+        guard link == nil, let screen = NSScreen.main else {
+            self.end = max(self.end, end)
+            return
+        }
+        let now = ProcessInfo.processInfo.systemUptime
+        (self.name, self.end, start, last, gaps) = (name, end, now, now, [])
         cpu = Latency.threadTime
         (lastCPU, cpus) = (cpu, [])
         link = screen.displayLink(target: self, selector: #selector(frame))
@@ -247,8 +249,9 @@ private final class FrameMeter: NSObject {
         let now = ProcessInfo.processInfo.systemUptime
         gaps.append(now - last)
         last = now
-        cpus.append(Latency.threadTime - lastCPU)
-        lastCPU = Latency.threadTime
+        let thread = Latency.threadTime
+        cpus.append(thread - lastCPU)
+        lastCPU = thread
         guard now > end else { return }
         link.invalidate()
         self.link = nil
@@ -261,10 +264,10 @@ private final class FrameMeter: NSObject {
         let part = { (share: Double) in Int(sorted[Int(Double(sorted.count - 1) * share)] * 1000) }
         // Each hitch's end from the split, its gap, and the main thread's CPU in it: "130+41/30". A gap with little CPU
         // waited on the render server.
-        var end = 0.0
+        var elapsed = 0.0
         let hitches = zip(gaps, cpus).compactMap { gap, cpu in
-            end += gap
-            return gap > link.duration * 1.5 ? "\(Int(end * 1000))+\(Int(gap * 1000))/\(Int(cpu * 1000))" : nil
+            elapsed += gap
+            return gap > link.duration * 1.5 ? "\(Int(elapsed * 1000))+\(Int(gap * 1000))/\(Int(cpu * 1000))" : nil
         }
         let busy = Int((Latency.threadTime - cpu) * 1000)
         record("split \(gaps.count) \(hitches.count) \(time)ms \(part(0.5)) \(part(0.95)) \(part(1)) \(busy)ms "
