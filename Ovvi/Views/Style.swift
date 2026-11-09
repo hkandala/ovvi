@@ -372,7 +372,7 @@ private struct ScrolledFades: ViewModifier {
 }
 
 /// The palette's AppKit rows (`RowView`), as SwiftUI draws `MenuRow` and `Keycap` on the panel's glass (measured on
-/// its pixels): its hierarchical styles are fuller there than AppKit's label colors.
+/// its pixels): its hierarchical styles are fuller there than AppKit's label colors, but with Increase Contrast.
 @MainActor
 enum RowInk {
     static let primary = ink(1, 1, .labelColor), secondary = ink(0.4, 0.42, .secondaryLabelColor),
@@ -390,7 +390,6 @@ enum RowInk {
             : Cap(fill: fill, rim: [1, 1, 0.6], sides: 0.3, outline: .black.withAlphaComponent(0.09))
     }
 
-    /// With Increase Contrast, AppKit's own label color, which follows it.
     private static func ink(_ dark: CGFloat, _ light: CGFloat, _ system: NSColor) -> NSColor {
         NSColor(name: nil) { appearance in
             NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast ? system
