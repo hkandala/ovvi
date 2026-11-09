@@ -1248,10 +1248,14 @@ you did, no need of reverting them".
   neither. `takeSnapshot` fails on a stuck page (WKErrorDomain 1), but as a check it costs a picture of every card
   each time.
   The on-demand set: CI's virtual Mac has no GPU process (the test skips there).
-- **Runs.** testWebCardsDrawAgainAfterTheGPUProcessHangs, local: red on the old code ("the browser after Reload",
-  101 s), green on the new.
+- **Decisions (review).** Per card's pool, not over all of them: a pool reports 0 until its own pages draw, so a card
+  that never drew while the only one that did closed must not read as a dropped process. Each end is logged
+  (`dev.ovvi.app`, category `web`).
+- **Runs.** testWebCardsDrawAgainAfterTheGPUProcessHangs, local: on the old code, with the process held 35 s more and
+  let go, red at "the browser after Reload" (blank, 101 s); green on the new (53 s, at a load of 90–117), the end
+  logged.
 - **For the user.** Leave Ovvi open with browser, Explorer, Markdown and Git cards (some in other tabs) while the Mac
-  is busy. If a card still goes blank, wait 2 s: it draws again by itself; open its other tabs, and Reload once. If it
+  is busy. If a card still goes blank, wait a few seconds: it draws again by itself; open its other tabs, and Reload once. If it
   stays blank, tell us and send `log show --last 2h --style compact --predicate 'process == "Ovvi" AND eventMessage
   CONTAINS "GPU"'`.
 

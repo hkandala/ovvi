@@ -499,7 +499,7 @@ gets the same card.
 - When WebKit's GPU process stops answering (a busy Mac), WebKit gives up on
   it and starts another, but it cannot end the old one, and every page keeps
   drawing through it: each web card, browser and plugin, stays blank, also
-  after **Reload**. The app ends that process within 2 seconds. The pages
+  after **Reload**. The app ends that process within a few seconds. The pages
   connect to the new one and draw again where they were, with no reload; a
   card out of view does so when it shows. WebKit has no public API for its
   GPU process: the app reads its process id with `_gpuProcessIdentifier`.

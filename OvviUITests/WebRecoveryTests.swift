@@ -94,8 +94,8 @@ extension OvviUITests {
     }
 
     /// WebKit gives up on a GPU process that stops answering (a starved Mac) but cannot end it, so every page kept its
-    /// drawing connection to it and stayed blank, Reload too. Drawn again after it: a browser's Reload, a Markdown
-    /// file's change, and a Git card's new commit in a kept tab out of view, shown. Needs a GPU process (not CI's).
+    /// drawing connection to it and stayed blank, Reload too. After it the cards draw again by themselves, a kept
+    /// tab's Git card when shown, and after Reload, a file's change and a new commit. Needs a GPU process (not CI's).
     func testWebCardsDrawAgainAfterTheGPUProcessHangs() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, shell) = try await newTab("hang")
@@ -129,38 +129,38 @@ extension OvviUITests {
         XCTAssertTrue(drawn(pageText("Paragraph 1"), in: page, within: 15), "the browser at first")
         XCTAssertTrue(drawn(heading("Notes"), in: notes, within: 15), "the Markdown card at first")
 
-        let hung = try await hangGPU(over: page)
-        try XCTSkipUnless(hung, "no GPU process (CI's virtual Mac)")
-        // Back to its top, which Reload keeps.
+        let stopped = try await web("web-stop")
+        try XCTSkipIf(stopped.isEmpty, "no GPU process (CI's virtual Mac)")
+        let ended = try await waitsOut(stopped, scrolling: page)
+        XCTAssertTrue(ended, "the app ended the GPU process WebKit gave up on")
+        // By themselves; the browser back at its top, which Reload keeps.
         page.scroll(byDeltaX: 0, deltaY: 10000)
+        XCTAssertTrue(drawn(pageText("Paragraph 1"), in: page, within: 10), "the browser by itself")
+        XCTAssertTrue(drawn(heading("Notes"), in: notes, within: 10), "the Markdown card by itself")
         element("browser.\(browser).reload").click()
         XCTAssertTrue(drawn(pageText("Paragraph 1"), in: page, within: 10), "the browser after Reload")
-        try await send("echo '# Changed' >notes.md && git -c user.name=e2e -c user.email=e2e@ovvi commit -q "
-            + "--allow-empty -m after\r", to: shell)
+        try await send("echo '# Changed' >notes.md\r", to: shell)
         XCTAssertTrue(drawn(heading("Changed"), in: notes, within: 10), "the Markdown card's change")
         try await show(kept)
+        XCTAssertTrue(drawn(commit("before"), in: home, within: 10), "the kept Git card by itself, shown")
+        try await send("git -c user.name=e2e -c user.email=e2e@ovvi commit -q --allow-empty -m after\r", to: shell)
         XCTAssertTrue(drawn(commit("after"), in: home, within: 10), "the kept Git card's new commit")
     }
 
-    /// Stops the app's GPU process while the browser's page scrolls, so its draws wait on it, until WebKit gives up on
-    /// it (10 to 25 s here) and the app ends it. On the old code it lived on: still stopped and with no draw for 30 s
-    /// more, it answered no page once let go, and the pages drew nothing again. False with no GPU process.
-    private func hangGPU(over page: XCUIElement) async throws -> Bool {
-        let stopped = try await web("web-stop")
-        guard !stopped.isEmpty else { return false }
-        var delta = -3000.0, ended = false
+    /// Scrolls the browser's page while the stopped GPU process holds its draws, until WebKit gives up on it (10 to
+    /// 25 s here) and the app ends it: false if it still runs after 30 s. On the old code it lived on, and once let
+    /// go 30 s or more after WebKit gave up, it answered no page: every card stayed blank, Reload too.
+    private func waitsOut(_ stopped: Set<String>, scrolling page: XCUIElement) async throws -> Bool {
+        var delta = -3000.0
         let deadline = Date.now + 30
-        while !ended, Date.now < deadline {
+        while Date.now < deadline {
             page.scroll(byDeltaX: 0, deltaY: delta)
             delta = -delta
-            ended = try await web("web-pids").isDisjoint(with: stopped)
+            if try await web("web-pids").isDisjoint(with: stopped) {
+                return true
+            }
         }
-        if !ended {
-            // A draw that waits on it closes the page's connection (WebKit's own timeout): none until it answers again.
-            try await Task.sleep(for: .seconds(35))
-            _ = try await web("web-resume")
-        }
-        return true
+        return false
     }
 
     /// The element shows its text: both dark and light pixels in its frame, not one blank fill.
