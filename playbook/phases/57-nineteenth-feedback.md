@@ -1623,3 +1623,16 @@ you did, no need of reverting them".
     explorer or git plugins, idk i am just giving random ideas, take different screenshots covering real time use case,
     also for chat view, avoid the permission prompt one, i see we are always taking one with permission prompt, show a
     real looking agent chat, with multiple tool calls etc".
+79. "cmd+d split is now bit weird in terms of glass effect, like i see glass effect flickers on both panes when split
+    happens, this wasn't a problem before, may be the liquid glass fix we did caused this issue? verify and fix this,
+    there shouldn't be any flicker in liquid glass pane borders when splitting is happening" (Track J).
+80. "chat bubbles padding is still not right, especially when long markdown messages are there, with long markdown
+    messages spacing seems very less, i provided image of imessage chat, replicate those spacing for both single line
+    and multiline markdown messages" (`.build/fb57/r7-3.12.26.png`; Track I).
+81. "let's always default our app to open in dark mode for now, our light mode is still not great, so let's default it
+    to dark, user can still change it to auto or light mode from settings" (Track T).
+82. "when i run commands like claude update, or codex update, ovvi recognises those as agent sessions and show progress
+    and shows them in sidebar, can we improve the detection, and detect only when agent is running? not other helper
+    commands, if this detection is coming from herdr itself, don't workaround things, we can leave it, if we are doing
+    the detection from our code, then let's improve it, figure out how herdr detects agent sessions we can do something
+    similar" (Track G).
