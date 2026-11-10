@@ -227,7 +227,7 @@ extension OvviUITests {
     @discardableResult
     private static func expectBetween(_ card: XCUIElement, from old: CGRect, _ step: String) -> Bool {
         let numbers = card.label.split(separator: " ").compactMap { Double($0) }.map { CGFloat($0) }
-        guard numbers.count == 10 else {
+        guard numbers.count == 14 else {
             XCTFail("\(step): \(card.label)")
             return false
         }
@@ -235,6 +235,16 @@ extension OvviUITests {
         let end = CGRect(x: numbers[6], y: numbers[7], width: numbers[8], height: numbers[9]), new = card.frame
         XCTAssertEqual(end.minX, new.minX, accuracy: 2, "\(step): \(card.label) at \(new)")
         XCTAssertEqual(end.minY, new.minY, accuracy: 2, "\(step): \(card.label) at \(new)")
+        // The surface (`CardChrome`) moves with the card.
+        let surface = CGRect(x: numbers[10], y: numbers[11], width: numbers[12], height: numbers[13])
+        for (edge, name) in [(\CGRect.minX, "left"), (\.maxX, "right"), (\.minY, "top"), (\.maxY, "bottom")] {
+            XCTAssertEqual(
+                surface[keyPath: edge],
+                mid[keyPath: edge],
+                accuracy: 3,
+                "\(step): the surface's \(name) edge",
+            )
+        }
         for (edge, name) in [(\CGRect.minX, "left"), (\.maxX, "right"), (\.minY, "top"), (\.maxY, "bottom")] {
             let (low, high) = (min(old[keyPath: edge], new[keyPath: edge]), max(old[keyPath: edge], new[keyPath: edge]))
             XCTAssertTrue((low - 3 ... high + 3).contains(mid[keyPath: edge]),

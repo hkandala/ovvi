@@ -120,6 +120,7 @@ final class MovingCard: NSView {
             host.layer?.masksToBounds = false
             host.layer?.removeAnimation(forKey: "motion")
             host.frame = bounds
+            chrome.place(bounds.size)
         }
         for animation in animations {
             layer.add(animation, forKey: "motion.\(animation.keyPath ?? "")")
@@ -160,8 +161,10 @@ final class MovingCard: NSView {
                 .joined(separator: " ")
         }
         let mid = shown.convert(shown.bounds, to: rootShown), end = layer.convert(layer.bounds, to: root)
+        let surface = chrome.shownFill(in: rootShown) ?? .zero
         let time = Int((ProcessInfo.processInfo.systemUptime - start) * 1000)
-        setAccessibilityLabel("slides \(slides) mid \(onScreen(mid)) at \(time) end \(onScreen(end))")
+        setAccessibilityLabel("slides \(slides) mid \(onScreen(mid)) at \(time) end \(onScreen(end)) surface "
+            + onScreen(surface))
     }
 
     override func setFrameSize(_ size: NSSize) {
@@ -171,9 +174,7 @@ final class MovingCard: NSView {
                                                         height: max(from.height, bounds.height)))
         if chrome.frame.size != bounds.size {
             chrome.frame = bounds
-            if self.from == nil {
-                chrome.place(bounds.size)
-            }
+            chrome.place(bounds.size)
         }
     }
 

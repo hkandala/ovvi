@@ -124,7 +124,8 @@ struct PaneCard: View {
         .clipShape(CardSurface.shape)
         // The card's element is its background: a container would merge into a one-pane page's.
         .background {
-            CardSurface(keyboard: lit, drawn: chromeLink == nil)
+            // `CardChrome` draws the surface: this is the card's element.
+            Color.clear.contentShape(CardSurface.shape)
                 .readableText(terminal.map { $0.state.isFailed ? "failed" : $0.ready ? "" : "loading" } ?? "")
                 .accessibilityLabel(page.cardLabel(pane))
                 .accessibilityIdentifier("pane.\(id)")
@@ -132,8 +133,6 @@ struct PaneCard: View {
                 .contextMenu { PaneItems(page: page, pane: pane) }
         }
         .overlay { ActiveBorder(id: id, shown: lit && shown.count > 1 && page.zoomedPaneID == nil) }
-        // Under `CardMotion` the whole card dims, its surface too.
-        .opacity(page.lifted == .pane(id) && chromeLink == nil ? 0.4 : 1)
         .overlay(alignment: .topLeading) {
             if let zone, page.dragging != nil {
                 let half = CGSize(width: size.width / 2, height: size.height / 2)

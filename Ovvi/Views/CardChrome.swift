@@ -12,20 +12,18 @@ final class CardChrome: NSView {
 
     init() {
         super.init(frame: .zero)
-        // Its own layer tree (a layer-hosting view), its y growing downward from the card's top.
+        // Its own layer tree (a layer-hosting view).
         let root = CALayer()
-        root.isGeometryFlipped = true
         layer = root
         wantsLayer = true
         root.sublayers = [drop, fill, lit, rim, edge]
         for part in [fill, lit, rim, rimAll, rimTop, edge] {
             part.cornerCurve = .continuous
+            part.cornerRadius = CardSurface.radius
         }
         for part in [fill, lit, rim, rimAll, rimTop, edge, topFade, glow, drop, shadowCut] {
             part.anchorPoint = .zero
         }
-        // Only the root's sublayers are flipped: the rim's own (its top line and glow) go by the rim's space.
-        rim.isGeometryFlipped = true
         rim.masksToBounds = true
         rim.compositingFilter = "plusL"
         rim.sublayers = [rimAll, rimTop, glow]
@@ -40,6 +38,10 @@ final class CardChrome: NSView {
     @available(*, unavailable)
     required init?(coder _: NSCoder) {
         nil
+    }
+
+    override var isFlipped: Bool {
+        true
     }
 
     override func hitTest(_: NSPoint) -> NSView? {
@@ -60,12 +62,16 @@ final class CardChrome: NSView {
         edge.borderColor = color(edgeLook.color)
         edgeWidth = edgeLook.width
         edge.borderWidth = edgeLook.width
+        edge.cornerRadius = CardSurface.radius + edgeLook.width
+        // A part a look does not draw is no pass of the render server.
+        lit.isHidden = !keyboard
+        rim.isHidden = look.style == .classic
+        drop.isHidden = look.cardDrop == nil
         if let shade = look.cardDrop {
             drop.shadowColor = color(shade)
             drop.shadowOpacity = 1
             drop.shadowRadius = Look.dropRadius
-            // Its own space grows upward.
-            drop.shadowOffset = CGSize(width: 0, height: -Look.dropDown)
+            drop.shadowOffset = CGSize(width: 0, height: Look.dropDown)
         } else {
             drop.shadowOpacity = 0
         }
@@ -97,12 +103,13 @@ final class CardChrome: NSView {
         shadowCut.add(animation("path", cut(old), cut(new)), forKey: "motion")
     }
 
+    /// e2e: where its fill shows now, in that layer's space.
+    func shownFill(in root: CALayer) -> CGRect? {
+        fill.presentation().map { $0.convert($0.bounds, to: root) }
+    }
+
     private func frames(_ size: CGSize) -> [(CALayer, CGRect)] {
-        let card = CGRect(origin: .zero, size: size), radius = CardSurface.radius
-        for part in [fill, lit, rim, rimAll, rimTop] {
-            part.cornerRadius = radius
-        }
-        edge.cornerRadius = radius + edgeWidth
+        let card = CGRect(origin: .zero, size: size)
         return [(fill, card), (lit, card), (rim, card), (rimAll, card), (rimTop, card), (drop, card),
                 (edge, card.insetBy(dx: -edgeWidth, dy: -edgeWidth)),
                 (glow, CGRect(x: 0, y: 0, width: size.width, height: 8)),

@@ -77,10 +77,6 @@ struct Look: Equatable {
         paneButton
     }
 
-    var cardShadow: ShadowStyle? {
-        cardDrop.map { .drop(color: $0, radius: Self.dropRadius, y: Self.dropDown) }
-    }
-
     /// The card shadow's color, at `dropRadius` and `dropDown` pt: Glass light only.
     var cardDrop: Color? {
         style == .glass && !dark ? .black.opacity(0.1) : nil
@@ -184,24 +180,15 @@ struct CardSurface: View {
     static let radius: CGFloat = 10
     static let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
     let keyboard: Bool
-    /// False under a card that `CardChrome` draws: then this is only the card's element.
-    var drawn = true
     @Environment(\.look) private var look
 
     var body: some View {
-        if drawn {
-            surface
-        } else {
-            Color.clear.contentShape(Self.shape)
-        }
-    }
-
-    private var surface: some View {
         let shape = Self.shape, edge = look.edge(keyboard: keyboard)
-        return shape.fill(look.cardFill)
+        shape.fill(look.cardFill)
             // On an opaque copy cut out under the card: on the translucent fill it would be as faint as the fill.
             .background {
-                if let shadow = look.cardShadow {
+                if let drop = look.cardDrop {
+                    let shadow = ShadowStyle.drop(color: drop, radius: Look.dropRadius, y: Look.dropDown)
                     // An overlay does not cut (it darkens the card by about black 0.1); a ZStack does.
                     ZStack { shape.fill(Color.black.shadow(shadow)); shape.fill(.black).blendMode(.destinationOut) }
                         .compositingGroup()
