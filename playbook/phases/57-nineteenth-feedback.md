@@ -1540,3 +1540,6 @@ you did, no need of reverting them".
     also on esc on archives sessions search should collapse it and focus the current pane" (Track B).
 74. "let's also slightly increase space between session header and the first workspace in the sidebar, not too much
     increase, slight increase should be good" (Track B).
+75. "in archive sessions, can we keep fixed height? i see the height of the archive sessions keep changing, when
+    loader is there, when error message is there or when sessions are shown, let's fix it to one height, and loader and
+    error messages should be vertically aligned" (Track B).
