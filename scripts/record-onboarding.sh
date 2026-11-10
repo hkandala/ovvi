@@ -118,7 +118,10 @@ layout() {
     upto 3
     # The app shows a tab made in the space in view by itself.
     h tab create --workspace w5 --cwd "$R/notes" --label Ideas --no-focus >/dev/null
+    # The first click may only take the keys from the new pane's chooser: a second one is harmless.
     upto 4.4
+    tap w1
+    sleep 0.3
     tap w1
     upto 6.8
     wrap
@@ -176,8 +179,13 @@ agents() {
     h pane send-text "$c" "In public/app.js, show under each link's URL when it was created, like \"Created 3 days ago\". \
 Keep the change small, then run npm test." >/dev/null
     h pane send-keys "$c" Enter >/dev/null
-    # Rolls once it is at work: its first step shows.
+    # Rolls once it is at work: its first step shows. Chat shows once off camera first, so its history is drawn when
+    # the click shows it.
     h pane wait-output "$c" --match "⎿" --timeout 90000 >/dev/null
+    o "$c" "$R/shortlink" view "$c" chat >/dev/null
+    sleep 1.5
+    o "$c" "$R/shortlink" view "$c" tui >/dev/null
+    sleep 1
     roll "agents-$1"
     upto 3.5
     tap "pane.$c.view.chat" || o "$c" "$R/shortlink" view "$c" chat >/dev/null
@@ -195,9 +203,17 @@ plugins() {
     cp "$REPO/scripts/onboarding/deploys/package.json" "$W/config/plugins/deploys/"
     cp "$REPO/scripts/onboarding/deploys/main."{ts,css} "$W/config/plugins/deploys/src/"
     o "$shell" "$R/api" --timeout 120 plugins reload deploys >/dev/null
-    h pane run "$shell" "clear" >/dev/null
     tap w2
     tap w2:t2
+    # Each card once, off camera: their pages and the browser's site load before the film, so none shows empty in it.
+    local warm
+    warm=$(o "$shell" "$R/api" open git . --beside "$shell" --json | json "d['pane']")
+    o "$shell" "$R/api" open browser "localhost:$port" --beside "$warm" --json >/dev/null
+    o "$shell" "$R/api" open deploys --beside "$warm" --down >/dev/null
+    sleep 4
+    for warm in $(panes w2:t2 | grep -vx "$shell"); do h pane close "$warm" >/dev/null; done
+    sleep 1
+    h pane run "$shell" "clear" >/dev/null
     sleep 1
     roll "plugins-$1"
     upto 0.4
