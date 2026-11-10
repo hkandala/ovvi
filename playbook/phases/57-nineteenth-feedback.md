@@ -1534,3 +1534,5 @@ you did, no need of reverting them".
 73. "in archive sessoins, when i search for something not available, instead of showing no sessions found, it
     continuously shows reading sessions loader, we should show no sessions found, if no matches to the search, and
     also on esc on archives sessions search should collapse it and focus the current pane" (Track B).
+74. "let's also slightly increase space between session header and the first workspace in the sidebar, not too much
+    increase, slight increase should be good" (Track B).
