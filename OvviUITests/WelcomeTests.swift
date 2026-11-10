@@ -27,6 +27,8 @@ extension OvviUITests {
             app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'tab.'")).count
                 != tabs
         }, "⌘T made a tab behind the welcome")
+        // A key during the intro only ends it: the walk starts once it is gone.
+        XCTAssertTrue(element("welcome.intro").vanishes(within: 5), "the intro stays")
         app.typeKey(.rightArrow, modifierFlags: [])
         XCTAssertTrue(element("welcome.dots").has(\.stringValue, "2 of \(count)", within: 3))
         app.typeKey(.leftArrow, modifierFlags: [])
@@ -150,17 +152,18 @@ extension OvviUITests {
                 throw XCTSkip("\(error)")
             }
             XCTAssertTrue(welcomeNext.exists(within: connect))
-            try await Task.sleep(for: .seconds(4))
-            let install = element("welcome.herdr.install")
+            // The intro (about 2 s), then each page's clip plays once through; the herdr step comes last.
+            try await Task.sleep(for: .seconds(2.5 + 6))
             while welcomeNext.label != "Get Started" {
-                if install.exists {
-                    install.click()
-                    _ = welcomeNext.has(\.isEnabled, true, within: connect)
-                }
-                try await Task.sleep(for: .seconds(4))
                 welcomeNext.click()
+                try await Task.sleep(for: .seconds(6))
             }
-            try await Task.sleep(for: .seconds(4))
+            let install = element("welcome.herdr.install")
+            if install.exists {
+                install.click()
+                _ = welcomeNext.has(\.isEnabled, true, within: connect)
+                try await Task.sleep(for: .seconds(3))
+            }
             welcomeNext.click()
             try await Task.sleep(for: .seconds(1))
             try await Self.post("\(one)/record-stop")

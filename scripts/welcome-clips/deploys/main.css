@@ -1,0 +1,10 @@
+ul { list-style: none; margin: 0; padding: 6px 14px; }
+li { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--divider); }
+li:last-child { border-bottom: 0; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--finished); }
+.building .dot { background: var(--working); animation: pulse 1.2s ease-in-out infinite; }
+.title { flex: 1; }
+.state { color: var(--finished); font-weight: 500; }
+.building .state { color: var(--working); }
+.when { color: var(--dim); min-width: 44px; text-align: right; }
+@keyframes pulse { 50% { opacity: 0.35; } }

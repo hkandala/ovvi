@@ -1,0 +1,37 @@
+{
+  "name": "deploys",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The latest deploys of this project.",
+  "scripts": {
+    "build": "esbuild src/main.ts --bundle --splitting --format=esm --minify --sourcemap --target=safari18 --log-level=warning --outdir=dist",
+    "dev": "npm run build -- --watch",
+    "check": "tsc -p ."
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2"
+  },
+  "peerDependencies": {
+    "@ovvi/plugin-api": "*"
+  },
+  "peerDependenciesMeta": {
+    "@ovvi/plugin-api": {
+      "optional": true
+    }
+  },
+  "ovvi": {
+    "id": "deploys",
+    "name": "Deploys",
+    "api": 3,
+    "entry": "dist/main.js",
+    "icon": "paperplane",
+    "header": [
+      {
+        "id": "site",
+        "type": "text",
+        "style": "dim"
+      }
+    ]
+  }
+}
