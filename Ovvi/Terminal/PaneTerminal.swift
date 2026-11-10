@@ -86,6 +86,9 @@ final class PaneTerminal {
         guard state.isFailed else { return }
         guard live else { return retried = nil }
         if retried.map({ .now - $0 >= .seconds(5) }) ?? true {
+            // The first try since it failed, or since the page came back from Reconnecting: its card loads, not
+            // "stopped". Later tries keep the panel (`end`).
+            state = retried == nil ? .idle : state
             retried = .now
             open()
         }
@@ -310,6 +313,17 @@ final class PaneTerminal {
 }
 
 extension PaneTerminal {
+    /// Its page's session answers: a stream that failed then is the pane's own.
+    var live: Bool {
+        view.store()?.state == .live
+    }
+
+    func scroll(lines: Int, column: Int, row: Int, modifiers: Int) {
+        if state == .live {
+            stream?.scroll(lines: lines, column: column, row: row, modifiers: modifiers)
+        }
+    }
+
     func resize(columns: Int, rows: Int) {
         stream?.resize(cols: columns, rows: rows, cellWidth: Int(view.metrics?.cellWidthPixels ?? 0),
                        cellHeight: Int(view.metrics?.cellHeightPixels ?? 0))
@@ -327,10 +341,6 @@ extension PaneTerminal {
         open()
     }
 
-    var live: Bool {
-        view.store()?.state == .live
-    }
-
     func mouse(_ action: TerminalStream.MouseAction, _ button: TerminalStream.MouseButton,
                column: Int, row: Int, modifiers: Int)
     {
@@ -341,12 +351,6 @@ extension PaneTerminal {
             takeBack()
         } else if state == .live {
             stream?.mouse(action, button, column: column, row: row, modifiers: modifiers)
-        }
-    }
-
-    func scroll(lines: Int, column: Int, row: Int, modifiers: Int) {
-        if state == .live {
-            stream?.scroll(lines: lines, column: column, row: row, modifiers: modifiers)
         }
     }
 

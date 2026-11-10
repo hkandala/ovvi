@@ -75,6 +75,7 @@ struct Detail: View {
             // Reconnecting in one branch, so the page keeps its state through it.
             let reconnecting = store.reconnecting
             tabs()
+                .environment(\.pageReconnecting, reconnecting)
                 .opacity(reconnecting ? 0.5 : 1)
                 .allowsHitTesting(!reconnecting)
                 .overlay {
@@ -210,6 +211,8 @@ private struct TabPages: View {
 
 extension EnvironmentValues {
     @Entry var pageHidden = false
+    /// The page shows Reconnecting over its cards: theirs says it once, so no card shows a state of its own.
+    @Entry var pageReconnecting = false
 }
 
 extension View {

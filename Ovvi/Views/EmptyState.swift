@@ -9,8 +9,15 @@ struct EmptyState<Actions: View>: View {
     var compact = false
     var id: String?
     @ViewBuilder var actions: Actions
+    @Environment(\.pageReconnecting) private var reconnecting
 
     var body: some View {
+        if !reconnecting {
+            content
+        }
+    }
+
+    private var content: some View {
         VStack(spacing: compact ? 6 : 12) {
             Image(symbol: symbol).font(.system(size: compact ? 20 : 32, weight: .light)).foregroundStyle(.secondary)
                 .symbolRenderingMode(.hierarchical).accessibilityHidden(true)
@@ -49,8 +56,15 @@ struct Loader<Icon: View>: View {
     var delay = Duration.zero
     @ViewBuilder var icon: Icon
     @State private var shown = false
+    @Environment(\.pageReconnecting) private var reconnecting
 
     var body: some View {
+        if !reconnecting {
+            content
+        }
+    }
+
+    private var content: some View {
         VStack(spacing: 12) {
             VStack(spacing: 12) {
                 icon.font(.system(size: 32, weight: .light)).foregroundStyle(.secondary)
