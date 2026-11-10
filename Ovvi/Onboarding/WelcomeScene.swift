@@ -41,7 +41,7 @@ struct WelcomeScene: View {
                    scale: last ? machines.scale : Self.scale)
             window(pieces: Piece.remote, stage: last ? 5 : 0, at: CGPoint(x: machines.remote.x + (last ? 0 : 80),
                                                                           y: machines.remote.y), scale: machines.scale)
-                .opacity(stage == 5 ? 1 : 0)
+                .opacity(stage == 5 ? 1 : 0.01)
                 .animation(spring?.delay(stage == 5 ? 0.25 : 0), value: stage)
             // Which machine each window shows, above it.
             label("This Mac", "laptopcomputer").offset(x: machines.mac.x, y: machines.mac.y - 30)
@@ -179,13 +179,14 @@ private struct PieceView: View {
         let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
         let delay = piece.delays[stage] ?? 0
         ZStack(alignment: .topLeading) {
-            // Each stage's picture is drawn, unseen, from `loaded` on, so its decode is done before its page.
+            // Each stage's picture is drawn, unseen, from `loaded` on, so its decode is done before its page. Unseen is
+            // 1%: Core Animation skips a layer at 0, and decodes it only on the frame it shows.
             let keys = piece.stages.keys.filter { $0 <= loaded || here != nil && $0 == shown }.sorted()
             ForEach(keys, id: \.self) { key in
                 let picture = piece.stages[key]
                 Image("welcome.\(picture?.picture ?? "")").resizable().interpolation(.high)
                     .frame(width: picture?.frame.width, height: picture?.frame.height)
-                    .opacity(key == shown && intro == .scene ? 1 : 0)
+                    .opacity(key == shown && intro == .scene ? 1 : 0.01)
             }
             // The intro's pearl pane, which this one grows out of; it fades in place as the picture comes.
             Group {
@@ -207,7 +208,7 @@ private struct PieceView: View {
         }
         .accessibilityElement().accessibilityAddTraits(.isStaticText).accessibilityIdentifier("welcome.picture")
         .accessibilityValue("welcome.\(near?.picture ?? "") \(look.dark ? "dark" : "light")")
-        .opacity(here == nil || intro == .start && reduceMotion ? 0 : 1)
+        .opacity(intro == .start && reduceMotion ? 0 : here == nil ? 0.01 : 1)
         .offset(x: frame.minX, y: frame.minY)
         .animation(reduceMotion ? nil : .spring(duration: 0.75, bounce: 0.12).delay(delay), value: stage)
         .animation(reduceMotion ? nil : .spring(duration: 0.8, bounce: 0.1), value: intro)
