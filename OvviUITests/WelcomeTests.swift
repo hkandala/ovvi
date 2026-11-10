@@ -159,21 +159,25 @@ extension OvviUITests {
             } catch {
                 throw XCTSkip("\(error)")
             }
-            // Next shows once the intro is over; each page's callouts draw in about 2.5 s. The herdr step is last.
-            XCTAssertTrue(welcomeNext.exists(within: connect))
-            let install = element("welcome.herdr.install")
-            for _ in 0 ..< 12 {
-                try await Task.sleep(for: .seconds(3.5))
-                if install.exists {
-                    install.click()
-                    _ = welcomeNext.has(\.isEnabled, true, within: connect)
-                    try await Task.sleep(for: .seconds(2))
-                }
-                if welcomeNext.label == "Get Started", welcomeNext.isEnabled {
+            // As few accessibility queries as can be while it plays: each is a snapshot of the whole app, and a poll
+            // every 0.1 s through the intro stalled its frames for 0.2 s at a time.
+            let intro = element("welcome.intro")
+            for _ in 0 ..< 120 {
+                if intro.exists {
                     break
                 }
-                welcomeNext.click()
+                try await Task.sleep(for: .seconds(0.3))
             }
+            try await Task.sleep(for: .seconds(5))
+            for _ in 1 ..< 6 {
+                welcomeNext.click()
+                try await Task.sleep(for: .seconds(3.5))
+            }
+            welcomeNext.click()
+            try await Task.sleep(for: .seconds(3))
+            element("welcome.herdr.install").click()
+            XCTAssertTrue(welcomeNext.has(\.isEnabled, true, within: connect))
+            try await Task.sleep(for: .seconds(2.5))
             welcomeNext.click()
             try await Task.sleep(for: .seconds(1))
             try await Self.post("\(one)/record-stop")
