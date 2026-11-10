@@ -154,9 +154,10 @@ extension OvviUITests {
             } catch {
                 throw XCTSkip("\(error)")
             }
-            // Next shows once the intro is over; then each page for 4.5 s, as its pictures rise and move in. The herdr
-            // step is the last.
-            XCTAssertTrue(welcomeNext.exists(within: connect))
+            // The intro unwatched (queries of the app's whole tree stall its main thread), then each page for 4.5 s,
+            // as its pictures rise and move in. The herdr step is the last.
+            XCTAssertTrue(element("welcome.intro").exists(within: connect))
+            try await Task.sleep(for: .seconds(3.5))
             let install = element("welcome.herdr.install")
             var last = false
             while !last {
