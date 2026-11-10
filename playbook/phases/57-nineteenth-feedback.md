@@ -366,6 +366,8 @@ runs and on-demand on the final head.
   show the background alone. A window reader that comes during a full-screen change now hears its did notifications
   too. Runs: 42714517118, 42726405079 green (window, restore,
   traffic-light and look tests).
+- **Round 7 (71).** The empty session's "Git projects" list and its shell run are gone; it keeps the icon, the title
+  and line, New Space and Open Folder….
 - **For the user (round 7).** Quit with two windows open and launch: both come back with their sessions; close every
   window, quit, launch: one new-window view. A session you stopped (a reboot) is still skipped, so a window of only
   stopped sessions shows the view. An empty session: New Space, Open Folder…, and your Git projects under ~/code.
