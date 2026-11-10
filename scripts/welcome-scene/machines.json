@@ -1,0 +1,1 @@
+[{"id":"scene-build","name":"build-server","target":"dev@192.0.2.10","icon":"server.rack"},{"id":"scene-mini","name":"studio-mini","target":"192.0.2.24","icon":"macmini"},{"id":"scene-gpu","name":"gpu-box","target":"ubuntu@192.0.2.31","icon":"cpu"}]

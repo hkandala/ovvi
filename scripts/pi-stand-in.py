@@ -4,9 +4,9 @@
 Started by the chooser with Ovvi's flags (`-e <pi-ovvi-<sha8>.ts> --ovvi <state file>`), it needs the extension
 file whole (its sha256 starts with the name's sha8), writes the state lines pi-ovvi writes and a session file in pi's
 format, reports its state to herdr and answers prompts on its terminal: "wait" opens a dialog until 1 is typed, "slow"
-works until Esc and takes a message sent meanwhile after its tool, as pi steers, "/tree" moves the leaf to the
-parent of the last user message, "tools" runs every kind of tool, anything else gets one command and the reply
-"Echo: <prompt>".
+works until Esc and takes a message sent meanwhile after its tool, as pi steers, "/tree" moves the leaf back before
+the last user message, "tools" runs every kind of tool, a prompt of OVVI_STAND_IN_SCENE's turns plays that turn
+(scripts/welcome-scene/turns.py), anything else gets one command and the reply "Echo: <prompt>".
 """
 import hashlib
 import json
@@ -29,6 +29,7 @@ with open(extension, "rb") as file:
 os.makedirs(os.path.dirname(state), mode=0o700, exist_ok=True)
 transcript = os.path.join(folder, os.path.basename(os.path.dirname(state)) + ".jsonl")
 leaf = None
+scene = json.load(open(os.environ["OVVI_STAND_IN_SCENE"]))["pi"] if os.environ.get("OVVI_STAND_IN_SCENE") else {}
 
 
 def line(path, value):
@@ -36,22 +37,46 @@ def line(path, value):
         file.write(json.dumps(value) + "\n")
 
 
-def entry(role, **fields):
+def entry(role, at=None, **fields):
+    """Appends a message entry to the leaf, as pi does."""
     global leaf
     entry_id = uuid.uuid4().hex[:8]
     line(transcript, {"type": "message", "id": entry_id, "parentId": leaf,
-                      "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime()),
-                      "message": {"role": role, "timestamp": int(time.time() * 1000), **fields}})
+                      "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime(at)),
+                      "message": {"role": role, "timestamp": int((at or time.time()) * 1000), **fields}})
     leaf = entry_id
     return entry_id
 
 
-def assistant(content, stop, **fields):
-    entry("assistant", content=content, api="stand-in", provider="stand-in", model="pi-stand-in", stopReason=stop,
-          **fields)
+def assistant(content, stop, model="pi-stand-in", **fields):
+    entry("assistant", content=content, api="stand-in", provider="stand-in", model=model, stopReason=stop, **fields)
+
+
+def play(text, turn):
+    """A scripted turn of the welcome pictures, dated as if it took `secs`: ends idle, or works on in its last tool."""
+    at = time.time() - turn["secs"]
+    entry("user", at=at, content=[{"type": "text", "text": text}])
+    line(state, {"type": "working"})
+    stand_in.report("working")
+    for step in turn["steps"]:
+        started, at = at, at + step.get("secs", 2)
+        if "text" in step:
+            assistant([{"type": "text", "text": step["text"]}], "stop", model=turn["model"], at=at)
+            continue
+        call = "toolu_" + uuid.uuid4().hex[:12]
+        assistant([{"type": "toolCall", "id": call, "name": step["tool"], "arguments": step["arguments"]}], "toolUse",
+                  model=turn["model"], at=started)
+        if "output" in step:
+            entry("toolResult", at=at, toolCallId=call, toolName=step["tool"],
+                  content=[{"type": "text", "text": step["output"]}], details=step.get("details", {}), isError=False)
+    if not turn.get("working"):
+        line(state, {"type": "idle"})
+        stand_in.report("idle")
 
 
 def prompt(text):
+    if text in scene:
+        return play(text, scene[text])
     if text == "/tree":
         entries = {}
         with open(transcript) as file:
