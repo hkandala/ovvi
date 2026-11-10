@@ -149,10 +149,15 @@ plugins() {
     h pane send-text "$shell" "ovvi open git ." >/dev/null
     upto 0.9
     h pane send-keys "$shell" Enter >/dev/null
+    # What ovvi answers is no part of the picture: ⌃L, as one clears a shell.
+    upto 1.6
+    h pane send-keys "$shell" ctrl+l >/dev/null
     upto 2.2
     h pane send-text "$shell" "ovvi open browser localhost:$port --down" >/dev/null
     upto 2.7
     h pane send-keys "$shell" Enter >/dev/null
+    upto 3.4
+    h pane send-keys "$shell" ctrl+l >/dev/null
     upto 4.1
     git=$(h pane list | json "[p['pane_id'] for p in d['result']['panes'] if p['tab_id'] == 'w2:t2' \
 and p.get('label', '').startswith('ovvi:git')][0]")
@@ -199,7 +204,7 @@ drawbox=$(((wx + 6) * 2)):$(((wy + 4) * 2)):180:76:0x$lights:t=fill,crop=$((w * 
 scale=iw*2:ih*2:flags=lanczos,$(python3 scripts/welcome-clips/camera.py 1824x912 ${!keys}),format=yuv420p,\
 split[a][b];[b]trim=end_frame=1,loop=loop=60:size=1,setpts=N/60/TB,fps=60[s];\
 [a][s]xfade=transition=fade:duration=0.5:offset=$(python3 -c "print(round($length - 0.6, 2))")[v]" -map "[v]" \
-        -c:v libx265 -tag:v hvc1 -crf 30 -preset slow -x265-params log-level=error -an -movflags +faststart \
+        -c:v libx265 -tag:v hvc1 -crf 32 -preset slow -x265-params log-level=error -an -movflags +faststart \
         -color_primaries bt709 -color_trc bt709 -colorspace bt709 \
         "$CLIPS/welcome-$1-$2.mp4"
     ls -l "$CLIPS/welcome-$1-$2.mp4"
