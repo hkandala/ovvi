@@ -599,7 +599,9 @@ runs and on-demand on the final head.
   keep the panel (no blink, now checked each turn). The test downs Key Host's link (HostName 192.0.2.1), then makes
   its name unresolvable, kills its master, and checks before, during (also a workspace first shown) and after.
   Red on the old code: 42908657892 ("stopped once back") and 42912697974 ("stopped before Reconnecting"); the first
-  fix still said "stopped" before Reconnecting (42912680770: the stream fails before the store's read does). Pictures: `~/Downloads/ovvi-research/p57f/r7/`.
+  fix still said "stopped" before Reconnecting (42912680770: the stream fails before the store's read does), and a
+  cover over each card's content did not draw over its terminal (42913993186: cards live in their own hosting views,
+  and an AppKit terminal sits over SwiftUI there): the panel replaced it. Green: 42915708766 (4 tests). Pictures: `~/Downloads/ovvi-research/p57f/r7/`.
 - **For the user.** With a devvm-aai browser card open, sleep the Mac for a while, wake it, and reload: the page loads
   without closing the window.
 
