@@ -65,7 +65,9 @@ struct WelcomeView: View {
                     .opacity(named ? 1 : 0).offset(y: moves ? 0 : 8).blur(radius: moves ? 0 : 6)
                     .frame(width: Welcome.size.width).offset(y: 370)
                     .transition(still ? .opacity : .opacity.combined(with: .offset(y: -10)))
-                    .accessibilityIdentifier("welcome.intro")
+                    // From its first frame: a clear view is left out of the accessibility tree.
+                    .accessibilityElement(children: .ignore).accessibilityAddTraits(.isStaticText)
+                    .accessibilityLabel("Ovvi").accessibilityIdentifier("welcome.intro")
                 // The first page's picture, drawn unseen during the intro so it is decoded before the page comes in.
                 Image("welcome/hero").resizable().frame(width: 2, height: 1).opacity(0.01).accessibilityHidden(true)
             }
