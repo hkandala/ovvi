@@ -69,7 +69,7 @@ struct Look: Equatable {
     }
 
     var activeBorder: Color {
-        .primary.opacity(dark ? 0.3 : 0.22)
+        dark ? .white.opacity(0.3) : .black.opacity(0.22)
     }
 
     /// 3.3:1 or more on the window.

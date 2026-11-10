@@ -122,16 +122,19 @@ In Glass the two are close: the keyboard card is only a little brighter.
   loads meanwhile drops none of them. A page's card draws its surface (fill,
   rim, edge, the light Glass shadow) as layers of its own, which the render
   server draws at each frame's size: the same before, during and after the
-  motion. While a card's size changes, only its content is cut by its moving
-  frame (rounded, 10 pt): it keeps the larger of its two sizes and lays out at
-  its new size once the motion ends. Its terminal resizes 150 ms after that, as
-  for any change of the card's size
-  ([Size](/docs/talking-to-herdr#size)). A window resize and the sidebar size
+  motion, with the keyboard card's 1 pt border. Each card makes one motion, to
+  a place known when it starts: its content lays out once, at its new size,
+  as the motion starts, and shows only within the moving card (rounded,
+  10 pt). Its terminal or web page takes the new size then too, so nothing
+  lays out again when the card lands. A window resize and the sidebar size
   the cards at every step, with no animation of their own.
-- The main thread stays free around the slide
-  ([Measuring](#measuring-the-slide)). A split's new card slides in with its
-  chooser already drawn, and herdr's answer to the split (its snapshot) is
-  drawn after the slide. The window cannot be dragged during the slide:
+- A split shows at once under a stand-in id, in the place herdr will give it.
+  herdr's tree takes over once it puts every pane in the same place; a
+  snapshot read before the split's swap or balance does not move a card
+  ([Writes](/docs/talking-to-herdr)). After the split's writes, the second
+  snapshot takes over anyway (another client may have changed the tab).
+- A split's new card slides in with the others, from the same frame, with
+  its chooser already drawn. The window cannot be dragged during the slide:
   AppKit then skips its window drag region, which it would work out again at
   every frame.
   A kept page out of view does not draw its cards again for a split in the
@@ -156,6 +159,14 @@ Explorer, Git, Markdown and a browser, and among six panes. It runs under
 XCUITest, whose accessibility client takes about a quarter more of the main
 thread. A Release build that a script clicks, with no XCUITest, gives the
 numbers that count.
+
+`-recordMotion YES` gives each card's place, its surface's and its content's
+laid out size at each display frame, from a change until 0.4 s after the
+last one. The on-demand UI test `testSplitsMoveEachCardOnceToItsPlace` reads
+them for ⌘D, ⇧⌘D, zoom, restore and close on a terminal, File Explorer and a
+browser: each edge moves one way to its place, never past it, in steps the
+ease-out curve allows, lands once, and stays; the surface stays on the card;
+the content lays out once.
 
 ## Moving the keyboard
 

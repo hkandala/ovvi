@@ -1,7 +1,8 @@
 import AppKit
 
 /// Fits the view to itself once its size stops changing: meanwhile the terminal keeps its grid, clipped, so neither
-/// libghostty nor the program reflows at every step, and a web view does not lay its page out at every step.
+/// libghostty nor the program reflows at every step, and a web view does not lay its page out at every step. In a
+/// card's motion at once: the card lays its content out once, at its final size.
 final class SettlingHost: NSView {
     private var fitting: Task<Void, Never>?
     static let record = UserDefaults.standard.bool(forKey: "recordMotion")
@@ -12,7 +13,8 @@ final class SettlingHost: NSView {
     }
 
     override func resizeSubviews(withOldSize old: NSSize) {
-        if Self.record, frame.size != old {
+        guard frame.size != old else { return }
+        if Self.record {
             sizes += 1
             let now = ProcessInfo.processInfo.systemUptime
             let start = motion.map { now - $0.last < 0.1 ? $0.start : now } ?? now
@@ -20,8 +22,13 @@ final class SettlingHost: NSView {
             setAccessibilityLabel("\(sizes) \(Int((now - start) * 1000))")
         }
         fitting?.cancel()
+        var card = superview
+        while let view = card, !(view is MovingCard) {
+            card = view.superview
+        }
+        let moving = (card as? MovingCard)?.moving == true
         let surface = view as? PaneSurfaceView
-        guard let view, surface == nil || surface?.terminal?.grid != nil, !view.frame.isEmpty, old != .zero
+        guard let view, surface == nil || surface?.terminal?.grid != nil, !view.frame.isEmpty, old != .zero, !moving
         else {
             fit()
             return

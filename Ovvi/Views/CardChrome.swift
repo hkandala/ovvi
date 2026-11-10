@@ -7,6 +7,8 @@ import SwiftUI
 final class CardChrome: NSView {
     private let fill = CALayer(), lit = CALayer(), rim = CALayer(), rimAll = CALayer(), rimTop = CALayer()
     private let topFade = CAGradientLayer(), glow = CAGradientLayer(), edge = CALayer(), drop = CALayer()
+    /// The keyboard card's border, inside its shape.
+    private let active = CALayer()
     private let shadowCut = CAShapeLayer()
     private var edgeWidth: CGFloat = 0, size = CGSize.zero
 
@@ -16,14 +18,14 @@ final class CardChrome: NSView {
         let root = CALayer()
         layer = root
         wantsLayer = true
-        root.sublayers = [drop, fill, lit, rim, edge]
+        root.sublayers = [drop, fill, lit, rim, edge, active]
         (drop.shadowOpacity, drop.shadowRadius) = (1, Look.dropRadius)
         drop.shadowOffset = CGSize(width: 0, height: Look.dropDown)
-        for part in [fill, lit, rim, rimAll, rimTop, edge] {
+        for part in [fill, lit, rim, rimAll, rimTop, edge, active] {
             part.cornerCurve = .continuous
             part.cornerRadius = CardSurface.radius
         }
-        for part in [fill, lit, rim, rimAll, rimTop, edge, topFade, glow, drop, shadowCut] {
+        for part in [fill, lit, rim, rimAll, rimTop, edge, active, topFade, glow, drop, shadowCut] {
             part.anchorPoint = .zero
         }
         rim.masksToBounds = true
@@ -31,6 +33,7 @@ final class CardChrome: NSView {
         rim.sublayers = [rimAll, rimTop, glow]
         rimAll.borderWidth = 0.7
         rimTop.borderWidth = 1
+        active.borderWidth = 1
         rimTop.mask = topFade
         topFade.colors = [CGColor(gray: 0, alpha: 1), CGColor(gray: 0, alpha: 0)]
         drop.mask = shadowCut
@@ -50,8 +53,8 @@ final class CardChrome: NSView {
         nil
     }
 
-    /// The look's colors, the keyboard card's fill and edge when `keyboard`.
-    func paint(_ look: Look, keyboard: Bool) {
+    /// The look's colors, the keyboard card's fill and edge when `keyboard`, its border when `active`.
+    func paint(_ look: Look, keyboard: Bool, active shown: Bool) {
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         let color = { (color: Color) in NSColor(color).cgColor }
@@ -67,6 +70,8 @@ final class CardChrome: NSView {
         edge.cornerRadius = CardSurface.radius + edgeLook.width
         // A part a look does not draw is no pass of the render server.
         lit.isHidden = !keyboard
+        active.borderColor = color(look.activeBorder)
+        active.isHidden = !shown
         rim.isHidden = look.style == .classic
         drop.isHidden = look.cardDrop == nil
         drop.shadowColor = look.cardDrop.map(color)
@@ -105,7 +110,7 @@ final class CardChrome: NSView {
 
     private func frames(_ size: CGSize) -> [(CALayer, CGRect)] {
         let card = CGRect(origin: .zero, size: size)
-        return [(fill, card), (lit, card), (rim, card), (rimAll, card), (rimTop, card), (drop, card),
+        return [(fill, card), (lit, card), (rim, card), (rimAll, card), (rimTop, card), (drop, card), (active, card),
                 (edge, card.insetBy(dx: -edgeWidth, dy: -edgeWidth)),
                 (glow, CGRect(x: 0, y: 0, width: size.width, height: 8)),
                 (topFade, CGRect(x: 0, y: 0, width: size.width, height: 14))]

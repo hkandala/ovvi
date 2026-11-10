@@ -112,6 +112,12 @@ Problems that came back across phases, and the rule that stops each. How we work
 
 ## SwiftUI and AppKit
 
+- **A motion has one target, known when it starts, and nothing moves a card after it lands.** Each split fix (phase 57,
+  rounds 2–7) made a new artifact because four parts moved cards: SwiftUI's layout, Core Animation, herdr's later
+  snapshot (applied after a 0.13 s hold, so a stale one moved every card again at landing) and the content's relayout
+  at landing. Hand a layout shown ahead of herdr over only when herdr's tree puts every pane in the same place; lay a
+  moving card's content out once, at its final size; and check a change with the per-frame track
+  (`testSplitsMoveEachCardOnceToItsPlace`), not a single mid-motion sample.
 - **Never give a `ScrollPosition` binding back what the scroll view wrote into it.** It names a row as a scroll
   begins or ends, and the next body puts that row back at the top: a jump (phases 49, 51 and 52). Use a binding that
   drops the writes and set it only for the app's own scrolls. `defaultScrollAnchor(.bottom)` alone follows new rows

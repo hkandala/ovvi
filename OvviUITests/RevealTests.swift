@@ -121,10 +121,9 @@ extension OvviUITests {
             ("sidebar shown", { self.element("titlebar.sidebar").click() }),
             ("split down", { self.paneMenu(pane, "Split Down") }),
         ]
-        var sampled = 0
         for (step, act) in steps {
             XCTAssertTrue(host.exists(within: 3), step)
-            let sizes = Self.motion(host).sizes, slides = Self.slides(card), place = card.frame
+            let sizes = Self.motion(host).sizes, slides = Self.slides(card.label)
             let band = band(through: terminal), before = Self.ink(Self.crop(XCUIScreen.main.screenshot().image, band))
             try await act()
             var inks: [Double] = []
@@ -139,12 +138,12 @@ extension OvviUITests {
                 XCTAssertGreaterThanOrEqual(Self.motion(host).sizes - sizes, 4,
                                             "\(step): sizes from \(sizes) to \(host.label)")
             } else {
-                XCTAssertGreaterThan(Self.slides(card), slides, "\(step): \(card.label)")
-                sampled += Self.expectBetween(card, from: place, step) ? 1 : 0
+                XCTAssertGreaterThan(Self.slides(card.label), slides, "\(step): \(card.label)")
+                let problems = Self.smoothness(card.label)
+                XCTAssertTrue(problems.isEmpty, "\(step): \(problems.joined(separator: "; "))")
             }
             try await expectText([pane], step)
         }
-        XCTAssertGreaterThan(sampled, 0, "no motion sampled while it ran")
     }
 
     func testAVisitedCardComesBackAtOnce() async throws {
@@ -221,41 +220,6 @@ extension OvviUITests {
             .max { $0.width * $0.height < $1.width * $1.height } ?? .zero
         return CGRect(x: window.minX, y: frame.minY + frame.height * 0.45, width: window.width,
                       height: frame.height * 0.2)
-    }
-
-    /// A sample a busy main thread took after the motion (0.13 s) tests nothing: false then.
-    @discardableResult
-    private static func expectBetween(_ card: XCUIElement, from old: CGRect, _ step: String) -> Bool {
-        let numbers = card.label.split(separator: " ").compactMap { Double($0) }.map { CGFloat($0) }
-        guard numbers.count == 14 else {
-            XCTFail("\(step): \(card.label)")
-            return false
-        }
-        let mid = CGRect(x: numbers[1], y: numbers[2], width: numbers[3], height: numbers[4])
-        let end = CGRect(x: numbers[6], y: numbers[7], width: numbers[8], height: numbers[9]), new = card.frame
-        XCTAssertEqual(end.minX, new.minX, accuracy: 2, "\(step): \(card.label) at \(new)")
-        XCTAssertEqual(end.minY, new.minY, accuracy: 2, "\(step): \(card.label) at \(new)")
-        // The surface (`CardChrome`) moves with the card.
-        let surface = CGRect(x: numbers[10], y: numbers[11], width: numbers[12], height: numbers[13])
-        for (edge, name) in [(\CGRect.minX, "left"), (\.maxX, "right"), (\.minY, "top"), (\.maxY, "bottom")] {
-            XCTAssertEqual(
-                surface[keyPath: edge],
-                mid[keyPath: edge],
-                accuracy: 3,
-                "\(step): the surface's \(name) edge",
-            )
-        }
-        for (edge, name) in [(\CGRect.minX, "left"), (\.maxX, "right"), (\.minY, "top"), (\.maxY, "bottom")] {
-            let (low, high) = (min(old[keyPath: edge], new[keyPath: edge]), max(old[keyPath: edge], new[keyPath: edge]))
-            XCTAssertTrue((low - 3 ... high + 3).contains(mid[keyPath: edge]),
-                          "\(step): the \(name) edge at \(mid[keyPath: edge]), not from \(old) to \(new)")
-        }
-        return numbers[5] < 130
-    }
-
-    private static func slides(_ card: XCUIElement) -> Int {
-        let words = card.label.split(separator: " ")
-        return words.firstIndex(of: "slides").flatMap { Int(words[min($0 + 1, words.count - 1)]) } ?? 0
     }
 
     private static func motion(_ host: XCUIElement) -> (sizes: Int, ms: Int) {

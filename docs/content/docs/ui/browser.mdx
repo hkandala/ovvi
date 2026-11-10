@@ -151,12 +151,13 @@ server's terminal.
 
 - The page is inset 6 pt from the card's sides and bottom, with a 6 pt
   radius, and starts 6 pt under the toolbar, so Back has 11 pt under it. Cards are never glass.
-- **Resize.** While the card's size changes (a split's motion, a divider or a
-  window drag), the page keeps its size, clipped, or with the card's fill at
-  its new edge. 150 ms after the last change, or when a window drag ends, the
-  page takes the new size: one page layout per motion, as a terminal keeps
-  its grid ([States](/docs/ui/states)). A page laid out at every frame made
-  the split's motion stutter.
+- **Resize.** While the card's size changes (a divider or a window drag, the
+  sidebar), the page keeps its size, clipped, or with the card's fill at its
+  new edge. 150 ms after the last change, or when a window drag ends, the
+  page takes the new size: one page layout per drag, as a terminal keeps its
+  grid ([States](/docs/ui/states)). A split's motion gives the page its new
+  size once, as the motion starts. A page laid out at every frame made the
+  split's motion stutter.
 - The tab's title is "Browser", then the page's title (else its host) in
   secondary text, as a terminal tab's "zsh ovvi" ("Browser | Hacker News"
   where a title is plain text: [Tab bar](/docs/ui/window#tab-bar)). Its

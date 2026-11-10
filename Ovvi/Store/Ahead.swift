@@ -29,7 +29,7 @@ struct Ahead {
     }
 
     struct NewSplit {
-        let tabID: String, standIn: String, tree: SplitNode, known: Set<String>
+        let tabID: String, standIn: String, tree: SplitNode
         var after: Int?
     }
 
@@ -86,16 +86,15 @@ struct Ahead {
         var trees = snapshot.trees.compactMapValues { $0.removing(hidden) }
         if let split {
             let now = snapshot.trees[split.tabID]
-            let even = now.flatMap { tree in
-                tree.paneIDs.first { !split.known.contains($0) }.map { tree.evened(around: $0).isEmpty }
-            } == true
-            // The first snapshot with its pane evened ends it, else the second: herdr may keep a ratio its own way,
-            // or a snapshot may be read ahead of the answer.
-            if now == nil || split.after.map({ $0 > 0 || even }) == true {
+            let shown = split.tree.removing(closing.union(splitPanes.filter { closing.contains($0.value) }.keys))
+            // herdr's tree takes over once it places the panes where the split shows them: one read ahead of the swap
+            // or the balance would move the cards a second time. Else the second snapshot after the write: herdr may
+            // keep a ratio its own way, or another client changed the tab.
+            let same = trees[split.tabID].flatMap { now in shown?.places(like: now, renaming: splitPanes) } == true
+            if now == nil || same || split.after.map({ $0 > 0 }) == true {
                 self.split = nil
             } else {
-                trees[split.tabID] = split.tree.removing(closing.union(splitPanes.filter { closing.contains($0.value) }
-                        .keys))
+                trees[split.tabID] = shown
                 self.split?.after = split.after.map { $0 + 1 }
             }
         }

@@ -101,3 +101,14 @@ private func changes(_ list: [(path: [Bool], ratio: Double)]) -> [String: Double
     #expect(right(0.5, down(0.3, leaf("t"), leaf("u")), leaf("v")).neighbor(of: "v", .left) == "u")
     #expect(uneven.neighbor(of: "u", .up) == "t")
 }
+
+@Test func `a tree places its panes like another with its ids renamed`() {
+    let shown = right(0.5, leaf("p1"), leaf("new"))
+    #expect(shown.places(like: right(0.50000001, leaf("p1"), leaf("p2")), renaming: ["new": "p2"]))
+    #expect(!shown.places(like: right(0.5, leaf("p1"), leaf("p2")), renaming: [:]))
+    // herdr's tree read ahead of the swap of a Split Left, and ahead of its balance.
+    #expect(!shown.places(like: right(0.5, leaf("p2"), leaf("p1")), renaming: ["new": "p2"]))
+    #expect(!shown.places(like: right(0.5, leaf("p1"), down(0.5, leaf("p2"), leaf("p3"))), renaming: ["new": "p2"]))
+    #expect(!right(0.333, leaf("p1"), right(0.5, leaf("p2"), leaf("new")))
+        .places(like: right(0.5, leaf("p1"), right(0.5, leaf("p2"), leaf("p3"))), renaming: ["new": "p3"]))
+}

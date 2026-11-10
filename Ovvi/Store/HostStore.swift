@@ -39,7 +39,6 @@ final class HostStore {
     }
 
     @ObservationIgnored var ahead = Ahead()
-    @ObservationIgnored var sliding = ContinuousClock.now
     @ObservationIgnored private(set) var last: Snapshot?
     @ObservationIgnored private(set) var parked: [String: Pane] = [:]
     @ObservationIgnored var lookingTabID: String?
@@ -144,7 +143,6 @@ final class HostStore {
         for await update in await client.updates() {
             switch update {
             case let .snapshot(snapshot):
-                await slid()
                 let start = Latency.threadTime
                 let changes = apply(snapshot)
                 state = .live

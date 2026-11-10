@@ -49,7 +49,7 @@ private struct SplitLayout: View {
     @Environment(\.pageReconnecting) private var reconnecting
 
     private var motion: Animation? {
-        Animation.reduced ? nil : .easeOut(duration: HostStore.slide)
+        Animation.reduced ? nil : .easeOut(duration: MovingCard.slide)
     }
 
     var body: some View {
@@ -61,9 +61,9 @@ private struct SplitLayout: View {
             ZStack(alignment: .topLeading) {
                 ForEach(parts.cards.map { (view: views[$0.id] ?? $0.id, card: $0) }, id: \.view) { _, card in
                     let away = zoomed != nil && zoomed != card.id
-                    let entering = placed != nil && views[card.id] == nil
-                    let rect = zoomed == card.id ? area : entering ? card.start : card.rect
-                    CardMotion(rect: rect, move: move, entering: entering && move != 0, hidden: hidden, id: card.id,
+                    let entering = placed != nil && views[card.id] == nil && move != 0
+                    let rect = zoomed == card.id ? area : card.rect
+                    CardMotion(rect: rect, move: move, start: entering ? card.start : nil, hidden: hidden, id: card.id,
                                look: look,
                                content: PaneCard(id: card.id, page: page, away: away)
                                    .overlay { CardFlash(store: page.store, id: card.id) }
@@ -133,7 +133,7 @@ private extension NSWindow {
         guard NSEvent.pressedMouseButtons == 0 else { return }
         isMovable = false
         Task {
-            try? await Task.sleep(for: .seconds(HostStore.slide))
+            try? await Task.sleep(for: .seconds(MovingCard.slide))
             isMovable = true
         }
     }

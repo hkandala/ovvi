@@ -342,10 +342,12 @@ One path is [Future work](/docs/future-work).
 ### Size
 
 - Card size ÷ cell size gives cols × rows. While the card's size keeps
-  changing (a window drag, a divider drag, the sidebar, layout motion), its
+  changing (a window drag, a divider drag, the sidebar), its
   terminal keeps its grid, clipped at the top left. Once the size has not
   changed for 150 ms, or a window drag ends, the terminal takes the card's size
-  and the new grid goes to herdr at once. Pixel-only changes send nothing.
+  and the new grid goes to herdr at once. A card's layout motion gives its
+  content its new size once, as the motion starts: the terminal takes it then.
+  Pixel-only changes send nothing.
 - herdr answers every resize, even to the same size, with a full frame
   (`"full":true`); its other frames only carry what changed.
 - At a new grid (a resize, a new text size) a card that is not watching

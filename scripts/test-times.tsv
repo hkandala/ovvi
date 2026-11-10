@@ -3,6 +3,7 @@
 # 42621512673; six tests none of them ran from full run 42757073992. Tests they did not run keep their earlier
 # times.
 # Refresh: playbook/ci.md, Refresh the test times.
+330	testSplitsMoveEachCardOnceToItsPlace
 271	testSettingsScenes
 252	testHundredsOfPanesStayQuick
 221	testOverviewOfManyTabsStaysBounded

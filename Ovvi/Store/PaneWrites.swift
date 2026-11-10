@@ -12,14 +12,9 @@ extension HostStore {
         let shown = ahead.splitPanes.first { $0.value == paneID }?.key ?? paneID
         let tab = workspaces.flatMap(\.tabs).first { $0.tree?.paneIDs.contains(shown) == true }
         if let tab, let tree = tab.tree {
-            let known = Set(tree.paneIDs + (last?.trees[tab.id]?.paneIDs ?? []))
-            ahead.split = Ahead.NewSplit(
-                tabID: tab.id,
-                standIn: standIn,
-                tree: tree.split(shown, direction, new: standIn, before: before),
-                known: known,
-            )
-            slide()
+            ahead.split = Ahead.NewSplit(tabID: tab.id, standIn: standIn,
+                                         tree: tree.split(shown, direction, new: standIn, before: before))
+            redraw()
         }
         // herdr's `handle_pane_split` (src/app/api/panes.rs) starts it in the split pane's folder; an earlier split's
         // stand-in has its chooser's.
