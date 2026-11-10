@@ -6,7 +6,7 @@ hash as Codex does (else it shows Codex's "Hooks need review" picker and runs no
 prompt, writes a rollout in Codex's format, reports its state to herdr and draws Codex's input box above its status
 row. Prompts: "wait" shows an approval until 1 is typed, "model" opens a picker (herdr still says idle) until Esc,
 "slow" works until Esc, "new" starts a new session (as `/new` and a prompt do), a prompt of OVVI_STAND_IN_SCENE's
-turns plays that turn (scripts/welcome-scene/turns.py), anything else gets one command and the reply "Echo: <prompt>".
+turns plays that turn (scripts/welcome-scene/scene.py), anything else gets one command and the reply "Echo: <prompt>".
 """
 import hashlib
 import json

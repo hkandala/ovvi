@@ -6,7 +6,7 @@ file whole (its sha256 starts with the name's sha8), writes the state lines pi-o
 format, reports its state to herdr and answers prompts on its terminal: "wait" opens a dialog until 1 is typed, "slow"
 works until Esc and takes a message sent meanwhile after its tool, as pi steers, "/tree" moves the leaf back before
 the last user message, "tools" runs every kind of tool, a prompt of OVVI_STAND_IN_SCENE's turns plays that turn
-(scripts/welcome-scene/turns.py), anything else gets one command and the reply "Echo: <prompt>".
+(scripts/welcome-scene/scene.py), anything else gets one command and the reply "Echo: <prompt>".
 """
 import hashlib
 import json
