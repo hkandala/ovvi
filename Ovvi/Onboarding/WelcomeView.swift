@@ -38,7 +38,7 @@ struct WelcomeView: View {
             case .agents: ("Answer agents in chat", "Claude Code, Codex, Pi or OpenCode: one agent, terminal or chat. "
                     + "Orange needs you, blue works, green is done.")
             case .plugins: ("Open tools beside you", "Git, Browser and File Explorer come built in. Write your own in "
-                    + "TypeScript; you and agents open them with ovvi.")
+                    + "TypeScript; you and agents open them with `ovvi`.")
             case .machines: ("Reach any machine", "Add any machine you can ssh to. Its sessions open in their own "
                     + "window and run on while your Mac sleeps.")
             case .herdr: ("Install herdr, then begin", "herdr runs your sessions. Ovvi installs it for you.")
@@ -51,7 +51,7 @@ struct WelcomeView: View {
             case .running: 4.5
             case .layout: 5
             case .agents: 4.2
-            case .plugins: 5.5
+            case .plugins: 6.5
             case .machines: 3.5
             case .herdr: 0
             }
@@ -78,7 +78,7 @@ struct WelcomeView: View {
             ZStack {
                 VStack(spacing: 6) {
                     Text(current.words.title).font(.system(size: 24, weight: .semibold))
-                    Text(current.words.text).font(.system(size: 15)).foregroundStyle(.secondary)
+                    Text(LocalizedStringKey(current.words.text)).font(.system(size: 15)).foregroundStyle(.secondary)
                         .multilineTextAlignment(.center).lineSpacing(2).frame(maxWidth: 760)
                 }
                 .id(page)

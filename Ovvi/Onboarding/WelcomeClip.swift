@@ -2,8 +2,8 @@ import AVFoundation
 import SwiftUI
 
 /// A welcome page's picture: a short silent clip of the app (Ovvi/Onboarding/Clips, made by
-/// scripts/welcome-clips.sh), looped from its start each time the page shows, with no controls. Reduce Motion: its
-/// first frame, still.
+/// scripts/welcome-clips.sh), looped from its start each time the page shows, with no controls. Reduce Motion: the
+/// frame where its change shows, still.
 struct WelcomeClip: NSViewRepresentable {
     let player: AVQueuePlayer?
 

@@ -206,9 +206,9 @@ encode() {
 drawbox=$(((wx + 6) * 2)):$(((wy + 4) * 2)):180:76:0x$lights:t=fill,crop=$((w * 2)):$((hh * 2)):$((x * 2)):$((y * 2)),\
 scale=iw*2:ih*2:flags=lanczos,$(python3 scripts/welcome-clips/camera.py 1824x912 ${!keys}),format=yuv420p,\
 split[a][b];[b]trim=end_frame=1,loop=loop=60:size=1,setpts=N/60/TB,fps=60[s];\
-[a][s]xfade=transition=fade:duration=0.5:offset=$(python3 -c "print(round($length - 0.6, 2))")[v]" -map "[v]" \
-        -c:v libx265 -tag:v hvc1 -crf 32 -preset slow -x265-params log-level=error -an -movflags +faststart \
-        -color_primaries bt709 -color_trc bt709 -colorspace bt709 \
+[a][s]xfade=transition=fade:duration=0.5:offset=$(python3 -c "print(round($length - 0.6, 2))"),format=yuv420p[v]" \
+        -map "[v]" -c:v libx265 -tag:v hvc1 -crf 32 -preset slow -an -movflags +faststart \
+        -x265-params log-level=error:colorprim=bt709:transfer=bt709:colormatrix=bt709 \
         "$CLIPS/welcome-$1-$2.mp4"
     ls -l "$CLIPS/welcome-$1-$2.mp4"
 }
