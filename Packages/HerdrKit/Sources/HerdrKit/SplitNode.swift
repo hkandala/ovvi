@@ -192,13 +192,14 @@ public extension SplitNode {
         return along.max { shared($0.rect) + near < shared($1.rect) }?.id
     }
 
-    /// Every pane in the same place, with `names` for this tree's ids (herdr keeps ratios as 32-bit floats).
+    /// Every pane in the same place, with `names` for this tree's ids (herdr keeps ratios as 32-bit floats: 1/3
+    /// comes back as 0.33333334).
     func places(like other: SplitNode, renaming names: [String: String]) -> Bool {
         let unit = CGRect(x: 0, y: 0, width: 1, height: 1), mine = rects(in: unit), theirs = other.rects(in: unit)
+        let edges = { (rect: CGRect) in [rect.minX, rect.minY, rect.maxX, rect.maxY] }
         return mine.count == theirs.count && zip(mine, theirs).allSatisfy { one, two in
-            (names[one.id] ?? one.id) == two.id && abs(one.rect.minX - two.rect.minX) < 1e-3
-                && abs(one.rect.minY - two.rect.minY) < 1e-3 && abs(one.rect.maxX - two.rect.maxX) < 1e-3
-                && abs(one.rect.maxY - two.rect.maxY) < 1e-3
+            (names[one.id] ?? one.id) == two.id && zip(edges(one.rect), edges(two.rect))
+                .allSatisfy { abs($0 - $1) < 1e-5 }
         }
     }
 

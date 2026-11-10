@@ -22,11 +22,7 @@ final class SettlingHost: NSView {
             setAccessibilityLabel("\(sizes) \(Int((now - start) * 1000))")
         }
         fitting?.cancel()
-        var card = superview
-        while let view = card, !(view is MovingCard) {
-            card = view.superview
-        }
-        let moving = (card as? MovingCard)?.moving == true
+        let moving = sequence(first: self) { $0.superview }.lazy.compactMap { $0 as? MovingCard }.first?.moving == true
         let surface = view as? PaneSurfaceView
         guard let view, surface == nil || surface?.terminal?.grid != nil, !view.frame.isEmpty, old != .zero, !moving
         else {
@@ -49,6 +45,11 @@ final class SettlingHost: NSView {
     func fit() {
         guard let view, !bounds.isEmpty, view.frame.size != bounds.size else { return }
         Self.place(view, bounds)
+        // e2e: "sizes ms fit ms", the fit's time from the first size of its run.
+        if Self.record, let motion {
+            let fitted = Int((ProcessInfo.processInfo.systemUptime - motion.start) * 1000)
+            setAccessibilityLabel("\(sizes) \(Int((motion.last - motion.start) * 1000)) fit \(fitted)")
+        }
     }
 
     static func settle(_ fitting: inout Task<Void, Never>?, _ fit: @escaping @MainActor () -> Void) {

@@ -3,7 +3,8 @@ import SwiftUI
 
 /// `CardSurface` as Core Animation layers, for a card that `CardMotion` moves: the render server draws its fill, rim,
 /// edge and shadow at each frame's size, exactly as at rest. A SwiftUI surface, laid out once for the motion, would
-/// be cut by the motion's clip, and its rim and edge would change for the slide and back at landing.
+/// be cut by the motion's clip, and its rim and edge would change for the slide and back at landing. It lies under the
+/// card's content: content drawn opaque to the card's edge would hide the keyboard card's border.
 final class CardChrome: NSView {
     private let fill = CALayer(), lit = CALayer(), rim = CALayer(), rimAll = CALayer(), rimTop = CALayer()
     private let topFade = CAGradientLayer(), glow = CAGradientLayer(), edge = CALayer(), drop = CALayer()

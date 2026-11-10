@@ -1834,3 +1834,29 @@ you did, no need of reverting them".
     onboarding pane should be opened and once it reached you'r are all done state then window should open or on skip -
     that split issue is very evident in the onboarding video as well, once the split fixes are done we should re
     record everything once again" (item 78, Track Y4).
+
+### Track Z (item 84)
+
+- **Cause.** Not a spring: a second slide. herdr's snapshots were held for 0.13 s from the key (`slid()`) and then
+  applied together, right at landing. `Ahead` let herdr's tree replace the stand-in tree on "the first snapshot with
+  its pane evened", so a snapshot read before the split's swap or balance moved every card to a stale place for an
+  update and back: land, jump back about 30 pt, slide again (the user's recording, measured per frame; the same in an
+  app-only film of main, `~/Downloads/ovvi-research/p57z/main-split-frames.png`). Each card's content also laid out
+  again at landing (laid out at max(old, new) for the slide), and its terminal or page 150 ms later. Four parts moved
+  cards (SwiftUI's two passes, Core Animation, herdr's late snapshot, the content's relayout); each round fixed one.
+  The audit: `~/Downloads/ovvi-research/p57z/audit.md`.
+- **Fix (one motion per card, its place known at the start).** herdr's tree takes over, after the write, only once it
+  places every pane where the stand-in tree does (`SplitNode.places(like:renaming:)`, 32-bit ratios allowed), else
+  at the third snapshot after the write. The hold is deleted (`Slide.swift`). A card going to the same place (within
+  half a point) is never armed again. Content lays out once, at its final size, as the motion starts; a terminal or
+  web view in a moving card fits then too (`SettlingHost`); drags, the sidebar and window resizes still settle. A new
+  card is armed in `makeNSView`, in the same update as the others (`entering` deleted). The keyboard card's 1 pt
+  border is a `CardChrome` layer, so it follows the card's edge (item 79's "Not fixed" is gone).
+- **Proof.** `-recordMotion` gives each card's place per display frame. The on-demand
+  `testSplitsMoveEachCardOnceToItsPlace` runs ⌘D, a third card, ⇧⌘D, Split Left and Up, zoom, restore, a divider drag
+  and closes on a terminal, File Explorer and a browser, in Glass and Classic, dark and light, and fails a card whose
+  edge goes back, passes its place, jumps more than the curve allows, moves after landing, moves twice, whose surface
+  leaves it, whose content lays out again, or whose terminal fits after the slide.
+- **Review.** One blocker (the hand-over could end a split before its write returned, so a stand-in closed at once
+  could come back); fixed: only after the write. Shoulds fixed: sub-point re-arms from float32 ratios, the 1e-3
+  tolerance (now 1e-5), the test hook's display link on a card that leaves, a third-card step and a fit-at-start check.

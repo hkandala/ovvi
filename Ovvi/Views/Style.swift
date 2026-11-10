@@ -69,7 +69,8 @@ struct Look: Equatable {
     }
 
     var activeBorder: Color {
-        dark ? .white.opacity(0.3) : .black.opacity(0.22)
+        // `.primary` (the label color, 85 %) at 30 % and 22 %, as a fixed color for the chrome's layer.
+        dark ? .white.opacity(0.255) : .black.opacity(0.187)
     }
 
     /// 3.3:1 or more on the window.

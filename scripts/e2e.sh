@@ -20,7 +20,7 @@ made=("$four" "$six" "$eight")
 # The app keeps a state folder and a server log per session.
 trap 'for s in "${made[@]}"; do scripts/herdr-session.sh down "$s" || true
         rm -rf "$HOME/.local/state/ovvi/$s" "$HOME/Library/Logs/Ovvi/$s.log"; done
-    rm -rf /tmp/ovvi-e2e-no-herdr-*' EXIT
+    rm -rf /tmp/ovvi-e2e-no-herdr-* /tmp/ovvi-e2e-smooth' EXIT
 for s in "$one" "$two" "$three" "$five" "$seven"; do
     scripts/herdr-session.sh up "$s"
     made+=("$s")

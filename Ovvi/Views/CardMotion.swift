@@ -101,8 +101,11 @@ final class MovingCard: NSView {
         let old = self.rect
         (self.move, self.rect) = (move, rect)
         host.frame.size = rect.size
-        // The same place (herdr's answer to a split shown ahead): a motion again would start its curve over.
-        guard let layer, old.width > 0, rect != old else { return }
+        // The same place (herdr's answer to a split shown ahead, its ratios as 32-bit floats): a motion again would
+        // start its curve over.
+        let same = zip([old.minX, old.minY, old.maxX, old.maxY], [rect.minX, rect.minY, rect.maxX, rect.maxY])
+            .allSatisfy { abs($0 - $1) < 0.5 }
+        guard let layer, old.width > 0, !same else { return }
         // The superlayer's y grows upward.
         var size = old.size, offset = CGPoint(x: old.minX - rect.minX, y: rect.maxY - old.maxY)
         if let shown = layer.presentation(), moving {
@@ -167,9 +170,10 @@ final class MovingCard: NSView {
     }
 
     @objc private func sample(_: CADisplayLink) {
+        let now = CACurrentMediaTime()
+        defer { stopTracking(now) }
         guard let layer, let shown = layer.presentation(), let root = window?.contentView?.layer,
               let rootShown = root.presentation() else { return }
-        let now = CACurrentMediaTime()
         let card = shown.convert(shown.bounds, to: rootShown), surface = chrome.shownFill(in: rootShown) ?? .zero
         let place = [card.minX, card.minY, card.width, card.height].map { Int($0.rounded()) }
         if samples.last.map({ Array($0.dropFirst()) }) != place {
@@ -185,6 +189,9 @@ final class MovingCard: NSView {
         if contents.last != content {
             contents.append(content)
         }
+    }
+
+    private func stopTracking(_ now: Double) {
         if now - sampled.changed > 0.4 {
             sampler?.invalidate()
             sampler = nil
@@ -193,6 +200,15 @@ final class MovingCard: NSView {
             }
             setAccessibilityLabel("slides \(slides) surface \(surfaceOff) content \(contents.joined(separator: " ")) "
                 + "track \(steps.joined(separator: ";"))")
+        }
+    }
+
+    /// A card that leaves its window mid-track: its display link would keep it.
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window == nil {
+            sampler?.invalidate()
+            sampler = nil
         }
     }
 
