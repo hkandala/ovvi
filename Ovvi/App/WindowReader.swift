@@ -43,8 +43,11 @@ struct WindowReader: NSViewRepresentable {
                     self?.stop()
                 }
             })
+            // The did ones too: a reader that came during the change (a window's start, then its content) saw no will.
             let notifications = [NSWindow.willEnterFullScreenNotification: true,
-                                 NSWindow.willExitFullScreenNotification: false]
+                                 NSWindow.willExitFullScreenNotification: false,
+                                 NSWindow.didEnterFullScreenNotification: true,
+                                 NSWindow.didExitFullScreenNotification: false]
             for (name, value) in notifications {
                 observers.append(center.addObserver(forName: name, object: window, queue: .main) { [weak self] _ in
                     MainActor.assumeIsolated { self?.changed(value) }

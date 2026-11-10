@@ -361,8 +361,10 @@ runs and on-demand on the final head.
   in a local XCUITest recording (17.3 frames a second, 58 ms each): before, the window's middle went from the
   desktop's 22 to a plain gray 30 for 12 frames (about 690 ms), then to the glass 23; after, 22 straight to 23, the
   glass and title row from the window's first frame. **Fix:** that empty phase is `WindowStart`: the window's
-  background and title row, and on the launch's first window Ovvi's icon (96 pt) in the middle; the content then
-  fades in over 0.2 s. Later windows and ⌘N show the background alone. Runs: 42714517118 green (window, restore,
+  background and title row, and at launch (every restored window, or the first new one) Ovvi's icon (96 pt) in the
+  middle until a window of the launch has its content; the content then fades in over 0.2 s. Later windows and ⌘N
+  show the background alone. A window reader that comes during a full-screen change now hears its did notifications
+  too. Runs: 42714517118 green (window, restore,
   traffic-light and look tests).
 - **For the user (round 7).** Quit with two windows open and launch: both come back with their sessions; close every
   window, quit, launch: one new-window view. A session you stopped (a reboot) is still skipped, so a window of only

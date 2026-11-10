@@ -1,11 +1,13 @@
 import SwiftUI
 
 /// A window before its first page or the new-window view: already its own background and title row, so it never shows
-/// a plain window first; the launch's first window shows Ovvi's icon in the middle meanwhile (a restore reads herdr).
+/// a plain window first; at launch (every window macOS restores, or the first new one) Ovvi's icon shows in the middle
+/// meanwhile, until a window of the launch has its content.
 struct WindowStart: View {
     let pages: WindowPages
-    @State private var icon = false
-    private static var shown = false
+    @State private var icon = !WindowStart.started
+    /// A window of this launch shows its content: later windows (⌘N, a Dock reopen) show no icon.
+    static var started = false
     private var settings = AppSettings()
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
@@ -25,9 +27,5 @@ struct WindowStart: View {
             }
             .windowChrome(look)
             .background(WindowReader(pages: pages, fullScreen: .constant(false), lightsOff: .constant(0)))
-            .onAppear {
-                icon = !Self.shown
-                Self.shown = true
-            }
     }
 }

@@ -93,8 +93,7 @@ struct ContentView: View {
     @SceneStorage("selection") private var savedSelection = ""
     @SceneStorage("sidebar") private var sidebar = true
     @SceneStorage("sidebarWidth") private var sidebarWidth = 300.0
-    /// The window shows the sessions to pick from until a pick opens its first page (`SessionPicker`), also when macOS
-    /// restores it.
+    /// `SessionPicker` until a pick opens the first page, also in a window macOS restores.
     @SceneStorage("picking") private var picking = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openWindow) private var openWindow
@@ -113,6 +112,7 @@ struct ContentView: View {
         }
         .animation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.2),
                    value: pages.current == nil && !picking)
+        .onChange(of: pages.current == nil && !picking) { WindowStart.started = true }
         .task {
             let opening = WindowPages.opening
             WindowPages.opening = nil
