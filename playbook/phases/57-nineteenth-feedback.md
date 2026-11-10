@@ -151,6 +151,24 @@ runs and on-demand on the final head.
 - Not done: the polls while the shell is back but herdr still reports the agent sleep 2 s, not 0.3 s (fine for
   correctness).
 
+### Track G findings, round 7 (item 82)
+
+- **herdr's detection, not Ovvi's: left as is.** In `ovvi-dev-p57g` a stand-in `claude` script (prints "Current
+  version…", "Checking for updates…", sleeps) run as `claude update`: herdr's `pane.get` gave `agent: claude` at once
+  (`agent_status: unknown`), then `idle` 2 s later, for the whole run. `pane.process_info`: `/bin/sh
+  /tmp/…/claude update` and its `sleep`. `herdr agent explain`: `agent: claude`, `state: idle`, manifest
+  `remote:…/agent-detection/remote/claude.toml 2026.10.11.1`, `rule: none`, `fallback_reason:
+  default_known_agent_idle_fallback`. A real `claude update` is a process named `claude`, which herdr takes the same
+  way.
+- **How herdr decides** (herdr.dev `agents.mdx`, 0.9.5): it finds a known agent's process in the pane's foreground
+  (by its process, whatever the arguments), then reads the live bottom of the screen against that agent's detection
+  manifest for `idle`, `working` or `blocked`; with no rule matched, a known agent counts as `idle`
+  (`default_known_agent_idle_fallback`). An integration's own reports replace the screen reading. `HERDR_AGENT=` on a
+  wrapper names an agent herdr cannot see; there is no way to say "not an agent".
+- **Ovvi** takes `pane.agent` and the status only from herdr's snapshot (`HostStore` sets `pane.agent = new.agent`);
+  its sidebar rows and progress come from them. Its own launches (`Launch`) only mark chats Ovvi typed. Nothing to
+  change in Ovvi; a fix belongs in herdr (a subcommand list per agent, or no agent until a manifest rule matches).
+
 ### Track G findings, round 5 (item 44)
 
 - **Spiked on plain installs** (npm into `/tmp`, an isolated `ZDOTDIR` shell with each agent's store in `/tmp`, in
