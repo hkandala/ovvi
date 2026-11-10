@@ -1789,3 +1789,5 @@ you did, no need of reverting them".
     reason anyway as text below. can we make the onboarding pane bit more cool, pane should fully be covered with
     video, and the text and the button should be at bottom on a overlay with a gradient shadow something like that,
     that make the video and text seem immersive. you can take over my gui lock and finish this entire onboarding flow".
+    Follow-up to item 80: "for the chat i see we changed max width of both user and assistant messages, can we revert
+    that, padding is fine, but the messages width is too small now" (Track I).
