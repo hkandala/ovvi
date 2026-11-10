@@ -9,11 +9,12 @@ struct CardMotion<Content: View>: NSViewRepresentable {
     let entering: Bool
     let hidden: Bool
     let id: String
-    let edge: (color: NSColor, width: CGFloat)
+    let look: Look
     let content: Content
 
     func makeNSView(context _: Context) -> MovingCard {
-        let card = MovingCard(AnyView(content), move: move, rect: rect)
+        let card = MovingCard(move: move, rect: rect)
+        card.host.rootView = AnyView(content.environment(\.chromeLink, card.link))
         card.entering = entering
         if SettlingHost.record {
             card.setAccessibilityElement(true)
@@ -23,8 +24,8 @@ struct CardMotion<Content: View>: NSViewRepresentable {
     }
 
     func updateNSView(_ card: MovingCard, context _: Context) {
-        card.host.rootView = AnyView(content)
-        card.edge = edge
+        card.host.rootView = AnyView(content.environment(\.chromeLink, card.link))
+        card.look = look
         card.hide(hidden)
         if SettlingHost.record {
             card.setAccessibilityIdentifier("motion.\(id)")
@@ -39,24 +40,43 @@ struct CardMotion<Content: View>: NSViewRepresentable {
 }
 
 final class MovingCard: NSView {
-    let host: NSHostingView<AnyView>
+    let host = NSHostingView(rootView: AnyView(EmptyView()))
+    private let chrome = CardChrome()
+    private(set) lazy var link = ChromeLink(self)
     private(set) var move: Int
     var rect: CGRect
     var entering = false
-    var edge = (color: NSColor.clear, width: CGFloat(0))
+    var look = Look(style: .glass, dark: true) {
+        didSet {
+            if look != oldValue {
+                chrome.paint(look, keyboard: lit)
+            }
+        }
+    }
+
+    var lit = false {
+        didSet {
+            if lit != oldValue {
+                chrome.paint(look, keyboard: lit)
+            }
+        }
+    }
+
     private var from: CGSize?
     private var motions = 0
     private var slides = 0
 
-    init(_ content: AnyView, move: Int, rect: CGRect) {
-        host = NSHostingView(rootView: content)
+    init(move: Int, rect: CGRect) {
         (self.move, self.rect) = (move, rect)
         super.init(frame: .zero)
         wantsLayer = true
-        layer?.cornerRadius = CardSurface.radius
-        layer?.cornerCurve = .continuous
         host.safeAreaRegions = []
+        host.wantsLayer = true
+        host.layer?.cornerRadius = CardSurface.radius
+        host.layer?.cornerCurve = .continuous
+        addSubview(chrome)
         addSubview(host)
+        chrome.paint(look, keyboard: lit)
     }
 
     @available(*, unavailable)
@@ -82,11 +102,9 @@ final class MovingCard: NSView {
         }
         guard size != rect.size || offset != .zero else { return }
         from = size
+        let sized = size != rect.size
         host.frame = CGRect(origin: .zero, size: CGSize(width: max(size.width, rect.width),
                                                         height: max(size.height, rect.height)))
-        layer.masksToBounds = true
-        // The card's edge, which it draws just outside its shape, where the mask cuts it.
-        (layer.borderWidth, layer.borderColor) = (edge.width, edge.color.cgColor)
         let position = animation("position", NSValue(point: offset), NSValue(point: .zero))
         position.isAdditive = true
         var animations = [animation("bounds.size", NSValue(size: size), NSValue(size: rect.size)), position]
@@ -99,12 +117,18 @@ final class MovingCard: NSView {
         CATransaction.setCompletionBlock { [weak self] in
             guard let self, motion == motions else { return }
             from = nil
-            layer.masksToBounds = false
-            layer.borderWidth = 0
+            host.layer?.masksToBounds = false
+            host.layer?.removeAnimation(forKey: "motion")
             host.frame = bounds
         }
         for animation in animations {
             layer.add(animation, forKey: "motion.\(animation.keyPath ?? "")")
+        }
+        chrome.frame = CGRect(origin: .zero, size: rect.size)
+        chrome.place(rect.size)
+        chrome.animate(from: size, to: rect.size) { self.animation($0, $1, $2) }
+        if sized {
+            clip(from: size, to: rect.size)
         }
         CATransaction.commit()
         if SettlingHost.record {
@@ -115,6 +139,15 @@ final class MovingCard: NSView {
                 self?.recordMid(since: start)
             }
         }
+    }
+
+    /// Only the content is cut while its size changes: it lays out once, at the larger size.
+    private func clip(from old: CGSize, to new: CGSize) {
+        guard let content = host.layer else { return }
+        content.masksToBounds = true
+        let clip = animation("bounds.size", NSValue(size: old), NSValue(size: new))
+        (clip.fillMode, clip.isRemovedOnCompletion) = (.forwards, false)
+        content.add(clip, forKey: "motion")
     }
 
     private func recordMid(since start: TimeInterval) {
@@ -136,6 +169,12 @@ final class MovingCard: NSView {
         let from = from ?? .zero
         host.frame = CGRect(origin: .zero, size: CGSize(width: max(from.width, bounds.width),
                                                         height: max(from.height, bounds.height)))
+        if chrome.frame.size != bounds.size {
+            chrome.frame = bounds
+            if self.from == nil {
+                chrome.place(bounds.size)
+            }
+        }
     }
 
     private func animation(_ key: String, _ from: Any, _ end: Any,

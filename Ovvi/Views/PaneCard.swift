@@ -21,6 +21,7 @@ struct PaneCard: View {
     @Environment(\.appearsActive) private var active
     @Environment(\.look) private var look
     @Environment(\.pageHidden) private var hidden
+    @Environment(\.chromeLink) private var chromeLink
     private var settings = AppSettings()
 
     var body: some View {
@@ -108,6 +109,7 @@ struct PaneCard: View {
         .onChange(of: lit, initial: true) {
             if !hidden {
                 keptLit = lit
+                chromeLink?.card?.lit = lit
             }
         }
         // Not the view's task: a page that leaves at once (a quick switch) would cancel it. Hidden, it gets no hover
@@ -122,7 +124,7 @@ struct PaneCard: View {
         .clipShape(CardSurface.shape)
         // The card's element is its background: a container would merge into a one-pane page's.
         .background {
-            CardSurface(keyboard: lit)
+            CardSurface(keyboard: lit, drawn: chromeLink == nil)
                 .readableText(terminal.map { $0.state.isFailed ? "failed" : $0.ready ? "" : "loading" } ?? "")
                 .accessibilityLabel(page.cardLabel(pane))
                 .accessibilityIdentifier("pane.\(id)")

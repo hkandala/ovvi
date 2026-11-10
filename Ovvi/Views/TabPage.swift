@@ -61,9 +61,8 @@ private struct SplitLayout: View {
                     let away = zoomed != nil && zoomed != card.id
                     let entering = placed != nil && views[card.id] == nil
                     let rect = zoomed == card.id ? area : entering ? card.start : card.rect
-                    let edge = look.edge(keyboard: false)
                     CardMotion(rect: rect, move: move, entering: entering && move != 0, hidden: hidden, id: card.id,
-                               edge: (NSColor(edge.color), edge.width),
+                               look: look,
                                content: PaneCard(id: card.id, page: page, away: away)
                                    .overlay { CardFlash(store: page.store, id: card.id) }
                                    .environment(\.look, look).environment(\.pageHidden, hidden))

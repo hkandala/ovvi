@@ -13,7 +13,7 @@ extension Animation {
 }
 
 /// Values from Rex's Glass (Modern) and Classic (System) material files, tuned by eye.
-struct Look {
+struct Look: Equatable {
     let style: InterfaceStyle
     let dark: Bool
     /// The system's own colors follow Increase Contrast by themselves.
@@ -78,8 +78,15 @@ struct Look {
     }
 
     var cardShadow: ShadowStyle? {
-        style == .glass && !dark ? .drop(color: .black.opacity(0.1), radius: 5, y: 2) : nil
+        cardDrop.map { .drop(color: $0, radius: Self.dropRadius, y: Self.dropDown) }
     }
+
+    /// The card shadow's color, at `dropRadius` and `dropDown` pt: Glass light only.
+    var cardDrop: Color? {
+        style == .glass && !dark ? .black.opacity(0.1) : nil
+    }
+
+    static let dropRadius: CGFloat = 5, dropDown: CGFloat = 2
 
     var track: Color {
         .primary.opacity(contrast ? 0.1 : 0.05)
@@ -177,11 +184,21 @@ struct CardSurface: View {
     static let radius: CGFloat = 10
     static let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
     let keyboard: Bool
+    /// False under a card that `CardChrome` draws: then this is only the card's element.
+    var drawn = true
     @Environment(\.look) private var look
 
     var body: some View {
+        if drawn {
+            surface
+        } else {
+            Color.clear.contentShape(Self.shape)
+        }
+    }
+
+    private var surface: some View {
         let shape = Self.shape, edge = look.edge(keyboard: keyboard)
-        shape.fill(look.cardFill)
+        return shape.fill(look.cardFill)
             // On an opaque copy cut out under the card: on the translucent fill it would be as faint as the fill.
             .background {
                 if let shadow = look.cardShadow {
