@@ -17,13 +17,13 @@ extension OvviUITests {
     func testTheWelcomeTurnsItsPagesAndClosesForGood() async throws {
         try await Self.post("\(one)/welcome", Data("forget".utf8))
         addTeardownBlock { [one] in _ = try? await Self.post("\(one)/welcome", Data("done".utf8)) }
-        relaunch(one)
-        XCTAssertTrue(welcomeNext.exists(within: connect), "no welcome on a first launch")
+        relaunch(one, ["-welcomeHold", "60"])
         // The intro first (the mark and the name); → during it only ends it, on the first page.
         let intro = element("welcome.intro")
-        XCTAssertTrue(intro.exists, "no intro")
+        XCTAssertTrue(intro.exists(within: connect), "no welcome on a first launch")
         app.typeKey(.rightArrow, modifierFlags: [])
         XCTAssertTrue(intro.vanishes(within: 1.5), "→ left the intro on")
+        XCTAssertTrue(welcomeNext.exists(within: 2))
         let count = try XCTUnwrap(welcomePage.split(separator: " ").last.flatMap { Int($0) }, welcomePage)
         XCTAssertEqual(welcomePage, "1 of \(count)")
         let tabs = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'tab.'")).count

@@ -132,7 +132,9 @@ struct WelcomeView: View {
             guard await pause(0.4) else { return }
             withAnimation(.easeOut(duration: 0.5)) { named = true }
         }
-        guard await pause(still ? 1.6 : 0.95) else { return }
+        // `-welcomeHold <seconds>`: a test holds the intro until its key.
+        let hold = UserDefaults.standard.double(forKey: "welcomeHold")
+        guard await pause(hold > 0 ? hold : still ? 1.6 : 0.95) else { return }
         endIntro()
     }
 
