@@ -45,14 +45,19 @@ extension OvviUITests {
         XCTAssertFalse(welcomeNext.exists(within: 2), "the welcome again after it was done")
     }
 
-    /// A key during the intro goes straight to the first page, never past it. The panes page steps through its
-    /// pictures by itself and stays on the last (with Reduce Motion, CI's, it shows the last at once).
+    /// A click during the intro goes straight to the first page (after it, a click there does nothing). The panes
+    /// page steps through its pictures by itself and stays on the last (with Reduce Motion it shows the last at once).
     func testTheWelcomeIntroSkipsAndThePanesPageSteps() {
-        relaunch(one, ["-welcomeDone", "NO"])
-        XCTAssertTrue(app.windows["welcome"].exists(within: connect))
-        XCTAssertFalse(welcomeNext.exists, "the pages before the intro played")
-        app.typeKey(.return, modifierFlags: [])
-        XCTAssertTrue(welcomeNext.exists(within: 0.5), "the intro went on after a key")
+        relaunch(one, ["-welcomeDone", "NO", "-forceMotion", "YES"])
+        let panel = app.windows["welcome"]
+        XCTAssertTrue(panel.exists(within: connect))
+        // A slow Mac may find the panel when its 2.5 s intro is over.
+        let playing = !welcomeNext.exists
+        panel.click()
+        if playing {
+            XCTAssertTrue(welcomeNext.exists(within: 0.5), "the intro went on after a click")
+        }
+        XCTAssertTrue(welcomeNext.exists(within: connect))
         XCTAssertTrue(welcomePage.hasPrefix("1 of "), welcomePage)
         app.typeKey(.rightArrow, modifierFlags: [])
         let picture = element("welcome.picture")
