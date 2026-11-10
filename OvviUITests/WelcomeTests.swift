@@ -166,13 +166,13 @@ extension OvviUITests {
                 throw XCTSkip("\(error)")
             }
             XCTAssertTrue(welcomeNext.exists(within: connect))
-            let install = element("welcome.herdr.install"), picture = element("welcome.picture")
+            let install = element("welcome.herdr.install")
+            // → turns the pages, no pointer in the film; the panes and plugins pages (2 and 6) step through three
+            // pictures, 2.8 s apart.
             while welcomeNext.label != "Get Started" {
-                // The panes and plugins pages step through three pictures, 2.8 s apart; the page settles first.
-                try await Task.sleep(for: .seconds(0.8))
-                let steps = picture.exists && ["New pane", "Browser"].contains(picture.label)
-                try await Task.sleep(for: .seconds(steps ? 7.7 : 3.7))
-                welcomeNext.click()
+                let page = welcomePage.split(separator: " ").first.flatMap { Int($0) } ?? 0
+                try await Task.sleep(for: .seconds([2, 6].contains(page) ? 8.5 : 4.5))
+                app.typeKey(.rightArrow, modifierFlags: [])
             }
             if install.exists {
                 try await Task.sleep(for: .seconds(2))
@@ -180,7 +180,7 @@ extension OvviUITests {
                 _ = welcomeNext.has(\.isEnabled, true, within: connect)
             }
             try await Task.sleep(for: .seconds(4))
-            welcomeNext.click()
+            app.typeKey(.return, modifierFlags: [])
             try await Task.sleep(for: .seconds(1))
             try await Self.post("\(one)/record-stop")
         }
