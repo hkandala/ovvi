@@ -124,7 +124,8 @@ extension OvviUITests {
     }
 
     /// Not a check: films the welcome in dark and then light, with a missing herdr and the fake installer, to
-    /// /tmp/ovvi-welcome-<look>.mp4 (on demand, local: the recording needs the screen recording permission).
+    /// /tmp/ovvi-welcome/<checkout>-<look>.mp4, one name per checkout as worktrees film at once (on demand, local: the
+    /// recording needs the screen recording permission).
     func testWelcomeFilm() async throws {
         executionTimeAllowance = 600
         addTeardownBlock { [one] in _ = try? await Self.post("\(one)/record-stop") }
@@ -142,7 +143,9 @@ extension OvviUITests {
                 app.menuBars.menuItems["Zoom"].click()
             }
             do {
-                try await Self.post("\(one)/record", Data("/tmp/ovvi-welcome-\(look).mp4".utf8))
+                let checkout = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+                try await Self.post("\(one)/record",
+                                    Data("/tmp/ovvi-welcome/\(checkout.lastPathComponent)-\(look).mp4".utf8))
             } catch {
                 throw XCTSkip("\(error)")
             }
