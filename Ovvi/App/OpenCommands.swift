@@ -2,8 +2,6 @@ import HerdrKit
 import SwiftUI
 
 extension CommandList {
-    /// ⌘K's Open File…, Open Working Tree and Open Commit… (ui/window#command-palette): the card `ovvi open` makes,
-    /// from the keyboard card's folder.
     static func opens(_ page: Page?) -> [Command] {
         let folder = page?.keyboardPane?.cwd != nil
         return [
@@ -20,8 +18,7 @@ extension CommandList {
 }
 
 extension Page {
-    /// A path typed or pasted in the palette, with its default plugin: in a new tab, or to the side with ⌥ (⌥Return,
-    /// ⌥-click). Read as the key or click comes in.
+    /// ⌥ is read as the key or click comes in.
     func open(path text: String) {
         let how = Self.how
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
@@ -38,15 +35,12 @@ extension Page {
         Task { await openAsCLI(path, [], how) }
     }
 
-    /// The Git card of the keyboard card's repository at a source: `uncommitted`, or a commit's hash or ref.
     func openGit(_ source: String) {
         let how = Self.how, source = source.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !source.isEmpty else { return }
         Task { await openAsCLI("git", [keyboardPane?.cwd ?? "", source], how) }
     }
 
-    /// The absolute path of a file or folder on the page's machine, nil when there is none: `~` is the home folder,
-    /// and a relative path starts at the keyboard card's folder.
     func resolve(_ text: String) async -> String? {
         await store.there(text.trimmingCharacters(in: .whitespacesAndNewlines), from: keyboardPane?.cwd ?? "")
     }
@@ -55,7 +49,6 @@ extension Page {
         NSApp.currentEvent?.modifierFlags.contains(.option) == true ? .side : .tab
     }
 
-    /// `ovvi open`'s kind and argument for the words, opened from the keyboard card; a refusal is a notice.
     private func openAsCLI(_ first: String, _ words: [String], _ how: Opening) async {
         let pane = keyboardPane
         let call = AgentCall(store: store, pane: pane?.id ?? "", cwd: pane?.cwd ?? "/", id: "", args: [])
@@ -63,21 +56,8 @@ extension Page {
             let (plugin, arg) = try await call.opening(first, words)
             await open(plugin, arg: arg, from: pane?.terminalID ?? "", how: how)
         } catch {
-            await store.show(Notice(text: (error as? AgentError)?.message ?? error.localizedDescription,
-                                    tone: .warning))
+            store.show(Notice(text: (error as? AgentError)?.message ?? error.localizedDescription,
+                              tone: .warning))
         }
-    }
-}
-
-extension HostStore {
-    /// The path's absolute form on the machine when a file (or a folder, with its `/`) is there: `~` is the home
-    /// folder, and a relative path starts at `cwd` (the home folder when it is empty).
-    func there(_ path: String, from cwd: String) async -> String? {
-        let script = #"""
-        case $1 in "~"|"~/"*) p=$HOME${1#"~"} ;; /*) p=$1 ;; *) p=${2:-$HOME}/$1 ;; esac
-        if [ -d "$p" ]; then printf '%s/' "$p"; elif [ -e "$p" ]; then printf '%s' "$p"; fi
-        """#
-        let found = await (try? machine.exec().output(["sh", "-c", script, "sh", path, cwd])) ?? ""
-        return found.isEmpty ? nil : PathField.tidy(found) + (found.hasSuffix("/") ? "/" : "")
     }
 }

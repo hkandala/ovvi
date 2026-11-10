@@ -1,27 +1,24 @@
 import SwiftUI
 
-/// ⌘/: every shortcut of the command list, grouped by the level it acts on. Glass like the palette; Esc, ⌘/ or a
-/// click outside closes it.
 struct Shortcuts: View {
     let commands: [Command]
     @FocusState private var focused: Bool
 
     var body: some View {
-        let rows = Self.rows(commands)
+        let rows = Self.rows(commands), first: [Command.Group] = [.panes, .tabs, .workspaces]
         let panel = HStack(alignment: .top, spacing: 48) {
-            column([.panes, .tabs, .workspaces], rows)
-            column([.sessions, .view, .edit, .plugins], rows)
+            column(first, rows)
+            column(Command.Group.allCases.filter { !first.contains($0) }, rows)
         }
         .padding(.horizontal, 28).padding(.vertical, 24)
-        // A short window scrolls the panel. ponytail: a window under about 870 pt wide clips its sides; a scroll
-        // view on both axes filled the whole window.
+        // ponytail: a window under about 870 pt wide clips its sides; a scroll view on both axes fills the whole
+        // window.
         ViewThatFits(in: .vertical) {
             panel
             ScrollView { panel }.scrollIndicators(.never)
         }
-        .floatingGlass(in: .rect(cornerRadius: 14))
+        .floatingGlass(in: .panel)
         .padding(.vertical, 16)
-        // The panel takes the keyboard, so Esc reaches it.
         .focusable()
         .focusEffectDisabled()
         .focused($focused)
@@ -31,7 +28,6 @@ struct Shortcuts: View {
     }
 
     private func column(_ groups: [Command.Group], _ rows: [Row]) -> some View {
-        // Plugins only over a plugin card.
         let groups = groups.filter { group in rows.contains { $0.group == group } }
         return VStack(alignment: .leading, spacing: 0) {
             ForEach(groups, id: \.self) { group in
@@ -52,10 +48,8 @@ struct Shortcuts: View {
                     }
                     .font(.system(size: 13))
                     .frame(height: 30)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityAddTraits(.isStaticText)
+                    .readableText(row.keys.map { $0.joined() }.joined(separator: " or "))
                     .accessibilityLabel(row.title)
-                    .accessibilityValue(row.keys.map { $0.joined() }.joined(separator: " or "))
                     .accessibilityIdentifier("shortcuts.\(row.title)")
                 }
             }
@@ -63,7 +57,6 @@ struct Shortcuts: View {
         .frame(width: 380)
     }
 
-    /// One modifier or key in its own box, so a long shortcut reads clearly.
     private static func keycap(_ cap: String) -> some View {
         Text(cap).font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
             .padding(.horizontal, 5)
@@ -74,12 +67,9 @@ struct Shortcuts: View {
     private struct Row {
         let group: Command.Group
         let title: String
-        /// Each shortcut's keycaps: the first, then a second key ("⌘K or ⇧⌘P").
         let keys: [[String]]
     }
 
-    /// One row per command with a key, in the command list's order, with its second key; a family's commands share
-    /// one row and one keycap for their keys ("Select Pane ⌥ ⌘ ←→↑↓", "Show Tab 1–9 ⌘ 1–9").
     private static func rows(_ commands: [Command]) -> [Row] {
         var rows: [Row] = []
         for command in commands {

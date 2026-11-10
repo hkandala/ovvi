@@ -1,21 +1,21 @@
 import AppKit
 import SwiftUI
 
-/// Shows a pane's terminal view. The registry owns the view; the newest host adopts it, so a tab's page that
-/// SwiftUI makes again (a switch back to it) never destroys the surface.
+/// The registry owns the view and a host takes it (`adopt`), so that a page SwiftUI makes again never destroys the
+/// surface.
 struct TerminalHost: NSViewRepresentable {
     let terminal: PaneTerminal
-    /// The card's dim. On the host view: SwiftUI's `opacity` moved the terminal's accessibility frame half a card
-    /// down, so clicks at its center missed it.
+    /// On the host view: SwiftUI's `opacity` moves the terminal's accessibility frame half a card down, so that clicks
+    /// at its center miss it.
     let alpha: CGFloat
-    /// In a kept page out of view: an input, not read from the environment in `updateNSView`, which SwiftUI does not
-    /// call for an environment change alone.
+    /// An input, not read from the environment in `updateNSView`, which SwiftUI does not call for an environment
+    /// change alone.
     let hidden: Bool
 
     func makeNSView(context _: Context) -> SettlingHost {
         let host = SettlingHost()
         host.clipsToBounds = true
-        host.addSubview(terminal.view)
+        adopt(host)
         if SettlingHost.record {
             host.setAccessibilityElement(true)
             host.setAccessibilityRole(.group)
@@ -24,10 +24,14 @@ struct TerminalHost: NSViewRepresentable {
     }
 
     func updateNSView(_ host: SettlingHost, context _: Context) {
+        // Only as its kept page comes into view: at every update, a card that leaves (the main window's, as its pane
+        // floats) would take the view from the shown one.
+        if host.isHidden, !hidden {
+            adopt(host)
+        }
         host.hide(hidden)
-        // A new pane's chooser hid it (ui/new-pane): it fades in as the chooser fades out.
         if host.alphaValue == 0, alpha > 0,
-           !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion || Animation.forceMotion
+           !Animation.reduced
         {
             NSAnimationContext.runAnimationGroup { context in
                 context.duration = 0.15
@@ -40,13 +44,19 @@ struct TerminalHost: NSViewRepresentable {
             host.setAccessibilityIdentifier("host.\(terminal.paneID)")
         }
     }
+
+    /// A shown host takes the view; a hidden one only a view no host has, and takes it as it shows (`updateNSView`). A
+    /// moved pane's old page, out of view, can make a host after the new card's, and must not take the view from it.
+    private func adopt(_ host: SettlingHost) {
+        guard terminal.view.superview !== host, !hidden || terminal.view.superview == nil else { return }
+        host.addSubview(terminal.view)
+        host.fit()
+    }
 }
 
 struct TerminalCard: View {
     let terminal: PaneTerminal
-    /// Another window controls the session (D66): the window's capsule offers Take Back instead of the card.
     let watched: Bool
-    /// The content's opacity: the watching dim (D66); 0 under a new pane's chooser, with no spinner.
     let alpha: CGFloat
     @Environment(\.pageHidden) private var hidden
     @Environment(\.look) private var look
@@ -58,28 +68,26 @@ struct TerminalCard: View {
             .id(ObjectIdentifier(terminal))
             .overlay(alignment: .bottom) {
                 switch terminal.state {
-                // Not under a new pane's chooser, where it could not be clicked.
                 case _ where alpha == 0: EmptyView()
                 case .watching where !watched:
                     Button("In use elsewhere · Take Back", action: terminal.takeBack)
                         .buttonStyle(.glass)
                         .accessibilityIdentifier("pane.\(terminal.paneID).take-back")
                         .padding(gap)
-                case let .failed(text):
+                // While the page reconnects, its overlay says why.
+                case let .failed(text) where terminal.live:
                     EmptyState(symbol: "terminal", title: "The terminal stopped", text: text, compact: true) {
-                        Button("Retry", action: terminal.show).buttonStyle(.glassProminent)
+                        Button("Retry", action: terminal.retry).buttonStyle(.glassProminent)
                             .accessibilityIdentifier("pane.\(terminal.paneID).retry")
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(look.cardSolid(keyboard: lit))
-                case .idle, .live, .watching:
+                case .idle, .live, .watching, .failed:
                     EmptyView()
                 }
             }
-            // The card's fill (after a grid change, its old picture) until herdr drew it at its size; a spinner
-            // only when that takes over 0.5 s.
             .overlay {
-                // A click on the spinner is the card's: it takes the keyboard before the card drew.
+                // A click on the spinner is the card's: it takes the keyboard while the card loads.
                 if !terminal.ready, !terminal.state.isFailed, alpha > 0 {
                     Loader(delay: .milliseconds(500)).allowsHitTesting(false)
                 }
@@ -87,7 +95,6 @@ struct TerminalCard: View {
     }
 }
 
-/// Copy, Paste and Select All on this terminal, not on the keyboard card.
 struct TerminalItems: View {
     let view: PaneSurfaceView
 

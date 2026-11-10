@@ -1,14 +1,8 @@
 import XCTest
 
-/// The `ovvi` command (agent-control/cli): typed in a pane, it asks the Ovvi that follows the session through herdr
-/// and the machine's mailbox.
 extension OvviUITests {
-    /// The script that Ovvi writes on each machine it opens a session on.
     static let ovviCommand = "~/.cache/ovvi/bin/ovvi"
 
-    /// status from herdr's tokens, float and unfloat with their windows (also of a session with no page, whose
-    /// workspaces are marked while it floats), errors as text and JSON, copy onto the clipboard; once Ovvi quits, its
-    /// marks go and the command exits 3.
     func testTheOvviCommandFloatsCopiesAndSaysWhereItIs() async throws {
         let (tab, first) = try await newTab("ovvi")
         let second = try await split(first)
@@ -16,7 +10,6 @@ extension OvviUITests {
         XCTAssertTrue(element("terminal.\(second)").exists(within: 3))
         try await waitForPrompt(first)
         try await expectOpen("w2")
-        // Its own mark, which the workspace's does not imply.
         try await expectShown(one, first)
         let ovvi = Self.ovviCommand
         try await run("\(ovvi) status", in: first, "status", 0, "Shown in Ovvi")
@@ -26,7 +19,6 @@ extension OvviUITests {
         let window = app.windows.containing(.any, identifier: "float.\(second)").firstMatch
         XCTAssertTrue(window.exists(within: 5))
         XCTAssertTrue(element("float.\(second).pin").has(\.stringValue, "on", within: 3))
-        // An agent's float leaves the keyboard where it was.
         XCTAssertTrue(hasKeyboard("terminal.\(first)"))
         try await run("\(ovvi) float \(second)", in: first, "again", 0, "existing: true")
         try await run("\(ovvi) unfloat \(second)", in: first, "unfloat", 0, "floating: false")
@@ -54,13 +46,10 @@ extension OvviUITests {
                       #"{"error":{"code":"no_ovvi""#)
     }
 
-    /// A session started after Ovvi read the machine's session list is a pane argument too: Ovvi reads the list again
-    /// before it says the session does not run.
     func testTheOvviCommandFloatsAPaneOfASessionStartedLater() async throws {
-        let five = try env("OVVI_SESSION5")
-        if await (try? Self.snapshot(five)) != nil {
+        if try await answer(five) != nil {
             try await Self.post("\(five)/stop")
-            try await expect("five to stop") { await (try? Self.snapshot(five)) == nil }
+            try await expect("five to stop") { try await answer(five) == nil }
         }
         relaunch()
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
@@ -68,7 +57,7 @@ extension OvviUITests {
         try await expectShown(one, "w1:p1")
         let ovvi = Self.ovviCommand
         try await run("until [ -x \(ovvi) ]; do sleep 0.1; done", in: "w1:p1", "script", 0)
-        // Answered after the list was read: Ovvi takes requests in order, after its first snapshot's list.
+        // Ovvi takes requests in order, after its first snapshot's list.
         try await run("\(ovvi) float \(five)/w1:p1", in: "w1:p1", "stopped", 1, "ovvi: no herdr session \(five)")
         let (_, pane) = try await shown(running(five))
         try await run("\(ovvi) float \(five)/\(pane)", in: "w1:p1", "later", 0, "floating: true")
@@ -78,23 +67,19 @@ extension OvviUITests {
         XCTAssertTrue(window.vanishes(within: 3))
     }
 
-    /// The `ovvi` command on Key Host (RemoteTests' sshd, CI only): Ovvi writes the script there, hears the ring over
-    /// the relay, takes the request
-    /// from that machine's mailbox and floats the pane in this Mac's window.
     func testTheOvviCommandWorksOnARemoteMachine() async throws {
         try await skipWithoutSSH()
-        // CI's sshd has this Mac's home: an older script that only the Key Host store can replace, written once this
-        // Mac's Ovvi, which may still be writing its own, is gone.
+        // CI's sshd has this Mac's home: a stale script that only the Key Host store can replace, written once this
+        // Mac's Ovvi, which may still write its own, is gone.
         try await waitForPrompt("w1:p1")
         app.terminate()
         try await run("printf '#!/bin/sh\\n# ovvi-cli 0\\n' >\(Self.ovviCommand)", in: "w1:p1", "old", 0)
-        relaunch(one, ["-machines", Self.keyHost, "-machine", "e2e-key"])
+        relaunch(one, Self.onKeyHost)
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         try await waitForPrompt("w1:p1")
         try await expectOpen("w1")
         try await expectShown(one, "w1:p1")
         let ovvi = Self.ovviCommand
-        // The Key Host store writes it once its session opens, beside its first marks.
         try await run("until ! grep -qx '# ovvi-cli 0' \(ovvi); do sleep 0.1; done", in: "w1:p1", "new", 0)
         try await run("\(ovvi) status --json | tr , '\\n'", in: "w1:p1", "status", 0, "\"remote\":true")
         try await run("\(ovvi) info", in: "w1:p1", "info", 0, "machine: Key Host")
@@ -105,8 +90,7 @@ extension OvviUITests {
         XCTAssertTrue(window.vanishes(within: 3))
     }
 
-    /// Types the command in the pane, then `echo ‹marker›-$?`: waits for the marker with the exit code, and checks the
-    /// lines the command printed, each by its start, unwrapped: CI's panes are about 40 columns.
+    /// Unwrapped: CI's panes are about 40 columns.
     func run(_ command: String, in pane: String, _ marker: String, _ code: Int, _ lines: String...) async throws {
         try await send("\(command); echo \(marker)-$((6*7))-$?\r", to: pane)
         // Exit 3 comes after the 3 s the command waits for a take.
@@ -125,7 +109,6 @@ extension OvviUITests {
         }
     }
 
-    /// The user's clipboard, every type of it, back after the test.
     func keepClipboard() {
         let saved = (NSPasteboard.general.pasteboardItems ?? []).map { item in
             item.types.compactMap { type in item.data(forType: type).map { (type, $0) } }

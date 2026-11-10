@@ -1,94 +1,68 @@
 import Foundation
 
-/// One session of a terminal multiplexer, as the app uses it (design D49): the app talks to this, never to
-/// herdr's methods or argv. `HerdrClient` is the only implementation.
 public protocol Multiplexer: Sendable {
-    /// Every session on this machine, running or not.
     func sessions() async throws -> [Session]
-    /// Stops this session's server: every program in it ends.
     func stopSession() async throws
-    /// Deletes this session, which must be stopped.
+    /// The session must be stopped.
     func deleteSession() async throws
-    /// The whole layout now, with every tab's split tree.
     func snapshot() async throws -> Snapshot
-    /// Snapshots as the session changes, paced, until the stream is dropped. Called once.
+    /// Called once.
     func updates() async -> AsyncStream<Update>
-    /// Reads a snapshot now, or once more after the read in flight (after the app's own write).
     func refresh() async
-    /// Starts this session's server and waits until it answers, at most `timeout`; false when it already ran.
     @discardableResult
     func startServer(within timeout: Duration) async throws -> Bool
 
-    /// One pane now: its cwd follows a `cd` that no event reports.
+    /// Its cwd follows a `cd` that no event reports.
     func pane(_ paneID: String) async throws -> Pane
-    /// Marks the pane as shown to the user, for 30 s, or clears the mark (talking-to-herdr#agent-requests).
     func mark(_ paneID: String, shown: Bool) async throws
-    /// Marks the workspace as followed by Ovvi, for 30 s, or clears the mark (agent-control#is-my-pane-in-ovvi).
     func mark(workspace workspaceID: String, open: Bool) async throws
-    /// The pane's chat launch (`ovvi-chat`), kept by herdr with the pane, past the app: no time limit.
+    /// herdr keeps it with the pane, past the app: no time limit.
     func mark(_ paneID: String, chat: String) async throws
-    /// What the pane runs besides its shell, else the shell (`isShell`, design D41).
     func program(_ paneID: String) async throws -> Program?
-    /// A pane's terminal by its terminal id: control it, or only watch it.
     func terminal(_ terminalID: String, cols: Int, rows: Int, observe: Bool, takeover: Bool) async throws
         -> TerminalStream
 
-    /// The text on the pane's screen now.
     func screen(_ paneID: String) async throws -> String
-    /// The pane's last `lines` lines, scrollback and screen, without the screen's blank rows at the end.
     func recent(_ paneID: String, lines: Int) async throws -> String
-    /// Scrolls the pane's viewport, which every client of the pane shares; 0 is the bottom. The multiplexer clamps it.
+    /// The viewport is shared by every client of the pane; 0 is the bottom. The multiplexer clamps it.
     func scroll(_ paneID: String, offsetFromBottom offset: Int) async throws
 
-    /// Actions. None moves the multiplexer's focus, except `swap` (herdr 0.9.5).
+    /// None of the actions moves the multiplexer's focus, except `swap` (herdr 0.9.5).
     func split(_ paneID: String, _ direction: SplitNode.Direction) async throws -> Pane?
-    /// Swaps the pane with its nearest neighbor that way, in the same tab. Moves herdr's focus to that tab (herdr
-    /// 0.9.5 has no way around it).
+    /// Moves herdr's focus to that tab (herdr 0.9.5 has no way around it).
     func swap(_ paneID: String, _ heading: Heading) async throws
-    /// Swaps two panes of one tab; panes of two tabs are refused. Moves herdr's focus as the other `swap` does.
+    /// herdr refuses panes of two tabs, and moves its focus as the other `swap` does.
     func swap(_ paneID: String, with targetID: String) async throws
-    /// Moves the nearest divider that way by `amount` of its split.
     func resize(_ paneID: String, _ heading: Heading, amount: Double) async throws
     /// One split's ratio; `path` from the root, `false` = first child.
     func setRatio(tab tabID: String, path: [Bool], ratio: Double) async throws
     /// A move to another workspace gives the pane a new id. A move into its own tab is refused.
     func move(pane paneID: String, to destination: Destination) async throws -> Pane?
-    /// A nil label clears it.
     func rename(pane paneID: String, label: String?) async throws
-    /// A new tab of one pane with this label, running `command` (argv, no shell) instead of a shell, in the label's
-    /// path's folder (it survives a restart better than the folder it was asked from), else in `cwd`; returns its pane
-    /// id.
-    func newTab(workspace workspaceID: String, cwd: String, label: PaneLabel, command: [String]) async throws -> String?
+    func newTab(workspace workspaceID: String, cwd: String, label: String, command: [String]) async throws -> String?
     func newTab(workspace workspaceID: String, cwd: String) async throws -> Pane?
-    /// Returns the new workspace's first pane. Without a label the multiplexer names it.
     func newWorkspace(label: String?, cwd: String) async throws -> Pane?
     func rename(workspace workspaceID: String, label: String) async throws
-    /// Moves the workspaces, in this order, before another one, or last.
     func move(workspaces workspaceIDs: [String], before workspaceID: String?) async throws
-    /// `group` also closes the workspace's linked worktree workspaces; herdr refuses to close a repository's
-    /// workspace that has them without it.
+    /// herdr refuses to close a repository's workspace that has linked worktree workspaces without `group`.
     func close(workspace workspaceID: String, group: Bool) async throws
     func close(pane paneID: String) async throws
     func close(tab tabID: String) async throws
     func rename(tab tabID: String, label: String) async throws
-    /// Moves the tab before the tab now at `index` in its workspace (the count puts it last).
     func move(tab tabID: String, to index: Int) async throws
-    /// Logical keys (`ctrl+c`), encoded by the multiplexer for the program's input modes.
+    /// herdr encodes the logical keys (`ctrl+c`) for the program's input modes.
     func sendKeys(_ keys: [String], pane paneID: String) async throws
-    /// Text typed at the pane's cursor, then logical keys (`enter`).
     func sendInput(_ text: String, keys: [String], pane paneID: String) async throws
-    /// Submits a prompt to the pane's agent: pasted, then Enter. Refused while the agent is blocked.
+    /// herdr refuses it while the agent is blocked.
     func prompt(_ text: String, pane paneID: String) async throws
 }
 
-/// A way from a pane, for keys that move the keyboard, swap or resize.
 public enum Heading: String, Sendable {
     // herdr's words.
     // swiftlint:disable:next identifier_name
     case left, right, up, down
 }
 
-/// Where `move(pane:to:)` puts a pane.
 public enum Destination: Sendable {
     /// With herdr's default label (its number) when none.
     case newTab(workspaceID: String, label: String? = nil)
@@ -164,22 +138,25 @@ extension HerdrClient: Multiplexer {
         return result.pane
     }
 
+    /// The app marks again every 10 s, so a mark goes 30 s after the app that made it stopped.
+    private static let markLife = 30000
+
     public nonisolated func mark(_ paneID: String, shown: Bool) async throws {
         // "remote": the pane is on another machine than this Mac, so its programs' own copy (pbcopy) misses this Mac.
-        let tokens: [String: any Sendable] = ["ovvi-shown": shown ? (exec is SSHExec ? "remote" : "1") : NSNull()]
+        let tokens: [String: any Sendable] = [Tokens.shown: shown ? (exec.isRemote ? "remote" : "1") : NSNull()]
         let _: Created = try await call("pane.report_metadata", ["pane_id": paneID, "source": "ovvi",
-                                                                 "tokens": tokens, "ttl_ms": 30000])
+                                                                 "tokens": tokens, "ttl_ms": Self.markLife])
     }
 
     public nonisolated func mark(_ paneID: String, chat: String) async throws {
         let _: Created = try await call("pane.report_metadata", ["pane_id": paneID, "source": "ovvi-chat",
-                                                                 "tokens": ["ovvi-chat": chat]])
+                                                                 "tokens": [Tokens.chat: chat]])
     }
 
     public nonisolated func mark(workspace workspaceID: String, open: Bool) async throws {
-        let tokens: [String: any Sendable] = ["ovvi-open": open ? "\(AgentRequest.version)" : NSNull()]
+        let tokens: [String: any Sendable] = [Tokens.open: open ? "\(AgentRequest.version)" : NSNull()]
         let _: Created = try await call("workspace.report_metadata", ["workspace_id": workspaceID, "source": "ovvi",
-                                                                      "tokens": tokens, "ttl_ms": 30000])
+                                                                      "tokens": tokens, "ttl_ms": Self.markLife])
     }
 
     public nonisolated func rename(pane paneID: String, label: String?) async throws {
@@ -190,12 +167,11 @@ extension HerdrClient: Multiplexer {
         try await (call("tab.create", ["workspace_id": workspaceID, "cwd": cwd, "focus": false]) as Created).rootPane
     }
 
-    public nonisolated func newTab(workspace workspaceID: String, cwd: String, label: PaneLabel,
+    public nonisolated func newTab(workspace workspaceID: String, cwd: String, label: String,
                                    command: [String]) async throws -> String?
     {
         // Never a `tab_id`: layout.apply would replace that tab and kill its panes.
-        let root: [String: any Sendable] = ["type": "pane", "cwd": label.folder ?? cwd, "label": label.text,
-                                            "command": command]
+        let root: [String: any Sendable] = ["type": "pane", "cwd": cwd, "label": label, "command": command]
         return try await (call("layout.apply", ["workspace_id": workspaceID, "focus": false, "root": root])
             as Applied).layout.root.pane_id
     }

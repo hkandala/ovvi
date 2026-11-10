@@ -5,12 +5,13 @@ description: "What the user sees in every connection, pane and error state"
 
 Every empty, failed and not-installed place has one look (`EmptyState`): an
 SF Symbol (32 pt, light, secondary), a title (15 pt semibold), at most one
-line under it (13 pt secondary; a command or a program's output in 12 pt
-monospaced, selectable, up to 8 lines), and at most two buttons, the first
+text under it (13 pt secondary, up to 3 lines; a program's output in 12 pt
+monospaced, selectable, up to 12 lines), then an optional command (12 pt
+monospaced, tertiary, up to 2 lines), and at most two buttons, the first
 one prominent glass, the second glass. In a list or a small panel the same
-look is compact (20 pt symbol, 13 pt title). Every connecting and loading
+look is compact (20 pt symbol, 13 pt title, 12 pt text). Every connecting and loading
 place has one loader (`Loader`): an icon over a small spinner and one line,
-and under it at most one line of what the work is doing.
+and under it at most two lines of what the work is doing.
 
 | State | What the user sees |
 |---|---|
@@ -18,9 +19,10 @@ and under it at most one line of what the work is doing.
 | Installing herdr | the loader "Installing herdr…" with the installer's last line under it, then "Connecting…"; a failure: "herdr did not install" over the installer's last lines and **Try Again** |
 | Connecting | the machine's icon over "Connecting to ‹machine›…" with a spinner, after 0.3 s, so a fast connect shows nothing. Also from a click on **Connect** (or a machine just added) until the session answers; ssh's question replaces it while it is up, and it shows again 0.3 s after the answer |
 | herdr missing on a remote machine | "herdr is not installed on ‹machine›" over the same line and the install command, and **Install herdr**, which installs it over SSH |
-| herdr older than 0.9.3 | "herdr is too old" over "herdr ‹version› is too old; 0.9.3 or newer needed.", no button: the running server's version counts. The app asks herdr again every 2 s, so the page clears by itself once a newer server runs. Before 0.9.1 (no `remote-api-bridge`) the first call fails: "‹session› is not running" with **Start**, or Reconnecting |
-| A card's terminal stream failed (for example herdr updated but not restarted: the API works, terminal streams fail) | over the card's fill, compact: "The terminal stopped" over herdr's error text, and **Retry** |
-| herdr server not running on This Mac | a power symbol, "‹session› is not running" (over why a start failed, if one did) and **Start ‹session›** (a launchd job, D47; a second start of the same session joins the one that runs), per page: the page stays open and its other pages are not touched |
+| herdr older than 0.9.3 | "herdr is too old" over "herdr ‹version› is too old; 0.9.3 or newer needed.", no button: the running server's version counts. The app asks herdr again every 2 s, so the page clears by itself once a newer server runs. |
+| A card's terminal stream failed (for example herdr updated but not restarted: the API works, terminal streams fail) | over the card's fill, compact: "The terminal stopped" over herdr's error text, and **Retry**. The card asks herdr again by itself at most every 5 s, at a snapshot, and keeps the panel meanwhile. While the page reconnects, the card keeps its last picture under the page's overlay, and the stream opens again once the page is live |
+| herdr server not running on This Mac | a power symbol, "‹session› is not running" (over why a start failed, if one did, until the session answers or the next Start) and **Start ‹session›** (a launchd job, D47; a second start of the same session joins the one that runs), per page: the page stays open and its other pages are not touched |
+| Starting a session (**Start ‹session›**) | the loader: a power symbol over "Starting ‹session›…", until the session answers or the start fails (up to 10 s) |
 | herdr server not running on a remote machine | "‹session› is not running" and **Start ‹session›**, which starts it with nohup over SSH |
 | A window with nothing to restore (launch, ⌘N, a Dock reopen) | the [new-window view](/docs/ui/window#new-window): Ovvi's icon and name over each machine's sessions; it connects to nothing by itself |
 | SSH auth failed | Disconnected: a network symbol with a slash (`network.slash`), "Disconnected from ‹machine›" over ssh's message, and **Connect** |

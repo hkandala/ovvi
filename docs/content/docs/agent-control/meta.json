@@ -1,4 +1,4 @@
 {
   "title": "Agent control",
-  "pages": ["index", "cli", "protocol", "remote", "migration"]
+  "pages": ["index", "cli", "protocol", "remote"]
 }

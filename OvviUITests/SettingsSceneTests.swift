@@ -1,7 +1,5 @@
 import XCTest
 
-/// Pictures of every Settings page and state, in dark and in light, for a designer's look (on demand): the window, and
-/// any menu open over it.
 extension OvviUITests {
     func testSettingsScenes() async throws {
         // About 70 pictures.
@@ -10,7 +8,6 @@ extension OvviUITests {
         let (_, shell) = try await newTab("settings scenes")
         try await waitForPrompt(shell)
         let config = "/tmp/ovvi-e2e-settings-scenes"
-        // A second plugin with a long name and no settings, that no card waits for.
         let quiet = #"{"version":"0.1.0","description":"A plugin with a long description that runs past one line "#
             + #"of the header on purpose.","ovvi":{"id":"ovvi-e2e-quiet","name":"Quiet Plugin With A Rather Long "#
             + #"Name","api":3,"entry":"main.js","icon":"moon"}}"#
@@ -22,7 +19,7 @@ extension OvviUITests {
             + #"{"id":"e2e-m3","name":"build-farm-us-east-1-primary-worker-07","#
             + #""target":"ci@build-farm-us-east-1-primary-worker-07.example.internal","icon":"cpu"}]"#
         for appearance in ["dark", "light"] {
-            relaunch(nil, ["-configFolder", config, "-appearance", appearance, "-machines", machines,
+            relaunch(one, ["-configFolder", config, "-appearance", appearance, "-machines", machines,
                            // Quoted: a bare value that starts with - is read as a flag.
                            "-agentArguments.claude", #""--model opus""#,
                            "-browserApprovals.local", #"("localhost:5173", "grafana.internal")"#,
@@ -41,12 +38,10 @@ extension OvviUITests {
         }
     }
 
-    /// The window, and any menu open over it, in the result bundle.
     fileprivate func scene(_ name: String, _ window: XCUIElement) {
-        // Off the window: no hover fill.
         window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1.3)).hover()
         Thread.sleep(forTimeInterval: 0.4)
-        // An open menu; a closed one is still there with an empty frame.
+        // A closed menu is still there with an empty frame.
         let menus = app.menus.allElementsBoundByIndex.filter { $0.frame.width > 1 }
         for (shot, suffix) in [(window, "")] + menus.map({ ($0, " (menu)") }) {
             let attachment = XCTAttachment(screenshot: shot.screenshot())
@@ -57,7 +52,6 @@ extension OvviUITests {
     }
 }
 
-/// One appearance's walk through the window, its pictures numbered in order.
 @MainActor
 private final class SettingsTour {
     let test: OvviUITests, look: String, window: XCUIElement
@@ -168,7 +162,6 @@ private final class SettingsTour {
         shoot("search none")
         search.typeKey("a", modifierFlags: .command)
         search.typeKey(.delete, modifierFlags: [])
-        // Shorter by the window's bottom edge, if it resizes.
         test.openSettings("agents")
         let edge = window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1)).withOffset(CGVector(dx: 0, dy: -1))
         edge.click(forDuration: 0.3, thenDragTo: edge.withOffset(CGVector(dx: 0, dy: -140)))

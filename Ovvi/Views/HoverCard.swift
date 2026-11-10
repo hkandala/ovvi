@@ -1,35 +1,27 @@
+import Carbon.HIToolbox
 import HerdrKit
 import SwiftUI
 
-/// Where a hover panel sits: its `panel` point on the trigger's `trigger` point, moved by `offset`.
 struct PanelPlace {
     let trigger: UnitPoint
     let panel: UnitPoint
     let offset: CGSize
 
-    /// Centered under a tab capsule, 6 pt below the title row.
     static let under = PanelPlace(trigger: .bottom, panel: .top,
                                   offset: CGSize(width: 0, height: (TitleBar.height - TabBar.height) / 2 + 6))
-    /// Right of a sidebar agent row, 6 pt past the sidebar's edge (over the first card): the row's 4 pt inset in its
-    /// space row, the rows' inset and the 8 pt handle lie between.
     static let beside = PanelPlace(trigger: .topTrailing, panel: .topLeading,
                                    offset: CGSize(width: 4 + Sidebar.rowInsets.trailing + gap + 6, height: 0))
 }
 
 extension View {
-    /// A panel that opens by this view after the pointer rests on it 0.25 s, stays while the pointer moves into
-    /// it (0.15 s grace), and closes when the pointer leaves both, on a click or a scroll outside it, or with Esc.
-    /// Not while a mouse button is down (a drag), nor while disabled. In the window, not a `.popover`: a popover is
-    /// a window that takes the keyboard when it shows, and a resting pointer must not take keys from the terminal.
-    /// `action` names an accessibility action that opens it. `light`: the pointer is over it, for a list that finds
-    /// the row under the pointer itself (observed in the panel's own update); then the view has no hover region.
+    /// In the window, not a `.popover`: a popover is a window that takes the keyboard when it shows, and a resting
+    /// pointer must not take keys from the terminal.
     func hoverPanel(place: PanelPlace, action: String? = nil, light: RowLight? = nil,
                     @ViewBuilder _ panel: @escaping (_ close: @escaping () -> Void) -> some View) -> some View
     {
         modifier(HoverPanel(place: place, action: action, light: light, panel: panel))
     }
 
-    /// `onHover`, only when `tracks`.
     @ViewBuilder
     func onHover(if tracks: Bool, perform action: @escaping (Bool) -> Void) -> some View {
         if tracks {
@@ -39,16 +31,13 @@ extension View {
         }
     }
 
-    /// Draws the open hover panel over this view, the window's content: no scroll view or mask around its
-    /// trigger clips it, and there is one at a time.
     func hoverPanelHost() -> some View {
         modifier(HoverPanelHost())
     }
 }
 
-/// The window's open hover panel, which its trigger sets: observed only by the host. (A preference that every tab
-/// capsule wrote was combined at every update of the window: 100–150 ms of the main thread in a pass of tab
-/// switches, swipes and overview opens.)
+/// Not a preference: one that every tab capsule writes is combined at every update of the window, 100–150 ms of the
+/// main thread in a pass of tab switches, swipes and overview opens.
 @MainActor @Observable
 final class HoverPanels {
     var open: OpenPanel?
@@ -66,10 +55,8 @@ private struct HoverPanelHost: ViewModifier {
                 PanelLayout(trigger: trigger, place: open?.place ?? .under) {
                     // In only: the panel would lose its place on the way out.
                     if let open {
-                        // Another trigger's panel is another view: no state carries over.
                         open.content.id(open.owner).transition(.asymmetric(
-                            insertion: .opacity.combined(with: NSWorkspace.shared
-                                .accessibilityDisplayShouldReduceMotion ? .identity
+                            insertion: .opacity.combined(with: Animation.reduced ? .identity
                                 : .scale(scale: 0.97, anchor: open.place.panel))
                                 .animation(.easeOut(duration: 0.13)),
                             removal: .identity,
@@ -82,7 +69,6 @@ private struct HoverPanelHost: ViewModifier {
 }
 
 struct OpenPanel {
-    /// Its trigger's `HoverPanel`, and the trigger's frame in the window (global).
     let owner: UUID
     var trigger: CGRect
     let place: PanelPlace
@@ -117,18 +103,15 @@ private struct HoverPanel<Panel: View>: ViewModifier {
     @State private var open = false
     @State private var overTrigger = false
     @State private var overPanel = false
-    /// The open panel's frame in the window (top left based).
     @State private var panelFrame = CGRect.null
     @State private var pending: Task<Void, Never>?
     @State private var monitor: Any?
-    /// The window it opened in, under the pointer: not the key one, whose Esc and pointer are not the panel's.
     @State private var window: NSWindow?
-    /// Off under the overview, which hides its trigger (`underOverview`).
     @Environment(\.isEnabled) private var enabled
     @Environment(HoverPanels.self) private var panels: HoverPanels?
     @State private var id = UUID()
-    /// The trigger's frame in the window, not observed: a write at every move (the tab bar's capsules while the row
-    /// scrolls) redrew every trigger at every frame.
+    /// Not observed: a write at every move (the tab bar's capsules while the row scrolls) redraws every trigger at
+    /// every frame.
     @State private var trigger = Trigger()
     private final class Trigger {
         var frame = CGRect.zero
@@ -160,7 +143,6 @@ private struct HoverPanel<Panel: View>: ViewModifier {
                     Button(action) { show(true) }
                 }
             }
-            // Disabled: it goes at once. It opens only on a hover, never under a still pointer.
             .onChange(of: enabled) {
                 if !enabled {
                     show(false)
@@ -175,15 +157,13 @@ private struct HoverPanel<Panel: View>: ViewModifier {
         guard over != open, !over || NSEvent.pressedMouseButtons == 0 else { return }
         pending = Task {
             try? await Task.sleep(for: .milliseconds(over ? 250 : 150))
-            // A drag may have started meanwhile.
             if !Task.isCancelled, !over || NSEvent.pressedMouseButtons == 0 {
                 show(over || enabled && pointerInPanel)
             }
         }
     }
 
-    /// Over the open panel by its frame: a busy app runs the panel's hover late, after the trigger's grace or a
-    /// click in it, which then closed it and went to the view under it (on CI).
+    /// By its frame: a busy app runs the panel's hover late, after the trigger's grace or a click in it.
     private var pointerInPanel: Bool {
         guard open, let window, let height = window.contentView?.bounds.height else { return false }
         let point = window.mouseLocationOutsideOfEventStream
@@ -212,13 +192,13 @@ private struct HoverPanel<Panel: View>: ViewModifier {
             window = NSApp.window(withWindowNumber: under) ?? NSApp.keyWindow
             let events: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown, .scrollWheel, .keyDown]
             monitor = NSEvent.addLocalMonitorForEvents(matching: events) { event in
-                guard event.type != .keyDown || event.keyCode == 53 && event.window === window else { return event }
+                guard event.type != .keyDown || Int(event.keyCode) == kVK_Escape && event.window === window
+                else { return event }
                 let escape = event.type == .keyDown
                 let swallow = MainActor.assumeIsolated {
                     if escape || !overPanel && !pointerInPanel {
                         show(false)
                     }
-                    // A text field that edits (a rename, a filter) still gets its Esc.
                     return escape && !(window?.firstResponder is NSText)
                 }
                 return swallow ? nil : event
@@ -234,19 +214,16 @@ private struct HoverPanel<Panel: View>: ViewModifier {
     }
 }
 
-/// Rex's "peek": a tab's title and a row for each of its first six panes, an agent's with its state's icon. A click
-/// on a row goes to that pane; on the title, to the tab. A blocked agent's row shows its last screen lines (herdr
-/// 0.9.5 sends no blocked message), read once when the card opens.
+/// A blocked agent's row shows its last screen lines: herdr 0.9.5 sends no blocked message.
 struct HoverCard: View {
     let tabID: String
     let page: Page
     let close: () -> Void
-    /// Each blocked pane's last 3 non-empty screen lines.
     @State private var lines: [String: [String]] = [:]
 
     var body: some View {
         let store = page.store
-        if let workspace = store.workspace(of: tabID), let tab = workspace.tabs.first(where: { $0.id == tabID }) {
+        if let workspace = store.workspace(of: tabID), let tab = store.tab(tabID) {
             let panes = store.panes(in: tabID)
             VStack(alignment: .leading, spacing: 4) {
                 Button {
@@ -267,7 +244,6 @@ struct HoverCard: View {
                 }
             }
             .padding(6)
-            // Not narrower when it fits: the screen lines come in after it shows and would widen it.
             .frame(width: 280, alignment: .leading)
             .floatingGlass(in: .rect(cornerRadius: 12))
             .accessibilityElement(children: .contain)
@@ -286,12 +262,10 @@ struct HoverCard: View {
     }
 
     private func row(_ pane: HostStore.Pane) -> some View {
-        // A plugin's, a browser's or New Pane's own name and what it shows, as its card header says: a plugin's and a
-        // browser's pane runs only a placeholder (`cat`), New Pane's the shell it replaces.
         let kind = pane.agent == nil ? page.kindTitle(pane) : nil
         let shown = lines[pane.id] ?? [], name = kind?.name ?? pane.agentName ?? pane.programName ?? "terminal"
         let detail = kind == nil ? pane.folder : kind?.detail
-        let state = pane.state == .idle ? nil : pane.state
+        let state = pane.state?.shown
         return Button {
             page.go(to: pane)
             close()
@@ -303,7 +277,6 @@ struct HoverCard: View {
                     Text(detail ?? "").foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                     Spacer(minLength: 0)
                 }
-                // The state icon's room.
                 .padding(.trailing, state == nil ? 0 : 18)
                 ForEach(shown.indices, id: \.self) { index in
                     Text(shown[index]).font(.system(size: 10, design: .monospaced)).foregroundStyle(.secondary)
@@ -318,7 +291,7 @@ struct HoverCard: View {
         .accessibilityIdentifier("hovercard.\(pane.id)")
         .accessibilityLabel([name, detail].compactMap(\.self).joined(separator: ", "))
         .accessibilityValue(([pane.state?.title].compactMap(\.self) + shown).joined(separator: "\n"))
-        // On the first line's end. Over the button, so a test sees it.
+        // Over the button, so a test sees it.
         .overlay(alignment: .topTrailing) {
             if let state {
                 StateIcon(state: state).stateElement(state, "hovercard.\(pane.id).state")

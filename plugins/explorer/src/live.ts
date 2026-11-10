@@ -1,7 +1,3 @@
-// The Markdown place's live preview (markdown.ts): CodeMirror's lines drawn as rendered Markdown, the same locked and
-// unlocked but for the marks of the caret's lines unlocked. What crosses a line (a paragraph's soft breaks, a setext
-// heading's underline) or replaces whole lines (tables, HTML blocks, reference definitions) lives in a state field; the
-// rest is drawn per viewport.
 import { HighlightStyle, syntaxHighlighting, syntaxTree } from "@codemirror/language"
 import { Annotation, type EditorState, type Range, StateField } from "@codemirror/state"
 import { Decoration, type DecorationSet, EditorView, ViewPlugin, type ViewUpdate, WidgetType } from "@codemirror/view"
@@ -10,20 +6,16 @@ import { tags } from "@lezer/highlight"
 import MarkdownIt from "markdown-it"
 
 const md = new MarkdownIt({ html: true, linkify: true })
-// Images are not loaded: their alt text links to them, as in a Markdown image's own line.
 md.renderer.rules.image = (tokens, i) => {
   const { escapeHtml } = md.utils
   const src = String(tokens[i].attrGet("src") ?? "")
   return `<a href="${escapeHtml(src)}">${escapeHtml(tokens[i].content || src)}</a>`
 }
 
-/** Unlocked is the view's `editable`: then the caret's lines show their marks. */
 export const editing = (state: EditorState) => state.facet(EditorView.editable)
 const switched = (start: EditorState, now: EditorState) => editing(start) !== editing(now)
-/** The nodes that hold blocks: the walks over the document's blocks go into these only. */
 export const containers = ["Document", "Blockquote", "BulletList", "OrderedList", "ListItem"]
 
-/** The lines the caret or the selection touches unlocked, as ranges; none locked. */
 function active(state: EditorState) {
   if (!editing(state)) return []
   return state.selection.ranges.map((range) => ({
@@ -35,12 +27,10 @@ const touches = (lines: { from: number; to: number }[], from: number, to: number
   lines.some((line) => line.from <= to && line.to >= from)
 const changed = (start: EditorState, now: EditorState) => syntaxTree(start) !== syntaxTree(now)
 
-/** A reference's label as CommonMark matches it: no brackets, case and runs of spaces ignored. */
+/** As CommonMark matches labels: case and runs of spaces ignored. */
 const label = (text: string) => text.replace(/^\[|\]$/g, "").trim().replace(/\s+/g, " ").toLowerCase()
-/** A footnote's definition at a line's start (`[^note]: …`), after any quote marks or indent. */
 const footnote = /^[ \t>]*\[\^([^\]\s]+)\]:/
 
-/** The document's link definitions (label to address) and footnotes (label to number and place, in order). */
 type References = { links: Map<string, string>; notes: Map<string, { n: number; from: number }> }
 function references(state: EditorState): References {
   const links = new Map<string, string>(), notes = new Map<string, { n: number; from: number }>()
@@ -68,9 +58,7 @@ export const referenceField = StateField.define<References>({
   update: (refs, tr) => (tr.docChanged || changed(tr.startState, tr.state) ? references(tr.state) : refs),
 })
 
-/** A table or an HTML block as markdown-it draws it; a click puts the caret in its source (in Edit). */
 class Block extends WidgetType {
-  /** `indent`: the list items' indent around it, in em. */
   constructor(readonly source: string, readonly indent: number) {
     super()
   }
@@ -94,8 +82,6 @@ class Block extends WidgetType {
   }
 }
 
-/** An element drawn in place of its source: a soft break's space, an entity's character, a thematic break's line, a
- *  `<br>`, a footnote's number. */
 class Html extends WidgetType {
   constructor(readonly html: string) {
     super()
@@ -112,14 +98,12 @@ class Html extends WidgetType {
 }
 const space = Decoration.replace({ widget: new Html(" ") })
 
-/** The blocks drawn whole or hidden unless the caret is in them (tables, HTML blocks, comments, link definitions), and
- *  the line breaks that do not draw (a paragraph's soft breaks, a setext heading's underline): block widgets and
- *  replaced line breaks live in the state, not a plugin.
+/** Block widgets and replaced line breaks must live in the state, not a plugin.
  *  ponytail: walks the document's blocks at each change of the caret; per viewport if long files lag. */
 function blocks(state: EditorState): DecorationSet {
   const ranges: Range<Decoration>[] = []
   const lines = active(state), doc = state.doc
-  /** The end of the blank line after `to`, when there is one: a hidden block takes it along, so no double gap stays. */
+  /** A hidden block takes the blank line after it along, so no double gap stays. */
   const blank = (to: number) => {
     const next = to < doc.length ? doc.lineAt(to + 1) : undefined
     return next && !next.text.trim() && next.number < doc.lines ? next.to : to
@@ -145,8 +129,7 @@ function blocks(state: EditorState): DecorationSet {
           }
         }
         if (!touches(lines, from, to)) {
-          // In a list item: at its text, the source without the indent its lines share (four spaces or a tab would
-          // make it code).
+          // Without the indent its lines share: four spaces or a tab make it code.
           const source = state.sliceDoc(from, to)
           const indent = source.split("\n").filter((each) => each.trim()).map((each) => /^[ \t]*/.exec(each)?.[0] ?? "")
             .reduce((common, each) => (each.startsWith(common) ? common : common.startsWith(each) ? each : ""))
@@ -167,15 +150,13 @@ function blocks(state: EditorState): DecorationSet {
         return false
       }
       if (name === "Paragraph") {
-        // Soft breaks are spaces, so the paragraph flows: not at the caret's lines, after a hard break (two spaces or
-        // an unescaped backslash), nor before a footnote's definition.
+        // A hard break is two spaces or an unescaped backslash.
         const first = doc.lineAt(node.from).number, last = doc.lineAt(node.to).number
         for (let n = first; n < last; n++) {
           const line = doc.line(n), next = doc.line(n + 1)
           if (touches(lines, line.from, next.to)) continue
           if (/(?: {2}|(?<!\\)(?:\\\\)*\\)$/.test(line.text) || footnote.test(next.text)) continue
           const start = next.from + (/^[ \t>]*/.exec(next.text)?.[0].length ?? 0)
-          // A break in what the preview hides (a link's address, a tag, a comment) draws no space.
           const hidden = ["URL", "LinkMark", "LinkTitle", "HTMLTag", "Comment"]
             .includes(syntaxTree(state).resolveInner(line.to, -1).name)
           ranges.push((hidden ? Decoration.replace({}) : space).range(line.from + line.text.trimEnd().length, start))
@@ -189,7 +170,6 @@ function blocks(state: EditorState): DecorationSet {
 }
 const blockField = StateField.define<DecorationSet>({
   create: blocks,
-  // A selection that keeps its lines (a drag while locked, a move in one line) changes nothing here.
   update: (set, tr) =>
     tr.docChanged || switched(tr.startState, tr.state) || changed(tr.startState, tr.state)
       || (tr.selection && JSON.stringify(active(tr.startState)) !== JSON.stringify(active(tr.state)))
@@ -197,11 +177,8 @@ const blockField = StateField.define<DecorationSet>({
   provide: (field) => EditorView.decorations.from(field),
 })
 
-/** A task's box ticked by a click: a locked page saves it (`show`). */
 export const ticked = Annotation.define<boolean>()
 
-/** A list item's bullet, number or task box, at the end of its depth's indent: the text and its wrapped lines start
- *  after it. A box is `marker` characters after the item's line start, and a click ticks it (a writable file). */
 class Bullet extends WidgetType {
   constructor(readonly text: string, readonly width: number,
     readonly task?: { checked: boolean; marker: number; label: string }) {
@@ -238,55 +215,43 @@ const hide = Decoration.replace({})
 const line = (className: string) => Decoration.line({ class: className })
 const frontmatter = Decoration.mark({ class: "cm-frontmatter" })
 const code = Decoration.mark({ class: "cm-md-code" })
-// The marks of an element, hidden off the caret's lines: a heading's `#`, emphasis, code ticks. Links hide their own.
 const marks = new Set(["HeaderMark", "EmphasisMark", "StrikethroughMark", "CodeMark"])
 const kept = new Set(["FencedCode", "SetextHeading1", "SetextHeading2"])
-/** The inline HTML elements drawn as themselves; others show as written. */
 const phrasing = new Set(["a", "abbr", "b", "cite", "code", "del", "em", "i", "ins", "kbd", "mark", "q", "s", "samp",
   "small", "span", "strong", "sub", "sup", "u", "var"])
-/** Each list depth's indent, and the space between a bullet and its text, in em. */
 const INDENT = 1.5
 const GAP = 0.4
 
-/** A link's address as the page follows it: without the `<>` of `[a](<my file.md>)` (Lezer's URL holds them), and
- *  GFM's bare `www.` and e-mail addresses with their scheme. */
+/** Lezer's URL holds the `<>` of `[a](<my file.md>)`; GFM's bare `www.` and e-mail addresses get their scheme. */
 function target(raw: string) {
   const url = raw.replace(/^<(.*)>$/s, "$1")
   return /^www\./i.test(url) ? `http://${url}` : /^[^\s/:@<>]+@[^\s/@<>]+\.[^\s/@<>]+$/.test(url) ? `mailto:${url}` : url
 }
-/** A list item's depth: 1 at the top. */
 function depth(item: SyntaxNode) {
   let n = 0
   for (let at: SyntaxNode | null = item; at; at = at.parent) n += Number(/^(Bullet|Ordered)List$/.test(at.name))
   return n
 }
 
-/** The rendered look of the visible lines: marks hidden off the caret's lines, line styles for headings, lists,
- *  quotes and code, links as links. */
 function preview(view: EditorView): DecorationSet {
   const { state } = view
   const { doc } = state
   const ranges: Range<Decoration>[] = []
   const lines = active(state)
   const { links, notes } = state.field(referenceField)
-  /** The line of `pos` is a caret's. */
   const raw = (pos: number) => touches(lines, pos, pos)
-  /** After one space at `pos`: a mark takes its space along. */
   const past = (pos: number) => (state.sliceDoc(pos, pos + 1) === " " ? pos + 1 : pos)
   const slice = (node: { from: number; to: number }) => state.sliceDoc(node.from, node.to)
   const link = (href: string) => Decoration.mark({ tagName: "a", attributes: { href: target(href) } })
-  /** Hides from `a` to `b`, line by line: a plugin may not replace a line break (the state field joins lines). */
+  /** Line by line: a plugin may not replace a line break. */
   const conceal = (a: number, b: number) => {
     for (let at = a; at < b; at = doc.lineAt(at).to + 1) {
       const end = Math.min(b, doc.lineAt(at).to)
       if (end > at) ranges.push(hide.range(at, end))
     }
   }
-  /** The visible range walked now. */
   let from = 0, to = 0
-  /** The line starts at or in `node`, from its first line on. */
   const within = (node: { from: number; to: number }, at: number) => doc.lineAt(node.from).from <= at && at <= node.to
-  /** Each line of a node that is in view. */
   const shown = (node: { from: number; to: number }) => {
     const first = doc.lineAt(Math.max(node.from, from)).number
     const last = doc.lineAt(Math.min(node.to, to)).number
@@ -313,19 +278,16 @@ function preview(view: EditorView): DecorationSet {
           const text = state.sliceDoc(textFrom, textTo), off = !touches(lines, node.from, node.to)
           const note = name === "Link" && !url && !ref && text.startsWith("^") ? notes.get(text.slice(1)) : undefined
           if (note) {
-            // A footnote's reference: a raised number that links to its definition (drawn with its line).
             const definition = state.sliceDoc(node.to, node.to + 1) === ":" && footnote.test(doc.lineAt(node.from).text)
             const href = `#fn:${encodeURIComponent(text.slice(1))}`
             const widget = new Html(`<sup class="cm-md-fnref"><a href="${href}">${note.n}</a></sup>`)
             if (off && !definition) ranges.push(Decoration.replace({ widget }).range(node.from, node.to))
             return false
           }
-          // A reference's address by its label, or by its text (`[text][]`, `[text]`); none is no link but text.
           const href = url ? slice(url) : links.get(label(ref && ref.to - ref.from > 2 ? slice(ref) : text))
           if (!href) return
           if (textTo > textFrom) ranges.push(link(href).range(textFrom, textTo))
           else if (off) {
-            // An image with no alt text: its address is the link, as markdown-it's rule draws it.
             const shown = md.utils.escapeHtml(target(href))
             ranges.push(Decoration.replace({ widget: new Html(`<a href="${shown}">${shown}</a>`) }).range(node.from, node.to))
             return
@@ -339,13 +301,11 @@ function preview(view: EditorView): DecorationSet {
           if (url && !raw(node.from)) ranges.push(hide.range(node.from, url.from), hide.range(url.to, node.to))
           return false
         }
-        // GFM's bare address, also a footnote's text.
         if (name === "URL" && !["Link", "Image", "LinkReference"].includes(parent?.name ?? "")
           || (name === "URL" && parent?.name === "LinkReference" && footnote.test(doc.lineAt(node.from).text))) {
           ranges.push(link(slice(node)).range(node.from, node.to))
         }
         if (name === "Paragraph" || name === "LinkReference") {
-          // A footnote's definition: its number in place of its label, in smaller secondary text.
           for (const each of shown(node)) {
             const match = /^([ \t>]*)\[\^([^\]\s]+)\]:/.exec(each.text), note = match && notes.get(match[2])
             if (!match || !note) continue
@@ -355,7 +315,6 @@ function preview(view: EditorView): DecorationSet {
           }
         }
         if (name === "Blockquote") {
-          // A bar for each quote around the line (markdown.css), the text after the last.
           const nested = node.node.getChildren("Blockquote")
           let quotes = 0
           for (let at: SyntaxNode | null = node.node; at; at = at.parent) quotes += Number(at.name === "Blockquote")
@@ -367,7 +326,7 @@ function preview(view: EditorView): DecorationSet {
         }
         if (name === "FencedCode" || name === "CodeBlock") {
           const first = doc.lineAt(node.from).number, last = doc.lineAt(node.to).number
-          // The fences' lines: a block not closed yet has only its opening one.
+          // A block not closed has only its opening fence.
           const fences = new Set(node.node.getChildren("CodeMark").map((mark) => doc.lineAt(mark.from).number))
           let quoted = false
           for (let at = parent; at; at = at.parent) quoted ||= at.name === "Blockquote"
@@ -376,10 +335,8 @@ function preview(view: EditorView): DecorationSet {
             const edge = `${n === first ? " cm-md-pre-first" : ""}${n === last ? " cm-md-pre-last" : ""}`
             ranges.push(line(`cm-md-pre${edge}${fence ? " cm-md-fence" : ""}`).range(each.from))
             if (fence && each.to > each.from) ranges.push(hide.range(each.from, each.to))
-            // In a quote, the quote's marks.
             const marks = quoted && !fence && !raw(each.from) ? /^(?:[ \t]*>[ \t]?)+/.exec(each.text)?.[0].length : undefined
             if (marks) ranges.push(hide.range(each.from, each.from + marks))
-            // An indented block's indent is its mark.
             const indent = name === "CodeBlock" && parent?.name === "Document" && !raw(each.from)
               ? /^(?: {1,4}|\t)/.exec(each.text)?.[0].length : undefined
             if (indent) ranges.push(hide.range(each.from, each.from + indent))
@@ -398,12 +355,10 @@ function preview(view: EditorView): DecorationSet {
         }
         if (name === "Comment" && !touches(lines, node.from, node.to)) conceal(node.from, node.to)
         if (name === "HTMLTag") {
-          // An inline element drawn as itself: its tags hidden off the caret's lines, its text in it.
           const tag = slice(node), open = /^<([a-z][\w-]*)([^>]*?)\s*>$/i.exec(tag)
           const element = open?.[1].toLowerCase()
           if (element === "br" && !raw(node.from)) conceal(node.from, node.to), ranges.push(lineBreak.range(node.to))
           if (!element || !phrasing.has(element) || open?.[2].endsWith("/")) return
-          // Its close: the first at its own depth among the tags of that name after it.
           const opens = new RegExp(`^<${element}[\\s>]`, "i"), closes = new RegExp(`^</${element}\\s*>$`, "i")
           let close = node.node.nextSibling
           for (let level = 0; close; close = close.nextSibling) {
@@ -419,9 +374,6 @@ function preview(view: EditorView): DecorationSet {
           if (!touches(lines, node.from, close.to)) conceal(node.from, node.to), conceal(close.from, close.to)
         }
         if (name === "ListItem") {
-          // The item's lines after its first (a second paragraph, a code block, the caret's paragraph) hang at its
-          // text, their indent hidden; a nested list's lines are its own. A quote's or a code block's line moves whole,
-          // with its bars or its fill (in a quote around the list, a code line's fill stays: the bars move not).
           const mark = node.node.getChild("ListMark")
           if (!mark) return
           const head = doc.lineAt(mark.from), width = depth(node.node) * INDENT
@@ -439,7 +391,6 @@ function preview(view: EditorView): DecorationSet {
             ranges.push((quote || (!quoted && code.some((block) => within(block, each.from)))
               ? Decoration.line({ attributes: { style: `margin-left: ${hang}` } })
               : Decoration.line({ class: "cm-md-hang", attributes: { style: `--hang: ${hang}` } })).range(each.from))
-            // The spaces after any quote marks around the list (hidden with their own space), up to the item's text.
             const lead = quote ? /^()([ \t]*)/ : /^((?:[ \t]*>[ \t]?)*)([ \t]*)/
             const [, marks = "", spaces = ""] = lead.exec(each.text) ?? []
             const indent = Math.min(column - marks.length, spaces.length), at = each.from + marks.length
@@ -449,11 +400,9 @@ function preview(view: EditorView): DecorationSet {
         if (name === "ListMark" && parent?.name === "ListItem") {
           const each = doc.lineAt(node.from)
           const width = depth(parent) * INDENT
-          // On the caret's line the mark shows where the bullet was, its text a little to the right.
           const style = raw(node.from) ? `--hang: ${width - 1}em` : `--hang: ${width}em; text-indent: -${width}em`
           ranges.push(Decoration.line({ class: "cm-md-hang", attributes: { style } }).range(each.from))
           if (!raw(node.from)) {
-            // A task's box takes its bullet's place; a number counts from the list's first.
             const marker = parent.getChild("Task")?.getChild("TaskMarker") ?? undefined
             const end = past(marker?.to ?? node.to)
             const task = marker && {

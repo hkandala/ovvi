@@ -1,17 +1,13 @@
 import Foundation
 
-/// Claude Code's transcript (`~/.claude/projects/…/<session>.jsonl`), one JSON object per line
-/// (resources/research/agents/claude-code.md#3-file-watching-and-the-parser). The core reads the API's own shapes:
-/// `user` and `assistant` lines with `text`, `tool_use`, `tool_result` and `thinking` blocks. Queued prompts, turn
-/// ends, errors and compaction are extras of 2.1.x that may change; anything else is skipped.
+/// The core reads the API's own shapes: `user` and `assistant` lines with `text`, `tool_use`, `tool_result` and
+/// `thinking` blocks. Queued prompts, turn ends, errors and compaction are extras of 2.1.x that may change.
 public enum ClaudeTranscript {
-    /// The lines `read` skips that are most of a transcript, as an awk pattern for `Exec.follow`: records of the
-    /// other types that write `type` first (`api-request-blob`, `last-prompt`, …), and attachments other than queued
-    /// prompts.
+    /// Records of the other types write `type` first (`api-request-blob`, `last-prompt`, …); attachments other than
+    /// queued prompts go too.
     public static let unread = #"/^[{] *"type": *"/ && !/^[{] *"type": *"(user|assistant|system|attachment)"/ || "#
         + #"/^[{][^{]*"attachment": *[{]/ && !/"queued_command"/"#
 
-    /// Adds what the line holds; false when it is not JSON (a torn line).
     @discardableResult
     public static func read(_ line: String, into history: inout ChatHistory) -> Bool {
         guard let object = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any] else {
@@ -82,8 +78,8 @@ public enum ClaudeTranscript {
         }
     }
 
-    /// A user's text; Claude's own tags as what they mean: a slash command as its name, an interrupt as a note, and
-    /// its command output and task notices not at all.
+    /// Claude's own tags as what they mean: a slash command as its name, an interrupt as a note, and its command output
+    /// and task notices not at all.
     private static func user(_ text: String, id: String, time: Date?, into history: inout ChatHistory) {
         if text.hasPrefix("[Request interrupted by user") {
             history.append(ChatEntry(id: id, .note("Interrupted", failed: false), time: time))
@@ -103,35 +99,30 @@ public enum ClaudeTranscript {
         let toolID = block["id"] as? String ?? id
         let path = (input["file_path"] as? String ?? input["notebook_path"] as? String)
             .map { ChatHistory.short($0, cwd) }
-        let category: ChatTool.Category, target: String
-        var shown = name.lowercased()
+        let target: String
+        var shown = name.lowercased(), category: ChatTool.Category?
         switch name {
         case "TodoWrite":
             history.append(ChatEntry(id: id, .todos(ChatTodo.list(input["todos"])), time: time))
             return
-        case "Read", "NotebookRead": (category, target) = (.read, path ?? "")
-        case "Edit", "MultiEdit", "Write", "NotebookEdit": (category, target) = (.edit, path ?? "")
-        case "Bash": (category, target) = (.command, ChatHistory.firstLine(input["command"]))
-        case "Grep", "Glob": (category, target) = (.search, ChatHistory.firstLine(input["pattern"]))
-        case "WebSearch": (category, target) = (.search, ChatHistory.firstLine(input["query"]))
+        case "Read", "NotebookRead", "Edit", "MultiEdit", "Write", "NotebookEdit": target = path ?? ""
+        case "Bash": target = ChatHistory.firstLine(input["command"])
+        case "Grep", "Glob": target = ChatHistory.firstLine(input["pattern"])
+        case "WebSearch": target = ChatHistory.firstLine(input["query"])
         case "Task", "Agent":
             shown = input["subagent_type"] as? String ?? "agent"
             (category, target) = (.other, ChatHistory.firstLine(input["description"]))
         case "AskUserQuestion":
-            let question = (input["questions"] as? [[String: Any]])?.first?["question"]
-            (category, target) = (.other, ChatHistory.firstLine(question))
+            target = ChatHistory.firstLine((input["questions"] as? [[String: Any]])?.first?["question"])
         default:
-            // An MCP tool's own name (`mcp__server__tool`), and its first text argument by name (the same each read:
-            // a parsed object has no order).
+            // An MCP tool's own name (`mcp__server__tool`), and its first text argument.
             shown = (name.components(separatedBy: "__").last ?? name).lowercased()
-            let text = input.sorted { $0.key < $1.key }.first { $0.value is String }?.value
-            (category, target) = (.other, ChatHistory.firstLine(text))
+            (category, target) = (.other, ChatHistory.firstText(input))
         }
         history.append(ChatEntry(id: id, .tool(ChatTool(id: toolID, name: shown, category: category, target: target,
                                                         input: ChatHistory.detail(input), started: time)), time: time))
     }
 
-    /// A result as its row says it: lines read, lines changed with the diff, or a failure's first line.
     private static func result(_ block: [String: Any], _ extra: Any?, id: String, time: Date?,
                                into history: inout ChatHistory)
     {

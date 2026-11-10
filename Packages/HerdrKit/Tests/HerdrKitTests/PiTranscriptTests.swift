@@ -2,13 +2,10 @@ import Foundation
 @testable import HerdrKit
 import Testing
 
-/// Real pi 1.4.0 sessions, cut down (`Fixtures/pi-*.jsonl`): `pi-session` has a read, a failed command, a write, a
-/// `!` command and an interrupt; `pi-tree` has five failed tries, a turn with an edit, then a `/tree` back to the last
-/// failed try and a turn on that branch.
+/// Real pi 1.4.0 sessions, cut down.
 private struct Read {
     var transcript: PiTranscript
     var history: ChatHistory
-    /// Where the read stopped, in bytes.
     let end: Int
 }
 
@@ -59,7 +56,6 @@ private extension ChatHistory {
     #expect(tools.allSatisfy { $0.result != nil })
     #expect(tools[0].category == .read && tools[0].target == "a.txt" && tools[0].result == "1 line")
     #expect(tools[1].failed && tools[1].target == "ls /nonexistent" && tools[1].result == "exit 1")
-    // The `!` command.
     #expect(tools[3].target == "echo bang" && tools[3].result == "exit 0" && !tools[3].failed)
     #expect(tools[3].input == "echo bang" && tools[3].output == "bang")
     #expect(tools[1].input.hasPrefix("command: ls /nonexistent") && tools[1].output.contains("No such file"))
@@ -77,12 +73,10 @@ private extension ChatHistory {
 }
 
 private extension ChatHistory {
-    /// Back at the last failed try, before the edit turn.
     var movedBack: Bool {
         users.count == 1 && notes.count == 5 && tools.isEmpty
     }
 
-    /// The turn after the move, on that branch.
     var branched: Bool {
         users == ["Run the bash command 'echo hi > a.txt', then edit a.txt replacing hi with bye, then reply with "
             + "just: done", "Reply with just: branched"]
@@ -91,28 +85,23 @@ private extension ChatHistory {
 }
 
 @Test func `the history is the branch from the leaf, also after a tree move`() throws {
-    // Before the move: five failed tries, then the turn with the edit.
     var read = try transcript("pi-tree", upTo: "19d90989")
     #expect(read.history.users.count == 2 && read.history.notes.count == 5)
     #expect(read.history.entries.last?.kind == ChatEntry.Kind.reply("done"))
 
-    // /tree back to the last failed try, read up to its size: the edit turn goes.
     read.transcript.tree("6636acff", at: read.end, into: &read.history)
     #expect(read.history.movedBack)
 
-    // The next turn grows from there.
     #expect(try transcript("pi-tree").history.branched)
 }
 
 @Test func `a tree move waits for the transcript, and one it has passed is dropped`() throws {
     let end = try transcript("pi-tree", upTo: "19d90989").end
-    // A new chat reads the state file first: the move waits until the transcript is read up to its size.
     var early = PiTranscript(), history = ChatHistory()
     early.tree("6636acff", at: end, into: &history)
     #expect(try transcript("pi-tree", upTo: "19d90989", into: early).history.movedBack)
     #expect(try transcript("pi-tree", into: early).history.branched)
 
-    // A card shown again reads the transcript first: the entries after the move grew from it already.
     var late = try transcript("pi-tree")
     late.transcript.tree("6636acff", at: end, into: &late.history)
     #expect(late.history.branched)
@@ -128,8 +117,6 @@ private extension ChatHistory {
     #expect(read && history.users == ["hello"])
 }
 
-/// In pi's shapes: `nestedCalls` with whole arguments, and `details.calls` with arguments as JSON text, which an older
-/// pi writes alone and cuts when long.
 @Test func `a codemode result keeps its script's calls as rows of their own`() throws {
     var transcript = PiTranscript(), history = ChatHistory()
     let call = #"{"type":"toolCall","id":"c","name":"codemode","arguments":{"code":"…"}}"#

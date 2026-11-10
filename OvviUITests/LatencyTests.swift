@@ -1,10 +1,7 @@
 import XCTest
 
-/// The main interactions react at once: `-recordLatency YES` gives, for each key, the time from
-/// the key to the first frame that drew its change and how many run loop turns that took ("⌘T 12ms 0 …").
 extension OvviUITests {
     func testPanelsAndSwitchesReactAtOnce() async throws {
-        // The session slide's spring, as on a Mac without Reduce Motion.
         try launchRecordingLatency(["-forceMotion", "YES"])
         openPage(two)
         showPage(one)
@@ -14,12 +11,10 @@ extension OvviUITests {
         key("k", .command) { palette.exists }
         key(escape, []) { !palette.exists }
         key("k", .command) { palette.exists }
-        // The first letter and the last ⌫ change every row (the groups' headers go or come back).
         key("s", []) { palette.value as? String == "s" }
         key(XCUIKeyboardKey.delete.rawValue, []) { self.element("palette.section.Tabs").exists }
         key(escape, []) { !palette.exists }
         key("t", [.command, .option]) { openSession.exists }
-        // Its first draw lists the sessions the page read as it connected, not an empty list that fills a moment later.
         let first = element("app.latency").stringValue.split(separator: "; ").last { $0.hasPrefix("open-session") }
         XCTAssertTrue(first?.split(separator: " ").last?.split(separator: ",").contains { $0 == two } == true,
                       "\(first ?? "none")")
@@ -45,23 +40,19 @@ extension OvviUITests {
             XCTAssertLessThanOrEqual(entry.lists, 3, entry.name)
         }
         let keys = recorded().filter { ["⌘", "⌃", "⇧", "⌥"].contains($0.name.first.map(String.init)) }
-        // ⌥⌘1 first: `showPage` above.
         XCTAssertEqual(keys.map(\.name), ["⌥⌘1", "⌘K", "⌘K", "⌥⌘T", "⌘2", "⌘1", "⌃⌘]", "⌃⌘[", "⌥⌘]", "⌥⌘["])
         for entry in keys {
             XCTAssertEqual(entry.turns, 0, entry.name)
         }
     }
 
-    /// ⌘T, ⌘D, ⌘W and ⇧⌘W show their change in the key's turn or the next: herdr catches up after (`Ahead`).
     func testNewTabSplitAndClosesShowAtOnce() async throws {
         try launchRecordingLatency()
         let before = try await tabIDs()
         closeNew("tab", besides: before)
-        // A new tab is "New Tab" until its program is known, never herdr's number.
         let selected = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'tab.' AND selected == true"))
             .firstMatch
         key("t", .command) { selected.label == "New Tab" && !self.element("tab.w1:t1").isSelected }
-        // Terminal: the title stays "New Tab" while the new pane's chooser shows.
         app.typeKey(.return, modifierFlags: [])
         var titles: [String] = []
         XCTAssertTrue(until(5) {
@@ -70,7 +61,6 @@ extension OvviUITests {
         })
         XCTAssertFalse(titles.contains { !$0.isEmpty && $0.allSatisfy(\.isNumber) }, "\(titles)")
         let made = try await newTabID(after: before)
-        // herdr's tab took the stand-in's place, still selected.
         XCTAssertTrue(element("tab.\(made)").has(\.isSelected, true, within: 3))
         try await settle([made])
         let cards = element("page.\(made)").descendants(matching: .any)
@@ -92,7 +82,6 @@ extension OvviUITests {
         XCTAssertFalse(element("tab.\(made)").exists)
     }
 
-    /// Two quick ⌘T select the second new tab; ⌘T and a close before herdr answers close herdr's tab as it comes.
     func testQuickNewTabsAndAnEarlyClose() async throws {
         try launchRecordingLatency()
         let before = try await tabIDs()
@@ -110,7 +99,8 @@ extension OvviUITests {
         let now = try await tabIDs()
         app.typeKey("t", modifierFlags: .command)
         app.typeKey("w", modifierFlags: [.command, .shift])
-        // herdr makes the tab, and the app closes it: no dialog, no tab left.
+        // Read after a second, once herdr made it: until then its tabs match the first read too.
+        try await Task.sleep(for: .seconds(1))
         try await expect("the early-closed tab made and closed") {
             let tabs = try await tabIDs()
             return tabs.count == now.count && tabs.contains(two[1])
@@ -119,10 +109,7 @@ extension OvviUITests {
         XCTAssertFalse(app.sheets.firstMatch.exists)
     }
 
-    /// A two-finger swipe between sessions: the page follows the fingers, and from their lift slides on
-    /// to the next page with the session spring, from their speed: no jump or stall at the lift, no bounce, calmer
-    /// than a 0.14 s spring. A trackpad's events at a known speed (`scripts/swipe.swift`): XCUITest's scroll
-    /// is one flick, at the page before the fingers lift.
+    /// A trackpad's events at a known speed (`scripts/swipe.swift`): XCUITest's scroll is one flick.
     func testSessionSwipeFollowsTheFingersAndSlidesOnFromTheirSpeed() async throws {
         try launchRecordingLatency(["-forceMotion", "YES"])
         openPage(two)
@@ -130,8 +117,8 @@ extension OvviUITests {
         XCTAssertTrue(until(3) { header == one })
         let sidebar = element("sidebar"), width = sidebar.frame.width
         let center = "\(sidebar.frame.midX) \(sidebar.frame.midY)"
-        // Steps of 10 pt, 16 ms apart (625 pt/s), 10 pt past half the sidebar's width, then momentum; the other way if
-        // natural scrolling is off. Past half a page: a lift CI posts over 100 ms late counts as a rest.
+        // The other way if natural scrolling is off. Past half a page: a lift CI posts over 100 ms late counts as a
+        // rest.
         let moves = Int(width / 20) + 1
         var forward = -1.0
         for sign in [-1.0, 1.0] {
@@ -147,9 +134,8 @@ extension OvviUITests {
         let (swipe, path, shown) = try XCTUnwrap(swipes().last, "no swipe moved")
         let speed = 10 / 0.016
         let times = path.map { $0[0] }, offsets = path.map { $0[1] }
-        // The page went with the fingers, give or take the system's own pace.
+        // Give or take the system's own pace.
         XCTAssertEqual(offsets[0], Double(10 * moves), accuracy: 40, "\(swipe)")
-        // The next page, one page width over (the sidebar's minus its 8 pt handle), never past it, never back.
         let target = offsets.last ?? 0
         XCTAssertEqual(target, width - 8, accuracy: 2, "\(swipe)")
         XCTAssertTrue(zip(offsets, offsets.dropFirst()).allSatisfy { $0 <= $1 }, "\(swipe)")
@@ -160,27 +146,21 @@ extension OvviUITests {
         XCTAssertLessThan(settled, 400, "\(swipe)")
         XCTAssertGreaterThan(shown, 0, "\(swipe)")
         XCTAssertLessThan(beforeShow(path) - settled, 120, "\(swipe)")
-        // A step at least every 100 ms until then: no stall (a slide started at the scroll view's own end stood still
-        // 100–350 ms, then jumped). A debug build under XCUITest still drops a few frames at the start (about 50 ms).
+        // A debug build under XCUITest drops a few frames at the start (about 50 ms).
         let steps = times.filter { $0 <= settled }
         XCTAssertLessThan(zip(steps, steps.dropFirst()).map { $1 - $0 }.max() ?? 1000, 100, "\(swipe)")
-        // Its first 60 ms keep at least half the fingers' speed: no jump, no stall.
         let early = path.last { $0[0] <= 60 } ?? path[0]
         XCTAssertGreaterThan((early[1] - offsets[0]) / max(early[0], 1) * 1000, speed / 2, "\(swipe)")
         XCTAssertLessThan((early[1] - offsets[0]) / max(early[0], 1) * 1000, speed * 3, "\(swipe)")
 
-        // 40 pt back, then the fingers stop 0.2 s before they lift: back to the same page (the session spring),
-        // no session change.
         let name = element("sidebar.header"), place = name.frame.minX
         try await Self.post("\(one)/swipe", Data("\(center) \(-10 * forward) 4 200".utf8))
         try await Task.sleep(for: .seconds(1))
         XCTAssertEqual(header, two)
         XCTAssertEqual(name.frame.minX, place, accuracy: 1)
 
-        // Slowly past half a page, a rest, a lift: the spring from rest is logically complete still about 1.4 % of its
-        // way short (1.3–1.6 pt here). The session shows only once the pages are on their place: shown before, its
-        // 100 ms of main thread held them short, then they jumped. The last frame recorded started the show. 10 pt past
-        // half the sidebar's width.
+        // The spring from rest is logically complete still about 1.4 % of its way short (1.3–1.6 pt). The session shows
+        // only once the pages are on their place: its 100 ms of main thread would hold them short, then they jump.
         try await Self.post("\(one)/swipe", Data("\(center) \(-2 * forward) \(Int(width / 4) + 5) 200".utf8))
         try await Task.sleep(for: .seconds(1.5))
         XCTAssertEqual(header, one)
@@ -189,22 +169,14 @@ extension OvviUITests {
         XCTAssertEqual(slowPath.last?[1] ?? -1, 0, accuracy: 0.5, slow)
     }
 
-    /// A quick flick between sessions: the fingers on the pad for 48 ms, then momentum. The pages slide on
-    /// to the next page and rest there with the window on its session.
     func testQuickSessionFlickLandsOnTheNextPageInStep() async throws {
         try launchRecordingLatency(["-forceMotion", "YES"])
         openPage(two)
         showPage(one)
         XCTAssertTrue(until(3) { header == one })
-        // The header at rest: the window shows the session at the click, its pages arrive 0.2 s later (read mid-slide,
-        // 1 pt short, on CI).
+        // At rest: the pages arrive 0.2 s after the click (read mid-slide, 1 pt short, on CI).
         let sidebar = element("sidebar"), name = element("sidebar.header")
-        var place = CGFloat.nan
-        XCTAssertTrue(until(3) {
-            let now = name.frame.minX
-            defer { place = now }
-            return now == place
-        })
+        let place = try XCTUnwrap(steady(3) { name.frame.minX })
         let center = "\(sidebar.frame.midX) \(sidebar.frame.midY)"
         // The other way if natural scrolling is off.
         for sign in [-1.0, 1.0] {
@@ -215,11 +187,9 @@ extension OvviUITests {
             }
         }
         XCTAssertEqual(header, two)
-        // The pages rest on the session the window shows.
         XCTAssertEqual(name.frame.minX, place, accuracy: 1)
         let (swipe, path, _) = try XCTUnwrap(swipes().last, "no swipe moved")
         XCTAssertEqual(path.last?[1] ?? 0, sidebar.frame.width - 8, accuracy: 2, "\(swipe)")
-        // A step at least every 100 ms until the page: no stall. The session shows with it.
         let settled = path.first { abs($0[1] - sidebar.frame.width + 8) <= 2 }?[0] ?? 1000
         XCTAssertLessThan(settled, 400, "\(swipe)")
         XCTAssertLessThan(beforeShow(path) - settled, 120, "\(swipe)")
@@ -227,12 +197,8 @@ extension OvviUITests {
         XCTAssertLessThan(zip(steps, steps.dropFirst()).map { $1 - $0 }.max() ?? 1000, 100, "\(swipe)")
     }
 
-    /// A swipe into a session of 200 tabs: the window draws its tab bar and tab's page as the pages arrive, not
-    /// 0.4–0.8 s after the sidebar.
     func testSessionSwipeIntoManyTabsDrawsThemWithTheSidebar() async throws {
-        let eight = try env("OVVI_SESSION8")
-        addTeardownBlock { _ = try? await Self.post("\(eight)/stress") }
-        // 20 workspaces of 10 tabs; w1's first tab in four cards or more (each made every tab's actions).
+        addTeardownBlock { [eight] in _ = try? await Self.post("\(eight)/stress") }
         try await Self.post("\(eight)/stress", Data("200 20 200 0".utf8))
         for _ in 0 ..< 3 {
             try await Self.call(eight, "pane.split", ["target_pane_id": "w1:p1", "direction": "down", "cwd": "/tmp",
@@ -244,8 +210,8 @@ extension OvviUITests {
         openPage(one)
         XCTAssertTrue(until(3) { header == one })
         let sidebar = element("sidebar"), center = "\(sidebar.frame.midX) \(sidebar.frame.midY)"
-        // There, back, there again: which sign goes back follows natural scrolling. Steps of 10 pt, 10 pt past half the
-        // sidebar's width: a lift CI posts over 100 ms late counts as a rest, and short of half the pages spring back.
+        // Which sign goes back follows natural scrolling. 10 pt past half the sidebar's width: a lift CI posts over 100
+        // ms late counts as a rest, and short of half the pages spring back.
         let moves = Int(sidebar.frame.width / 20) + 1
         var back = 10.0
         for target in [eight, one, eight] {
@@ -261,7 +227,6 @@ extension OvviUITests {
             XCTAssertEqual(header, target)
             back = -back
         }
-        // "session <ms> <turns> <ms>": from the show to the end of the turn that drew it, into eight's page.
         let shows = element("app.latency").stringValue.split(separator: "; ").filter { $0.hasPrefix("session ") }
             .compactMap { Int($0.split(separator: " ")[1].dropLast(2)) }
         XCTAssertEqual(shows.count, 3, "\(shows)")
@@ -269,8 +234,6 @@ extension OvviUITests {
         XCTAssertLessThan(min(shows[0], shows[2]), 600, "\(shows)")
     }
 
-    /// The sidebar's "swipe" records in which the pages moved (a swipe back to the page in view makes one that did
-    /// not), each with its offsets: [ms, pt], and the ms to the session's show (-1: none).
     private func swipes() -> [(String, [[Double]], Double)] { // swiftlint:disable:this large_tuple
         element("app.latency").stringValue.split(separator: "; ").filter { $0.hasPrefix("swipe ") }.map { swipe in
             let words = swipe.split(separator: " ")
@@ -280,9 +243,8 @@ extension OvviUITests {
         }.filter { $0.1.count > 4 }
     }
 
-    /// The ms of the slide's last frame, which started the show: the pages record only until it. The window shows the
-    /// session as the pages are drawn within 0.5 pt of their place, not in the spring's long tail. Not the show's own
-    /// time: a late frame delays it (CI's VM drew none for 60 ms there, the show 80 ms after the page).
+    /// Not the show's own time: a late frame delays it (CI's VM drew none for 60 ms there, the show 80 ms after the
+    /// page).
     private func beforeShow(_ path: [[Double]]) -> Double {
         path.last?[0] ?? 0
     }
@@ -290,19 +252,15 @@ extension OvviUITests {
     private func launchRecordingLatency(_ args: [String] = []) throws {
         relaunch(one, ["-recordLatency", "YES"] + args)
         XCTAssertTrue(element("pane.w1:p1").exists(within: connect))
-        // Also after a failed step.
         addTeardownBlock { @MainActor in self.keep(self.element("app.latency").stringValue, as: "latency") }
     }
 
-    /// The key, then its change; a pause, so the next key's record starts clean.
     private func key(_ key: String, _ flags: XCUIElement.KeyModifierFlags, until done: () -> Bool) {
         app.typeKey(key, modifierFlags: flags)
         XCTAssertTrue(until(5, done), "after \(key)")
         Thread.sleep(forTimeInterval: 0.5)
     }
 
-    /// "⌘T 12ms 0 9ms 0": the key, the time to its frame, the turns, the app's own time, the lists made;
-    /// "swipe 230ms 0:145.0,…".
     struct Entry {
         let name: String, turns: Int, lists: Int
     }

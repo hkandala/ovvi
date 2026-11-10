@@ -1,12 +1,6 @@
 import XCTest
 
-/// A plugin's header row (plugins/manifest#header).
 extension OvviUITests {
-    /// A user plugin's controls, drawn from its manifest before its page loads: Back and Forward at the row's left
-    /// edge, a menu with a section and a divider, a path text, a badge in a button's label, a field that takes the
-    /// free width, gaps, Open With; a hidden control is not drawn. A toggle and segments change at once, a menu pick
-    /// leaves the value to the page, and the floating window draws the same row with the same values. A plugin with
-    /// no header has one header row.
     func testAPluginsHeaderDrawsItsManifestsControls() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, shell) = try await newTab("header")
@@ -14,7 +8,7 @@ extension OvviUITests {
         let config = "/tmp/ovvi-e2e-header"
         try await send(fixture(in: config) + "\r", to: shell)
         try await waitFor(shell) { $0.contains("made-42") }
-        relaunch(nil, ["-configFolder", config])
+        relaunch(one, ["-configFolder", config])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         element("workspace.w2").click()
         let card = try await newCard("ovvi:fixture#e2ehdr /tmp/notes.md").pane
@@ -27,15 +21,12 @@ extension OvviUITests {
         XCTAssertEqual(control("push").label, "Push, 2")
         XCTAssertTrue(control("open-with").exists)
         XCTAssertFalse(control("gone").exists)
-        // Over the page's left edge (11 pt into the card, the page 10 pt), in the pane and floating.
         let page = element("fixture.\(card).card").frame
         XCTAssertEqual(control("go-back").frame.minX - page.minX, 1, accuracy: 1, "\(page)")
         // Past its prompt's own width (about 70 pt), with the room of a card on CI's 1024 pt screen without the
         // sidebar: beside a 300 pt sidebar the row's other controls leave the field about 55 pt.
         element("titlebar.sidebar").click()
         XCTAssertTrue(until(2) { control("filter").frame.width > 100 }, "\(control("filter").frame)")
-        // 6 pt apart by default; `gap` 0 joins Push to Outline.
-        // The segments' first sits 2 pt into their track.
         XCTAssertEqual(control("mode.read").frame.minX - control("rows").frame.maxX, 6 + 2, accuracy: 1)
         XCTAssertEqual(control("push").frame.minX, control("outline").frame.maxX, accuracy: 0.5)
         keepScreenshot("plugin header")
@@ -51,21 +42,18 @@ extension OvviUITests {
         }
         control("root").menuItems["tmp"].click()
         XCTAssertTrue(control("root").menuItems["tmp"].vanishes(within: 2))
-        XCTAssertEqual(control("root").value as? String, "ovvi")
+        XCTAssertFalse(until(0.5) { control("root").stringValue != "ovvi" }, control("root").stringValue)
 
-        try floatsTheSameRow(card)
+        floatsTheSameRow(card)
 
-        // The page starts right under row 1: one row of 36 pt, not two.
         let bare = try await newCard("ovvi:bare#e2ebar /tmp").pane
         XCTAssertTrue(element("bare.\(bare).card").exists(within: 5))
         XCTAssertLessThan(element("bare.\(bare).card").frame.minY - element("pane.\(bare)").frame.minY, 50)
         try await send("rm -rf \(config) /tmp/notes.md\r", to: shell)
     }
 
-    /// The floating window draws the same row with the same values, Back as far from the card's top edge as from its
-    /// left (only there: in a pane the row sits under row 1).
-    private func floatsTheSameRow(_ card: String) throws {
-        let window = try float(card)
+    private func floatsTheSameRow(_ card: String) {
+        let window = float(card)
         let floating = { (id: String) in self.element("pane.\(card).\(id)", in: window) }
         XCTAssertTrue(floating("mode.edit").has(\.isSelected, true, within: 3))
         XCTAssertFalse(floating("outline").isSelected)
@@ -80,7 +68,6 @@ extension OvviUITests {
         XCTAssertTrue(window.vanishes(within: 3))
     }
 
-    /// A shell line that writes a plugin whose header has every control type, and one with no header.
     private func fixture(in config: String) -> String {
         let header = [
             #"{"id":"root","type":"menu","symbol":"folder","title":"ovvi","items":[{"title":"Places"},"#

@@ -1,27 +1,20 @@
 import XCTest
 
-/// The sidebar's git line and its menu: a repository's row shows its branch and runs Fetch, Pull and Push.
 extension OvviUITests {
-    /// A repository's row shows the branch with ahead and behind, a linked worktree sits under it, the line follows a
-    /// commit, and the filter matches branches. Its menu's Fetch, Pull and Push run git (`sync`).
     func testWorkspaceRowsShowGitWorktreesAndSync() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        // The sandboxed runner cannot run git: a pane of w2 (in /tmp) builds a repository one commit ahead of its
-        // upstream and one behind it, and a linked worktree.
+        // The sandboxed runner cannot run git: a pane of w2 builds the repository.
         let root = "/tmp/ovvi-e2e-git-\(Int.random(in: 10000 ... 99999))"
         let git = "git -c user.name=e2e -c user.email=e2e@ovvi"
         // In a subshell: w2 stays in /tmp, a folder outside any repository.
         let script = "(mkdir -p \(root) && cd \(root) && git init -q -b main repo && cd repo && "
             + "\(git) commit -q --allow-empty -m one && git clone -q --bare . ../up.git && "
             + "git remote add origin ../up.git && git fetch -q origin && git branch -q -u origin/main && "
-            // Pushed, then replaced: one commit behind the upstream and one ahead of it.
             + "\(git) commit -q --allow-empty -m two && git push -q origin main && git reset -q --hard HEAD~1 && "
             + "\(git) commit -q --allow-empty -m three && git worktree add -q ../tree -b feature) && "
             + "echo built-$((6*7))"
         try await send("\(script)\r", to: "w2:p1")
-        addTeardownBlock { [one] in
-            _ = try? await Self.call(one, "pane.send_text", ["pane_id": "w2:p1", "text": "rm -rf \(root)\r"])
-        }
+        sendAfter("rm -rf \(root)\r", to: "w2:p1")
         try await waitFor("w2:p1") { $0.contains("\nbuilt-42") }
         let repo = try await workspace(of: createWorkspace("repo", cwd: "\(root)/repo").tab)
         // herdr fills a workspace's worktree fields only through its worktree calls.
@@ -44,7 +37,6 @@ extension OvviUITests {
         XCTAssertTrue(until(12) { repoRow.value as? String == "main ahead 2 behind 1" })
         try await sync(repoRow, root: root, git: git)
 
-        // The filter matches branches; a matching worktree keeps its repository's row.
         let filter = element("sidebar.filter")
         filter.click()
         filter.typeText("feature")
@@ -53,9 +45,6 @@ extension OvviUITests {
         XCTAssertTrue(repoRow.exists)
     }
 
-    /// Fetch, Pull and Push after a separator only on a repository's row: Fetch brings a commit another clone pushed,
-    /// Push's refusal shows git's words in the notice, and Pull brings the commit; the line follows each at once. The
-    /// notice has a spinner while git runs (a 3 s upload-pack), then a check for 2 s.
     private func sync(_ row: XCUIElement, root: String, git: String) async throws {
         element("workspace.w2").rightClick()
         XCTAssertTrue(app.menuItems["Move Down"].exists(within: 2))
@@ -88,7 +77,6 @@ extension OvviUITests {
         XCTAssertEqual(symbol.label, "Error")
         keepScreen("push refused")
 
-        // One behind and none ahead: Pull fast-forwards.
         try await send("(cd \(root)/repo && git reset -q --hard origin/main~1) && echo reset-$((6*7))\r", to: "w2:p1")
         try await waitFor("w2:p1") { $0.contains("\nreset-42") }
         row.rightClick()

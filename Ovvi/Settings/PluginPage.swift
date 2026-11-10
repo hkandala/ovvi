@@ -9,14 +9,13 @@ struct PluginPage: View {
         "plugin.\(plugin).\(setting)"
     }
 
-    /// Show in New Pane's: `+` is in no setting's id.
+    /// `+` is in no setting's id.
     static func newPaneRow(_ plugin: String) -> String {
         "plugin.\(plugin).+new-pane"
     }
 
     var body: some View {
-        let row = id == Registry.browser.id ? InstalledPlugin(id: id, manifest: Registry.browser, kind: .bundled)
-            : PluginInstalls.shared.rows.first { $0.id == id }
+        let row = PluginInstalls.shared.rows.first { $0.id == id }
         Form {
             if let failure = PluginInstalls.shared.failure {
                 NoticeCapsule(tone: .error, text: failure.text) {}.frame(maxWidth: .infinity)
@@ -28,14 +27,12 @@ struct PluginPage: View {
                     ForEach(sections, id: \.offset) { index, section in
                         Section {
                             ForEach(section.settings, id: \.id) { SettingRow(setting: $0, plugin: id) }
-                            // The last section ends with the rows of Ovvi's own, as one card.
                             if index == sections.count - 1 {
                                 inOvvi(manifest)
                             }
                         } header: {
                             Text(section.title)
                         } footer: {
-                            // A card's own choices are the default plugins' way; another plugin may read them live.
                             if Registry.defaults.contains(id), index == sections.count - 1 {
                                 Text("New cards start with the settings above. A card keeps its own choice once you "
                                     + "change it in its header.").settingsFooter()
@@ -70,7 +67,6 @@ struct PluginPage: View {
         }
     }
 
-    /// The settings in groups: a setting with a `section` starts one under that heading.
     private static func sections(_ settings: [PluginSetting])
         -> [(offset: Int, element: (title: String, settings: [PluginSetting]))]
     {
@@ -87,7 +83,6 @@ struct PluginPage: View {
 
 private struct PluginSummary: View {
     let row: InstalledPlugin
-    /// Its row went: installed under its manifest's id.
     let gone: () -> Void
 
     var body: some View {
@@ -99,7 +94,7 @@ private struct PluginSummary: View {
         } actions: {
             if let busy = row.busy {
                 ProgressView().controlSize(.small)
-                Text(busy).foregroundStyle(.secondary).accessibilityIdentifier("\(id).busy")
+                Text(busy).foregroundStyle(.secondary)
             } else {
                 if case .installed = row.kind {
                     Button(manifest == nil ? "Install" : "Update") {
@@ -113,14 +108,13 @@ private struct PluginSummary: View {
                     .accessibilityIdentifier("\(id).update")
                 }
                 if row.kind == .bundled, let offer = defaults.offers[row.id] {
-                    // An edited copy stays the user's until they pick the app's again.
                     Button(offer.map { "Update to Version \($0)" } ?? "Reset to Default") {
                         Task { await defaults.reset(row.id) }
                     }
                 }
                 if manifest?.entry != nil {
-                    Button("Show Log") { PluginLog.show(row.id) }.accessibilityIdentifier("\(id).log")
-                    Button("Reload") { Task { await Plugin.reload(row.id) } }.accessibilityIdentifier("\(id).reload")
+                    Button("Show Log") { PluginLog.show(row.id) }
+                    Button("Reload") { Task { await Plugin.reload(row.id) } }
                 }
             }
         }
@@ -173,7 +167,6 @@ private struct SettingRow: View {
                         Text($0.title.shown).tag(PluginSetting.Value.text($0.value))
                     }
                 } label: { label }
-                // Short: they fit beside the title, as Git's Unified | Side by Side.
                 if options.count <= 4, options.map(\.title.count).reduce(0, +) <= 24 {
                     picker.pickerStyle(.segmented)
                 } else {
@@ -224,21 +217,10 @@ private struct SettingRow: View {
         }
     }
 
-    /// The text typed, if it fits (a path starts with / or ~); the field shows the saved value again either way.
     private func save() {
         if let draft {
             PluginSettings.shared.set(.text(draft), setting, of: plugin)
         }
         draft = nil
-    }
-}
-
-struct NewPaneSwitch: View {
-    let manifest: PluginManifest
-
-    var body: some View {
-        Toggle("Show in New Pane", isOn: Binding { Registry.inNewPane(manifest) } set: {
-            Registry.show(manifest.id, inNewPane: $0)
-        })
     }
 }

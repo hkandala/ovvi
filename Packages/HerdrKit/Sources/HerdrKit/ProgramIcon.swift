@@ -1,13 +1,11 @@
 import Foundation
 
-/// One entry of the program icon catalog (`resources/icons/catalog.json`): only the fields the app uses.
 public struct ProgramIcon: Decodable, Sendable {
     public let id: String
     public let tile: Tile
     let match: Match
 
     public struct Tile: Decodable, Sendable {
-        /// `#rrggbb`.
         public let background: String
         public let glyph: String
     }
@@ -21,9 +19,6 @@ public struct ProgramIcon: Decodable, Sendable {
 }
 
 public extension [ProgramIcon] {
-    /// The id of a pane's icon. The first hit wins: herdr's agent, the foreground process (name, argv0; a Node
-    /// CLI's script first), the title; then `terminal` when only the shell runs, `placeholder` for a program or agent
-    /// the catalog does not know.
     func iconID(agent: String?, program: Program?, title: String?) -> String {
         func find(_ hit: (ProgramIcon.Match) -> Bool) -> String? {
             first { hit($0.match) }?.id
@@ -32,13 +27,13 @@ public extension [ProgramIcon] {
             return id
         }
         if let program, !program.isShell {
-            // A path's last part; a login shell's leading `-`. Not `URL(filePath:)`: for a bare name it read the
-            // working folder (getcwd), for each tile's icons in each overview frame.
+            // A login shell's argv0 starts with `-`. Not `URL(filePath:)`: for a bare name it reads the working
+            // folder (getcwd), for each tile's icons in each overview frame.
             let base = { (path: String) in String((path.split(separator: "/").last ?? "").trimmingPrefix("-")) }
             var names = [program.name, program.argv0].compactMap(\.self).map(base)
-            // A Node CLI (`pi`) is its script, not `node`: the package's path, else the bin link's name it was
-            // started through (`gemini`).
-            if let script = program.script, names.contains(where: ["node", "bun"].contains) {
+            // A Node CLI (`pi`) is its script, not `node`: the package's path, else the name of the bin link that
+            // started it (`gemini`).
+            if let script = program.script, names.contains(where: Program.runtimes.contains) {
                 if let id = find({ $0.scriptSuffix?.contains { script.hasSuffix($0) } == true }) {
                     return id
                 }

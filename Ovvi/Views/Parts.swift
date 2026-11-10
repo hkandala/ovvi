@@ -1,29 +1,24 @@
 import HerdrKit
 import SwiftUI
 
-/// Where each card and divider of the tree goes: each split divides its rectangle by its ratio, less the 8 pt gap,
-/// which is its divider. Both sides get an exact size, so no card's content can push its neighbor out of the page.
+/// Both sides of a split get an exact size, so no card's content can push its neighbor out of the page.
 struct Parts {
     struct Card {
         let id: String
         let rect: CGRect
-        /// Where it slides in from: beside its place, on its side of its split.
         let start: CGRect
     }
 
     struct Divider {
-        /// From the root, `false` = first child, as `layout.set_split_ratio` takes it.
+        /// From the root, `false` = first child, as herdr's `layout.set_split_ratio` takes it.
         let path: [Bool]
         let right: Bool
         let rect: CGRect
-        /// The split's length without the gap.
         let total: CGFloat
-        /// herdr's, kept in 0–1 (a NaN or out-of-range ratio from herdr must not break the layout).
+        /// Kept in 0–1: a NaN or out-of-range ratio from herdr must not break the layout.
         let ratio: Double
-        /// The last pane of the first side and the first of the second.
         let beside: [String?]
 
-        /// The path in `0` and `1` digits, `root` for the root split.
         var id: String {
             path.isEmpty ? "root" : path.map { $0 ? "1" : "0" }.joined()
         }
@@ -36,7 +31,6 @@ struct Parts {
         add(tree, area, path: [], side: CGVector(dx: 1, dy: 0), held: held)
     }
 
-    /// `side`: the card's side of its split, as a unit step (right, left, down or up).
     private mutating func add(_ node: SplitNode, _ rect: CGRect, path: [Bool], side: CGVector,
                               held: [[Bool]: Double])
     {

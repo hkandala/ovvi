@@ -1,0 +1,14 @@
+#!/bin/sh
+# The real herdr ($OVVI_E2E_HERDR) with the failures that files in $OVVI_E2E_FLAGS switch on: `terminal` fails every
+# terminal stream, as a herdr updated under a running server does; `down` fails every run. Each stream open is a line
+# in `opens`.
+case "$*" in *"terminal session"*) echo "$*" >>"$OVVI_E2E_FLAGS/opens" ;; esac
+if [ -e "$OVVI_E2E_FLAGS/down" ]; then
+    echo "herdr is down" >&2
+    exit 1
+fi
+case "$*" in *"terminal session"*) if [ -e "$OVVI_E2E_FLAGS/terminal" ]; then
+    echo "protocol mismatch" >&2
+    exit 1
+fi ;; esac
+exec "$OVVI_E2E_HERDR" "$@"

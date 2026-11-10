@@ -1,16 +1,18 @@
 import XCTest
 
-/// The tests' herdr side: calls through the e2e helper, ids from its replies, cleanups after a test.
 extension OvviUITests {
-    /// The pane's text; `recent_unwrapped` joins the lines the pane's width wrapped (CI's panes and prompts vary).
+    /// `recent_unwrapped` joins the lines the pane's width wrapped (CI's panes and prompts vary).
     func read(_ pane: String, in session: String? = nil, _ source: String = "visible") async throws -> String {
         let read = try await Self.call(session ?? one, "pane.read", ["pane_id": pane, "source": source])["read"]
         return try field((read as? [String: Any])?["text"], "pane.read's text")
     }
 
-    /// herdr's `pane.get` of the pane.
     func pane(_ id: String, in session: String? = nil) async throws -> [String: Any] {
         try await field(Self.call(session ?? one, "pane.get", ["pane_id": id])["pane"], "pane \(id)")
+    }
+
+    func paneLabel(_ pane: String) async throws -> String {
+        try await self.pane(pane)["label"] as? String ?? ""
     }
 
     func tabOf(_ pane: String, in session: String? = nil) async throws -> String {
@@ -21,11 +23,14 @@ extension OvviUITests {
         try await field(self.pane(pane, in: session)["terminal_id"], "\(pane)'s terminal")
     }
 
-    func send(_ text: String, to pane: String) async throws {
-        try await Self.call(one, "pane.send_text", ["pane_id": pane, "text": text])
+    func send(_ text: String, to pane: String, in session: String? = nil) async throws {
+        try await Self.call(session ?? one, "pane.send_text", ["pane_id": pane, "text": text])
     }
 
-    /// The helper or herdr said no, or a reply lacks a field. Thrown, not recorded: teardowns try? it.
+    func sendAfter(_ text: String, to pane: String) {
+        addTeardownBlock { [one] in _ = try? await Self.call(one, "pane.send_text", ["pane_id": pane, "text": text]) }
+    }
+
     struct Failed: Error, CustomStringConvertible {
         let description: String
     }
@@ -35,18 +40,24 @@ extension OvviUITests {
         return value
     }
 
-    /// The id of what herdr made, from its reply: `id(created, "tab")` is `tab.tab_id`, `"root_pane"` gives `pane_id`.
     func id(_ reply: [String: Any], _ key: String) throws -> String {
         let name = key.split(separator: "_").last ?? ""
         return try field((reply[key] as? [String: Any])?["\(name)_id"], "\(key) id")
     }
 
-    /// After the test, closes the tab or workspace of session one, unless the test did.
-    func closeAfter(_ kind: String, _ id: String) {
-        addTeardownBlock { [one] in _ = try? await Self.call(one, "\(kind).close", ["\(kind)_id": id]) }
+    /// herdr sends no event for a rename: the metadata report makes the app read the snapshot (the app reads no token
+    /// of this one).
+    func relabel(_ pane: String, _ label: String, in session: String? = nil) async throws {
+        try await Self.call(session ?? one, "pane.rename", ["pane_id": pane, "label": label])
+        try await Self.call(session ?? one, "pane.report_metadata", ["pane_id": pane, "source": "ovvi-e2e-relabel",
+                                                                     "tokens": ["relabel": "1"], "ttl_ms": 1000])
     }
 
-    /// After the test, closes every tab or workspace of session one that is not in `before`.
+    func closeAfter(_ kind: String, _ id: String, in session: String? = nil) {
+        let session = session ?? one
+        addTeardownBlock { _ = try? await Self.call(session, "\(kind).close", ["\(kind)_id": id]) }
+    }
+
     func closeNew(_ kind: String, besides before: [String]) {
         addTeardownBlock { [one] in
             for id in try await Self.ids(kind, in: one) where !before.contains(id) {
@@ -60,14 +71,15 @@ extension OvviUITests {
         String(tab.prefix { $0 != ":" })
     }
 
-    /// Splits the pane to the right (or `down`) in herdr; the new pane's id.
     @discardableResult
-    func split(_ pane: String, _ direction: String = "right") async throws -> String {
-        try await id(Self.call(one, "pane.split", ["target_pane_id": pane, "direction": direction, "cwd": "/tmp",
-                                                   "focus": false]), "pane")
+    func split(_ pane: String, _ direction: String = "right", in session: String? = nil) async throws -> String {
+        try await id(
+            Self.call(session ?? one, "pane.split", ["target_pane_id": pane, "direction": direction, "cwd": "/tmp",
+                                                     "focus": false]),
+            "pane",
+        )
     }
 
-    /// A tab in herdr (in /tmp, labelled when `label` is given): its id and its pane's.
     func createTab(in workspace: String, label: String? = nil,
                    session: String? = nil) async throws -> (tab: String, pane: String)
     {
@@ -77,7 +89,6 @@ extension OvviUITests {
         return try (id(created, "tab"), id(created, "root_pane"))
     }
 
-    /// A workspace of its own, closed after the test: its tab's id and its pane's.
     func createWorkspace(_ label: String, cwd: String = "/tmp") async throws -> (tab: String, pane: String) {
         let created = try await Self.call(one, "workspace.create", ["label": label, "cwd": cwd, "focus": false])
         try closeAfter("workspace", id(created, "workspace"))
@@ -97,8 +108,6 @@ extension OvviUITests {
         }
     }
 
-    /// A card's pane in a tab of its own in w2, made as Ovvi makes one (a placeholder), closed after the test; shown
-    /// unless `show` is false.
     func newCard(_ label: String, cwd: String = "/tmp", show shown: Bool = true) async throws
         -> (tab: String, pane: String)
     {
@@ -115,8 +124,7 @@ extension OvviUITests {
         return (tab, pane)
     }
 
-    /// Waits for the prompt in every pane of the tabs: a shell's startup runs programs (`path_helper`, nvm's `ls`),
-    /// which would make a close ask (D41).
+    /// A shell's startup runs programs (`path_helper`, nvm's `ls`), which would make a close ask.
     func settle(_ tabs: [String]) async throws {
         for pane in try await snapshot()["panes"] as? [[String: Any]] ?? []
             where tabs.contains(pane["tab_id"] as? String ?? "")
@@ -125,7 +133,6 @@ extension OvviUITests {
         }
     }
 
-    /// `sleep 100` in the pane: a program besides its shell, so a close asks (D41).
     func runSleep(_ pane: String) async throws {
         try await waitForPrompt(pane)
         try await send("sleep 100\r", to: pane)
@@ -138,7 +145,14 @@ extension OvviUITests {
         return processes.compactMap { $0["name"] as? String }
     }
 
-    /// Session one's `session.snapshot`.
+    func answer(_ session: String) async throws -> [String: Any]? {
+        do {
+            return try await Self.snapshot(session)
+        } catch is Failed {
+            return nil
+        }
+    }
+
     func snapshot() async throws -> [String: Any] {
         try await Self.snapshot(one)
     }
@@ -150,21 +164,18 @@ extension OvviUITests {
         return snapshot
     }
 
-    /// Waits until the session answers; `start` starts its server first when it does not, and gives it a workspace.
-    /// Its snapshot.
     @discardableResult
     func running(_ session: String, start: Bool = true) async throws -> [String: Any] {
-        if start, await (try? Self.snapshot(session)) == nil {
+        if start, try await answer(session) == nil {
             try await Self.post("\(session)/start")
         }
-        let snapshot = try await poll("\(session) to answer") { try? await Self.snapshot(session) }
+        let snapshot = try await poll("\(session) to answer") { try await answer(session) }
         guard start, (snapshot["workspaces"] as? [Any] ?? []).isEmpty else { return snapshot }
         try await Self.call(session, "workspace.create", ["label": "five", "cwd": "/tmp", "focus": false])
         return try await Self.snapshot(session)
     }
 
-    /// The session's first workspace and the pane of its active tab, which its page shows first. Tests close and make
-    /// five's workspaces, so its ids change from run to run.
+    /// Tests close and make five's workspaces, so its ids change from run to run.
     func shown(_ snapshot: [String: Any]) throws -> (workspace: String, pane: String) {
         let workspace: [String: Any] = try field((snapshot["workspaces"] as? [[String: Any]])?.first, "workspace")
         let tab: String = try field(workspace["active_tab_id"], "active tab")
@@ -177,8 +188,8 @@ extension OvviUITests {
         try await Self.ids("tab", in: session ?? one)
     }
 
-    /// The session's `tab` or `workspace` ids. Off the main actor for async teardown blocks: after a failure, one on
-    /// the main actor waits for it until the 2-minute allowance runs out.
+    /// Off the main actor for async teardown blocks: after a failure, one on the main actor waits for it until the
+    /// 2-minute allowance runs out.
     nonisolated static func ids(_ kind: String, in session: String) async throws -> [String] {
         try await (snapshot(session)[kind + "s"] as? [[String: Any]] ?? []).compactMap { $0[kind + "_id"] as? String }
     }
@@ -189,14 +200,12 @@ extension OvviUITests {
         }
     }
 
-    /// The tab's order in w2.
     func order(of tab: String) async throws -> Int? {
         try await (Self.call(one, "tab.list", ["workspace_id": "w2"])["tabs"] as? [[String: Any]] ?? [])
             .compactMap { $0["tab_id"] as? String }.firstIndex(of: tab)
     }
 
-    /// A linked open's new tab: once the bar shows it, it sits right after `card`'s with no capsule between them, and
-    /// herdr has it there. XCUITest looks too seldom to see a one-snapshot jump: that is checked by hand.
+    /// XCUITest looks too seldom to see a one-snapshot jump.
     func expectBeside(_ tab: String, _ card: String) async throws {
         XCTAssertTrue(element("tab.\(tab)").exists(within: 5))
         let after = element("tab.\(card)").frame.maxX, start = element("tab.\(tab)").frame.minX
@@ -209,23 +218,43 @@ extension OvviUITests {
         }
     }
 
-    /// Shows w2's tab by its key (⌘1–9): a click misses one past the tab bar's end on CI's screen.
+    /// By its key: a click misses a tab past the tab bar's end on CI's screen.
     func show(_ tab: String) async throws {
         let found = try await order(of: tab)
         let index = try XCTUnwrap(found)
-        // Not before the tab bar has it: herdr's new tab reaches the app with the next snapshot.
+        // herdr's new tab reaches the app with the next snapshot.
         XCTAssertTrue(element("tab.\(tab)").exists(within: 5))
         app.typeKey("\(index + 1)", modifierFlags: .command)
         XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, true, within: 3))
     }
 
-    /// No saved windows (an earlier test's), with setUp's app gone first, as it saves its window too.
+    /// setUp's app goes first, as it saves its window too.
     func forgetWindows() async throws {
         app.terminate()
         _ = try await Self.post("\(one)/forget-windows")
     }
 
-    /// The text in the result bundle, kept also when the test passes.
+    func hasSSH() async throws -> Bool {
+        try await String(decoding: Self.post("\(one)/ssh-connections"), as: UTF8.self) != "none"
+    }
+
+    /// Skips where the pane's shell would start this Mac's own claude: no claude, or the stand-in (CI's, which only
+    /// exits), goes on.
+    func skipIfThisMacHasClaude(_ pane: String, _ which: String) async throws {
+        try await send("case \"$(command -v claude)\" in ''|*/Fixtures/agents/*) echo claude-$((6*7))-safe;; "
+            + "*) echo claude-$((6*7))-real;; esac\r", to: pane)
+        try await waitFor(pane) { $0.contains("\nclaude-42-") }
+        if try await read(pane).contains("\nclaude-42-real") {
+            throw XCTSkip("this Mac has claude, which \(which)")
+        }
+    }
+
+    func skipWithoutSSH() async throws {
+        if try await !hasSSH() {
+            throw XCTSkip("no sshd on 127.0.0.1:2222 (scripts/ci-sshd.sh, CI only)")
+        }
+    }
+
     func keep(_ text: String, as name: String) {
         let attachment = XCTAttachment(string: text)
         attachment.name = name
@@ -233,7 +262,6 @@ extension OvviUITests {
         add(attachment)
     }
 
-    /// The session's herdr runs (`terminal session` and `remote-api-bridge`), any client's, as `pid argv` lines.
     func runs(_ session: String) async throws -> [String] {
         try await String(decoding: Self.post("\(session)/children"), as: UTF8.self).split(separator: "\n")
             .map(String.init)
@@ -243,7 +271,6 @@ extension OvviUITests {
         try await runs(session).filter { $0.contains("terminal session") }
     }
 
-    /// One herdr API call on a throwaway session, through the helper.
     @discardableResult
     nonisolated static func call(_ session: String, _ method: String,
                                  _ params: [String: Any]) async throws -> [String: Any]
@@ -257,8 +284,6 @@ extension OvviUITests {
         return result
     }
 
-    /// One POST to the e2e helper: `<session>` for an API call, `<session>/<action>` for the others (see the helper).
-    /// Throws unless it answers 200.
     @discardableResult
     nonisolated static func post(_ path: String, _ body: Data = Data()) async throws -> Data {
         let helper = ProcessInfo.processInfo.environment["OVVI_HELPER"] ?? "run through make e2e"

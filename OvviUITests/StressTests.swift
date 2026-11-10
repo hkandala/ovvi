@@ -1,26 +1,18 @@
 import XCTest
 
-/// The whole UI at scale: a session of 30 workspaces, 300 tabs and 400 panes (600 took CI two
-/// minutes to make; a Mac gives all its programs 511 terminals), 100 of them agents that print, retitle and change
-/// state, and half the others printing (`scripts/stress.py`). It records the main keys' time to their frame, the
-/// frames while the sidebar (with a workspace's agents unfolded) and the tab bar scroll, the app's CPU and memory, and
-/// the main thread's work every 5 s: all in the result bundle ("stress", "usage, …", "sample").
+/// 400 panes: 600 took CI two minutes to make, and a Mac gives all its programs 511 terminals.
 extension OvviUITests {
     func testHundredsOfPanesStayQuick() async throws {
         executionTimeAllowance = 600
-        let eight = try env("OVVI_SESSION8")
-        addTeardownBlock { _ = try? await Self.post("\(eight)/stress") }
+        addTeardownBlock { [eight] in _ = try? await Self.post("\(eight)/stress") }
         let made = try await String(decoding: Self.post("\(eight)/stress", Data("300 30 400 100".utf8)), as: UTF8.self)
         print(made)
-        // From the launch to the first card drawn: 7–8 s on CI; unbounded program asks (400 at once) once kept it blank
-        // past 30 s.
+        // From the launch to the first card drawn: 7–8 s on CI.
         let launched = Date.now
         relaunch(eight, ["-recordLatency", "YES"])
-        // Also after a failed step.
         addTeardownBlock { @MainActor in self.note(self.element("app.latency").stringValue) }
         XCTAssertTrue(element("pane.w1:p1").exists(within: 20))
         note("connect \(Int(Date.now.timeIntervalSince(launched) * 1000))ms")
-        // The first snapshot's program asks (one per pane), and the agents' first states.
         try await Task.sleep(for: .seconds(10))
 
         let palette = element("palette.filter"), openSession = element("open-session.filter")
@@ -37,8 +29,6 @@ extension OvviUITests {
         quietKey("s", [.command, .control]) { self.element("sidebar").exists }
         try await typeInPalette()
 
-        // Frames while lists scroll: the sidebar's 30 rows with w1's agents unfolded, then folded; the tab bar's 10
-        // capsules.
         unfold("w1")
         try await scroll(over: element("sidebar").frame, vertical: true)
         fold("w1")
@@ -47,29 +37,24 @@ extension OvviUITests {
 
         try await newTabSplitAndCloses(in: eight)
 
-        // A busy tab: an agent and a printing pane, in view.
         quietKey("1", .command) { self.element("tab.w1:t1").isSelected }
         let busy = try await measure("busy tab", seconds: 5, session: eight)
-        // 15 % on CI; snapshot reads back to back and an O(n²) line split once took over 100 %.
+        // 15 % on CI.
         let cpu = busy.split(separator: "\n")[0].split(separator: " ")
         XCTAssertLessThan(Double(cpu[1].dropLast()) ?? 100, 50, busy)
         try await sample("busy tab", in: eight)
-        // The malloc heap, which follows the session's size (126 MB of 219 MB on CI at 400 panes).
         try await keep(String(decoding: Self.post("\(eight)/heap"), as: UTF8.self), as: "heap, busy tab")
 
-        // Another session's page and back (its own snapshots stop mattering while it is out of view).
         openPage(one)
         quietKey("[", [.command, .option]) { self.header == eight }
         quietKey("]", [.command, .option]) { self.header == self.one }
         quietKey("[", [.command, .option]) { self.header == eight }
 
         let keys = recorded().filter { $0.name.first.map("⌘⌃⇧⌥".contains) == true }
-        // Every key drew its change in its own turn, or the next for herdr's writes.
         for entry in keys {
             XCTAssertLessThanOrEqual(entry.turns, 1, entry.name)
         }
-        // A snapshot's apply on the main thread ("main … <snapshots> <their ms>", its own time): about 11 ms on CI
-        // (75 ms when a set of every tab's focused pane was made again for each pane).
+        // A snapshot's apply on the main thread ("main … <snapshots> <their ms>", its own time): about 11 ms on CI.
         let main = element("app.latency").stringValue.split(separator: "; ").filter { $0.hasPrefix("main ") }
             .map { $0.split(separator: " ") }
         let applies = main.reduce(0) { $0 + (Int($1[3]) ?? 0) }
@@ -77,7 +62,6 @@ extension OvviUITests {
         XCTAssertLessThan(applied, 25 * max(applies, 1), "\(applied) ms for \(applies) snapshots")
     }
 
-    /// ⌘K over all its rows, a filter typed key by key and taken back, and a scroll of its list: "S 9ms 0 8ms 1".
     private func typeInPalette() async throws {
         let palette = element("palette.filter")
         quietKey("k", .command) { palette.exists }
@@ -103,10 +87,8 @@ extension OvviUITests {
         }
     }
 
-    /// ⌘T, a quiet tab of its own (measured while 100 agents work in others), ⌘D, ⌘W and ⇧⌘W.
     private func newTabSplitAndCloses(in eight: String) async throws {
         let before = try await tabIDs(in: eight)
-        // t1's page is gone: its capsule may be out of view, so not made (the row makes only the capsules in view).
         quietKey("t", .command) { !self.element("page.w1:t1").exists }
         let new = try await newTabID(after: before, in: eight)
         XCTAssertTrue(element("tab.\(new)").has(\.isSelected, true, within: 10))
@@ -117,14 +99,12 @@ extension OvviUITests {
         quietKey("d", .command, until: { cards.count == 2 }, saw: {
             cards.allElementsBoundByIndex.map(\.identifier).joined(separator: " ")
         })
-        // The new pane's first program answer, so the close does not wait for herdr's.
         try await Task.sleep(for: .seconds(2.5))
         quietKey("w", .command) { cards.count == 1 }
         quietKey("w", [.command, .shift]) { !self.element("tab.\(new)").exists }
     }
 
-    /// The key, then 1.5 s with no accessibility query before its change is checked: XCUITest's queries take the main
-    /// thread, for seconds at this size, and would be counted as the key's time.
+    /// XCUITest's queries take the main thread, for seconds at this size, and would be counted as the key's time.
     private func quietKey(_ key: String, _ flags: XCUIElement.KeyModifierFlags, until done: () -> Bool,
                           saw: () -> String = { "" })
     {
@@ -133,13 +113,11 @@ extension OvviUITests {
         XCTAssertTrue(until(5, done), "after \(key): \(saw())")
     }
 
-    /// A line in the result bundle and the log.
     func note(_ text: String) {
         print(text)
         keep(text, as: "stress")
     }
 
-    /// A trackpad scroll of 30 steps of 20 pt there and the momentum after, then back: one "scroll" record each.
     private func scroll(over frame: CGRect, vertical: Bool) async throws {
         for sign in [-1.0, 1.0] {
             let body = "\(frame.midX) \(frame.midY) \(20 * sign) 30 0 \(vertical ? 1 : 0)"
@@ -148,7 +126,6 @@ extension OvviUITests {
         }
     }
 
-    /// `sample`'s profile of the app for 3 s, kept in the result bundle.
     private func sample(_ name: String, in session: String) async throws {
         let profile = try await Self.post("\(session)/sample", Data("3".utf8))
         keep(String(decoding: profile, as: UTF8.self), as: "sample, \(name)")

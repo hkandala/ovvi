@@ -20,9 +20,8 @@ private func error(_ ovvi: String, package: String = #""version": "0.1.0""#) -> 
 }
 
 @Test func `a package's ovvi key is its manifest, with the package's version and description`() throws {
-    // `permissions` (D108) and a newer app's field load and are ignored.
     let csv = try manifest(base + #""#
-        + #", "opens": {"files": ["*.csv", "public.comma-separated-values-text"]}, "permissions": ["network"],"#
+        + #", "opens": {"files": ["*.csv", "public.comma-separated-values-text"]},"#
         + #""header": [{"id": "rows", "type": "text", "style": "dim"}, {"type": "spacer"},"#
         + #"{"id": "first-row", "type": "toggle", "symbol": "tablecells", "title": "First Row", "value": true},"#
         + #"{"id": "mode", "type": "menu", "title": "Mode", "items": [{"value": "a", "title": "A"}, "-"]}],"#
@@ -99,7 +98,6 @@ private func error(_ ovvi: String, package: String = #""version": "0.1.0""#) -> 
     #expect(name > ext && ext > text && text > data && data > any)
     #expect(try rank(["*.md"], "/x/a.csv") == nil)
     #expect(try rank(["public.image"], "/x/a.csv") == nil)
-    // A name the system does not know matches no type, only a glob.
     #expect(try rank(["public.data"], "/x/main.rs") == nil)
     #expect(try rank(["*.md", "*"], "/x/a.md") == ext)
 }
@@ -119,7 +117,7 @@ private func error(_ ovvi: String, package: String = #""version": "0.1.0""#) -> 
     #expect(!plugin.settings[2].fits(.number(5100)) && !plugin.settings[2].fits(.text("500")))
     #expect(!plugin.settings[0].fits(.number(1)) && !plugin.settings[4].fits(.text("x")))
     #expect(try manifest(base).settings.isEmpty)
-    // From settings.json: a JSON boolean is an NSNumber too.
+    // A JSON boolean is an NSNumber too.
     #expect(PluginSetting.Value(json: true) == .bool(true) && PluginSetting.Value(json: 1) == .number(1))
     #expect(PluginSetting.Value(json: [1]) == nil)
 }

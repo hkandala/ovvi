@@ -2,8 +2,7 @@ import Foundation
 @testable import HerdrKit
 import Testing
 
-/// Recorded from opencode 1.19.4 (`Fixtures/opencode-*`): a session with a command allowed in a permission prompt, a
-/// question, a read and an edit, plus an interrupted command from a second session; and that first session's events.
+/// Recorded from opencode 1.19.4.
 private func fixture(_ name: String, _ type: String) throws -> String {
     let url = try #require(Bundle.module.url(forResource: name, withExtension: type, subdirectory: "Fixtures"))
     return try String(contentsOf: url, encoding: .utf8)
@@ -37,7 +36,6 @@ private func tools(_ history: ChatHistory) -> [ChatTool] {
     #expect(tools[3].target == "a.txt" && tools[3].result == "+1 -1")
     #expect(tools[3].diff.map { "\($0.mark)\($0.number) \($0.text)" } == ["-1 hello", "+1 ovvi was here"])
     #expect(history.entries.contains { $0.kind == .note("Interrupted", failed: false) })
-    // A turn of two steps ends once, after its last reply.
     #expect(history.entries.count {
         if case .turnEnd = $0.kind {
             true
@@ -59,7 +57,6 @@ private func tools(_ history: ChatHistory) -> [ChatTool] {
     #expect(other.history.entries.isEmpty)
     var loaded = OpenCodeSession(id: first)
     _ = try loaded.load(fixture("opencode-messages", "json"))
-    // The events are the first three turns: the same entries as the history's.
     let entries = live.history.entries
     #expect(!entries.isEmpty)
     #expect(Array(loaded.history.entries.prefix(entries.count)).map(\.kind) == entries.map(\.kind))

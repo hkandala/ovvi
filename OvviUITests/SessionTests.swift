@@ -1,19 +1,14 @@
 import XCTest
 
-/// The window's sessions: Open Session lists, opens, starts, stops and deletes sessions; a session
-/// opened goes last; Detach Session leaves one running. Sessions as in SidebarTests.
 extension OvviUITests {
-    func testOpenSessionListsSessionsAndOpensAPage() throws {
-        let three = try env("OVVI_SESSION3")
+    func testOpenSessionListsSessionsAndOpensAPage() {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         openSessionPanel()
         expectRow("open-session.session.\(two)", under: "Running", above: "Stopped")
         expectRow("open-session.session.\(three)", under: "Stopped", above: "Open in this window")
         expectRow("open-session.open.\(one)", under: "Open in this window", above: nil)
-        // Empty field: a new name is offered first.
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'open-session.new.'"))
             .firstMatch.isSelected)
-        // Only this run's sessions, so all four groups are in view.
         app.typeText(String(one.dropLast()))
         XCTAssertTrue(element("open-session.new.\(one.dropLast())").exists(within: 2))
         keepScreenshot("open session")
@@ -29,7 +24,6 @@ extension OvviUITests {
         XCTAssertTrue(until(3) { header == one })
         XCTAssertTrue(element("workspace.w2").exists(within: 2))
 
-        // The workspace menu has a group per page; another page's workspace shows that page.
         showPage(two)
         XCTAssertTrue(until(3) { header == two })
         app.typeKey("s", modifierFlags: [.command, .control])
@@ -43,7 +37,6 @@ extension OvviUITests {
         XCTAssertTrue(element("workspace.w2").has(\.isSelected, true, within: 2))
         XCTAssertTrue(until(3) { header == one })
 
-        // Enter on a page open in this window shows it; no page opens or closes.
         showPage(two)
         XCTAssertTrue(until(3) { header == two })
         openSessionPanel()
@@ -55,7 +48,6 @@ extension OvviUITests {
     }
 
     func testOptionCommandTCreatesASessionAsANewPage() async throws {
-        let four = try env("OVVI_SESSION4")
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         app.typeKey("t", modifierFlags: [.command, .option])
         XCTAssertTrue(hasKeyboard("open-session.filter"))
@@ -63,7 +55,6 @@ extension OvviUITests {
         XCTAssertTrue(element("open-session.new.\(four)").has(\.isSelected, true, within: 2))
         app.typeKey(.return, modifierFlags: [])
 
-        // The app starts the server and makes its first workspace; the new page shows it.
         XCTAssertTrue(until(connect) { header == four })
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
         let snapshot = try await Self.snapshot(four)
@@ -72,7 +63,6 @@ extension OvviUITests {
     }
 
     func testOpenSessionStartsAStoppedSession() async throws {
-        let five = try env("OVVI_SESSION5")
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         try await running(five)
         try await Self.post("\(five)/stop")
@@ -88,9 +78,7 @@ extension OvviUITests {
         try await Self.snapshot(five)
     }
 
-    /// Open Session's lit running row has Stop; once stopped, Delete. Both ask first.
     func testOpenSessionStopsAndDeletesASession() async throws {
-        let seven = try env("OVVI_SESSION7")
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         openSessionPanel()
         app.typeText(seven)
@@ -104,11 +92,10 @@ extension OvviUITests {
         let stop = app.sheets.buttons["Stop Session"]
         XCTAssertTrue(stop.exists(within: 2))
         XCTAssertTrue(until(2) { isRed(stop) })
-        // Return confirms, as a click does.
         app.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(element("\(row.identifier).delete").exists(within: 10))
         expectRow(row.identifier, under: "Stopped", above: nil)
-        let stopped = try? await Self.snapshot(seven)
+        let stopped = try await answer(seven)
         XCTAssertNil(stopped)
 
         element("\(row.identifier).delete").click()
@@ -117,11 +104,9 @@ extension OvviUITests {
         keepScreenshot("delete asks")
         app.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(row.vanishes(within: 10))
-        // Deleted: the name is free again.
         XCTAssertTrue(element("open-session.new.\(seven)").exists(within: 2))
     }
 
-    /// Open Session's lit open row has Detach, plain, not red; the window's last page has none.
     func testOpenSessionDetachesAnOpenSession() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         openSessionPanel()
@@ -145,15 +130,12 @@ extension OvviUITests {
         detach.click()
         XCTAssertTrue(until(3) { !pageList().contains(two) })
         XCTAssertTrue(until(3) { header == one })
-        // Still running, and the panel stays open.
         XCTAssertTrue(element("open-session.session.\(two)").exists(within: 2))
         expectRow("open-session.session.\(two)", under: "Running", above: nil)
         try await Self.snapshot(two)
     }
 
-    /// A session opened goes last in the window's sessions, not beside the one in view.
     func testOpenedSessionsGoLast() async throws {
-        let five = try env("OVVI_SESSION5")
         try await running(five)
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         openPage(two)
@@ -169,7 +151,6 @@ extension OvviUITests {
         closePage(two)
         XCTAssertTrue(until(3) { header == one })
         XCTAssertEqual(pageList(), [one])
-        // The session still runs (testClosingAPageAndQuittingLeaveNoStreams checks its runs end).
         try await Self.snapshot(two)
 
         // At its center: the page that slid away may leave it unhittable for a moment.
@@ -179,14 +160,11 @@ extension OvviUITests {
         app.typeKey(.escape, modifierFlags: [])
     }
 
-    /// Keys go to the page shown by Open Session, a sidebar swipe and ⌥⌘] (the path of a ⌥ + swipe with
-    /// no sidebar, `WindowPages.step`), not to the page shown before: a page shown again gives its keyboard card
-    /// the keys, though its tab did not change.
     func testKeysGoToTheSessionShown() async throws {
         let mine = try await shown(Self.snapshot(one)).pane, theirs = try await shown(Self.snapshot(two)).pane
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         openPage(two)
-        // Connected: the card takes the keys at the first snapshot. Not by the terminal's id: both sessions have it.
+        // Not by the terminal's id: both sessions have it.
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "identifier == 'workspace.w1' AND label == 'gamma'"))
             .firstMatch.exists(within: connect))
         try await type("opened", into: theirs, of: two)
@@ -219,8 +197,7 @@ extension OvviUITests {
         XCTAssertTrue(until(connect) { pageList(in: window).contains(session) })
     }
 
-    /// Shows the session's page and closes it from its header's context menu (in the window, not the menu bar's File ▸
-    /// Detach Session).
+    /// In the window, not the menu bar's File ▸ Detach Session.
     func closePage(_ session: String, in window: XCUIElement? = nil) {
         showPage(session, in: window)
         XCTAssertTrue(element("sidebar.header", in: window).has(\.stringValue, session, within: 3))
@@ -230,7 +207,6 @@ extension OvviUITests {
         XCTAssertTrue(until(3) { !pageList(in: window).contains(session) })
     }
 
-    /// The window's open sessions in page order (`sidebar.sessions`).
     func pageList(in window: XCUIElement? = nil) -> [String] {
         element("sidebar.sessions", in: window).stringValue.split(separator: " ").map(String.init)
     }
@@ -253,8 +229,7 @@ extension OvviUITests {
         return filter
     }
 
-    /// Mostly red, by its pixels (XCUITest reads no color): a destructive button's fill, with the lit row's accent at
-    /// its corners. An alert's fades in: wait.
+    /// By its pixels: XCUITest reads no color. An alert's fades in: wait.
     func isRed(_ element: XCUIElement) -> Bool {
         let pixels = Self.pixels(element.screenshot().image)
         let count = max(pixels.count / 4, 1)
@@ -264,7 +239,6 @@ extension OvviUITests {
         return mean[0] > mean[1] + 30 && mean[0] > mean[2] + 30
     }
 
-    /// The page in view's session (a static text's value).
     var header: String? {
         element("sidebar.header").value as? String
     }

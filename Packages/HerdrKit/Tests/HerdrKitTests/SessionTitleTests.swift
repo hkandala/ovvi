@@ -2,7 +2,7 @@ import Foundation
 @testable import HerdrKit
 import Testing
 
-/// Lines as each script prints them, from real sessions (Claude Code 2.1.310, Codex 0.163, pi 0.80, OpenCode 1.x).
+/// From real sessions (Claude Code 2.1.310, Codex 0.163, pi 0.80, OpenCode 1.x).
 @Test func `session titles: a rename wins over Claude Code's own, and placeholders are none`() {
     let claude = #"""
     {"type":"custom-title","customTitle":"say hi (Branch)","sessionId":"1b77b9f3-ed25-4373-964e-295a0158d7e8"}
@@ -38,7 +38,6 @@ import Testing
     #expect(await localExec.sessionTitle(agent: "gemini", session: file.path) == nil)
 }
 
-/// No title yet: the first typed prompt, cut at 100 characters with "…" (ui/window#agent-rows).
 @Test func `an untitled session's first prompt`() {
     let long = String(repeating: "word ", count: 30)
     let claude = #"""

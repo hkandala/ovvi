@@ -3,28 +3,19 @@ import GhosttyTerminal
 import HerdrKit
 import Observation
 
-/// One pane's live terminal: herdr's frames drawn by a libghostty surface (host-managed
-/// backend), with keys, clicks and the wheel going back to herdr.
 @MainActor @Observable
 final class PaneTerminal {
     private(set) var state = State.idle
     var hasKeyboard = false
-    /// The content shows: herdr's frames at the card's grid settled (PTY resized, program redrawn), or a watcher
-    /// drew. Off from a new surface's start and from each grid change until then, so herdr's first frame (the old
-    /// screen reflowed at the new size) never shows: the card keeps its last picture meanwhile.
+    /// Off from a new surface's start and from each grid change until the grid settles, so that herdr's first frame
+    /// (the last screen reflowed at the new size) never shows.
     var ready = false
-    /// A small copy of its last picture for the overview's tiles that are not live (`takeSnapshot`).
     var snapshot: IOSurface?
-    /// It shows a picture (drawn, or a still): only a reveal with none fades in.
     @ObservationIgnored var revealed = false
     @ObservationIgnored var settling: Task<Void, Never>?
-    /// Shows the content at the latest 0.4 s after drawing paused, whatever the frames do.
     @ObservationIgnored var deadline: Task<Void, Never>?
-    /// The surface's last grid; nil until the first stream opens. Read by the host, which fits the view at once
-    /// until then.
     @ObservationIgnored private(set) var grid: InMemoryTerminalViewport?
-    /// The surface's latest grid, at once: `grid` takes it in `resized`'s task, which must not be replaced by one for
-    /// an older grid.
+    /// `grid` takes it in `resized`'s task, which a task for a stale grid must not replace.
     @ObservationIgnored private var latest: InMemoryTerminalViewport?
     @ObservationIgnored let view = PaneSurfaceView(frame: .zero)
     @ObservationIgnored var paneID: String
@@ -33,27 +24,21 @@ final class PaneTerminal {
     @ObservationIgnored private let session: InMemoryTerminalSession
     @ObservationIgnored private var pending: [Input] = []
     @ObservationIgnored private var draining: Task<Void, Never>?
-    /// A paste libghostty is still writing.
     @ObservationIgnored private var paste: String?
     @ObservationIgnored private var tasks: [Task<Void, Never>] = []
     @ObservationIgnored private var run: Task<Void, Never>?
     @ObservationIgnored private var resizing: Task<Void, Never>?
-    /// Redraw Terminal's size change under way: its frames never show (`reveal`).
     @ObservationIgnored var redrawing: Task<Void, Never>?
     @ObservationIgnored private(set) var lastFrame = ContinuousClock.now
     @ObservationIgnored private var stream: TerminalStream?
     @ObservationIgnored private(set) var observing = false
     @ObservationIgnored private var shown = false
+    @ObservationIgnored private var retried: ContinuousClock.Instant?
     /// Counts streams, so a stream that is ending cannot change the state of the next one.
     @ObservationIgnored private(set) var generation = 0
-    /// Another window controls the session (D66): a new stream watches.
     @ObservationIgnored var watches: () -> Bool = { false }
-    /// A key press, paste or click in the card (D8's triggers), before it is handled.
     @ObservationIgnored var onInput: () -> Void = {}
-    /// A frame came (the find bar places its highlights again).
     @ObservationIgnored var onFrame: (() -> Void)?
-    /// In its window's shown tab, or floated (the registry): drawn, and not evicted. Others keep their last
-    /// picture.
     @ObservationIgnored var inView = false {
         didSet {
             if inView != oldValue {
@@ -75,7 +60,7 @@ final class PaneTerminal {
             suppressesPixelOnlyResizes: true,
         )
         // Pastes leave libghostty framed, and herdr frames them again for the app's own mode. No cursor on the
-        // empty surface before herdr's first frame, which says whether it shows.
+        // empty surface ahead of herdr's first frame, which says whether it shows.
         session.receive(Self.modes)
         view.terminal = self
         // No surface until it streams (`show`): a card that never does costs no GPU memory.
@@ -90,16 +75,22 @@ final class PaneTerminal {
         ]
     }
 
-    /// Also retries a stream that failed.
+    /// The registry calls it on every snapshot: a failed stream opens again at most every 5 s, and only while herdr
+    /// answers the page.
     func show() {
-        guard !shown || state.isFailed else { return }
-        shown = true
-        view.rebuild()
-        open()
+        guard shown else {
+            shown = true
+            view.rebuild()
+            return open()
+        }
+        guard state.isFailed else { return }
+        guard live else { return retried = nil }
+        if retried.map({ .now - $0 >= .seconds(5) }) ?? true {
+            retried = .now
+            open()
+        }
     }
 
-    /// Control moved between windows (D66) while it is out of view: its stream ends, its surface and picture
-    /// stay. Shown again, it opens the right stream, and herdr's first frame redraws it at the same grid.
     func pause() {
         guard shown else { return }
         shown = false
@@ -108,8 +99,6 @@ final class PaneTerminal {
         end()
     }
 
-    /// The card left the kept set, or the overview alone showed it: let go of its stream and its surface (D46). It
-    /// keeps its last image.
     func hide() {
         pause()
         view.free()
@@ -117,7 +106,6 @@ final class PaneTerminal {
         session.receive(Self.modes)
     }
 
-    /// Its pane closed, or its page or window did: it is not used again.
     func close() {
         hide()
         tasks.forEach { $0.cancel() }
@@ -127,31 +115,15 @@ final class PaneTerminal {
         open(takeover: true)
     }
 
-    /// Control of the session moved between windows (D66): this window's streams take over, or watch. A kept one
-    /// out of view ends its stream instead and opens the right one when shown, so a move restarts only the shown
-    /// terminals' herdr runs.
     func control(_ controls: Bool) {
         guard shown, observing == controls else { return }
         guard inView else { return pause() }
-        // Keys the old controller had not sent yet do not go out at a later takeover.
+        // Keys this window had not sent yet do not go out at a later takeover.
         if !controls {
             pending = []
             paste = nil
         }
         open(observe: !controls, takeover: controls)
-    }
-
-    func mouse(_ action: TerminalStream.MouseAction, _ button: TerminalStream.MouseButton,
-               column: Int, row: Int, modifiers: Int)
-    {
-        if action == .down {
-            onInput()
-        }
-        if state == .watching, action == .down {
-            takeBack()
-        } else if state == .live {
-            stream?.mouse(action, button, column: column, row: row, modifiers: modifiers)
-        }
     }
 
     // MARK: Stream
@@ -185,10 +157,10 @@ final class PaneTerminal {
             for await event in stream.events where generation == self.generation {
                 switch event {
                 case let .frame(frame):
-                    if state == .idle {
+                    if state == .idle || state.isFailed {
                         started(frame)
                     }
-                    // Before libghostty has the frame: drawing pauses.
+                    // Ahead of libghostty's frame: drawing pauses.
                     if !ready {
                         settle()
                     }
@@ -213,24 +185,26 @@ final class PaneTerminal {
         drain()
     }
 
-    /// Ends the current stream by closing its stdin. The run goes on until herdr exits, so the next `open`
-    /// waits for the pane to be free; a stream still opening closes itself once open.
+    /// The run goes on until herdr exits, so that the next `open` waits for the pane to be free; a stream still
+    /// opening closes itself once open.
     private func end() {
         generation += 1
         stream?.close()
         stream = nil
-        state = .idle
+        // A failed card keeps its panel while it opens again.
+        if !state.isFailed {
+            state = .idle
+        }
     }
 
     private func closed(_ reason: TerminalStream.Closed) {
         // No frame yet: herdr refused the stream at open.
-        let refused = state == .idle
+        let refused = state == .idle || state.isFailed
         state = .idle
         switch reason {
         case .held:
-            // Watch. Take over only if the user typed while a refused control opened; a stream
-            // taken over mid-session never takes back by itself (design D8). A new task: `open`
-            // waits for this run to end.
+            // Takes over only if the user typed while a refused control opened. A new task: `open` waits for this
+            // run to end.
             let takeover = refused && !pending.isEmpty
             if !takeover {
                 pending = []
@@ -242,7 +216,6 @@ final class PaneTerminal {
                 }
             }
         case .liveUpdate:
-            // Opens the stream again after 1 s (talking-to-herdr#how-a-stream-ends): a watcher stays one (D8).
             Task { [generation, observing] in
                 try? await Task.sleep(for: .seconds(1))
                 if generation == self.generation {
@@ -250,7 +223,6 @@ final class PaneTerminal {
                 }
             }
         case .ended:
-            // Gone: the next snapshot drops the card.
             pending = []
         case let .failed(text):
             pending = []
@@ -260,10 +232,9 @@ final class PaneTerminal {
 
     // MARK: Size and input
 
-    /// libghostty's grid for the card's size. The first one is taken once the layout settles (100 ms after the
-    /// last change), so the first stream opens at the card's real size, not at the surface's first guess before
-    /// layout (50×17), which made an agent redraw twice. Later ones go at once: the host already waited for the
-    /// card's size to settle.
+    /// The first grid waits for the layout to settle, so that the first stream opens at the card's real size, not at
+    /// the surface's first guess (50×17), which makes an agent redraw twice. Later ones go at once: the host waits
+    /// for the card's size to settle.
     private func resized(_ size: InMemoryTerminalViewport) {
         latest = size
         resizing?.cancel()
@@ -291,7 +262,6 @@ final class PaneTerminal {
         if case let .text(text) = input, paste != nil || text.hasPrefix("\u{1B}[200~") {
             let whole = (paste ?? "") + text
             paste = whole
-            // Text after the end mark (typing in the same write) goes out on its own.
             if let end = whole.range(of: "\u{1B}[201~") {
                 paste = nil
                 queue(.text(String(whole[..<end.upperBound])))
@@ -309,7 +279,6 @@ final class PaneTerminal {
     /// ponytail: keys (main thread) and libghostty's text (its IO thread) are ordered only as
     /// they arrive here, microseconds apart; enough for typing.
     private func queue(_ input: Input) {
-        // A failed card shows why; typing there goes nowhere.
         guard !state.isFailed else { return }
         if case let (.keys(old)?, .keys(new)) = (pending.last, input) {
             pending[pending.count - 1] = .keys(old + new)
@@ -323,8 +292,7 @@ final class PaneTerminal {
         drain()
     }
 
-    /// Sends input in order, one at a time, while the stream is live: a key waits for herdr's
-    /// answer before the next text goes out. Input typed before the first frame waits for it.
+    /// One at a time: a key waits for herdr's answer, then the next text goes out.
     private func drain() {
         guard draining == nil else { return }
         draining = Task {
@@ -351,9 +319,29 @@ extension PaneTerminal {
         enqueue(.keys(keys))
     }
 
-    /// Text as typed, after the input queued before it (New Pane's held keys).
     func type(_ text: String) {
         enqueue(.text(text))
+    }
+
+    func retry() {
+        open()
+    }
+
+    var live: Bool {
+        view.store()?.state == .live
+    }
+
+    func mouse(_ action: TerminalStream.MouseAction, _ button: TerminalStream.MouseButton,
+               column: Int, row: Int, modifiers: Int)
+    {
+        if action == .down {
+            onInput()
+        }
+        if state == .watching, action == .down {
+            takeBack()
+        } else if state == .live {
+            stream?.mouse(action, button, column: column, row: row, modifiers: modifiers)
+        }
     }
 
     func scroll(lines: Int, column: Int, row: Int, modifiers: Int) {
@@ -363,10 +351,8 @@ extension PaneTerminal {
     }
 
     enum State: Equatable {
-        /// No stream, or one still opening (no frame yet): not shown lately (D46), closed, or the pane is gone.
         case idle
         case live
-        /// Another client controls the pane: watch until the user acts (design D8).
         case watching
         case failed(String)
 
@@ -377,9 +363,7 @@ extension PaneTerminal {
     }
 
     enum Input {
-        /// Bytes from libghostty: typed text, IME, pastes.
         case text(String)
-        /// herdr logical keys, encoded by herdr for the app's input modes.
         case keys([String])
     }
 }

@@ -1,22 +1,26 @@
 import XCTest
 
-/// Runs against two throwaway herdr sessions from `make e2e`. The runner is sandboxed and cannot
-/// reach herdr, so herdr calls go through the e2e helper on localhost (`scripts/e2e-helper.py`).
-/// xcodebuild strips the TEST_RUNNER_ prefix from the names.
+/// The runner is sandboxed and cannot reach herdr, so herdr calls go through the e2e helper on localhost
+/// (`scripts/e2e-helper.py`). xcodebuild strips the TEST_RUNNER_ prefix from the names.
 @MainActor
 final class OvviUITests: XCTestCase {
     var one = ""
     var two = ""
+    var three = "", four = "", five = "", six = "", seven = "", eight = ""
     let app = XCUIApplication()
     /// The app's first snapshot: login shell, herdr checks and a few herdr runs; slow on CI runners.
     let connect: TimeInterval = 30
 
-    /// Session one: w1 "alpha" with t1 = p1 | (p2 / p3) at 0.6 and t2 "second"; w2 "beta".
-    /// Session two: w1 "gamma".
     override func setUp() async throws {
         continueAfterFailure = false
         one = try env("OVVI_SESSION")
         two = try env("OVVI_SESSION2")
+        three = try env("OVVI_SESSION3")
+        four = try env("OVVI_SESSION4")
+        five = try env("OVVI_SESSION5")
+        six = try env("OVVI_SESSION6")
+        seven = try env("OVVI_SESSION7")
+        eight = try env("OVVI_SESSION8")
         // Once per session; the runner may restart between tests, so ask herdr, not a static. The check is on
         // the last step, so a setup cut short builds again (and fails loudly) instead of passing half-built.
         let built = try await (Self.snapshot(two)["workspaces"] as? [[String: Any]] ?? [])
@@ -35,13 +39,12 @@ final class OvviUITests: XCTestCase {
         relaunch()
     }
 
-    /// The pointer goes off the title row: left on a capsule, it would open a hover card in the next test's launch.
-    /// Not async: a failure stops an async test inside the main actor's job, and an async tearDown then waits for
-    /// the main actor until the 2-minute allowance runs out.
-    /// The main window: the first match can be a floating window that a teardown block's close is closing, with no
-    /// frame (an INFINITY point, on CI). A warp, not XCUITest's hover: that first looks for a window over the
-    /// point, and a floating window gone meanwhile failed the test (on CI).
-    /// XCTest runs a sync tearDown on the main thread; a fresh XCUIApplication is the same app, so self stays out.
+    /// The pointer goes off the title row: left on a capsule, it would open a hover card in the next test's launch. Not
+    /// async: a failure stops an async test inside the main actor's job, and an async tearDown then waits for the main
+    /// actor until the 2-minute allowance runs out. The main window: the first match can be a floating window that a
+    /// teardown block's close is closing, with no frame (an INFINITY point, on CI). A warp, not XCUITest's hover: that
+    /// first looks for a window over the point, and a floating window gone meanwhile fails the test (on CI). XCTest
+    /// runs a sync tearDown on the main thread; a fresh XCUIApplication is the same app, so self stays out.
     override func tearDown() {
         MainActor.assumeIsolated {
             let main = XCUIApplication().windows.matching(NSPredicate(format: "identifier BEGINSWITH 'main-'"))
@@ -61,11 +64,9 @@ final class OvviUITests: XCTestCase {
         XCTAssertTrue(element("workspace.w2").exists)
         XCTAssertTrue(element("tab.w1:t1").exists)
         XCTAssertTrue(element("tab.w1:t2").exists)
-        // At launch no text field has the keyboard; a terminal has it.
         XCTAssertEqual(app.textFields.matching(NSPredicate(format: "hasKeyboardFocus == true")).count, 0)
         XCTAssertNotEqual(element("sidebar.filter").elementType, .textField)
 
-        // p1 | (p2 / p3): p1 on the left with about 60 % of the width, p2 above p3.
         let first = element("pane.w1:p1").frame, second = element("pane.w1:p2").frame
         let third = element("pane.w1:p3").frame
         XCTAssertLessThan(first.maxX, second.minX)
@@ -85,7 +86,6 @@ final class OvviUITests: XCTestCase {
         keepScreenshot("second workspace")
     }
 
-    /// Each workspace keeps its own selected tab; coming back shows it, with the marker on it.
     func testWorkspaceKeepsItsSelectedTab() {
         XCTAssertTrue(element("tab.w1:t2").exists(within: connect))
         element("tab.w1:t2").click()
@@ -143,12 +143,9 @@ final class OvviUITests: XCTestCase {
 }
 
 extension OvviUITests {
-    /// `stty size` in the pane prints the grid its card shows (the terminal's accessibility value), in this window
-    /// when there are several.
     func expectPTYSize(_ pane: String, in window: XCUIElement? = nil) async throws {
         let terminal = element("terminal.\(pane)", in: window)
         try await waitForPrompt(pane)
-        // What it saw last, for the failure: the card's grid and the pane's screen.
         var seen = "no grid"
         do {
             try await poll("stty size in \(pane) to match its card", times: 30) { () async throws -> String? in
@@ -183,46 +180,27 @@ extension OvviUITests {
         }
     }
 
-    /// The pane's text shows `line`, which may wrap: a row ends where it wraps, and one that wraps at a space drops it.
+    /// `line` may wrap: a row ends where it wraps, and one that wraps at a space drops it.
     func waitFor(_ pane: String, toShow line: String, times: Int = 50) async throws {
         let squeezed = line.filter { !$0.isWhitespace }
         try await waitFor(pane, times: times) { $0.filter { !$0.isWhitespace }.contains(squeezed) }
-    }
-
-    /// `probe` every 100 ms until it gives a value (a predicate expectation checks only about once a second); the
-    /// test fails after `times` tries.
-    @discardableResult
-    func poll<Value>(_ what: String, times: Int = 50,
-                     _ probe: () async throws -> Value?) async throws -> Value
-    {
-        for _ in 0 ..< times {
-            if let value = try await probe() {
-                return value
-            }
-            try await Task.sleep(for: .milliseconds(100))
-        }
-        // A throw, not XCTFail: XCTFail in async code stops the test inside the main actor's job, where its async
-        // teardown blocks wait for the main actor until the 2-minute allowance runs out.
-        throw Waited(description: "waited for \(what)")
-    }
-
-    func expect(_ what: String, times: Int = 50, _ check: () async throws -> Bool) async throws {
-        try await poll(what, times: times) { try await check() ? true : nil }
-    }
-
-    struct Waited: Error, CustomStringConvertible {
-        let description: String
     }
 
     func env(_ name: String) throws -> String {
         try XCTUnwrap(ProcessInfo.processInfo.environment[name], "run through make e2e")
     }
 
-    /// Launches the app on the session (one by default) with no window state from earlier runs and none of the user's
-    /// plugins; `launch` ends a running one first.
+    enum Windows {
+        case ignored
+        /// A launch with -ApplePersistenceIgnoreState saves no state at ⌘Q.
+        case saved
+        /// `-machines []`: none of the user's machines, whose masters a test must not touch.
+        case restored
+    }
+
     /// `pin`: the settings as they ship, whatever the user's Ovvi has (the defaults are shared); off for a test that
     /// changes them in the Settings window, where a pinned key cannot change.
-    func relaunch(_ session: String? = nil, _ args: [String] = [], pin: Bool = true) {
+    func relaunch(_ session: String? = nil, _ args: [String] = [], pin: Bool = true, windows: Windows = .ignored) {
         let config = args.contains("-configFolder") ? ["-archivedHome", Self.archivedHome] : Self.noConfig
         let shipped = ["notifyNeedsYou": "YES", "notifyFinished": "YES", "notifyFromAgents": "YES",
                        "terminalFont": "", "cursorStyle": "block", "cursorBlink": "YES", "optionKey": "characters",
@@ -231,24 +209,37 @@ extension OvviUITests {
                        "showClosedSessions": "YES", "newPaneOpens": ""]
         let pinned = pin ? shipped.sorted { $0.key < $1.key }.filter { !args.contains("-\($0.key)") }
             .flatMap { ["-\($0.key)", $0.value] } : []
-        app.launchArguments = ["-session", session ?? one, "-ApplePersistenceIgnoreState", "YES"] + config + pinned
-            + args
+        let start = switch windows {
+        case .ignored: ["-session", session ?? one, "-ApplePersistenceIgnoreState", "YES"]
+        case .saved: ["-session", session ?? one, "-NSQuitAlwaysKeepsWindows", "YES"]
+        case .restored: ["-defaultSession", session ?? one, "-machines", "[]"]
+        }
+        app.launchArguments = start + config + pinned + args
         // The default plugins install from npm's cache (`make web` fills it), never the network.
         app.launchEnvironment["npm_config_offline"] = "true"
         app.launch()
     }
 
-    /// Stand-ins for New Pane's check of the agents (ui/new-pane#agent): `claude`, `pi` and `opencode`, and `codex` in
-    /// its own folder. CI puts both folders on its login shell's PATH.
-    static let agents = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "Fixtures/agents").path
+    static let fixtures = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "Fixtures").path
 
-    /// A config folder of the tests' own: the app installs its default plugins there, never in the user's. Archived
-    /// reads the agents' stores of the tests' fixtures, never the user's sessions.
+    /// CI puts both folders on its login shell's PATH.
+    static let agents = "\(fixtures)/agents"
+
+    /// In this checkout, which the pane's shell reads: the runner is sandboxed.
+    static let scripts = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        .appending(path: "scripts")
+
+    static let archivedHome = "/tmp/ovvi-e2e-archived"
+
+    /// A config folder of the tests' own, never the user's. The e2e helper's launches use the same folders (`ISOLATED`
+    /// in scripts/e2e-helper.py), and scripts/e2e.sh empties the config folder.
     static let noConfig = ["-configFolder", "/tmp/ovvi-e2e-no-config", "-archivedHome", archivedHome]
 
-    /// Swipes sideways over the element until the target has the value, one way and then the other: which sign goes
-    /// forward follows the natural scrolling setting (one way here, the other on CI), and past the last page nothing
-    /// moves.
+    static let keyHost = #"[{"id":"e2e-key","name":"Key Host","target":"ovvi-key","icon":"server.rack"}]"#
+
+    static let onKeyHost = ["-machines", keyHost, "-machine", "e2e-key"]
+
+    /// Which sign goes forward follows the natural scrolling setting (one way here, the other on CI).
     func swipe<Value: Equatable>(_ element: XCUIElement, by distance: Double? = nil, until target: XCUIElement,
                                  _ property: KeyPath<XCUIElement, Value>, _ value: Value) async throws
     {
@@ -264,39 +255,30 @@ extension OvviUITests {
         throw Waited(description: "waited for the swipe over \(element.identifier)")
     }
 
-    /// Shows a card's header buttons. Over the header, not the card's center: SwiftUI does not see the
-    /// pointer jump straight into a terminal view, which takes the mouse moves.
+    /// Over the header, not the card's center: SwiftUI does not see the pointer jump straight into a terminal view,
+    /// which takes the mouse moves.
     func hoverHeader(_ pane: String) {
         element("pane.\(pane)").coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 40, dy: 17)).hover()
     }
 
-    /// A new tab (closed after the test), its workspace selected so its capsule shows: its id and
-    /// its pane's. By default in w2, another workspace than the one selected at launch.
     func newTab(_ label: String, in workspace: String = "w2") async throws -> (tab: String, pane: String) {
         let (tab, pane) = try await createTab(in: workspace, label: label)
         closeAfter("tab", tab)
-        // Drawn first: a test that launched the app itself asks while the window still connects.
         let row = element("workspace.\(workspace)")
         XCTAssertTrue(row.exists(within: connect), "no row for \(workspace)")
         if !row.isSelected {
             row.click()
         }
-        // Hittable and at rest, not only there: the bar lays out again after a workspace change; a click on an earlier
-        // frame went beside it (on CI). Up to 10 s, herdr's own bound: right after a launch CI's herdr took 3 s to
-        // answer a snapshot read or a `tab.create`, and sent `tab.created` 1.3 s after its reply.
+        // Hittable and at rest: the bar lays out again after a workspace change, and a click on an earlier frame lands
+        // beside it (on CI). Up to 10 s, herdr's own bound: right after a launch CI's herdr took 3 s to answer a
+        // snapshot read or a `tab.create`, and sent `tab.created` 1.3 s after its reply.
         let capsule = element("tab.\(tab)")
         XCTAssertTrue(capsule.has(\.isHittable, true, within: 10))
-        // One query a look: a slow one (over 1 s on a busy CI Mac) made the two of each look outlast the wait.
-        var frame = CGRect.null
-        XCTAssertTrue(until(5) {
-            let now = capsule.frame
-            defer { frame = now }
-            return now == frame
-        }, "\(capsule.frame)")
+        // One query a look: a slow one (over 1 s on a busy CI Mac) makes the two of each look outlast the wait.
+        XCTAssertNotNil(steady(5) { capsule.frame }, "\(capsule.frame)")
         return (tab, pane)
     }
 
-    /// createWorkspace with this many tabs, selected so its capsules show: its tabs' ids and its first pane's.
     func newWorkspace(_ label: String, tabs count: Int = 1) async throws -> (tabs: [String], pane: String) {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await createWorkspace(label)
@@ -308,8 +290,6 @@ extension OvviUITests {
         let row = element("workspace.\(workspace)")
         XCTAssertTrue(row.exists(within: 3))
         row.click()
-        // Shown (its first tab is the selected one), with every tab, by the count: the bar makes only the capsules
-        // in view.
         XCTAssertTrue(element("tab.\(tabs[0])").exists(within: 3))
         XCTAssertTrue(element("tabs.count").has(\.stringValue, "\(count)", within: 3))
         return (tabs, pane)
@@ -335,7 +315,6 @@ extension OvviUITests {
         return owner.exists ? "\(owner.elementType.rawValue) '\(owner.identifier)' '\(owner.label)'" : "nothing"
     }
 
-    /// For people reviewing a run: the window (brought to the front when given), in the result bundle.
     func keepScreenshot(_ name: String, of window: XCUIElement? = nil) {
         if let window {
             raise(window)
@@ -346,9 +325,8 @@ extension OvviUITests {
         add(attachment)
     }
 
-    /// Waits for the element to take the keyboard; focus lands a moment after it appears.
-    /// By one query a try: `exists` and then a focus read found a terminal gone between the two as its floating window
-    /// came forward, which XCUITest fails the test for (on CI).
+    /// One query a try: between `exists` and a focus read a terminal can go as its floating window comes forward, which
+    /// XCUITest fails the test for (on CI).
     func hasKeyboard(_ identifier: String, in window: XCUIElement? = nil) -> Bool {
         let focused = NSPredicate(format: "identifier == %@ AND hasKeyboardFocus == true", identifier)
         return until(2) { (window ?? app).descendants(matching: .any).matching(focused).firstMatch.exists }
@@ -362,6 +340,11 @@ extension OvviUITests {
     /// By its value: a plain text's label is empty.
     func text(_ value: String, in page: XCUIElement? = nil) -> XCUIElement {
         (page ?? app).staticTexts.matching(NSPredicate(format: "value == %@", value)).firstMatch
+    }
+
+    /// The main windows, by identifier: the first window can be a tooltip, a hover card or a floating pane.
+    var mainWindows: XCUIElementQuery {
+        app.windows.matching(NSPredicate(format: "identifier BEGINSWITH 'main-'"))
     }
 
     func element(_ identifier: String, in window: XCUIElement? = nil) -> XCUIElement {

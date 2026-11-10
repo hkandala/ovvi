@@ -1,6 +1,7 @@
 # Seconds per UI test on CI, for scripts/shard.py: the mean of the passed tries of full runs 42587598516,
 # 42621495316 and 42621503671; the on-demand tests (Makefile ON_DEMAND) from on-demand runs 42587606624 and
-# 42621512673. Tests they did not run keep their earlier times.
+# 42621512673; six tests none of them ran from full run 42757073992. Tests they did not run keep their earlier
+# times.
 # Refresh: playbook/ci.md, Refresh the test times.
 271	testSettingsScenes
 252	testHundredsOfPanesStayQuick
@@ -45,6 +46,7 @@
 31	testSettingsPagesSearchAndLook
 30	testAChatSendsStopsAndFoldsItsToolCalls
 30	testHoverCardBlursTheTextBehindIt
+30	testRecentPutsTheSpaceWhoseAgentChangedLastFirst
 29	testADroppedBrowserKeepsItsPictureAndComesBack
 29	testNewWindowScenes
 28	testAChatShowsTheTerminalWhileItWaitsAndAnswersQuestions
@@ -101,6 +103,7 @@
 20	testKeyboardShortcutsPanelListsTheCommandsKeys
 20	testResizeNeverBlanksTheText
 20	testTabContextMenuRenamesAndMoves
+19	testARemoteMachinesArchivedSessionsShowPastAStuckAgent
 19	testATabClickComesIntoViewWithoutAFlicker
 19	testClosingAFloatedPaneAsksInItsWindow
 19	testCommandDSplitsInTheKeyWindowOnly
@@ -118,9 +121,11 @@
 17	testGoneFilesSayFileNotFound
 17	testOpenPutsCardsWithoutMovingTheView
 17	testPaletteLightStaysWhileTheListScrolls
+17	testRelaunchRestoresEveryWindowWithItsSession
 17	testReplacingKeepsTheZoomAndTheFloatingWindow
 17	testSwipesPageTheSidebarAndNotTheTabs
 16	testAToolOutputScrollsInsideItsBox
+16	testArchivedShowsTheOthersPastAStuckAgent
 16	testChatRelaunchesAnIdleAgentOnly
 16	testClosingAPageAndQuittingLeaveNoStreams
 16	testCommandClickOnALinkOpensIt
@@ -206,6 +211,7 @@
 11	testReplacingAPaneRunningAProgramAsks
 11	testSwipedSessionPagesShowTheirRows
 11	testTabsShowTheirProgramsIcons
+11	testTheSidebarsEmptyAreaHasTheSessionMenu
 11	testViewSwitchesAChatAgentsCard
 10	testAClickBeforeACardDrewKeepsTheKeyboard
 10	testAPluginPanesRowNamesThePlugin
@@ -221,6 +227,7 @@
 9	testANewTabShowsNoIconOfItsShellsStartup
 9	testAPluginPaneWithAShellGetsItsPlaceholder
 9	testAgentsRowShowsItsTabsCard
+9	testArchivedSearchSaysWhenNothingMatchesAndEscReturnsToThePane
 9	testCloseButtonShowsOnTheHoveredTabAndCloses
 9	testClosingTheKeyboardCardHandsKeysToItsNeighbor
 9	testEmptyPageOffersNewWorkspace
@@ -228,7 +235,7 @@
 9	testMenuLightFollowsThePointer
 9	testOpenSessionStopsAndDeletesASession
 9	testQuickNewTabsThenClosesStepBackOneTabEach
-9	testShownPanesAreMarkedAndAFloatRequestFloats
+9	testShownPanesAreMarkedAndOvviFloatFloats
 9	testSplitRightTwiceGivesThirds
 9	testTakenOverCardOffersTakeBack
 9	testTrafficLightsSitInTheTitleRow
@@ -273,7 +280,6 @@
 7	testSplitButtonAddsAPane
 7	testSwitchingTabsKeepsTheLastTabAttached
 7	testTheOvviCommandWorksOnARemoteMachine
-6	testARemoteMachinesCopyRequestReachesTheClipboard
 6	testCardShowsItsTerminalOnceHerdrDrewItAtItsSize
 6	testCardsAttachAtTheirSize
 6	testDoubleClickRenamesAndEscapeCancels
@@ -294,7 +300,6 @@
 5	testPlusMakesATabAndSelectsIt
 5	testResizingACardResizesThePTY
 5	testTabsStayInTheTitleRowWithTheSidebarOpenOrCollapsed
-4	testACopyRequestReachesTheClipboard
 4	testOptionTypesCharacters
 4	testPaletteTakesKeysTypedRightAfterCommandK
 4	testSidebarFilterNarrowsTheWorkspaces

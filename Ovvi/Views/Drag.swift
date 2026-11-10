@@ -3,28 +3,11 @@ import HerdrKit
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// What a drag in a window carries. The page holds it; the pasteboard only routes the drag to the
-/// app's drop targets.
-enum Dragged: Equatable {
-    case pane(String)
-    case tab(String)
-    case workspace(String)
-
-    var paneID: String? {
-        if case let .pane(id) = self {
-            id
-        } else {
-            nil
-        }
-    }
-}
-
 extension UTType {
     static let ovviDrag = UTType(exportedAs: "dev.ovvi.app.drag")
 }
 
-/// Holding a dragged pane over a tab's capsule or a workspace's row 0.65 s selects it (Rex's spring-loading), and a
-/// pane or a tab over the workspace button opens its menu; not after the drag ended (a late update).
+/// Nothing once the drag ends: an update can come late.
 func springTask(_ page: Page, _ select: @escaping () -> Void) -> Task<Void, Never> {
     Task {
         if await (try? Task.sleep(for: .milliseconds(650))) != nil, page.dragging != nil {
@@ -34,7 +17,6 @@ func springTask(_ page: Page, _ select: @escaping () -> Void) -> Task<Void, Neve
 }
 
 enum DropTarget {
-    /// A card: its center (nil) or an edge.
     case card(String, edge: Heading?)
     case tab(String)
     case move(Destination)
@@ -51,8 +33,6 @@ struct DropIndicator: View {
     }
 }
 
-/// A card's drop zones: the outer quarter on each side is that edge (the nearest one in a corner), the rest is
-/// the center (nil).
 func dropEdge(_ point: CGPoint, in size: CGSize) -> Heading? {
     let across = point.x / max(size.width, 1), down = point.y / max(size.height, 1)
     let distances: [(Heading, Double)] = [(.left, across), (.right, 1 - across), (.up, down), (.down, 1 - down)]
@@ -60,8 +40,6 @@ func dropEdge(_ point: CGPoint, in size: CGSize) -> Heading? {
     return nearest.0
 }
 
-/// A pane dragged over a card: the center of another card in its tab swaps, an edge of any other card places it
-/// beside; its own card and another tab's center are not targets.
 struct CardDrop: DropDelegate {
     let paneID: String
     let page: Page
@@ -91,7 +69,6 @@ struct CardDrop: DropDelegate {
         return true
     }
 
-    /// The edge or the center (`.some(nil)`), nil when not a target.
     private func target(_ point: CGPoint) -> Heading?? {
         guard let dragged = page.dragging?.paneID, dragged != paneID,
               let source = page.store.pane(dragged), let pane = page.store.pane(paneID) else { return nil }
@@ -100,13 +77,10 @@ struct CardDrop: DropDelegate {
     }
 }
 
-/// A pane dragged over a place with one target (the `+`, the tab track's end, a sidebar's empty space, a workspace
-/// menu row), or a tab over a new tab in another workspace (a workspace menu row) or a new workspace.
 struct PaneDrop: DropDelegate {
     let page: Page
     let target: DropTarget
     @Binding var over: Bool
-    /// Off: a hidden workspace menu's row.
     var enabled = true
 
     func validateDrop(info _: DropInfo) -> Bool {
@@ -154,9 +128,7 @@ struct PaneDrop: DropDelegate {
     }
 }
 
-/// A drag held over the collapsed sidebar's workspace button opens the workspace menu after 0.65 s, so the drop
-/// can go on a row there; a drop on the button itself is none. Any drag here is a pane's or a tab's: workspace
-/// rows are in the sidebar, which is closed while the button shows.
+/// Any drag here is a pane's or a tab's: workspace rows are in the sidebar, which is closed while the button shows.
 struct SpringDrop: DropDelegate {
     let page: Page
     @Binding var over: Bool
@@ -187,10 +159,8 @@ struct SpringDrop: DropDelegate {
 extension Animation {
     static let highlight = Animation.easeOut(duration: 0.12)
 
-    /// Rex's insertion timing: 0.22 s on its "production" curve. Tabs and rows slide apart with it; none with
-    /// Reduce Motion (from AppKit: a drop delegate has no environment).
     static var slide: Animation? {
-        NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? nil : .timingCurve(.slide, duration: 0.22)
+        reduced ? nil : .timingCurve(.slide, duration: 0.22)
     }
 }
 
@@ -200,30 +170,25 @@ extension UnitCurve {
                                         endControlPoint: UnitPoint(x: 0.3, y: 1))
 }
 
-/// The views dropped last (a tab, or a workspace's rows), and how far from their place the drag image left them: they
-/// glide in from there.
 struct Landing: Equatable {
     let ids: [String]
     let offset: CGFloat
-    /// A new drop at the same offset glides too.
     let count: Int
 }
 
 extension View {
-    /// Glides in from `landing`'s offset when it names `id`, over 0.22 s on the slide's curve. No hover meanwhile:
-    /// passing under the still pointer, a tab took the × and kept it once there (no hover event came after).
+    /// No hover meanwhile: a view passing under the still pointer takes the hover and keeps it (no hover event
+    /// follows).
     func lands(_ id: String, _ landing: Landing?, axis: Axis) -> some View {
         modifier(Lands(landing: landing?.ids.contains(id) == true ? landing : nil, axis: axis))
     }
 
-    /// Clears a target's drop state when a drag starts or ends: after a drop, a `dropUpdated` can come after
-    /// `performDrop` with no `dropExited` to follow (seen by hand: the highlight stayed), even after the session
-    /// ended.
+    /// After a drop, a `dropUpdated` can come after `performDrop` with no `dropExited` to follow, even once the session
+    /// ends.
     func clearsDrop(_ page: Page, _ clear: @escaping () -> Void) -> some View {
         onChange(of: page.dragging == nil) { clear() }
     }
 
-    /// Starts a drag of `item` after 4 pt; the view's frame is the preview, or `previewSize` from its top left.
     func dragSource(_ item: Dragged, page: Page, previewSize: CGSize? = nil) -> some View {
         modifier(DragSourceModifier(item: item, page: page, previewSize: previewSize))
     }
@@ -233,16 +198,15 @@ private struct DragSourceModifier: ViewModifier {
     let item: Dragged
     let page: Page
     let previewSize: CGSize?
-    /// Its size, not its frame in the window: that one changes as its row scrolls, and every tab capsule wrote it to
-    /// its state at each layout (a second update of each capsule a workspace switch made).
+    /// Its size, not its frame in the window: the frame changes as its row scrolls, an update of every tab capsule at
+    /// each layout.
     @State private var size = CGSize.zero
 
     func body(content: Content) -> some View {
         content
             .onGeometryChange(for: CGSize.self, of: \.size) { size = $0 }
             .simultaneousGesture(DragGesture(minimumDistance: 4).onChanged { value in
-                // Where the mouse went down: a busy app's first change comes late, and the image then sat off the
-                // pointer's grab, and a row's drop above or below where it was let go.
+                // Where the mouse went down: a busy app's first change comes late.
                 DragSource.begin(item, page: page, grabbed: value.startLocation, size: previewSize ?? size)
             })
     }

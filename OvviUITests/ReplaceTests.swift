@@ -1,10 +1,7 @@
 import XCTest
 
-/// Replace Pane (⇧⌘R): a fresh shell in the pane's place, size and folder, with the keyboard; it asks first, as Close
-/// Pane does, when something besides the shell runs.
 extension OvviUITests {
-    /// With motion (CI has Reduce Motion on): the new pane takes the old card in place, so no card comes into the
-    /// page sliding from its side and none fades out.
+    /// With motion: CI has Reduce Motion on.
     func testReplacingAShellPaneTakesItsPlaceAndFolder() async throws {
         relaunch(one, ["-recordMotion", "YES", "-forceMotion", "YES"])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
@@ -15,17 +12,11 @@ extension OvviUITests {
         try await send("cd /usr/bin\r", to: right)
         try await expect("the pane in /usr/bin") { try await pane(right)["cwd"] as? String == "/usr/bin" }
         element("tab.\(tab)").click()
-        // Where the card rests in its tab's page.
         let card = element("pane.\(right)"), page = element("page.\(tab)")
         func place(_ card: XCUIElement) -> CGRect {
             card.frame.offsetBy(dx: -page.frame.minX, dy: -page.frame.minY)
         }
-        var frame = CGRect.null
-        XCTAssertTrue(until(3) {
-            let now = card.exists ? place(card) : .null
-            defer { frame = now }
-            return !now.isNull && now == frame
-        })
+        let frame = try XCTUnwrap(steady(3) { card.exists ? place(card) : nil })
         element("terminal.\(right)").click()
         XCTAssertTrue(hasKeyboard("terminal.\(right)"))
         let cards = element("cards.\(tab)"), came = cards.stringValue
@@ -36,7 +27,6 @@ extension OvviUITests {
         let replaced = element("pane.\(new)")
         XCTAssertTrue(replaced.exists(within: 3))
         XCTAssertFalse(until(1) { cards.stringValue != came }, "cards came, went: \(came), then \(cards.stringValue)")
-        // The old card's place and size, to the point.
         XCTAssertTrue(until(3) {
             guard replaced.exists else { return false }
             let now = place(replaced)
@@ -50,8 +40,6 @@ extension OvviUITests {
         try await typeAndRead(new)
     }
 
-    /// A zoomed pane's new pane stays zoomed; a floated pane's new pane floats in a window where the old one was, with
-    /// its Stay on Top.
     func testReplacingKeepsTheZoomAndTheFloatingWindow() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("replace zoom")
@@ -71,11 +59,10 @@ extension OvviUITests {
         try await waitForPrompt(zoomed)
         try await typeAndRead(zoomed)
 
-        // The zoom is the new pane's: ⇧⌘↩ restores it.
         app.typeKey(.return, modifierFlags: [.command, .shift])
         XCTAssertTrue(element("pane.\(left)").exists(within: 2))
 
-        let window = try float(zoomed)
+        let window = float(zoomed)
         element("float.\(zoomed).pin").click()
         XCTAssertTrue(hasKeyboard("terminal.\(zoomed)", in: window))
         let frame = window.frame
@@ -90,7 +77,6 @@ extension OvviUITests {
         try await typeAndRead(floated)
     }
 
-    /// The one new pane of the tab, once herdr closed the old one and the others stayed.
     func replaced(_ old: String, in tab: String, besides others: [String]) async throws -> String {
         try await poll("a new pane in \(old)'s place") { () async throws -> String? in
             let panes = try await (snapshot()["panes"] as? [[String: Any]] ?? [])
@@ -100,7 +86,6 @@ extension OvviUITests {
         }
     }
 
-    /// Return confirms, Esc keeps the pane; from the palette too.
     func testReplacingAPaneRunningAProgramAsks() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("replace ask")
@@ -121,9 +106,9 @@ extension OvviUITests {
         keepScreenshot("replace pane dialog")
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(confirm.vanishes(within: 2))
+        XCTAssertFalse(element("pane.\(pane)").vanishes(within: 1))
         let running = try await foreground(pane)
         XCTAssertTrue(running.contains("sleep"))
-        XCTAssertTrue(element("pane.\(pane)").exists)
 
         openPalette()
         app.typeText("replace pane")
@@ -140,11 +125,8 @@ extension OvviUITests {
 }
 
 extension OvviUITests {
-    /// Redraw Terminal (⌥⌘R, and the palette): the program hears the PTY one column narrower, then the card's grid
-    /// again, so a TUI paints its whole screen again.
     func testRedrawTerminalMakesTheProgramRepaint() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        // Not "redraw": the palette would list the tab first.
         let (tab, pane) = try await newTab("nudge")
         try await settle([tab])
         element("tab.\(tab)").click()
@@ -158,7 +140,7 @@ extension OvviUITests {
                 .filter { $0.hasPrefix("resized") }
         }
         // `clear` wipes the typed line: an answer only the shell prints says the trap is set. Each size on a line of
-        // its own: after a long prompt (CI's) it wrapped.
+        // its own: after a long prompt (CI's) it wraps.
         try await send("trap 'echo; echo resized $(stty size)' WINCH; clear; echo armed-$((6*7))\r", to: pane)
         try await waitFor(pane) { $0.contains("armed-42") }
         element("terminal.\(pane)").click()

@@ -1,11 +1,8 @@
 import XCTest
 
-/// The text size (View ▸ Increase, Decrease and Reset Font Size) and the Option key. The size persists in
-/// the app's own defaults, so the test puts it back.
+/// The size persists in the app's own defaults, so the test puts it back.
 extension OvviUITests {
-    /// ⌘+ makes the text bigger, ⌘- smaller, ⌘0 brings back the default size. A shown card's grid follows, herdr's
-    /// PTY follows it, and the stream stays open. ⌘= is not here: on CI a 1 pt step after ⌘+ did not change the grid
-    /// (1x display), and the step was checked by hand instead.
+    /// No ⌘=: on CI's 1x display a 1 pt step after ⌘+ keeps the grid.
     func testFontSizeKeys() async throws {
         let terminal = element("terminal.w1:p1")
         XCTAssertTrue(terminal.exists(within: connect))
@@ -31,7 +28,7 @@ extension OvviUITests {
         XCTAssertEqual(after, stream, "the stream was not opened again")
     }
 
-    /// Option types the macOS characters on every keyboard layout (libghostty sent Alt on CI's by default).
+    /// libghostty sends Alt by default on CI's keyboard layout.
     func testOptionTypesCharacters() async throws {
         let terminal = element("terminal.w1:p1")
         XCTAssertTrue(terminal.exists(within: connect))
@@ -51,8 +48,7 @@ extension OvviUITests {
         try await waitFor("w1:p1") { $0.split(separator: "\n").contains("∫¡") }
     }
 
-    /// The grid leaves `grid` the way `order` says: `<=` shrinks it (a bigger font), `>=` grows it; the new grid. On a
-    /// 1x display a 1 pt step can keep the cell width (CI: 14 and 15 pt both 48 columns), so one side may stay.
+    /// On a 1x display a 1 pt step can keep the cell width (CI: 14 and 15 pt both 48 columns), so one side may stay.
     @discardableResult
     private func expectGrid(_ terminal: XCUIElement, _ order: (Int, Int) -> Bool,
                             _ grid: String) async throws -> String
@@ -68,7 +64,6 @@ extension OvviUITests {
         try await expect("the grid \(grid)") { terminal.value as? String == grid }
     }
 
-    /// The pid of the pane's `terminal session` run.
     private func pid(of pane: String) async throws -> String {
         let terminal = try await terminalID(pane)
         let line = try await streams(one).first { $0.contains(terminal) }

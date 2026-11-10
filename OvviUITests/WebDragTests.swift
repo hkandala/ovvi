@@ -1,9 +1,6 @@
 import XCTest
 
-/// A pane dragged over web cards (a browser's and a plugin's): their pages take no part in the app's own drags.
 extension OvviUITests {
-    /// The highlight shows on the right half of a browser card and then of a plugin card while the drag holds there,
-    /// and the drop places the pane right of the plugin card.
     func testADragOverWebCardsShowsTheirEdgesAndDrops() async throws {
         let (tabs, first) = try await newWorkspace("web")
         let tab = tabs[0]
@@ -12,18 +9,15 @@ extension OvviUITests {
         let browser = try await split(first), plugin = try await split(browser)
         let explorer = "ovvi:explorer#e2edrp /private/tmp/ovvi-e2e-browser/"
         for (pane, label) in [(browser, "ovvi:browser#e2edrb \(page)"), (plugin, explorer)] {
-            try await Self.call(one, "pane.rename", ["pane_id": pane, "label": label])
-            try await Self.call(one, "pane.report_metadata", ["pane_id": pane, "source": "ovvi-panes",
-                                                              "tokens": ["ovvi-label": "1"], "ttl_ms": 1000])
+            try await relabel(pane, label)
         }
         restoreHerdrFocusAfter()
         XCTAssertTrue(pageText("ovvi-page-one").exists(within: 10))
-        // Its tree drawn, not its loader: the page is what the drag crosses.
         XCTAssertTrue(element("files.\(plugin).page").descendants(matching: .any)
             .matching(NSPredicate(format: "label == %@", "one.html")).firstMatch.exists(within: 10))
 
-        // Through the helper's press, which leaves XCUITest free to read the highlight while it holds, and lets go
-        // once the test saw it: drag.swift's release 4 s into a timed hold left a session that never ended (CI).
+        // Through the helper's press, which leaves XCUITest free to read the highlight while it holds: drag.swift's
+        // release 4 s into a timed hold can leave a session that never ends (CI).
         let from = card(first, 0, 0).withOffset(CGVector(dx: 60, dy: 17)).screenPoint
         let over = [browser, plugin].map { card($0, 0.9, 0.6).screenPoint }
         let path = "\(from.x) \(from.y) \(over[0].x) \(over[0].y) 4 \(over[1].x) \(over[1].y)"

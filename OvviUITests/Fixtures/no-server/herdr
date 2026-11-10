@@ -1,0 +1,4 @@
+#!/bin/sh
+# The real herdr ($OVVI_E2E_HERDR) whose server never starts: a start fails and the session stays stopped.
+case "$*" in *" server") exit 1 ;; esac
+exec "$OVVI_E2E_HERDR" "$@"

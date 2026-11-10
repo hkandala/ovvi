@@ -1,15 +1,11 @@
 import HerdrKit
 import SwiftUI
 
-/// A run of tool calls as one quiet line of its counts and a chevron (ui/chat-view#tool-calls), so the replies stand
-/// out; open, a row per call and per thinking. Its rows are made only while it is open.
 struct ToolStack: View {
     let counts: String
-    /// Nil: closed.
     let steps: [ChatEntry]?
     let paneID: String
     let toggle: () -> Void
-    /// The calls opened to their input and output.
     let opened: Set<String>
     let toggleTool: (String) -> Void
 
@@ -30,13 +26,11 @@ struct ToolStack: View {
                 ForEach(steps) { step in
                     if let tool = step.tool {
                         ToolRow(tool: tool, open: opened.contains(tool.id), paneID: paneID) { toggleTool(tool.id) }
-                        // A codemode script's calls, under its name.
                         ForEach(tool.calls, id: \.id) { call in
                             ToolRow(tool: call, open: opened.contains(call.id), paneID: paneID) { toggleTool(call.id) }
                         }
                         .padding(.leading, 20)
                     } else {
-                        // Lined up with the tool rows around it: their icon and height.
                         HStack(spacing: 6) {
                             Icon(symbol: "text.bubble")
                             Text("Thought").italic().foregroundStyle(.tertiary)
@@ -48,12 +42,10 @@ struct ToolStack: View {
             }
         }
         .font(.system(size: 12))
-        // A reply's width: its text on the replies' edge, its hover fill as far out as the reply box (18 pt).
         .replyPlace()
     }
 }
 
-/// `terminal  bash npm test · exit 1   4.2s`; open, its input (an edit's diff) and its output.
 private struct ToolRow: View {
     let tool: ChatTool
     let open: Bool
@@ -95,13 +87,12 @@ private struct ToolRow: View {
                         ToolDetail(title: "Output", text: tool.output, id: "chat.\(paneID).tool.output")
                     }
                 }
-                // Under the tool's name: past its 14 pt icon and the row's 6 pt spacing.
+                // Past the 14 pt icon and the row's 6 pt spacing.
                 .padding(.leading, Composer.inset + 20).padding(.bottom, 4)
             }
         }
     }
 
-    /// Squares and upright or wide rectangles only, so they read as one size.
     static func symbol(_ category: ChatTool.Category) -> String {
         switch category {
         case .read: "doc.text"
@@ -135,7 +126,6 @@ private struct ToolDetail: View {
                 Text(text).font(.system(size: 11, design: .monospaced)).lineSpacing(2).textSelection(.enabled)
                     .fixedSize().accessibilityIdentifier(id).padding(8)
             }
-            // Text narrower than the box at its left.
             .defaultScrollAnchor(.topLeading)
             .frame(maxHeight: 180).fixedSize(horizontal: false, vertical: true)
             .background(.primary.opacity(0.04), in: .rect(cornerRadius: 6))

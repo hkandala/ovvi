@@ -1,19 +1,13 @@
 import AppKit
 import SwiftUI
 
-/// Where floating windows open: SwiftUI places a new one at the frame asked for with it (`defaultWindowPlacement`),
-/// so nothing sizes it after: a frame set once the window shows can lose to SwiftUI's default size, which sometimes
-/// comes after it (a replaced pane's window came back 46 pt short on CI).
+/// SwiftUI places a new floating window at the frame asked for with it (`defaultWindowPlacement`): a frame set once the
+/// window shows can lose to SwiftUI's default size, which sometimes comes after it (46 pt short on CI).
 @MainActor
 enum FloatFrames {
-    /// Each floated terminal's window.
     static let windows = NSMapTable<NSString, NSWindow>.strongToWeakObjects()
-    /// The frame of the floating window asked for last, until SwiftUI places it.
     private static var next: NSRect?
 
-    /// Opens the pane's floating window, or brings it to the front: a new one at `frame` (a replaced pane's old
-    /// window's), else where it was last (AppKit's saved frame), else over its main window.
-    /// An `agent`'s float (agent-control/cli) comes to the front without the keyboard and without activating the app.
     static func open(_ floating: Floating, over main: NSWindow?, frame: NSRect? = nil, agent: Bool = false,
                      with open: OpenWindowAction?)
     {
@@ -27,14 +21,11 @@ enum FloatFrames {
         if agent {
             quiet[floating.terminalID] = .some(NSApp.keyWindow)
         }
-        open?(id: "float", value: floating)
+        open?(id: WindowPages.floatScene, value: floating)
     }
 
-    /// Agents' new floats, until their windows show: the window that had the keyboard, which keeps it.
     static var quiet: [String: NSWindow?] = [:]
 
-    /// A new float's window for an agent: in front, and the keyboard back in the window that had it once SwiftUI made
-    /// the float key (at most 1 s).
     static func keepKey(_ window: NSWindow, _ terminalID: String) {
         guard let previous = quiet.removeValue(forKey: terminalID) else { return }
         Task { window.orderFrontRegardless() }
@@ -53,7 +44,7 @@ enum FloatFrames {
         }
     }
 
-    /// `next`, in the screen's top-left based points that `WindowPlacement` takes.
+    /// `WindowPlacement` takes the screen's top-left based points.
     static func placement() -> WindowPlacement {
         defer { next = nil }
         guard let frame = next, let screen = NSScreen.screens.first(where: { $0.frame.intersects(frame) })
@@ -69,7 +60,7 @@ enum FloatFrames {
         return main.constrainFrameRect(frame, to: main.screen)
     }
 
-    /// AppKit's saved frame for the terminal's window (`setFrameAutosaveName`): "x y width height …".
+    /// AppKit's saved frame (`setFrameAutosaveName`): "x y width height …".
     private static func saved(_ terminalID: String) -> NSRect? {
         let parts = UserDefaults.standard.string(forKey: "NSWindow Frame float \(terminalID)")?
             .split(separator: " ").compactMap { Double($0) } ?? []
@@ -77,7 +68,6 @@ enum FloatFrames {
     }
 }
 
-/// The floating window's AppKit side: Stay on Top, and its close, which detaches the pane.
 struct FloatReader: NSViewRepresentable {
     let terminalID: String
     let pinned: Bool
@@ -91,24 +81,31 @@ struct FloatReader: NSViewRepresentable {
 
     func updateNSView(_ reader: Reader, context _: Context) {
         reader.closed = closed
-        // Above every app's windows and on every Space, like picture in picture.
-        reader.window?.level = pinned ? .floating : .normal
-        let onTop: NSWindow.CollectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        if pinned {
-            reader.window?.collectionBehavior.formUnion(onTop)
-        } else {
-            reader.window?.collectionBehavior.subtract(onTop)
-        }
+        reader.pinned = pinned
     }
 
     final class Reader: TrafficLights {
         var closed: () -> Void = {}
         var terminalID = ""
+        /// Applied again as the view joins its window: SwiftUI's first update comes while it has none.
+        var pinned = false {
+            didSet { pin() }
+        }
+
+        private func pin() {
+            window?.level = pinned ? .floating : .normal
+            let onTop: NSWindow.CollectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+            if pinned {
+                window?.collectionBehavior.formUnion(onTop)
+            } else {
+                window?.collectionBehavior.subtract(onTop)
+            }
+        }
 
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
             guard let window else { return }
-            // Placed by SwiftUI (`FloatFrames`); AppKit keeps the frame for the next time the pane floats.
+            pin()
             // ponytail: one defaults key per terminal ever floated; prune them if that ever matters.
             FloatFrames.windows.setObject(window, forKey: terminalID as NSString)
             window.setFrameAutosaveName("float \(terminalID)")

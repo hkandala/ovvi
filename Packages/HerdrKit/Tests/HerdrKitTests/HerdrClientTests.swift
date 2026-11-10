@@ -3,21 +3,16 @@ import Foundation
 import Synchronization
 import Testing
 
-/// Answers bridge requests like herdr. `answer` handles plain calls (nil: never answer); without
-/// it, `session.snapshot` answers after `readDelay` with `agents`, and `events.subscribe` streams
-/// stay open for the test to push lines into.
 final class FakeExec: Exec {
     struct State {
         var argv: [[String]] = []
         var written: [String] = []
         var reads = 0
-        /// Each snapshot read's start, as herdr got the request.
         var readStarts: [ContinuousClock.Instant] = []
         var inFlight = 0
         var maxInFlight = 0
         var terminated = 0
         var agents: [String] = []
-        /// The snapshot's panes, as JSON.
         var panes: [String] = []
         var subscribes: [String] = []
         var events: AsyncStream<String>.Continuation?
@@ -88,7 +83,6 @@ final class FakeExec: Exec {
         }
     }
 
-    /// Pushes one line on the open events stream.
     func event(_ line: String = #"{"event":"tab_created","data":{}}"#) {
         _ = state.withLock { $0.events }?.yield(line)
     }
@@ -109,10 +103,8 @@ func eventually(within timeout: Duration = .seconds(20), _ condition: () async -
 /// Mac (CI's runner with the plugin tests' npm and git beside them) cannot fail them.
 final class Gate: Sendable {
     struct State {
-        /// Each wait's end, as the client asked for it.
         var deadlines: [ContinuousClock.Instant] = []
         var waiting = 0
-        /// The waits begun so far that `open` let go.
         var opened = 0
     }
 
@@ -129,13 +121,11 @@ final class Gate: Sendable {
             return $0.deadlines.count
         }
         defer { state.withLock { $0.waiting -= 1 } }
-        // A write's refresh cancels the wait.
         while !Task.isCancelled, state.withLock({ $0.opened < ticket }) {
             try? await Task.sleep(for: .milliseconds(5))
         }
     }
 
-    /// Lets every wait begun so far go.
     func open() {
         state.withLock { $0.opened = $0.deadlines.count }
     }
@@ -148,7 +138,7 @@ func client(_ exec: FakeExec, _ gate: Gate? = nil, timeout: Duration = .seconds(
     return HerdrClient(session: "s", exec: exec, timeout: timeout, wait: gate.wait)
 }
 
-/// Starts updates and waits for the opening reads (one before and one after subscribing).
+/// Two opening reads: one ahead of and one after subscribing.
 func started(_ client: HerdrClient, _ exec: FakeExec, _ gate: Gate? = nil) async throws -> AsyncStream<Update> {
     let updates = await client.updates()
     try #require(await eventually {
@@ -199,7 +189,6 @@ func started(_ client: HerdrClient, _ exec: FakeExec, _ gate: Gate? = nil) async
     _ = try await client(FakeExec { _ in snapshot(version: "0.9.4-rc1") }).snapshot()
 }
 
-/// An empty snapshot reply from this herdr version.
 private func snapshot(version: String) -> String {
     #"{"id":"1","result":{"snapshot":{"version":"\#(version)","workspaces":[],"tabs":[],"panes":[],"layouts":[],"#
         + #""agents":[]}}}"#
@@ -214,7 +203,6 @@ private func snapshot(version: String) -> String {
     let updates = try await started(client, exec, gate)
     let waits = gate[\.deadlines].count
     exec.event()
-    // No debounce: the read starts with no wait before it.
     #expect(await eventually { exec[\.inFlight] == 1 })
     #expect(gate[\.deadlines].count == waits)
     for _ in 0 ..< 5 {
@@ -222,7 +210,6 @@ private func snapshot(version: String) -> String {
     }
     await client.refresh()
     #expect(await eventually { exec[\.reads] == 2 && exec[\.inFlight] == 0 })
-    // The events during the first read made one read again, at once for the write; any other waits at the gate.
     try? await Task.sleep(for: .milliseconds(300))
     #expect(exec[\.reads] == 2)
     #expect(exec[\.maxInFlight] == 1)
@@ -246,15 +233,14 @@ private func keepComing(_ exec: FakeExec) -> Task<Void, Never> {
     let sent = ContinuousClock.now, waits = gate[\.deadlines].count
     let events = keepComing(exec)
     defer { events.cancel() }
-    // A read at once, then a wait to its start plus the spacing, however many events come meanwhile. Not always the
-    // first read: on a busy Mac the next event can come after it ended, so the read with events during it is the last.
+    // Not always the first read: on a busy Mac the next event can come after it ended, so the read with events during
+    // it is the last.
     #expect(await eventually { gate[\.waiting] == 1 })
     let starts = exec[\.readStarts], deadline = try #require(gate[\.deadlines].dropFirst(waits).first)
     let start = try #require(starts.last), before = starts.dropLast().last ?? sent
     #expect(deadline >= before + HerdrClient.spacing && deadline <= start + HerdrClient.spacing)
     try? await Task.sleep(for: .milliseconds(200))
     #expect(exec[\.reads] == starts.count, "\(exec[\.reads]) reads, \(starts.count) before the wait")
-    // Its end: one read more, then the next wait.
     gate.open()
     #expect(await eventually { exec[\.reads] == starts.count + 1 && gate[\.waiting] == 1 })
     #expect(exec[\.maxInFlight] == 1)
@@ -268,7 +254,6 @@ private func keepComing(_ exec: FakeExec) -> Task<Void, Never> {
     let updates = try await started(client, exec, gate)
     let events = keepComing(exec)
     defer { events.cancel() }
-    // Each write's read comes while the spaced read still waits: the gate never opens.
     for _ in 0 ..< 5 {
         #expect(await eventually { gate[\.waiting] == 1 })
         let reads = exec[\.reads]

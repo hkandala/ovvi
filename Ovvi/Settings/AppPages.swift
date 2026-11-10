@@ -9,7 +9,6 @@ struct GeneralPage: View {
     private static let fixedNote = "Hold ⌥ as you make a pane to choose each time."
 
     var body: some View {
-        // A plugin removed since it was picked: New Pane.
         let opens = Chooser.fixedRow(settings.newPaneOpens)?.id ?? ""
         Form {
             Section("Startup") { OpenAtLogin() }
@@ -26,7 +25,7 @@ struct GeneralPage: View {
                     Text("New panes open")
                     Text(opens.isEmpty ? Self.chooserNote : Self.fixedNote)
                 }
-                .accessibilityIdentifier("settings.general.new-pane").settingsRow("general.new-pane")
+                .identifiedSettingsRow("general.new-pane")
                 Toggle(isOn: settings.$followMouse) {
                     Text("Focus follows mouse")
                     Text("A pane gets the keyboard when the pointer rests on it.")
@@ -43,16 +42,15 @@ struct GeneralPage: View {
     }
 }
 
-/// Open at login: the system's login item for the app (`SMAppService.mainApp`), read again each time the app comes
-/// forward, so a change in System Settings ▸ General ▸ Login Items shows here; never kept in the app's defaults. A run
-/// with a config folder of its own (the UI tests) only flips the switch: a test build must never become a login item.
+/// Read again each time the app comes forward: System Settings ▸ General ▸ Login Items can change it. A test build must
+/// never become a login item.
 private struct OpenAtLogin: View {
     @State private var status = Self.read()
     @State private var problem: String?
     @Environment(\.look) private var look
 
     private static var isTest: Bool {
-        UserDefaults.standard.string(forKey: "configFolder") != nil
+        Registry.testConfig != nil
     }
 
     private static func read() -> SMAppService.Status {
@@ -68,9 +66,8 @@ private struct OpenAtLogin: View {
                 Text("Allow Ovvi in System Settings ▸ General ▸ Login Items.")
             }
         }
-        .accessibilityIdentifier("settings.general.open-at-login").settingsRow("general.open-at-login")
+        .identifiedSettingsRow("general.open-at-login")
         .task {
-            // A test run's switch keeps its own value.
             guard !Self.isTest else { return }
             for await _ in NotificationCenter.default.notifications(named: NSApplication.didBecomeActiveNotification) {
                 status = Self.read()
@@ -217,14 +214,13 @@ struct TerminalPage: View {
                 Picker(selection: settings.$terminalFont) {
                     Text("SF Mono").tag("")
                     Divider()
-                    // A family set before it was uninstalled stays a choice.
                     ForEach(fonts + (fonts.contains(settings.terminalFont) || settings.terminalFont.isEmpty
                             ? [] : [settings.terminalFont]), id: \.self) { Text($0).tag($0) }
                 } label: {
                     Text("Font")
                     Text("Monospaced fonts on this Mac.")
                 }
-                .accessibilityIdentifier("settings.terminal.font").settingsRow("terminal.font")
+                .identifiedSettingsRow("terminal.font")
                 Picker("Cursor", selection: settings.$cursorStyle) {
                     Text("Block").tag(TerminalCursorStyle.block)
                     Text("Bar").tag(TerminalCursorStyle.bar)
@@ -233,7 +229,7 @@ struct TerminalPage: View {
                 .pickerStyle(.segmented)
                 .settingsRow("terminal.cursor")
                 Toggle("Blink the cursor", isOn: settings.$cursorBlink)
-                    .accessibilityIdentifier("settings.terminal.blink").settingsRow("terminal.blink")
+                    .identifiedSettingsRow("terminal.blink")
                 Picker(selection: settings.$optionKey) {
                     Text("Types special characters").tag(OptionKey.characters)
                     Text("Acts as Meta").tag(OptionKey.meta)
@@ -242,9 +238,9 @@ struct TerminalPage: View {
                     Text("Option key")
                     Text("⌥B types ∫. Choose Meta for shells and editors that use ⌥ shortcuts.")
                 }
-                .accessibilityIdentifier("settings.terminal.option").settingsRow("terminal.option")
+                .identifiedSettingsRow("terminal.option")
                 Toggle("Copy text when you select it", isOn: settings.$copyOnSelect)
-                    .accessibilityIdentifier("settings.terminal.copy").settingsRow("terminal.copy")
+                    .identifiedSettingsRow("terminal.copy")
             } footer: {
                 Text("Text size is in Appearance. Colors follow the appearance.").settingsFooter()
             }
@@ -266,7 +262,7 @@ struct AgentsPage: View {
                     Text("Open new agents in")
                     Text("Switch any agent between Chat and Terminal in its header.")
                 }
-                .accessibilityIdentifier("settings.agents.view").settingsRow("agents.view")
+                .identifiedSettingsRow("agents.view")
             }
             Section("Sidebar") {
                 Toggle(isOn: settings.$showClosed) {
@@ -299,7 +295,6 @@ struct AgentsPage: View {
             } header: {
                 Text("Notifications")
             } footer: {
-                // A link in the sentence: it wraps with it and keeps its baseline.
                 Text(.init("Banners, sounds and the Dock badge are in System Settings. [Notification Settings…]"
                         + "(x-apple.systempreferences:com.apple.Notifications-Settings.extension?id="
                         + "\(Bundle.main.bundleIdentifier ?? ""))"))
@@ -328,7 +323,6 @@ private struct AgentSettingsRow: View {
             }
             Spacer()
             TextField("Extra arguments", text: $arguments, prompt: Text("Extra arguments"))
-                // The field shows what it keeps.
                 .onChange(of: arguments) { arguments = Chooser.allowed(arguments) }
                 .textFieldStyle(.roundedBorder).frame(width: 220)
                 .labelsHidden().accessibilityLabel("\(agent.name) extra arguments")

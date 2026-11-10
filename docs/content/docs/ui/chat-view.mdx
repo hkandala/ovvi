@@ -128,8 +128,8 @@ and no backslash.
 | OpenCode | `~/.cache/ovvi/opencode/ovvi-tui.js` and its `tui.json`; the launch's password file `chat/T/pw` | `OVVI_OC_STATE=…/state.jsonl OPENCODE_TUI_CONFIG=…/tui.json OPENCODE_SERVER_PASSWORD=$(cat "…/pw") opencode --port 0 --hostname 127.0.0.1 -- ovvi-T` | `-- ovvi-T` after `--port` (opencode ignores what follows `--`), and the state line's `pid` is a marked process's |
 
 - Before the line, one run on the pane's machine writes what the line needs
-  (Pi and OpenCode), each file whole (a temporary file, then a rename). If
-  that run fails, the plain command starts, with no chat.
+  (Pi and OpenCode): pi-ovvi, the OpenCode plugin and its `tui.json` go whole
+  (a temporary file, then a rename). If that run fails, the plain command starts, with no chat.
 - The flags write no user config. The user's own settings, hooks, plugins
   and extensions keep working. One exception: a user's own
   `OPENCODE_TUI_CONFIG` is replaced for a chat launch.
@@ -243,24 +243,30 @@ and no backslash.
 ## The adapter interface
 
 One protocol, `ChatAdapter` in `Ovvi/Chat/ChatAdapter.swift`, fits every
-agent. `ChatAdapters.all` lists the four.
+agent. `Chooser.agents` lists the four, each with its adapter.
 
 ```swift
 protocol ChatAdapter: Sendable {
     static var command: String { get }                 // the chooser's command, herdr's agent name
-    static func flags(_ token: String) -> String       // added to the command
-    static func prepare(_ token: String, on exec: any Exec) async -> String?  // the whole line; nil: plain
+    static func flags(_ token: String, resume: String?) -> String  // added to the command
+    static func prepare(_ token: String, resume: String?, arguments: String, on exec: any Exec) async -> String?
+                                                       // the whole line; nil: plain
+    static func resume(_ session: String) -> String?   // herdr's agent_session as launch flags; nil: no button
+    static var quit: String { get }                    // /exit or /quit
+    static var stopKeys: [String] { get }
+    static var resumesAnywhere: Bool { get }
     init?(_ foreground: [Program.Foreground])          // the marker in pane.process_info's argv
+    init(token: String, pids: [Int])                   // a launch bound by its process ids
     var token: String { get }
-    var stopKeys: [String] { get }
     @MainActor func follow(_ chat: Chat, on exec: any Exec) async   // history, phase, question, problem
-    func answer(_ question: ChatQuestion, _ answers: [String: String], on exec: any Exec) async  // optional
+    func answer(_ question: ChatQuestion, _ answers: [String: String], on exec: any Exec) async -> Bool  // default: false
 }
 ```
 
 The core (`Chat`, the views) does the rest: sending, Stop, text that starts
-with `/`, the drawer and the layout. `Chat.follow(history:on:read:)` follows a
-history file for any adapter.
+with `/`, the drawer and the layout. `Chat.followSessions(_:on:late:skip:read:line:)`
+follows a side file of session lines, and the history file each one names,
+for any adapter.
 
 ## Ready, working, waiting
 
@@ -438,7 +444,7 @@ A run is one quiet line with no card: its summary and a chevron.
   pt and gray, in the middle of the messages, until the first message. While
   a history loads, it shows a small spinner in its place. An empty chat has no
   scroll view: the scroll view is made with the rows, at the bottom (one
-  made empty kept a blank above a long history that came later).
+  made empty keeps a blank above a long history that comes later).
 - The messages, the question card and the reply box sit in a 760 pt column,
   centered on any card, 32 pt in from its sides. The messages scroll, newest
   at the bottom, and fade in under the header. In a floating window they
@@ -446,17 +452,18 @@ A run is one quiet line with no card: its summary and a chevron.
   there.
 - **Scrolling.** The messages are a plain stack, not a lazy one: every row
   in it is built, so every height is real, and an open, a split and Scroll
-  to Bottom land exactly. (A lazy stack guessed the heights of rows it had
-  not built, and after a split showed a blank where it guessed wrong.)
+  to Bottom land exactly. (A lazy stack guesses the heights of the rows it has
+  not built, and after a split shows a blank where it guesses wrong.)
 - **The newest rows.** The stack starts with a block of the newest rows:
-  the rows that hold about 120 lines of text, at most 34 rows. Each line
-  break counts as a line, and so does each 90 characters of text. A tool
-  row, Worked or a note counts as 2 lines, and a plan as its items plus 1.
+  the rows that hold about 120 lines of text, at most 34 rows. A message counts
+  as 1 line, plus a line for each line break and each 90 characters of
+  text. A run of tool calls, Worked or a note counts as 2 lines,
+  and a plan as its items plus 1.
   120 lines are about two views of text, so the block fills a usual view.
   When the card is made (its tab first shows, or shows again after its
   page left the [kept tab pages](/docs/ui/window#tab-page)), the app builds the
   block and lays it out, so the block's size is the cost of that show.
-  (34 rows of long replies took 394 ms of the main thread; 120 lines take
+  (31 rows of long replies take 394 ms of the main thread; 120 lines take
   about 124 ms, and a terminal tab 34 ms.) A switch to a kept tab page builds
   nothing.
 - **The bottom.** One rule holds the bottom: the scroll view's bottom
@@ -467,8 +474,8 @@ A run is one quiet line with no card: its summary and a chevron.
   the scroll as it nears or leaves the bottom, so a slow trackpad scroll
   moves the messages exactly as far as the fingers.
 - **Rows stay.** At the bottom the stack shows the newest block. Once the
-  chat leaves the exact bottom, the oldest row shown is fixed: new rows no
-  longer take rows off the top. The rows stay shown until the card closes
+  chat leaves the exact bottom, the oldest row shown is fixed: new rows do
+  not take rows off the top. The rows stay shown until the card closes
   or shows its TUI, or a new chat starts. A switch to another tab or
   space and back keeps them and the scroll place (its page is kept),
   and while its page is kept the chat goes on following its transcript.
@@ -592,7 +599,7 @@ snapshot does not start every run at once.
 | Claude Code | the last `custom-title` line (from `/rename`), else the last `ai-title` line, in the session's transcript `~/.claude/projects/*/<id>.jsonl` |
 | Codex | `thread_name` on the session's last line in `~/.codex/session_index.jsonl` |
 | Pi | the last `session_info` line (from `/name`) in the session file. pi names no session by itself |
-| OpenCode | `session.title` in its database, read with `sqlite3 -readonly`. Its placeholder "New session - …" counts as none |
+| OpenCode | `session.title` in its database, read with `sqlite3 -readonly`. Its placeholders "New session - …" and "Child session - …" count as none |
 
 With no title yet, the same run reads the first typed prompt: Claude Code's first `user` message in the
 transcript's first 100 lines that is not a meta line or a command's wrapper (text that starts with `<`), Pi's first
@@ -615,7 +622,7 @@ UI tests point the reads at a fixture home (`-archivedHome`), as Archived Sessio
   `.model`, `.user`, `.sending`, `.not-sent`, `.reply`, `.worked`, `.empty`, `.stack`, `.tool`, `.tool.input`,
   `.tool.output`, `.note`, `.bottom`, `.earlier`, `.question`, `.option.‹option›`,
   `.drawer`, `.open-terminal`, `.problem` and `.show-terminal`. The header has `pane.‹id›.title`,
-  `pane.‹id›.state`, `pane.‹id›.program`, `pane.‹id›.view.chat`
+  `pane.‹id›.state`, `pane.‹id›.view.chat`
   (`.tui`) and `pane.‹id›.enable-chat` (Relaunch with Chat).
 
 ## Side files
@@ -629,7 +636,8 @@ user's own on a shared machine.
 | `~/.cache/ovvi/pi-ovvi-<sha8>.ts` | the app, before a Pi launch |
 | `~/.cache/ovvi/opencode/ovvi-tui.js`, `tui.json` | the app, rewritten before each OpenCode launch |
 
-**The 30-day sweep.** Each launch deletes side files untouched for 30 days,
+**The 30-day sweep.** Each launch deletes the files under
+`~/.cache/ovvi/chat/` untouched for 30 days,
 then empty folders more than a minute old, so a folder that a launch just
 made stays. Claude Code's and Codex's hooks do it at each session start, and
 the run before a Pi or OpenCode launch does it too. It goes by the files' times,
@@ -648,7 +656,7 @@ does not answer).
   `pid` a marked process's.
 - **Codex's hook trust.** The app passes the trust hash of its own hook only:
   sha256 of the hook's JSON with Codex's defaults, under the `-c` layer's
-  key. Codex runs that hook without a question, and every other hook still
+  key. Codex runs that hook without a question, and every other hook
   needs review. No bypass flag.
 - **Claude Code's hooks** come in the inline `--settings`, so nothing is
   written to the user's settings. The user's and the company's hooks run

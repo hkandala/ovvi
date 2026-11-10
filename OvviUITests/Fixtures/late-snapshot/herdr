@@ -1,0 +1,16 @@
+#!/bin/sh
+# The next herdr on PATH, whose snapshots answer 2 s late once the session has a space: a Start's own checks (no space
+# yet) answer at once, the session's first read after it late. launchd starts the server through this too, with the
+# same PATH and no other variable.
+herdr=$(PATH=${PATH#*:} command -v herdr)
+case "$*" in *remote-api-bridge*)
+    set -o pipefail
+    "$herdr" "$@" | {
+        IFS= read -r reply || exit 0
+        case "$reply" in *'"session_snapshot"'*'"workspaces":[]'*) ;; *'"session_snapshot"'*) sleep 2 ;; esac
+        printf '%s\n' "$reply"
+        exec cat
+    }
+    exit
+esac
+exec "$herdr" "$@"

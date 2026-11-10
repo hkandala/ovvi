@@ -1,15 +1,12 @@
 import XCTest
 
-/// The Settings window (ui/settings): ⌘, opens it; each page's setting takes effect in the main window. Settings live
-/// in the defaults the tests share with the user's Ovvi, and New Pane's switches in the tests' config folder, so each
-/// test puts back what it changes.
+/// Settings live in the defaults the tests share with the user's Ovvi, and New Pane's switches in the tests' config
+/// folder, so each test puts back what it changes.
 extension OvviUITests {
-    /// The Settings window, by its sidebar.
     var settingsWindow: XCUIElement {
         app.windows.containing(.any, identifier: "settings.sidebar").firstMatch
     }
 
-    /// ⌘, opens Settings (or brings it forward) at a page.
     func openSettings(_ page: String) {
         app.typeKey(",", modifierFlags: .command)
         let row = element("settings.page.\(page)", in: settingsWindow)
@@ -17,7 +14,6 @@ extension OvviUITests {
         row.click()
     }
 
-    /// Picks an item of a Settings pop-up or segmented control.
     func choose(_ id: String, _ item: String) {
         let control = element(id, in: settingsWindow)
         XCTAssertTrue(control.exists(within: 3), id)
@@ -29,7 +25,6 @@ extension OvviUITests {
         }
     }
 
-    /// Sets a Settings switch, whatever it was.
     func turn(_ id: String, _ isOn: Bool) {
         let toggle = element(id, in: settingsWindow)
         XCTAssertTrue(toggle.exists(within: 3), id)
@@ -39,8 +34,6 @@ extension OvviUITests {
         XCTAssertTrue(until(2) { (toggle.value as? Int == 1) == isOn }, "\(id): \(String(describing: toggle.value))")
     }
 
-    /// Every page opens with its first control, in dark and in light (pictures for people reviewing a run); Open at
-    /// login flips; a search pick opens the page of the row it found; Appearance's tiles change the main window's look.
     func testSettingsPagesSearchAndLook() {
         for appearance in ["dark", "light"] {
             relaunch(one, ["-appearance", appearance])
@@ -54,7 +47,7 @@ extension OvviUITests {
                 keepScreenshot("settings \(page) \(appearance)", of: settingsWindow)
             }
         }
-        // Open at login flips (a run with a test config folder never registers the build for login).
+        // A run with a test config folder never registers the build for login.
         openSettings("general")
         turn("settings.general.open-at-login", true)
         turn("settings.general.open-at-login", false)
@@ -71,7 +64,6 @@ extension OvviUITests {
         search.typeKey("a", modifierFlags: .command)
         search.typeKey(.delete, modifierFlags: [])
 
-        // The style's tiles (the appearance is pinned by the launch argument), from Glass to Classic.
         openSettings("appearance")
         addTeardownBlock { @MainActor [self] in
             openSettings("appearance")
@@ -85,8 +77,6 @@ extension OvviUITests {
         XCTAssertTrue(settingsWindow.vanishes(within: 2))
     }
 
-    /// Terminal ▸ Font changes every terminal's grid at once, and the stream stays open; a selection copies itself;
-    /// Option acts as Meta.
     func testSettingsTerminalFontAndOptionKey() async throws {
         relaunch(one, pin: false)
         let terminal = element("terminal.w1:p1")
@@ -111,11 +101,9 @@ extension OvviUITests {
         settingsWindow.typeKey("w", modifierFlags: .command)
         XCTAssertTrue(settingsWindow.vanishes(within: 2))
 
-        // A drag over the first line puts it on the clipboard, with no ⌘C.
         keepClipboard()
         NSPasteboard.general.clearContents()
         try await send("clear; echo ovvi-copy-$((6*7))\r", to: "w1:p1")
-        // `clear` runs first: the first line is the output.
         try await waitFor("w1:p1") { $0.hasPrefix("ovvi-copy-42") }
         let line = terminal.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0.01))
         line.click(
@@ -137,8 +125,6 @@ extension OvviUITests {
         try await waitFor("w1:p1") { $0.split(separator: "\n").contains("^[b") }
     }
 
-    /// Agents: a switched-off agent leaves New Pane, extra arguments go into the agent's line, and a new agent opens
-    /// on its chat.
     func testSettingsAgentsSwitchArgumentsAndChat() async throws {
         relaunch(one, pin: false)
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
@@ -156,7 +142,6 @@ extension OvviUITests {
         let field = element("settings.agents.claude.arguments", in: settingsWindow)
         field.click()
         field.typeKey("a", modifierFlags: .command)
-        // The quote is refused: it would go into a typed line.
         field.typeText("--model e2e-\"opus")
         XCTAssertTrue(field.has(\.stringValue, "--model e2e-opus", within: 2), field.stringValue)
         choose("settings.agents.view", "Chat")
@@ -164,7 +149,6 @@ extension OvviUITests {
         settingsWindow.typeKey("w", modifierFlags: .command)
         XCTAssertTrue(settingsWindow.vanishes(within: 2))
 
-        // Codex is off: Agent lists Claude Code, Pi and OpenCode.
         element("workspace.w2").click()
         let tabs = try await tabIDs()
         closeNew("tab", besides: tabs)
@@ -187,8 +171,6 @@ extension OvviUITests {
         XCTAssertTrue(lines.contains { $0.contains("--model e2e-opus --session-id") }, "\(lines)")
     }
 
-    /// Machines: a machine's page saves a new name on Return, which its row shows; Add Machine says what is wrong
-    /// with a target, and Esc leaves it.
     func testSettingsMachinePageSavesAnEdit() {
         let machines = #"[{"id":"e2e-m1","name":"devbox","target":"ovvi-e2e@localhost","icon":"server.rack"},"#
             + #"{"id":"e2e-m2","name":"gpubox","target":"ovvi-e2e@127.0.0.1","icon":"cpu"}]"#
@@ -218,8 +200,7 @@ extension OvviUITests {
         XCTAssertTrue(target.vanishes(within: 2), "Esc left Add Machine open")
     }
 
-    /// Privacy shows with no approved website; a typed address adds its origin (https when it has no scheme), a
-    /// non-address adds nothing, and Remove takes it off. On a test machine: the approvals are the user's defaults.
+    /// On a test machine: the approvals are the user's defaults.
     func testSettingsPrivacyAddsAndRemovesAWebsite() {
         // A machine of this run's own: a failed run's site stays under its key, not the next run's.
         let id = "e2e-p\(Int.random(in: 100_000 ... 999_999))"
@@ -239,7 +220,6 @@ extension OvviUITests {
         let remove = element("settings.privacy.\(id).https://example.com.remove", in: settingsWindow)
         XCTAssertTrue(remove.exists(within: 3), "no row for https://example.com")
         XCTAssertFalse(element("settings.privacy.\(id).empty", in: settingsWindow).exists)
-        // Away and back: the page stays in the sidebar with the site; then Remove empties it again.
         openSettings("general")
         openSettings("privacy")
         remove.click()

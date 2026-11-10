@@ -15,7 +15,6 @@ private func files(_ patch: String) -> [String] {
             "a/bin.dat b/bin.dat", #""a/sub/line\nbreak" "b/sub/line\nbreak""#, "a/sub/new/f.txt b/sub/new/f.txt",
             #""a/sub/tab\t\"x" "b/sub/tab\t\"x""#,
         ])
-        // A CR LF file's lines keep their CR; a binary file is named, not shown.
         #expect(patch.contains("-b\r\n+c\r\n") && patch.contains("Binary files /dev/null and b/bin.dat differ"))
         let merge = try await Git.log(repo.path, exec: exec)[0].hash
         #expect(try await files(Git.patch(repo.path, commit: merge, exec: exec)) == ["a/side.txt b/side.txt"])

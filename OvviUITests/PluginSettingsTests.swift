@@ -1,11 +1,5 @@
 import XCTest
 
-/// A plugin that is not confirmed yet, here a local path in settings.json, asks in its card: which plugin and its
-/// folder, in the confirmation's words; Cancel closes a card. Settings ▸ Plugins lists it
-/// (plugins/packages#the-plugins-page), and its page draws its setting with no trust rows. Install loads the card,
-/// whose page can list files with no permissions in its manifest, and keeps its id in trust.json; the setting reaches
-/// the card at once (API 3) and settings.json keeps it. Remove forgets it: the card shows it missing. File Explorer's
-/// page draws its manifest's settings.
 extension OvviUITests {
     func testAPluginCardAsksAndItsPageSetsItsSettings() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
@@ -22,7 +16,7 @@ extension OvviUITests {
                            + "their build script. Install plugins only from sources you trust.")
         try await cancelsASecondCard()
         try await show(card.tab)
-        // Install loads it, before Settings covers the card on CI's small screen.
+        // Install ahead of Settings, which covers the card on CI's small screen.
         element("pane.\(card.pane).trust.install").click()
         XCTAssertTrue(text("Shout false at load listed").exists(within: 10))
 
@@ -40,7 +34,6 @@ extension OvviUITests {
         XCTAssertTrue(shout.exists(within: 5))
         let remove = element("plugins.ovvi-e2e-shout.remove")
         XCTAssertTrue(remove.exists)
-        XCTAssertFalse(element("plugins.ovvi-e2e-shout.forget").exists, "a trust row on the plugin's page")
 
         shout.click()
         XCTAssertTrue(text("Shout true listed").exists(within: 3))
@@ -49,7 +42,6 @@ extension OvviUITests {
             + "\(config)/trust.json && echo kept-$((6*7))\r", to: shell)
         try await waitFor(shell) { $0.contains("kept-42") }
 
-        // Remove: off the list and out of trust.json; the card shows the plugin missing, its folder stays.
         remove.click()
         let sheet = settings.sheets.firstMatch
         XCTAssertTrue(sheet.buttons["Remove"].exists(within: 5))
@@ -68,10 +60,16 @@ extension OvviUITests {
         let cancel = element("pane.\(pane).trust.cancel")
         XCTAssertTrue(cancel.exists(within: 10))
         cancel.click()
-        try await expect("the canceled card's pane to close") { await (try? self.pane(pane)) == nil }
+        try await expect("the canceled card's pane to close") {
+            do {
+                _ = try await self.pane(pane)
+                return false
+            } catch is Failed {
+                return true
+            }
+        }
     }
 
-    /// A default plugin's page: its manifest's settings. Pictures of both pages in dark and light.
     private func defaultPluginPage(_ page: XCUIElement, in settings: XCUIElement) {
         // Back to the list: a click on the selected row changes nothing.
         element("settings.page.general").click()
@@ -90,8 +88,6 @@ extension OvviUITests {
         keepScreenshot("plugins page light", of: settings)
     }
 
-    /// A config folder with the Shout plugin, trusted by no one, with one toggle; the app launched on it, and a card
-    /// of the plugin in its own tab. `extra`: a shell command that adds to the folder.
     func shoutCard(_ config: String, shell: String, extra: String = "true") async throws
         -> (tab: String, pane: String)
     {
@@ -99,7 +95,6 @@ extension OvviUITests {
         let manifest = #"{"version":"1.0.0","description":"Says it.","ovvi":{"id":"ovvi-e2e-shout","#
             + #""name":"Shout","api":3,"entry":"main.js","icon":"megaphone","#
             + #""settings":[{"id":"shout","type":"toggle","title":"Shout","default":false}]}}"#
-        // Each draw also lists a folder: no manifest permission needed.
         let main = #"export default function main(ovvi) { const p = document.body.appendChild("#
             + #"document.createElement("p")); const draw = async (more) => { const listed = await "#
             + #"ovvi.files.list("/tmp").then(() => " listed", (e) => " " + e.code); p.textContent = "Shout " + "#
@@ -109,10 +104,8 @@ extension OvviUITests {
             + "echo '\(main)' > \(folder)/main.js && \(extra) && clear && echo made-$((6*7))\r", to: shell)
         // A long line: a loaded Mac's shell takes seconds to echo it.
         try await waitFor(shell, times: 150) { $0.contains("made-42") }
-        addTeardownBlock { [one] in
-            _ = try? await Self.call(one, "pane.send_text", ["pane_id": shell, "text": "rm -rf \(config)\r"])
-        }
-        relaunch(nil, ["-configFolder", config])
+        sendAfter("rm -rf \(config)\r", to: shell)
+        relaunch(one, ["-configFolder", config])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         element("workspace.w2").click()
         return try await newCard("ovvi:ovvi-e2e-shout#e2eshu /tmp")

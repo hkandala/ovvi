@@ -44,7 +44,9 @@ The app makes notifications itself, from snapshot changes, for every session
 open in any window. Each change posts once, even when several windows show
 the session:
 - A pane's status becomes `blocked`: "codex needs you", with "‹session› ·
-  ‹space› · ‹tab›" as the body.
+  ‹space› · ‹tab›" as the body. On a remote machine ‹session› is "‹machine› ·
+  ‹session›", or the machine's name for `default`; the subtitle below and the
+  Dock menu use the same name.
 - `completion_seq` changes to a new non-null value: "pi finished", with the
   same body.
 - None for the panes of the tab shown in the key window while the app is

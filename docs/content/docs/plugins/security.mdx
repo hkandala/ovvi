@@ -19,10 +19,9 @@ you open:
 - Write to the clipboard.
 - Run its package's `build` script as you on this Mac, when Ovvi builds it.
 
-The manifest does not limit this. An older manifest can still list
-`permissions`, but Ovvi ignores them: a plugin that can run a command can do
-anything else too, so a list of permissions would be a promise that the app
-cannot keep. Install plugins only from sources that you trust.
+The manifest does not limit this, and it lists no permissions: a plugin that
+can run a command can do anything else too, so a list of permissions would be
+a promise that the app cannot keep. Install plugins only from sources that you trust.
 
 ## The confirmation
 
@@ -131,8 +130,8 @@ The rules below keep that content from taking over the card and its bridge
   `--ignore-scripts` and no peer dependencies
   ([Install](/docs/plugins/packages#install)). The package's own `build`
   script runs only after you confirm the plugin.
-- **Limits:** a file read 16 MB, a `run`'s stdout 4 MiB, a state value
-  256 KiB, a label argument 1024 characters.
+- **Limits:** a file read 16 MB, a `run`'s stdout 4 MiB, a card's state
+  file (its state and controls) 256 KiB, a label argument 1024 characters.
 
 ## What the app cannot protect
 

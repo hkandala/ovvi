@@ -1,9 +1,6 @@
 import XCTest
 
-/// The title row: sidebar toggle, machine and workspace buttons, the tab bar and its menus. Session
-/// one's w1 "alpha" has t1 (three panes) and t2 "second"; w2 "beta" has one tab.
 extension OvviUITests {
-    /// With the sidebar open, the first capsule starts where the cards do, also while the sidebar is resized.
     func testTabsLineUpWithTheCards() {
         let tab = element("tab.w1:t1"), card = element("pane.w1:p1"), handle = element("sidebar.resize")
         XCTAssertTrue(card.exists(within: connect))
@@ -24,7 +21,6 @@ extension OvviUITests {
         XCTAssertEqual(toggle.value as? String, "open")
         XCTAssertLessThan(tab.frame.maxY, window.frame.minY + 46)
         XCTAssertFalse(workspace.exists)
-        // The capsule alone: the sidebar lists no tabs.
         XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "tab.w1:t2").count, 1)
         keepScreenshot("sidebar open")
 
@@ -51,11 +47,9 @@ extension OvviUITests {
         // Its checkmark is not in XCUITest's view of a menu item; the screenshot shows it.
         XCTAssertTrue(app.menuItems["Add Machine…"].exists)
         keepScreenshot("machine menu")
-        // The current machine: nothing changes.
         thisMac.click()
         XCTAssertTrue(thisMac.vanishes(within: 2))
-        XCTAssertEqual(app.windows.count, 1)
-        XCTAssertTrue(element("tab.w1:t2").exists)
+        XCTAssertFalse(until(0.5) { app.windows.count != 1 || !element("tab.w1:t2").exists })
     }
 
     func testWorkspaceMenuMakesAndPicksWorkspaces() async throws {
@@ -66,14 +60,12 @@ extension OvviUITests {
         let filter = openWorkspaceMenu()
         XCTAssertTrue(element("workspaces.\(one).w1").isSelected)
         keepScreenshot("workspace menu")
-        // Arrows move; Esc closes.
         app.typeKey(.downArrow, modifierFlags: [])
         XCTAssertTrue(element("workspaces.\(one).w2").has(\.isSelected, true, within: 2))
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(filter.vanishes(within: 2))
         openWorkspaceMenu()
 
-        // A name no workspace has: Enter makes it in herdr, and the app selects it.
         let name = "made-\(Int.random(in: 1000 ... 9999))"
         app.typeText(name)
         XCTAssertTrue(element("workspaces.create").has(\.isSelected, true, within: 2))
@@ -93,7 +85,6 @@ extension OvviUITests {
         try await expect("the button to show \(name)") { button.value as? String == "\(one) | \(name)" }
         XCTAssertTrue(element("tab.\(made):t1").exists(within: 2))
 
-        // Picking another workspace shows its tabs.
         openWorkspaceMenu()
         element("workspaces.\(one).w2").click()
         XCTAssertTrue(element("tab.w2:t1").exists(within: 2))
@@ -102,8 +93,6 @@ extension OvviUITests {
         keepScreenshot("one tab")
     }
 
-    /// The filter narrows the rows; New Workspace makes one in herdr, Open Session… opens that panel in the menu's
-    /// place.
     func testWorkspaceMenuFiltersAndItsItemsAct() async throws {
         XCTAssertTrue(element("tab.w1:t2").exists(within: connect))
         app.typeKey("s", modifierFlags: [.command, .control])
@@ -132,7 +121,6 @@ extension OvviUITests {
         let workspace = workspace(of: tabs[0])
         let close = element("tab.\(tabs[1]).close")
         XCTAssertFalse(close.exists)
-        // The selected tab too has none until hovered.
         XCTAssertTrue(element("tab.\(tabs[0])").isSelected)
         XCTAssertFalse(element("tab.\(tabs[0]).close").exists)
         element("tab.\(tabs[1])").hover()
@@ -142,7 +130,6 @@ extension OvviUITests {
         XCTAssertTrue(close.vanishes(within: 2))
         element("tab.\(tabs[1])").hover()
         XCTAssertTrue(close.exists(within: 2))
-        // Only its shell runs: no dialog (D41).
         try await settle([tabs[1]])
         close.click()
         try await expect("herdr to close it") { try await tabsOf(workspace).map(\.id) == [tabs[0], tabs[2]] }
@@ -154,7 +141,6 @@ extension OvviUITests {
         let workspace = workspace(of: tabs[0])
         keepScreenshot("three tabs")
         let field = element("tab.\(tabs[0]).rename")
-        // A double-click on the title starts it too; Esc cancels an edit.
         let before = try await tabsOf(workspace).first?.label
         element("tab.\(tabs[0])").doubleClick()
         XCTAssertTrue(field.exists(within: 2))
@@ -167,7 +153,7 @@ extension OvviUITests {
         element("tab.\(tabs[0])").rightClick()
         app.menuItems["Rename Tab"].click()
         XCTAssertTrue(field.exists(within: 2))
-        // Read now, a round trip after Esc: a write Esc made by mistake has landed.
+        // A herdr read after Esc: a write Esc made by mistake has landed by then.
         let after = try await tabsOf(workspace).first?.label
         XCTAssertEqual(after, before)
         XCTAssertTrue(hasKeyboard(field))
@@ -180,13 +166,12 @@ extension OvviUITests {
         XCTAssertFalse(app.windows.firstMatch.menuItems["Move Tab Left"].isEnabled)
         app.windows.firstMatch.menuItems["Move Tab Right"].click()
         try await expect("the new order") { try await tabsOf(workspace).map(\.id) == [tabs[1], tabs[0], tabs[2]] }
-        // The moved tab stays selected.
         let moved = element("tab.\(tabs[0])")
         XCTAssertTrue(moved.isSelected)
-        // ⇧⌘← moves it back; in a rename field it selects to the line's start instead.
         app.typeKey(.leftArrow, modifierFlags: [.command, .shift])
         try await expect("the order back") { try await tabsOf(workspace).map(\.id) == tabs }
-        // Drawn there too: a right click read the capsule's place from before the snapshot drew, and hit the next tab.
+        // Drawn there too: a right click can read the capsule's place ahead of the snapshot's draw, and hit the next
+        // tab.
         let next = element("tab.\(tabs[1])")
         XCTAssertTrue(until(2) { moved.frame.maxX <= next.frame.minX }, "\(moved.frame), \(next.frame)")
         moved.rightClick()
@@ -199,7 +184,6 @@ extension OvviUITests {
         try await Task.sleep(for: .seconds(1))
         let order = try await tabsOf(workspace).map(\.id)
         XCTAssertEqual(order, tabs)
-        // From the palette too, while its field has the keyboard.
         openPalette()
         app.typeText("move tab right")
         app.typeKey(.return, modifierFlags: [])
@@ -217,7 +201,6 @@ extension OvviUITests {
         app.windows.firstMatch.menuItems["Close Other Tabs"].click()
         let confirm = app.sheets.buttons["Close Tabs"]
         XCTAssertTrue(confirm.exists(within: 2))
-        // t1's two panes and t3's one; what runs in them.
         XCTAssertTrue(app.sheets.staticTexts
             .matching(NSPredicate(format: "value BEGINSWITH 'sleep is running in them. Their 3 panes' "
                     + "OR label BEGINSWITH 'sleep is running in them. Their 3 panes'")).firstMatch
@@ -234,12 +217,10 @@ extension OvviUITests {
         let fades = element("tabs.fades"), rowEnd = element("titlebar.overview").frame.minX - 8
         XCTAssertTrue(first.exists(within: 3))
         XCTAssertEqual(first.frame.width, 220, accuracy: 1)
-        // ⌘ and + keep their place in the window; the tabs past the row's end are out of view, and faded at that end.
         XCTAssertLessThan(element("titlebar.new-tab").frame.maxX, app.windows.firstMatch.frame.maxX)
         XCTAssertTrue(fades.has(\.stringValue, "trailing", within: 2))
         keepScreenshot("eight tabs")
 
-        // ⇧⌘[ from the first goes round to the last: the row shows it at once, faded at the start only.
         app.typeKey("[", modifierFlags: [.command, .shift])
         XCTAssertTrue(last.has(\.isSelected, true, within: 2))
         XCTAssertEqual(last.frame.width, 220, accuracy: 1)
@@ -247,9 +228,7 @@ extension OvviUITests {
         XCTAssertTrue(fades.has(\.stringValue, "leading", within: 2))
         keepScreenshot("scrolled to the last tab")
 
-        // A tab and a half back with a sideways scroll: tabs are cut off at both ends.
         try await swipe(last, by: 330, until: fades, \.stringValue, "leading, trailing")
-        // A click on the one cut off at the end selects it where it is: no scroll.
         let inView = capsules.filter(\.exists)
         let cut = try XCTUnwrap(inView.first { $0.frame.minX < rowEnd - 20 && $0.frame.maxX > rowEnd },
                                 "\(inView.map(\.frame.minX)) to \(rowEnd)")
@@ -259,11 +238,9 @@ extension OvviUITests {
         XCTAssertTrue(cut.has(\.isSelected, true, within: 2))
         XCTAssertFalse(until(0.6) { abs(cut.frame.minX - start) > 0.5 }, "scrolled from \(start) to \(cut.frame.minX)")
 
-        // A new tab from ⌘T comes into view.
         app.typeKey("1", modifierFlags: .command)
         XCTAssertTrue(first.has(\.isSelected, true, within: 2))
         app.typeKey("t", modifierFlags: .command)
-        // herdr puts it last.
         let made = try await poll("the new tab") {
             try await tabsOf(workspace(of: tabs[0])).last.flatMap { tabs.contains($0.id) ? nil : $0.id }
         }
@@ -271,12 +248,10 @@ extension OvviUITests {
         XCTAssertTrue(until(1) { element("tab.\(made)").frame.maxX <= rowEnd + 1 })
     }
 
-    /// A labeled tab's title is its label (testShowsWorkspacesTabsAndSplits: "second - ‹session›").
     func testWindowTitleOfADefaultLabelIsTheProgramAndFolder() async throws {
         let window = app.windows.firstMatch
         XCTAssertTrue(element("tab.w1:t2").exists(within: connect))
-        // t1 keeps herdr's default label: the front card's program and folder name (/private/tmp), a bar between
-        // them as in every plain-text title; the shell is zsh here, bash on CI.
+        // The shell is zsh here, bash on CI.
         try await expect("the window title ‹shell› | tmp - ‹session›") { window.title.hasSuffix("sh | tmp - \(one)") }
     }
 
@@ -288,7 +263,6 @@ extension OvviUITests {
         return filter
     }
 
-    /// The workspace's tabs in herdr's order.
     private func tabsOf(_ workspace: String) async throws -> [(id: String, label: String)] {
         let snapshot = try await snapshot()
         return (snapshot["tabs"] as? [[String: Any]] ?? []).filter { $0["workspace_id"] as? String == workspace }

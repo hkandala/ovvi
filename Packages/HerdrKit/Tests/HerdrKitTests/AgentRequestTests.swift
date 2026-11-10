@@ -37,7 +37,6 @@ private func request(_ fields: [String]) -> Data {
     }
 }
 
-/// The real runs, against a mailbox in a temporary home.
 private func mailbox() throws -> (ProcessExec, URL) {
     let home = FileManager.default.temporaryDirectory.appending(path: "ovvi-mailbox-\(UUID().uuidString)")
     try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)

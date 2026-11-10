@@ -71,10 +71,14 @@ only at these times:
   until then;
 - each time the pane shows in a card;
 - 1 s after the user presses Return in that card;
-- when a snapshot shows that the pane's agent or the first word of its
+- when a snapshot shows that the pane's agent, its label or the first word of its
   stripped terminal title changed, for a pane asked before (a progress title
   changes on and on; its first word does not). herdr sends `pane.updated` on
-  each change of the stripped title, and the events stream subscribes to it.
+  each change of the stripped title, and the events stream subscribes to it;
+- for a chat launch whose agent process is not known yet, every 0.5 s, 20
+  times at most;
+- once more 5 s after a plugin pane's answer shows a program other than its
+  placeholder (a slow shell start after a restart).
 
 The same answer gives the argv of every foreground process, where the app
 finds a [chat view](/docs/ui/chat-view#which-panes-have-it) launch marker. The
@@ -86,7 +90,7 @@ card's ask and Return's first: without the limit, the first snapshot of a
 400-pane session showed no card for over 30 s. An ask that
 a newer one replaced while it waited makes no herdr run.
 
-There is no polling. The result stays on the pane in the `HostStore`, so the
+There is no other polling. The result stays on the pane in the `HostStore`, so the
 views only read it.
 
 ## The catalog

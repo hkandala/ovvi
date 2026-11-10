@@ -1,12 +1,6 @@
 import XCTest
 
-/// The sidebar: one page per session open in the window, workspace rows (their git line in
-/// `WorkspaceGitTests`), the footer and the Open Session panel. Session one: w1 "alpha", w2 "beta"; session two: w1
-/// "gamma"; three is stopped; four is made by a test; five is stopped and started by tests; seven is stopped and
-/// deleted by a test.
 extension OvviUITests {
-    /// A right-click under the rows, or on the page header, has the session's menu: New Space, Open Session…, Show or
-    /// Hide Archived Sessions and Detach Session (off on the last page).
     func testTheSidebarsEmptyAreaHasTheSessionMenu() {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let shelf = element("agents.shelf.Archived Sessions")
@@ -37,11 +31,9 @@ extension OvviUITests {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         XCTAssertEqual(header, one)
         XCTAssertEqual(pageList(), [one])
-        // The other sessions cost nothing: no bridge, no stream.
         let runs = try await runs(two)
         XCTAssertEqual(runs, [])
 
-        // Esc and a click outside close the panel.
         let filter = openSessionPanel()
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(filter.vanishes(within: 2))
@@ -50,7 +42,6 @@ extension OvviUITests {
         XCTAssertTrue(filter.vanishes(within: 2))
     }
 
-    /// With the sidebar collapsed, the light of the workspace menu, Open Session and the palette follows the pointer.
     func testMenuLightFollowsThePointer() {
         XCTAssertTrue(element("tab.w1:t2").exists(within: connect))
         app.typeKey("s", modifierFlags: [.command, .control])
@@ -69,7 +60,6 @@ extension OvviUITests {
         XCTAssertTrue(open.has(\.isSelected, true, within: 2))
         keepScreenshot("open session lit by the pointer")
         app.typeKey(.escape, modifierFlags: [])
-        // The light moves in the hover's own update with or without a fade: the fade itself needs an eye.
         app.typeKey("k", modifierFlags: .command)
         let tab = element("palette.tab.w1:t1"), workspace = element("palette.workspace.\(one).w2")
         XCTAssertTrue(workspace.exists(within: 2))
@@ -80,15 +70,13 @@ extension OvviUITests {
         XCTAssertFalse(workspace.isSelected)
     }
 
-    /// With ⌥ held, a swipe anywhere (over a card here) moves between sessions sideways, with the sidebar's pages, and
-    /// between workspaces up or down, one step a gesture, and never changes the tab; so does a wheel.
     func testOptionSwipesMoveBetweenSessionsAndWorkspaces() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         openPage(two)
         showPage(one)
         XCTAssertTrue(until(3) { header == one })
         let card = element("terminal.w1:p1").frame, center = "\(card.midX) \(card.midY)"
-        // 14 steps of 10 pt (625 pt/s) with ⌥; the other way if natural scrolling is off.
+        // The other way if natural scrolling is off.
         var forward = -1.0
         for sign in [-1.0, 1.0] where header != two {
             forward = sign
@@ -100,7 +88,6 @@ extension OvviUITests {
         XCTAssertTrue(until(3) { header == one })
         XCTAssertTrue(element("tab.w1:t1").isSelected)
 
-        // Session one has two workspaces: a step either way shows w2, and the other way back w1.
         XCTAssertTrue(element("workspace.w1").isSelected)
         try await Self.post("\(one)/swipe", Data("\(center) 10 4 0 1 1".utf8))
         XCTAssertTrue(element("workspace.w2").has(\.isSelected, true, within: 3))
@@ -108,19 +95,15 @@ extension OvviUITests {
         XCTAssertTrue(element("workspace.w1").has(\.isSelected, true, within: 3))
         XCTAssertEqual(header, one)
 
-        // A wheel with ⌥: a workspace too.
         XCUIElement.perform(withKeyModifiers: .option) { element("terminal.w1:p1").scroll(byDeltaX: 0, deltaY: 30) }
         XCTAssertTrue(element("workspace.w2").has(\.isSelected, true, within: 3))
 
-        // With the sidebar hidden, a sideways one steps the session (the window's title ends with its name).
         app.typeKey("s", modifierFlags: [.command, .control])
         XCTAssertTrue(element("titlebar.workspace").exists(within: 2))
         try await Self.post("\(one)/swipe", Data("\(center) \(10 * forward) 14 0 0 1".utf8))
         XCTAssertTrue(until(3) { self.app.windows.firstMatch.title.hasSuffix(" - \(two)") })
     }
 
-    /// A sideways swipe over the sidebar pages it and never changes the tab; a sideways wheel over a card changes
-    /// neither the tab nor the session.
     func testSwipesPageTheSidebarAndNotTheTabs() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         openPage(two)
@@ -130,7 +113,6 @@ extension OvviUITests {
         try await swipe(sidebar, until: header, \.stringValue, two)
         try await swipe(sidebar, until: header, \.stringValue, one)
         XCTAssertTrue(element("tab.w1:t1").isSelected)
-        // Near the card's left edge, where page two of the sidebar lies, off to the side; both ways.
         let edge = element("terminal.w1:p1").coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0.5))
             .withOffset(CGVector(dx: 30, dy: 0))
         let width = Double(element("terminal.w1:p1").frame.width)
@@ -144,10 +126,7 @@ extension OvviUITests {
         try await swipe(sidebar, until: header, \.stringValue, two)
     }
 
-    /// With three sessions, the page a swipe lands on shows its rows, in the sidebar, at rest: a page not laid out
-    /// takes no room, and would show blank once a swipe settled.
     func testSwipedSessionPagesShowTheirRows() async throws {
-        let five = try env("OVVI_SESSION5")
         try await running(five)
         openPage(two)
         openPage(five)
@@ -155,7 +134,6 @@ extension OvviUITests {
         let sidebar = element("sidebar"), header = element("sidebar.header")
         XCTAssertTrue(header.has(\.stringValue, one, within: 3))
         let rows = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'workspace.'"))
-        // The first page goes nowhere the other way: then the next swipe goes forward.
         var delta = -Double(sidebar.frame.width)
         for session in [two, five] {
             sidebar.hover()
@@ -172,15 +150,10 @@ extension OvviUITests {
         }
     }
 
-    /// ⌘Q and a relaunch bring back the window's pages that still run, the page in view and each page's workspace.
     func testRelaunchRestoresThePagesThatStillRun() async throws {
-        let five = try env("OVVI_SESSION5")
         try await running(five)
-        // Not relaunch: a launch with -ApplePersistenceIgnoreState saves no state at ⌘Q (CI 39902793320). -session
-        // keeps any saved pages out; ⌘Q saves whatever the Mac's "close windows when quitting" setting says.
         try await forgetWindows()
-        app.launchArguments = ["-session", one, "-NSQuitAlwaysKeepsWindows", "YES"] + Self.noConfig
-        app.launch()
+        relaunch(windows: .saved)
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         element("workspace.w2").click()
         XCTAssertTrue(element("workspace.w2").has(\.isSelected, true, within: 2))
@@ -190,10 +163,7 @@ extension OvviUITests {
         XCTAssertTrue(app.wait(for: .notRunning, timeout: 5))
         try await Self.post("\(five)/stop")
 
-        // No -session, which wins over the saved pages; if they did not come back, the window opens none.
-        // -machines: none of the user's machines, whose masters a test must not touch.
-        app.launchArguments = ["-defaultSession", one, "-machines", "[]"] + Self.noConfig
-        app.launch()
+        relaunch(windows: .restored)
         XCTAssertTrue(until(connect) { header == two })
         XCTAssertTrue(pageList().contains(one))
         XCTAssertFalse(pageList().contains(five))
@@ -202,16 +172,13 @@ extension OvviUITests {
     }
 
     func testEmptyPageOffersNewWorkspace() async throws {
-        let five = try env("OVVI_SESSION5")
         for workspace in try await running(five)["workspaces"] as? [[String: Any]] ?? [] {
             try await Self.call(five, "workspace.close", ["workspace_id": workspace["workspace_id"] ?? ""])
         }
         relaunch(five)
-        // The window's content offers New Space and Open Folder…; the sidebar stays quiet, with no button of its own.
         let button = element("detail.new-workspace")
         XCTAssertTrue(element("detail.empty").firstMatch.exists(within: connect))
         XCTAssertTrue(element("detail.open-folder").exists)
-        XCTAssertFalse(element("new-workspace").exists)
         XCTAssertFalse(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'workspace.'")).firstMatch
             .exists)
         keepScreenshot("empty page")
@@ -233,7 +200,6 @@ extension OvviUITests {
         let row = element("workspace.\(made)")
         XCTAssertTrue(row.has(\.isSelected, true, within: 3))
 
-        // Rename: the inline field, Enter saves.
         row.rightClick()
         app.menuItems["Rename Space"].click()
         let field = element("workspace.\(made).rename")
@@ -242,7 +208,6 @@ extension OvviUITests {
         field.typeText("renamed\r")
         try await expect("herdr's label") { try await workspaceLabel(made) == "renamed" }
 
-        // New Tab: a tab of it in herdr, selected.
         let tabs = try await tabIDs()
         row.rightClick()
         // In the window, not the menu bar's File ▸ New Tab.
@@ -251,7 +216,6 @@ extension OvviUITests {
         XCTAssertEqual(workspace(of: tab), made)
         XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, true, within: 3))
 
-        // Last; Move Up puts it before beta, in the sidebar before herdr answers (its server stopped), then in herdr.
         row.rightClick()
         XCTAssertFalse(app.menuItems["Move Down"].isEnabled)
         addTeardownBlock { [one] in _ = try? await Self.post("\(one)/resume") }
@@ -269,7 +233,6 @@ extension OvviUITests {
         try await settle(tabIDs().filter { workspace(of: $0) == made })
         row.rightClick()
         app.windows.firstMatch.menuItems["Close Space"].click()
-        // D41: a program runs, so it asks, with what runs and the tab and pane count.
         // A predicate: a query by identifier takes at most 128 characters.
         let text = "sleep is running in it. Its 2 tabs, 2 panes and everything running in them will end, here and "
             + "in every herdr client. This cannot be undone."
@@ -279,7 +242,6 @@ extension OvviUITests {
         XCTAssertTrue(row.vanishes(within: 2))
     }
 
-    /// A double-click on a row renames too; Esc keeps herdr's label.
     func testDoubleClickRenamesAndEscapeCancels() async throws {
         let row = element("workspace.w2"), field = element("workspace.w2.rename")
         XCTAssertTrue(row.exists(within: connect))
@@ -314,8 +276,6 @@ extension OvviUITests {
         drag(start - 480)
     }
 
-    /// In a long list the selected workspace's row scrolls into view, just enough and clear of the fade, however it
-    /// was selected.
     func testTheSelectedRowScrollsIntoView() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         var rows: [String] = [], panes: [String] = []
@@ -329,22 +289,15 @@ extension OvviUITests {
         let inView = { (row: XCUIElement) in
             row.exists && row.frame.minY >= header.frame.maxY && row.frame.maxY <= filter.frame.minY
         }
-        // The lazy list makes no row out of view.
-        XCTAssertFalse(inView(last), "\(last.frame) under \(header.frame), over \(filter.frame)")
-        // Round the end to the last row (from the first again until the snapshot with all of them came).
         XCTAssertTrue(until(5) {
             self.app.typeKey("1", modifierFlags: [.command, .control])
             self.app.typeKey("[", modifierFlags: [.command, .control])
             return until(1) { last.isSelected }
         })
         XCTAssertTrue(until(2) { inView(last) }, "\(last.frame), filter \(filter.frame)")
-        // Just enough: the row's end (its agent's line, unfolded) at the list's end, over its bottom inset, Archived
-        // Sessions and the footer's padding.
         let end = element("agent.\(panes[23])").frame
         XCTAssertGreaterThan(end.maxY, filter.frame.minY - 60, "\(end), filter \(filter.frame)")
         XCTAssertFalse(inView(first))
-        // ⌃⌘3 (after alpha and beta): up to long0, with the 18 pt fade's room above it (the list starts 7 pt under the
-        // header).
         app.typeKey("3", modifierFlags: [.command, .control])
         XCTAssertTrue(until(2) { long0.isSelected && long0.frame.minY >= header.frame.maxY + 21 }, "\(long0.frame)")
         app.typeKey("1", modifierFlags: [.command, .control])

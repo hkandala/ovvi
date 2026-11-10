@@ -2,37 +2,16 @@ import AppKit
 import GhosttyTerminal
 import HerdrKit
 
-/// Owns every pane's terminal of one window's pages, keyed by `terminal_id`, so SwiftUI never destroys one when
-/// its tab goes out of view. The shown tab's terminals stream and draw; the `spare` most recently shown others,
-/// over all windows, keep their surface without drawing (as Ghostty's hidden tabs) and, on this Mac, their
-/// stream, so coming back to them is at once; the rest keep only their last picture (design: what streams). Web
-/// cards (browsers and plugins) the same way: the `spareWeb` most recently shown others keep their page; the rest
-/// keep their last picture and are made again from their label when shown.
+/// Keyed by `terminal_id`, so that SwiftUI never destroys a terminal when its tab goes out of view.
 /// ponytail: keyed by terminal id alone; herdr's ids (`term_` and 14 hex digits, from the clock) did not
 /// repeat across sessions. Key by session too if they ever do.
 @MainActor
 final class PaneViewRegistry {
-    /// The design's bound on terminals kept out of view, over all windows (D46). Each keeps its surface, about
-    /// 6 MB (libghostty frees the swap chain while it does not draw and makes it again in under a millisecond when
-    /// shown), a copy of its last picture (17 MB for a full-window card on Retina) and a herdr run of 7 MB. On
-    /// Retina: 405 MB with 16 terminals in splits, 653 MB with 33 full-window tabs. One evicted comes back under its
-    /// last picture if the system kept it, else it fades in.
-    /// `-spareTerminals N` (defaults `spareTerminals`).
+    /// Each terminal kept out of view keeps its surface, about 6 MB (libghostty frees the swap chain while it does not
+    /// draw and makes it again in under a millisecond when shown), a copy of its last picture (17 MB for a full-window
+    /// card on Retina) and a herdr run of 7 MB. On Retina: 405 MB with 16 terminals in splits, 653 MB with 33
+    /// full-window tabs.
     static let spare = UserDefaults.standard.string(forKey: "spareTerminals").flatMap { Int($0) } ?? 25
-    /// The bound on web cards kept out of view, over all windows: each keeps its web view and WebKit's process for
-    /// it. Floating windows' cards and cards with unsaved edits are never dropped. `-spareWebCards N` (defaults
-    /// `spareWebCards`).
-    static let spareWeb = UserDefaults.standard.string(forKey: "spareWebCards").flatMap { Int($0) } ?? 25
-    /// Kept web cards of every window, the most recently shown last.
-    static var recentWeb: [Kept] = []
-    /// Every card's picture in the app (a kept or dropped web card's, a chat's), the most recently taken last: past
-    /// 200 MB the oldest go (a card with none shows its loader).
-    static var pictured: [Kept] = []
-    struct Kept {
-        weak var registry: PaneViewRegistry?
-        let id: String
-    }
-
     /// On critical memory pressure the kept cards out of view go down to half the bounds. Not on a warning: macOS sent
     /// one every 30 minutes at normal pressure with 43 % of 32 GB free, and each dropped web cards that the next
     /// workspace switch made again (100–200 ms each).
@@ -45,38 +24,24 @@ final class PaneViewRegistry {
         return source
     }()
 
-    /// Kept terminals of every window (a surface; a stream unless paused), the most recently shown last.
     static var recent: [PaneTerminal] = []
     weak var pages: WindowPages?
     var terminals: [String: PaneTerminal] = [:]
-    /// Browser panes' cards (ui/browser), by terminal id as terminals are: a moved card keeps its page.
     var browsers: [String: Browser] = [:]
-    /// The other plugin panes' cards, the same way.
     var plugins: [String: Plugin] = [:]
-    /// Linked opens' landings (`Page.open(_:arg:at:from:how:)`) for the cards not made yet.
     var landings: [String: String] = [:]
     var webInView: Set<String> = []
-    /// Dropped web cards' and chats' last pictures (`pictured`), until made again.
     var pictures: [(id: String, picture: CGImage)] = []
-    /// The tab's page, for hidden terminals' sizes (`fitHidden`).
     var pageSize = CGSize.zero {
         didSet {
             guard pageSize != oldValue else { return }
-            // Once the size settles, as a shown card's host does: a sidebar's motion gives a size at every frame.
-            hiddenFitting?.cancel()
-            hiddenFitting = Task { [weak self] in
-                try? await Task.sleep(for: .milliseconds(150))
-                if !Task.isCancelled {
-                    self?.fitHidden()
-                }
-            }
+            // Once the size settles: a sidebar's motion gives a size at every frame.
+            SettlingHost.settle(&hiddenFitting) { [weak self] in self?.fitHidden() }
         }
     }
 
     private var hiddenFitting: Task<Void, Never>?
-    /// Chat cards' pictures from their views in the window (`ChatProbe`), by terminal id.
     var chatViews: [String: () -> CGImage?] = [:]
-    /// The terminals in view at the last `show`: a chat among them that left takes its picture.
     private var shownIDs: Set<String> = []
 
     init() {
@@ -98,7 +63,7 @@ final class PaneViewRegistry {
         terminal.view.openLink = { [weak self] link, how in
             Links.open(link, how: how, from: terminalID, page: self?.pages?.page(of: terminalID))
         }
-        terminal.view.tileScale = { [weak self] in self?.pages?.tileScale ?? 0.35 }
+        terminal.view.tileScale = { [weak self] in self?.pages?.tileScale ?? WindowPages.tile }
         terminals[terminalID] = terminal
         return terminal
     }
@@ -121,7 +86,6 @@ final class PaneViewRegistry {
         return browser
     }
 
-    /// Made again when its manifest changed (Reload Plugin); nil for a plugin not on this Mac or with no pages.
     func plugin(_ pane: HostStore.Pane, _ label: PaneLabel, terminalID: String, store: HostStore) -> Plugin? {
         if let plugin = plugins[terminalID], plugin.label.iid == label.iid, plugin.manifest == label.manifest {
             if plugin.paneID != pane.id {
@@ -139,24 +103,14 @@ final class PaneViewRegistry {
         plugin.web.open = { [weak self] opener, arg, place, how, background in
             guard let page = self?.pages?.page(of: terminalID) else { return }
             Task {
-                // A file or folder gone since the page drew its link or row, also an HTML file's `file:` page.
-                let file = arg.hasPrefix("file:"), path = file ? URL(string: arg)?.path ?? "" : arg
-                if file || opener.opens.folders || !opener.opens.files.isEmpty, path.hasPrefix("/"),
-                   await page.store.there(path, from: "/") == nil
-                {
-                    return page.store.notFound(path)
-                }
-                await page.open(opener, arg: arg, at: place, from: terminalID, how: how, background: background)
+                await page.openFromPlugin(opener, arg: arg, at: place, from: terminalID, how: how,
+                                          background: background)
             }
         }
         plugins[terminalID] = plugin
         return plugin
     }
 
-    /// Cards whose label got another address from elsewhere load it (`Browser.follow`), at each snapshot; a plugin's
-    /// card takes its label's new argument.
-    /// A card goes with its pane or its label (a rename that breaks it, another iid): its page, timers and proxy share
-    /// stop with it.
     private func follow(_ alive: Set<String>) {
         pictures.removeAll { !alive.contains($0.id) }
         chatViews = chatViews.filter { alive.contains($0.key) }
@@ -164,7 +118,6 @@ final class PaneViewRegistry {
         let labels = Dictionary((pages?.withFloats ?? []).flatMap(\.store.panes).compactMap { pane in
             pane.terminalID.flatMap { id in pane.plugin.map { (id, $0) } }
         }, uniquingKeysWith: { first, _ in first })
-        // Also a label of another kind with the same iid.
         func kept(_ id: String, _ label: PaneLabel) -> Bool {
             alive.contains(id) && labels[id]
                 .map { $0.iid == label.iid && $0.manifest?.id == label.manifest?.id } == true
@@ -183,9 +136,8 @@ final class PaneViewRegistry {
         }
     }
 
-    /// A terminal, browser or plugin view took the keyboard: the newest holder. A view that had the keyboard before
-    /// must not take it back when SwiftUI moves it to a new host (`viewWillMove`). A floating window's (alone in it)
-    /// drops none.
+    /// The newest holder: a view that had the keyboard earlier must not take it back when SwiftUI moves it to a new
+    /// host (`viewWillMove`). A floating window's (alone in it) drops none.
     private func claim(_ terminalID: String) -> () -> Void {
         { [weak self] in
             guard let self, pages?.floats(terminalID) != true else { return }
@@ -194,22 +146,9 @@ final class PaneViewRegistry {
         }
     }
 
-    func built(_ terminalID: String) -> Browser? {
-        browsers[terminalID]
-    }
-
-    func builtPlugin(_ terminalID: String) -> Plugin? {
-        plugins[terminalID]
-    }
-
-    /// Streams and draws these terminals (terminal id → pane id); past the `spare` most recently shown others,
-    /// the rest let go. `unvisited` stream and draw too but are no visit (the overview): they keep their place in
-    /// `recent`, and one not in it lets go once no longer shown. Drops the terminals not in `alive` (their panes
-    /// closed). The others keep their last picture. `web`: the web cards in view.
     func show(_ shown: [String: String], web: Set<String>, unvisited: [String: String] = [:], alive: Set<String>,
               client: (any Multiplexer)?)
     {
-        // A web card's placeholder is no terminal to stream.
         let shown = shown.filter { !web.contains($0.key) }
         for id in alive.isEmpty ? [] : shownIDs.subtracting(shown.keys) {
             if let picture = chatViews[id]?() {
@@ -224,7 +163,6 @@ final class PaneViewRegistry {
             PaneTerminal.snapshots.removeAll { $0 === terminal }
         }
         follow(alive)
-        // Without a client (the page in view connecting), the terminals there go on: another page's floated ones.
         let make = { (ids: [String: String]) in
             ids.compactMap { id, pane in client.map { self.terminal(id, pane: pane, client: $0) } ??
                 self.terminals[id]
@@ -234,7 +172,6 @@ final class PaneViewRegistry {
         for terminal in terminals.values {
             let was = terminal.inView
             terminal.inView = streaming.contains { $0 === terminal }
-            // Shown by the overview alone: back to how it was, with no picture (only its snapshot).
             if was, !terminal.inView, !Self.recent.contains(where: { $0 === terminal }) {
                 terminal.hide()
                 terminal.view.dropPicture()
@@ -242,7 +179,6 @@ final class PaneViewRegistry {
         }
         Self.recent = Self.recent.filter { terminal in !visited.contains { $0 === terminal } } + visited
         streaming.forEach { $0.show() }
-        // The window closes: its web cards go with it, with no picture, and the other windows' kept cards stay.
         guard !alive.isEmpty else {
             Self.recentWeb.removeAll { $0.registry === self }
             (browsers, plugins, webInView) = ([:], [:], [])
@@ -260,7 +196,6 @@ final class PaneViewRegistry {
         // A panel's keys: its close gives them to the keyboard card.
         guard pages?.panelOpen != true || pages?.floats(terminalID) == true else { return }
         dropClaims(but: terminalID)
-        // A card that shows its chat: the reply box.
         if let chat = pages?.page(of: terminalID)?.store.chats[terminalID], chat.showsChat, chat.live, !chat.drawer {
             chat.wantsKeyboard = true
             return
@@ -270,7 +205,6 @@ final class PaneViewRegistry {
         plugins[terminalID]?.web.view.takeKeyboard()
     }
 
-    /// Per window: a floating window's terminals keep their claims.
     func dropClaims(but terminalID: String? = nil) {
         for (id, terminal) in terminals where id != terminalID && pages?.floats(id) != true {
             terminal.view.dropClaim()
@@ -283,7 +217,6 @@ final class PaneViewRegistry {
         }
     }
 
-    /// The main window's terminal that has the keyboard, from the window itself, so it cannot drift.
     var keyboardTerminalID: String? {
         let views = terminals.mapValues { $0.view as NSView }.merging(browsers.mapValues(\.view)) { first, _ in first }
             .merging(plugins.mapValues(\.web.view)) { first, _ in first }
@@ -292,8 +225,8 @@ final class PaneViewRegistry {
 }
 
 extension PaneViewRegistry {
-    /// The selected workspace's other tabs' kept terminals take their card's size while hidden, as Ghostty's hidden
-    /// tabs do: their programs hear of a new window size at once, and a switch to the tab shows no reflow.
+    /// Hidden kept terminals take their card's size, so that their programs hear of a new window size at once and a
+    /// switch to the tab shows no reflow.
     func fitHidden() {
         guard let pages, let page = pages.current, let workspace = page.selectedWorkspace, pageSize != .zero
         else { return }
@@ -304,9 +237,7 @@ extension PaneViewRegistry {
                 guard let view = terminals[terminalID]?.view, view.window == nil,
                       let card = page.zoomedPaneID == paneID ? area : cards.first(where: { $0.id == paneID })?.rect
                 else { continue }
-                // The terminal's room in its card (`PaneCard`): under the header, inset at the sides and bottom.
-                let size = CGSize(width: max(card.width - 2 * PaneCard.inset, 1),
-                                  height: max(card.height - page.headerHeight(page.store.pane(paneID)) - gap, 1))
+                let size = PaneCard.terminalSize(card.size, header: page.headerHeight(page.store.pane(paneID)))
                 if view.frame.size != size {
                     view.terminal?.hold()
                     view.frame.size = size

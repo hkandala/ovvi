@@ -1,36 +1,36 @@
 import GhosttyTerminal
 import SwiftUI
 
-/// The app's settings (ui/settings), for the command list and the Settings window. Each is one key in the app's
-/// defaults.
 struct AppSettings: DynamicProperty {
     @AppStorage("appearance") var appearance = Appearance.dark
     @AppStorage("interfaceStyle") var style = InterfaceStyle.glass
     @AppStorage("fontSize") var fontSize = PaneTerminal.fontSize
     @AppStorage("focusFollowsMouse") var followMouse = false
-    /// What a new pane opens: New Pane's chooser (empty), or a row's id (ui/new-pane#a-fixed-pick).
-    @AppStorage(Chooser.opensKey) var newPaneOpens = ""
-    @AppStorage(Notifications.needsYou) var notifyNeedsYou = true
-    @AppStorage(Notifications.finished) var notifyFinished = true
-    @AppStorage(Notifications.fromAgents) var notifyFromAgents = true
-    /// A monospaced family; empty: the system's (SF Mono).
+    @AppStorage("newPaneOpens") var newPaneOpens = ""
+    @AppStorage("notifyNeedsYou") var notifyNeedsYou = true
+    @AppStorage("notifyFinished") var notifyFinished = true
+    @AppStorage("notifyFromAgents") var notifyFromAgents = true
     @AppStorage("terminalFont") var terminalFont = ""
     @AppStorage("cursorStyle") var cursorStyle = TerminalCursorStyle.block
     @AppStorage("cursorBlink") var cursorBlink = true
     @AppStorage("optionKey") var optionKey = OptionKey.characters
     @AppStorage("copyOnSelect") var copyOnSelect = false
-    /// What a new agent's card shows first.
     @AppStorage("agentView") var agentView = AgentView.terminal
-    /// The sidebar's Archived Sessions; off, it reads nothing.
     @AppStorage("showClosedSessions") var showClosed = true
 
-    /// What the terminals take from the settings (`PaneTerminal.configure`): a change configures them again.
     var terminal: [String] {
         [terminalFont, "\(fontSize)", cursorStyle.rawValue, "\(cursorBlink)", optionKey.rawValue, "\(copyOnSelect)"]
     }
 }
 
-/// What Option does in a terminal: types the macOS characters, or acts as Meta (both keys, or the left one).
+enum Appearance: String {
+    case auto, light, dark
+}
+
+enum InterfaceStyle: String {
+    case glass, classic
+}
+
 enum OptionKey: String, CaseIterable {
     case characters, meta, left
 
@@ -46,4 +46,12 @@ enum OptionKey: String, CaseIterable {
 
 enum AgentView: String {
     case terminal, chat
+}
+
+@MainActor
+extension UserDefaults {
+    /// Per config folder, so a test's `-configFolder` keeps its writes out of the user's. Not a suite at a path: once
+    /// its file exists, a new process's writes read back the prior value and notify no view.
+    static let agents = UserDefaults(suiteName: "dev.ovvi.app.agents." + Registry.config.path.replacing("/", with: "_"))
+        ?? .standard
 }

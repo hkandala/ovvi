@@ -1,9 +1,6 @@
 import AppKit
 import SwiftUI
 
-/// A `RowTable` row: its header, the accent pill when lit, a light fill under the pointer, then a symbol or a program
-/// tile, the title, the note, the detail or › and the keycaps, placed as `MenuRow` lays them out. For accessibility
-/// the header and the row are two elements, as SwiftUI's were.
 final class RowView: NSView {
     static let id = NSUserInterfaceItemIdentifier("row")
     private var act: () -> Void = {}
@@ -78,12 +75,10 @@ final class RowView: NSView {
         needsDisplay = true
     }
 
-    /// Out of the table, kept for reuse: no element for a test or VoiceOver to find, no pointer on it.
     func removed() {
         (press.isHidden, headerView.isHidden, hovered, pressed) = (true, true, false, false)
     }
 
-    /// The row under its header, above the gap to the next (the list's inset after the last).
     private var rowRect: NSRect {
         NSRect(x: 0, y: bounds.height - gap - height, width: bounds.width, height: height)
     }
@@ -106,7 +101,7 @@ final class RowView: NSView {
             (lit ? NSColor(Color.accentColor) : RowInk.primary.withAlphaComponent(pressed ? 0.08 : 0.05)).setFill()
             NSBezierPath(cgPath: Path(roundedRect: row, cornerRadius: 8, style: .continuous).cgPath).fill()
         }
-        // The tile at the window's scale, read as it draws: a row is made before it is in a window.
+        // Read as it draws: a row is made ahead of joining a window.
         let icon = (item.pane?.iconID ?? item.program).flatMap {
             Tile.image($0, letter: item.pane?.letter, scale: window?.backingScaleFactor ?? 2)
         } ?? symbol
@@ -126,7 +121,6 @@ final class RowView: NSView {
         drawTexts(item, in: row, end: item.keys.isEmpty ? end : end + 3 - 8)
     }
 
-    /// The title takes the room it needs first, as `MenuRow`'s; the note and the detail get what is left.
     private func drawTexts(_ item: FilterList.Item, in row: NSRect, end: CGFloat) {
         let start = row.minX + 8 + 22 + 8
         let detail = [item.detail, item.opens ? "›" : ""].filter { !$0.isEmpty }.joined(separator: " ")
@@ -153,8 +147,6 @@ final class RowView: NSView {
         }
     }
 
-    /// One line at `left` on the pixel grid, centered in the row's height; cut in its middle when the room is less
-    /// than it needs.
     private func draw(_ text: String, _ attributes: [NSAttributedString.Key: Any], left: CGFloat, room: CGFloat,
                       in row: NSRect)
     {
@@ -170,7 +162,7 @@ final class RowView: NSView {
                                 options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine], attributes: attributes)
     }
 
-    /// A keycap as `Keycap` draws it on the palette's glass, drawn: a glass view per keycap took most of a key's time.
+    /// Drawn: a glass view per keycap takes most of a key's time.
     private func drawCap(_ key: String, in rect: NSRect) {
         let dark = effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
         let shape = { (inset: CGFloat) in
@@ -180,7 +172,6 @@ final class RowView: NSView {
         let cap = RowInk.cap(dark: dark, lit: lit)
         cap.fill.setFill()
         shape(0).fill()
-        // The rim is brightest at the top and the bottom, as the glass lights it.
         for (band, alpha) in cap.rim.enumerated() {
             let edge = RowInk.white(alpha), side = RowInk.white(alpha * cap.sides)
             let ring = shape(CGFloat(band) * 0.5 + 0.25)
@@ -208,13 +199,11 @@ final class RowView: NSView {
         (text as NSString).size(withAttributes: attributes).width
     }
 
-    /// On the pixel grid, as SwiftUI places its views.
     private func pixel(_ value: CGFloat) -> CGFloat {
         let scale = window?.backingScaleFactor ?? 2
         return (value * scale).rounded() / scale
     }
 
-    /// Only the row lights, not its header nor the gap after it.
     private func point(_ event: NSEvent) {
         let over = rowRect.contains(convert(event.locationInWindow, from: nil))
         if over != hovered {
@@ -253,7 +242,6 @@ final class RowView: NSView {
         }
     }
 
-    /// The row's element, as the SwiftUI button was. Its clicks go on to the row, its next responder.
     private final class Press: NSView {
         var act: () -> Void = {}
 
@@ -264,7 +252,6 @@ final class RowView: NSView {
     }
 }
 
-/// Program tiles as images, made once per icon and scale by SwiftUI's own `ProgramTile`.
 @MainActor
 private enum Tile {
     private static var images: [String: NSImage] = [:]

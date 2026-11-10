@@ -1,6 +1,5 @@
 {
   "markdown": ["md", "markdown", "mdx"],
-  "text": ["ts", "mts", "cts", "plist"],
   "image": ["png", "jpg", "jpeg", "gif", "webp", "heic", "heif", "tif", "tiff", "bmp", "svg"],
   "pdf": ["pdf"],
   "audio": ["mp3", "m4a", "m4b", "aac", "wav", "aif", "aiff", "aifc", "caf", "flac", "amr", "ogg", "oga", "opus"],

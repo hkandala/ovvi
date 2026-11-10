@@ -1,20 +1,14 @@
 import SwiftUI
 
-/// A split's 8 pt gap: a 16 pt hit area with the resize pointer, a grip on hover (gorex's 36 × 3 pt, in
-/// `Look.grip`), a drag that moves the split live and sends on release, a double-click for 0.5, and an adjustable
-/// accessibility element (5 % steps).
 struct SplitDivider: View {
     let divider: Parts.Divider
-    /// The app's ratio while dragged or sent, until herdr's snapshot shows its own.
     @Binding var held: Double?
     let page: Page
     let tabID: String
     let label: String
     @State private var hovering = false
     @Environment(\.look) private var look
-    /// The ratio when the drag began.
     @State private var start: Double?
-    /// The last change asked for, and the last one sent: only the latest goes, and `held` stays until its snapshot.
     @State private var asked = 0
     @State private var sent = 0
 
@@ -49,11 +43,8 @@ struct SplitDivider: View {
                         start = nil
                     })
                     .onTapGesture(count: 2) { send(hold(0.5)) }
-                    .accessibilityElement()
+                    .readableText("\(Int((ratio * 100).rounded()))%")
                     .accessibilityLabel(label)
-                    // As the cards: a plain element shows XCUITest no value.
-                    .accessibilityAddTraits(.isStaticText)
-                    .accessibilityValue("\(Int((ratio * 100).rounded()))%")
                     .accessibilityIdentifier("divider.\(tabID).\(divider.id)")
                     .accessibilityAdjustableAction { direction in
                         send(hold(ratio + (direction == .increment ? 0.05 : -0.05)))
@@ -68,10 +59,9 @@ struct SplitDivider: View {
             .onDisappear { held = nil }
     }
 
-    /// The ratio to herdr (D10). Held until the snapshot shows it; dropped when herdr refused it, or when herdr
-    /// already has it (no snapshot change would drop it then).
+    /// Held until the snapshot shows it; dropped when herdr refuses it, or when herdr already has it (no snapshot
+    /// change would drop it then).
     private func send(_ value: Double) {
-        // herdr has it already, and no other change is on its way.
         guard sent != asked || abs(value - divider.ratio) > 0.0005 else {
             held = nil
             return
@@ -83,7 +73,6 @@ struct SplitDivider: View {
             while page.store.writing {
                 try? await Task.sleep(for: .milliseconds(50))
             }
-            // A newer change replaced it while it waited.
             guard change == asked else { return }
             let done = await page.store.setRatio(tab: tabID, path: divider.path, ratio: value)
             sent = change
@@ -99,7 +88,7 @@ struct SplitDivider: View {
         return from + (right ? drag.translation.width : drag.translation.height) / max(divider.total, 1)
     }
 
-    /// In herdr's 0.1–0.9, so the view shows what herdr keeps.
+    /// herdr keeps ratios in 0.1–0.9.
     @discardableResult
     private func hold(_ value: Double) -> Double {
         let clamped = min(max(value, 0.1), 0.9)

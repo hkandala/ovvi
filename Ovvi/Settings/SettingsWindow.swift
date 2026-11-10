@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// The Settings window's pages (ui/settings), in the sidebar's order.
 enum SettingsPage: String, CaseIterable, Hashable {
     case general, appearance, terminal, agents, machines, plugins, privacy
 
@@ -8,7 +7,6 @@ enum SettingsPage: String, CaseIterable, Hashable {
         rawValue.capitalized
     }
 
-    /// Its sidebar row's SF Symbol, drawn filled on its tile (`SettingsIcon`).
     var symbol: String {
         switch self {
         case .general: "gearshape"
@@ -16,7 +14,7 @@ enum SettingsPage: String, CaseIterable, Hashable {
         case .terminal: "apple.terminal"
         case .agents: "sparkles"
         case .machines: "desktopcomputer"
-        case .plugins: Registry.missing
+        case .plugins: "puzzlepiece.extension"
         case .privacy: "hand.raised"
         }
     }
@@ -26,7 +24,6 @@ enum SettingsDetail: Hashable {
     case machine(String), plugin(String)
 }
 
-/// Where the window is: the page, the detail page over it, and the row a search pick rings for a second.
 @MainActor @Observable
 final class SettingsRoute {
     static let shared = SettingsRoute()
@@ -37,7 +34,7 @@ final class SettingsRoute {
     func open(_ page: SettingsPage, _ detail: SettingsDetail? = nil) {
         self.page = page
         path = detail.map { [$0] } ?? []
-        WindowPages.openWindow?(id: "settings")
+        WindowPages.openWindow?(id: WindowPages.settingsScene)
     }
 }
 
@@ -50,7 +47,6 @@ struct SettingsWindow: View {
     var body: some View {
         @Bindable var route = SettingsRoute.shared
         NavigationSplitView {
-            // A pick in the sidebar leaves any detail page; a search pick and `open` set both.
             List(selection: Binding { route.page } set: { route.page = $0
                 route.path = []
             }) {
@@ -85,10 +81,9 @@ struct SettingsWindow: View {
                     ContentUnavailableView.search(text: search)
                 }
             }
-            // A little room between the search field and the first row: the list's content margins draw none.
+            // The list's content margins draw no room under the search field.
             .safeAreaPadding(.top, 6)
             .searchable(text: $search, placement: .sidebar)
-            // As System Settings: the sidebar always shows.
             .toolbar(removing: .sidebarToggle)
             .accessibilityIdentifier("settings.sidebar")
             .navigationSplitViewColumnWidth(215)
@@ -103,10 +98,27 @@ struct SettingsWindow: View {
                     }
             }
         }
-        // As System Settings: a set width, the height the user's.
         .frame(width: 715).frame(minHeight: 400)
         .environment(\.look, Look(style: settings.style, dark: colorScheme == .dark,
                                   contrast: colorSchemeContrast == .increased))
+    }
+}
+
+private struct SettingsIcon: View {
+    let page: SettingsPage
+    @Environment(\.look) private var look
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: 6, style: .continuous)
+        Image(systemName: page.symbol).font(.system(size: 13, weight: .medium)).imageScale(.medium)
+            .symbolVariant(.fill).symbolRenderingMode(.hierarchical)
+            .foregroundStyle(look.settingsGlyph)
+            .frame(width: 22, height: 22)
+            .background(LinearGradient(colors: look.settingsFill, startPoint: .top, endPoint: .bottom), in: shape)
+            .overlay(shape.strokeBorder(LinearGradient(colors: look.settingsEdge, startPoint: .top, endPoint: .bottom),
+                                        lineWidth: 0.5))
+            .shadow(color: look.settingsShadow, radius: 0.5, y: 0.5)
+            .compositingGroup()
     }
 }
 
@@ -137,26 +149,21 @@ private struct SettingsPageView: View {
         }
         .formStyle(.grouped)
         .navigationTitle(page.title)
-        // A toolbar item, so the window has a toolbar as System Settings: with none (the sidebar toggle is removed),
-        // the window has a bare title bar, its traffic lights in the corner and its corners square. A pushed page has
-        // its Back button.
+        // With no toolbar item the window has a bare title bar: traffic lights in the corner, square corners.
         .toolbar { ToolbarSpacer(.fixed) }
         .scrollsToRing()
     }
 }
 
-/// Scrolls a page to a search pick's row, then lets the ring go after a second. Each page has its own: a plugin's page
-/// is pushed over the sidebar's page, whose proxy cannot reach it.
+/// Each page has its own: the sidebar page's proxy cannot reach a page pushed over it.
 private struct RingScroll: ViewModifier {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
     func body(content: Content) -> some View {
         ScrollViewReader { proxy in
             content.task(id: SettingsRoute.shared.ring) {
                 guard let ring = SettingsRoute.shared.ring else { return }
                 // After the page's first layout: its rows are there to scroll to.
                 try? await Task.sleep(for: .milliseconds(50))
-                withAnimation(reduceMotion ? nil : .default) { proxy.scrollTo(ring, anchor: .center) }
+                withAnimation(Animation.reduced ? nil : .default) { proxy.scrollTo(ring, anchor: .center) }
                 try? await Task.sleep(for: .seconds(1))
                 if SettingsRoute.shared.ring == ring {
                     SettingsRoute.shared.ring = nil
@@ -171,9 +178,12 @@ extension View {
         modifier(RingScroll())
     }
 
-    /// A row a search can find: scrolled to and ringed for a second when picked.
     func settingsRow(_ id: String) -> some View {
         modifier(SettingsRow(id: id))
+    }
+
+    func identifiedSettingsRow(_ id: String) -> some View {
+        accessibilityIdentifier("settings." + id).settingsRow(id)
     }
 }
 
@@ -193,7 +203,6 @@ struct SettingsSearch: Identifiable {
     let id: String, title: String, page: SettingsPage
     var words = ""
     var detail: SettingsDetail?
-    /// Where it is, when not just its page: "Plugins › Git".
     var place: String?
 
     static let app = [
@@ -239,7 +248,6 @@ struct SettingsSearch: Identifiable {
     }
 }
 
-/// A pushed page's first card, as System Settings' detail pages have it.
 struct SettingsHeader<Icon: View, Actions: View>: View {
     let title: String
     var note: String?
@@ -257,7 +265,6 @@ struct SettingsHeader<Icon: View, Actions: View>: View {
                         Text(note).foregroundStyle(.secondary)
                     }
                 }
-                // A description wraps; the last line, a source or a target, keeps its ends.
                 let shown = lines.filter { !$0.isEmpty }
                 ForEach(Array(shown.enumerated()), id: \.offset) { index, line in
                     let last = index == shown.count - 1

@@ -1,23 +1,20 @@
 import HerdrKit
 import SwiftUI
 
-/// Where a plugin card opens a file or a diff (plugins/default-plugins): in the card (a click or a double-click), in a
-/// new tab right after the card's tab (⌘), or in a pane to the card's side (⌥).
 enum Opening {
     case here, tab, side
 }
 
 extension Page {
-    /// A browser or plugin pane takes the chooser's pane's place, with Replace Pane's steps (ui/new-pane#browser). It
-    /// waits for a snapshot that has the pane: herdr's split or tab answer comes before one, and a fast pick (⌘D,
-    /// then 3) would find nothing to replace.
+    /// Waits for a snapshot that has the pane: herdr answers a split or a tab ahead of it, and a fast pick (⌘D, then 3)
+    /// would find nothing to replace.
     func open(_ plugin: PluginManifest, _ chooser: Chooser) {
         guard chooser.starting == nil, chooser.opening == nil else { return }
         chooser.opening = plugin
         Task {
             defer {
-                // Kept while the replace waits for its snapshot (`drop(closed:)` drops it then): else the old pane's
-                // shell showed until the new pane took its place.
+                // Kept while the replace waits for its snapshot: else the replaced pane's shell shows until the new
+                // pane takes its place.
                 if chooser.paneID.map({ store.ahead.replacing[$0] == nil }) ?? true {
                     store.drop(chooser)
                 }
@@ -42,20 +39,28 @@ extension Page {
         }
     }
 
-    /// An open from the card of terminal `source`. A new pane gets the keyboard from the snapshot after it unless it
-    /// opens in the `background`; once the card is gone it opens in the selected tab's workspace. Its card lands at
-    /// `place` (a line of a file or a diff's file) once: the place is not in the label.
+    func openFromPlugin(_ plugin: PluginManifest, arg: String, at place: String? = nil, from source: String,
+                        how: Opening, background: Bool = false) async
+    {
+        let file = arg.hasPrefix("file:"), path = file ? URL(string: arg)?.path ?? "" : arg
+        if file || plugin.opens.folders || !plugin.opens.files.isEmpty, path.hasPrefix("/"),
+           await store.there(path, from: "/") == nil
+        {
+            return store.notFound(path)
+        }
+        await open(plugin, arg: arg, at: place, from: source, how: how, background: background)
+    }
+
     func open(_ plugin: PluginManifest, arg: String, at place: String? = nil, from source: String,
               how: Opening, background: Bool = false) async
     {
-        if how == .here, let shown = terminals.builtPlugin(source), shown.manifest.id == plugin.id {
+        if how == .here, let shown = terminals.plugins[source], shown.manifest.id == plugin.id {
             return shown.go(arg, at: place)
         }
-        let card = store.panes.first { $0.terminalID == source }
+        let card = store.terminalPane(source)
         guard let tabID = card?.tabID ?? selectedTab?.id, let workspace = store.workspace(of: tabID) else { return }
         let label = store.newLabel(plugin, arg: arg), cwd = card?.cwd ?? keyboardPane?.cwd ?? "~"
-        // A path with a control character or over 1024 characters makes no plugin label.
-        guard PaneLabel(label.text) != nil else { return }
+        guard label.fits else { return }
         await store.write { client in
             let spot = if how == .side, let card {
                 PanePlace.split(tab: card.tabID, pane: card.id, .right)
@@ -63,7 +68,7 @@ extension Page {
                 PanePlace.tab(after: tabID)
             }
             let pane = try await store.newPane(client, in: workspace.id, cwd: cwd, label: label, spot)
-            // ponytail: a card made from a snapshot before this line misses its landing; hand it over in the label
+            // ponytail: a card made from a snapshot ahead of this line misses its landing; hand it over in the label
             // if that shows.
             if let place, let terminalID = pane.terminalID {
                 terminals.landings[terminalID] = place
@@ -75,63 +80,7 @@ extension Page {
     }
 }
 
-enum PanePlace {
-    case tab(after: String)
-    case split(tab: String, pane: String, SplitNode.Direction)
-}
-
 extension HostStore {
-    /// A new pane in the workspace, with herdr's focus left alone: a browser or plugin card with its label and
-    /// placeholder in one call (plugins/labels#create), else a shell, made in a new tab and then moved into place.
-    func newPane(_ client: any Multiplexer, in workspaceID: String, cwd: String, label: PaneLabel?,
-                 _ place: PanePlace) async throws -> HerdrKit.Pane
-    {
-        guard case let .tab(after) = place else {
-            return try await makePane(client, in: workspaceID, cwd: cwd, label: label, place)
-        }
-        let placing = placeBeside(after, in: workspaceID)
-        do {
-            let pane = try await makePane(client, in: workspaceID, cwd: cwd, label: label, place)
-            await moveBeside(placing, pane.tabID, after: after, in: workspaceID, client)
-            return pane
-        } catch {
-            dropBeside(placing)
-            throw error
-        }
-    }
-
-    /// The new pane, in a new tab at the workspace's end (where herdr adds it) or, for a split, moved beside its pane.
-    private func makePane(_ client: any Multiplexer, in workspaceID: String, cwd: String, label: PaneLabel?,
-                          _ place: PanePlace) async throws -> HerdrKit.Pane
-    {
-        var pane: HerdrKit.Pane?
-        if let label {
-            if let id = try await client.newTab(workspace: workspaceID, cwd: cwd, label: label,
-                                                command: label.placeholder)
-            {
-                pane = try await client.pane(id)
-            }
-        } else {
-            pane = try await client.newTab(workspace: workspaceID, cwd: cwd)
-        }
-        guard var pane else { throw HerdrError.failed("herdr named no pane") }
-        if case let .split(tabID, target, direction) = place {
-            // ponytail: herdr makes no split with a command, so the new tab shows for a snapshot before its pane
-            // moves beside the card; hide it as Replace Pane does if that flash shows.
-            do {
-                pane = try await client.move(pane: pane.id, to: .tab(tabID, beside: target, split: direction)) ?? pane
-            } catch {
-                try? await client.close(pane: pane.id)
-                throw error
-            }
-        }
-        return pane
-    }
-}
-
-extension HostStore {
-    /// The label's argument of a pane opened in this folder: for a plugin that opens folders or repositories (File
-    /// Explorer, Git), the folder's git repository's root, else the folder, with the `/` of a folder; else none.
     func arg(_ plugin: PluginManifest, in folder: String) async -> String {
         guard plugin.opens.folders || plugin.opens.git else { return "" }
         var root = folder
@@ -139,14 +88,5 @@ extension HostStore {
             root = repo
         }
         return root.hasSuffix("/") ? root : root + "/"
-    }
-
-    /// Git runs on a remote machine as it is (one without git fails, harmlessly), on This Mac only once its check
-    /// passed: `/usr/bin/git` without the developer tools opens their install dialog.
-    func gitRuns() async -> Bool {
-        if machine.isRemote {
-            return true
-        }
-        return await gitUsable.value
     }
 }

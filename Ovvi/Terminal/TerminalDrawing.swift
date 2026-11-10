@@ -2,28 +2,24 @@ import AppKit
 import CoreImage
 import GhosttyTerminal
 import IOSurface
+import SwiftUI
 
-/// What a card draws: herdr's frames once they settled at its grid, only while it is shown, and its last picture
-/// meanwhile; never a blank.
 extension PaneTerminal {
     /// The app's paste mode; no cursor until herdr's first frame says whether it shows.
     static let modes = "\u{1B}[?2004h\u{1B}[?25l"
 
-    /// The grid may change (a new card size or text size): the old picture stays until herdr's frames at the new
-    /// grid settle (100 ms if it stayed). Before libghostty hears of it, whose renderer thread may draw at once
-    /// (CI: garbled glyphs for 3 frames after a ⌘- paused late), and on libghostty's grid change for other paths.
-    /// Also with no stream (an evicted card back at a new size); a watcher shows the reflow: it cannot resize.
+    /// Called ahead of libghostty hearing of a grid change: its renderer thread may draw at once (CI: garbled glyphs
+    /// for 3 frames after a ⌘- paused late). A watcher shows the reflow: it cannot resize.
     func hold() {
         guard ready, !observing else { return }
         ready = false
-        // Its picture over it until it drew again (`dropStill`): libghostty can draw during the hold.
+        // libghostty can draw during the hold.
         view.keepPicture()
         settle()
     }
 
-    /// libghostty draws nothing until frames stop for 100 ms (a watcher cannot resize: shown at once), so the
-    /// view's layer keeps its last picture: the old text, at the top left (libghostty's layer gravity), or nothing
-    /// on a new surface (its background is clear). Not an alpha hide: the text went blank between two pictures.
+    /// libghostty's layer keeps its last picture at the top left (its layer gravity), or nothing on a new surface (its
+    /// background is clear). Not an alpha hide: the text goes blank between two pictures.
     func settle() {
         // A rebuilt watcher settles too: its new surface has not parsed the first frame when that reveal would
         // draw.
@@ -47,9 +43,6 @@ extension PaneTerminal {
         }
     }
 
-    /// Leaving view, a kept one's picture is kept first (`keepPicture`, a full copy), and every one's small copy
-    /// for the overview. One the overview alone showed lets go of its picture next (`dropPicture`): its snapshot
-    /// is all it needs.
     func inViewChanged() {
         if !inView {
             if PaneViewRegistry.recent.contains(where: { $0 === self }) {
@@ -69,10 +62,8 @@ extension PaneTerminal {
         }
     }
 
-    /// Redraw Terminal: the program paints its screen again, over text others wrote into it (a launcher's warnings
-    /// after sleep). herdr has no call for it: the PTY one column narrower, then the card's grid back, two SIGWINCHes;
-    /// TUIs repaint all at a new width. The old picture shows until the frames at the card's grid settle. Not while
-    /// watching: observe cannot resize.
+    /// herdr has no call for a repaint: the PTY one column narrower, then the card's grid back, two SIGWINCHes; TUIs
+    /// repaint all at a new width. Not while watching: observe cannot resize.
     func redraw() {
         guard state == .live, redrawing == nil, let grid, grid.columns > 1 else { return }
         hold()
@@ -93,7 +84,7 @@ extension PaneTerminal {
         }
     }
 
-    /// Drawing resumes: the new picture at once. The first fades in from 0: a fade that never ran leaves it shown.
+    /// The first fades in from 0: a fade that never runs leaves it shown.
     private func reveal() {
         settling?.cancel()
         deadline?.cancel()
@@ -104,9 +95,8 @@ extension PaneTerminal {
         draw()
         let first = !revealed
         revealed = true
-        // Not in an overview tile: its snapshot or fill shows until it drew, then the terminal at once.
         if first, !(view.superview is MiniTerminal.Mini),
-           !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+           !Animation.reduced
         {
             let fade = CABasicAnimation(keyPath: "opacity")
             fade.fromValue = 0
@@ -116,16 +106,12 @@ extension PaneTerminal {
     }
 }
 
-/// The overview's snapshots: a tile that is not live shows its terminal's last picture, at the tile's
-/// pixel size (360 px wide blurred on Retina, then sharpened as it turned live), so one scrolled into
-/// view shows at once, with no fade, until it is live. An IOSurface: Core Animation shows it without a copy of its
-/// own (a `CGImage` doubled the memory).
+/// An IOSurface: Core Animation shows it without a copy of its own (a `CGImage` doubles the memory).
 extension PaneTerminal {
     /// Least recently taken first out, past 100 MB: a full-window card's is about 1.3–1.7 MB on Retina.
     static var snapshots: [PaneTerminal] = []
     private static let context = CIContext(options: [.cacheIntermediates: false])
 
-    /// It has a picture for a tile: a snapshot, or it is live and drew (or failed, and shows why in its card).
     var pictured: Bool {
         snapshot != nil || inView && ready || state.isFailed
     }
@@ -151,7 +137,6 @@ extension PaneTerminal {
         Self.snapshots.append(self)
         while Self.snapshots.reduce(0, { $0 + ($1.snapshot?.allocationSize ?? 0) }) > 100 << 20 {
             let old = Self.snapshots.removeFirst()
-            // Its still waiting for the next surface (`dropPicture`) goes too, unless it shows now.
             if let still = old.view.still, still.superlayer == nil, still.contents as AnyObject? === old.snapshot {
                 old.view.still = nil
                 old.revealed = false
@@ -161,22 +146,18 @@ extension PaneTerminal {
     }
 }
 
-/// A terminal out of the recently shown set gives up its surface: libghostty's three IOSurfaces of the card's size
-/// (17 MB each for a full-window card on a Retina screen). Its last picture stays: libghostty's old layer, which
-/// keeps showing its last IOSurface, volatile while no window shows it, so it costs no memory then (the system may
-/// take it back under memory pressure). A new surface draws under it until its frames are drawn (design D46).
+/// libghostty's three IOSurfaces of the card's size take 17 MB each for a full-window card on a Retina screen. Its last
+/// picture stays in libghostty's layer, volatile while no window shows it, so that it costs no memory then (the system
+/// may take it back under memory pressure).
 extension PaneSurfaceView {
     func free() {
         guard controller != nil else { return }
-        // One not dropped yet (shown and evicted again before its new surface drew) stays the picture.
+        // A still not dropped yet (evicted again ahead of its new surface's first draw) stays the picture.
         still = still ?? layer
         controller = nil
         purgeable(window == nil)
     }
 
-    /// The overview alone showed it: no full picture stays (a full-size IOSurface each). Its snapshot is its
-    /// picture instead, over its next surface until that drew (`coverNewSurface`, `dropStill`), so a tile turns
-    /// live in place; with none, its first show fades in again.
     func dropPicture() {
         if still !== layer {
             still?.removeFromSuperlayer()
@@ -191,7 +172,6 @@ extension PaneSurfaceView {
         terminal?.revealed = still != nil
     }
 
-    /// A new surface once the view is in a window, with the old picture over it (`terminalDidAttachSurface`).
     func rebuild() {
         guard controller == nil else { return }
         purgeable(false)
@@ -199,16 +179,14 @@ extension PaneSurfaceView {
         controller = PaneTerminal.controller
     }
 
-    /// The picture the view shows: the old one over a new surface that has not drawn yet.
     var picture: Any? {
         still?.superlayer == nil ? layer?.contents : still?.contents
     }
 
-    /// The new surface draws again: the old picture goes once it drew (its layer's contents changed; libghostty
-    /// draws when it stops being occluded). One that never draws keeps showing the old picture. Not for an empty
-    /// frame (a swap chain made again at a new size can show one first), unless three come: the screen is empty.
+    /// libghostty draws when it stops being occluded. An empty frame does not count (a swap chain made again at a new
+    /// size can show one first), unless three come: the screen is empty.
     func dropStill() {
-        // Over a new surface only: not the old layer itself, before its rebuild.
+        // Over a new surface only, not the view's own layer ahead of its rebuild.
         guard let still, still !== layer, still.superlayer != nil else { return }
         let id = ObjectIdentifier(still)
         stillFrames = 0
@@ -231,19 +209,15 @@ extension PaneSurfaceView {
         stillWatch = nil
     }
 
-    /// A new surface (`rebuild`) under the old picture: it draws once
-    /// herdr's frames settle, as a first stream's, or soon from what a live stream sent meanwhile. Not the first
-    /// surface (no grid yet): that one waits for its first stream's frames anyway.
     func coverNewSurface() {
         dropSmallStill()
         if let still, let layer, still !== layer {
-            // Sized with the view, as it was as its layer; its gravity keeps the picture in place.
             still.frame = layer.bounds
             still.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
             layer.addSublayer(still)
         }
         guard let terminal, terminal.grid != nil else { return }
-        // A settle begun before (a resize while evicted) would reveal the empty surface.
+        // A settle begun while evicted (a resize) would reveal the empty surface.
         terminal.settling?.cancel()
         terminal.deadline?.cancel()
         terminal.deadline = nil
@@ -254,12 +228,10 @@ extension PaneSurfaceView {
         }
     }
 
-    /// Out of a miniature, no still smaller than the view's pixels (the overview's snapshot, `dropPicture`) shows
-    /// (a card showed blurred, then sharp): the card shows its fill, and its terminal fades in when it
-    /// draws, as a first one.
+    /// Out of a miniature, a still smaller than the view's pixels shows blurred, then sharp: the card shows its fill
+    /// instead.
     func dropSmallStill() {
-        // Only a snapshot's (stretched): a full-size still of a card that grew meanwhile shows its old picture
-        // unscaled.
+        // Only a snapshot's (stretched): a full-size still of a card that grew meanwhile shows unscaled.
         guard !(superview is MiniTerminal.Mini), let still, still !== layer, still.contentsGravity == .resize,
               still.small(in: self) else { return }
         still.removeFromSuperlayer()
@@ -268,11 +240,9 @@ extension PaneSurfaceView {
         terminal?.revealed = false
     }
 
-    /// An evicted card's: volatile while the view is in no window; back in one, a picture the system took is gone
-    /// (it takes them within seconds), and the next reveal fades in as a first one. A kept card's stays, so it
-    /// comes back as it was.
+    /// Back in a window, a picture the system took is gone (it takes them within seconds).
     func purgeable(_ volatile: Bool) {
-        // Not a snapshot standing in (`dropPicture`): the overview's tiles show it too.
+        // Not a snapshot standing in: the overview's tiles show it too.
         guard controller == nil, let surface = still?.contents as? IOSurface, surface !== terminal?.snapshot
         else { return }
         var old: UInt32 = 0
@@ -280,16 +250,13 @@ extension PaneSurfaceView {
         if !volatile, old == IOSurfacePurgeabilityState.purgeableEmpty.rawValue {
             still?.removeFromSuperlayer()
             still = nil
-            // The next reveal fades in, as a first one.
             terminal?.revealed = false
         }
     }
 
-    /// The card leaves view: a copy of its last frame stays over the surface until it draws again. libghostty
-    /// frees its swap chain while it does not draw (as Ghostty does for hidden tabs) and empties those IOSurfaces
-    /// as it frees them (`kIOSurfacePurgeableEmpty`), so the layer's own picture is gone when the view is in a
-    /// window again: a blank frame on every return, and evicted stills came back empty and
-    /// faded in. About 2 ms and 17 MB for a full-window card on Retina.
+    /// libghostty frees its swap chain while it does not draw and empties those IOSurfaces as it frees them
+    /// (`kIOSurfacePurgeableEmpty`), so that the layer's own picture is gone when the view is in a window again. About
+    /// 2 ms and 17 MB for a full-window card on Retina.
     func keepPicture() {
         guard still == nil, let layer, let surface = layer.contents as? IOSurface, !surface.emptied,
               let copy = Self.copy(surface) else { return }
@@ -331,7 +298,6 @@ extension PaneSurfaceView {
 }
 
 extension CALayer {
-    /// Its picture is narrower than the view's pixels (not known out of a window).
     func small(in view: NSView) -> Bool {
         guard let scale = view.window?.backingScaleFactor,
               let surface = contents as? IOSurface else { return false }
@@ -340,7 +306,6 @@ extension CALayer {
 }
 
 extension IOSurface {
-    /// Some pixel differs from its first (the background): text or a cursor. Every other line, up to the first hit.
     var drawn: Bool {
         guard bytesPerElement == 4, width > 0, height > 0 else { return false }
         lock(options: .readOnly, seed: nil)

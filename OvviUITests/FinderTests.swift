@@ -1,12 +1,6 @@
 import XCTest
 
-/// The File Explorer behaves as the Finder's list: the find bar, the keys, the selection, `..` as a row, the
-/// change dots and the Git status bar, against FilesTests' small repository.
 extension OvviUITests {
-    /// Row 2's Filter opens the find bar with the keyboard, and a second click closes it; a letter typed in the tree
-    /// opens it with that letter, and Esc closes it with its filter. A click selects `..` like any row, and a click on
-    /// no row clears the selection. Return renames the selected row on disk (Return saves), as a folder's menu does;
-    /// ⌘↓ opens a folder as the root and ⌘↑ goes back up.
     func testFileExplorerFindBarAndFinderKeys() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, shell) = try await newTab("files-finder")
@@ -50,14 +44,11 @@ extension OvviUITests {
         try await send("rm -rf \(repo)\r", to: shell)
     }
 
-    /// Return renames the selected file with its stem selected, a name the tree refuses keeps the old one, and a
-    /// folder's menu renames it.
     private func renames(_ card: String, _ tree: XCUIElement, _ shell: String) async throws {
         row("a.txt", in: tree).click()
         app.typeKey(.return, modifierFlags: [])
         let rename = tree.textFields.matching(NSPredicate(format: "value == 'a.txt'")).firstMatch
         XCTAssertTrue(rename.exists(within: 3))
-        // Its name is selected, not its extension, as in the Finder.
         app.typeText("b\r")
         XCTAssertTrue(row("b.txt", in: tree).exists(within: 5))
         row("b.txt", in: tree).click()
@@ -71,15 +62,12 @@ extension OvviUITests {
         XCTAssertTrue(tree.textFields.matching(NSPredicate(format: "value == 'build'")).firstMatch.exists(within: 3))
         app.typeText("built\r")
         XCTAssertTrue(row("built", in: tree).exists(within: 5))
-        // The row moves before the folder does.
+        // The row moves ahead of the folder.
         try await send("clear; test -d built || sleep 1; test -f b.txt && test ! -e a.txt && test -d built && " +
             "echo renamed-$((6*7))\r", to: shell)
         try await waitFor(shell) { $0.contains("renamed-42") }
     }
 
-    /// A click on no row, or on row 2's Collapse All, leaves nothing selected: ⌘O opens nothing. A click selects `..`
-    /// as any row, and ⌘O on it goes up; Back (⌃-) comes to the root, so neither ⌘O before opened src, and Forward
-    /// (⌃⇧-) goes up again.
     private func selection(_ card: String, _ tree: XCUIElement, _ root: String) async throws {
         row("src", in: tree).click()
         tree.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9)).click()
@@ -100,15 +88,12 @@ extension OvviUITests {
         XCTAssertTrue(row("a.txt", in: tree).exists(within: 10))
     }
 
-    /// Whether the row draws git's change dot: pixels in the needs-you orange at its right end, in its first 24 pt (a
-    /// folder row's frame reaches into the next row). A row is one button to accessibility, its dot no element of its
-    /// own, so this reads the picture. Nil where screenshots draw no web content (CI's machines): no pixel of the row
-    /// differs from its first.
+    /// In its first 24 pt: a folder row's frame reaches into the next row. A row is one button to accessibility, its
+    /// dot no element of its own, so this reads the picture. Nil where screenshots draw no web content (CI's machines).
     private func dot(_ row: XCUIElement) -> Bool? {
         guard let full = row.screenshot().image.cgImage(forProposedRect: nil, context: nil, hints: nil),
               row.frame.width > 0
         else { return nil }
-        // The picture's pixels per point.
         let scale = Double(full.width) / row.frame.width
         guard let crop = full.cropping(to: CGRect(x: 0, y: 0, width: Double(full.width), height: 24 * scale))
         else { return nil }
@@ -117,7 +102,6 @@ extension OvviUITests {
             (0 ..< 3).map { abs(Int(pixels[index + $0]) - Int(pixels[$0])) }.reduce(0, +) > 90
         })
         else { return nil }
-        // The last 30 pt of each pixel row.
         let end = max(width - Int(30 * scale), 0)
         return stride(from: 0, to: pixels.count, by: 4).contains { index in
             let red = Int(pixels[index]), green = Int(pixels[index + 1]), blue = Int(pixels[index + 2])
@@ -125,9 +109,6 @@ extension OvviUITests {
         }
     }
 
-    /// A clean folder shows no change dot, also with a folder git ignores in it; a new
-    /// file shows one on its folder. The status bar shows the root's folders and files and its Git part
-    /// (`statusBar`); Git opens Git on the repository in a new tab. A folder outside a repository has no Git part.
     func testFileExplorerChangeDotsAndGitBar() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, shell) = try await newTab("files-dots")
@@ -175,8 +156,6 @@ extension OvviUITests {
         try await send("rm -rf \(repo) \(repo)-remote \(repo)-other /tmp/ovvi-e2e-files-plain\r", to: shell)
     }
 
-    /// The lines changed since HEAD; Push while the branch is ahead, and a click pushes; Pull once Fetch saw a commit
-    /// elsewhere, and a click pulls.
     private func statusBar(_ tree: XCUIElement, _ shell: String, _ repo: String) async throws {
         XCTAssertTrue(text("+1", in: tree).exists(within: 5))
         keepScreenshot("file explorer status bar")

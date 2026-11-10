@@ -1,15 +1,11 @@
 import CryptoKit
 import Foundation
 
-/// Codex's rollout (`~/.codex/sessions/…/rollout-….jsonl`), one JSON object per line
-/// (resources/research/agents/codex.md#3-file-watching-and-parser). The parser reads the typed items of
-/// `item_completed` events, which are whole when written, and the turn's end; anything else is skipped.
+/// The typed items of `item_completed` events are whole when written.
 public enum CodexRollout {
-    /// The lines `read` skips, as an awk pattern for `Exec.follow`: every top-level `type` but `event_msg` and
-    /// `turn_context` (most of a rollout is `response_item`).
+    /// Most of a rollout is `response_item`.
     public static let unread = #"/^[{][^{]*"type": *"/ && !/^[{][^{]*"type": *"(event_msg|turn_context)"/"#
 
-    /// Adds what the line holds; false when it is not JSON (a torn line).
     @discardableResult
     public static func read(_ line: String, into history: inout ChatHistory) -> Bool {
         guard let object = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any] else {
@@ -63,8 +59,7 @@ public enum CodexRollout {
         }
     }
 
-    /// A subagent started (`agent`) or sent a message (`agent_send`), named by its path: a finished step. Its end is
-    /// a notice, no step, and Codex seldom writes it (its subagents outlive the turn).
+    /// Its end is a notice, no step, and Codex seldom writes it (its subagents outlive the turn).
     private static func subagent(_ item: [String: Any], id: String, time: Date?, into history: inout ChatHistory) {
         guard let name = ["started": "agent", "interacted": "agent_send"][item["kind"] as? String ?? ""] else { return }
         let path = (item["agent_path"] as? String ?? "").split(separator: "/").last.map(String.init) ?? ""
@@ -74,11 +69,9 @@ public enum CodexRollout {
         history.append(ChatEntry(id: id, .tool(tool), time: time))
     }
 
-    /// An MCP tool's own name, and its first text argument by name.
     private static func mcp(_ item: [String: Any], id: String, time: Date?, into history: inout ChatHistory) {
-        let arguments = (item["arguments"] as? [String: Any] ?? [:]).sorted { $0.key < $1.key }
         var tool = ChatTool(id: id, name: item["tool"] as? String ?? "tool", category: .other,
-                            target: ChatHistory.firstLine(arguments.first { $0.value is String }?.value),
+                            target: ChatHistory.firstText(item["arguments"] as? [String: Any] ?? [:]),
                             input: ChatHistory.detail(item["arguments"]), started: time)
         tool.failed = item["status"] as? String == "failed"
         tool.result = tool.failed ? "failed" : ""
@@ -87,14 +80,13 @@ public enum CodexRollout {
         history.append(ChatEntry(id: id, .tool(tool), time: time))
     }
 
-    /// The script of `[shell, -lc, script]`; a read as the file it read.
     private static func command(_ item: [String: Any], id: String, time: Date?, into history: inout ChatHistory) {
         let parsed = item["parsed_cmd"] as? [[String: Any]] ?? [], argv = item["command"] as? [String] ?? []
         let script = argv.count == 3 && argv[1] == "-lc" ? argv[2] : argv.joined(separator: " ")
         let path = parsed.count == 1 && parsed[0]["type"] as? String == "read" ? parsed[0]["path"] as? String : nil
         let duration = item["duration"] as? [String: Any]
         let seconds = (duration?["secs"] as? Double ?? 0) + (duration?["nanos"] as? Double ?? 0) / 1e9
-        var tool = ChatTool(id: id, name: path == nil ? "bash" : "read", category: path == nil ? .command : .read,
+        var tool = ChatTool(id: id, name: path == nil ? "bash" : "read",
                             target: path ?? ChatHistory.firstLine(script), input: ChatHistory.detail(script),
                             started: time?.addingTimeInterval(-seconds))
         let exit = item["exit_code"] as? Int, status = item["status"] as? String
@@ -112,7 +104,7 @@ public enum CodexRollout {
         let content = change["type"] as? String == "add" ? change["content"] as? String : nil
         let diff = content.map(ChatTool.DiffLine.added)
             ?? ChatTool.DiffLine.unified(change["unified_diff"] as? String ?? "")
-        var tool = ChatTool(id: id, name: "edit", category: .edit, target: path, started: time)
+        var tool = ChatTool(id: id, name: "edit", target: path, started: time)
         let status = change["status"] as? String ?? ""
         tool.failed = ["failed", "declined"].contains(status)
         tool.result = tool.failed ? status : change["type"] as? String == "delete" ? "deleted"

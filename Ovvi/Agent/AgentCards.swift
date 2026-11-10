@@ -1,8 +1,6 @@
 import HerdrKit
 import SwiftUI
 
-/// `open`, `reveal`, `card` and `shown` (agent-control/cli): cards an agent opens and points at, never moving the
-/// user's view.
 extension AgentCommand {
     static let open = AgentCommand(
         name: "open", usage: "open <kind-or-path> [<arg>...] [<place>] [--new]",
@@ -30,19 +28,18 @@ extension AgentCommand {
             guard !new else { throw AgentError.usage("--replace makes no new card") }
             return try await call.replace(target, plugin, arg)
         }
-        // A card of that kind and argument where the new one would go.
         let store = if case let .beside(target, _) = place {
             try call.found(target).0
         } else {
             call.store
         }
         if !new, let same = store.panes.first(where: { pane in
-            pane.plugin.map { $0.manifest?.id == plugin.id && $0.place == arg } == true
+            pane.plugin.map { $0.manifest?.id == plugin.id && $0.arg == arg } == true
         }), let label = same.plugin {
             return call.opened(same.id, label, in: store, reused: true)
         }
         let label = store.newLabel(plugin, arg: arg)
-        guard PaneLabel(label.text) != nil else { throw AgentError.noLabel(first) }
+        guard label.fits else { throw AgentError.noLabel(first) }
         let (made, id) = try await call.newPane(place, label: label)
         return call.opened(id, label, in: made, reused: false)
     }
@@ -66,8 +63,8 @@ extension AgentCommand {
     static let card = AgentCommand(
         name: "card", usage: "card <pane>", summary: "What a card shows: kind, argument, title, unsaved edits",
         help: """
-        kind is a browser or plugin id, terminal or agent; an agent card adds agent and chat, and view (chat or tui) \
-        when it has the chat view. arg is a card's argument, a terminal's folder.
+        kind is a browser or plugin id, terminal or agent; an agent card adds agent, and view (chat or tui) when it \
+        has the chat view. arg is a card's argument, a terminal's folder.
         """,
     ) { call in
         let target = try await call.target(call.argument("pane"))
@@ -78,7 +75,7 @@ extension AgentCommand {
         if let label = pane.plugin {
             let card = pane.card
             json["kind"] = label.manifest?.id ?? label.plugin
-            json["arg"] = label.place
+            json["arg"] = label.arg
             json["dirty"] = card?.dirty == true
             json["error"] = label.manifest == nil ? Registry.problem(label.plugin) ?? "no plugin \(label.plugin)"
                 : card?.web.bridge?.failure.map { "\($0.title): \($0.text)" }
@@ -88,9 +85,7 @@ extension AgentCommand {
             json["dirty"] = false
             if let agent = pane.agent {
                 json["agent"] = agent
-                let chat = store.chat(pane)
-                json["chat"] = chat?.showsChat == true
-                json["view"] = chat.map { $0.showsChat ? "chat" : "tui" }
+                json["view"] = store.chat(pane).map { $0.showsChat ? "chat" : "tui" }
             }
         }
         return AgentOutput(json)
@@ -111,15 +106,13 @@ extension AgentCommand {
 }
 
 extension AgentCall {
-    /// The asking pane as the user knows it, for a notice or a prompt: its agent's name ("Claude Code"), else its
-    /// program's ("zsh"), else its card's title.
     var agent: String {
         store.pane(pane).map { $0.agentLabel ?? $0.programName ?? $0.cardTitle } ?? pane
     }
 
     func found(_ target: PaneTarget) throws -> (HostStore, HostStore.Pane) {
         guard let store = target.store else {
-            throw AgentError(code: "failed", message: "Ovvi does not show herdr session \(target.session)")
+            throw AgentError.failed("Ovvi does not show herdr session \(target.session)")
         }
         guard let pane = store.pane(target.id) else {
             throw AgentError.paneNotFound(target.id, in: target.session)
@@ -127,7 +120,6 @@ extension AgentCall {
         return (store, pane)
     }
 
-    /// `open`'s answer; a card out of view gets the notice, with Show.
     func opened(_ id: String, _ label: PaneLabel, in store: HostStore, reused: Bool) -> AgentOutput {
         let shown = store.inView.contains(id)
         if !shown, let pane = store.pane(id) {
@@ -135,23 +127,21 @@ extension AgentCall {
             store.notice(reused ? "\(agent) points to \(title)"
                 : "\(agent) opened \(kind)\(title == kind ? "" : " \(title)")", show: pane)
         }
-        return AgentOutput(["pane": id, "kind": label.manifest?.id ?? label.plugin, "arg": label.place,
+        return AgentOutput(["pane": id, "kind": label.manifest?.id ?? label.plugin, "arg": label.arg,
                             "label": label.text, "reused": reused, "shown": shown])
     }
 
-    /// `--replace`: the card's label names the new kind and argument with its iid, so the card shows it as a label
-    /// from elsewhere (a browser as a new page of its history). Never over a terminal or unsaved edits.
     func replace(_ target: PaneTarget, _ plugin: PluginManifest, _ arg: String) async throws -> AgentOutput {
         let (store, pane) = try found(target)
         guard let old = pane.plugin else {
-            throw AgentError(code: "bad_argument", message: "pane \(pane.id) is no browser or plugin card")
+            throw AgentError.badArgument("pane \(pane.id) is no browser or plugin card")
         }
         if pane.card?.dirty == true {
             throw AgentError(code: "dirty", message: "pane \(pane.id) has unsaved edits")
         }
         let label = PaneLabel(plugin: plugin.id, iid: old.iid, arg: arg)
-        guard PaneLabel(label.text) != nil else { throw AgentError.noLabel(arg) }
-        // A browser card made later loads its saved address before its label's, as after a typed one.
+        guard label.fits else { throw AgentError.noLabel(arg) }
+        // A browser card loads its saved address ahead of its label's.
         if old.plugin == Registry.browser.id {
             await store.machine.exec().remove(home: old.statePath(session: store.session))
         }
@@ -160,16 +150,15 @@ extension AgentCall {
         return opened(pane.id, label, in: store, reused: false)
     }
 
-    /// The kind and the label's argument of `open`'s words (agent-control/cli, Kind or path).
     func opening(_ first: String, _ words: [String]) async throws -> (PluginManifest, String) {
         if let plugin = Registry.plugin(first) {
             return try await (plugin, arg(plugin, words))
         }
         if let problem = Registry.problem(first) {
-            throw AgentError(code: "plugin_not_found", message: problem)
+            throw AgentError.pluginNotFound(problem)
         }
         guard words.isEmpty else {
-            throw AgentError(code: "plugin_not_found", message: "no plugin \(first); `ovvi plugins` lists them")
+            throw AgentError.pluginNotFound("no plugin \(first); `ovvi plugins` lists them")
         }
         if first.lowercased().hasPrefix("file://") {
             return try await (Registry.browser, arg(Registry.browser, [first]))
@@ -180,17 +169,16 @@ extension AgentCall {
         }
         let path = absolute(first), folder = try await isFolder(path)
         guard let plugin = Registry.openers(for: folder ? path + "/" : path).first else {
-            throw AgentError(code: "bad_argument", message: "no plugin opens \(first)")
+            throw AgentError.badArgument("no plugin opens \(first)")
         }
         return try await (plugin, arg(plugin, path: path, folder: folder, source: nil))
     }
 
-    /// A kind's argument from its words: a URL, or a path and for Git its source; none for a kind that opens nothing.
     private func arg(_ plugin: PluginManifest, _ words: [String]) async throws -> String {
         let opens = plugin.opens, takes = !opens.files.isEmpty || opens.folders || opens.git
         guard let first = words.first else {
             guard !takes, opens.urls.isEmpty else {
-                throw AgentError(code: "bad_argument", message: "\(plugin.id) needs a \(takes ? "path" : "URL")")
+                throw AgentError.badArgument("\(plugin.id) needs a \(takes ? "path" : "URL")")
             }
             return ""
         }
@@ -198,14 +186,14 @@ extension AgentCall {
             throw AgentError.usage("extra argument \(words[opens.git ? 2 : 1])")
         }
         if !opens.urls.isEmpty, !takes || web(first) {
-            // A path is a file URL, and a file URL names a Mac file: for a pane on This Mac only, whatever the kind.
+            // A file URL names a file on the Mac.
             let path = !first.contains("://") && ["/", "."].contains(first.prefix(1))
             let mac = store.machine.isRemote && (path || first.lowercased().hasPrefix("file:"))
             let url = mac ? nil : plugin.id == Registry.browser.id
                 ? Browser.url(path ? fileURL(first) : first, local: true)?.absoluteString
                 : plugin.opens(url: first) ? first : nil
             guard let url else {
-                throw AgentError(code: "bad_argument", message: mac ? "\(plugin.id) opens a file on This Mac only"
+                throw AgentError.badArgument(mac ? "\(plugin.id) opens a file on This Mac only"
                     : "\(plugin.id) does not open \(first)")
             }
             return url
@@ -214,19 +202,17 @@ extension AgentCall {
         return try await arg(plugin, path: path, folder: isFolder(path), source: words.dropFirst().first)
     }
 
-    /// A folder's or a file's argument: a repository's root (`/repo/`, then a Git source), a folder as Open File
-    /// Explorer Here takes it, or the file.
     private func arg(_ plugin: PluginManifest, path: String, folder: Bool, source: String?) async throws -> String {
         let name = (path as NSString).lastPathComponent
         if plugin.opens.git {
             guard folder, await store.gitRuns(), let root = await Git.root(path, exec: store.machine.exec()) else {
-                throw AgentError(code: "bad_argument", message: "\(path) is no folder of a git repository")
+                throw AgentError.badArgument("\(path) is no folder of a git repository")
             }
             guard let source else { return root + "/" }
             let hash = source == "uncommitted" ? source
                 : await Git.commit(source, in: root, exec: store.machine.exec())
             guard let hash else {
-                throw AgentError(code: "bad_argument", message: "\(source) is not uncommitted or a commit")
+                throw AgentError.badArgument("\(source) is not uncommitted or a commit")
             }
             return "\(root)/ \(hash)"
         }
@@ -235,63 +221,52 @@ extension AgentCall {
         }
         if folder {
             guard plugin.opens.folders else {
-                throw AgentError(code: "bad_argument", message: "\(plugin.id) does not open folders")
+                throw AgentError.badArgument("\(plugin.id) does not open folders")
             }
             return await store.arg(plugin, in: path)
         }
         guard plugin.rank(file: path) != nil else {
-            throw AgentError(code: "bad_argument", message: "\(plugin.id) does not open \(name)")
+            throw AgentError.badArgument("\(plugin.id) does not open \(name)")
         }
         return path
     }
 
     private func web(_ text: String) -> Bool {
-        ["http", "https"].contains(URL(string: text)?.scheme?.lowercased() ?? "")
+        URL(string: text)?.isWebAddress == true
     }
 
-    /// A path's file URL; its `?query` and `#fragment` stay the URL's (`./page.html?v=3`).
     private func fileURL(_ path: String) -> String {
         let end = path.firstIndex { "?#".contains($0) } ?? path.endIndex
         return URL(filePath: absolute(String(path[..<end]))).absoluteString + path[end...]
     }
 
-    /// A path from the request's working folder, without `.` and `..`.
     func absolute(_ path: String) -> String {
         URL(filePath: path, relativeTo: URL(filePath: cwd, directoryHint: .isDirectory)).standardized.path
     }
 
-    /// Whether the path is a folder, on the asking pane's machine; a missing one is `bad_argument`.
     private func isFolder(_ path: String) async throws -> Bool {
         let exec = await store.machine.exec()
         async let exists = exec.succeeds(#"[ -e "$1" ]"#, [path]), folder = exec.succeeds(#"[ -d "$1" ]"#, [path])
         guard await exists else {
-            // Also in the user's view for `ovvi open` typed in a shell; an agent's open (a probe) answers it alone.
             if store.pane(pane)?.agent == nil {
                 store.notFound(path)
             }
-            throw AgentError(code: "bad_argument", message: "no file or folder \(path)")
+            throw AgentError.badArgument("no file or folder \(path)")
         }
         return await folder
     }
 }
 
 extension HostStore {
-    var floatingPanes: Set<String> {
-        Set(windows.filter(\.visible).flatMap(\.withFloats).filter { $0.store === self }
-            .flatMap { page in panes.filter(page.floats).map(\.id) })
-    }
-
-    /// How long an agent's notice and flash last when a test holds them (`-agentHoldSeconds`), so that a slow query
-    /// still finds them.
+    /// A test's hold, so that a slow XCUITest query still finds the notice and the flash.
     private static let held = UserDefaults.standard.string(forKey: "agentHoldSeconds").flatMap(Double.init)
         .map { Duration.seconds($0) }
     private static var flashes = 0
 
     func notice(_ text: String, show pane: Pane) {
-        Task { await show(Notice(text: text, tone: .info, show: pane.terminalID), for: Self.held ?? .seconds(4)) }
+        show(Notice(text: text, tone: .info, show: pane.terminalID), for: Self.held ?? .seconds(4))
     }
 
-    /// The card's border flashes in the accent color once (`reveal`); a second reveal starts it again.
     func flash(_ pane: String) {
         flashing = pane
         Self.flashes += 1
@@ -304,8 +279,6 @@ extension HostStore {
         }
     }
 
-    /// A pane's title in a notice or an answer: a card's as its window shows it (a browser's page title), an agent's,
-    /// else the terminal's.
     func title(_ pane: Pane) -> String {
         WindowPages.windows.lazy.flatMap(\.withFloats).first { $0.store === self }?.kindTitle(pane)?.detail
             ?? pane.plugin?.title ?? pane.cardTitle
@@ -313,13 +286,11 @@ extension HostStore {
 }
 
 extension HostStore.Pane {
-    /// Its plugin card, in the first window that made one.
     var card: Plugin? {
         terminalID.flatMap { id in WindowPages.windows.lazy.compactMap { $0.terminals.plugins[id] }.first }
     }
 }
 
-/// `ovvi reveal`: the card's border lights in the accent color once.
 struct CardFlash: View {
     let store: HostStore
     let id: String
@@ -338,6 +309,6 @@ struct CardFlash: View {
 
 extension AgentError {
     static func noLabel(_ arg: String) -> AgentError {
-        AgentError(code: "bad_argument", message: "\(arg) makes no label: a control character, or over 1024 characters")
+        badArgument("\(arg) makes no label: a control character, or over \(PaneLabel.argLimit) characters")
     }
 }

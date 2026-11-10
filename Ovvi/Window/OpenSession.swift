@@ -1,18 +1,12 @@
 import HerdrKit
 import SwiftUI
 
-/// The one place to create or open a session (D68): a new name, the running and stopped sessions, and the ones
-/// already open in this window. Create, open and start take one path: start the server when it is not running,
-/// then open its page last. The lit running session has Stop, the lit stopped one Delete (both red, and ask first),
-/// the lit open one Detach. A glass panel like the palette: Enter acts, Esc or a click outside closes it.
 struct OpenSession: View {
     let pages: WindowPages
     @Binding var open: Bool
     @State private var suggested: String
-    /// The session a start, stop or delete runs on.
     @State private var busy: String?
     @State private var failure: (text: String, retry: () -> Void)?
-    /// The Stop or Delete waiting for the user's yes: `stop`, else `delete`, and its session.
     @State private var asking: (verb: String, session: String)?
 
     init(pages: WindowPages, open: Binding<Bool>) {
@@ -36,10 +30,9 @@ struct OpenSession: View {
         }
         .padding([.horizontal, .top], 8)
         .frame(width: 420)
-        .floatingGlass(in: .rect(cornerRadius: 14))
+        .floatingGlass(in: .panel)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Open Session")
-        // e2e: what the first draw lists.
         .onAppear { Latency.shared.note("open-session \(sessions.map(\.name).joined(separator: ","))") }
         .task {
             await pages.current?.store.loadSessions()
@@ -47,8 +40,6 @@ struct OpenSession: View {
                 suggested = sessions.newName
             }
         }
-        // Both end what runs for good, on every device (D41's reason to ask). An alert: Return confirms it
-        // (`NSWindow.confirm`), and its action is red.
         .alert(
             "\(asking?.verb.capitalized ?? "") the session “\(asking?.session ?? "")”?",
             isPresented: Binding { asking != nil } set: {
@@ -78,7 +69,6 @@ struct OpenSession: View {
         }
     }
 
-    /// The page's last known list: shown at once, read again as the panel opens.
     private var sessions: [Session] {
         pages.current?.store.sessions ?? []
     }
@@ -90,7 +80,6 @@ struct OpenSession: View {
         let create = Session.isValidName(new) && !sessions.contains { $0.name == new } && !shown.contains(new)
             ? [item("new", "Create session “\(new)”", "New", new) { start(new) }] : []
         let others = sessions.filter { !shown.contains($0.name) && $0.name.matches(filter) }
-        // A remote window's groups name the machine: the same names (`default`) run on both.
         let place = pages.machine.isRemote ? " on \(pages.machine.name)" : ""
         let session = { (one: Session) in
             var row = item("session", one.name, (one.running ? "Running" : "Stopped") + place, one.name) {
@@ -111,16 +100,13 @@ struct OpenSession: View {
                     pages.show(page)
                     open = false
                 }
-                // The session keeps running; never the window's last page.
-                if pages.list.count > 1 {
+                if pages.canDetach {
                     row.button = ("Detach", { pages.close(page) })
                 }
                 return row
             }
     }
 
-    /// A row of a kind (`new`, `session` or `open`: its id's prefix and its symbol). The group headers say what a
-    /// row does; no hint text on the rows.
     private func item(_ kind: String, _ title: String, _ section: String, _ session: String,
                       act: @escaping () -> Void) -> FilterList.Item
     {
@@ -141,7 +127,6 @@ struct OpenSession: View {
         let machine = pages.machine
         run(session, "start") {
             try await HostStore.start(session, on: machine)
-            // Not on a machine the window switched to meanwhile.
             if pages.machine.id == machine.id {
                 pages.open(session)
             }
@@ -149,8 +134,6 @@ struct OpenSession: View {
         }
     }
 
-    /// A start, stop or delete of the session (`verb` for the notice). On a failure the panel stays open, with
-    /// herdr's reason and Retry.
     private func run(_ session: String, _ verb: String, _ work: @escaping () async throws -> Void) {
         guard busy == nil else { return }
         busy = session

@@ -1,11 +1,9 @@
 import Foundation
 
-/// An opencode 1.x session as its server gives it (resources/research/agents/opencode.md#3-watching): messages and
-/// their parts, first from `GET /session/<id>/message`, then from the `/event` stream, upserted by id. The core is
-/// user text, text replies, tool parts (a call and its result in one) and the end of a turn; reasoning, todos,
-/// subagents and compaction are extras of 1.x; anything else is skipped.
+/// opencode 1.x gives messages and their parts first from `GET /session/<id>/message`, then from the `/event`
+/// stream, upserted by id.
 /// `@unchecked Sendable`: its parts are JSONSerialization's immutable objects, so a copy is safe to read and change
-/// on another thread; the app builds it off the main actor.
+/// on another thread.
 public struct OpenCodeSession: @unchecked Sendable {
     public let id: String
     public private(set) var history = ChatHistory()
@@ -21,15 +19,13 @@ public struct OpenCodeSession: @unchecked Sendable {
         let created: Date?
         let completed: Date?
         let finish: String?
-        /// "Interrupted", or the error's message.
         let error: String?
         let model: String?
-        /// The model's variant ("high"): its thinking effort.
+        /// opencode's variant ("high") is the thinking effort.
         let variant: String?
         let cwd: String?
     }
 
-    /// The history's `[{info, parts}]`; false when the text is not that.
     public mutating func load(_ text: String) -> Bool {
         guard let list = try? JSONSerialization.jsonObject(with: Data(text.utf8)) as? [[String: Any]] else {
             return false
@@ -47,7 +43,6 @@ public struct OpenCodeSession: @unchecked Sendable {
         return true
     }
 
-    /// One event of `/event` (its `data:` object): true when it changed the history.
     @discardableResult
     public mutating func apply(_ event: [String: Any]) -> Bool {
         let properties = event["properties"] as? [String: Any] ?? [:]
@@ -85,7 +80,7 @@ public struct OpenCodeSession: @unchecked Sendable {
         parts[id] = part
     }
 
-    /// The history again from every message and part, in id order (opencode's ids sort by time).
+    /// In id order: opencode's ids sort by time.
     /// ponytail: rebuilt whole on each event (a few per step, deltas are skipped); keep entries per part if a long
     /// session gets slow.
     private mutating func build() {
@@ -156,23 +151,20 @@ public struct OpenCodeSession: @unchecked Sendable {
         }
     }
 
-    /// The row's kind and target; an empty target: the tool's own title.
-    private static func row(_ tool: String, _ input: [String: Any], _ cwd: String?) -> (ChatTool.Category, String) {
+    private static func row(_ tool: String, _ input: [String: Any], _ cwd: String?) -> (ChatTool.Category?, String) {
         let path = (input["filePath"] as? String).map { ChatHistory.short($0, cwd) } ?? ""
         let question = (input["questions"] as? [[String: Any]])?.first?["question"]
         return switch tool {
-        case "bash": (.command, ChatHistory.firstLine(input["command"]))
-        case "read": (.read, path)
-        case "edit", "write", "multiedit", "apply_patch", "patch": (.edit, path)
-        case "grep", "glob", "list": (.search, ChatHistory.firstLine(input["pattern"] ?? input["path"]))
-        case "websearch": (.search, ChatHistory.firstLine(input["query"]))
+        case "bash": (nil, ChatHistory.firstLine(input["command"]))
+        case "read", "edit", "write", "multiedit", "apply_patch", "patch": (nil, path)
+        case "grep", "glob", "list": (nil, ChatHistory.firstLine(input["pattern"] ?? input["path"]))
+        case "websearch": (nil, ChatHistory.firstLine(input["query"]))
         case "task": (.other, ChatHistory.firstLine(input["description"]))
-        case "question": (.other, ChatHistory.firstLine(question))
+        case "question": (nil, ChatHistory.firstLine(question))
         default: (.other, "")
         }
     }
 
-    /// "exit 1", "+3 -1", "62 lines", or the output's first line.
     private static func result(_ metadata: [String: Any], _ diff: [ChatTool.DiffLine], output: Any?) -> String {
         if let exit = metadata["exit"] as? Int, exit != 0 {
             return "exit \(exit)"
@@ -192,10 +184,9 @@ public struct OpenCodeSession: @unchecked Sendable {
     }
 }
 
-/// opencode's server on the pane's machine, reached with `curl` there. The password stays in its 0600 file under
-/// `folder` (relative to the home folder): curl reads it from a here-document, never from argv.
+/// The password stays in its 0600 file under `folder`: curl reads it from a here-document, never from argv.
 public extension Exec {
-    /// `/event`, the server's lines (`data: {json}`, blank lines between) until the stream is dropped.
+    /// The server's lines are `data: {json}`, blank lines between.
     func openCodeEvents(_ url: String, folder: String) async throws -> AsyncStream<String> {
         let script = #"""
         exec curl -sN -K - "$2/event" <<EOF
@@ -205,7 +196,6 @@ public extension Exec {
         return try await lines(script, [folder, url])
     }
 
-    /// One request, a POST when it has a JSON `body`: the HTTP status and the body; nil when there was no answer.
     func openCode(_ url: String, _ path: String, body: String? = nil, folder: String) async
         -> (status: Int, body: String)?
     {

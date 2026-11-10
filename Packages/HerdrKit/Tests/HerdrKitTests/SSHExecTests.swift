@@ -2,12 +2,11 @@ import Foundation
 @testable import HerdrKit
 import Testing
 
-/// The envelope runs in the remote login shell; `sh` here stands in for it.
 @Test func `envelope runs the argv unchanged`() async throws {
-    let argv = ["printf", "%s|", "it's", "a b", "$HOME", "\"q\"", "`x`", "ü\n2"]
+    let argv = ["printf", "%s|", "it's", "a b", "$HOME", "\"q\"", "`x`", "ü\n2", "'\u{301}; echo no"]
     let exec = localExec
-    let out = try await exec.output(["sh", "-c", SSHExec.envelope(argv)])
-    #expect(out == "it's|a b|$HOME|\"q\"|`x`|ü\n2|")
+    let out = try await exec.output(["sh", "-c", shellEnvelope(argv)])
+    #expect(out == "it's|a b|$HOME|\"q\"|`x`|ü\n2|'\u{301}; echo no|")
 }
 
 @Test func `targets that are not options`() {
@@ -17,7 +16,6 @@ import Testing
     #expect(!SSHExec.isValidTarget(""))
 }
 
-/// The relay here, without ssh: runs at once over one process, their stdin, exits and kills.
 @Test func `relay carries runs over one process`() async throws {
     let local = localExec
     let relay = try #require(await Relay.start(ProcessExec.spawn(["perl", "-e", Relay.script], local.environment)))
@@ -32,11 +30,10 @@ import Testing
     #expect(await failing.exit() == (3, "err\n"))
     sleeping.terminate()
     #expect(await sleeping.exit().status == 9)
-    // A kill closes stdin too: the observe wrapper's background child ends, and so the run.
-    let watching = try relay.run(SSHExec.quoted([
+    let watching = try relay.run(shellQuoted([
         "sh",
         "-c",
-        TerminalStream.observeWrapper,
+        observeWrapper,
         "sh",
         "sh",
         "-c",
@@ -47,7 +44,6 @@ import Testing
     #expect(await watching.exit().status == 9)
 }
 
-/// A remote machine's runs, here without ssh: SSHExec's relay and command.
 struct RelayExec: Exec {
     let relay: Relay
 
@@ -57,15 +53,18 @@ struct RelayExec: Exec {
     }
 
     func run(_ argv: [String]) throws -> Channel {
-        try relay.run("exec " + SSHExec.quoted(argv))
+        try relay.run("exec " + shellQuoted(argv))
     }
 
     func herdr() -> String? {
         nil
     }
+
+    var isRemote: Bool {
+        true
+    }
 }
 
-/// A dropped file's copy over the relay (here without ssh): the same bytes under the same name, in a folder of its own.
 @Test func `upload copies a file whole`() async throws {
     let exec = try await RelayExec.start()
     let folder = URL.temporaryDirectory.appending(path: "ovvi-upload-\(UUID().uuidString)")
@@ -84,7 +83,6 @@ struct RelayExec: Exec {
     }
 }
 
-/// `git … -z` output keeps its NUL bytes over the relay, also past the relay's 64 KB reads.
 @Test func `relay passes NUL bytes unchanged`() async throws {
     let relay = try #require(await Relay.start(ProcessExec.spawn(["perl", "-e", Relay.script], localExec.environment)))
     let run = try relay

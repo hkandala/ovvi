@@ -1,36 +1,23 @@
-// A mouse drag through several points, for the drag tests that need two legs (a tab held over the
-// workspace button opens its menu, then drops on a row there): XCUITest drags to one point only. Presses at x y (screen
-// points, top left) for 0.3 s, then moves to each next point over 0.3 s and holds there for its seconds, then lets go.
-// A negative hold prints "held" and holds until a line on stdin (at most 30 s): the test lets go once it saw what the
-// hold did. Posted to the HID system, as scripts/swipe.swift does. Only in the tests' app's windows.
-// Usage: swift scripts/drag.swift <x> <y> (<x> <y> <hold>)...
+// A mouse drag through several points (screen points, top left), holding at each for its seconds: XCUITest drags to
+// one point only. A negative hold prints "held" and holds until a line on stdin (at most 30 s).
+// Usage: drag <x> <y> (<x> <y> <hold>)...
 import CoreGraphics
 import Foundation
 
 let args = CommandLine.arguments.dropFirst().compactMap { Double($0) }
-guard args.count >= 5, (args.count - 2) % 3 == 0 else { fatalError("usage: drag.swift <x> <y> (<x> <y> <hold>)...") }
+guard args.count >= 5, (args.count - 2) % 3 == 0 else { fatalError("usage: drag <x> <y> (<x> <y> <hold>)...") }
 let start = CGPoint(x: args[0], y: args[1])
 let points = [start] + stride(from: 2, to: args.count, by: 3).map { CGPoint(x: args[$0], y: args[$0 + 1]) }
 
 onlyIntoTheApp(points)
 
-func post(_ type: CGEventType, _ point: CGPoint) {
-    CGEvent(mouseEventSource: nil, mouseType: type, mouseCursorPosition: point, mouseButton: .left)?
-        .post(tap: .cghidEventTap)
-}
-
-CGWarpMouseCursorPosition(start)
-Thread.sleep(forTimeInterval: 0.3)
+warp(to: start)
 post(.leftMouseDown, start)
 Thread.sleep(forTimeInterval: 0.3)
 var point = start
 for index in stride(from: 2, to: args.count, by: 3) {
     let next = CGPoint(x: args[index], y: args[index + 1])
-    for step in 1 ... 20 {
-        let part = Double(step) / 20
-        post(.leftMouseDragged, CGPoint(x: point.x + (next.x - point.x) * part, y: point.y + (next.y - point.y) * part))
-        Thread.sleep(forTimeInterval: 0.015)
-    }
+    glide(from: point, to: next)
     point = next
     if args[index + 2] < 0 {
         print("held")

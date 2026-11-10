@@ -1,21 +1,21 @@
 import Foundation
 
 public enum HerdrError: Error, Equatable, Sendable {
-    /// No herdr binary on the machine.
     case notFound
-    /// herdr is too old.
     case unsupported(String)
-    /// herdr did not answer within the request's timeout.
     case timeout
-    /// herdr answered with an error.
     case herdr(code: String, message: String)
-    /// The command failed or printed something we cannot read.
     case failed(String)
-    /// ssh needs an answer (a password, a code, a host key) to reach the machine; ssh's text. Only the user's
-    /// Connect asks again.
+    /// ssh needs an answer the user gives; only Connect tries again.
     case disconnected(String)
-    /// herdr changed nothing, for this reason (`same_tab`, `cross_tab`, `zoomed_tab`).
     case refused(String)
+
+    public var isMachineProblem: Bool {
+        switch self {
+        case .notFound, .unsupported, .disconnected: true
+        default: false
+        }
+    }
 }
 
 extension HerdrError: LocalizedError {

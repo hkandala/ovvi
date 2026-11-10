@@ -58,8 +58,8 @@ ovvi float w1:p3 [--on-top]               # its own window over Ovvi. --on-top: 
 ovvi unfloat w1:p3                        # back into its tab
 ovvi reveal w1:p3                         # a flash when in view, else a notice with Show
 ovvi card w1:p3 --json                    # kind, arg, title, dirty (unsaved edits), floating, shown, error
-                                          # an agent pane adds agent, chat (true with the chat view shown),
-                                          # and view ("chat" or "tui") when it has a chat view
+                                          # an agent pane adds agent, and view ("chat" or "tui") when it
+                                          # has a chat view
 ovvi shown --json                         # your session's panes in view, and the ones that float
 ovvi balance [w1:p3]                      # evens out the splits of that pane's tab, yours by default
 ```

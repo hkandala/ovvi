@@ -1,40 +1,28 @@
 import CryptoKit
 import Foundation
-import Network
 
-/// Runs commands on a remote machine through its one ControlMaster, with the system `ssh`: the user's config,
-/// agent and keys work unchanged (machines#the-ssh-connection). A run starts the master when none lives, never with
-/// a prompt; only `connect(ask:)` may ask.
+/// A run starts the master when none lives, never with a prompt; only `connect(ask:)` may ask.
 public actor SSHExec: Exec {
-    /// What ssh asks (a host key, a password, a code), answered by the user; nil cancels.
     public typealias Ask = @Sendable (String) async -> String?
 
-    /// As the user types it in a terminal: `host`, `user@host`, a `~/.ssh/config` alias.
     nonisolated let target: String
-    /// This Mac's login-shell environment: the user's agent and PATH for ssh.
     nonisolated let environment: [String: String]
     nonisolated let socket: String
-    /// The master's pid while it lives: a check costs a `kill(pid, 0)`, not a process. A reused pid reads as a live
-    /// master until its relay is needed again and does not start (`currentRelay`).
-    private var connection: pid_t?
+    /// A check costs a `kill(pid, 0)`, not a process. A reused pid reads as a live master until its relay is needed
+    /// again and does not start.
+    var connection: pid_t?
     private var starting: Task<Void, Error>?
-    /// ssh wants an answer: no start without one until `connect` (machines#health-check).
     private var blocked: HerdrError?
-    /// A start that failed for another reason (no network, host down) waits until `retry.at`, backing off.
     private var retry: (at: ContinuousClock.Instant, error: Error)?
     private var failures = 0
-    /// herdr's path from the machine's login shell, asked once per master; a nil is asked again after 30 s.
     private var lookup: (task: Task<String?, Error>, at: ContinuousClock.Instant)?
-    /// The one SSH session every run goes through (`Relay`), started by the first run on a master.
     private var relay: Relay?
     private var relayStart: Task<Relay?, Never>?
-    /// The machine's browser proxy while its cards use it (`openProxy`).
-    private var proxy: (front: SOCKSFront, users: Int)?
-    /// ssh's `-D` port and the master it is on: a new master forwards it again.
-    private var dynamic: (port: UInt16, pid: pid_t)?
-    private var forwarding: Task<UInt16, Error>?
-    /// The check of a master that a page's connection found hung (`endHung`).
-    private var ending: Task<Void, Never>?
+    var proxy: (front: SOCKSFront, users: Int)?
+    /// A new master forwards the port again.
+    var dynamic: (port: UInt16, pid: pid_t)?
+    var forwarding: Task<UInt16, Error>?
+    var ending: Task<Void, Never>?
 
     public init(target: String, local: ProcessExec) {
         self.target = target
@@ -45,6 +33,10 @@ public actor SSHExec: Exec {
         socket = Self.folder + "/" + hash + "-\(getpid())"
     }
 
+    public nonisolated var isRemote: Bool {
+        true
+    }
+
     /// A target the user may add: ssh would read a leading `-` as an option, and argv takes no spaces.
     public static func isValidTarget(_ target: String) -> Bool {
         !target.isEmpty && !target.hasPrefix("-") && !target.contains(where: \.isWhitespace)
@@ -53,11 +45,9 @@ public actor SSHExec: Exec {
     public func run(_ argv: [String]) async throws -> Channel {
         try await up(nil)
         // `exec`: the run's pid is the command's own on every `sh`, so a kill reaches it.
-        return try await currentRelay().run("exec " + Self.quoted(argv))
+        return try await currentRelay().run("exec " + shellQuoted(argv))
     }
 
-    /// The live relay, started on first use. One that does not start (no Perl, a login slower than 10 s) is tried
-    /// again by the next run.
     private func currentRelay() async throws -> Relay {
         if let relay, relay.alive {
             return relay
@@ -94,13 +84,12 @@ public actor SSHExec: Exec {
         .failed("Ovvi needs Perl on \(target): its relay did not start")
     }
 
-    /// One SSH session on the master that runs the command. Without a master it fails at once instead of opening
-    /// its own connection and prompting again, and it sends none of the user's configured forwards
-    /// (machines#the-ssh-connection).
+    /// Without a master it fails at once instead of opening its own connection and prompting again, and it sends none
+    /// of the user's configured forwards.
     private func session(_ argv: [String]) throws -> Channel {
         try ProcessExec.spawn(["/usr/bin/ssh", "-F", "/dev/null", "-o", "ControlMaster=no", "-o", "BatchMode=yes",
                                "-o", "ProxyCommand=/usr/bin/false", "-S", socket, "--", target,
-                               Self.envelope(argv)], environment)
+                               shellEnvelope(argv)], environment)
     }
 
     public func herdr() async throws -> String? {
@@ -126,7 +115,6 @@ public actor SSHExec: Exec {
         lookup = nil
     }
 
-    /// Starts the master if none lives, asking the user what ssh asks: the Connect button and a new machine.
     public func connect(ask: @escaping Ask) async throws {
         try await up(ask)
     }
@@ -141,8 +129,7 @@ public actor SSHExec: Exec {
         try? process.run()
     }
 
-    /// One start at a time; the others wait for it and use its master.
-    private func up(_ ask: Ask?) async throws {
+    func up(_ ask: Ask?) async throws {
         while let starting {
             _ = try? await starting.value
         }
@@ -227,7 +214,6 @@ public actor SSHExec: Exec {
         started()
     }
 
-    /// A new master: herdr's path is asked again (it may be installed since).
     private func started() {
         blocked = nil
         retry = nil
@@ -236,7 +222,6 @@ public actor SSHExec: Exec {
         relay = nil
     }
 
-    /// A start that failed: one that needs an answer blocks, any other backs off (2, 4 … 30 s).
     private func failed(_ status: Int32, _ text: String) -> HerdrError {
         let needsAnswer = ["Permission denied", "Host key verification failed", "passphrase",
                            "IDENTIFICATION HAS CHANGED"].contains { text.contains($0) }
@@ -252,15 +237,13 @@ public actor SSHExec: Exec {
         return error
     }
 
-    /// The master's pid, from "Master running (pid=123)".
-    private func pid() async -> pid_t? {
+    func pid() async -> pid_t? {
         await control(["-O", "check"])?.stderr.split(separator: "pid=").last
             .flatMap { pid_t($0.prefix { $0.isNumber }) }
     }
 
-    /// An `ssh -O` command to the master; nil when it did not answer within `limit` (a master stopped with SIGSTOP
-    /// never does).
-    private func control(_ command: [String], within limit: Duration = .seconds(5)) async
+    /// Nil when the master did not answer within `limit`: a master stopped with SIGSTOP never does.
+    func control(_ command: [String], within limit: Duration = .seconds(5)) async
         -> (status: Int32, stderr: String)?
     {
         guard let channel = try? ProcessExec.spawn(["/usr/bin/ssh", "-F", "/dev/null", "-S", socket] + command
@@ -270,7 +253,7 @@ public actor SSHExec: Exec {
         return try? await withTimeout(limit, onTimeout: channel.terminate) { await channel.exit() }
     }
 
-    /// The last absolute path the login shell prints after our marker (an rc file may print first).
+    /// The last absolute path after our marker: an rc file may print first.
     private func findHerdr() async throws -> String? {
         let marker = "ovvi-herdr"
         let shell = #"exec "${SHELL:-sh}" -lic "$0" </dev/null 2>/dev/null"#
@@ -278,113 +261,5 @@ public actor SSHExec: Exec {
         let path = text.components(separatedBy: marker).last?
             .split(separator: "\n").last.map(String.init) ?? ""
         return path.hasPrefix("/") ? path : nil
-    }
-}
-
-extension SSHExec {
-    /// The local port of the machine's SOCKS proxy for its browser cards (ui/browser#remote-localhost),
-    /// started by the first card; each call is balanced by a `closeProxy`. The proxy forwards through ssh's `-D` on
-    /// the master, started with the first page connection and again on each new master. No password prompt: a
-    /// machine that needs one fails the page until Connect.
-    public func openProxy() async throws -> NWEndpoint.Port {
-        if proxy == nil {
-            let front = try await SOCKSFront.start { [weak self] trouble in
-                guard let self else { throw HerdrError.disconnected("Closed") }
-                return try await dynamicPort(after: trouble)
-            }
-            // Another card's start may have won meanwhile.
-            if proxy == nil {
-                proxy = (front, 0)
-            } else {
-                front.stop()
-            }
-        }
-        proxy?.users += 1
-        return proxy?.front.port ?? .any
-    }
-
-    /// The machine's last browser card went: the proxy and ssh's `-D` end.
-    public func closeProxy() async {
-        guard let proxy else { return }
-        guard proxy.users <= 1 else {
-            self.proxy?.users -= 1
-            return
-        }
-        self.proxy = nil
-        proxy.front.stop()
-        await cancelForward()
-    }
-
-    private func cancelForward() async {
-        guard let dynamic, dynamic.pid == connection else { return }
-        self.dynamic = nil
-        _ = await control(["-O", "cancel", "-D", "127.0.0.1:\(dynamic.port)"])
-    }
-
-    /// ssh's `-D` port on the live master, forwarded once per master (one at a time), and again after a trouble.
-    private func dynamicPort(after trouble: SOCKSFront.Trouble?) async throws -> UInt16 {
-        switch trouble {
-        case let .gone(port) where dynamic?.port == port:
-            dynamic = nil
-        case let .stalled(port) where dynamic?.port == port:
-            // The pages that stalled together wait for one check.
-            let task = ending ?? Task { await endHung(port) }
-            ending = task
-            await task.value
-            if ending == task {
-                ending = nil
-            }
-        default: break
-        }
-        try await up(nil)
-        if let dynamic, dynamic.pid == connection {
-            return dynamic.port
-        }
-        if let forwarding {
-            return try await forwarding.value
-        }
-        let task = Task { try await forward() }
-        forwarding = task
-        defer {
-            if forwarding == task {
-                forwarding = nil
-            }
-        }
-        return try await task.value
-    }
-
-    /// A relay run crosses the link too: none in 3 s (more when the relay must start), and the master or its link
-    /// hangs (stopped, or a link half open after a sleep that ServerAlive has not caught yet). It ends if it still
-    /// answers here (at once: a local reply), and the next `up` starts a new one; a stopped one is left behind.
-    private func endHung(_ port: UInt16) async {
-        let hung = connection
-        guard await (try? output(["true"], timeout: .seconds(3))) == nil, connection == hung, dynamic?.port == port
-        else { return }
-        _ = await control(["-O", "exit"], within: .seconds(1))
-        if connection == hung {
-            (dynamic, connection) = (nil, nil)
-        }
-    }
-
-    /// A port ssh found taken meanwhile is tried again with another. A master that does not answer is gone, though
-    /// `kill` passes for its pid when a new process has it: a new master then.
-    private func forward() async throws -> UInt16 {
-        for _ in 0 ..< 3 {
-            guard let pid = connection, let port = SOCKSFront.freePort() else { break }
-            guard await control(["-O", "forward", "-D", "127.0.0.1:\(port)"])?.status == 0 else {
-                if await self.pid() != pid, connection == pid {
-                    connection = nil
-                    try await up(nil)
-                }
-                continue
-            }
-            dynamic = (port, pid)
-            // The last card went while ssh forwarded.
-            if proxy == nil {
-                await cancelForward()
-            }
-            return port
-        }
-        throw HerdrError.failed("ssh did not forward a port to \(target)")
     }
 }

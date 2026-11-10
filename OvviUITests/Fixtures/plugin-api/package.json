@@ -20,7 +20,6 @@
       { "id": "shout", "title": "Shout", "menu": "view", "key": "cmd+shift+y", "symbol": "megaphone" },
       { "id": "taken", "title": "Taken Key", "menu": "file", "key": "cmd+t" }
     ],
-    "handles": ["save"],
-    "permissions": ["files:read", "files:write", "git", "run", "clipboard"]
+    "handles": ["save"]
   }
 }

@@ -3,23 +3,16 @@ import HerdrKit
 import Observation
 import WebKit
 
-/// The app's side of a plugin page's `ovvi` object (web/ovvi/runtime.ts, plugins/api). Bound to its card when the
-/// card is made, so no message names a machine or another card.
 @MainActor @Observable
 final class Bridge {
     @ObservationIgnored private(set) weak var plugin: Plugin?
-    /// The page's changes of its commands (`controls.set` of a command's id): `title`, `checked`, `enabled`.
     private(set) var commands: [String: [String: Any]] = [:]
-    /// Why the page cannot run: the card shows it with its fix.
     var failure: PluginProblem?
-    /// The plugin's state value as last set (JSON), kept beside the header's values.
     @ObservationIgnored private var state: Any?
     @ObservationIgnored private var saving: Task<Void, Never>?
-    /// The page's watches by id, and the running ones while the card shows.
     @ObservationIgnored private var watches: [Int: String] = [:]
     @ObservationIgnored private var watching: [Int: Task<Void, Never>] = [:]
     @ObservationIgnored private(set) var visible = false
-    /// The state file as last written: a header change that leaves it (a badge) writes nothing.
     @ObservationIgnored private var written: Data?
     @ObservationIgnored var keyboard = false {
         didSet {
@@ -29,14 +22,11 @@ final class Bridge {
         }
     }
 
-    /// `run`s under way, and the ones waiting for a slot: two at a time per card.
     @ObservationIgnored private var runs = 0
     @ObservationIgnored private var waiting: [CheckedContinuation<Void, Never>] = []
-    /// The last git write: each waits for the one before it (git takes `index.lock`).
+    /// Git takes `index.lock`: one write at a time.
     @ObservationIgnored private var writes: Task<Void, Never>?
-    /// The toast the page waits on, by its id.
     @ObservationIgnored var toast: Int?
-    /// The app's theme as the page reads it (`ovvi.theme`), from the card's view.
     @ObservationIgnored var theme: [String: Any] = [:] {
         didSet {
             if loaded, (theme as NSDictionary) != (oldValue as NSDictionary) {
@@ -47,7 +37,6 @@ final class Bridge {
 
     @ObservationIgnored private var loaded = false
 
-    /// The API version this app gives pages.
     static let api = 3
 
     init(plugin: Plugin) {
@@ -66,13 +55,11 @@ final class Bridge {
         }
     }
 
-    /// A closed card or one of another kind leaves `plugins` before `showWeb` hears of it: its watches end here. A
-    /// pending state write goes on.
+    /// A closed card leaves `plugins` ahead of `showWeb`, so its watches end here.
     isolated deinit {
         watching.values.forEach { $0.cancel() }
     }
 
-    /// The card's context for the runtime, in the page before its code runs.
     func context() -> [String: Any] {
         guard let plugin, let store = plugin.web.store else { return [:] }
         let machine = store.machine
@@ -89,8 +76,6 @@ final class Bridge {
         return context
     }
 
-    /// Reads the instance state file once, before the first load: a relaunch, another device or a card made again
-    /// after a drop starts where it was.
     func start() async {
         loaded = true
         guard let plugin, let store = plugin.web.store, state == nil else { return }
@@ -102,22 +87,18 @@ final class Bridge {
         state = file?["state"].flatMap { $0 is NSNull ? nil : $0 }
     }
 
-    /// An event for the page's `ovvi.on` handlers (and the runtime's own: watches, toasts).
     func event(_ name: String, _ data: Any) {
         plugin?.web.view.callAsyncJavaScript("window.ovvi_receive?.(name, data)", arguments: ["name": name,
                                                                                               "data": data],
                                              in: nil, in: .page)
     }
 
-    /// The card moved: after `card.go`, Back, Forward or a rename from elsewhere.
     func place(_ arg: String, at landing: String?) {
         var place: [String: Any] = ["arg": arg]
         place["at"] = landing
         event("place", place)
     }
 
-    /// The card came into view or left it (`PaneViewRegistry.showWeb`: the shown tab's cards and the floating ones):
-    /// `visible`, and the watches run only in view; coming into view calls each watch once.
     func shown(_ yes: Bool) {
         guard yes != visible else { return }
         visible = yes
@@ -143,36 +124,26 @@ final class Bridge {
         }
     }
 
-    /// 500 ms after the last change of the state or a header value, the instance state file on the card's machine:
-    /// `{"controls": …, "state": …}`, at most 256 KiB, last writer wins. Not after the pane closed: its device removed
-    /// the file.
-    private func save() {
-        guard let plugin, let store = plugin.web.store else { return }
+    /// False when the file, controls and state, is over 256 KiB or not JSON.
+    @discardableResult private func save() -> Bool {
+        guard let plugin, let store = plugin.web.store else { return true }
         var file: [String: Any] = ["controls": plugin.header.values]
         file["state"] = state
         guard let data = try? JSONSerialization.data(withJSONObject: file, options: .sortedKeys),
-              data.count <= 256 << 10, data != written else { return }
+              data.count <= 256 << 10
+        else { return false }
+        guard data != written else { return true }
         written = data
-        let path = plugin.label.statePath(session: store.session), terminalID = plugin.terminalID
-        saving?.cancel()
-        let previous = saving
-        saving = Task { [weak store] in
-            try? await Task.sleep(for: .milliseconds(500))
-            // After a write still on its way: last writer wins on a slow machine too.
-            await previous?.value
-            guard !Task.isCancelled, let store, store.panes.contains(where: { $0.terminalID == terminalID })
-            else { return }
-            await store.machine.exec().write(home: path, String(decoding: data, as: UTF8.self))
-        }
+        store.saveState(&saving, path: plugin.label.statePath(session: store.session), data: data,
+                        terminalID: plugin.terminalID)
+        return true
     }
 
-    /// One message from the page, `{ call, args }`: its JSON reply, or the error the page's promise rejects with
-    /// (`<code>: <text>`).
     func call(_ message: [String: Any]) async -> (Any?, String?) {
         let name = message["call"] as? String ?? "", args = message["args"] as? [String: Any] ?? [:]
         do {
             guard let plugin, failure == nil || name == "card.failed" else { throw PluginError("closed", "Closed") }
-            // A page still running after Remove (its card shows the plugin missing): it can do nothing more.
+            // A page still running after Remove can do nothing more.
             guard PluginTrust.shared.allows(plugin.manifest) else { throw PluginError("closed", "Removed") }
             let reply = try await answer(name, args, plugin)
             guard let reply else { return (nil, nil) }
@@ -188,7 +159,6 @@ final class Bridge {
         }
     }
 
-    /// The reply as JSON values, or as JSON already (`Data`); nil for none.
     private func answer(_ name: String, _ args: [String: Any], _ plugin: Plugin) async throws -> Any? {
         switch name {
         case "run": return try await run(args)
@@ -212,11 +182,10 @@ final class Bridge {
         case "card.go":
             guard let arg = args["arg"] as? String else { throw PluginError("failed", "arg is missing") }
             plugin.go(arg, at: args["at"] as? String)
-        // The runtime's ⌘← and ⌘→: Back and Forward, when the card has a place that way.
         case "card.step": plugin.web.view.step?(args["back"] as? Bool == true)
         case "card.ready":
             plugin.web.ready = true
-            // A change between the context and the runtime's start had no one to hear it.
+            // A change between the context and the runtime's start has no one to hear it.
             event("visible", visible)
             event("keyboard", keyboard)
         case "card.setDirty": plugin.web.dirty = args["dirty"] as? Bool == true
@@ -240,11 +209,12 @@ final class Bridge {
     }
 
     private func keep(_ value: Any) throws {
-        guard let data = try? JSONSerialization.data(withJSONObject: [value]), data.count <= 256 << 10 else {
+        let kept = state
+        state = value is NSNull ? nil : value
+        guard save() else {
+            state = kept
             throw PluginError("tooLarge", "The state is over 256 KiB, or not JSON")
         }
-        state = value is NSNull ? nil : value
-        save()
     }
 
     private func watch(_ name: String, _ args: [String: Any]) throws {
@@ -264,12 +234,10 @@ final class Bridge {
     func calls(_ name: String, _ args: [String: Any]) async throws -> Data {
         guard let plugin, let store = plugin.web.store else { throw PluginError("closed", "Closed") }
         let data = try JSONSerialization.data(withJSONObject: args)
-        let calls = await PluginCalls(exec: store.machine.exec(), remote: store.machine.isRemote,
-                                      gitRuns: name != "run" ? store.gitRuns() : false)
+        let calls = await PluginCalls(exec: store.machine.exec(), gitRuns: name != "run" ? store.gitRuns() : false)
         return try await calls.call(name, data)
     }
 
-    /// In the pane's folder unless the page says otherwise.
     private func run(_ args: [String: Any]) async throws -> Data {
         while runs >= 2 {
             await withCheckedContinuation { waiting.append($0) }
@@ -284,7 +252,6 @@ final class Bridge {
         return try await calls("run", args)
     }
 
-    /// After the git write before it, whether it worked or not.
     private func serial(_ body: @escaping () async throws -> Data) async throws -> Data {
         let previous = writes
         let write = Task { () -> Result<Data, any Error> in
@@ -299,9 +266,12 @@ final class Bridge {
         return try await write.value.get()
     }
 
-    /// A page loads again: the old page's watches and toast go with it.
     func reset() {
         watching.values.forEach { $0.cancel() }
+        // The page that asked is gone.
+        if toast != nil {
+            plugin?.web.toast = nil
+        }
         (watching, watches, commands, toast) = ([:], [:], [:], nil)
     }
 }

@@ -1,8 +1,7 @@
 import HerdrKit
 import SwiftUI
 
-/// The place a File Explorer card shows, by the rule and the extensions its page picks it by (`kind` in
-/// plugins/explorer/place.ts, places.json).
+/// Must match `kind` in plugins/explorer/src/place.ts.
 enum ExplorerPlace: String, CaseIterable {
     case files, file, preview, markdown
 
@@ -12,12 +11,15 @@ enum ExplorerPlace: String, CaseIterable {
             self = .files
         } else if places["markdown", default: []].contains(ext) {
             self = .markdown
-        } else if ext.isEmpty || places["text", default: []].contains(ext) {
-            self = .file
         } else {
             self = ["image", "pdf", "audio", "video", "binary"].contains { places[$0, default: []].contains(ext) }
                 ? .preview : .file
         }
+    }
+
+    init?(plugin: String, _ arg: String) {
+        guard plugin == "explorer" else { return nil }
+        self.init(arg)
     }
 
     var symbol: String {
@@ -32,16 +34,14 @@ enum ExplorerPlace: String, CaseIterable {
 
 extension PaneLabel {
     var symbol: String {
-        manifest.map { $0.id == "explorer" ? ExplorerPlace(place).symbol : $0.icon } ?? Registry.missing
+        manifest.map { ExplorerPlace(plugin: $0.id, arg)?.symbol ?? $0.icon } ?? Registry.missing
     }
 
-    /// Its plugin; nil when it is not on this Mac (a missing plugin's card shows).
     var manifest: PluginManifest? {
         Registry.plugin(plugin)
     }
 
-    /// The card's and the tab's title, from the label alone (menus ask for every tab's): the file's or the root's
-    /// name, a diff's `Working Tree` or short hash. A page's `document.title` comes first (`Page.pluginTitle`).
+    /// From the label alone: menus ask for every tab's title.
     var title: String {
         if manifest?.id == "git", let source = diffSource {
             return source == "uncommitted" ? "Working Tree" : String(source.prefix(7))
@@ -53,7 +53,7 @@ extension PaneLabel {
 
 extension Page {
     func pluginTitle(_ pane: HostStore.Pane, _ label: PaneLabel) -> String {
-        let title = pane.terminalID.flatMap(terminals.builtPlugin)?.web.title ?? ""
+        let title = pane.terminalID.flatMap { terminals.plugins[$0] }?.web.title ?? ""
         return title.isEmpty ? label.title : title
     }
 
@@ -65,16 +65,13 @@ extension Page {
 }
 
 extension Image {
-    /// An SF Symbol, or the app's own symbol of that name (`Assets.xcassets`), for what a manifest names: a plugin's
-    /// icon, a control's or a menu item's symbol.
     init(symbol name: String) {
         self = NSImage.own.contains(name) ? Image(name) : Image(systemName: name)
     }
 }
 
 extension NSImage {
-    /// The app's own symbols: Git's `source.branch` and Word Wrap's `text.wrap` (Material Design Icons'
-    /// `source-branch` and `wrap`).
+    /// Material Design Icons' `source-branch` and `wrap`.
     static let own: Set = ["source.branch", "text.wrap"]
 
     static func symbol(_ name: String) -> NSImage? {
@@ -82,8 +79,6 @@ extension NSImage {
     }
 }
 
-/// A plugin pane's card (not the browser's, which has its own), made on first use from its label and kept by
-/// terminal id as terminals are: what its header and content share, and its page.
 @MainActor @Observable
 final class Plugin {
     let terminalID: String
@@ -91,7 +86,6 @@ final class Plugin {
         didSet { name() }
     }
 
-    /// The pane's label as the last snapshot has it: the card's own renames come later. Its iid never changes.
     private(set) var label: PaneLabel
     let manifest: PluginManifest
     let web: WebCard
@@ -104,7 +98,7 @@ final class Plugin {
         self.paneID = paneID
         self.label = label
         self.manifest = manifest
-        web = WebCard(plugin: manifest.id, arg: label.place, place: place, store: store)
+        web = WebCard(plugin: manifest.id, arg: label.arg, place: place, store: store)
         header = Header(manifest: manifest)
         name()
         web.bridge = Bridge(plugin: self)
@@ -119,22 +113,19 @@ final class Plugin {
     }
 
     func name() {
-        let page = manifest.id == "explorer" ? ExplorerPlace(web.arg).rawValue : manifest.id
+        let page = ExplorerPlace(plugin: manifest.id, web.arg)?.rawValue ?? manifest.id
         web.view.setAccessibilityIdentifier("\(page).\(paneID).page")
     }
 
-    /// A plugin's page takes what its manifest `handles` (`save`, `find`); a File Explorer saves in File and Markdown,
-    /// and finds there and in the tree (its filter); Git finds (filters) in a diff, not on its home.
     func handles(_ command: String) -> Bool {
         guard manifest.handles.contains(command) else { return false }
         if manifest.id == "git" {
             return PaneLabel(plugin: "git", iid: "", arg: web.arg).diffSource != nil
         }
-        let place = manifest.id == "explorer" ? ExplorerPlace(web.arg) : nil
+        let place = ExplorerPlace(plugin: manifest.id, web.arg)
         return place != .preview && (place != .files || command == "find")
     }
 
-    /// A menu command for the card's page: `save`, `find`, `findNext` or `findPrevious`.
     func command(_ name: String) {
         web.bridge?.event(name, NSNull())
     }
@@ -143,11 +134,10 @@ final class Plugin {
         web.dirty
     }
 
-    /// The places shown before and after this one, as a browser's history: an argument and its landing each.
     private(set) var back: [(arg: String, at: String?)] = []
     private(set) var forward: [(arg: String, at: String?)] = []
-    /// The arguments the card renamed its label to while its renames are under way: a snapshot read before one is no
-    /// rename from elsewhere. Cleared once the last one returned (a write waits for the snapshot after it).
+    /// A snapshot read ahead of a rename is no rename from elsewhere. Cleared once the last one returns: a write waits
+    /// for the snapshot after it.
     @ObservationIgnored private var renamed: Set<String> = []
     @ObservationIgnored private var renaming = 0
 
@@ -159,17 +149,13 @@ final class Plugin {
         !forward.isEmpty
     }
 
-    /// Shows another place in the card, after the one it shows; the same place with a landing goes there. The tree
-    /// comes back with the file it opened revealed.
     func go(_ arg: String, at place: String?) {
         guard arg != web.arg else {
             web.bridge?.place(arg, at: place)
             return
         }
-        // A path that makes no label (a control character, over 1024 characters) opens nothing, as a linked open.
-        guard PaneLabel(PaneLabel(plugin: manifest.id, iid: label.iid, arg: arg).text) != nil else { return }
+        guard PaneLabel(plugin: manifest.id, iid: label.iid, arg: arg).fits else { return }
         leave { plugin in
-            // Back lands where it came back from: the tree reveals the file it opened, Git's home the change.
             plugin.back.append((plugin.web.arg, place ?? arg))
             plugin.forward = []
             plugin.show(arg, at: place)
@@ -192,8 +178,6 @@ final class Plugin {
         }
     }
 
-    /// Open With's pick of another plugin: the pane's label names it, with the same iid and argument, and the card is
-    /// made again as its card.
     func reopen(as other: PluginManifest) {
         leave { plugin in
             let text = PaneLabel(plugin: other.id, iid: plugin.label.iid, arg: plugin.web.arg).text
@@ -202,7 +186,6 @@ final class Plugin {
         }
     }
 
-    /// Unsaved edits ask first: Back, a click or a reload would drop them. The toast keeps the card weakly.
     func leave(_ then: @escaping (Plugin) -> Void) {
         guard web.dirty else { return then(self) }
         web.bridge?.dropToast()
@@ -212,7 +195,6 @@ final class Plugin {
                           main: .init(title: "Keep Editing") {})
     }
 
-    /// The label follows the place, so a reload or a card made again comes back to it.
     private func show(_ arg: String, at place: String?) {
         web.show(arg, at: place)
         name()
@@ -230,12 +212,10 @@ final class Plugin {
         }
     }
 
-    /// A snapshot's new label: the card's own rename, or a new place from elsewhere (an agent's `herdr pane rename`),
-    /// shown after the one the card shows, as a browser's.
-    /// ponytail: a place from elsewhere drops unsaved edits without asking, as a rename always did.
+    /// ponytail: a place from elsewhere drops unsaved edits without asking.
     func follow(_ label: PaneLabel) {
         self.label = label
-        let arg = label.place
+        let arg = label.arg
         if arg != web.arg, !renamed.contains(arg) {
             back.append((web.arg, nil))
             forward = []
@@ -250,7 +230,6 @@ struct BackForward: View {
     @Environment(\.look) private var look
 
     var body: some View {
-        // No opacity of their own: ChromeStyle dims a disabled button.
         HStack(spacing: 0) {
             IconButton(symbol: "chevron.left", help: "Back", key: .back, size: 22) { plugin.goBack() }
                 .disabled(!plugin.canGoBack)
@@ -263,10 +242,8 @@ struct BackForward: View {
     }
 }
 
-/// One line at the top of the card with two buttons, the second the default. A button's action ends it.
 struct Toast {
     let text: String
-    /// None: the main button alone.
     let other: Action?
     let main: Action
 
@@ -278,15 +255,12 @@ struct Toast {
 }
 
 extension HostStore.Pane {
-    /// A browser's or a plugin's label, also of a plugin not on this Mac: the pane runs only its placeholder.
     var plugin: PaneLabel? {
         PaneLabel(label)
     }
 }
 
 extension HostStore {
-    /// A new plugin pane's label, its iid unique in the session. A new browser card on a remote machine starts on the
-    /// network its setting names (ui/browser#this-macs-network).
     func newLabel(_ plugin: PluginManifest, arg: String) -> PaneLabel {
         let taken = Set(panes.compactMap { PaneLabel($0.label)?.iid })
         let label = PaneLabel(plugin: plugin.id, iid: PaneLabel.newIID(taken: taken), arg: arg)

@@ -1,50 +1,30 @@
 import Foundation
 
-/// The oldest herdr release this kit works with.
 let herdrVersion = "0.9.3"
 
-/// What `Multiplexer.updates()` delivers.
 public enum Update: Sendable {
     case snapshot(Snapshot)
     case error(HerdrError)
-    /// Read off the event itself, not the next snapshot: one read sooner.
-    case float(FloatRequest)
-    /// A copy request's text (talking-to-herdr#copy-requests).
-    case copy(String)
-    /// The `ovvi` command rang on the pane (agent-control/protocol): `id` names its request in the machine's mailbox.
     case request(id: String, pane: String)
 }
 
-/// Talks to one herdr session: requests over `remote-api-bridge`, one events stream, paced snapshots. herdr runs
-/// by the absolute path its machine's login shell gives (`Exec.herdr()`).
 public actor HerdrClient {
     nonisolated let session: String
     nonisolated let exec: any Exec
     nonisolated let timeout: Duration
-    /// The wait for a spaced read's start; a test holds it to count reads without the wall clock.
     nonisolated let wait: @Sendable (ContinuousClock.Instant) async -> Void
 
     private var out: AsyncStream<Update>.Continuation?
-    /// When the last good snapshot was read; nil since the start or the last failure.
     private var lastRead: ContinuousClock.Instant?
     private var reading = false
     private var readAgain = false
-    /// Set by a write's refresh: the next read is not spaced.
     private var hurry = false
-    /// The wait before a spaced read, which a write's refresh cuts short.
     private var pause: Task<Void, Never>?
     private var heartbeat: Task<Void, Never>?
     private var events: Task<Void, Never>?
-    /// Agent panes of the open events stream; nil when no stream is open.
     private var subscribed: [String]?
-    /// The float requests' nonces (one per click).
-    private var floated: Set<String> = []
-    /// The copy requests' ids (one per copy).
-    private var copied: Set<String> = []
-    /// The last 256 `ovvi` requests' ids, oldest first.
     private var asked: [String] = []
 
-    /// `timeout` bounds each request.
     public init(
         session: String,
         exec: any Exec,
@@ -59,7 +39,6 @@ public actor HerdrClient {
 
     // MARK: Requests
 
-    /// Sends one request through a new `remote-api-bridge` run and decodes its `result`.
     nonisolated func call<Result: Decodable & Sendable>(
         _ method: String,
         _ params: [String: any Sendable] = [:],
@@ -90,8 +69,6 @@ public actor HerdrClient {
         return try decode(SessionList.self, list).sessions
     }
 
-    /// `herdr session stop` or `delete` of this session; herdr's reason when it refuses. Bounded by `timeout`, as a
-    /// request is.
     nonisolated func session(_ command: String) async throws {
         let channel = try await exec.run([herdr(), "--session", session, "session", command, session, "--json"])
         channel.closeInput()
@@ -113,10 +90,8 @@ public actor HerdrClient {
         try await (call("pane.process_info", ["pane_id": paneID]) as ProcessInfoResult).processInfo.program
     }
 
-    /// Throws `.unsupported` when herdr is too old.
     public nonisolated func snapshot() async throws -> Snapshot {
         var snapshot = try await (call("session.snapshot") as SnapshotResult).snapshot
-        // Leading digits per part, so 0.9.4-rc1 counts as 0.9.4.
         let numbers = { (version: String) in
             version.split(separator: ".").map { Int($0.prefix(while: \.isNumber)) ?? 0 }
         }
@@ -136,7 +111,6 @@ public actor HerdrClient {
 
     // MARK: Updates
 
-    /// Paced as talking-to-herdr, Events says.
     public func updates() -> AsyncStream<Update> {
         precondition(out == nil, "updates() is called once per client")
         let (stream, out) = AsyncStream<Update>.makeStream()
@@ -146,7 +120,6 @@ public actor HerdrClient {
         return stream
     }
 
-    /// A write's read (talking-to-herdr, Events): right after the read in flight, never spaced.
     public func refresh() {
         hurry = true
         pause?.cancel()
@@ -169,14 +142,13 @@ public actor HerdrClient {
                     let snapshot = try await snapshot()
                     lastRead = .now
                     out?.yield(.snapshot(snapshot))
-                    // A ring while the stream opened again came with no event.
-                    snapshot.panes.forEach { ask($0.tokens?.request, $0.id) }
+                    // A ring made while the stream reopens sends no event.
+                    snapshot.panes.forEach { ask($0.tokens?[Tokens.request], $0.id) }
                     let agentPanes = snapshot.agents.map(\.paneID).sorted()
                     if out != nil, agentPanes != subscribed {
                         subscribe(agentPanes)
                     }
                 } catch {
-                    // Too old too: the heartbeat finds herdr again once it is updated.
                     lastRead = nil
                     out?.yield(.error(error as? HerdrError ?? .failed("\(error)")))
                 }
@@ -192,7 +164,6 @@ public actor HerdrClient {
         }
     }
 
-    /// The least time from one read's start to the next one's while events keep coming.
     static let spacing = Duration.milliseconds(250)
 
     private func stop() {
@@ -201,8 +172,6 @@ public actor HerdrClient {
         events?.cancel()
     }
 
-    /// (Re)opens the one events stream. Every line on it means "read the snapshot again"; a pane's float, copy and
-    /// `ovvi` requests are the only payloads read.
     private func subscribe(_ agentPanes: [String]) {
         events?.cancel()
         subscribed = agentPanes
@@ -216,8 +185,7 @@ public actor HerdrClient {
             // herdr sends it on a terminal title change; a title can pick a pane's icon.
             "pane.updated", "layout.updated",
         ]
-        // No *.focused: the app ignores herdr's focus. Each agent entry makes herdr poll that pane
-        // every 100 ms, so plain shells are left out.
+        // Each agent entry makes herdr poll that pane every 100 ms, so plain shells are left out.
         let subscriptions = types.map { ["type": $0] }
             + agentPanes.map { ["type": "pane.agent_status_changed", "pane_id": $0] }
         let params = ["subscriptions": subscriptions]
@@ -231,20 +199,12 @@ public actor HerdrClient {
                     let message = try? JSONDecoder().decode(EventLine.self, from: Data(line.utf8))
                     // events_lost, pane_not_found: start over.
                     guard message?.error == nil else { break }
-                    // Once: every change of the asking pane sends its tokens again until they expire.
-                    if let request = FloatRequest(message?.data?.pane?.tokens), floated.insert(request.nonce).inserted {
-                        out?.yield(.float(request))
-                    }
-                    if let id = message?.data?.pane?.tokens?["ovvi-copy"], copied.insert(id).inserted {
-                        copy(id)
-                    }
-                    ask(message?.data?.pane?.tokens?["ovvi-req"], message?.data?.pane?.paneID)
-                    // Every other line, the first too (subscription_started: catch up on what came before it).
+                    ask(message?.data?.pane?.tokens?[Tokens.request], message?.data?.pane?.paneID)
+                    // The first line too: subscription_started means catch up on what came ahead of it.
                     read()
                 }
                 channel.terminate()
             } catch {}
-            // The stream ended on its own: wait a little, then a fresh snapshot opens it again.
             try? await Task.sleep(for: .seconds(1))
             guard !Task.isCancelled else { return }
             subscribed = nil
@@ -252,7 +212,7 @@ public actor HerdrClient {
         }
     }
 
-    /// Yields an `ovvi` request once per id: herdr sends the token again on each change of the pane until it expires.
+    /// herdr sends the token again on each change of the pane until it expires.
     private func ask(_ id: String?, _ pane: String?) {
         // ponytail: a linear search of 256 ids per ring.
         guard let id, let pane, AgentRequest.isID(id), !asked.contains(id) else { return }
@@ -260,23 +220,6 @@ public actor HerdrClient {
         out?.yield(.request(id: id, pane: pane))
     }
 
-    /// Reads a copy request's text from `/tmp/ovvi-copy-<id>` on the session's machine, as base64 (Linux's wraps
-    /// lines), and deletes the file. Nothing comes for a missing file: a second Mac showing the pane read it first.
-    private func copy(_ id: String) {
-        // A UUID only: the id goes into the path.
-        guard UUID(uuidString: id) != nil else { return }
-        Task {
-            let script = #"f=/tmp/ovvi-copy-$1; base64 <"$f" && rm -f "$f""#
-            if let text = try? await exec.output(["sh", "-c", script, "sh", id]), !text.isEmpty,
-               let data = Data(base64Encoded: text, options: .ignoreUnknownCharacters)
-            {
-                out?.yield(.copy(String(decoding: data, as: UTF8.self)))
-            }
-        }
-    }
-
-    /// The one health check (machines, Health check): a snapshot read now and every 30 s, every 2 s while reads fail.
-    /// It also catches events the stream missed, and finds a stopped session again once it answers.
     private func beat() async {
         repeat {
             // A 2 s tick, so a read that fails mid-wait (the session stopped) is retried soon.
@@ -321,7 +264,7 @@ private struct EventLine: Decodable {
 
 private struct EventPane: Decodable {
     let paneID: String?
-    let tokens: [String: String]?
+    let tokens: Tokens?
 
     enum CodingKeys: String, CodingKey {
         case paneID = "pane_id", tokens
@@ -345,30 +288,6 @@ struct ExportResult: Decodable {
     let layout: Layout
 }
 
-/// Runs body; past the deadline, calls onTimeout (which must make body end) and throws `.timeout`.
-func withTimeout<T: Sendable>(
-    _ duration: Duration,
-    onTimeout: @escaping @Sendable () -> Void,
-    _ body: @escaping @Sendable () async throws -> T,
-) async throws -> T {
-    try await withThrowingTaskGroup(of: T.self) { group in
-        group.addTask(operation: body)
-        group.addTask {
-            try await Task.sleep(for: duration)
-            throw HerdrError.timeout
-        }
-        defer { group.cancelAll() }
-        do {
-            guard let value = try await group.next() else { throw HerdrError.timeout }
-            return value
-        } catch {
-            onTimeout()
-            throw error
-        }
-    }
-}
-
-/// One NDJSON line, keys sorted so tests can compare lines; nil when the object is not JSON.
 func jsonLine(_ object: [String: Any]) -> String? {
     guard JSONSerialization.isValidJSONObject(object),
           let data = try? JSONSerialization.data(withJSONObject: object, options: .sortedKeys)

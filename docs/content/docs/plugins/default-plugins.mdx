@@ -64,11 +64,7 @@ changed that value in the card's header: the card keeps its own choice.
   secondary text, as a terminal tab's "zsh ovvi"
   ([Tab bar](/docs/ui/window#tab-bar)). A path with a control character, or
   over 1024 characters, makes no label, so nothing opens.
-- The words of the kinds before the plugin system still open: `file`,
-  `preview`, `markdown` and `files` open a File Explorer, and `diff` opens
-  Git. An old `files` label names its root without the `/`, and it still
-  opens the tree. An old `diff` label (`<root> <source>`) still opens its
-  diff. The root's `/` keeps a root whose last word looks like a hash
+- The root's `/` keeps a root whose last word looks like a hash
   (`My Project abcdef0`) a home.
 - The placeholder prints the plugin's name, the argument and "Shown in Ovvi"
   in the middle of the pane in herdr's TUI, and follows the label when it
@@ -143,10 +139,9 @@ the click.
   first), from the lists in the plugin's `places.json`: `.md`, `.markdown`
   and `.mdx` open Markdown. Images, PDF, audio and video open Preview. Known
   kinds that are not text (archives, Office documents, fonts, disk images)
-  open Preview's info view. Everything else opens File: a name with no
-  extension (`Makefile`), a name the system does not know (`.rs`), `.ts`
-  (TypeScript, not an MPEG-2 stream) and `.plist`. File shows the info view
-  for a file that is not UTF-8.
+  open Preview's info view. Everything else opens File, also a name with no
+  extension (`Makefile`). File shows the info view for a file that is not
+  UTF-8.
 - Another plugin with a pattern for a file takes it from File Explorer,
   whose pattern is `*` ([Which plugin opens a file](/docs/plugins/manifest#which-plugin-opens-a-file)).
 - A landing (a line, a diff's file, the row to reveal) is used once, by the
@@ -300,7 +295,7 @@ File, Preview and Markdown share one row 2, with the same order, spacing and
 - **On the right:** Preview's page and zoom, Word Wrap (File only), Show in
   File Explorer, **Open in Browser** (`globe`, File on an HTML file on This
   Mac only: the page in a browser pane in a new tab, selected), the mode
-  (Markdown only), then Open With.
+  and the lock (Markdown only), then Open With.
 - **The breadcrumbs** are the file's path, its parts with `›` between them
   and the first part in secondary text. Inside a Git repository the path
   starts at the repository's root, with the root's name first
@@ -403,7 +398,7 @@ selection in the accent at 24 %. A 4 pt gap sits under the header.
 
 - The tree and the letters update after each change under the root while
   the card shows. The open folders list again. A root that cannot be listed
-  shows "Can't list ‹root›" in the middle of the card, under a folder icon.
+  shows "Can't list ‹root›" in the middle of the card, under `folder.badge.questionmark`.
 - **The status bar.** A 27 pt line under the tree (16 pt buttons), with
   10 pt more above its text, so the space above the text and below it to
   the card's edge (the card's 10 pt inset) is the same. It hides only while the root cannot
@@ -501,10 +496,7 @@ An editable text view (CodeMirror 6).
   The card keeps its mode, its lock and Source's fold: another Markdown file in
   the card, Back and Forward, and a relaunch show them as last left. A card
   whose user never chose opens in the settings' mode and lock (Rich Text,
-  locked). A card kept from before the lock maps its mode: Read is Rich Text
-  locked, Live Edit Rich Text unlocked, Source is Source folded, Side by Side
-  Source with the page shown. The setting kept Source; Read, Live Edit and
-  Side by Side became Rich Text.
+  locked).
 - **Rich Text is one view, locked or not.** It is one editor (CodeMirror
   with Markdown, GitHub's flavor), drawn as rendered Markdown: a live
   preview. It is a 640 pt column, 28 pt under row 2, in the system font 1 pt
@@ -842,7 +834,8 @@ over the card that uses it, because a disabled menu item swallows its key.
   Next and Find Previous with the same keys.
 - Replace Pane (⇧⌘R) gives a fresh shell with the chooser. Close, Replace Pane
   and the commands that change a pane's kind ask nothing while the pane runs
-  only its placeholder. Unsaved edits are not a reason to ask.
+  only its placeholder. A close with unsaved edits shows its tab and the
+  "‹name› has unsaved edits." toast first.
 
 ## Remote machines
 
@@ -911,9 +904,9 @@ the machine. The limits:
 - **Parsing.** CodeMirror parses the lines in view in slices of 50 ms until
   they are parsed, whatever has focus. Its own parser in idle time runs on a
   budget of the wall clock (3 s in 30 s) and starts a new budget only while
-  the editor has focus. A page that the system paused in the middle of a
-  parse spent the budget at once, and a card without focus showed its
-  Markdown raw.
+  the editor has focus. Without the slices, a page that the system pauses in
+  the middle of a parse spends the budget at once, and a card without focus
+  shows its Markdown raw.
 - **Inspect.** Every card is inspectable: Show Web Inspector in the card's menu, or
   Safari's Develop menu.
 

@@ -1,20 +1,10 @@
 import HerdrKit
 import SwiftUI
 
-/// A window's view until it shows a session (ui/window#new-window): Ovvi's icon and name over one glass list of every
-/// machine's sessions, running first, each machine's New Session, then Add Machine and Edit Machines. A window shows
-/// it whenever it would otherwise connect by itself: at launch with nothing to restore, on ⌘N, when the app reopens
-/// with no window. A pick opens that session as the window's first page. A machine whose sessions cannot be read lists
-/// the row that fixes it (Install herdr, Connect).
 struct SessionPicker: View {
     let pages: WindowPages
-    /// Each machine's sessions by id, once read; an error when they could not be. Until then its known ones show.
     @State private var read: [String: Result<[Session], Error>] = [:]
-    /// A machine still reading after 150 ms shows its spinner; a quicker answer shows none.
     @State private var slow = false
-    @State private var fullScreen = false
-    @State private var lightsOff = 0
-    /// The window's content height: the list gets what the icon, the name and the panel's own rows leave.
     @State private var room: CGFloat = 900
     private var settings = AppSettings()
     @Environment(\.colorScheme) private var colorScheme
@@ -25,11 +15,8 @@ struct SessionPicker: View {
     }
 
     /// A run against a throwaway session (`-session`, a test's `-defaultSession`) lists only throwaway ones, never the
-    /// user's, and its fix rows open that session, not `default`.
-    private static let throwaway: String? = {
-        let arguments = UserDefaults.standard.volatileDomain(forName: UserDefaults.argumentDomain)
-        return (arguments["session"] ?? arguments["defaultSession"]) as? String
-    }()
+    /// user's.
+    private static let throwaway = MachineList.session ?? MachineList.defaultSession
 
     var body: some View {
         let look = Look(style: settings.style, dark: colorScheme == .dark, contrast: colorSchemeContrast == .increased)
@@ -37,7 +24,6 @@ struct SessionPicker: View {
             Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 80, height: 80)
                 .accessibilityHidden(true)
             Text("Ovvi").font(.system(size: 22, weight: .semibold)).padding(.top, 8)
-            // The machine rows stay in view under the scrolled sessions; the panel's 8 pt goes round them too.
             FilterList(
                 prompt: "Find a session",
                 name: "picker",
@@ -47,38 +33,30 @@ struct SessionPicker: View {
             ) {}
                 .padding(8)
                 .frame(width: 440)
-                .floatingGlass(in: .rect(cornerRadius: 14))
+                .floatingGlass(in: .panel)
                 .padding(.top, 24)
         }
-        // Lifted by a title row's height, so the column centers in the room under the title row.
         .padding(.bottom, TitleBar.height)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { room = $0 }
         .environment(\.look, look)
-        // Again for a machine added meanwhile.
-        .task(id: machines.map(\.id)) { await readAll() }
+        .task(id: MachineList.shared.all.map(\.id)) { await readAll() }
         .task {
             try? await Task.sleep(for: .milliseconds(150))
             slow = true
         }
         .windowChrome(look)
-        .background(WindowReader(pages: pages, fullScreen: $fullScreen, lightsOff: $lightsOff))
+        .background(WindowReader(pages: pages, fullScreen: .constant(false), lightsOff: .constant(0)))
         .navigationTitle("Ovvi")
-        // A notification click or a float URL while no window has a page opens its session here.
         .onAppear { WindowPages.takeAsked = takeAsked }
         .onDisappear { WindowPages.takeAsked = nil }
-        // A field's Esc goes on to here: the window closes, as nothing else in it has Esc.
         .onExitCommand { pages.window?.performClose(nil) }
     }
 
-    private var machines: [Machine] {
-        [.thisMac] + MachineList.shared.list
-    }
-
-    /// Every machine at once; each shows as soon as it answers, and within 15 s whatever the others do: a read can wait
-    /// on another window's ssh question (`SSHExec.up`) or a slow login, and then says so instead of spinning.
+    /// Within 15 s whatever the others do: a read can wait on another window's ssh question (`SSHExec.up`) or a slow
+    /// login.
     private func readAll() async {
-        let unread = machines.filter { read[$0.id] == nil }
+        let unread = MachineList.shared.all.filter { read[$0.id] == nil }
         let reads = unread.map { machine in
             Task {
                 let result = await Self.sessions(on: machine)
@@ -101,7 +79,7 @@ struct SessionPicker: View {
     }
 
     private static func sessions(on machine: Machine) async -> Result<[Session], Error> {
-        let client = await HerdrClient(session: "default", exec: machine.exec())
+        let client = await HerdrClient(session: Session.defaultName, exec: machine.exec())
         do {
             return try await .success(client.sessions())
         } catch {
@@ -109,19 +87,14 @@ struct SessionPicker: View {
         }
     }
 
-    /// A group per machine: its running sessions, then its stopped ones, then New Session; a spinner row while it
-    /// reads, or the row that fixes why it cannot. Typed text keeps the sessions it matches (and a machine's other
-    /// rows when it matches the machine's name), the machines with a match first, so Return opens the first match.
-    /// Add Machine and Edit Machines stay at the foot.
     private func items(_ filter: String) -> [FilterList.Item] {
         let typed = filter.trimmingCharacters(in: .whitespaces)
-        let groups = machines.map { machine in
+        let groups = MachineList.shared.all.map { machine in
             let (rows, sessions) = group(machine, typed: typed)
             let kept = typed.isEmpty || machine.name.matches(filter) ? rows
                 : rows.filter { sessions.contains($0.id) || $0.id.hasSuffix(".+new") }
             return (rows: kept, matched: !typed.isEmpty && (!sessions.isEmpty || machine.name.matches(filter)))
         }
-        // A stable sort: the machine order stays inside each half.
         let sessions = (groups.filter(\.matched) + groups.filter { !$0.matched }).flatMap(\.rows)
         return sessions + [
             FilterList.Item(id: "+add-machine", symbol: "plus.circle", title: "Add Machine…", section: "") {
@@ -133,13 +106,11 @@ struct SessionPicker: View {
         ]
     }
 
-    /// The machine's rows, and the ids of the sessions a typed name matches. The app's own rows' ids start with `+`,
-    /// which no session name has.
+    /// The app's own rows' ids start with `+`, which no session name has.
     private func group(_ machine: Machine, typed: String) -> ([FilterList.Item], Set<String>) {
-        let fallback = Self.throwaway ?? "default"
+        let fallback = Self.throwaway ?? Session.defaultName
         switch read[machine.id] ?? KnownSessions.of(machine).map(Result.success) {
         case nil:
-            // The row's place from the first frame, its words and spinner only once the read is slow.
             var reading = row(
                 machine,
                 "+reading",
@@ -160,8 +131,6 @@ struct SessionPicker: View {
                 }
             }
             let matched = Set(rows.filter { $0.title.matches(typed) }.map(\.id))
-            // A typed name no session of the machine has, else a free one picked as it starts. A throwaway run makes
-            // only typed throwaway names.
             let fresh = typed.isEmpty ? Self.throwaway == nil
                 : Session.isValidName(typed) && !sessions.contains { $0.name == typed }
                 && (Self.throwaway == nil || typed.hasPrefix("ovvi-"))
@@ -176,7 +145,6 @@ struct SessionPicker: View {
         }
     }
 
-    /// The row that fixes why the machine's sessions cannot be read.
     private func fix(_ machine: Machine, _ error: Error, fallback: String) -> FilterList.Item {
         switch error as? HerdrError {
         case .notFound:
@@ -197,7 +165,6 @@ struct SessionPicker: View {
         }
     }
 
-    /// A row of the machine's group, `<machine id>.<name>`.
     private func row(_ machine: Machine, _ name: String, _ symbol: String, _ detail: String, title: String? = nil,
                      busy: Bool = false, act: @escaping () -> Void) -> FilterList.Item
     {
@@ -210,12 +177,9 @@ struct SessionPicker: View {
         pick(asked.session, on: machine)
     }
 
-    /// The session opens in this window; on This Mac a stopped one starts, as Open Session does, and New Session
-    /// starts its server on any machine.
     private func pick(_ session: String, on machine: Machine, start: Bool = false) {
         pages.machine = machine
         pages.open(session, start: start || !machine.isRemote)
-        // Only now a window of the machine: floats, the Dock's New Tab and the machine menu find it once it has a page.
         pages.opened()
     }
 }

@@ -1,10 +1,8 @@
 import Foundation
 import HerdrKit
 
-/// Codex (resources/research/agents/codex.md). Started with an inline SessionStart hook (`-c hooks.SessionStart=…`)
-/// that appends each session's JSON, with its rollout's path, to `~/.cache/ovvi/chat/T/hooks.jsonl`, and that hook's
-/// trust hash (`-c hooks.state=…`), so Codex asks nothing and no bypass flag trusts other hooks. Tool approvals and
-/// questions stay in its terminal: herdr reports them as blocked.
+/// The hook's trust hash goes in `-c hooks.state=…`, so that Codex asks nothing and no bypass flag trusts other hooks.
+/// Tool approvals and questions stay in its terminal: herdr reports them as blocked.
 struct Codex: ChatAdapter {
     static let command = "codex"
     let token: String
@@ -13,15 +11,15 @@ struct Codex: ChatAdapter {
 
     /// Codex runs it with the user's login shell (`$SHELL -lc`), fish too: plain commands with no variable of its
     /// own, no quote and no backslash. It runs at each session's first prompt, not at launch.
-    /// ponytail: `$HOME` unquoted, so a home folder with a space gets no chat, as with Claude Code.
+    /// ponytail: `$HOME` unquoted, so a home folder with a space gets no chat.
     static func hook(_ token: String) -> String {
         // `awk 1`: the line and its newline in one write, so two hooks at once never share a line.
-        let folder = "$HOME/.cache/ovvi/chat/\(token)"
+        let folder = "$HOME/\(ChatAdapters.folder(token))"
         return "umask 077;mkdir -p \(folder);awk 1 >>\(folder)/hooks.jsonl;" + ChatAdapters.sweep
     }
 
     /// The trust key is the `-c` layer's own (`codex-rs/hooks`); an inline table, as the `-c` parser splits a dotted
-    /// key on every dot. `resume` after them: `codex resume` takes the overrides before it.
+    /// key on every dot. `resume` after them: `codex resume` takes the overrides ahead of it.
     static func flags(_ token: String, resume: String?) -> String {
         let hook = hook(token), trust = CodexRollout.trust(hook)
         return #"-c 'hooks.SessionStart=[{hooks=[{type="command",command="\#(hook)"}]}]' "#
@@ -29,13 +27,12 @@ struct Codex: ChatAdapter {
             + (resume.map { " " + $0 } ?? "")
     }
 
-    /// Its thread again. The hook reports it at the first prompt after the resume, so the chat stays empty until then.
+    /// The hook reports the thread at the first prompt after the resume: the chat stays empty until then.
     static func resume(_ session: String) -> String? {
         ChatAdapters.uuid(session).map { "resume \($0)" }
     }
 
-    /// The hook's folder for T in a `hooks.SessionStart` value: the launcher's `codex` and the native binary both
-    /// carry it.
+    /// The launcher's `codex` and the native binary both carry the `hooks.SessionStart` value.
     init?(_ foreground: [Program.Foreground]) {
         guard let token = ChatAdapters.marked(foreground, { argv in
             argv.lazy.compactMap { $0.hasPrefix("hooks.SessionStart=") ? ChatAdapters.token(in: $0) : nil }.first
@@ -57,18 +54,16 @@ struct Codex: ChatAdapter {
         }
     }
 
-    /// The last SessionStart with a rollout is the history: a new one after `/new`, `/clear`, a fork or a resume,
-    /// at its first prompt. One with no rollout (a hidden thread of Codex's own) is not.
+    /// A SessionStart with no rollout (a hidden thread of Codex's own) is no history.
     @MainActor private func sessions(_ chat: Chat, _ exec: any Exec) async {
         await chat.followSessions(folder + "/hooks.jsonl", on: exec, late: false, skip: CodexRollout.unread,
                                   read: CodexRollout.read) { $0["transcript_path"] as? String }
     }
 
-    /// herdr reports a picker or a dialog as idle: while it says idle or working, a screen whose last rows lack the
-    /// input box above the status row waits too (two reads in a row, not a redraw), so the live terminal shows and
-    /// nothing is sent into the picker. The last rows, not the visible ones: the user may have scrolled the pane. The
-    /// first read alone decides: the chat shown again on an open picker. A message not sent with no session yet: the
-    /// hook did not run (a trust hash Codex no longer takes, hooks turned off).
+    /// herdr reports a picker or a dialog as idle: a screen whose last rows lack the input box above the status row
+    /// waits too (two reads in a row, not a redraw). The last rows, not the visible ones: the user may have scrolled
+    /// the pane. The first read alone decides when the chat shows on an open picker. A message not sent with no
+    /// session yet: the hook did not run (a trust hash Codex rejects, hooks turned off).
     @MainActor private func screens(_ chat: Chat) async {
         var misses = 1
         while !Task.isCancelled {

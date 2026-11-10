@@ -2,7 +2,6 @@ import Foundation
 @testable import HerdrKit
 import Testing
 
-/// A new folder in the temporary folder, removed by the caller.
 func scratchFolder() throws -> URL {
     let folder = URL.temporaryDirectory.appending(path: "ovvi-files-\(UUID().uuidString)")
     try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -10,8 +9,7 @@ func scratchFolder() throws -> URL {
     return try URL(filePath: #require(folder.resourceValues(forKeys: [.canonicalPathKey]).canonicalPath))
 }
 
-/// A repository with a merge and every kind of change uncommitted, built once by real git without the user's config;
-/// the tests only read it. It stays in the temporary folder: building one per test took minutes on a loaded Mac.
+/// Built once: one per test takes minutes on a loaded Mac.
 let scratchRepo = Task { try await makeScratchRepo() }
 
 private func makeScratchRepo() async throws -> URL {
@@ -66,10 +64,8 @@ private func execs() async throws -> [any Exec] {
             FileEntry(name: "line\nbreak", isFolder: false, ignored: false),
             FileEntry(name: "tab\t\"x", isFolder: false, ignored: false),
         ])
-        // Inside an ignored folder everything is ignored.
         #expect(try await Files.list(repo.path + "/build", git: true, exec: exec)
             == [FileEntry(name: "out", isFolder: false, ignored: true)])
-        // No git, or no repository: nothing ignored.
         #expect(try await Files.list(repo.path, git: false, exec: exec).allSatisfy { !$0.ignored })
         let plain = try scratchFolder()
         defer { try? FileManager.default.removeItem(at: plain) }
@@ -130,24 +126,20 @@ private func execs() async throws -> [any Exec] {
         #expect(try Data(contentsOf: file) == edited)
         #expect(try await Files.read(file.path, exec: exec) == FileContents(data: edited, hash: hash))
         #expect(try FileManager.default.attributesOfItem(atPath: file.path)[.posixPermissions] as? Int == 0o751)
-        // The old hash: the disk changed since.
         await #expect(throws: FileError.changed) {
             try await Files.save(Data(), to: file.path, replacing: read.hash, exec: exec)
         }
         #expect(try Data(contentsOf: file) == edited)
-        // A save whose stdin ended early writes nothing.
         let chunks = base64Lines(Data(repeating: 7, count: 100_000))
         await #expect(throws: HerdrError.failed("The save was cut short")) {
             try await exec.checkedOutput(["sh", "-c", Files.saveScript, "sh", file.path, hash, "100000"],
                                          input: chunks.dropLast())
         }
         #expect(try Data(contentsOf: file) == edited)
-        // Overwrite: no hash, no check.
         try Data("theirs".utf8).write(to: file)
         let mine = try await Files.save(edited, to: file.path, replacing: nil, exec: exec)
         #expect(try await Files.read(file.path, exec: exec) == FileContents(data: edited, hash: mine))
 
-        // A link stays a link; an empty file saves and reads.
         let link = folder.appending(path: "link")
         try? FileManager.default.removeItem(at: link)
         try FileManager.default.createSymbolicLink(at: link, withDestinationURL: file)
@@ -170,7 +162,7 @@ private func execs() async throws -> [any Exec] {
     }
 }
 
-/// Writes to the file (a new file in the folder) until the stream yields: the watcher starts on its own task.
+/// Writes until the stream yields: the watcher starts on its own task.
 private func yields(_ changes: AsyncStream<Void>, writing file: URL) async throws {
     let writer = Task {
         while !Task.isCancelled {
@@ -191,7 +183,7 @@ private func yields(_ changes: AsyncStream<Void>, writing file: URL) async throw
     try Data().write(to: file)
     let changes = Files.watch(file.path, exec: localExec)
     try await yields(changes, writing: file)
-    // `.atomic` writes a new file and renames it over the old one; a watcher on the old file may still get two
+    // `.atomic` writes a new file and renames it over the first; a watcher on the replaced file may still get two
     // events, the third comes only from the new file.
     try Data("x".utf8).write(to: file, options: .atomic)
     #expect(await changes.first { true } != nil)
@@ -202,7 +194,6 @@ private func yields(_ changes: AsyncStream<Void>, writing file: URL) async throw
 @Test func `watches a file that comes later, and everything under a folder`() async throws {
     let folder = try scratchFolder()
     defer { try? FileManager.default.removeItem(at: folder) }
-    // Its folder too.
     let later = folder.appending(path: "later/f")
     for exec in try await execs() {
         try? FileManager.default.removeItem(at: later.deletingLastPathComponent())
@@ -217,7 +208,6 @@ private func yields(_ changes: AsyncStream<Void>, writing file: URL) async throw
     try FileManager.default.createDirectory(at: inner, withIntermediateDirectories: true)
     try Data().write(to: inner.appending(path: "f"))
     try await yields(Files.watch(folder.path, exec: localExec), writing: inner.appending(path: "f"))
-    // Remote: the folder's own entries and git's view.
     try await yields(Files.watch(folder.path, exec: RelayExec.start()), writing: URL(filePath: folder.path + "/"))
 }
 
@@ -227,7 +217,7 @@ private func yields(_ changes: AsyncStream<Void>, writing file: URL) async throw
     _ = try await localExec.checkedOutput(["sh", "-c", """
     cd "$1" && git init -q && echo a >f && git add f && git -c user.name=t -c user.email=t@t commit -qm f && echo b >f
     """, "sh", folder.path])
-    // `git status` says ` M f` before and after each write.
+    // `git status` says ` M f` ahead of and after each write.
     try await yields(Files.watch(folder.path, exec: RelayExec.start()), writing: folder.appending(path: "f"))
 }
 

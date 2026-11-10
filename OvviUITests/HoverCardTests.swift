@@ -1,6 +1,5 @@
 import XCTest
 
-/// The hover card: a tab's panes on a capsule or an agent row, and the chrome buttons' tooltips.
 extension OvviUITests {
     func testHoverCardShowsABlockedAgentsScreenAndEscClosesIt() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
@@ -17,11 +16,9 @@ extension OvviUITests {
         XCTAssertEqual(rows(of: card).count, 3)
         try await waitForValue("hovercard.\(pane)", containing: "hover-42")
         XCTAssertTrue((element("hovercard.\(pane)").value as? String)?.hasPrefix("Needs you") == true)
-        // The agent's row ends with its state's icon; the shells' rows show none.
         XCTAssertEqual(element("hovercard.\(pane).state").stringValue, "Needs you")
         let states = card.descendants(matching: .any).matching(NSPredicate(format: "identifier ENDSWITH '.state'"))
         XCTAssertEqual(states.count, 1)
-        // Under its capsule, 6 pt below the 46 pt title row (12 pt below the 34 pt capsule).
         XCTAssertEqual(card.frame.midX, element("tab.\(tab)").frame.midX, accuracy: 2)
         XCTAssertEqual(card.frame.minY - element("tab.\(tab)").frame.maxY, 12, accuracy: 1.5)
         keepScreenshot("hover card")
@@ -45,17 +42,14 @@ extension OvviUITests {
         XCTAssertTrue(hasKeyboard("terminal.\(second)"))
         XCTAssertTrue(card.vanishes(within: 2))
 
-        // Shown again, it still goes when the pointer leaves (it closed under the pointer).
         element("tab.\(tab)").hover()
         XCTAssertTrue(card.exists(within: 2))
         element("workspace.w1").hover()
         XCTAssertTrue(card.vanishes(within: 2))
     }
 
-    /// A plugin pane's row names the plugin and what it shows, as its card header does, never its placeholder's `cat`.
     func testAPluginPanesRowNamesThePlugin() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        // `newCard` makes its tab in beta and shows it from the tab bar.
         element("workspace.w2").click()
         let (tab, pane) = try await newCard("ovvi:explorer#e2ehov /tmp/")
         element("tab.\(tab)").hover()
@@ -83,7 +77,6 @@ extension OvviUITests {
         XCTAssertTrue(card.exists(within: 2))
         XCTAssertEqual(rows(of: card).count, 2)
         XCTAssertEqual(card.label, "Panes of build")
-        // Beside the row, 6 pt past the sidebar's edge.
         XCTAssertEqual(card.frame.minY, row.frame.minY, accuracy: 1.5)
         XCTAssertEqual(card.frame.minX - element("sidebar").frame.maxX, 6, accuracy: 1.5)
         element("hovercard.title").click()
@@ -92,9 +85,8 @@ extension OvviUITests {
         XCTAssertTrue(element("workspace.w2").has(\.isSelected, true, within: 2))
     }
 
-    /// In every look the card over a busy terminal shows the text behind only as a soft blur: its empty part is far
-    /// less sharp than the same text below the card. On a Mac Liquid Glass alone let it read clearly; CI's
-    /// VM draws glass with no backdrop, so on CI this guards only against a see-through panel.
+    /// On a Mac Liquid Glass alone lets the text behind read clearly; CI's VM draws glass with no backdrop, so on CI
+    /// this guards only against a see-through panel.
     func testHoverCardBlursTheTextBehindIt() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("busy")
@@ -117,11 +109,9 @@ extension OvviUITests {
             XCTAssertTrue(card.vanishes(within: 2), look)
             element("tab.\(tab)").hover()
             XCTAssertTrue(card.exists(within: 2), look)
-            // The pane row's empty right part, and the same rect over the bare terminal below the card.
             let row = element("hovercard.\(pane)").frame
             let empty = CGRect(x: row.midX, y: row.minY + 3, width: row.width / 2 - 10, height: 20)
             var sharp = (card: 0.0, bare: 0.0)
-            // The card fades in, and the terminal draws its lines.
             let blurred = until(2) {
                 sharp = (sharpness(empty), sharpness(empty.offsetBy(dx: 0, dy: 100)))
                 return sharp.bare > 4 && sharp.card < sharp.bare * 0.3
@@ -131,8 +121,6 @@ extension OvviUITests {
         }
     }
 
-    /// The mean brightness step between neighbor pixels in a rect of the window (screen points): high for crisp text,
-    /// low for a blur.
     private func sharpness(_ rect: CGRect) -> Double {
         let window = app.windows.firstMatch
         let shot = window.screenshot().image
@@ -142,14 +130,13 @@ extension OvviUITests {
         guard let crop = full.cropping(to: CGRect(x: box.minX * scale, y: box.minY * scale,
                                                   width: box.width * scale, height: box.height * scale))
         else { return 0 }
-        // Row ends pair with the next row's start: a few steps in thousands, no matter for a ratio.
         let brightness = Self.brightness(NSImage(cgImage: crop, size: .zero))
         let steps = zip(brightness, brightness.dropFirst()).map { abs($0 - $1) }
         return steps.isEmpty ? 0 : Double(steps.reduce(0, +)) / Double(steps.count)
     }
 
-    /// The tooltip and the VoiceOver label are one string (`IconButton`). macOS gives the help tag's text to no
-    /// accessibility attribute, and on CI the tag showed in one run of two, so the label stands in for it.
+    /// macOS gives the help tag's text to no accessibility attribute, and on CI the tag shows in one run of two, so the
+    /// label stands in for it.
     func testChromeButtonsNameTheirShortcuts() {
         let button = element("titlebar.new-tab")
         XCTAssertTrue(button.exists(within: connect))

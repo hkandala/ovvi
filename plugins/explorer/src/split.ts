@@ -1,7 +1,3 @@
-// Markdown's Source (markdown.ts): the rendered page beside the source, a second CodeMirror view of the same
-// text. The source's changes go to the page, and a tick in the page goes to the source as an edit. The two scroll
-// together by source line: the one the user last scrolled, clicked or typed in leads. A button on the divider folds
-// the page away and back.
 import { Annotation, EditorState, type Extension } from "@codemirror/state"
 import { EditorView, type ViewUpdate } from "@codemirror/view"
 import { ticked } from "./live"
@@ -9,15 +5,12 @@ import { ticked } from "./live"
 /** A change one view passed to the other: it goes no further. */
 const synced = Annotation.define<boolean>()
 
-/** `to` scrolled so the source line at the top of `from` is at its top, as far into the line. */
 function align(from: EditorView, to: EditorView) {
   const at = from.scrollDOM.scrollTop - from.documentPadding.top, block = from.lineBlockAtHeight(at)
   const line = to.lineBlockAt(block.from), into = (at - block.top) / Math.max(block.height, 1)
   to.scrollDOM.scrollTop = line.top + to.documentPadding.top + into * line.height
 }
 
-/** The page beside `source` in `parent`, drawn with `extensions`, folded unless `preview`; `follow` passes on the
- *  source's changes. A click on the fold button tells `folded` whether the page shows. */
 export function sideBySide(source: EditorView, parent: HTMLElement, extensions: Extension, preview: boolean,
   folded: (preview: boolean) => void) {
   const divider = Object.assign(document.createElement("div"), { className: "split-divider" })
@@ -51,8 +44,7 @@ export function sideBySide(source: EditorView, parent: HTMLElement, extensions: 
       }
     },
   })
-  // The page leads after the user's input in it; anything else (the source, the outline, find) gives it back. Not by
-  // hover: the source scrolls by keys under a pointer resting on the page. And the page's own height changes (its
+  // Not by hover: the source scrolls by keys under a pointer resting on the page. The page's own height changes (its
   // widgets measured) never move the source.
   let pageLeads = false
   const input = (event: Event) => {

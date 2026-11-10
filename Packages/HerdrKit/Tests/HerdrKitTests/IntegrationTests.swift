@@ -3,7 +3,6 @@ import Foundation
 import Synchronization
 import Testing
 
-/// The repository's root, for its scripts and resources.
 let repoRoot = URL(filePath: #filePath).appending(path: "../../../../..").standardized
 private let script = repoRoot.appending(path: "scripts/herdr-session.sh").path
 
@@ -21,8 +20,8 @@ private func shell(_ argv: String...) async -> Int32 {
     }
 }
 
-/// This Mac's runs with the test run's environment and herdr from its PATH, not the app's login-shell lookup: its 3 s
-/// bound ran out under heavy load (a load of 200), and herdr was not found.
+/// The test run's environment and herdr from its PATH, not the app's login-shell lookup: its 3 s bound runs out
+/// under heavy load (a load of 200).
 let localExec: ProcessExec = {
     ProcessExec.prepare()
     let env = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("HERDR_") }
@@ -31,9 +30,14 @@ let localExec: ProcessExec = {
     return ProcessExec(env, herdr: herdr, asked: .now)
 }()
 
-private let herdrInstalled: @Sendable () async -> Bool = { await shell("which", "herdr") == 0 }
+/// On CI, which installs herdr, they run even without it, and fail.
+private let herdrInstalled: @Sendable () async -> Bool = {
+    if ProcessInfo.processInfo.environment["CI"] != nil {
+        return true
+    }
+    return await shell("which", "herdr") == 0
+}
 
-/// A client for a new throwaway session, removed after `body`.
 private func withSession(_ exec: any Exec, _ body: (HerdrClient) async throws -> Void) async throws {
     let session = "ovvi-e2e-\(UUID().uuidString.prefix(6).lowercased())"
     try #require(await shell(script, "up", session) == 0)
@@ -41,8 +45,6 @@ private func withSession(_ exec: any Exec, _ body: (HerdrClient) async throws ->
     try await body(HerdrClient(session: session, exec: exec))
 }
 
-/// Counts `events.subscribe` requests, so a test can tell a read caused by an event from one after
-/// the stream reopened.
 private final class SubscribeCounter: Exec {
     let base: ProcessExec
     let subscribes = Mutex(0)
@@ -114,8 +116,8 @@ private func talk(_ client: HerdrClient, _ exec: SubscribeCounter) async throws 
         return nil
     })
     let snapshot = try #require(found)
-    // Still the first events stream: the event caused the read, not a reopened stream. A reopen
-    // reads before it subscribes again, so wait past its 1 s backoff before counting.
+    // Still the first events stream: the event caused the read, not a reopened stream. A reopen reads ahead of
+    // subscribing again, so the wait outlasts its 1 s backoff.
     try await Task.sleep(for: .milliseconds(1500))
     #expect(exec.subscribes.withLock { $0 } == 1)
     withExtendedLifetime(updates) {}
@@ -152,8 +154,7 @@ private func talk(_ client: HerdrClient, _ exec: SubscribeCounter) async throws 
     #expect(lines.map(\.count) == [1, 8_000_000, 1])
 }
 
-/// Counts the work, not the wall clock (a busy CI runner stalls for seconds): each byte is searched once, where a
-/// scan from the line's start for each chunk searched an 8 MB line in 64 KB chunks about 60 times over.
+/// Counts the work, not the wall clock: a busy CI runner stalls for seconds.
 @Test func `a long line is searched once`() {
     let chunk = Data(repeating: UInt8(ascii: "x"), count: 65536)
     var buffer = LineBuffer()
@@ -178,7 +179,6 @@ private func talk(_ client: HerdrClient, _ exec: SubscribeCounter) async throws 
     defer { try? FileManager.default.removeItem(at: dir) }
     try FileManager.default.createDirectory(at: dir.appending(path: "bin"), withIntermediateDirectories: true)
     let shell = dir.appending(path: "shell").path, herdr = dir.appending(path: "bin/herdr").path
-    // Counts its runs; an rc file that prints without a final newline.
     let source = "#!/bin/sh\necho >> \"$0.count\"\nprintf motd\nsh -c \"$2\"\n"
     try source.write(toFile: shell, atomically: true, encoding: .utf8)
     try "".write(toFile: herdr, atomically: true, encoding: .utf8)
@@ -189,7 +189,6 @@ private func talk(_ client: HerdrClient, _ exec: SubscribeCounter) async throws 
     #expect(found.herdr == herdr && found.vars["XDG_X"] == "1")
     #expect(await ProcessExec.loginShell(["SHELL": shell, "PATH": "/usr/bin:/bin"]).herdr == nil)
 
-    // While herdr is missing: one login shell at a time, then none for 30 s.
     try FileManager.default.removeItem(atPath: shell + ".count")
     let exec = ProcessExec(["SHELL": shell, "PATH": "/usr/bin:/bin"], herdr: nil, asked: .now - .seconds(31))
     async let first = exec.herdr(), second = exec.herdr(), third = exec.herdr()
@@ -207,7 +206,6 @@ private struct NewWorkspace: Decodable {
     let root_pane: Pane // swiftlint:disable:this identifier_name
 }
 
-/// How a stream ends, past its frames.
 private func closedReason(_ events: inout AsyncStream<TerminalStream.Event>.Iterator) async -> TerminalStream.Closed? {
     while let event = await events.next() {
         if case let .closed(reason) = event {
@@ -248,7 +246,6 @@ private func control(_ client: HerdrClient) async throws {
         }
         #expect(resized?.width == 70 && resized?.height == 15)
 
-        // Held: a second controller is refused, a watcher is not.
         let second = try await client.terminal(terminal, cols: 60, rows: 12)
         #expect(await second.events.first { _ in true } == .closed(.held))
         let watcher = try await client.terminal(terminal, cols: 60, rows: 12, observe: true)
@@ -262,7 +259,6 @@ private func control(_ client: HerdrClient) async throws {
         watcher.close()
         #expect(await eventually { await shell("pgrep", "-f", observer) == 1 })
 
-        // Taken over: a controller with --takeover wins, the first one hears it.
         let taker = try await client.terminal(terminal, cols: 60, rows: 12, takeover: true)
         #expect(await closedReason(&events) == .held)
         taker.close()
@@ -271,8 +267,6 @@ private func control(_ client: HerdrClient) async throws {
     })
 }
 
-/// The server the app starts gets the CLI's user keys: with `XDG_CONFIG_HOME` elsewhere, both find the session
-/// there. The app's own keys stay out (D47), and herdr runs by its absolute path.
 @Test(.enabled("herdr is not on PATH", herdrInstalled))
 func `a started server shares the CLI's paths`() async throws {
     struct Moved: Exec {
@@ -299,7 +293,6 @@ func `a started server shares the CLI's paths`() async throws {
     try await client.startServer(within: .seconds(10))
     #expect(FileManager.default.fileExists(atPath: "\(config)/herdr/sessions/\(session)"))
     let job = try await base.output(["launchctl", "print", "gui/\(getuid())/dev.ovvi.app.herdr.\(session)"])
-    // The login shell's herdr and its PATH as it is.
     let herdr = try #require(await base.herdr())
     #expect(job.contains("program = \(herdr)\n") && job.contains("PATH => \(base.environment["PATH"] ?? "")\n"))
     #expect(job.contains("XDG_CONFIG_HOME") && !job.contains("__CFBundleIdentifier"))
@@ -346,7 +339,6 @@ func `moves beside a pane, swaps by id, and throws herdr's refusals`() async thr
         let _: Created = try await client.call("workspace.create", ["cwd": "/tmp", "focus": false])
         let second = try #require(try await client.split("w1:p1", .right))
         let other = try #require(try await client.move(pane: second.id, to: .newTab(workspaceID: "w1")))
-        // Back beside p1, under it.
         let back = try await client.move(pane: other.id, to: .tab("w1:t1", beside: "w1:p1", split: .down, ratio: 0.3))
         #expect(back?.tabID == "w1:t1")
         guard case let .split(direction, ratio, _, _)? = try await client.snapshot().trees["w1:t1"] else {

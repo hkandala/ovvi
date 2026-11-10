@@ -1,13 +1,10 @@
 import HerdrKit
 import OSLog
 
-/// The `ovvi` command's requests (agent-control/protocol): heard on the session's events stream, taken from the
-/// machine's mailbox, run, answered there.
 extension HostStore {
-    private static let log = Logger(subsystem: "dev.ovvi.app", category: "agent")
+    private static let log = Logger(ovvi: "agent")
 
-    /// One request: an Ovvi whose user is away gives the one in use 500 ms to take it first. Nothing when another
-    /// Ovvi took it, or the command gave up.
+    /// Several Ovvis can follow a session: one whose user is away lets the one in use take the request first.
     func answer(request id: String, from pane: String) async {
         if away {
             try? await Task.sleep(for: .milliseconds(500))
@@ -29,7 +26,6 @@ extension HostStore {
         do {
             try await exec.answer(request: id, code: answer.code, out: answer.out, err: answer.err)
         } catch {
-            // The command exits 4.
             Self.log.error("answer to \(id) failed: \(error.localizedDescription)")
         }
     }

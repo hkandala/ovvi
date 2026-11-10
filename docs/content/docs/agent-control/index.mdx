@@ -33,8 +33,18 @@ remote machine that Ovvi connects to (D104).
 
 A skill is a folder of instructions that an agent loads when a task needs it.
 The `ovvi` skill, in `skills/ovvi/` of the Ovvi repo, teaches an agent the
-`ovvi` command
-([what it holds](/docs/agent-control/migration#the-ovvi-skill)).
+`ovvi` command. Its `SKILL.md` says what Ovvi is, how to tell that Ovvi
+shows the pane (`ovvi status`), the commands an agent uses most and the rules.
+One file per topic loads only when the agent needs it:
+
+| File | Holds |
+|---|---|
+| `cards.md` | `open` in each place, reuse, replace, browser addresses, `float`, `card`, `shown`, `balance` |
+| `plugins.md` | list, make, reload and install plugins |
+| `agents.md` | start an agent with the chat view, relaunch an agent with chat, switch a card between chat and TUI |
+| `remote.md` | what differs on a remote machine |
+
+Every herdr detail points to the herdr skill (`herdr --skill`).
 
 - **On This Mac,** `make install` links the folder to
   `~/.agents/skills/ovvi` (pi and Codex) and `~/.claude/skills/ovvi`

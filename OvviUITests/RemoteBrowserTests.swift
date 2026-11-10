@@ -1,11 +1,8 @@
 import XCTest
 
-/// Browser cards and their machine (ui/browser#remote-localhost). The test server names the
-/// process that connected to it: WebKit on This Mac, sshd through a remote machine's proxy. On CI Key Host is this Mac
-/// over SSH (`scripts/ci-sshd.sh`), so one port serves both machines.
+/// On CI Key Host is this Mac over SSH (`scripts/ci-sshd.sh`), so one port serves both machines.
 extension OvviUITests {
-    /// A server on `port` in the pane's shell, which answers "via=‹the process that connected› host=‹Host›". Its
-    /// script goes as base64: the runner is sandboxed, and a shell of the session writes it.
+    /// Its script goes as base64: the runner is sandboxed, and a shell of the session writes it.
     func serveWho(_ port: Int, from pane: String) async throws {
         let script = """
         import http.server, socketserver, subprocess, sys
@@ -42,9 +39,6 @@ extension OvviUITests {
         window.webViews.staticTexts.matching(NSPredicate(format: "value BEGINSWITH %@", prefix)).firstMatch
     }
 
-    /// One browser pane on two machines at once: This Mac's window loads This Mac's `localhost:<port>` directly, Key
-    /// Host's loads Key Host's through its proxy (sshd connects) as `key-host.localhost`, and shows `localhost` with
-    /// the machine's name. The name's chip loads the page on This Mac's network, and back.
     func testARemoteBrowserCardLoadsItsMachinesLocalhost() async throws {
         try await skipWithoutSSH()
         relaunch(one, ["-machines", Self.keyHost])
@@ -89,7 +83,7 @@ extension OvviUITests {
         XCTAssertTrue(whoText("via=sshd", in: remote).exists(within: connect))
         XCTAssertEqual(chip.label, "Key Host")
 
-        // A port nothing listens on: the proxy's refusal at once (ssh's own close made WebKit wait 60 s).
+        // A port nothing listens on: the proxy's refusal at once (ssh's own close makes WebKit wait 60 s).
         element("browser.\(browser).address", in: remote).click()
         app.typeText("localhost:\(port + 1)\r")
         let message = element("browser.\(browser).message", in: remote)
@@ -97,13 +91,29 @@ extension OvviUITests {
                       "\(message.value ?? "")")
         let address = element("browser.\(browser).address", in: remote).value as? String ?? ""
         XCTAssertTrue(address.hasPrefix("http://localhost:\(port + 1)"), address)
+        try await asksOverTheFailure(browser, port, in: remote)
 
         try await reloadsAfterTheForwardEnds(browser, port, in: remote)
     }
 
-    /// ssh's forward gone while its master lives (as when it lost its `-D`): the next page forwards again. Then its
-    /// master gone (as after a sleep): a new master, and a new forward on it. Then its master hung. Each time a new
-    /// name: WebKit keeps a spare connection to the last one.
+    /// A page from elsewhere asks over the failure, an approved one ends the question, and Not Now shows the
+    /// machine's own name.
+    private func asksOverTheFailure(_ browser: String, _ port: Int, in remote: XCUIElement) async throws {
+        try await expect("the label follows") { try await paneLabel(browser).contains("localhost:\(port + 1)") }
+        try await relabel(browser, "ovvi:browser#e2erem https://ovvi.invalid/")
+        let open = element("browser.\(browser).open", in: remote)
+        XCTAssertTrue(open.exists(within: 5), shown(browser, remote))
+        try await relabel(browser, "ovvi:browser#e2erem http://localhost:\(port)/")
+        XCTAssertTrue(open.vanishes(within: 5))
+        XCTAssertTrue(whoText("via=sshd", in: remote).exists(within: connect))
+        try await relabel(browser, "ovvi:browser#e2erem https://ovvi.invalid/two")
+        XCTAssertTrue(open.exists(within: 5))
+        element("browser.\(browser).not-now", in: remote).click()
+        XCTAssertTrue(open.vanishes(within: 3))
+        XCTAssertEqual(element("browser.\(browser).address", in: remote).value as? String, "http://localhost:\(port)/")
+    }
+
+    /// Each time a new name: WebKit keeps a spare connection to the last one.
     private func reloadsAfterTheForwardEnds(_ browser: String, _ port: Int, in remote: XCUIElement) async throws {
         let ports = try await Self.post("\(one)/ssh-unforward", Data("ovvi-key".utf8))
         XCTAssertFalse(ports.isEmpty)
@@ -119,8 +129,6 @@ extension OvviUITests {
             page(from: "dropped.localhost:\(port)", in: remote).exists(within: connect),
             shown(browser, remote),
         )
-        // Its master hung (stopped, as a link that hangs): the page waits a few seconds, not for ever, and comes
-        // through a new master. Both end after.
         addTeardownBlock { [one] in _ = try? await Self.post("\(one)/ssh-drop", Data("ovvi-key".utf8)) }
         let stopped = try await Self.post("\(one)/ssh-stop", Data("ovvi-key".utf8))
         XCTAssertFalse(stopped.isEmpty)
@@ -137,15 +145,13 @@ extension OvviUITests {
         return window.webViews.staticTexts.matching(NSPredicate(format: format, "host=\(host)")).firstMatch
     }
 
-    /// The card's failure, for a page that did not come.
     private func shown(_ browser: String, _ window: XCUIElement) -> String {
         let message = element("browser.\(browser).message", in: window)
         return message.exists ? "\(message.value ?? "")" : "no failure shown"
     }
 
-    /// The address in place of the field's (which keeps the keyboard after a failed load, so a click selects nothing).
     /// Clicked until it has the keyboard: right after a dropped master the page shows Reconnecting for a moment, and
-    /// takes no clicks (a CI recording: the address went to the page).
+    /// takes no clicks (on CI).
     private func open(_ address: String, in browser: String, _ window: XCUIElement) {
         let field = element("browser.\(browser).address", in: window)
         XCTAssertTrue(until(connect) {

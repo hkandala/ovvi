@@ -1,16 +1,12 @@
 import HerdrKit
 import SwiftUI
 
-/// One row of the chat (ui/chat-view#messages).
 struct ChatRowView: View, Equatable {
     let row: ChatRow
     let paneID: String
-    /// A run's counts: "Ran 3 commands, read 2 files".
     let counts: String
-    /// An open run's steps, copied from the history only while it is open; nil: closed.
     let steps: [ChatEntry]?
     let toggle: () -> Void
-    /// The tool calls opened to their input and output.
     let opened: Set<String>
     let toggleTool: (String) -> Void
     @Environment(\.look) private var look
@@ -23,7 +19,6 @@ struct ChatRowView: View, Equatable {
 
     var body: some View {
         switch row {
-        // More room between a turn and the user's messages than between a turn's rows.
         case let .user(_, text): UserBubble(text: text, paneID: paneID).padding(.vertical, 8)
         case .stack:
             ToolStack(counts: counts, steps: steps, paneID: paneID, toggle: toggle, opened: opened,
@@ -31,9 +26,7 @@ struct ChatRowView: View, Equatable {
         case let .worked(_, seconds):
             let text = seconds.map { "Worked " + ChatHistory.duration($0) } ?? "Worked"
             Text(text).font(.system(size: 12)).foregroundStyle(.secondary)
-                .accessibilityElement(children: .ignore)
-                .accessibilityAddTraits(.isStaticText)
-                .accessibilityValue(text)
+                .readableText(text)
                 .accessibilityIdentifier("chat.\(paneID).worked")
         case let .reply(_, text):
             Markdown(text: text).accessibilityIdentifier("chat.\(paneID).reply")
@@ -43,15 +36,12 @@ struct ChatRowView: View, Equatable {
         case let .note(_, text, failed):
             Label(text, systemImage: failed ? "exclamationmark.triangle.fill" : "stop.circle")
                 .font(.system(size: 12)).foregroundStyle(failed ? AnyShapeStyle(look.error) : AnyShapeStyle(.secondary))
-                .accessibilityElement(children: .ignore)
-                .accessibilityAddTraits(.isStaticText)
-                .accessibilityValue(text)
+                .readableText(text)
                 .accessibilityIdentifier("chat.\(paneID).note")
         }
     }
 }
 
-/// The chat's loader, under the running turn: Working's icon and "Working 29s".
 struct WorkingRow: View {
     let since: Date?
 
@@ -67,11 +57,9 @@ struct WorkingRow: View {
     }
 }
 
-/// The user's message, as in Messages: blue, on the right.
 struct UserBubble: View {
     let text: String
     let paneID: String
-    /// On its way: not in the history yet.
     var sending = false
     @Environment(\.look) private var look
 
@@ -81,7 +69,6 @@ struct UserBubble: View {
             .accessibilityValue(text)
             .accessibilityIdentifier("chat.\(paneID).\(sending ? "sending" : "user")")
             .foregroundStyle(Look.onAccent)
-            // Its links in its own text color, not the accent it sits on.
             .tint(Look.onAccent)
             .bubble(look.sentBubble)
             .padding(.trailing, -Bubble.inset)
@@ -91,25 +78,22 @@ struct UserBubble: View {
 }
 
 extension View {
-    /// A message's bubble, with Messages' padding (ui/chat-view#what-it-looks-like): the caller pulls it out by
-    /// `Bubble.inset`, so its text keeps the messages' edge.
+    /// The caller pulls it out by `Bubble.inset`, so that its text keeps the messages' edge.
     func bubble(_ color: Color) -> some View {
         padding(.horizontal, Bubble.inset).padding(.vertical, 7).background(color, in: .rect(cornerRadius: 18))
     }
 
-    /// A reply's place and widest width, for a reply bubble and a run of tool calls (whose rows inset their text by
-    /// `Composer.inset`): pulled out by `inset`, so its text keeps the messages' edge.
+    /// Pulled out by `inset`, so that its text keeps the messages' edge.
     func replyPlace(_ inset: CGFloat = Composer.inset) -> some View {
         padding(.leading, -inset).padding(.trailing, ChatView.gutter)
     }
 }
 
-/// Messages' padding at a bubble's sides (iMessage: 12 pt beside the text, 7 pt above and under it).
+/// Messages' padding (iMessage: 12 pt beside the text, 7 pt above and under it).
 enum Bubble {
     static let inset: CGFloat = 12
 }
 
-/// A todo list.
 private struct Plan: View {
     let todos: [ChatTodo]
 
@@ -136,7 +120,6 @@ private struct Plan: View {
     }
 }
 
-/// A question the chat can answer, with its options; a click answers once every question has an answer.
 struct QuestionCard: View {
     let question: ChatQuestion
     let paneID: String

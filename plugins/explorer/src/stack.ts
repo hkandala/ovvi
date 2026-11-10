@@ -1,10 +1,8 @@
-// The tree's sticky folders (Pierre's sticky stack) on the card itself, with no band of their own: an opaque band never
-// matches Glass's card, whose fill changes with what is behind the window. The tree's scroll view is masked under the
-// stack, so no row shows there at any scroll speed: the mask stays with the view, which does not scroll, while WebKit
-// moves the rows on its own thread. The stack is in the view, so it is masked too; a copy of it draws over the mask,
-// after each draw of the tree (the stack's rows change only then). The stack itself still takes the clicks.
+// An opaque band never matches Glass's card, whose fill changes with what is behind the window. The tree's scroll
+// view is masked under the stack: the mask stays with the view, which does not scroll, while WebKit moves the rows on
+// its own thread. The stack is in the view, so it is masked too; a copy of it draws over the mask after each draw of
+// the tree.
 
-/** Shows the stack of the tree in `host` (a `FileTree`'s container) as a copy over its masked view. */
 export function stack(host: HTMLElement) {
   const shadow = host.shadowRoot!
   const copy = shadow.appendChild(document.createElement("div"))
@@ -12,7 +10,6 @@ export function stack(host: HTMLElement) {
   // Out of the way of clicks, the keyboard and VoiceOver: the stack below takes them.
   copy.inert = true
   let drawn = "", hovered: string | null = null
-  /** The hover the stack's row has, on its copy. */
   const hover = () => {
     for (const row of copy.querySelectorAll<HTMLElement>("[data-file-tree-sticky-path]")) {
       row.toggleAttribute("data-hover", row.dataset.fileTreeStickyPath === hovered)
@@ -40,8 +37,7 @@ export function stack(host: HTMLElement) {
     }
     hover()
   }
-  // Pierre's draws come in a microtask after its scroll handler, so the copy and the mask change in the same frame. A
-  // new width (a split's divider, the window) moves the copy.
+  // Pierre's draws come in a microtask after its scroll handler, so the copy and the mask change in the same frame.
   new MutationObserver(draw).observe(shadow, { subtree: true, childList: true, attributes: true })
   new ResizeObserver(() => {
     drawn = ""

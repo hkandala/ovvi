@@ -1,13 +1,10 @@
 import XCTest
 
-/// Live terminals, checked through herdr: `pane.read`, `pane.get` and a second
-/// `control` stream from the helper. Session one's t1 is p1 | (p2 / p3), t2 holds p4.
 extension OvviUITests {
     func testCardsAttachAtTheirSize() async throws {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         for pane in ["w1:p1", "w1:p2", "w1:p3"] {
             try await expectPTYSize(pane)
-            // The stream opened at that size: no resize after attach, so an agent draws once.
             let terminal = try await terminalID(pane)
             let line = try await streams(one).first { $0.contains(terminal) } ?? ""
             let rows = line.firstMatch(of: /--rows (\d+)/)?.1, cols = line.firstMatch(of: /--cols (\d+)/)?.1
@@ -46,10 +43,9 @@ extension OvviUITests {
             let offset = try await (pane("w1:p1")["scroll"] as? [String: Any])?["offset_from_bottom"] as? Int ?? 0
             return offset > 0 ? offset : nil
         }
-        // Up and down do not change the tab.
         XCTAssertTrue(element("tab.w1:t1").isSelected)
         keepScreenshot("vertical scroll")
-        // Back at the bottom (delta is the way down now): a later test of the shard reads this pane's view.
+        // Back at the bottom: a later test of the shard reads this pane's view.
         try await poll("the viewport back at the bottom", times: 20) { () async throws -> Bool? in
             terminal.scroll(byDeltaX: 0, deltaY: delta * 10)
             try await Task.sleep(for: .milliseconds(300))
@@ -58,7 +54,6 @@ extension OvviUITests {
         }
     }
 
-    /// ⌘2 shows the second tab, whose pane attaches at its card's size; ⇧⌘[ ] step.
     func testCommandDigitSelectsATab() async throws {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         app.typeKey("2", modifierFlags: .command)
@@ -72,7 +67,6 @@ extension OvviUITests {
         app.typeKey("]", modifierFlags: [.command, .shift])
         XCTAssertTrue(element("tab.w1:t2").has(\.isSelected, true, within: 2))
 
-        // ⌘1 picks a tab of the workspace shown now, and leaves the other one's selection alone.
         element("workspace.w2").click()
         XCTAssertTrue(element("pane.w2:p1").has(\.isHittable, true, within: 2))
         app.typeKey("1", modifierFlags: .command)
@@ -85,8 +79,8 @@ extension OvviUITests {
     func testSwitchingTabsKeepsTheLastTabAttached() async throws {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         let old = try await terminalID("w1:p1"), new = try await terminalID("w1:p4")
-        // The app controls p1 (its PTY has the card's size), so a second controller is refused. A
-        // probe before the app attached would win, and the app would only watch.
+        // The app controls p1 (its PTY has the card's size), so a second controller is refused; a probe that came first
+        // would win, and the app would only watch.
         try await expectPTYSize("w1:p1")
         try await waitForControl(old)
         let rows = try await viewportRows("w1:p1")
@@ -95,7 +89,6 @@ extension OvviUITests {
         XCTAssertTrue(element("terminal.w1:p4").exists(within: 2))
         try await expectPTYSize("w1:p4")
         try await waitForControl(new)
-        // The last tab stays attached at its size, so coming back to it resizes nothing.
         try await waitForControl(old)
         let away = try await viewportRows("w1:p1")
         XCTAssertEqual(away, rows)
@@ -116,7 +109,6 @@ extension OvviUITests {
         element("tab.w1:t2").click()
         XCTAssertTrue(hasKeyboard("terminal.w1:p4"))
         element("tab.w1:t1").click()
-        // Back on t1, the keyboard is on p2 again, not on herdr's focused p1.
         XCTAssertTrue(hasKeyboard(terminal))
         app.typeText("echo tab-keys-$((40+3))")
         app.typeKey(.return, modifierFlags: [])
@@ -124,7 +116,6 @@ extension OvviUITests {
         let other = try await read("w1:p1")
         XCTAssertFalse(other.contains("tab-keys-43"))
 
-        // Up arrow (a herdr key) brings the command back.
         app.typeKey(.upArrow, modifierFlags: [])
         app.typeKey(.return, modifierFlags: [])
         try await waitFor("w1:p2") { $0.components(separatedBy: "\ntab-keys-43").count == 3 }
@@ -134,13 +125,12 @@ extension OvviUITests {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("taken")
         element("tab.\(tab)").click()
-        // The app controls the pane (its PTY has the card's size) before the probe: a probe that came first would
+        // The app controls the pane (its PTY has the card's size) ahead of the probe: a probe that came first would
         // win, and the app would only watch.
         try await expectPTYSize(pane)
         let terminal = try await terminalID(pane)
         try await waitForControl(terminal)
 
-        // Another client takes the pane (and lets go at once): the card watches and offers it back.
         try await Self.post("\(one)/takeover", Data(terminal.utf8))
         let takeBack = element("pane.\(pane).take-back")
         XCTAssertTrue(takeBack.exists(within: 3))
@@ -153,7 +143,6 @@ extension OvviUITests {
         try await typeAndRead(pane)
     }
 
-    /// ⌃⇧ chords keep their Shift for a program with the kitty keyboard protocol: pi's extensions bind ⌃⇧S, ⌃⇧↩…
     func testControlShiftKeysReachAKittyProgram() async throws {
         let (tab, pane) = try await newTab("kitty")
         element("tab.\(tab)").click()
@@ -182,8 +171,6 @@ extension OvviUITests {
         try await field((self.pane(pane)["scroll"] as? [String: Any])?["viewport_rows"], "\(pane)'s rows")
     }
 
-    /// A `control` stream from the helper, let go at once, until herdr refuses it: another client controls the
-    /// terminal.
     private func waitForControl(_ terminal: String) async throws {
         try await expect("herdr to refuse a second control of \(terminal)", times: 20) {
             try await String(decoding: Self.post("\(one)/control", Data(terminal.utf8)), as: UTF8.self)

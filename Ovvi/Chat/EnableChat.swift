@@ -1,18 +1,15 @@
 import HerdrKit
 import SwiftUI
 
-/// Relaunch with Chat (ui/chat-view#which-panes-have-it), where Chat | TUI sits on an agent card with no launch marker:
-/// it starts the agent again with Ovvi's flags in the same session. It asks first while the agent works or waits.
 struct EnableChat: View {
     let pane: HostStore.Pane
     let page: Page
     @State private var asking = false
     @Environment(\.look) private var look
 
-    /// An agent with a chat adapter whose session herdr knows, once its processes are known to carry no marker.
     static func offered(_ pane: HostStore.Pane, _ store: HostStore) -> Bool {
         guard pane.program != nil, store.adapter(pane) == nil, let session = pane.session,
-              let adapter = ChatAdapters.adapter(pane.agent) else { return false }
+              let adapter = Chooser.agent(pane.agent)?.adapter else { return false }
         return adapter.resume(session) != nil && store.chooser(pane.id) == nil
     }
 

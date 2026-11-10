@@ -12,26 +12,7 @@ extension AgentCommand {
         let onTop = call.flag("--on-top")
         let target = try await call.target(call.argument("pane"))
         try call.done()
-        let machine = call.store.machine
-        guard let window = call.store.windows.first else {
-            throw AgentError.noWindow(call.store.session)
-        }
-        let existing = target.floating != nil
-        WindowPages.float(session: target.session, pane: target.id, machine: machine.id, over: window, agent: true)
-        // A session with no page opens a float-only one, which floats the pane once it connects.
-        try await settle(for: .seconds(8)) { target.floating != nil || window.floatPending == nil }
-        let floating = target.floating
-        if floating == nil, case let .failed(error) = target.store?.state {
-            throw error
-        }
-        guard let (page, terminalID) = floating else {
-            throw AgentError.paneNotFound(target.id, in: target.session)
-        }
-        if onTop {
-            page.floating[terminalID] = true
-        }
-        return AgentOutput(["pane": target.id, "floating": true, "onTop": page.floating[terminalID] == true,
-                            "existing": existing])
+        return try await call.float(target, onTop: onTop)
     }
 
     static let unfloat = AgentCommand(
@@ -57,7 +38,7 @@ extension AgentCommand {
         }
         try call.done()
         let (store, pane) = try call.found(target)
-        // Its tab once the writes before it are done: they can move the pane.
+        // Its tab after the queued writes: they can move the pane.
         let tab = try await store.request { client in
             let tab = store.pane(pane.id)?.tabID ?? pane.tabID
             try await store.balance(tab, client)
@@ -73,7 +54,7 @@ extension AgentCommand {
         try call.done()
         let text = try await call.store.machine.exec().input(request: call.id)
         guard text.count <= AgentRequest.inputLimit else {
-            throw AgentError(code: "bad_argument", message: "standard input is over 1 MiB")
+            throw AgentError.badArgument("standard input is over 1 MiB")
         }
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(String(decoding: text, as: UTF8.self), forType: .string)
@@ -81,8 +62,31 @@ extension AgentCommand {
     }
 }
 
+extension AgentCall {
+    func float(_ target: PaneTarget, onTop: Bool) async throws -> AgentOutput {
+        let machine = store.machine
+        guard let window = store.windows.first else {
+            throw AgentError.noWindow(store.session)
+        }
+        let existing = target.floating != nil
+        WindowPages.float(session: target.session, pane: target.id, machine: machine.id, over: window, agent: true)
+        try await settle(for: .seconds(8)) { target.floating != nil || window.floatPending == nil }
+        let floating = target.floating
+        if floating == nil, case let .failed(error) = target.store?.state {
+            throw error
+        }
+        guard let (page, terminalID) = floating else {
+            throw AgentError.paneNotFound(target.id, in: target.session)
+        }
+        if onTop {
+            page.floating[terminalID] = true
+        }
+        return AgentOutput(["pane": target.id, "floating": true, "onTop": page.floating[terminalID] == true,
+                            "existing": existing])
+    }
+}
+
 extension PaneTarget {
-    /// The page whose window floats the pane, and its terminal.
     var floating: (Page, String)? {
         for page in WindowPages.windows.flatMap(\.withFloats)
             where page.store.session == session && page.store.machine.id == machine.id

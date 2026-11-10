@@ -1,7 +1,6 @@
 import Foundation
 import UniformTypeIdentifiers
 
-/// A failed plugin call: the `OvviError` code the page's promise rejects with, and the text.
 public struct PluginError: Error, Equatable {
     public let code: String
     public let text: String
@@ -11,11 +10,10 @@ public struct PluginError: Error, Equatable {
         self.text = text
     }
 
-    /// A HerdrKit error as the page reads it.
     init(_ error: any Error) {
         switch error {
         case let error as PluginError: self = error
-        case FileError.tooLarge: self.init("tooLarge", "The file is over 16 MB")
+        case FileError.tooLarge: self.init("tooLarge", "The file is over \(Files.viewLimit >> 20) MB")
         case FileError.changed: self.init("changed", "The file changed on disk")
         case HerdrError.timeout: self.init("timeout", "It took too long")
         case let HerdrError.failed(text) where text.hasPrefix("Not a file") || text.contains("No such file"):
@@ -26,23 +24,17 @@ public struct PluginError: Error, Equatable {
     }
 }
 
-/// A plugin page's calls on its card's machine (plugins/api): files, git and run. Arguments and replies are JSON, as
-/// the page sends and reads them. The card's own calls (its place, state, header, toast, menus) are the app's.
 public struct PluginCalls: Sendable {
     public let exec: any Exec
-    public let remote: Bool
-    /// git may run on the machine (`HostStore.gitRuns`): on This Mac, not before the developer tools are there.
     public let gitRuns: Bool
 
-    public init(exec: any Exec, remote: Bool, gitRuns: Bool) {
-        (self.exec, self.remote, self.gitRuns) = (exec, remote, gitRuns)
+    public init(exec: any Exec, gitRuns: Bool) {
+        (self.exec, self.gitRuns) = (exec, gitRuns)
     }
 
-    /// The git writes, which a card runs one at a time.
     public static let gitWrites: Set = ["git.stage", "git.unstage", "git.commit", "git.fetch", "git.pull", "git.push",
                                         "git.switch", "git.init", "git.revert"]
 
-    /// Runs one call; its JSON reply. Throws `failed` for a call it does not know.
     public func call(_ name: String, _ arguments: Data) async throws(PluginError) -> Data {
         let reply: Any?
         do {
@@ -79,7 +71,11 @@ public struct PluginCalls: Sendable {
             guard let text = String(validating: file.data, as: UTF8.self) else {
                 throw PluginError("notText", "The file is not UTF-8 text")
             }
-            return ["text": text, "hash": file.hash, "writable": !remote || file.data.count <= Files.remoteEditLimit]
+            return [
+                "text": text,
+                "hash": file.hash,
+                "writable": !exec.isRemote || file.data.count <= Files.remoteEditLimit,
+            ]
         case "files.readBytes":
             let file = try await Files.read(path, exec: exec)
             let type = UTType(filenameExtension: (path as NSString).pathExtension)?.preferredMIMEType
@@ -99,7 +95,11 @@ public struct PluginCalls: Sendable {
             let git = gitRuns ? await Git.root(path, exec: exec) != nil : false
             return try await Files.paths(path, git: git, exec: exec)
         case "files.write":
-            let data = try args.base64.flatMap { Data(base64Encoded: $0) } ?? Data(args.need(\.text, "text").utf8)
+            let data = if let base64 = args.base64 {
+                try Data(base64Encoded: base64) ?? args.notBase64()
+            } else {
+                try Data(args.need(\.text, "text").utf8)
+            }
             return try await ["hash": Files.save(data, to: path, replacing: args.over, exec: exec)]
         case "files.move":
             _ = try await exec.checkedOutput(["sh", "-c", Self.moveScript, "sh", path, args.path(\.target, "target")])
@@ -109,7 +109,6 @@ public struct PluginCalls: Sendable {
         }
     }
 
-    /// `d` for a folder, else the size and the `cksum` (`Files.read`'s hash); fails for nothing there.
     static let infoScript = #"""
     if [ -d "$1" ]; then echo d; elif [ -e "$1" ]; then wc -c <"$1" && cksum <"$1"
     else echo "No such file" >&2; exit 1; fi
@@ -168,10 +167,8 @@ public struct PluginCalls: Sendable {
         }
     }
 
-    /// A write's git arguments, never asking for a password (`Git.run`), and whether it may take long: the network's,
-    /// and a commit's hooks.
     private func write(_ name: String, _ root: String, _ args: Args) async throws -> ([String], Bool) {
-        // A path, not a pattern: `*.txt` stages that file alone. `reset` also before the first commit.
+        // A path, not a pattern: `*.txt` stages that file alone. `reset` also with no commit yet.
         let paths = args.paths.map { ["--"] + $0 }
         switch name {
         case "git.stage": return (paths.map { ["--literal-pathspecs", "add", "-A"] + $0 } ?? ["add", "-A"], false)
@@ -184,13 +181,15 @@ public struct PluginCalls: Sendable {
         case "git.pull": return (Git.Sync.pull.arguments, true)
         case "git.push": return (Git.Sync.push.arguments, true)
         case "git.init": return (["init", "-q"], false)
-        default:
-            let branch = try args.need(\.branch, "branch")
-            guard !branch.hasPrefix("-") else { throw PluginError("failed", "No branch \(branch)") }
-            // A remote branch makes a local one that tracks it.
-            let remote = try await Git.branches(root, exec: exec).contains { $0.remote && $0.name == branch }
-            return (["switch"] + (remote ? ["--track", branch] : [branch]), true)
+        case "git.switch": return try await (switchTo(args.need(\.branch, "branch"), root), true)
+        default: throw PluginError("failed", "No call \(name)")
         }
+    }
+
+    private func switchTo(_ branch: String, _ root: String) async throws -> [String] {
+        guard !branch.hasPrefix("-") else { throw PluginError("failed", "No branch \(branch)") }
+        let remote = try await Git.branches(root, exec: exec).contains { $0.remote && $0.name == branch }
+        return ["switch"] + (remote ? ["--track", branch] : [branch])
     }
 
     private static func json(_ change: Git.Change) -> [String: Any] {
@@ -199,7 +198,7 @@ public struct PluginCalls: Sendable {
         return json
     }
 
-    /// argv in `cwd`, no shell between: `sh` only changes the folder and runs it.
+    /// No shell between: `sh` only changes the folder and runs argv.
     /// ponytail: stdout as lines (a last line break is added, NUL bytes pass) and stderr's last 8 KB, as `Exec` gives
     /// them; a stream per call when a plugin needs bytes.
     private func run(_ args: Args) async throws -> Any? {
@@ -241,6 +240,10 @@ private struct Args: Decodable {
     let text, base64, over, source, message, branch, stdin: String?
     let paths, argv: [String]?
     let limit, timeout: Int?
+
+    func notBase64() throws -> Data {
+        throw PluginError("failed", "base64 is not base64")
+    }
 
     func need(_ key: KeyPath<Self, String?>, _ name: String) throws -> String {
         guard let text = self[keyPath: key] else { throw PluginError("failed", "\(name) is missing") }

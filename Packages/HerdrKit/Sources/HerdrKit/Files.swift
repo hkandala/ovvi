@@ -3,34 +3,26 @@ import Foundation
 public struct FileEntry: Equatable, Sendable {
     public let name: String
     public let isFolder: Bool
-    /// git ignores it, or the folder it is in.
     public let ignored: Bool
 }
 
-/// A file's bytes and their `cksum`, which a save checks against the disk.
 public struct FileContents: Equatable, Sendable {
     public let data: Data
     public let hash: String
 }
 
 public enum FileError: Error, Equatable, Sendable {
-    /// Over `Files.viewLimit`; the file's size.
     case tooLarge(Int)
-    /// The file changed on disk since it was read.
     case changed
 }
 
-/// Files on a machine for the plugins, through `Exec` on This Mac and remote machines alike. The relay carries lines,
-/// so names come NUL-separated and bytes as base64.
+/// The relay carries lines, so names come NUL-separated and bytes as base64.
 public enum Files {
-    /// Bigger files show the preview's info view.
     public static let viewLimit = 16 << 20
-    /// Bigger files on a remote machine open read only: a save queues the whole file on the machine's one relay.
+    /// A save queues the whole file on the machine's one relay.
     public static let remoteEditLimit = 4 << 20
 
-    /// A folder's files and folders but `.git` (as VS Code), folders first, by name as the Finder sorts. With `git`,
-    /// the names git ignores are marked: `git check-ignore` asks only about the folder's own names, so a listing never
-    /// walks the whole repository.
+    /// `git check-ignore` asks only about the folder's own names, so a listing never walks the whole repository.
     public static func list(_ folder: String, git: Bool, exec: any Exec) async throws -> [FileEntry] {
         // Links to folders are folders; a name may hold a line break. The ignored names come after an empty one; none
         // outside a repository. Each name is asked as `./name`: git reads them as pathspecs, so `:foo` would be `foo`.
@@ -59,8 +51,6 @@ public enum Files {
         }
     }
 
-    /// Every file under `root`, from it, for the filter; with `git` the files git does not ignore, and tracked files
-    /// deleted since.
     /// ponytail: the first 8 MB of names (about 150,000 files); a search on the machine when roots get bigger.
     public static func paths(_ root: String, git: Bool, exec: any Exec) async throws -> [String] {
         let script = #"""
@@ -75,7 +65,6 @@ public enum Files {
             .map { String($0.hasPrefix("./") ? $0.dropFirst(2) : $0) }
     }
 
-    /// The file's bytes, up to `viewLimit`.
     public static func read(_ path: String, exec: any Exec) async throws -> FileContents {
         // The hash first: a change between the two reads makes a save stop with `changed`, never lose it.
         let script = #"""
@@ -97,9 +86,6 @@ public enum Files {
         return FileContents(data: data, hash: String(lines[1]))
     }
 
-    /// Writes `data` over the file at once (a new file beside it, then `mv`) if its disk hash is still `hash`; nil
-    /// overwrites whatever is there. A link is written through, so it stays a link. Gives the new hash; throws
-    /// `changed` and writes nothing otherwise.
     public static func save(_ data: Data, to path: String, replacing hash: String?, exec: any Exec) async throws
         -> String
     {
@@ -109,8 +95,8 @@ public enum Files {
         return result
     }
 
-    /// `cp -p` gives the new file the old one's mode. The size check: a run whose stdin closed early (the connection
-    /// dropped, the app quit) decodes what came and exits 0.
+    /// `cp -p` gives the new file the replaced one's mode. The size check: a run whose stdin closed early (the
+    /// connection dropped, the app quit) decodes what came and exits 0.
     static let saveScript = #"""
     t=$(mktemp "$(dirname "$1")/.ovvi-save.XXXXXX") || exit
     trap 'rm -f "$t"' EXIT
@@ -121,17 +107,14 @@ public enum Files {
     if [ -h "$1" ]; then cat "$t" >"$1"; else mv -f "$t" "$1"; fi
     """#
 
-    /// Yields when the file, or anything under the folder, may have changed: compare `read`'s hash to skip your own
-    /// saves; list a folder's open folders again for new files and git letters. On This Mac file system events for
-    /// the path, whatever file it names now; on a remote machine a check every 2 s while the stream is read.
     public static func watch(_ path: String, exec: any Exec) -> AsyncStream<Void> {
         let (stream, continuation) = AsyncStream<Void>.makeStream(bufferingPolicy: .bufferingNewest(1))
-        if exec is ProcessExec {
-            let events = Events(path, continuation)
-            continuation.onTermination = { _ in events.stop() }
-        } else {
+        if exec.isRemote {
             let task = Task { await poll(path, exec: exec, continuation) }
             continuation.onTermination = { _ in task.cancel() }
+        } else {
+            let events = Events(path, continuation)
+            continuation.onTermination = { _ in events.stop() }
         }
         return stream
     }
@@ -148,7 +131,7 @@ public enum Files {
               (cd "$1" && xargs -0 cat 2>/dev/null); } | cksum
         else cksum <"$1"; fi
         """#
-        // Nil before the first check; then nil inside while the file is gone.
+        // Nil until the first check; then nil inside while the file is gone.
         var last: String??
         while !Task.isCancelled {
             let now = try? await exec.checkedOutput(["sh", "-c", script, "sh", path])
@@ -161,9 +144,8 @@ public enum Files {
     }
 }
 
-/// File system events on This Mac for a path and anything under it, whatever file it names now: a file an editor
-/// replaced, or one that comes back, is still seen. The stream is on the nearest folder that exists: one made later
-/// sends nothing.
+/// Whatever file the path names: a file an editor replaced, or one that comes back, is still seen. The stream is on
+/// the nearest folder that exists: one made later sends nothing.
 private final class Events: Sendable {
     private static let queue = DispatchQueue(label: "ovvi.files.watch")
     private let changed: AsyncStream<Void>.Continuation
@@ -204,7 +186,7 @@ private final class Events: Sendable {
         }
     }
 
-    /// On the events' queue: a callback that runs now uses `self`, which the context does not keep.
+    /// On the events' queue: a callback that is running uses `self`, which the context does not keep.
     func stop() {
         Self.queue.async { [self] in
             guard let stream else { return }

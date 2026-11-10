@@ -2,23 +2,18 @@ import Foundation
 import HerdrKit
 import Observation
 
-/// Installs herdr on a machine with the command from herdr's docs, on This Mac or over the machine's SSH connection,
-/// then connects the machine's pages (ui/states). A missing or too old herdr's page shows its button.
 @MainActor @Observable
 final class HerdrInstall {
     static let shared = HerdrInstall()
 
     enum Step: Equatable {
-        /// The installer's last line, or what comes after it.
         case running(String)
-        /// The end of what the installer printed.
         case failed(String)
     }
 
-    /// By machine id.
     private(set) var steps: [String: Step] = [:]
 
-    /// herdr.dev's install command; `-herdrInstall` gives the e2e tests a fake installer, so no test installs herdr.
+    /// `-herdrInstall` gives the e2e tests a fake installer, so no test installs herdr.
     static var command: String {
         UserDefaults.standard.string(forKey: "herdrInstall") ?? "curl -fsSL https://herdr.dev/install.sh | sh"
     }
@@ -31,8 +26,7 @@ final class HerdrInstall {
         let exec = await machine.exec()
         var printed: [String] = []
         do {
-            // Every command's stderr on stdout, in order, for the failure's text (curl's own errors too), and a
-            // failed curl fails the pipe where the shell has pipefail (a `sh` without it exits on a bare `set`).
+            // A failed curl fails the pipe where the shell has pipefail; a `sh` without it exits on a bare `set`.
             let script = "(set -o pipefail) 2>/dev/null && set -o pipefail; exec 2>&1; " + Self.command
             let channel = try await exec.run(["sh", "-c", script])
             channel.closeInput()
@@ -59,8 +53,7 @@ final class HerdrInstall {
             do {
                 try await HostStore.start(session, on: machine)
             } catch {
-                // The "not running" page says why.
-                stores.first { $0.session == session }?.notice = Notice(text: error.localizedDescription)
+                stores.first { $0.session == session }?.startProblem = error.localizedDescription
             }
         }
         for store in stores {

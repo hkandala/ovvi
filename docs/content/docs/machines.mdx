@@ -24,7 +24,7 @@ description: "What a machine is, its sessions, the SSH connection, the health ch
   icon and id, in `UserDefaults`. The machine menu lists This Mac first, then the list. Settings ▸
   Machines lists them too ([Settings](/docs/ui/settings#machines)).
   - The list is JSON under the `machines` key. A run launched with
-    `-session` (the e2e tests, a run against a throwaway session) never reads
+    `-session`, `-defaultSession` or `-machines` (the e2e tests, a run against a throwaway session) never reads
     or writes it: it takes `-machines <json>` or no machines, so a test never
     reaches the user's hosts.
   - A window remembers its machine's id; `-machine <id>` picks it at launch.
@@ -88,7 +88,7 @@ description: "What a machine is, its sessions, the SSH connection, the health ch
     `ServerAliveCountMax=3`) ends the master within about 15 s after the
     network goes (a network change, sleep, a server restart). The next run
     starts a new one. The app runs no `-O exit` of its own on a failed check.
-  - On quit the app runs `ssh -S <ctl> -O exit <target>` for each master.
+  - On quit the app runs `ssh -F /dev/null -S <ctl> -O exit -- <target>` for each master.
 - **The relay:** every run of a remote machine (calls, the events stream,
   every terminal stream) goes through one SSH session. A server may allow
   only a few sessions per connection (`MaxSessions`; a server with one-time passcodes refused

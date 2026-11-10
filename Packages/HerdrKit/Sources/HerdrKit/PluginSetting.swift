@@ -1,25 +1,16 @@
 import Foundation
 
-/// A value the user sets on the plugin's page in Settings and the plugin's cards read (plugins/manifest#settings): one
-/// for all machines.
 public struct PluginSetting: Decodable, Sendable, Equatable {
     public let id: String
-    /// `toggle`, `choice`, `number`, `text` or `path`.
     public let type: String
     public let title: String
     public let `default`: Value
-    /// One line under the title.
     public var description: String?
-    /// A heading over this row and the rows after it.
     public var section: String?
-    /// A choice's: 2 to 12.
     public var options: [Option]?
-    /// A number's range, step and unit (`pt`).
     public var min: Double?, max: Double?, step: Double?
     public var unit: String?
-    /// A text's or a path's field when empty.
     public var placeholder: String?
-    /// A path's: `file` or `folder`.
     public var kind: String?
 
     public struct Option: Decodable, Sendable, Equatable {
@@ -31,7 +22,6 @@ public struct PluginSetting: Decodable, Sendable, Equatable {
         }
     }
 
-    /// A toggle's is a boolean, a number's a number, the others' a string.
     public enum Value: Decodable, Sendable, Hashable {
         case bool(Bool), number(Double), text(String)
 
@@ -46,7 +36,6 @@ public struct PluginSetting: Decodable, Sendable, Equatable {
             }
         }
 
-        /// From `settings.json`: a boolean, a number or a string.
         public init?(json: Any) {
             if let number = json as? NSNumber {
                 // A JSON boolean is an NSNumber too.
@@ -68,7 +57,6 @@ public struct PluginSetting: Decodable, Sendable, Equatable {
         }
     }
 
-    /// A setting the app writes itself (the browser's).
     public init(id: String, type: String, title: String, default value: Value, description: String?,
                 options: [Option]?)
     {
@@ -76,8 +64,6 @@ public struct PluginSetting: Decodable, Sendable, Equatable {
         (self.description, self.options) = (description, options)
     }
 
-    /// Whether a value fits this setting: its type, a choice's options, a number's range, a text's 1 KB, a path's
-    /// start. A value in `settings.json` that does not fit reads as the default.
     public func fits(_ value: Value) -> Bool {
         switch (type, value) {
         case (_, .bool): type == "toggle"
@@ -90,11 +76,8 @@ public struct PluginSetting: Decodable, Sendable, Equatable {
         }
     }
 
-    /// The rules the types do not carry; `bad` names the field.
     func check(_ bad: (String, String) -> ManifestError) throws(ManifestError) {
-        let low = { (char: Character) in char.isASCII && (char.isLowercase || char.isNumber) }
-        guard (1 ... 64).contains(id.count), id.first.map(low) == true, id.allSatisfy({ low($0) || $0 == "-" })
-        else { throw bad("id", "must be 1 to 64 of a-z, 0-9 and -, starting with a letter or digit") }
+        guard PluginManifest.isID(id) else { throw bad("id", PluginManifest.idRule) }
         guard ["toggle", "choice", "number", "text", "path"].contains(type) else {
             throw bad("type", "must be toggle, choice, number, text or path")
         }

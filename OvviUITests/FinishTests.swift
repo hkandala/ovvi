@@ -1,9 +1,7 @@
 import XCTest
 
-/// The find bar, links, the not running and failed start states, and programs of panes never shown.
 extension OvviUITests {
     func testSecondPagesServerStopsAndStartsAloneOnItsPage() async throws {
-        let five = try env("OVVI_SESSION5")
         let (workspace, pane) = try await shown(running(five))
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         openPage(five)
@@ -12,7 +10,6 @@ extension OvviUITests {
         try await Self.post("\(five)/stop")
         let start = element("detail.start")
         XCTAssertTrue(start.exists(within: 10))
-        // The first page is not touched: its cards and streams stay.
         showPage(one)
         XCTAssertTrue(element("terminal.w1:p1").exists(within: 3))
         XCTAssertFalse(start.exists)
@@ -27,7 +24,6 @@ extension OvviUITests {
     }
 
     func testAFailedStartKeepsThePanelOpenWithRetry() async throws {
-        let six = try env("OVVI_SESSION6")
         // No time to answer: every start the app makes fails, though launchd starts the server.
         relaunch(one, ["-startTimeout", "0"])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
@@ -45,12 +41,10 @@ extension OvviUITests {
                                                            text)).firstMatch
         XCTAssertTrue(said.exists, notice.debugDescription)
         XCTAssertEqual(notice.images["notice.symbol"].label, "Error")
-        // The panel stays open and its row's start is over (its spinner gone).
         XCTAssertTrue(filter.exists)
         XCTAssertTrue(element("open-session.new.\(six)").exists)
         keepScreenshot("could not start")
 
-        // The server came up after all: Retry finds it running and opens its page.
         try await running(six, start: false)
         notice.buttons["notice.retry"].click()
         XCTAssertTrue(filter.vanishes(within: connect))
@@ -63,7 +57,6 @@ extension OvviUITests {
         app.typeKey("f", modifierFlags: .command)
         let field = element("find.field"), count = element("find.count")
         XCTAssertTrue(hasKeyboard(field))
-        // "line 4" and 40–49; the last one, nearest the bottom, first.
         field.typeText("line 4")
         XCTAssertTrue(count.has(\.stringValue, "11 of 11", within: 2), count.stringValue)
         app.typeKey(.return, modifierFlags: [])
@@ -76,7 +69,7 @@ extension OvviUITests {
         XCTAssertTrue(count.has(\.stringValue, "11 of 11", within: 2), count.stringValue)
         element("find.next").click()
         XCTAssertTrue(count.has(\.stringValue, "1 of 11", within: 2), count.stringValue)
-        // A fixed width (the Window menu has an item named "find" too: the bar is the group).
+        // The Window menu has an item named "find" too: the bar is the group.
         XCTAssertEqual(app.groups.matching(identifier: "find").firstMatch.frame.width, 320, accuracy: 1)
         field.click()
         app.typeKey("a", modifierFlags: .command)
@@ -112,15 +105,32 @@ extension OvviUITests {
         app.typeText("line 42")
         XCTAssertTrue(count.has(\.stringValue, "3 of 3", within: 2), count.stringValue)
         try await expectHighlight("line 42", in: pane)
-        // Centered, it sits rows above herdr's last row: herdr scrolled up to it.
         try await expect("herdr to center the match") { try await scrollOffset(pane) > 0 }
-        // Its card leaving view closes it, and herdr's shared viewport goes back to the bottom.
         element("tab.w2:t1").click()
         XCTAssertTrue(field.vanishes(within: 2))
         try await expect("herdr back at the bottom") { try await scrollOffset(pane) == 0 }
     }
 
-    /// A new tab in view, its card with the keyboard, after `line 1` to `line 200`: its pane.
+    func testAFindBarClosedBeforeItsReadLeavesHerdrAtTheBottom() async throws {
+        app.launchEnvironment["SHELL"] = "\(Self.agents)/login-shell"
+        app.launchEnvironment["PATH"] = "\(Self.fixtures)/late-herdr:/usr/bin:/bin"
+        app.launchEnvironment["OVVI_E2E_HERDR"] = try env("OVVI_HERDR")
+        relaunch()
+        let pane = try await twoHundredLines("late")
+        app.typeKey("f", modifierFlags: .command)
+        let field = element("find.field")
+        XCTAssertTrue(hasKeyboard(field))
+        field.typeText("line 42")
+        // herdr's text has not come yet.
+        XCTAssertEqual(element("find.count").stringValue, "0 of 0")
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(field.vanishes(within: 2))
+        // The read answers 3 s after ⌘F.
+        try await Task.sleep(for: .seconds(4))
+        let offset = try await scrollOffset(pane)
+        XCTAssertEqual(offset, 0)
+    }
+
     private func twoHundredLines(_ label: String) async throws -> String {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab(label)
@@ -131,7 +141,6 @@ extension OvviUITests {
         return pane
     }
 
-    /// The rows herdr shows the text on are highlighted, the lowest one as the selected match.
     private func expectHighlight(_ text: String, in pane: String) async throws {
         let lit = element("find.highlights")
         var expected = ""
@@ -147,9 +156,6 @@ extension OvviUITests {
         }
     }
 
-    /// A terminal's links open as every link does, behind the card: ⌘-click in a new tab, ⌥-click to the side; ⌥
-    /// shows a link as ⌘ does. A link ends before the punctuation after it; an `ftp:` link and a path that is not
-    /// there open nothing; Markdown opens in File Explorer, HTML in the browser. The card's menu has no link items.
     func testCommandClickOnALinkOpensIt() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("link")
@@ -162,9 +168,7 @@ extension OvviUITests {
             to: pane,
         )
         try await waitFor(pane) { $0.hasPrefix("ftp://example.com/x\n\(address).\n") }
-        addTeardownBlock { [one] in
-            _ = try? await Self.call(one, "pane.send_text", ["pane_id": pane, "text": "rm -rf \(folder)\r"])
-        }
+        sendAfter("rm -rf \(folder)\r", to: pane)
         let terminal = element("terminal.\(pane)")
         let grid = try XCTUnwrap(terminal.value as? String).split(separator: " ").compactMap { Double($0) }
         let cell = CGSize(width: terminal.frame.width / grid[1], height: terminal.frame.height / grid[0])
@@ -172,7 +176,6 @@ extension OvviUITests {
             terminal.coordinate(withNormalizedOffset: .zero)
                 .withOffset(CGVector(dx: cell.width * 5.5, dy: cell.height * (row + 0.5)))
         }
-        // ⌘-click: only the https link opens, without its period.
         let before = try await tabIDs()
         for row in [0.0, 2.0, 1.0] {
             link(row).hover()
@@ -181,13 +184,12 @@ extension OvviUITests {
         try await expectBrowser(newTabID(after: before), " \(address)")
         let tabs = try await tabIDs()
         XCTAssertEqual(tabs.count, before.count + 1, "\(tabs)")
-        XCTAssertTrue(element("tab.\(tab)").isSelected)
+        XCTAssertFalse(until(0.5) { !element("tab.\(tab)").isSelected })
         XCUIElement.perform(withKeyModifiers: .command) { link(4).click() }
         try await expectBrowser(newTabID(after: tabs), "\(folder)/page.html")
 
         optionShowsLinks(terminal, link(1), address, link(4), "page.html")
 
-        // ⌥-click: Markdown beside the card, without the period.
         XCUIElement.perform(withKeyModifiers: .option) { link(3).click() }
         let side = try await sidePane(in: tab, besides: [pane])
         try await labelEnds(side, " \(folder)/notes.md")
@@ -199,8 +201,6 @@ extension OvviUITests {
         app.typeKey(.escape, modifierFlags: [])
     }
 
-    /// ⌥ shows a link as ⌘ does (the card's title is the link libghostty reports): pressed with the pointer on one,
-    /// and held while the pointer moves to another; none once it is up.
     private func optionShowsLinks(_ terminal: XCUIElement, _ start: XCUICoordinate, _ first: String,
                                   _ other: XCUICoordinate, _ end: String)
     {
@@ -214,7 +214,6 @@ extension OvviUITests {
         XCTAssertTrue(until(3) { terminal.title.isEmpty }, terminal.title)
     }
 
-    /// The new tab's pane is a browser whose label ends so.
     private func expectBrowser(_ tab: String, _ end: String) async throws {
         closeAfter("tab", tab)
         let pane = try await pane(of: tab)
@@ -224,12 +223,9 @@ extension OvviUITests {
         }
     }
 
-    /// A card opened for the first time shows its terminal only once herdr's frames settled at the card's size: the
-    /// program's redraw for the resize is in by then (no flicker of herdr's resize).
     func testCardShowsItsTerminalOnceHerdrDrewItAtItsSize() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("ready")
-        // An 80 × 24 PTY (another client's attach), and a shell that prints its size when it changes.
         let terminal = try await terminalID(pane)
         try await Self.post("\(one)/control", Data(terminal.utf8))
         try await send("trap 'echo resized $(stty size)' WINCH\r", to: pane)
@@ -241,14 +237,12 @@ extension OvviUITests {
         try await expect("\(pane) ready, it says \(card.stringValue)", times: 100) {
             card.exists && card.stringValue != "loading"
         }
-        // At once: the redraw at the card's grid was in before the card showed.
         let grid = try XCTUnwrap(element("terminal.\(pane)").value as? String)
         // Unwrapped: the line after CI's long prompt wraps.
         let screen = try await read(pane, "recent_unwrapped")
         XCTAssertTrue(screen.contains("resized \(grid)"), "card \(grid), screen:\n\(screen)")
     }
 
-    /// herdr is asked what every pane runs on the first snapshot, also in tabs never shown.
     func testNeverShownTabsCardNamesItsProgram() async throws {
         let capsule = element("tab.w1:t2")
         XCTAssertTrue(capsule.exists(within: connect))
@@ -263,14 +257,12 @@ extension OvviUITests {
 
     func testFoldersDroppedOnTheDockOpenWorkspaces() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        // The app beside the test runner, as the Dock opens it.
         let ovvi = Bundle.main.bundleURL.deletingLastPathComponent().appending(path: "Ovvi Dev.app").path
         let warm = try await dropFolder(ovvi)
         let opened = try await workspace(in: warm)
         XCTAssertTrue(element("workspace.\(opened)").has(\.isSelected, true, within: 3))
         XCTAssertEqual(app.windows.count, 1)
 
-        // A drop that starts the app opens one window and the workspace in it.
         app.terminate()
         let cold = try await dropFolder(ovvi)
         // The Debug build's own id, never the installed app's.
@@ -283,12 +275,10 @@ extension OvviUITests {
         XCTAssertEqual(relaunched.windows.count, 1)
     }
 
-    /// The helper opens a new folder with the app, as a drop on the Dock icon does: its path.
     private func dropFolder(_ ovvi: String) async throws -> String {
         try await String(decoding: Self.post("\(one)/open-folder", Data(ovvi.utf8)), as: UTF8.self)
     }
 
-    /// The workspace herdr made in the folder (its pane's cwd), closed after the test.
     private func workspace(in folder: String, times: Int = 50) async throws -> String {
         let name = (folder as NSString).lastPathComponent
         let id = try await poll("a workspace in \(name)", times: times) { () async throws -> String? in
@@ -299,7 +289,6 @@ extension OvviUITests {
         return id
     }
 
-    /// herdr's viewport of the pane, in lines from the bottom.
     private func scrollOffset(_ pane: String) async throws -> Int {
         try await field((self.pane(pane)["scroll"] as? [String: Any])?["offset_from_bottom"], "\(pane)'s scroll offset")
     }

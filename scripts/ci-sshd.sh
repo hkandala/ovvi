@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
-# CI only (it writes ~/.ssh and adds a user): an sshd on 127.0.0.1:2222 for the remote-host tests, and two hosts in
-# ~/.ssh/config, as a user would have them:
+# CI only: an sshd on 127.0.0.1:2222 for the remote-host tests, and two hosts in ~/.ssh/config:
 # - ovvi-key: this user with a key and a known host key, so nothing asks; its herdr sessions are the e2e ones.
 # - ovvi-pw: a password user without herdr, behind a host key alias ssh does not know yet, so ssh asks both.
-# Two sessions per connection, as a strict server allows: the app carries everything over one.
+# MaxSessions 2, as a strict server allows: the app carries everything over one connection.
 set -euo pipefail
 [ "${CI:-}" = true ] || { echo "CI only: it writes ~/.ssh and adds a user" >&2 && exit 2; }
 d=/tmp/ovvi-sshd
@@ -26,14 +25,13 @@ MaxSessions 2
 LogLevel VERBOSE
 Banner $d/banner
 CONFIG
-# A login banner, as many servers have: the app never shows it.
 echo "Authorized users only. Usage is subject to monitoring." >"$d/banner"
-# The helper counts connections in the log: this user owns it, root's sshd appends.
+# This user owns the log the helper reads; root's sshd appends to it.
 touch "$d/sshd.log"
 sudo /usr/sbin/sshd -f "$d/sshd_config" -E "$d/sshd.log"
 sudo sysadminctl -addUser ovvi-pw -password ovvi-e2e-pw -home /Users/ovvi-pw 2>&1
 sudo createhomedir -c -u ovvi-pw >/dev/null 2>&1 || true
-# A login shell as slow as a busy dev machine's: the app looks for herdr in one, and Connecting shows meanwhile.
+# A login shell as slow as a busy dev machine's: the app looks for herdr in one.
 sudo mkdir -p /Users/ovvi-pw
 echo 'sleep 2' | sudo tee /Users/ovvi-pw/.zshrc >/dev/null
 # Remote Login may admit only this group's members.
@@ -56,7 +54,6 @@ for _ in $(seq 50); do
     ssh-keyscan -p 2222 127.0.0.1 2>/dev/null >>~/.ssh/known_hosts && grep -q 2222 ~/.ssh/known_hosts && break
     sleep 0.1
 done
-# Both hosts as the tests expect them: no prompt for one, a password for the other.
 ssh -o BatchMode=yes ovvi-key true
 if ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ovvi-pw true 2>/dev/null; then
     echo "ovvi-pw got in without a password" >&2 && exit 1

@@ -1,34 +1,21 @@
 import HerdrKit
 import SwiftUI
 
-/// The sidebar's Archived Sessions (ui/window#archived-sessions): the agents' sessions on the window's machine that no
-/// pane runs, from the agents' own stores. Read each time it opens: the machine's last list at once, else a loader,
-/// until every agent's first page came or 2 s after the first did. The next pages read as the list's end scrolls in.
 struct ArchivedShelf: View {
     let pages: WindowPages
-    /// The page in view when drawn: its machine's sessions. A resume goes to the page in view when it runs.
     let page: Page
-    /// The agent the menu shows, "" for all.
     @AppStorage("archivedAgent", store: .agents) private var agent = ""
     @AppStorage(Page.openShelves, store: .agents) private var opened = ""
     @State private var list = ClosedList()
     @State private var reading: Set<String> = []
     @State private var failed: Set<String> = []
-    /// No list yet: the loader shows.
     @State private var loading = true
-    /// Each read anew (an open, Retry); an older one's pages land nowhere.
     @State private var generation = 0
     @State private var attempt = 0
     @State private var search = ""
     @State private var focusSearch = 0
-    /// The user opened it: its search field takes the keyboard as it appears.
     @State private var opening = false
-    /// Each machine's last list, shown as it opens again while it reads anew.
     private static var lists: [String: ClosedList] = [:]
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    /// UI tests' stores (`-archivedHome`), never the user's; the agents' session titles too.
-    static let home = UserDefaults.standard.string(forKey: "archivedHome")
 
     var body: some View {
         let key = page.archivedKey
@@ -58,12 +45,10 @@ struct ArchivedShelf: View {
                     if loading {
                         Loader(text: "Reading sessions…", delay: .milliseconds(300))
                     } else {
-                        // Lazy, for the pages.
                         ScrollView {
                             LazyVStack(spacing: 4) {
                                 ForEach(rows) { row($0) }
                                 if rows.isEmpty {
-                                    // On the list's middle; the end's reads go on under it.
                                     status(shown, next: next, rows: false).frame(maxWidth: .infinity)
                                         .frame(height: Self.height)
                                         .overlay(alignment: .bottom) { end(next, searching: searching) }
@@ -83,12 +68,10 @@ struct ArchivedShelf: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
-                // One height whatever it shows: the header and the search field hold still.
                 .frame(height: Self.height)
                 .padding(.bottom, 4)
             }
         }
-        // Open, as a space row that is not selected: a border, no glass.
         .background {
             if open {
                 RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(.primary.opacity(0.14))
@@ -105,7 +88,6 @@ struct ArchivedShelf: View {
             await searchOlder(shown)
         }
         .task(id: [open ? 1 : 0, attempt]) {
-            // Also while folded, for the next open's first frame.
             let machine = page.store.machine.id
             (list, loading) = (Self.lists[machine] ?? ClosedList(), Self.lists[machine] == nil)
             (reading, failed, generation) = ([], [], generation + 1)
@@ -114,11 +96,8 @@ struct ArchivedShelf: View {
         }
     }
 
-    /// The list's: five 48 pt rows, 4 pt apart.
     static let height: CGFloat = 5 * 48 + 4 * 4
 
-    /// The list's end: anew after each page, so it reads on while it stays in view (a page with nothing to show). A
-    /// search reads on by itself (`searchOlder`).
     @ViewBuilder private func end(_ next: [String], searching: Bool) -> some View {
         if !next.isEmpty, !searching {
             Color.clear.frame(height: 1).id(list.agents.values.map(\.looked).reduce(0, +))
@@ -126,9 +105,8 @@ struct ArchivedShelf: View {
         }
     }
 
-    /// Opens or folds it (a fold empties the search); opened, the search field takes the keyboard.
     private func toggle(_ key: String) {
-        withAnimation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.2)) {
+        withAnimation(Animation.reduced ? nil : .easeOut(duration: 0.2)) {
             opened = opened.togglingLine(key)
         }
         opening = opened.hasLine(key)
@@ -141,7 +119,6 @@ struct ArchivedShelf: View {
             HStack(spacing: 6) {
                 Text(Self.label)
                 Spacer(minLength: 0)
-                // Where a space row's chevron is.
                 Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
                     .rotationEffect(.degrees(open ? 90 : 0)).frame(width: 12)
             }
@@ -225,16 +202,15 @@ struct ArchivedShelf: View {
         }
     }
 
-    /// The page in view as an action runs: the shelf stays while the pages change.
     private var inView: Page {
         pages.current ?? page
     }
 
     private func row(_ session: ClosedSession) -> some View {
-        // pi's session is a file path: its name is enough.
+        // pi's session is a file path.
         let id = "agents.archived.\(session.agent).\((session.value as NSString).lastPathComponent)"
         return ArchivedRow(icon: session.agent, title: session.title,
-                           line2: PathField.short(session.folder, remote: page.store.machine.isRemote),
+                           line2: MachinePath.short(session.folder, remote: page.store.machine.isRemote),
                            date: session.date, id: id) { inView.resume(session) }
             .contextMenu {
                 Button("Resume") { inView.resume(session, beside: false) }
@@ -244,13 +220,10 @@ struct ArchivedShelf: View {
 }
 
 private extension ArchivedShelf {
-    /// A search's own reading: the agents' older pages, one after another, until every store was read or the list
-    /// holds 1000 sessions; cancelled by a new query, another agent or a fold. Older pages land under the rows.
     /// ponytail: polls every 0.2 s while another read runs; a read's own end could signal it if this ever shows.
     func searchOlder(_ shown: [String]) async {
         while !Task.isCancelled, !bounded(shown) {
             let next = list.next(of: shown).filter { !failed.contains($0) }
-            // An agent still on its first page has no next one yet: wait for it too.
             if loading || !reading.isDisjoint(with: shown) {
                 try? await Task.sleep(for: .milliseconds(200))
             } else if next.isEmpty {
@@ -262,13 +235,10 @@ private extension ArchivedShelf {
         }
     }
 
-    /// A search reads no further back than this many sessions on a machine: a large store answers in a bounded time.
     func bounded(_ shown: [String]) -> Bool {
         list.sessions(of: shown).count >= 1000
     }
 
-    /// Every agent's first page, shown together once all came, or 2 s after the first one did: a slow agent is read
-    /// on (`reading`) and comes in when it does, a failed one is marked (`failed`).
     func readFirst() async {
         var generation = generation
         let agents = Chooser.agents.map(\.command), exec = await page.store.machine.exec()
@@ -276,7 +246,7 @@ private extension ArchivedShelf {
         await withTaskGroup(of: (String, ClosedPage?).self) { group in
             for agent in agents {
                 group.addTask {
-                    await (agent, try? exec.closedSessions(agent: agent, offset: 0, home: Self.home))
+                    await (agent, try? exec.closedSessions(agent: agent, offset: 0, home: HostStore.archivedHome))
                 }
             }
             for await (agent, page) in group where generation == self.generation {
@@ -304,7 +274,7 @@ private extension ArchivedShelf {
                     }
                 }
                 if !shown, agent.isEmpty || waiting.isEmpty {
-                    // A next page read meanwhile from the last list lands nowhere.
+                    // A next page read meanwhile from the last list must land nowhere.
                     (shown, self.generation) = (true, self.generation + 1)
                     generation = self.generation
                     (list, failed, reading, loading) = (staged, missing, waiting, false)
@@ -316,9 +286,8 @@ private extension ArchivedShelf {
         }
     }
 
-    /// The pages after the list's end, for the agents that have more, added all at once.
     func readNext(_ agents: [String]) async {
-        // Marked as reading before the await: a second read meanwhile would read the same offset.
+        // Marked as reading ahead of the await: a second read meanwhile would read the same offset.
         let agents = agents.filter { !reading.contains($0) }, generation = generation, base = list
         reading.formUnion(agents)
         let exec = await page.store.machine.exec()
@@ -326,7 +295,7 @@ private extension ArchivedShelf {
             for agent in agents {
                 let offset = base.agents[agent]?.looked ?? 0
                 group.addTask {
-                    await (agent, try? exec.closedSessions(agent: agent, offset: offset, home: Self.home))
+                    await (agent, try? exec.closedSessions(agent: agent, offset: offset, home: HostStore.archivedHome))
                 }
             }
             var pages: [(String, ClosedPage?)] = []
@@ -347,29 +316,9 @@ private extension ArchivedShelf {
         keep()
     }
 
-    /// A list that read whole is the machine's next first frame.
     func keep() {
         if reading.isEmpty, failed.isEmpty {
             Self.lists[page.store.machine.id] = list
         }
-    }
-}
-
-extension Page {
-    /// ⌥: beside the keyboard card.
-    func resume(_ session: ClosedSession) {
-        resume(session, beside: NSEvent.modifierFlags.contains(.option))
-    }
-
-    /// The agents' sessions the panes of every open session of the machine run, or resume.
-    var liveSessions: Set<String> {
-        let stores = HostStore.all.filter { $0.machine.id == store.machine.id }
-        return Set(stores.flatMap(\.agentPanes).compactMap(\.session)).union(stores.flatMap(\.resuming))
-    }
-}
-
-extension Chooser {
-    static func name(_ command: String) -> String {
-        agents.first { $0.command == command }?.name ?? command
     }
 }

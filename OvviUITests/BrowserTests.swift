@@ -1,12 +1,10 @@
 import XCTest
 
-/// Browser panes (ui/browser): a herdr pane labeled `ovvi:browser#<iid> <url>` with a placeholder, shown
-/// as a web view card. The test pages are files a shell of the session writes (the runner is sandboxed).
+/// The test pages are files a shell of the session writes: the runner is sandboxed.
 extension OvviUITests {
-    /// Two pages: one links to two (also in a new window) and opens a popup that closes itself.
     func writePages(from pane: String, in session: String? = nil) async throws -> String {
         let folder = "/tmp/ovvi-e2e-browser"
-        try await Self.call(session ?? one, "pane.send_text", ["pane_id": pane, "text": """
+        try await send("""
         mkdir -p \(folder) && printf '<title>One</title><link rel="icon" href="data:image/svg+xml,<svg \
         xmlns=%%22http://www.w3.org/2000/svg%%22 \
         viewBox=%%220 0 16 16%%22><rect width=%%2216%%22 height=%%2216%%22/></svg>"> \
@@ -14,7 +12,7 @@ extension OvviUITests {
         <button onclick="window.open(\\x27pop.html\\x27)">Pop</button>' >\(folder)/one.html && \
         printf '<title>Two</title><p>ovvi-page-two</p>' >\(folder)/two.html && \
         printf '<p>ovvi-pop</p><button onclick="window.close()">Done</button>' >\(folder)/pop.html && clear\r
-        """])
+        """, to: pane, in: session)
         try await waitFor(pane, in: session) { !$0.contains("printf") }
         return "file://\(folder)/one.html"
     }
@@ -23,25 +21,16 @@ extension OvviUITests {
         app.webViews.staticTexts.matching(NSPredicate(format: "value == %@", text)).firstMatch
     }
 
-    /// Waits until the pane's state file on This Mac holds the address, read with `cat` in a shell of the session.
     /// A short marker, not the file: a narrow pane wraps the JSON (CI's screen), and the typed command holds no "42".
     func expectSaved(_ text: String, iid: String, shell: String, in session: String? = nil) async throws {
         let path = "~/.local/state/ovvi/\(session ?? one)/browser/\(iid).json"
         try await poll("\(text) in \(path)") { () async throws -> Bool? in
-            try await Self.call(session ?? one, "pane.send_text", [
-                "pane_id": shell, "text": "clear; grep -q \(text) \(path) && echo saved-$((6*7))\r",
-            ])
+            try await send("clear; grep -q \(text) \(path) && echo saved-$((6*7))\r", to: shell, in: session)
             try await Task.sleep(for: .milliseconds(200))
             return try await read(shell, in: session).contains("saved-42") ? true : nil
         }
     }
 
-    func paneLabel(_ pane: String, in session: String? = nil) async throws -> String {
-        try await self.pane(pane, in: session)["label"] as? String ?? ""
-    }
-
-    /// ⌘D on the pane, then 3 (Browser) in the chooser: the browser pane, labeled with no address, its address field
-    /// with the keyboard. Its id and label.
     func chooseBrowser(besides left: String, in tab: String) async throws -> (pane: String, label: String) {
         app.typeKey("d", modifierFlags: .command)
         let chooser = try await replaced(left, in: tab, besides: [left])
@@ -54,10 +43,6 @@ extension OvviUITests {
         return (browser, label)
     }
 
-    /// The chooser's Browser makes a labeled browser pane in the pane's place, its empty address with the keyboard; a
-    /// typed address loads and goes into the label; the placeholder shows in herdr. A link's page comes back after a
-    /// relaunch with its history (the state file), and a click selects the address. Web Inspector docks under the page.
-    /// Words that are no address search Google. Open Browser Here from the palette.
     func testBrowserFromTheChooserLoadsATypedAddressAndKeepsItsPage() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("browser")
@@ -74,16 +59,14 @@ extension OvviUITests {
         app.typeText(page)
         app.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(pageText("ovvi-page-one").exists(within: 5))
-        // Its `<link rel=icon>`, a `data:` SVG with spaces and escapes.
         XCTAssertTrue(element("browser.\(browser).icon").has(\.stringValue, "page", within: 5))
         try await expect("the typed address in the label") { try await paneLabel(browser) == "\(made) \(page)" }
-        // The placeholder in herdr follows the label: the address without its scheme.
         let short = page.replacing("file://", with: "")
         try await waitFor(browser) { $0.contains(short) && !$0.contains("file:") }
         keepScreenshot("browser card")
         app.webViews.buttons["Pop"].click()
         let popup = element("browser.\(browser).popup")
-        // Over the accessibility timeout (6 s), as in testLinksOpenInNewTabsAndPopupsClose.
+        // Over the accessibility timeout (6 s).
         XCTAssertTrue(popup.exists(within: 10))
         popup.buttons["Done"].click()
         XCTAssertTrue(popup.vanishes(within: 3))
@@ -93,7 +76,6 @@ extension OvviUITests {
 
         showInspector(browser)
 
-        // The saved address, not the label's.
         try await expectSaved("two.html", iid: String(made.dropFirst("ovvi:browser#".count)), shell: left)
         relaunch()
         element("workspace.w2").click()
@@ -101,12 +83,10 @@ extension OvviUITests {
         XCTAssertTrue(pageText("ovvi-page-two").exists(within: connect))
         let kept = try await paneLabel(browser)
         XCTAssertEqual(kept, "\(made) \(page)")
-        // A click selects the address, as ⌘L does; Esc gives the page the keyboard.
         let address = element("browser.\(browser).address")
         address.click()
         XCTAssertTrue(hasKeyboard(address))
         app.typeKey(.escape, modifierFlags: [])
-        // The history came back with it.
         XCTAssertTrue(element("browser.\(browser).back").has(\.isEnabled, true, within: 3))
         element("browser.\(browser).back").click()
         XCTAssertTrue(pageText("ovvi-page-one").exists(within: 5))
@@ -119,17 +99,12 @@ extension OvviUITests {
         try await openBrowserHere(on: left, in: tab, besides: browser)
     }
 
-    /// A link opens in a new tab, in the background, from the page's menu (which has no New Window or download items),
-    /// by ⌘-click and as a `target=_blank` link: each a browser pane on two.html. A `window.open` popup stays over the
-    /// card and closes by Esc and by its close button. ⌥-click opens the link beside the card.
     func testLinksOpenInNewTabsAndPopupsClose() async throws {
         let (tab, shell) = try await newTab("links")
         try await waitForPrompt(shell)
         let page = try await writePages(from: shell)
         let pane = try await split(shell)
-        try await Self.call(one, "pane.rename", ["pane_id": pane, "label": "ovvi:browser#e2e1ab \(page)"])
-        try await Self.call(one, "pane.report_metadata", ["pane_id": pane, "source": "ovvi-panes",
-                                                          "tokens": ["ovvi-label": "1"], "ttl_ms": 1000])
+        try await relabel(pane, "ovvi:browser#e2e1ab \(page)")
         element("tab.\(tab)").click()
         XCTAssertTrue(pageText("ovvi-page-one").exists(within: 5))
         let two = page.replacing("one.html", with: "two.html")
@@ -144,8 +119,7 @@ extension OvviUITests {
                 return label.hasPrefix("ovvi:browser#") && label.hasSuffix(" \(two)")
             }
             try await expectBeside(new, tab)
-            XCTAssertTrue(element("tab.\(tab)").isSelected, how)
-            XCTAssertTrue(pageText("ovvi-page-one").exists, how)
+            XCTAssertFalse(until(0.5) { !element("tab.\(tab)").isSelected || !pageText("ovvi-page-one").exists }, how)
         }
 
         app.webViews.links["Two"].rightClick()
@@ -177,7 +151,6 @@ extension OvviUITests {
         try await openBeside(in: tab, besides: [pane, shell], two)
     }
 
-    /// ⌥-click on a link: a browser pane on it beside the card, the card's page still shown.
     private func openBeside(in tab: String, besides panes: [String], _ two: String) async throws {
         XCUIElement.perform(withKeyModifiers: .option) { app.webViews.links["Two"].click() }
         let side = try await sidePane(in: tab, besides: panes)
@@ -185,18 +158,16 @@ extension OvviUITests {
         XCTAssertTrue(pageText("ovvi-page-one").exists)
     }
 
-    /// Web Inspector, docked: the page gives it the card's lower part, also after the card changes size.
     func showInspector(_ browser: String) {
         let web = element("browser.\(browser)"), height = web.frame.height, top = web.frame.minY
         let window = app.windows.matching(NSPredicate(format: "title BEGINSWITH 'Web Inspector'")).firstMatch
         element("browser.\(browser).inspector").click()
-        // Under the page: the page keeps its top.
+        // WebKit docks it only in a card tall enough, else it opens its own window (CI's small screen).
         XCTAssertTrue(until(5) { web.frame.height < height * 0.8 && abs(web.frame.minY - top) < 1 || window.exists })
         keepScreenshot("web inspector")
         if window.exists {
             window.buttons[XCUIIdentifierCloseWindow].click()
         } else {
-            // Docked, it stays under the page as the card changes size: the page keeps its inset.
             let card = element("browser.\(browser).card"), before = card.frame.width
             let inset = before - web.frame.width
             element("titlebar.sidebar").click()
@@ -208,8 +179,6 @@ extension OvviUITests {
         }
     }
 
-    /// Open Browser Here from the palette on a terminal: a browser pane in its place. Not offered on a browser pane,
-    /// where ⇧⌘R gives a shell with the chooser.
     func openBrowserHere(on left: String, in tab: String, besides browser: String) async throws {
         element("terminal.\(left)").click()
         openPalette()
@@ -233,29 +202,22 @@ extension OvviUITests {
         XCTAssertEqual(shellLabel, "")
     }
 
-    /// A pane an agent labels with the herdr CLI shows its page; after a session stop and start (a plain shell, a new
-    /// terminal id) the card comes back with the page it was on.
     func testAPaneLabeledInHerdrShowsItsPageAfterARestart() async throws {
-        let five = try env("OVVI_SESSION5")
         let (_, shell) = try await shown(running(five))
         try await waitForPrompt(shell, in: five)
         let page = try await writePages(from: shell, in: five)
-        let pane = try await id(Self.call(five, "pane.split", ["target_pane_id": shell, "direction": "right",
-                                                               "cwd": "/tmp", "focus": false]), "pane")
-        addTeardownBlock { _ = try? await Self.call(five, "pane.close", ["pane_id": pane]) }
+        let pane = try await split(shell, in: five)
+        closeAfter("pane", pane, in: five)
         try await Self.call(five, "pane.rename", ["pane_id": pane, "label": "ovvi:browser#e2e5ab \(page)"])
-        // A site a machine put in a label waits for Open (ui/browser#when-a-page-loads-by-itself); `.invalid`:
-        // approvals live in the defaults the tests share with the user's Ovvi.
-        let site = try await id(Self.call(five, "pane.split", ["target_pane_id": pane, "direction": "down",
-                                                               "cwd": "/tmp", "focus": false]), "pane")
-        addTeardownBlock { _ = try? await Self.call(five, "pane.close", ["pane_id": site]) }
+        // `.invalid`: approvals live in the defaults the tests share with the user's Ovvi.
+        let site = try await split(pane, "down", in: five)
+        closeAfter("pane", site, in: five)
         try await Self.call(
             five,
             "pane.rename",
             ["pane_id": site, "label": "ovvi:browser#e2e5ac https://ovvi.invalid/"],
         )
         let tab = try await tabOf(pane, in: five)
-        // The question in both appearances, for people reviewing a run.
         relaunch(five, ["-appearance", "light"])
         XCTAssertTrue(element("browser.\(site).open").exists(within: connect))
         keepScreenshot("open this page, light")
@@ -267,23 +229,18 @@ extension OvviUITests {
         element("browser.\(site).not-now").click()
         XCTAssertTrue(element("browser.\(site).empty").exists(within: 3))
         XCTAssertFalse(element("browser.\(site).open").exists)
-        // A click gives the card the keyboard; the tab (herdr's number label) takes its page's title.
         pageText("ovvi-page-one").click()
         XCTAssertTrue(element("tab.\(tab)").has(\.label, "Browser One", within: 3))
         XCTAssertTrue(twoRows(pane, title: "One", above: "browser.\(pane).address"))
-        // The page 11 pt under Back, as in a floating window.
         let back = element("browser.\(pane).back").frame
         XCTAssertEqual(element("browser.\(pane)").frame.minY - back.maxY, 11, accuracy: 1, "\(back)")
-        // An agent changes the address with the skill's commands: a rename, then a metadata token so Ovvi reads the
-        // layout again (a rename sends no event). The card loads it as a new page of its history.
+        // A rename sends no herdr event: the metadata token makes Ovvi read the layout again.
         let two = page.replacing("one.html", with: "two.html")
-        try await Self.call(five, "pane.rename", ["pane_id": pane, "label": "ovvi:browser#e2e5ab \(two)"])
-        try await Self.call(five, "pane.report_metadata", ["pane_id": pane, "source": "ovvi-panes",
-                                                           "tokens": ["ovvi-label": "1"], "ttl_ms": 1000])
+        try await relabel(pane, "ovvi:browser#e2e5ab \(two)", in: five)
         XCTAssertTrue(pageText("ovvi-page-two").exists(within: 5))
         XCTAssertTrue(element("browser.\(pane).back").has(\.isEnabled, true, within: 3))
         XCTAssertTrue(element("tab.\(tab)").has(\.label, "Browser Two", within: 3))
-        try floatAndBack(pane)
+        floatAndBack(pane)
         XCTAssertTrue(pageText("ovvi-page-two").exists(within: 3))
         try await expectSaved("two.html", iid: "e2e5ab", shell: shell, in: five)
 
@@ -293,7 +250,6 @@ extension OvviUITests {
         XCTAssertTrue(pageText("ovvi-page-two").exists(within: 15))
     }
 
-    /// A browser's or an agent's header: row 1's title (any when nil), and row 2's `control` under it.
     func twoRows(_ pane: String, title: String? = nil, above control: String) -> Bool {
         let row1 = element("pane.\(pane).title")
         return title.map { row1.stringValue == $0 } != false && element(control).frame.minY >= row1.frame.maxY
@@ -301,11 +257,8 @@ extension OvviUITests {
 }
 
 extension OvviUITests {
-    /// Past the kept web cards (`-spareWebCards 0`), a browser's card is dropped as its tab hides and keeps its
-    /// picture: its overview tile shows the page, and the card comes back from its label when shown (the page loads
-    /// again: its title, stamped as it loads, is a new one).
     func testADroppedBrowserKeepsItsPictureAndComesBack() async throws {
-        relaunch(nil, ["-spareWebCards", "0"])
+        relaunch(one, ["-spareWebCards", "0"])
         let (tab, pane) = try await newTab("dropped")
         try await waitForPrompt(pane)
         let folder = "/tmp/ovvi-e2e-dropped"
@@ -337,8 +290,6 @@ extension OvviUITests {
 }
 
 extension OvviUITests {
-    /// Files ⌘-clicked in a File Explorer card open tabs right after its tab, one after the other, behind it: the
-    /// card's tab stays selected, and each new tab shows its own page, not another tab's.
     func testEachOpenInANewTabShowsItsOwnPage() async throws {
         let (_, shell) = try await newTab("opens")
         try await waitForPrompt(shell)
@@ -355,8 +306,6 @@ extension OvviUITests {
             XCUIElement.perform(withKeyModifiers: .command) { row.click() }
             let opened = try await newTabID(after: before)
             closeAfter("tab", opened)
-            // Once the bar shows the new tab, the card's tab stays selected: the app follows a new tab only after it
-            // shows.
             XCTAssertTrue(element("tab.\(opened)").exists(within: 5), name)
             XCTAssertFalse(until(0.5) { !element("tab.\(tab)").isSelected }, name)
             try await show(opened)

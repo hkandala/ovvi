@@ -2,14 +2,13 @@ import Foundation
 @testable import HerdrKit
 import Testing
 
-private let all = PluginCalls(exec: localExec, remote: false, gitRuns: true)
+private let all = PluginCalls(exec: localExec, gitRuns: true)
 
 private func call(_ name: String, _ args: [String: Any], _ calls: PluginCalls = all) async throws -> Any? {
     let data = try await calls.call(name, JSONSerialization.data(withJSONObject: args))
     return try JSONSerialization.jsonObject(with: data, options: .fragmentsAllowed)
 }
 
-/// The call's error code.
 private func failure(_ name: String, _ args: [String: Any], _ calls: PluginCalls = all) async -> String? {
     do {
         _ = try await call(name, args, calls)
@@ -33,7 +32,6 @@ private func failure(_ name: String, _ args: [String: Any], _ calls: PluginCalls
     #expect(raw.contains(0xEF))
     #expect(read["hash"] as? String == written["hash"] as? String)
     #expect(read["writable"] as? Bool == true)
-    // A save over an old hash changes nothing.
     _ = try await call("files.write", ["path": file, "text": "two", "over": #require(read["hash"] as? String)])
     #expect(await failure("files.write", ["path": file, "text": "three", "over": read["hash"] ?? ""]) == "changed")
     #expect(try String(contentsOfFile: file, encoding: .utf8) == "two")
@@ -46,15 +44,15 @@ private func failure(_ name: String, _ args: [String: Any], _ calls: PluginCalls
     #expect(bytes["type"] as? String == "image/png")
     _ = try await call("files.write", ["path": png, "base64": "AQID"])
     #expect(try Data(contentsOf: URL(filePath: png)) == Data([1, 2, 3]))
+    #expect(await failure("files.write", ["path": png, "base64": "%", "text": "x"]) == "failed")
+    #expect(try Data(contentsOf: URL(filePath: png)) == Data([1, 2, 3]))
 
-    // A rename moves; it never replaces what is there.
     let moved = folder.appending(path: "c.png").path
     #expect(try await call("files.move", ["path": png, "target": moved]) is NSNull)
     #expect(FileManager.default.fileExists(atPath: moved) && !FileManager.default.fileExists(atPath: png))
     #expect(await failure("files.move", ["path": moved, "target": file]) == "failed")
     #expect(try String(contentsOfFile: file, encoding: .utf8) == "two")
     #expect(await failure("files.move", ["path": moved, "target": "c.png"]) == "failed")
-    // Only the case changes: the same file, renamed.
     let upper = folder.appending(path: "C.png").path
     #expect(try await call("files.move", ["path": moved, "target": upper]) is NSNull)
     #expect(try FileManager.default.contentsOfDirectory(atPath: folder.path).contains("C.png"))
@@ -81,7 +79,6 @@ private func failure(_ name: String, _ args: [String: Any], _ calls: PluginCalls
     let build = try #require(entries.first { $0["name"] as? String == "build" })
     #expect(build["folder"] as? Bool == true && build["ignored"] as? Bool == true)
     #expect(entries.contains { $0["name"] as? String == "two.txt" && $0["ignored"] as? Bool == false })
-    // Inside the repository, not at its root: still git's.
     let sub = try #require(await call("files.list", ["path": repo.appending(path: "build").path]) as? [[String: Any]])
     #expect(sub.first?["ignored"] as? Bool == true)
 
@@ -100,7 +97,6 @@ private func failure(_ name: String, _ args: [String: Any], _ calls: PluginCalls
     #expect(changes["unstaged"]?.contains { $0["path"] as? String == "sub/a.txt" } == true)
     let head = try #require(await call("git.head", ["root": repo.path]) as? [String: Any])
     #expect(head["branch"] as? String == "main")
-    // Sorted keys: the same reply is the same text every time.
     let raw = try await all.call("git.head", JSONSerialization.data(withJSONObject: ["root": repo.path]))
     #expect(String(decoding: raw, as: UTF8.self) == #"{"ahead":0,"behind":0,"branch":"main"}"#)
     let branches = try #require(await call("git.branches", ["root": repo.path]) as? [[String: Any]])
@@ -117,7 +113,7 @@ private func failure(_ name: String, _ args: [String: Any], _ calls: PluginCalls
     let patch = try #require(await call("git.diff", ["root": repo.path, "source": "uncommitted"]) as? String)
     #expect(patch.contains("diff --git a/sub/a.txt b/sub/a.txt"))
     #expect(await failure("git.diff", ["root": repo.path, "source": "-x"]) == "failed")
-    let none = PluginCalls(exec: localExec, remote: false, gitRuns: false)
+    let none = PluginCalls(exec: localExec, gitRuns: false)
     #expect(await failure("git.status", ["root": repo.path], none) == "failed")
 }
 
@@ -130,7 +126,6 @@ private func failure(_ name: String, _ args: [String: Any], _ calls: PluginCalls
     echo a >'*.txt'; echo b >b.txt
     """#, "sh", folder.path])
     let root = folder.appending(path: "work").path
-    // A folder that is no repository becomes one.
     let fresh = folder.appending(path: "fresh")
     try FileManager.default.createDirectory(at: fresh, withIntermediateDirectories: false)
     _ = try await call("git.init", ["root": fresh.path])
@@ -139,7 +134,6 @@ private func failure(_ name: String, _ args: [String: Any], _ calls: PluginCalls
         let json = try #require(await call("git.changes", ["root": root]) as? [String: [[String: Any]]])
         return json.mapValues { $0.compactMap { $0["path"] as? String } }
     }
-    // A path, not a pattern.
     _ = try await call("git.stage", ["root": root, "paths": ["*.txt"]])
     #expect(try await changes() == ["staged": ["*.txt"], "unstaged": ["b.txt"]])
     _ = try await call("git.stage", ["root": root])
@@ -147,15 +141,12 @@ private func failure(_ name: String, _ args: [String: Any], _ calls: PluginCalls
     #expect(try await changes() == ["staged": ["*.txt"], "unstaged": ["b.txt"]])
     #expect(await failure("git.commit", ["root": root, "message": "  "]) == "failed")
     _ = try await call("git.commit", ["root": root, "message": "one\n"])
-    // Revert: a change staged and then changed again, a staged rename (both paths), a staged new file and an untracked
-    // one go back to the commit.
     _ = try await localExec.checkedOutput(["sh", "-c", #"""
     set -e; cd "$1"; echo r >r.txt; git add r.txt; git commit -qm r; git mv r.txt moved.txt
     echo c >>'*.txt'; echo a >added.txt; git --literal-pathspecs add '*.txt' added.txt
     echo d >>'*.txt'; echo n >new.txt
     """#, "sh", root])
     _ = try await call("git.revert", ["root": root, "paths": ["*.txt", "added.txt", "moved.txt", "r.txt", "new.txt"]])
-    // The untracked b.txt it was not given stays.
     #expect(try await changes() == ["staged": [], "unstaged": ["b.txt"]])
     #expect(["added.txt", "moved.txt", "new.txt"]
         .allSatisfy { !FileManager.default.fileExists(atPath: "\(root)/\($0)") })
@@ -173,7 +164,6 @@ private func failure(_ name: String, _ args: [String: Any], _ calls: PluginCalls
     #expect(await failure("git.switch", ["root": root, "branch": "--detach"]) == "failed")
     #expect(try await call("git.head", ["root": root]).flatMap { $0 as? [String: Any] }?["branch"] as? String
         == "other")
-    // git's message, never a password prompt.
     #expect(await failure("git.switch", ["root": root, "branch": "none"]) == "failed")
 }
 
@@ -185,7 +175,6 @@ private func failure(_ name: String, _ args: [String: Any], _ calls: PluginCalls
     #expect(reply["stdout"] as? String == "/usr\na b\nc\n")
     #expect(reply["stderr"] as? String == "err\n")
     #expect(reply["truncated"] as? Bool == false)
-    // argv, not a shell line.
     let echo = try #require(await call("run", ["argv": ["echo", "$HOME;", "x"], "cwd": "/"]) as? [String: Any])
     #expect(echo["stdout"] as? String == "$HOME; x\n")
     #expect(await failure("run", ["argv": ["sleep", "5"], "cwd": "/", "timeout": 200]) == "timeout")

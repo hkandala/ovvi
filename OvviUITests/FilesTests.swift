@@ -1,13 +1,6 @@
 import XCTest
 
-/// The File Explorer: the root's tree from `@pierre/trees`, the filter, files shown in the card with Back
-/// and Forward, the open gestures and the row menu, against a small repository.
 extension OvviUITests {
-    /// The tree lists the root and a folder as it opens (a click on its name only selects it; → opens it); a new file
-    /// shows by itself; the filter finds a file in a folder never opened; a double-click shows it in the card, whose
-    /// label follows; Back comes back to the kept tree as it was (the filter's text and matches, build still open
-    /// under them), Forward to the file; Show in File Explorer roots the tree at its folder and reveals it; Open as
-    /// Root and the root's menu move the root.
     func testFileExplorerBrowsesOpensAndGoesBack() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, shell) = try await newTab("files")
@@ -18,27 +11,21 @@ extension OvviUITests {
 
         let tree = element("files.\(card).page")
         XCTAssertTrue(row("a.txt", in: tree).exists(within: 10))
-        // The first row 11 pt under Back, as in a floating window.
         let back = element("pane.\(card).go-back").frame
         XCTAssertEqual(row("..", in: tree).frame.minY - back.maxY, 11, accuracy: 1, "\(back)")
         XCTAssertTrue(row("build", in: tree).exists)
         XCTAssertFalse(row("main.swift", in: tree).exists)
-        // The first row, `..`, has the keyboard unseen: the first ↓ goes to it, not to the row after it.
         XCTAssertTrue(hasKeyboard(row("..", in: tree)))
         app.typeKey(.downArrow, modifierFlags: [])
         XCTAssertTrue(hasKeyboard(row("..", in: tree)))
         openAndCollapse(card, tree)
-        // a.swift sorts before main.swift: the reveal below must select main.swift, not the first row.
         try await send("touch new.md src/deep/a.swift\r", to: shell)
         XCTAssertTrue(row("new.md", in: tree).exists(within: 5))
         keepScreenshot("file explorer home")
-        // The overview draws the card live in its tile.
         app.typeKey("o", modifierFlags: [.command, .control])
         XCTAssertTrue(element("overview.card.\(card)").has(\.stringValue, "explorer", within: 3))
         app.typeKey(.escape, modifierFlags: [])
 
-        // A file in a folder never opened: a letter typed in the tree opens the find bar, whose filter loads every
-        // path.
         app.typeText("main")
         XCTAssertTrue(row("main.swift", in: tree).exists(within: 5))
         XCTAssertFalse(row("a.txt", in: tree).exists)
@@ -52,7 +39,6 @@ extension OvviUITests {
         keepScreenshot("file explorer file")
 
         try await backAndForward(card, tree, file, root)
-        // Show in File Explorer: the file's own folder as the root.
         element("pane.\(card).reveal").click()
         try await labelEnds(card, " \(root)/src/deep/")
         XCTAssertTrue(row("main.swift", in: tree).exists(within: 10))
@@ -64,14 +50,12 @@ extension OvviUITests {
         try await labelEnds(card, " \(root)/")
 
         try await moveRoot(card, tree, root)
-        try floatsWithRoomUnderTheRow(card) { self.row("..", in: self.element("files.\(card).page", in: $0)) }
+        floatsWithRoomUnderTheRow(card) { self.row("..", in: self.element("files.\(card).page", in: $0)) }
         try await send("rm -rf \(repo)\r", to: shell)
     }
 
-    /// Floated, the page's `first` element sits as far under Back as Back under the card's top edge; then back in its
-    /// tab.
-    private func floatsWithRoomUnderTheRow(_ pane: String, first: (XCUIElement) -> XCUIElement) throws {
-        let window = try float(pane)
+    private func floatsWithRoomUnderTheRow(_ pane: String, first: (XCUIElement) -> XCUIElement) {
+        let window = float(pane)
         let surface = element("float.\(pane)", in: window).frame
         let back = element("pane.\(pane).go-back", in: window).frame, row = first(window)
         XCTAssertTrue(row.exists(within: 5))
@@ -80,8 +64,6 @@ extension OvviUITests {
         XCTAssertTrue(window.vanishes(within: 3))
     }
 
-    /// In the editor ⌘[ is Select Previous Pane, not Back; Back is ⌃-. Then Forward (⌘→ over the tree): the file. ⌘←
-    /// in its text moves the caret.
     private func backAndForward(_ card: String, _ tree: XCUIElement, _ file: XCUIElement, _ root: String) async throws {
         file.textViews.firstMatch.click()
         app.typeKey("[", modifierFlags: .command)
@@ -97,8 +79,6 @@ extension OvviUITests {
         XCTAssertFalse(until(1) { element("pane.\(card).go-forward").isEnabled }, "⌘← in the text went Back")
     }
 
-    /// Back shows the tree as it was left, its filter's text and matches; with the find bar closed, build is still
-    /// open.
     private func backToTheKeptTree(_ card: String, _ tree: XCUIElement, _ root: String) async throws {
         XCTAssertTrue(row("main.swift", in: tree).exists(within: 10))
         try await labelEnds(card, " \(root)/")
@@ -125,7 +105,6 @@ extension OvviUITests {
         row("src", in: tree).rightClick()
         app.menuItems["Open as Root"].click()
         try await labelEnds(card, " \(root)/src/")
-        // The old tree shows until the new one drew, and it has deep too: main.swift is revealed in it.
         XCTAssertTrue(row("a.txt", in: tree).vanishes(within: 10))
         XCTAssertTrue(row("deep", in: tree).exists(within: 5))
         row("..", in: tree).doubleClick()
@@ -135,8 +114,6 @@ extension OvviUITests {
         XCTAssertTrue(row("deep", in: tree).vanishes(within: 3))
         row("src", in: tree).doubleClick()
         try await labelEnds(card, " \(root)/src/")
-        // Its first click opened nothing: ⌘← over the tree (not its parent row) comes back to the root's tree as it
-        // left it, src closed.
         app.typeKey(.leftArrow, modifierFlags: .command)
         XCTAssertTrue(row("a.txt", in: tree).exists(within: 10))
         XCTAssertFalse(row("deep", in: tree).exists)
@@ -147,10 +124,8 @@ extension OvviUITests {
         XCTAssertTrue(field.has(\.stringValue, "\(root)/src", within: 5))
         field.click()
         app.typeText("\(root)/none\r")
-        // A path that is no folder makes no place (Back below); Esc puts the root back.
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(field.has(\.stringValue, "\(root)/src", within: 3))
-        // Tidied: `src/..` is the root. Back comes to src: the refused path made no place.
         field.click()
         app.typeText("\(root)/src/..\r")
         try await labelEnds(card, " \(root)/")
@@ -159,9 +134,6 @@ extension OvviUITests {
         try await labelEnds(card, " \(root)/src/")
     }
 
-    /// The tree has the keyboard as its card shows: the first ↑ goes to the last row, ↑ from the first row to `..` and
-    /// ↓ back, ↓ moves, → opens a folder, ← closes it, ⌘O opens a file. Hidden files show only with row 2's eye. An
-    /// empty folder shows its placeholder. ⌘F opens the find bar, and `..` hides while it has text.
     func testFileExplorerKeysHiddenFilesAndFind() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, shell) = try await newTab("files-keys")
@@ -173,8 +145,6 @@ extension OvviUITests {
         XCTAssertTrue(row("a.txt", in: tree).exists(within: 10))
         XCTAssertFalse(row(".gitignore", in: tree).exists)
 
-        // `..`, build, src, a.txt: the first row has the keyboard, a turn after the page's focus. The first ↑ goes to
-        // the last row; ↑ from build goes to `..`.
         XCTAssertTrue(hasKeyboard(row("..", in: tree)))
         app.typeKey(.upArrow, modifierFlags: [])
         XCTAssertTrue(hasKeyboard(row("a.txt", in: tree)))
@@ -217,8 +187,6 @@ extension OvviUITests {
         try await send("rm -rf \(repo)\r", to: shell)
     }
 
-    /// A File Explorer beside a terminal leaves it the keyboard: a refresh of the tree (a file made under its root, as
-    /// a fetch writes in .git) and its tab shown again type nothing into the tree.
     func testFileExplorerLeavesTheKeyboardToThePaneInUse() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (shellTab, shell) = try await newTab("files-keyboard")
@@ -233,7 +201,6 @@ extension OvviUITests {
         XCTAssertTrue(hasKeyboard(row("a.txt", in: tree)))
         element("terminal.\(beside)").click()
         XCTAssertTrue(hasKeyboard("terminal.\(beside)"))
-        // A file before a.txt moves its row.
         try await send("touch \(repo)/0.txt\r", to: shell)
         XCTAssertTrue(row("0.txt", in: tree).exists(within: 5))
         app.typeText("echo kept-$((6*7))\r")
@@ -246,8 +213,6 @@ extension OvviUITests {
         try await send("rm -rf \(repo)\r", to: shell)
     }
 
-    /// ⌘-click opens a file in a new tab right after the card's, ⌥-click in a pane to the card's side, both behind: the
-    /// card's tab stays selected and the tree keeps the keyboard.
     func testFileExplorerOpensInNewTabsAndToTheSide() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, shell) = try await newTab("files-open")
@@ -256,8 +221,7 @@ extension OvviUITests {
         try await send("rm -rf \(repo) && mkdir -p \(repo) && cd \(repo) && touch one.txt two.txt three.txt four.txt "
             + "&& clear && echo ready-$((6*7))\r", to: shell)
         try await waitFor(shell) { $0.contains("ready-42") }
-        // An old Files label, its root without the `/`, still opens the tree.
-        let (tab, card) = try await newCard("ovvi:files#e2efio \(root)", cwd: repo)
+        let (tab, card) = try await newCard("ovvi:explorer#e2efio \(root)/", cwd: repo)
         let tree = element("files.\(card).page")
         XCTAssertTrue(row("four.txt", in: tree).exists(within: 10))
 
@@ -267,7 +231,6 @@ extension OvviUITests {
         XCTAssertTrue(element("file.\(side).page").exists(within: 10))
         XCTAssertTrue(hasKeyboard(row("one.txt", in: tree)))
 
-        // Each ⌘-click from the tree: a new tab right after the card's (from the second on, not the end), behind it.
         for name in ["two.txt", "three.txt", "four.txt"] {
             let before = try await tabIDs()
             XCUIElement.perform(withKeyModifiers: .command) { row(name, in: tree).click() }
@@ -275,8 +238,6 @@ extension OvviUITests {
             closeAfter("tab", opened)
             let pane = try await pane(of: opened)
             try await labelEnds(pane, " \(root)/\(name)")
-            // Once the bar shows the new tab, the card's tab stays selected: the app follows a new tab only after it
-            // shows.
             try await expectBeside(opened, tab)
             XCTAssertFalse(until(0.5) { !element("tab.\(tab)").isSelected }, name)
             XCTAssertTrue(hasKeyboard(row(name, in: tree)), name)
@@ -295,7 +256,6 @@ extension OvviUITests {
         }
     }
 
-    /// Two commits, a change, and an ignored folder.
     func makeTreeRepo(_ repo: String, in shell: String) async throws {
         let commit = "git -c user.name=e2e -c user.email=e2e@ovvi commit -q"
         try await send("""

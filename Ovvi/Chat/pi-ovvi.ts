@@ -1,7 +1,3 @@
-// pi-ovvi: Ovvi's chat view helper for pi, shipped inside Ovvi (ui/chat-view#launch-flags).
-// Ovvi writes it to ~/.cache/ovvi/pi-ovvi-<sha8>.ts and starts pi with `-e <this file> --ovvi <state.jsonl>`.
-// It appends one JSON line per change to the state file: the session's transcript, a /tree move, an extension dialog
-// opening or closing, pi starting or stopping work, and the session ending. Public pi events only.
 // @ts-nocheck
 import { appendFileSync, mkdirSync, statSync } from "node:fs";
 import { dirname } from "node:path";

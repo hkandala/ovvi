@@ -1,17 +1,11 @@
 import XCTest
 
-/// The overview (D70): every tab of the session as a miniature, grouped by workspace.
 extension OvviUITests {
-    /// ⌃⌘O hides the sidebar, the tab bar and every title-row button but one ×, and shows a tile per tab under its
-    /// workspace, two a row on CI's window, with wide margins; a tab never shown draws live in its tile; × closes a
-    /// tab; a click shows that tab, its terminals at their size; Esc and the title row's × leave too.
     func testOverviewShowsEveryTabLiveAndOpensOne() async throws {
-        // The sidebar's makes are counted.
-        relaunch(nil, ["-recordLatency", "YES"])
+        relaunch(one, ["-recordLatency", "YES"])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (closing, _) = try await newTab("closing", in: "w1")
         let made = sidebarsMade
-        // A white block in w2's pane, which no card showed yet.
         let block = "clear; for i in 1 2 3 4 5 6 7 8 9 10; do printf '\\033[107m%300s\\033[0m\\n' ''; done"
         try await send("\(block); echo block-$((6*7))\r", to: "w2:p1")
         try await waitFor("w2:p1") { $0.contains("\nblock-42") }
@@ -21,7 +15,6 @@ extension OvviUITests {
         XCTAssertTrue(overview.exists(within: 2))
         XCTAssertTrue(element("sidebar").vanishes(within: 2))
         XCTAssertFalse(element("tab.w1:t1").exists)
-        // × on hover closes the tab, as on the tab bar (an idle shell: no question).
         element("overview.tab.\(closing)").hover()
         element("overview.tab.\(closing).close").click()
         XCTAssertTrue(element("overview.tab.\(closing)").vanishes(within: 3))
@@ -29,7 +22,6 @@ extension OvviUITests {
         for id in ["overview.workspace.w1", "overview.workspace.w2", "overview.tab.w1:t1", "overview.tab.w1:t2"] {
             XCTAssertTrue(element(id).exists(within: 2), id)
         }
-        // The session's title, then each workspace's name over its tiles, two a row.
         XCTAssertEqual(element("overview.title").stringValue, one)
         let first = element("overview.tab.w1:t1").frame, second = element("overview.tab.w1:t2").frame
         XCTAssertEqual(first.minY, second.minY, accuracy: 1)
@@ -37,7 +29,7 @@ extension OvviUITests {
         expectOverviewChrome(first: first, second: second)
         XCTAssertEqual(element("overview.tab.w1:t1").stringValue, "selected")
         keepScreenshot("overview")
-        // w2's row is below CI's window: the lazy rows make it as it scrolls in, and it turns live.
+        // w2's row is below CI's window: the lazy rows make it as it scrolls in.
         let tile = element("overview.tab.w2:t1")
         scrollOverview(to: tile)
         XCTAssertLessThan(element("overview.workspace.w2").frame.maxY, tile.frame.minY)
@@ -46,7 +38,6 @@ extension OvviUITests {
         tile.click()
         XCTAssertTrue(overview.vanishes(within: 2))
         XCTAssertTrue(element("sidebar").exists(within: 2))
-        // The sidebar stayed under the overview and shows at once; made after it, it came late.
         XCTAssertEqual(sidebarsMade, made)
         XCTAssertTrue(element("tab.w2:t1").has(\.isSelected, true, within: 2))
         XCTAssertTrue(hasKeyboard("terminal.w2:p1"))
@@ -67,10 +58,8 @@ extension OvviUITests {
         XCTAssertTrue(element("titlebar.overview").exists(within: 2))
     }
 
-    /// A tile of a tab never shown, then of the shown one: once the overview closes and its card drew, it never goes
-    /// back to loading.
     func testOverviewTileIntoAnUnshownTabShowsItSteadily() async throws {
-        relaunch(nil, ["-recordMotion", "YES"])
+        relaunch(one, ["-recordMotion", "YES"])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("unshown", in: "w1")
         try await send("seq 1 40\r", to: pane)
@@ -87,20 +76,17 @@ extension OvviUITests {
                 values.append(card.stringValue)
             }
             print("tile, \(round): \(values) host \(element("host.\(pane)").label)")
-            // A tab never shown waits for herdr's frames at its card's size first.
             let drawn = values.drop { round == "unshown" && $0.contains("loading") }
             XCTAssertFalse(drawn.isEmpty || drawn.contains { $0.contains("loading") }, "\(round): \(values)")
         }
     }
 
-    /// Tiles with nothing to show yet show a loader, and each tile in view gets its picture in turn: two
-    /// never shown tabs of 9 panes each, side by side, more than the 16 live cards together.
     func testOverviewLoadsEveryTileInTurn() async throws {
-        relaunch(nil, ["-recordLatency", "YES"])
+        relaunch(one, ["-recordLatency", "YES"])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (first, root) = try await createWorkspace("loads")
         let second = try await createTab(in: workspace(of: first))
-        // A 3 × 3 grid each: halving one pane eight times left cards too small to draw a row at CI's 1x.
+        // A 3 × 3 grid each: halving one pane eight times leaves cards too small to draw a row at CI's 1x.
         for pane in [root, second.pane] {
             let middle = try await split(pane), right = try await split(middle)
             for column in [pane, middle, right] {
@@ -110,17 +96,14 @@ extension OvviUITests {
         app.typeKey("o", modifierFlags: [.command, .control])
         let tile = element("overview.tab.\(second.tab)")
         scrollOverview(to: tile)
-        // One waits for the other's cards to draw, with a loader meanwhile (recorded: CI's queries are too slow to see
-        // it).
+        // Recorded: CI's queries are too slow to see the loader.
         let tabs = [first, second.tab], loaders = tabs.map { element("overview.tab.\($0).loading") }
-        // Every card drew: no loader left (one query each, not one per card: CI's queries are slow).
+        // One query each, not one per card: CI's queries are slow.
         XCTAssertTrue(until(30) { !loaders.contains { $0.exists } })
         let record = element("app.latency").stringValue
         XCTAssertTrue(tabs.allSatisfy { record.contains("loader \($0)") }, record)
     }
 
-    /// The title row has the traffic lights and one × only; the grid (its first row's two tiles) is centered with wide
-    /// margins all round: 8 % of the width, at least 48 pt, and 40 pt above.
     private func expectOverviewChrome(first: CGRect, second: CGRect) {
         for id in ["titlebar.sidebar", "titlebar.machine", "titlebar.overview", "titlebar.palette",
                    "titlebar.new-tab"]
@@ -128,18 +111,16 @@ extension OvviUITests {
             XCTAssertFalse(element(id).exists, id)
         }
         let canvas = element("overview").frame, title = element("overview.title").frame
-        let side = max(48, canvas.width * 0.08), columns = CGFloat(min(
-            4,
-            max(2, Int((canvas.width - 2 * side + 16) / 356)),
-        ))
-        XCTAssertEqual(first.minX - canvas.minX, side, accuracy: 1)
-        // The grid's right edge: as many tiles as fit a row, full or not.
+        let side = first.minX - canvas.minX, room = canvas.width - 2 * side + 16
+        let columns = (room / (second.width + 16)).rounded()
+        XCTAssertEqual(side, max(48, canvas.width * 0.08), accuracy: 1)
         XCTAssertEqual(canvas.maxX - (first.minX + columns * second.width + (columns - 1) * 16), side, accuracy: 2)
+        XCTAssertTrue((2 ... 4).contains(columns), "\(columns)")
+        XCTAssertTrue(columns == 2 || second.width >= 340, "\(second)")
+        XCTAssertTrue(columns == 4 || (columns + 1) * (340 + 16) > room, "\(columns) in \(room)")
         XCTAssertEqual(title.minY - canvas.minY, 40, accuracy: 2)
     }
 
-    /// The overview shows the session in view: ⌥⌘] steps to the next one, whose tiles show, and a sideways wheel goes
-    /// nowhere; a click there shows that session's tab.
     func testOverviewStepsBetweenSessions() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         openSessionPanel()
@@ -148,11 +129,10 @@ extension OvviUITests {
         XCTAssertTrue(until(3) { header == two })
         app.typeKey("[", modifierFlags: [.command, .option])
         XCTAssertTrue(until(3) { header == one })
-        // A tab of session two no card showed, with the id of one of session one's (w1:t2): it draws live there.
         let (tab, pane) = try await createTab(in: "w1", session: two)
-        addTeardownBlock { [two] in _ = try? await Self.call(two, "tab.close", ["tab_id": tab]) }
+        closeAfter("tab", tab, in: two)
         let block = "clear; for i in 1 2 3 4 5 6 7 8 9 10; do printf '\\033[107m%300s\\033[0m\\n' ''; done"
-        try await Self.call(two, "pane.send_text", ["pane_id": pane, "text": "\(block)\r"])
+        try await send("\(block)\r", to: pane, in: two)
 
         app.typeKey("o", modifierFlags: [.command, .control])
         let overview = element("overview"), window = app.windows.firstMatch, title = element("overview.title")
@@ -179,10 +159,6 @@ extension OvviUITests {
         XCTAssertTrue(hasKeyboard("terminal.w1:p1"))
     }
 
-    /// What the overview costs: a workspace of 6 tabs and 12 panes, 8 of them printing, only its
-    /// first tab shown. Open, each tile in view gets a picture: the cards with none stream until they drew, then let
-    /// go (D70: the tiles are pictures), so the streams come back to the tab's while it is still open. Footprint and
-    /// CPU of each step are in the result bundle.
     func testOverviewCostsAndLetsGoAfter() async throws {
         let (tabs, _) = try await newWorkspace("usage", tabs: 6)
         var panes: [String] = []
@@ -202,18 +178,15 @@ extension OvviUITests {
         let page = try await measure("page")
         app.typeKey("o", modifierFlags: [.command, .control])
         XCTAssertTrue(element("overview").exists(within: 2))
-        // The second tab's tile, never shown, gets its picture (its one card is checked again below).
         let card = element("overview.card.\(panes[3])")
         scrollOverview(to: element("overview.tab.\(tabs[1])"))
         XCTAssertTrue(until(10) { card.stringValue.hasPrefix("snapshot") }, card.stringValue)
-        // Pictures taken, the tiles' streams end with the overview still open.
         try await poll("the tiles' streams to end") { () async throws -> Int? in
             let count = try await helpers(measure("overview", seconds: 1))
             return count <= helpers(page) + 1 ? count : nil
         }
         let open = try await measure("overview")
-        // Down to the new workspace's tiles: those in view get their pictures the same way. Either way: the sign
-        // follows the natural scrolling setting.
+        // Either way: the sign follows the natural scrolling setting.
         let last = element("overview.tab.\(tabs[5])")
         for delta in [-3000.0, 3000, -3000] where !(last.exists && last.isHittable) {
             element("overview").scroll(byDeltaX: 0, deltaY: delta)
@@ -222,14 +195,11 @@ extension OvviUITests {
         XCTAssertTrue(last.isHittable)
         keepScreenshot("overview of 6 tabs")
         let scrolled = try await measure("overview, scrolled")
-        // The kept terminals, at most 16 cards still drawing their first picture, and a run or two ending.
         XCTAssertLessThanOrEqual(helpers(scrolled), helpers(page) + 16 + 2, scrolled)
-        // Back up: the second tab's card shows its snapshot at once, never the bare fill.
         scrollOverview(to: element("overview.tab.\(tabs[1])"), step: 3000, steps: 1)
         XCTAssertTrue(card.exists)
         XCTAssertFalse(card.stringValue.hasPrefix("loading"), card.stringValue)
         XCTAssertTrue(card.stringValue.hasPrefix("snapshot"), card.stringValue)
-        // Its snapshot at the tile's pixel size: "snapshot ‹its width in pixels›".
         let width = Double(card.stringValue.split(separator: " ").last ?? "") ?? 0
         XCTAssertGreaterThanOrEqual(width, card.frame.width * (NSScreen.main?.backingScaleFactor ?? 1) - 2,
                                     card.stringValue)
@@ -243,14 +213,9 @@ extension OvviUITests {
         print("overview cost: page\n\(page)\nopen\n\(open)\nscrolled\n\(scrolled)")
     }
 
-    /// The overview of 200 tabs over 8 workspaces, 272 panes, 50 of them agents and half the rest printing
-    /// (`scripts/stress.py`): while trackpad scrolls go through it, at most 16 cards stream beside the
-    /// tab's, the tiles that were live keep a snapshot, and the footprint stays bounded. Footprint, CPU, the frames
-    /// dropped while scrolling (`app.latency`) and the main thread's profile are in the result bundle.
     func testOverviewOfManyTabsStaysBounded() async throws {
         executionTimeAllowance = 600
-        let eight = try env("OVVI_SESSION8")
-        addTeardownBlock { _ = try? await Self.post("\(eight)/stress") }
+        addTeardownBlock { [eight] in _ = try? await Self.post("\(eight)/stress") }
         _ = try await Self.post("\(eight)/stress", Data("200 8 272 50".utf8))
         relaunch(eight, ["-recordMotion", "YES", "-recordLatency", "YES"])
         addTeardownBlock { @MainActor in self.note(self.element("app.latency").stringValue) }
@@ -262,8 +227,6 @@ extension OvviUITests {
         XCTAssertTrue(overview.exists(within: 5))
         _ = try await measure("overview, 200 tabs", seconds: 5, session: eight)
         let frame = overview.frame
-        // Down, the sign following the natural scrolling setting: 20 swipes of 600 pt and their momentum, each a
-        // "scroll ‹frames› ‹hitches›" record in `app.latency`.
         var sign = -1.0, most = 0
         for index in 0 ..< 20 {
             try await Self.post("\(one)/swipe", Data("\(frame.midX) \(frame.midY) \(30 * sign) 20 0 1".utf8))
@@ -272,16 +235,15 @@ extension OvviUITests {
             }
             most = try await max(most, streams(eight).count)
         }
-        async let profile = Self.post("\(eight)/sample", Data("3".utf8))
+        let sample = "\(eight)/sample"
+        async let profile = Self.post(sample, Data("3".utf8))
         for _ in 0 ..< 4 {
             try await Self.post("\(one)/swipe", Data("\(frame.midX) \(frame.midY) \(-30 * sign) 20 0 1".utf8))
         }
         try await keep(String(decoding: profile, as: UTF8.self), as: "sample, overview scrolling")
         let scrolled = try await measure("overview, 200 tabs, scrolled", seconds: 5, session: eight)
-        // "‹live cards› ‹snapshots›".
         let snapshots = element("overview.snapshots").stringValue
         note("overview: most runs \(most), live and snapshots \(snapshots)")
-        // The kept terminals, at most 16 cards, and a run or two ending.
         XCTAssertLessThanOrEqual(most, helpers(page) + 16 + 2, "\(most) runs")
         XCTAssertGreaterThan(Int(snapshots.split(separator: " ").last ?? "") ?? 0, 8, snapshots)
         // Bounded by the live cap, whatever the tab count: 16 full-window cards are about 1.1 GB on Retina.
@@ -290,18 +252,12 @@ extension OvviUITests {
         XCTAssertTrue(overview.vanishes(within: 2))
     }
 
-    /// A browser's card shows its page's picture in its tile, taken as the overview opens, and a chat's card its view.
-    /// The tile stays a picture as the page follows a new address out of view. The web view takes no keys while the
-    /// overview is open, also when its card is given the keyboard (the palette closing), and has it again after.
     func testOverviewShowsBrowserAndChatCards() async throws {
         let (tab, chat) = try await startChat()
         closeAfter("tab", tab)
         try await say("hello", in: chat)
         XCTAssertTrue(row(chat, "reply", "Echo: **hello**").exists(within: 5))
-        // A shell beside it writes two pages whose title shows a key they got, then becomes a browser by its label
-        // (a new iid: no saved page).
-        let browser = try await id(Self.call(one, "pane.split", ["target_pane_id": chat, "direction": "right",
-                                                                 "cwd": "/tmp", "focus": false]), "pane")
+        let browser = try await split(chat)
         try await waitForPrompt(browser, in: one)
         let folder = "/tmp/ovvi-e2e-browser", keys = "<script>onkeydown = e => document.title = \\x27key \\x27 + e.key"
             + "</script>"
@@ -327,15 +283,10 @@ extension OvviUITests {
         let light = mean(shot)
         keepScreenshot("overview, browser and chat")
         XCTAssertGreaterThan(light, 150, "the light page's picture")
-        // Another address from the label (as an agent sets it): the card follows, the tile keeps its picture.
-        try await Self.call(one, "pane.rename", ["pane_id": browser,
-                                                 "label": "ovvi:browser#\(iid) file://\(folder)/dark.html"])
-        try await Self.call(one, "pane.report_metadata", ["pane_id": browser, "source": "ovvi-panes",
-                                                          "tokens": ["ovvi-label": "1"], "ttl_ms": 1000])
+        try await relabel(browser, "ovvi:browser#\(iid) file://\(folder)/dark.html")
         let tile = element("overview.tab.\(tab)")
         XCTAssertTrue(until(5) { tile.label.contains("Dark") }, tile.label)
         XCTAssertGreaterThan(mean(shot), 150, "the tile's picture")
-        // The palette closing gives the keyboard card the keyboard, here the browser: it waits for its card.
         app.typeKey("k", modifierFlags: .command)
         XCTAssertTrue(hasKeyboard(element("palette.filter")))
         app.typeKey(.escape, modifierFlags: [])
@@ -346,7 +297,6 @@ extension OvviUITests {
         XCTAssertEqual(title.stringValue, "Dark")
         app.typeText("y")
         XCTAssertTrue(title.has(\.stringValue, "key y", within: 2))
-        // Out of view, the chat's tile is the picture it took as it left.
         app.typeKey("1", modifierFlags: .command)
         XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, false, within: 3))
         app.typeKey("o", modifierFlags: [.command, .control])
@@ -354,18 +304,14 @@ extension OvviUITests {
         app.typeKey(.escape, modifierFlags: [])
     }
 
-    /// How many times the sidebar was made (`-recordLatency`).
     var sidebarsMade: Int {
         element("app.latency").stringValue.components(separatedBy: "sidebar made").count
     }
 
-    /// The footprint in a `usage` report, in MB.
     func footprint(_ usage: String) -> Int {
         usage.firstMatch(of: /Footprint: (\d+) MB/).flatMap { Int($0.1) } ?? .max
     }
 
-    /// Scrolls the overview until the element is hittable (`whole`: and all in view), `step` at a time; either way,
-    /// as the sign follows the natural scrolling setting.
     func scrollOverview(to target: XCUIElement, whole: Bool = false, step: Double = 300, steps: Int = 10) {
         let shown = {
             target.exists && target.isHittable && (!whole || self.element("overview").frame.contains(target.frame))
@@ -377,7 +323,6 @@ extension OvviUITests {
         }
     }
 
-    /// The mean brightness of an element's pixels.
     func mean(_ element: XCUIElement) -> Int {
         let brightness = Self.brightness(element.screenshot().image)
         return brightness.isEmpty ? 0 : brightness.reduce(0, +) / brightness.count

@@ -5,9 +5,8 @@ extension PaneTerminal {
     static let fontSize = 13
     static let fontSizes = 8 ... 32
 
-    /// `keybind = clear`: app shortcuts reach the menu. Transparent, so the card shows through.
-    /// No padding, so cells map from the view's origin; no scrollback, herdr keeps it. The font and the Terminal
-    /// settings come with the text size (`configure`).
+    /// `keybind = clear`: app shortcuts reach the menu. No padding, so that cells map from the view's origin; no
+    /// scrollback, herdr keeps it.
     ///
     /// Selections keep each cell's own text color over a macOS-like blue. libghostty's Alabaster and Afterglow set
     /// only a selection background, and Ghostty then draws selected text in the window background: `#212121` on
@@ -28,7 +27,6 @@ extension PaneTerminal {
         $0.withCustom("scrollback-limit", "0")
     }
 
-    /// The system monospaced font (SF Mono) rather than libghostty's own JetBrains Mono.
     static let systemFont = NSFont.monospacedSystemFont(ofSize: 0, weight: .regular).familyName ?? "Menlo"
 
     static var fonts: [String] {
@@ -42,17 +40,12 @@ extension PaneTerminal {
 
     /// Reads the stored size, not a caller's copy: SwiftUI keeps a shortcut's first action.
     static func stepFontSize(_ step: Int) {
-        let defaults = UserDefaults.standard
-        let size = clamped(defaults.object(forKey: "fontSize") as? Int ?? fontSize) + step
-        defaults.set(clamped(size), forKey: "fontSize")
+        let settings = AppSettings()
+        settings.fontSize = clamped(clamped(settings.fontSize) + step)
     }
 
-    /// Every surface takes the text size and the Terminal settings (ui/settings#terminal) at once, and its stream
-    /// stays open; a new font or size changes its grid, so the card resizes its PTY. Streaming cards hold their
-    /// picture first (`hold`). Read from the defaults, so one call serves every setting.
     static func configure() {
         let settings = AppSettings(), grid = "\(settings.terminalFont) \(settings.fontSize)"
-        // Only a new font or size changes the grid: hold the pictures for it alone.
         if grid != lastGrid {
             PaneViewRegistry.recent.forEach { $0.hold() }
             lastGrid = grid
@@ -66,7 +59,7 @@ extension PaneTerminal {
             if !settings.cursorBlink {
                 $0.withCursorStyleBlink(false)
             }
-            // Characters on every layout by default (on CI's, libghostty sent Alt by default).
+            // Always set: on CI's machine libghostty's default sends Alt.
             $0.withCustom("macos-option-as-alt", settings.optionKey.ghostty)
             // The system pasteboard: libghostty's `true` writes only a selection clipboard, which nothing reads.
             if settings.copyOnSelect {

@@ -1,12 +1,8 @@
 import XCTest
 
-/// A new pane's chooser (ui/new-pane): Terminal, Agent or Browser, with the keyboard from the start; and the commands
-/// that change a pane's kind.
-/// The chooser's rows the arrow test checks, and Claude Code under an open Agent.
 private let chooserRows = ["terminal", "agent", "browser", "explorer", "git", "claude"]
 
 extension OvviUITests {
-    /// A pane the app made shows the chooser: Return picks Terminal.
     func pickTerminal(_ pane: String) {
         let terminal = element("pane.\(pane).chooser.terminal")
         XCTAssertTrue(terminal.has(\.isSelected, true, within: 3))
@@ -14,8 +10,6 @@ extension OvviUITests {
         XCTAssertTrue(terminal.vanishes(within: 2))
     }
 
-    /// ⌘T: the new tab's card shows the chooser with Terminal selected and the keyboard. Keys type nothing into the
-    /// shell; Return gives the terminal, which takes keys.
     func testNewTabShowsTheChooserAndReturnGivesATerminal() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         element("workspace.w2").click()
@@ -31,7 +25,6 @@ extension OvviUITests {
         XCTAssertTrue(until(2) { [title.label, title.stringValue].contains("New Pane") }, title.debugDescription)
         keepScreenshot("new pane chooser")
         try await waitForPrompt(pane)
-        // "New Tab" while it asks, also once the shell is up; the shell's title after the pick.
         let capsule = element("tab.\(tab)")
         XCTAssertFalse(until(1.5) { capsule.label != "New Tab" }, capsule.label)
         app.typeText("echo leaked")
@@ -43,8 +36,8 @@ extension OvviUITests {
         let text = try await read(pane)
         XCTAssertFalse(text.contains("leaked"), text)
 
-        // ⌘T then Return at once, before herdr made the pane: the Return is the new card's, not the old shell's (which
-        // keeps the first responder meanwhile).
+        // ⌘T then Return at once, ahead of herdr's pane: the Return is the new card's, not the other shell's, which
+        // keeps the first responder meanwhile.
         let tabs = try await tabIDs()
         app.typeKey("t", modifierFlags: .command)
         app.typeKey(.return, modifierFlags: [])
@@ -57,8 +50,6 @@ extension OvviUITests {
         XCTAssertEqual(old, text, "the Return went to the old shell")
     }
 
-    /// ⌘D on a pane made outside the app (no chooser): the split's card shows it. ↑ ↓ move the selection and wrap at
-    /// the ends, → opens Agent's agents under it and ← closes them; Esc gives the terminal.
     func testSplitShowsTheChooserArrowsMoveAndEscGivesATerminal() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("chooser split")
@@ -91,9 +82,8 @@ extension OvviUITests {
             }
             XCTAssertTrue(selected(index), "\(key) ×\(count)")
         }
-        // The card's menu over the list too.
         options[1].rightClick()
-        let main = app.windows.matching(NSPredicate(format: "identifier BEGINSWITH 'main-'")).firstMatch
+        let main = mainWindows.firstMatch
         XCTAssertTrue(main.menuItems["Split Right"].exists(within: 2))
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(main.menuItems["Split Right"].vanishes(within: 2))
@@ -103,11 +93,10 @@ extension OvviUITests {
         try await waitForPrompt(right)
         try await typeAndRead(right)
 
-        // Floated while it asks, its window says "New Pane" too, in the title row and the window's title.
         app.typeKey("d", modifierFlags: .command)
         let new = try await replaced(right, in: tab, besides: [left, right])
         XCTAssertTrue(element("pane.\(new).chooser.terminal").exists(within: 3))
-        let window = try float(new)
+        let window = float(new)
         let info = element("float.\(new).info", in: window)
         XCTAssertTrue(until(3) { info.stringValue.hasPrefix("New Pane") }, info.debugDescription)
         XCTAssertEqual(window.title, "New Pane")
@@ -115,12 +104,8 @@ extension OvviUITests {
         XCTAssertTrue(window.vanishes(within: 3))
     }
 
-    /// An agent's pick types its command into the shell and shows the loader until herdr reports the agent; one whose
-    /// command ends shows the terminal with what it printed. CI has no agents: the test defines stand-ins in the
-    /// pane's shell, which the app's typed commands run. An agent the login shell does not find is greyed out, and the
-    /// keys skip it.
+    /// CI has no agents: the test defines stand-ins in the pane's shell, which the app's typed commands run.
     func testPickingAnAgentStartsItBehindTheLoader() async throws {
-        // A login shell with no profile, whose PATH has claude, pi and opencode but no codex.
         let herdr = try URL(filePath: env("OVVI_HERDR")).deletingLastPathComponent().path
         app.launchEnvironment["SHELL"] = "\(Self.agents)/login-shell"
         app.launchEnvironment["PATH"] = "\(Self.agents):\(herdr):/usr/bin:/bin"
@@ -143,7 +128,6 @@ extension OvviUITests {
         let report = #""$HERDR_BIN_PATH" --session "$HERDR_SESSION" pane report-agent --source ovvi-e2e "#
             + #"--agent claude --state idle "$HERDR_PANE_ID""#
         let agent = try await newPane("claude", "echo ovvi-stand-in; sleep 2; \(report); sleep 100")
-        // 2 opens Agent with its first agent selected: Return picks it.
         app.typeKey("2", modifierFlags: [])
         XCTAssertTrue(element("pane.\(agent).chooser.claude").has(\.isSelected, true, within: 2))
         XCTAssertEqual(element("pane.\(agent).chooser.agent").stringValue, "expanded")
@@ -151,7 +135,6 @@ extension OvviUITests {
         XCTAssertTrue(codex.has(\.stringValue, "Not installed", within: 3), codex.debugDescription)
         XCTAssertFalse(codex.isEnabled)
         keepScreenshot("agent not installed")
-        // ↓ and its number key skip it.
         app.typeKey(.downArrow, modifierFlags: [])
         XCTAssertTrue(element("pane.\(agent).chooser.pi").has(\.isSelected, true, within: 2))
         app.typeKey("2", modifierFlags: [])
@@ -177,8 +160,6 @@ extension OvviUITests {
         try await waitFor(failing) { $0.contains("\novvi-no-agent") }
     }
 
-    /// ⇧⌘R on a terminal gives a shell with no chooser; on an agent pane, the chooser. Open Terminal Here shows only
-    /// on an agent pane, Start Agent Here on every pane.
     func testReplacePaneAndThePaletteFollowThePanesKind() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("chooser kinds")
@@ -217,9 +198,6 @@ extension OvviUITests {
         try await typeAndRead(chosen)
     }
 
-    /// New Pane's folder line (ui/new-pane#folder) on the selected workspace's ⌘T: ⌘L or a click makes it a field and
-    /// Esc puts it back; Tab does too, and a folder that is not there shows the error and keeps the old one. A typed
-    /// `/usr` is where Terminal's shell starts. Choose Folder… shows on This Mac only.
     func typeFolderAndPickTerminal(remote: Bool) async throws {
         let before = try await tabIDs()
         closeNew("tab", besides: before)
@@ -264,8 +242,6 @@ extension OvviUITests {
         try await typeFolderAndPickTerminal(remote: false)
     }
 
-    /// The folder line shows on a split's and a new tab's stand-in, while herdr is paused: the folder herdr will start
-    /// the pane in, the one of the pane it was made from (ui/new-pane#the-folder).
     func testNewPanesFolderShowsBeforeHerdrAnswers() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("chooser folder")
@@ -278,7 +254,6 @@ extension OvviUITests {
         let folders = app.descendants(matching: .any).matching(NSPredicate(
             format: "identifier BEGINSWITH 'pane.new.' AND identifier ENDSWITH '.chooser.folder'",
         ))
-        // A quick second ⌘D splits the first one's stand-in: its folder is that one's chooser's.
         for (key, count) in [("d", 2), ("t", 1)] {
             _ = try await Self.post("\(one)/pause")
             for _ in 0 ..< count {
@@ -290,16 +265,13 @@ extension OvviUITests {
             let seen = folders.allElementsBoundByIndex.map(\.stringValue)
             _ = try await Self.post("\(one)/resume")
             XCTAssertTrue(shown, "⌘\(key) ×\(count): \(seen)")
-            // herdr's panes take the stand-ins' places.
             XCTAssertTrue(folders.firstMatch.vanishes(within: 5))
         }
     }
 
-    /// New Pane's folder line on Key Host, in the light look: the folder is the machine's, typed with no Choose
-    /// Folder….
     func testARemoteNewPanesFolderLineTakesATypedFolder() async throws {
         try await skipWithoutSSH()
-        relaunch(one, ["-machines", Self.keyHost, "-machine", "e2e-key", "-appearance", "light"])
+        relaunch(one, Self.onKeyHost + ["-appearance", "light"])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         element("workspace.w2").click()
         XCTAssertTrue(element("pane.w2:p1").has(\.isHittable, true, within: 3))

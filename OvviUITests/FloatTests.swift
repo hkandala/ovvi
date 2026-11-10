@@ -1,35 +1,29 @@
 import XCTest
 
-/// Floating panes (D50): a pane floats in its own window, its card in the tab is a placeholder.
 extension OvviUITests {
     func testFloatingAPaneOpensItsWindowAndDetachPutsItBack() async throws {
         let (tab, first) = try await newTab("float")
         let second = try await split(first)
         element("tab.\(tab)").click()
         XCTAssertTrue(element("terminal.\(second)").exists(within: 3))
-        let window = try float(second)
+        let window = float(second)
         XCTAssertTrue(element("terminal.\(second)", in: window).exists(within: 3))
         XCTAssertTrue(element("pane.\(second).show").exists(within: 3))
-        // herdr keeps the pane in its tab.
         try await expect("both panes in herdr's tab") { try await order(tab) == [first, second] }
         XCTAssertTrue(element("float.\(second).place").has(\.stringValue, "\(one) › beta › float", within: 3))
 
-        // The main window's keyboard card is never the placeholder, also on ⌘].
         element("tab.\(tab)").click()
         XCTAssertTrue(hasKeyboard("terminal.\(first)"))
         app.typeKey("]", modifierFlags: .command)
         XCTAssertTrue(hasKeyboard("terminal.\(first)"))
         XCTAssertTrue(window.exists)
 
-        // The main window covers it now; Show brings it forward with the keyboard, and keys go there.
         element("pane.\(second).show").click()
         XCTAssertTrue(hasKeyboard("terminal.\(second)", in: window))
         app.typeText("echo float-$((6*7))")
         app.typeKey(.return, modifierFlags: [])
         try await waitFor(second) { $0.contains("\nfloat-42") }
 
-        // Bring Back Here, in the main window once it is in front: the window goes, the card shows the terminal with
-        // the keyboard. The floating window's Detach: testOvviURLFloatsAPaneOfASessionWithNoPage.
         element("tab.\(tab)").click()
         element("pane.\(second).back").click()
         XCTAssertTrue(window.vanishes(within: 3))
@@ -37,24 +31,18 @@ extension OvviUITests {
         XCTAssertTrue(hasKeyboard("terminal.\(second)"))
     }
 
-    /// A new floating window: 60 % of the main window's width and 75 % of its height (at least 720 × 460 pt) centered
-    /// over it, the main window's title row and traffic lights, title-row buttons, a separator between the pane's info
-    /// and its place; the card in the tab says where the pane is and offers Show Window and Bring Back
-    /// Here.
     func testFloatingWindowOpensLargeWithTheMainWindowsTitleRow() async throws {
         let (tab, first) = try await newTab("float-frame")
         let second = try await split(first)
         element("tab.\(tab)").click()
         let main = app.windows.containing(.any, identifier: "tab.\(tab)").firstMatch.frame
-        let window = try float(second)
+        let window = float(second)
         let frame = window.frame, frames = "\(frame) over \(main)"
         XCTAssertEqual(frame.width, max(720, main.width * 0.6), accuracy: 2, frames)
         XCTAssertEqual(frame.height, max(460, main.height * 0.75), accuracy: 2, frames)
         XCTAssertEqual(frame.midX, main.midX, accuracy: 2, frames)
         XCTAssertEqual(frame.midY, main.midY, accuracy: 2, frames)
 
-        // The lights where the main window has them (testTrafficLightsSitInTheTitleRow); the 28 pt buttons centered
-        // on the same 46 pt row.
         let lights = [XCUIIdentifierCloseWindow, XCUIIdentifierMinimizeWindow, XCUIIdentifierFullScreenWindow]
             .map { window.buttons[$0] }
         XCTAssertTrue(until(2) {
@@ -69,14 +57,11 @@ extension OvviUITests {
             XCTAssertEqual(button.midY - frame.minY, 23, accuracy: 1, "\(button) in \(frame)")
         }
 
-        // The pane's program and folder in the title row, then a 1 pt separator 8 pt from each, then its place.
         let info = element("float.\(second).info", in: window)
         XCTAssertTrue(info.stringValue.hasSuffix("tmp"), info.debugDescription)
         let place = element("float.\(second).place", in: window).frame
         XCTAssertEqual(place.minX - info.frame.maxX, 2 * 8 + 1, accuracy: 1, "\(place) after \(info.frame)")
 
-        // In the tab, under the card's header: a line that says where the pane is, then Show Window and Bring Back
-        // Here side by side in the middle.
         element("tab.\(tab)").click()
         let show = element("pane.\(second).show"), back = element("pane.\(second).back")
         let card = element("pane.\(second)").frame
@@ -91,28 +76,21 @@ extension OvviUITests {
         XCTAssertLessThan(show.frame.width, card.width / 2, both)
         keepScreen("floating window over the main window")
         show.click()
-        // Not through `window`: XCUITest dropped that element once the window came forward (on CI). The
-        // card in the tab has no terminal, so this one is the floating window's.
+        // Not through `window`: XCUITest drops that element once the window comes forward (on CI).
         XCTAssertTrue(hasKeyboard("terminal.\(second)"))
     }
 
-    /// Two floating windows, one on top, its own ⌘K, and both back after ⌘Q and a relaunch.
     func testFloatingWindowsHaveTheirOwnCommandsAndComeBackAfterRelaunch() async throws {
-        // As testRelaunchRestoresThePagesThatStillRun: ⌘Q saves the window. From no saved windows: each came back
-        // as a window of its own on -session.
         try await forgetWindows()
-        app.launchArguments = ["-session", one, "-NSQuitAlwaysKeepsWindows", "YES"] + Self.noConfig
-        app.launch()
+        relaunch(windows: .saved)
         let (tab, first) = try await newTab("float-keep")
         let second = try await split(first), third = try await split(second)
         element("tab.\(tab)").click()
-        // Each through the palette, on the keyboard card: no floating window covers a card's header then.
         element("terminal.\(third)").click()
         XCTAssertTrue(hasKeyboard("terminal.\(third)"))
         openPalette().typeText("float pane")
         app.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(element("float.\(third)").exists(within: 5))
-        // Back in the main window, ⌘[ round the start skips the floated last card.
         element("tab.\(tab)").click()
         XCTAssertTrue(hasKeyboard("terminal.\(first)"))
         app.typeKey("[", modifierFlags: .command)
@@ -122,11 +100,9 @@ extension OvviUITests {
         let pinned = app.windows.containing(.any, identifier: "float.\(second)").firstMatch
         XCTAssertTrue(pinned.exists(within: 5))
 
-        // ⌘K in the floating window: its commands only, no places.
         XCTAssertTrue(hasKeyboard("terminal.\(second)", in: pinned))
         openPalette()
         XCTAssertTrue(element("palette.command.Detach Pane", in: pinned).exists(within: 2))
-        // Its first row is lit, not the row at the main window's selected tab's index.
         XCTAssertTrue(element("palette.command.Detach Pane", in: pinned).has(\.isSelected, true, within: 2))
         XCTAssertFalse(element("palette.command.New Tab", in: pinned).exists)
         XCTAssertFalse(element("palette.tab.\(tab)", in: pinned).exists)
@@ -138,9 +114,7 @@ extension OvviUITests {
 
         app.typeKey("q", modifierFlags: .command)
         XCTAssertTrue(app.wait(for: .notRunning, timeout: 5))
-        // -machines: none of the user's machines, whose masters a test must not touch.
-        app.launchArguments = ["-defaultSession", one, "-machines", "[]"] + Self.noConfig
-        app.launch()
+        relaunch(windows: .restored)
         let back = app.windows.containing(.any, identifier: "float.\(second)").firstMatch
         XCTAssertTrue(back.exists(within: connect))
         XCTAssertTrue(element("float.\(second).pin").has(\.stringValue, "on", within: 3))
@@ -148,7 +122,6 @@ extension OvviUITests {
         XCTAssertTrue(element("pane.\(second).show").exists(within: 3))
         XCTAssertTrue(element("pane.\(third).show").exists)
 
-        // herdr closed a pane: its window closes, the other stays.
         try await Self.call(one, "pane.close", ["pane_id": second])
         XCTAssertTrue(back.vanishes(within: 5))
         XCTAssertTrue(element("float.\(third)").exists)
@@ -163,42 +136,48 @@ extension OvviUITests {
     }
 
     func testClosingAFloatedPaneAsksInItsWindow() async throws {
+        let (other, shell) = try await newTab("float-close-other")
+        // A startup program still running would make its close ask.
+        try await waitForPrompt(shell)
         let (tab, first) = try await newTab("float-close")
         let second = try await split(first)
         try await runSleep(second)
         element("tab.\(tab)").click()
-        let window = try float(second)
-        // ⇧⌘W is Close Pane there, and asks too (⌘W detaches).
+        let window = float(second)
         XCTAssertTrue(hasKeyboard("terminal.\(second)", in: window))
         app.typeKey("w", modifierFlags: [.command, .shift])
         XCTAssertTrue(window.sheets.buttons["Close Pane"].exists(within: 5))
+        // A close in the main window that asks nothing leaves this question up.
+        element("tab.\(other)").click()
+        element("tab.\(other)").hover()
+        element("tab.\(other).close").click()
+        try await expect("the other tab closed in herdr") { try await !tabIDs().contains(other) }
+        XCTAssertTrue(window.sheets.buttons["Close Pane"].exists)
+        // The main window covers the float window now.
+        element("pane.\(second).show").click()
         window.sheets.buttons["Cancel"].click()
         XCTAssertTrue(window.sheets.buttons["Close Pane"].vanishes(within: 3))
         element("float.\(second).close").click()
         let confirm = window.sheets.buttons["Close Pane"]
         XCTAssertTrue(confirm.exists(within: 5))
-        // Return confirms in the floating window too.
         app.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(window.vanishes(within: 5))
         try await expect("the pane closed in herdr") { try await order(tab) == [first] }
 
-        // Closing the main window closes its floating windows.
-        let alone = try float(first)
+        let alone = float(first)
         element("tab.\(tab)").click()
         app.menuBars.menuBarItems["File"].click()
         app.menuBars.menuItems["Close Window"].click()
         XCTAssertTrue(alone.vanishes(within: 5))
     }
 
-    /// A floating window on top over the main window, in Glass and Classic, dark and light.
     func testFloatingWindowInEachLook() async throws {
         let (tab, first) = try await newTab("float-look")
         let second = try await split(first)
         element("tab.\(tab)").click()
-        let window = try float(second)
+        let window = float(second)
         element("float.\(second).pin").click()
         XCTAssertTrue(element("float.\(second).pin").has(\.stringValue, "on", within: 2))
-        // The main window's menu bar has the looks; the window on top stays in view.
         element("tab.\(tab)").click()
         addTeardownBlock { @MainActor [self] in
             pick("Interface Style", "Glass")
@@ -213,19 +192,13 @@ extension OvviUITests {
             XCTAssertTrue(window.isHittable)
             keepScreen("floating window, \(look)")
         }
-        // The red traffic light detaches.
         window.buttons[XCUIIdentifierCloseWindow].click()
         XCTAssertTrue(window.vanishes(within: 3))
         XCTAssertTrue(element("terminal.\(second)").exists(within: 3))
     }
 
-    /// `ovvi://float` (for agents of a session open elsewhere): a pane of a session with no page here floats, and no
-    /// page comes;
-    /// again brings the same window forward; a pane or session that is not there says so; Detach lets the session go.
-    /// A page's pane in a tab not in view floats too.
     func testOvviURLFloatsAPaneOfASessionWithNoPage() async throws {
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
-        // Two's gamma; one has a w1:p1 too, so always within the floating window.
         let pane = "w1:p1"
         let window = try await floatByURL(two, pane)
         XCTAssertTrue(until(3) { element("float.\(pane).place", in: window).stringValue.hasPrefix("\(two) › gamma › ")
@@ -235,15 +208,12 @@ extension OvviUITests {
         app.typeKey(.return, modifierFlags: [])
         try await expect("the keys in two's pane") { try await read(pane, in: two).contains("\nurl-42") }
 
-        // Again, with the main window in front, as `ovvi://float/?…`: the same window comes forward, and that path
-        // ("/") opens no workspace, as a dropped folder would: checked after the next steps.
         element("workspace.w1").click()
         let workspaces = try await workspaceIDs()
         try await openFloatURL("session=\(two)&pane=\(pane)", path: "/")
         XCTAssertTrue(hasKeyboard("terminal.\(pane)", in: window))
         XCTAssertEqual(app.windows.containing(.any, identifier: "float.\(pane)").count, 1)
 
-        // Not there: a notice in the main window, no window.
         element("workspace.w1").click()
         try await openFloatURL("session=\(two)&pane=w9:p9")
         let notice = element("detail.notice")
@@ -256,23 +226,18 @@ extension OvviUITests {
         let after = try await workspaceIDs()
         XCTAssertEqual(after, workspaces)
 
-        // Detach: the window goes, and so does two's connection. The URL brings the window forward first: a click on a
-        // window behind the main one lands in the main one.
+        // The URL brings the window forward first: a click on a window behind the main one lands in the main one.
         _ = try await floatByURL(two, pane)
         element("float.\(pane).detach", in: window).click()
         XCTAssertTrue(window.vanishes(within: 3))
         try await expect("two's herdr runs end") { try await runs(two).isEmpty }
 
-        // A page's pane, in a workspace not in view.
         let (tab, other) = try await newTab("float-url")
         element("workspace.w1").click()
         XCTAssertTrue(element("tab.\(tab)").vanishes(within: 3))
         _ = try await floatByURL(one, other)
     }
 
-    /// Closing the main window lets a URL float and its session go; a URL with no window opens one and floats there.
-    /// Open Session on the float's session makes it a page: the window stays, and after Detach the page keeps the
-    /// connection.
     func testOvviURLFloatGoesWithItsWindowAndOpensOne() async throws {
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
         let pane = "w1:p1"
@@ -299,11 +264,7 @@ extension OvviUITests {
         XCTAssertFalse(left.isEmpty)
     }
 
-    /// talking-to-herdr#agent-requests: the panes in view carry `ovvi-shown`; a float request on one, as pi-herd
-    /// sends it, floats the pane it names (of a session with no page), which is marked too; panes out of view, a
-    /// detached float's and, at quit, every pane lose their mark. The remote one:
-    /// testARemoteMachinesPanesAreMarkedAndFloatThere.
-    func testShownPanesAreMarkedAndAFloatRequestFloats() async throws {
+    func testShownPanesAreMarkedAndOvviFloatFloats() async throws {
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
         try await markAndFloat()
         XCTAssertFalse(pageList().contains(two))
@@ -314,17 +275,13 @@ extension OvviUITests {
         try await expectShown(one, "w1:p1", false)
     }
 
-    /// A new tab of one shows and is marked; its pane asks to float two's w1:p1, which floats and is marked until
-    /// its window detaches it; the tab loses its mark once w1 shows instead.
     func markAndFloat() async throws {
         let (tab, pane) = try await newTab("float-request")
         app.typeKey("2", modifierFlags: .command)
         XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, true, within: 2))
         try await expectShown(one, pane)
-        try await Self.call(one, "pane.report_metadata", [
-            "pane_id": pane, "source": "e2e", "ttl_ms": 1000,
-            "tokens": ["ovvi-float": "\(two)/w1:p1", "ovvi-float-id": UUID().uuidString],
-        ])
+        try await waitForPrompt(pane)
+        try await run("\(Self.ovviCommand) float \(two)/w1:p1", in: pane, "float", 0, "floating: true")
         let window = app.windows.containing(.any, identifier: "float.w1:p1").firstMatch
         XCTAssertTrue(window.exists(within: connect))
         XCTAssertTrue(until(3) { element("float.w1:p1.place", in: window).stringValue.hasPrefix("\(two) › gamma › ") })
@@ -343,9 +300,7 @@ extension OvviUITests {
         }
     }
 
-    /// `open -g` of the pane's `ovvi://float` URL with the app under test, through the helper, as pi-herd opens it
-    /// (XCUIApplication.open(_:) left the app not foreground for XCUITest, on CI); its floating window, once
-    /// its terminal has the keyboard.
+    /// Through the helper: XCUIApplication.open(_:) leaves the app not foreground for XCUITest, on CI.
     func floatByURL(_ session: String, _ pane: String) async throws -> XCUIElement {
         try await openFloatURL("session=\(session)&pane=\(pane)")
         let window = app.windows.containing(.any, identifier: "float.\(pane)").firstMatch
@@ -359,7 +314,7 @@ extension OvviUITests {
         _ = try await Self.post("\(one)/open-url", Data("\(ovvi)\novvi://float\(path)?\(query)".utf8))
     }
 
-    func float(_ pane: String) throws -> XCUIElement {
+    func float(_ pane: String) -> XCUIElement {
         hoverHeader(pane)
         element("pane.\(pane).float").click()
         let window = app.windows.containing(.any, identifier: "float.\(pane)").firstMatch
@@ -367,13 +322,11 @@ extension OvviUITests {
         return window
     }
 
-    /// Floated and back, the same page. The window's title row has no place: the tab's title is the shell's.
-    func floatAndBack(_ pane: String) throws {
-        let window = try float(pane)
+    func floatAndBack(_ pane: String) {
+        let window = float(pane)
         XCTAssertTrue(window.webViews.staticTexts.matching(NSPredicate(format: "value == 'ovvi-page-two'")).firstMatch
             .exists(within: 3))
         keepScreenshot("floated browser", of: window)
-        // Back as far from the card's top edge as from its left, and from the page under it.
         let surface = element("float.\(pane)", in: window).frame
         let back = element("browser.\(pane).back", in: window).frame, page = window.webViews.firstMatch.frame
         XCTAssertEqual(back.minY - surface.minY, back.minX - surface.minX, accuracy: 0.5, "\(back) in \(surface)")
@@ -384,7 +337,6 @@ extension OvviUITests {
         XCTAssertTrue(window.vanishes(within: 3))
     }
 
-    /// The whole screen: the main window and the floating ones.
     func keepScreen(_ name: String) {
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = name

@@ -1,12 +1,8 @@
 import Foundation
 import Synchronization
 
-/// One remote process that carries every run of a host over one SSH session: a server may
-/// allow only a few sessions per connection (`MaxSessions`), and a second connection would ask for a second
-/// passcode. Runs are lines both ways, as herdr's bridge, events and terminal streams are. The app sends
-/// `o <id> <command hex>` (open), `w <id> <line>`, `c <id>` (close stdin) and `k <id>` (SIGKILL by pid, then close
-/// stdin); the relay answers `l <id> <line>` and, once the run's output ended and it was reaped,
-/// `x <id> <status> <stderr hex>`.
+/// One SSH session for every run: a server may allow only a few sessions per connection (`MaxSessions`), and a
+/// second connection would ask for a second passcode.
 /// ponytail: Perl, which nearly every Unix has (Debian's perl-base is essential); a machine without it shows
 /// "Ovvi needs Perl". A relay in another language when one is missed.
 final class Relay: Sendable {
@@ -32,8 +28,6 @@ final class Relay: Sendable {
         self.channel = channel
     }
 
-    /// The relay on this channel (an SSH session that runs `perl -e script`); nil when it does not greet within
-    /// 10 s (no Perl there).
     static func start(_ channel: Channel) async -> Relay? {
         let relay = Relay(channel)
         let (greeted, greeting) = AsyncStream<Bool>.makeStream()
@@ -44,7 +38,6 @@ final class Relay: Sendable {
         return ready == true ? relay : nil
     }
 
-    /// Every line of the relay to its run; when the session ends, every run ends with it.
     private func route(_ greeting: AsyncStream<Bool>.Continuation) async {
         for await line in channel.lines {
             let parts = line.split(separator: " ", maxSplits: 2, omittingEmptySubsequences: false)
@@ -77,7 +70,6 @@ final class Relay: Sendable {
         greeting.yield(false)
     }
 
-    /// One run of the command (POSIX `sh`) on the machine, as a channel of its own.
     func run(_ command: String) throws -> Channel {
         let (lines, linesContinuation) = AsyncStream<String>.makeStream()
         let (exits, exitContinuation) = AsyncStream<(Int32, String)>.makeStream()
@@ -91,7 +83,6 @@ final class Relay: Sendable {
         channel.write("o \(id) \(Data(command.utf8).map { String(format: "%02x", $0) }.joined())")
         let exit = Task { await exits.first { _ in true } ?? (-1, "") }
         let channel = channel
-        // A dropped stream kills the run; one that ended at its end leaves the exit to come.
         linesContinuation.onTermination = { reason in
             if case .cancelled = reason {
                 channel.write("k \(id)")
@@ -119,10 +110,9 @@ final class Relay: Sendable {
         return String(decoding: bytes, as: UTF8.self)
     }
 
-    /// The relay: `select` over its stdin and every run's stdout and stderr; a run's lines go out whole, so frames
-    /// of two runs never mix; writes to a run's stdin wait in its own buffer, so a run that reads nothing never
-    /// holds up the others. When its stdin ends (the app quit, the connection dropped) it exits, and every run's
-    /// stdin closes with it.
+    /// A run's lines go out whole, so frames of two runs never mix; writes to a run's stdin wait in its own buffer, so
+    /// a run that reads nothing never holds up the others. When its stdin ends (the app quit, the connection dropped)
+    /// it exits, and every run's stdin closes with it.
     static let script = #"""
     use strict; use warnings; use IO::Handle; use IO::Select; use POSIX (); use Fcntl;
     $SIG{PIPE} = 'IGNORE';

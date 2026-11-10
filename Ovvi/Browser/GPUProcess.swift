@@ -1,17 +1,17 @@
 import Darwin
 import Foundation
+import HerdrKit
 import os
 import WebKit
 
 /// WebKit ends its GPU process when it stops answering (a starved Mac) and starts another, but its signal fails (xpc:
-/// "Operation not permitted"): the old one lives on and keeps every page's drawing connection, so every web card stays
-/// blank, Reload too, while its page process is fine. The app ends that process: the pages connect to the new one
-/// and draw again where they were, kept cards' when they show (their processes are paused until then).
-/// WebKit has no public word of its GPU process: its pid is `WKProcessPool._gpuProcessIdentifier` (0 while none).
+/// "Operation not permitted"): the stuck one lives on and keeps every page's drawing connection, so every web card
+/// stays blank, Reload too. Once the app ends it, the pages connect to the new one and draw again. WebKit has no public
+/// word of its GPU process: its pid is `WKProcessPool._gpuProcessIdentifier` (0 while none).
 @MainActor
 enum GPUProcess {
-    /// Every 2 s, with the first web card. ponytail: one dropped process per pool and check; two swaps inside one
-    /// check (WebKit waits seconds before it gives up) would leave the first.
+    /// ponytail: one dropped process per pool and check; two swaps inside one check (WebKit waits seconds to give up)
+    /// would leave the first.
     static let watch: Timer = {
         let timer = Timer(timeInterval: 2, repeats: true) { _ in
             MainActor.assumeIsolated { check() }
@@ -22,16 +22,16 @@ enum GPUProcess {
     }()
 
     private static let key = "_gpuProcessIdentifier"
-    private static let log = Logger(subsystem: "dev.ovvi.app", category: "web")
-    /// Each card's pool's GPU process at the last check, and its start time: a pid used again is another process. Per
-    /// pool: a pool's pid is 0 until its own pages draw, while the process serves the others.
+    private static let log = Logger(ovvi: "web")
+    /// With its start time: a pid used again is another process. Per pool: a pool's pid is 0 until its own pages draw.
     private static let known = NSMapTable<NSObject, NSArray>.weakToStrongObjects()
 
     static func check() {
         let pools = PaneViewRegistry.recentWeb.compactMap { $0.registry?.webView($0.id)?.configuration }
             .compactMap { $0.value(forKey: "processPool") as? NSObject }
             .filter { $0.responds(to: NSSelectorFromString(key)) }
-        for pool in pools {
+        // Many web views share a pool.
+        for pool in Set(pools) {
             let pid = (pool.value(forKey: key) as? NSNumber)?.int32Value ?? 0
             // WebKit drops a pool's process only as it ends it (`gpuProcessExited`).
             if let old = known.object(forKey: pool) as? [UInt64], pid != pid_t(old[0]),

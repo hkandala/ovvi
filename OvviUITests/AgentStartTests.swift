@@ -1,11 +1,8 @@
 import XCTest
 
-/// `ovvi notify`, `ovvi agent`, `ovvi chat`, `ovvi view` and `ovvi balance` (agent-control/cli): a notification on
-/// the Mac, an agent in a new pane, Relaunch with Chat, the Chat | TUI switch and Balance Splits, asked from a pane.
 extension OvviUITests {
-    /// A split beside the asking pane, then a tab right after its tab: each shell gets Claude Code's line with Ovvi's
-    /// flags, the answer comes once it is typed, and the keyboard and the selected tab stay. Past the errors only with
-    /// no `claude` or the stand-in (CI puts it on the login shell's PATH): a new pane's shell would start a real one.
+    /// Past the errors only with no `claude` or the stand-in (CI puts it on the login shell's PATH): a new pane's shell
+    /// would start a real one.
     func testAgentStartsAnAgentWithChatBesideThePane() async throws {
         let before = try await tabIDs()
         closeNew("tab", besides: before)
@@ -18,12 +15,7 @@ extension OvviUITests {
         try await run("\(ovvi) agent nobody --beside w9:p9", in: pane, "nobody", 1,
                       "ovvi: no agent nobody; there are claude")
         try await run("\(ovvi) agent claude --replace w9:p9", in: pane, "replace", 2, "ovvi: --replace takes")
-        try await send("case \"$(command -v claude)\" in ''|*/Fixtures/agents/*) echo claude-$((6*7))-safe;; "
-            + "*) echo claude-$((6*7))-real;; esac\r", to: pane)
-        try await waitFor(pane) { $0.contains("\nclaude-42-") }
-        if try await read(pane).contains("\nclaude-42-real") {
-            throw XCTSkip("this Mac has claude, which the new pane would start")
-        }
+        try await skipIfThisMacHasClaude(pane, "the new pane would start")
 
         for (place, marker) in [("", "split"), (" --tab", "tab")] {
             try await send("clear\r", to: pane)
@@ -34,13 +26,12 @@ extension OvviUITests {
             XCTAssertEqual(new == tab, place.isEmpty, "\(id) in \(new ?? "no tab")")
             // Wrapped at the pane's width (about 45 columns on CI).
             try await waitFor(id, toShow: "claude --session-id ")
-            XCTAssertTrue(element("tab.\(tab)").isSelected, marker)
+            XCTAssertFalse(until(0.5) { !element("tab.\(tab)").isSelected }, marker)
             XCTAssertTrue(hasKeyboard("terminal.\(pane)"), marker)
         }
     }
 
-    /// One notification per pane every 10 s, none while Settings ▸ Agents ▸ When an agent sends one is off. A banner
-    /// cannot be read or clicked from a test: only the answers are.
+    /// A banner cannot be read or clicked from a test: only the answers are.
     func testNotifyIsOncePerPaneEveryTenSecondsAndFollowsItsSwitch() async throws {
         let (_, pane) = try await newTab("notify")
         try await waitForPrompt(pane)
@@ -57,14 +48,12 @@ extension OvviUITests {
         try await run("\(ovvi) notify Done", in: pane, "off", 0, "notified: false")
     }
 
-    /// Never on the asking pane, a pane with no agent, or an agent that works; an idle one starts again with the chat
-    /// (Claude Code's stand-in, started by hand), and the command answers once its line is typed.
     func testChatRelaunchesAnIdleAgentOnly() async throws {
         let (_, agent) = try await startChat(chat: false, plain: true)
         let asking = try await split(agent)
         let busy = try await split(asking, "down")
         try await waitForPrompt(busy)
-        // Reported working before its session: herdr takes no state report after the session.
+        // Reported working ahead of its session: herdr takes no state report after the session.
         let herdr = #""$HERDR_BIN_PATH" --session "$HERDR_SESSION" pane"#
         try await send("\(herdr) report-agent --source ovvi-e2e --agent claude --state working \"$HERDR_PANE_ID\"; "
             + "\(herdr) report-agent-session \"$HERDR_PANE_ID\" --source herdr:claude --agent claude "
@@ -82,8 +71,6 @@ extension OvviUITests {
         XCTAssertFalse(element("pane.\(agent).enable-chat").exists)
     }
 
-    /// The card's Chat | TUI switch from a pane, which `card` reports; a pane with no chat view and a third word are
-    /// refused.
     func testViewSwitchesAChatAgentsCard() async throws {
         let (_, agent) = try await startChat(chat: false)
         XCTAssertTrue(element("pane.\(agent).view.tui").exists(within: 15))
@@ -96,13 +83,12 @@ extension OvviUITests {
                       #""view":"chat""#)
         try await run("\(ovvi) view \(agent) tui", in: asking, "tui", 0, "view: tui")
         XCTAssertTrue(composer.vanishes(within: 5))
-        XCTAssertTrue(element("pane.\(agent).view.tui").isSelected)
+        XCTAssertTrue(element("pane.\(agent).view.tui").has(\.isSelected, true, within: 2))
         // Wrapped at the pane's width (about 45 columns on CI).
         try await run("\(ovvi) view \(asking) chat", in: asking, "plain", 1, "ovvi: pane \(asking) runs no agent")
         try await run("\(ovvi) view \(agent) both", in: asking, "both", 2, "ovvi: both is not chat or tui")
     }
 
-    /// Balance Splits from a pane: its own tab by default, another pane's tab by name.
     func testBalanceEvensOutAPanesTab() async throws {
         let (tab, pane) = try await newTab("balance")
         try await split(pane)

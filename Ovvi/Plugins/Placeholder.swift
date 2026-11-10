@@ -1,9 +1,6 @@
 import HerdrKit
 
 extension PaneLabel {
-    /// The pane's command in herdr (ui/browser#in-herdrs-tui): the kind's name, the argument without its scheme
-    /// (`example.com/a`) and "Shown in Ovvi", centered. A resize, or Ovvi's SIGWINCH after a new label
-    /// (`HostStore.redrawPlaceholder`), draws it again with the label's argument as herdr has it now. Keys do nothing:
     /// `stty raw` makes Ctrl-C and Ctrl-D plain bytes for the `cat` that swallows them. herdr runs the argv itself,
     /// with no shell quoting.
     var placeholder: [String] {
@@ -39,9 +36,8 @@ extension PaneLabel {
 }
 
 extension HostStore {
-    /// A browser or plugin pane with only its shell in front gets its placeholder again, typed into that shell once
-    /// per shell process (plugins/labels#the-placeholder): herdr starts a fresh shell under the label after a restart,
-    /// and a pane labeled outside the app may have none. Never into a pane that runs another program.
+    /// herdr starts a fresh shell under the label after a restart, and a pane labeled outside the app has no
+    /// placeholder.
     func keepPlaceholder(_ pane: Pane) {
         guard let label = pane.plugin, let program = pane.program, let client else { return }
         guard program.isShell else {
@@ -61,21 +57,17 @@ extension HostStore {
         guard let shell = program.foreground.first?.pid, pane.placed != shell else { return }
         pane.placed = shell
         pane.drawnLabel = pane.label
-        // In place of the shell, so the pane runs only the placeholder; base64, which any login shell passes on. ⌃U
-        // first clears a line half typed in a herdr TUI, as a key: herdr pastes text into a shell that turned
+        // Base64, which any login shell passes on. ⌃U goes as a key: herdr pastes text into a shell that turned
         // bracketed paste on (zsh, bash 5.1+, fish at their prompt), where a ⌃U in it is a plain character. The space
         // keeps the line out of a history that ignores such lines (fish; zsh and bash when set to).
-        let line = " exec " + SSHExec.envelope(["exec"] + label.placeholder)
+        let line = " exec " + shellEnvelope(["exec"] + label.placeholder)
         Task {
             try? await client.sendKeys(["ctrl+u"], pane: pane.id)
             try? await client.sendInput(line, keys: ["enter"], pane: pane.id)
         }
     }
 
-    /// After a new label (a browser's typed address; a label change asks for the program again), the placeholder
-    /// draws the label's argument: SIGWINCH to its processes, by pid (its `cat` ignores it; a pid gone stale meanwhile
-    /// gets a harmless resize signal). Not one it drew already: a placeholder from before this launch shows its old
-    /// argument until its label changes.
+    /// Its `cat` ignores SIGWINCH, and a pid gone stale meanwhile gets a harmless resize signal.
     private func redrawPlaceholder(_ pane: Pane, _ program: Program) {
         guard pane.drawnLabel != pane.label, !program.foreground.isEmpty else { return }
         pane.drawnLabel = pane.label

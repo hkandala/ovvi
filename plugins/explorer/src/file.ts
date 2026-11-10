@@ -1,4 +1,3 @@
-// File: the card's file in CodeMirror with its language's colors, and the breadcrumbs `repo › … › file › {} symbol`.
 import { StreamLanguage, type StreamParser, syntaxTree } from "@codemirror/language"
 import { Compartment, type EditorState, type Extension, RangeSetBuilder } from "@codemirror/state"
 import { Decoration, type DecorationSet, EditorView, ViewPlugin, type ViewUpdate } from "@codemirror/view"
@@ -8,7 +7,6 @@ import { choose, name, own, type Place, type Reveal } from "./place"
 
 const legacy = (parser: Promise<StreamParser<unknown>>) => parser.then((p) => StreamLanguage.define(p))
 
-/** By extension (or name, for dotfiles); each loads on first use. */
 const languages: Record<string, () => Promise<Extension>> = {
   swift: () => legacy(import("@codemirror/legacy-modes/mode/swift").then((m) => m.swift)),
   ts: () => import("@codemirror/lang-javascript").then((m) => m.javascript({ typescript: true })),
@@ -39,7 +37,6 @@ const language = (path: string) => {
   return languages[key]?.() ?? []
 }
 
-/** Nodes that name a scope in the Lezer grammars, and the nodes that hold their names. */
 const scopes = new Set([
   ...["Function", "Class", "Method", "Interface", "Enum", "TypeAlias", "Namespace", "Constructor", "Record"].map(
     (s) => `${s}Declaration`,
@@ -61,7 +58,7 @@ const named = (node: SyntaxNode, state: EditorState): string | undefined => {
   }
 }
 
-/** The legacy modes (Swift, Kotlin, Ruby, shell, TOML) make no tree: the declarations less indented above the caret. */
+/** Stream modes (Swift, Kotlin, Ruby, shell, TOML) make no tree. */
 const declaration =
   /^\s*(?:[\w@]+\s+)*?(?:func|class|struct|enum|protocol|extension|actor|fun|object|interface|def|module|function)\s+([\w.]+)|^\s*([\w-]+)\s*\(\)\s*\{/
 const indented = (state: EditorState) => {
@@ -78,7 +75,6 @@ const indented = (state: EditorState) => {
   return found
 }
 
-/** The scopes around the caret, outermost first. */
 const symbol = (state: EditorState) => {
   const found: string[] = []
   for (let node: SyntaxNode | null = syntaxTree(state).resolveInner(state.selection.main.head, -1); node; node =
@@ -89,7 +85,6 @@ const symbol = (state: EditorState) => {
   return (found.length ? found : indented(state)).join(" › ")
 }
 
-/** Cards are often narrow: lines wrap, and a wrapped line goes on at its own indent, as in Xcode. */
 const indents = (view: EditorView) => {
   const builder = new RangeSetBuilder<Decoration>()
   for (const { from, to } of view.visibleRanges) {
@@ -123,9 +118,9 @@ export async function show(place: Place): Promise<Reveal> {
   const jump = (scope: string) =>
     ovvi.controls.set("jump", { value: [...trail, ...(scope ? [scope] : [])], symbol: scope ? "curlybraces" : "" })
   let last = ""
-  /** Word Wrap, on until the card turns it off: cards are often narrow. */
   const wrap = new Compartment(), wrapped = (on: boolean) => (on ? [EditorView.lineWrapping, hanging] : [])
-  let on = own(ovvi).wrap ?? true
+  const chosen = () => own(ovvi).wrap ?? true
+  let on = chosen()
   ovvi.controls.set("wrap", { value: on })
   const shown = await editor(place, [
     code,
@@ -135,15 +130,13 @@ export async function show(place: Place): Promise<Reveal> {
       const now = symbol(update.state)
       if (now !== last) jump((last = now))
     }),
-  ], place.root)
+  ], place.element)
   const view = shown?.view
-  // The info view has no lines to wrap.
   if (!view) return void ovvi.controls.set("wrap", { hidden: true })
   const rewrap = (now: boolean) => {
     if (now === on) return
     on = now
     ovvi.controls.set("wrap", { value: on })
-    // The line at the top stays in place.
     const top = view.lineBlockAtHeight(view.scrollDOM.scrollTop - view.documentPadding.top).from
     view.dispatch({ effects: [wrap.reconfigure(wrapped(on)), EditorView.scrollIntoView(top, { y: "start" })] })
   }
@@ -154,7 +147,7 @@ export async function show(place: Place): Promise<Reveal> {
   })
   // A kept page shown again takes the card's choice from another file's page, and so does this one if another
   // changed it while this one drew.
-  ovvi.on("place", () => rewrap(own(ovvi).wrap ?? true))
-  rewrap(own(ovvi).wrap ?? true)
+  ovvi.on("place", () => rewrap(chosen()))
+  rewrap(chosen())
   return shown.land
 }

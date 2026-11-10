@@ -2,15 +2,13 @@ import Foundation
 @testable import HerdrKit
 import Testing
 
-/// The four readers against fixture stores in a home folder of their own under /tmp, written as each agent writes
-/// them (pi 0.80, Claude Code 2.1.310, Codex 0.164, OpenCode 1.18), in `Fixtures/closed-sessions`.
+/// Fixture stores written as each agent writes them (pi 0.80, Claude Code 2.1.310, Codex 0.164, OpenCode 1.18).
 private struct Fixture {
     let home = URL(filePath: "/tmp/ovvi-closed-\(UUID().uuidString)")
     var exec: ProcessExec {
         ProcessExec(["HOME": home.path, "PATH": "/usr/bin:/bin"], herdr: nil, asked: .now)
     }
 
-    /// A file under the home folder, last changed `age` seconds ago.
     func write(_ path: String, _ text: String, age: TimeInterval = 0) throws {
         let file = home.appending(path: path)
         try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -19,7 +17,6 @@ private struct Fixture {
                                               ofItemAtPath: file.path)
     }
 
-    /// A file of `Fixtures/closed-sessions` under the home folder, last changed `age` seconds ago.
     func copy(_ name: String, to path: String, age: TimeInterval) throws {
         let url = try #require(Bundle.module.url(forResource: name, withExtension: "jsonl",
                                                  subdirectory: "Fixtures/closed-sessions"))
@@ -44,10 +41,8 @@ private struct Fixture {
     let folder = ".pi/agent/sessions/--tmp-a--/"
     try fixture.copy("pi-prompt", to: folder + "1.jsonl", age: 60)
     try fixture.copy("pi-named", to: folder + "2.jsonl", age: 10)
-    // Started and quit with no prompt.
     try fixture.write(folder + "3.jsonl", #"{"type":"session","version":3,"id":"01a3","cwd":"/tmp/a"}"#, age: 5)
 
-    // A page holds `limit` sessions with a prompt: it looks past the one without.
     let first = try await fixture.exec.closedSessions(agent: "pi", offset: 0, limit: 2)
     let path = fixture.home.path + "/" + folder
     #expect(first.sessions.map(\.value) == [path + "2.jsonl", path + "1.jsonl"])
@@ -67,7 +62,6 @@ private struct Fixture {
     let renamed = "1b77b9f3-ed25-4373-964e-295a0158d7e8", plain = "2c88c0a4-fe36-4484-a75f-3a6b1269e8f9"
     try fixture.copy("claude-renamed", to: ".claude/projects/-tmp-b/\(renamed).jsonl", age: 100)
     try fixture.copy("claude-prompt", to: ".claude/projects/-tmp-c/\(plain).jsonl", age: 50)
-    // A subagent's transcript is not a session.
     try fixture.write(".claude/projects/-tmp-c/\(plain)/subagents/agent-1.jsonl",
                       #"{"type":"user","message":{"role":"user","content":"sub"},"cwd":"/tmp/c"}"#)
 
@@ -76,12 +70,9 @@ private struct Fixture {
     #expect(page.sessions.map(\.title) == ["write the docs", "say hi (Branch)"])
     #expect(page.sessions.map(\.folder) == ["/tmp/c", "/tmp/b"])
     #expect(!page.more)
-    // A UI test's home, not the machine's.
     let elsewhere = ProcessExec(["HOME": "/nonexistent", "PATH": "/usr/bin:/bin"], herdr: nil, asked: .now)
     #expect(try await elsewhere.closedSessions(agent: "claude", offset: 0, home: fixture.home.path) == page)
 
-    // A long transcript: its first 100 lines and its last 256 KB. A rename in between is not read (the title there
-    // is Claude Code's own, at the end). The Agent SDK's are left out.
     let head = Array(repeating: #"{"type":"progress"}"#, count: 150)
     let middle = #"{"type":"custom-title","customTitle":"Not read"}"#
     let filler = #"{"type":"assistant","text":""# + String(repeating: "x", count: 1 << 20) + "\"}"
@@ -121,7 +112,6 @@ private struct Fixture {
     #expect(try await fixture.exec.closedSessions(agent: "codex", offset: 1, limit: 1).sessions.map(\.value)
         == ["019b-plain"])
 
-    // No database (a machine with no sqlite3 reads the same way): the rollouts.
     try FileManager.default.removeItem(at: fixture.home.appending(path: ".codex/state_5.sqlite"))
     try fixture.write(".codex/session_index.jsonl", #"{"id":"0201-named","thread_name":"Named one","updated_at":"x"}"#)
     let day = ".codex/sessions/2026/11/01/"
@@ -151,7 +141,6 @@ private struct Fixture {
     #expect(page.sessions.map(\.folder) == ["/tmp/f", "/tmp/g"])
     #expect(page.sessions.first?.date == Date(timeIntervalSince1970: 9))
 
-    // A PATH with a shell and no sqlite3.
     let bin = fixture.home.appending(path: "bin")
     try FileManager.default.createDirectory(at: bin, withIntermediateDirectories: true)
     try FileManager.default.createSymbolicLink(
@@ -202,7 +191,6 @@ private struct Fixture {
     var list = ClosedList()
     list.add(page("codex", [90, 80], more: true), for: "codex")
     list.add(page("pi", [95, 50, 10], more: false), for: "pi")
-    // pi's 50 waits: codex's next page may be newer.
     #expect(list.sessions(of: ["codex", "pi"]).map(\.value) == ["pi95", "codex90", "codex80"])
     #expect(list.next(of: ["codex", "pi"]) == ["codex"])
     #expect(list.sessions(of: ["pi"]).map(\.value) == ["pi95", "pi50", "pi10"])
@@ -217,13 +205,10 @@ private struct Fixture {
         "pi10",
     ])
     #expect(list.agents["codex"]?.looked == 3)
-    // A session that moved up comes again on the next page: once.
     list.add(page("pi", [95], more: false), for: "pi")
     #expect(list.sessions(of: ["pi"]).map(\.value) == ["pi95", "pi50", "pi10"])
 }
 
-/// Many newer sessions that are left out (the Agent SDK's, as a busy machine's runs leave them) do not leave a page
-/// empty: it looks on, past them, to the sessions with a prompt.
 @Test func `a page looks past the sessions it leaves out`() async throws {
     let fixture = Fixture()
     defer { fixture.remove() }

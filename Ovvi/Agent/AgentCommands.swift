@@ -1,23 +1,16 @@
 import AppKit
 import HerdrKit
 
-/// The commands of `ovvi` that Ovvi answers (agent-control/cli).
 struct AgentCommand {
     let name: String
-    /// The synopsis after `ovvi`, the name first: `float <pane> [--on-top]`.
     let usage: String
-    /// One line for `ovvi help`.
     let summary: String
-    /// More lines for `ovvi help <name>`, if any.
     var help = ""
-    /// Reads its arguments off the call (`flag`, `value`, `argument`, then `done`), acts and answers. Any error that
-    /// is not an `AgentError` answers `failed` with its text.
     let run: @MainActor (inout AgentCall) async throws -> AgentOutput
 }
 
 @MainActor
 enum AgentCommands {
-    /// The commands, in `ovvi help`'s order.
     static let all: [AgentCommand] = [
         .help,
         .info,
@@ -36,7 +29,6 @@ enum AgentCommands {
         .balance,
     ]
 
-    /// The script Ovvi writes to `~/.cache/ovvi/bin/ovvi` on each machine it opens a session on.
     static let script = Bundle.main.url(forResource: "ovvi", withExtension: "sh").flatMap { try? Data(contentsOf: $0) }
 
     static func run(_ argv: [String], cwd: String, from pane: String, request id: String,
@@ -57,7 +49,7 @@ enum AgentCommands {
     }
 
     static func failure(_ error: Error, json: Bool) -> AgentAnswer {
-        let error = error as? AgentError ?? AgentError(code: "failed", message: error.localizedDescription)
+        let error = error as? AgentError ?? AgentError.failed(error.localizedDescription)
         let out = json ? AgentOutput(["error": ["code": error.code, "message": error.message]]).jsonData : Data()
         return AgentAnswer(code: error.exit, out: out, err: "ovvi: \(error.message)\n")
     }
@@ -69,7 +61,6 @@ struct AgentAnswer {
     let err: String
 }
 
-/// An error code and message of agent-control/protocol, Error codes.
 struct AgentError: Error {
     let code: String
     let message: String
@@ -82,12 +73,24 @@ struct AgentError: Error {
         AgentError(code: "usage", message: message)
     }
 
+    static func badArgument(_ message: String) -> AgentError {
+        AgentError(code: "bad_argument", message: message)
+    }
+
+    static func failed(_ message: String) -> AgentError {
+        AgentError(code: "failed", message: message)
+    }
+
+    static func pluginNotFound(_ message: String) -> AgentError {
+        AgentError(code: "plugin_not_found", message: message)
+    }
+
     static func paneNotFound(_ id: String, in session: String) -> AgentError {
         AgentError(code: "pane_not_found", message: "pane \(id) is not in herdr session \(session)")
     }
 
     static func noWindow(_ session: String) -> AgentError {
-        AgentError(code: "failed", message: "no window shows herdr session \(session)")
+        failed("no window shows herdr session \(session)")
     }
 
     static func unknownCommand(_ name: String) -> AgentError {
@@ -95,13 +98,11 @@ struct AgentError: Error {
     }
 }
 
-/// A command's answer: one JSON value for `--json`, and the text without it.
 struct AgentOutput {
     /// Made of dictionaries, arrays, strings, numbers, booleans and `NSNull`.
     let json: Any
     let text: String
 
-    /// Without a text, a dictionary's fields as `name: value` lines.
     init(_ json: Any, text: String? = nil) {
         self.json = json
         self.text = text ?? (json as? [String: Any] ?? [:]).sorted { $0.key < $1.key }.map { key, value in
@@ -109,34 +110,26 @@ struct AgentOutput {
         }.joined()
     }
 
-    /// Keys sorted, so an answer reads the same every time.
     var jsonData: Data {
         let data = (try? JSONSerialization.data(withJSONObject: json, options: [.sortedKeys, .withoutEscapingSlashes]))
         return (data ?? Data("null".utf8)) + Data("\n".utf8)
     }
 }
 
-/// One request as a command sees it: who asks, and the arguments it has not read yet.
 @MainActor
 struct AgentCall {
-    /// The asking pane's session.
     let store: HostStore
-    /// The asking pane.
     let pane: String
-    /// The command's working folder on the asking pane's machine.
     let cwd: String
-    /// The request's id, which names its files in the machine's mailbox.
     let id: String
     var args: [String]
 
-    /// Whether the option is there, every copy of it read.
     mutating func flag(_ name: String) -> Bool {
         let had = args.contains(name)
         args.removeAll { $0 == name }
         return had
     }
 
-    /// The value after the option (`--beside w1:p3`), or nil without the option.
     mutating func value(_ name: String) throws -> String? {
         guard let index = args.firstIndex(of: name) else { return nil }
         guard index + 1 < args.count else { throw AgentError.usage("\(name) needs a value") }
@@ -164,16 +157,14 @@ struct AgentCall {
         PaneTarget(session: store.session, id: pane, machine: store.machine)
     }
 
-    /// A pane argument: `w1:p3` in the asking session, or `‹session›/‹pane›` of a session on the same machine. The
-    /// machine is always the asking pane's, so no argument can reach another one.
+    /// The machine is always the asking pane's, so that no argument reaches another one.
     func target(_ argument: String) async throws -> PaneTarget {
         let parts = argument.split(separator: "/", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
         let (session, id) = parts.count == 2 ? (parts[0], parts[1]) : (store.session, argument)
         guard !id.isEmpty, !id.hasPrefix("-"), !id.contains("/"), Session.isValidName(session),
               !id.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains)
-        else { throw AgentError(code: "bad_argument", message: "\(argument) is not a pane") }
+        else { throw AgentError.badArgument("\(argument) is not a pane") }
         let runs = { store.sessions.contains { $0.name == session && $0.running } }
-        // The list is read at connect and by Open Session: a session started since needs a new one.
         if session != store.session, !runs() {
             await store.loadSessions()
         }
@@ -191,14 +182,12 @@ struct AgentCall {
     }
 }
 
-/// A pane that a command names, on the asking pane's machine.
 @MainActor
 struct PaneTarget {
     let session: String
     let id: String
     let machine: Machine
 
-    /// Its session's store, when Ovvi follows it.
     var store: HostStore? {
         HostStore.all.first { $0.session == session && $0.machine.id == machine.id }
     }
@@ -210,7 +199,6 @@ extension AgentCommand {
     ) { call in
         let name = try call.optionalArgument()
         try call.done()
-        // `status` too, which the script answers by itself.
         let all = [.status] + AgentCommands.all
         if let name {
             guard let command = all.first(where: { $0.name == name }) else {
@@ -237,7 +225,7 @@ extension AgentCommand {
         }], text: text)
     }
 
-    /// Only for `help`: the script answers it from herdr's tokens and never sends it.
+    /// Only for `help`: the script answers `status` itself and never sends it.
     static let status = AgentCommand(
         name: "status", usage: "status [--json | --watch]", summary: "Says if Ovvi shows this pane, from herdr alone",
         help: "Exit 0 when an Ovvi follows the session, 3 when none does. --watch prints a line on each change.",
@@ -254,9 +242,7 @@ extension AgentCommand {
             "machine": call.store.machine.name,
             "appearance": dark ? "dark" : "light",
             "commands": AgentCommands.all.map(\.name),
-            // A key path to a metatype's static property crashes Swift 6.4.2's SIL generation.
-            // swiftformat:disable:next preferKeyPath
-            "agents": ChatAdapters.all.map { $0.command },
+            "agents": Chooser.agents.map(\.command),
         ])
     }
 }

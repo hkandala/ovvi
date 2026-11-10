@@ -3,12 +3,12 @@ import HerdrKit
 import SwiftUI
 import UserNotifications
 
-/// The notification delegate (set at launch, so a click that starts the app is not lost) and the Dock menu.
+/// The notification delegate goes in at launch, or a click that starts the app is lost.
 final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
     /// Set from macOS's decode of the restorable state until launch ends: a restored window's scene storage comes
     /// back a moment after it first shows.
     static var restoring = false
-    /// The windows macOS restored in full screen (it does so before launch ends); each leaves it once it shows.
+    /// macOS restores full screen windows ahead of the end of launch.
     static var restoredFullScreen: Set<ObjectIdentifier> = []
 
     func application(_: NSApplication, didDecodeRestorableState _: NSCoder) {
@@ -21,16 +21,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             .map(ObjectIdentifier.init))
         PluginBuilds.writeTypes()
         Task { await DefaultPlugins.shared.install() }
-        // A quit with no window open saves none, and macOS then opens none: one new-window view. Any main-capable
-        // window, shown yet or not: SwiftUI's own first window may not be on screen this early.
+        // A quit with no window open saves none, so macOS opens none. SwiftUI's own first window may not be on
+        // screen this early.
         DispatchQueue.main.async {
             if !NSApp.windows.contains(where: \.canBecomeMain) {
-                WindowPages.openWindow?(id: "main")
+                WindowPages.openWindow?(id: WindowPages.mainScene)
             }
         }
     }
 
-    /// Ovvi's marks on the panes it shows go first (talking-to-herdr#agent-requests).
     func applicationShouldTerminate(_ app: NSApplication) -> NSApplication.TerminateReply {
         Task {
             await HostStore.unmarkAll()
@@ -44,19 +43,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     }
 
     func applicationWillFinishLaunching(_: Notification) {
-        // Windows and their pages come back after a normal quit too, whatever the system setting says. A session
-        // start waits 10 s for its server (`-startTimeout`).
-        UserDefaults.standard.register(defaults: [
-            "NSQuitAlwaysKeepsWindows": true, "startTimeout": 10,
-            Notifications.needsYou: true, Notifications.finished: true, Notifications.fromAgents: true,
-        ])
-        UserDefaults.dropAgentsView()
+        UserDefaults.standard.register(defaults: ["NSQuitAlwaysKeepsWindows": true])
         let center = UNUserNotificationCenter.current()
         center.delegate = self
         // macOS asks the user once; later calls answer at once. The Dock badge shows only with `.badge` allowed.
         center.requestAuthorization(options: [.alert, .badge]) { _, _ in }
-        // SwiftUI takes the `ovvi://` URLs for its scenes, which take none (`handlesExternalEvents`): it dropped
-        // them (on CI).
+        // SwiftUI routes `ovvi://` URLs to its scenes, which take none (`handlesExternalEvents`), and drops them.
         NSAppleEventManager.shared().setEventHandler(self, andSelector: #selector(openURL(_:reply:)),
                                                      forEventClass: AEEventClass(kInternetEventClass),
                                                      andEventID: AEEventID(kAEGetURL))
@@ -68,15 +60,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         }
     }
 
-    /// A row per pane that needs you or finished, each session once over every window, then New Tab.
     func applicationDockMenu(_: NSApplication) -> NSMenu? {
         let menu = NSMenu()
         for store in HostStore.all {
             for pane in store.panes {
-                guard let state = pane.state, state >= .finishedUnseen else { continue }
+                guard let state = pane.state, state.calls else { continue }
                 let workspace = store.workspace(of: pane.tabID)?.label ?? ""
                 let item = NSMenuItem(
-                    title: "\(pane.agentName ?? "agent") \(state.word) · \(store.label) · \(workspace)",
+                    title: "\(Notifications.title(pane, state)) · \(store.label) · \(workspace)",
                     action: #selector(pick),
                     keyEquivalent: "",
                 )
@@ -92,28 +83,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         return menu
     }
 
-    /// `ovvi://` URLs (`ovvi-dev://` and `ovvi-release://`, the schemes Debug and measure builds claim, so neither
-    /// takes the installed app's), and folders dropped on the Dock icon (WindowPages). With no window (one that starts
-    /// the app opens none: `handlesExternalEvents(matching: [])`), a new one takes them once its page is live.
+    /// Debug and measure builds claim `ovvi-dev://` and `ovvi-release://`, so neither takes the installed app's URLs.
     func application(_: NSApplication, open urls: [URL]) {
         urls.filter { ["ovvi", "ovvi-dev", "ovvi-release"].contains($0.scheme) }.forEach(WindowPages.float)
         // Files only: `ovvi://float/?…` has a directory path too ("/").
         let folders = urls.filter { $0.isFileURL && $0.hasDirectoryPath }
         if !folders.isEmpty {
             WindowPages.open(folders: folders)
-            // Out of the Dock if minimized, so the new workspace shows.
             WindowPages.windows.first?.window?.makeKeyAndOrderFront(nil)
         }
         openWindowIfNone()
     }
 
-    /// AppKit's windows, not `WindowPages.windows`: a restored window joins those only once its pages restored.
-    /// Hidden (⌘H), no window is visible.
+    /// AppKit's windows: a restored window joins `WindowPages.windows` only once its pages restore. While the app
+    /// is hidden (⌘H), no window is visible.
     private func openWindowIfNone() {
         if !NSApp.windows.contains(where: {
             $0.canBecomeMain && ($0.isVisible || $0.isMiniaturized || NSApp.isHidden)
         }) {
-            WindowPages.openWindow?(id: "main")
+            WindowPages.openWindow?(id: WindowPages.mainScene)
         }
     }
 
@@ -123,7 +111,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         WindowPages.go(to: id)
     }
 
-    /// In the last key window, out of the Dock if minimized; with no window, a new one.
     @objc private func newTab() {
         NSApp.activate()
         guard let pages = WindowPages.windows.first, let page = pages.current else { return openWindowIfNone() }
@@ -131,7 +118,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         Task { await page.newTab() }
     }
 
-    /// While the app is active too: it posts only for panes the user is not looking at.
+    /// The app posts only for panes the user is not looking at, so banners show while it is active too.
     nonisolated func userNotificationCenter(_: UNUserNotificationCenter, willPresent _: UNNotification) async
         -> UNNotificationPresentationOptions
     {
@@ -149,77 +136,5 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             NSApp.activate()
             WindowPages.go(to: String(id.trimmingPrefix(Notifications.agent)))
         }
-    }
-}
-
-/// The app's notifications (D31): needs you and finished, for every open page, and the ones agents post with
-/// `ovvi notify`; no sounds. Each kind has its switch (app storage keys).
-@MainActor
-enum Notifications {
-    static let needsYou = "notifyNeedsYou", finished = "notifyFinished", fromAgents = "notifyFromAgents"
-    /// The id's prefix of an agent's, which the snapshot's sweep removes only once its pane closed.
-    static let agent = "agent|"
-
-    /// Posts the snapshot's new needs-you and finishes, except for panes the user looks at, and removes the page's
-    /// ones that no longer hold (the pane works, idles, closed or lost its agent).
-    static func post(_ changes: [Seen.Change], _ page: Page) {
-        let store = page.store
-        Task {
-            let center = UNUserNotificationCenter.current()
-            let delivered = await center.deliveredNotifications().map(\.request.identifier)
-            // After the wait: a later snapshot's new one must not go.
-            let holding = Set(store.panes.filter { $0.state ?? .idle >= .finishedUnseen }
-                .map { id($0, of: store) })
-            // An agent's goes with its pane.
-            let prefix = "\(store.machine.id)|\(store.session)|"
-            let panes = Set(store.panes.map { agent + id($0, of: store) })
-            let gone = delivered.filter {
-                $0.hasPrefix(prefix) && !holding.contains($0) || $0.hasPrefix(agent + prefix) && !panes.contains($0)
-            }
-            center.removeDeliveredNotifications(withIdentifiers: gone)
-        }
-        for change in changes where change.state >= .finishedUnseen
-            && UserDefaults.standard.bool(forKey: change.state == .needsYou ? needsYou : finished)
-        {
-            guard let pane = store.pane(change.paneID), pane.tabID != store.lookingTabID else { continue }
-            let content = UNMutableNotificationContent()
-            content.title = "\(pane.agentName ?? "agent") \(change.state.word)"
-            content.body = "\(store.label) · \(page.place(pane))"
-            UNUserNotificationCenter.current()
-                .add(UNNotificationRequest(identifier: id(pane, of: store), content: content, trigger: nil))
-        }
-    }
-
-    /// An agent's (`ovvi notify`), for the pane a click shows; a newer one of the pane replaces it.
-    static func post(_ title: String, _ body: String, from agent: String, for pane: HostStore.Pane,
-                     of store: HostStore) async throws
-    {
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.subtitle = "\(agent) · \(store.label)"
-        content.body = body
-        try await UNUserNotificationCenter.current()
-            .add(UNNotificationRequest(identifier: Self.agent + id(pane, of: store), content: content, trigger: nil))
-    }
-
-    /// The user looks at these panes.
-    static func remove(_ panes: [HostStore.Pane], of store: HostStore) {
-        UNUserNotificationCenter.current()
-            .removeDeliveredNotifications(withIdentifiers: panes.map { id($0, of: store) })
-    }
-
-    /// One per terminal, so a newer one replaces the older; the Dock menu's rows carry it too.
-    static func id(_ pane: HostStore.Pane, of store: HostStore) -> String {
-        "\(store.machine.id)|\(store.session)|\(pane.terminalID ?? pane.id)"
-    }
-}
-
-extension HostStore {
-    static var needsYou: Int {
-        all.reduce(0) { $0 + $1.waiting }
-    }
-
-    static func showBadge() {
-        NSApp.dockTile.badgeLabel = needsYou > 0 ? "\(needsYou)" : nil
     }
 }

@@ -1,10 +1,6 @@
 import XCTest
 
 extension OvviUITests {
-    /// A tab comes into view in every way: from the change on, each of its cards shows its last
-    /// picture, then herdr's screen, and nothing between. The app records each commit (`-recordFrames`): no card gone,
-    /// blank, fading, with a third picture or moved. Every tab is shown once first: a new card's first reveal fades in
-    /// on purpose. w1's second tab is a middle one (of three).
     func testATabComesIntoViewWithoutAFlicker() async throws {
         relaunch(one, ["-recordFrames", "YES", "-forceMotion", "YES"])
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
@@ -13,7 +9,7 @@ extension OvviUITests {
             try await fill(pane)
         }
         openPage(two)
-        // Keys for the tabs: right after a session change a click went beside the capsule (CI).
+        // Keys for the tabs: right after a session change a click can land beside the capsule (CI).
         for (act, panes) in [(key("1", [.command, .option]), ["w1:p1"]), (key("2"), ["w1:p4"]),
                              (click("workspace.w2"), ["w2:p1"]), (click("workspace.w1"), ["w1:p4"]),
                              (key("1"), ["w1:p1", "w1:p2", "w1:p3"])]
@@ -21,20 +17,16 @@ extension OvviUITests {
             act()
             try await expectText(panes, "warm-up")
         }
-        // The last change's record is done.
         try await Task.sleep(for: .seconds(2))
         try await expectNoFlicker()
     }
 
-    /// The flicker test's share in every run (it runs on demand, the Makefile's ON_DEMAND): a tab shown by its capsule
-    /// and back, recorded.
     func testATabClickComesIntoViewWithoutAFlicker() async throws {
         relaunch(one, ["-recordFrames", "YES", "-forceMotion", "YES"])
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         for pane in ["w1:p1", "w1:p2", "w1:p3", "w1:p4"] {
             try await fill(pane)
         }
-        // Each tab shown once first: a new card's first reveal fades in on purpose.
         element("tab.w1:t2").click()
         try await expectText(["w1:p4"], "warm-up")
         element("tab.w1:t1").click()
@@ -44,9 +36,6 @@ extension OvviUITests {
         XCTAssertTrue(records.allSatisfy { !$0.contains(#/ [1-9][0-9]*\//#) }, "\(records)")
     }
 
-    /// A card never shows a picture smaller than its pixels: a tab only the overview showed keeps the overview's small
-    /// snapshot (its tile's picture, D70); shown afterwards (by its capsule, or by its tile), it shows its fill and
-    /// fades in, not that snapshot blurred.
     func testACardNeverShowsTheOverviewsSmallSnapshot() async throws {
         relaunch(one, ["-recordFrames", "YES", "-forceMotion", "YES"])
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
@@ -58,7 +47,6 @@ extension OvviUITests {
                 closeAfter("tab", tab)
             }
             try await fill(pane)
-            // Its tile streams until it drew, then lets go and shows the snapshot it took.
             app.typeKey("o", modifierFlags: [.command, .control])
             let card = element("overview.card.\(pane)"), tile = element("overview.tab.\(tab)")
             XCTAssertTrue(until(5) { card.stringValue.hasPrefix("snapshot") }, "\(card.exists) '\(card.stringValue)'")
@@ -77,7 +65,6 @@ extension OvviUITests {
             element("tab.w1:t1").click()
         }
         keep(records.joined(separator: "\n"), as: "frames")
-        // The codes of bad commits come last: `s`, a small still.
         let blurred = records.filter { $0.split(separator: " ").last?.contains("s") == true }
         XCTAssertTrue(blurred.isEmpty, "\(blurred) of \(records)")
     }
@@ -94,7 +81,6 @@ extension OvviUITests {
             try await records.append(frames(name, act))
         }
         let sidebar = element("sidebar"), swipe = "\(one)/swipe", center = "\(sidebar.frame.midX) \(sidebar.frame.midY)"
-        // Either way, by natural scrolling: a swipe that turns no page records nothing.
         for (name, step) in [("session swipe", -10), ("session swipe back", 10)] {
             try await records.append(frames(name, swiped: true) {
                 try await Self.post(swipe, Data("\(center) \(step) 14".utf8))
@@ -112,7 +98,6 @@ extension OvviUITests {
                 tile.click()
             })
         }
-        // The tab's cards take the new size once shown: their terminals hold their grid and redraw at the new one.
         for (name, tab) in [("tab after the sidebar hid", "1"), ("tab after the sidebar showed", "2")] {
             element("titlebar.sidebar").click()
             try await Task.sleep(for: .seconds(1))
@@ -123,8 +108,6 @@ extension OvviUITests {
         XCTAssertTrue(flickers.isEmpty, "\(flickers) of \(records)")
     }
 
-    /// The app's frame record (`-recordFrames`) of the change `act` makes, named: one, or none for a swipe that turned
-    /// no page.
     private func frames(_ name: String, swiped: Bool = false, _ act: () async throws -> Void) async throws -> String {
         let probe = element("app.frames"), before = probe.stringValue.split(separator: "; ").count
         try await act()

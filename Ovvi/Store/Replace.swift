@@ -2,20 +2,16 @@ import HerdrKit
 import SwiftUI
 
 extension Ahead {
-    /// A Replace Pane under way (`replacing`), or done in the last snapshot (`replaced`).
     struct Replacing {
         let tabID: String
-        /// The session's panes when it was asked.
         let known: Set<String>
-        /// The old pane's terminal.
         let terminal: String?
-        /// herdr's answer to the split: the new pane.
         var made: HerdrKit.Pane?
-        /// A plugin pane's label: hidden in the tab it is made in too, which then drops out (it showed for a
-        /// snapshot, and its going took the pane out of the keyboard history).
+        /// Hidden in the tab it is made in too: that tab shows for a snapshot, and its going takes the pane out of
+        /// the keyboard history.
         var label: String?
 
-        /// The new panes, hidden until the old one is gone: not the old one, which has the label of a card made again.
+        /// Not the replaced pane, which has the label of a card made again.
         func hidden(_ panes: [HerdrKit.Pane], old: String) -> [String] {
             panes
                 .filter {
@@ -25,7 +21,6 @@ extension Ahead {
         }
     }
 
-    /// `cards` after a show: the new panes still there, and the ones that just took replaced panes' places.
     mutating func keepCards(_ ids: Set<String>) {
         cards = cards.filter { ids.contains($0.key) }.merging(replaced.compactMap { old, new in
             new.made.map { ($0.id, old) }
@@ -33,13 +28,10 @@ extension Ahead {
     }
 }
 
-/// Replace Pane (⇧⌘R): a fresh shell in the pane's place, size and folder, as after a change to the shell's setup.
 extension HostStore {
     /// herdr 0.9.5 has no respawn: the pane is split (herdr starts the new one in the pane's live folder) and closed,
-    /// so the new one fills the old one's place in the tree, at its size. The new pane hides until the old one is
-    /// gone (`Ahead.replacing`). `made` runs as herdr makes the new pane, before the close.
-    /// A browser or plugin pane (`plugin`, or a `label` kept as it is) is made with its label and placeholder in a new
-    /// tab, then moved beside the pane (plugins/labels#create).
+    /// so the new one fills its place in the tree, at its size. `made` runs as herdr makes the new pane, ahead of the
+    /// close.
     func replace(_ paneID: String, plugin: PluginManifest? = nil, label: PaneLabel? = nil, folder: String? = nil,
                  made: (HerdrKit.Pane) -> Void) async
     {
@@ -48,10 +40,8 @@ extension HostStore {
                                                   terminal: old.terminalID)
         let done = await write { client in
             var new: HerdrKit.Pane?
-            // A kept label's card is made again because its folder is gone: in its path's folder, else home.
             var label = label, cwd = "~"
             if label == nil, let plugin {
-                // In the chooser's folder, else the pane's live folder, as a split is.
                 cwd = if let folder {
                     folder
                 } else {
@@ -61,13 +51,13 @@ extension HostStore {
             }
             if let label {
                 ahead.replacing[paneID]?.label = label.text
-                if let tab = try await client.newTab(workspace: workspace.id, cwd: cwd, label: label,
-                                                     command: label.placeholder)
+                // The label's path's folder survives a restart better than the folder it is asked from.
+                if let tab = try await client.newTab(workspace: workspace.id, cwd: label.folder ?? cwd,
+                                                     label: label.text, command: label.placeholder)
                 {
                     do {
                         new = try await client.move(pane: tab, to: .tab(old.tabID, beside: paneID))
                     } catch {
-                        // Not left behind in its own tab.
                         try? await client.close(pane: tab)
                         throw error
                     }
@@ -82,7 +72,6 @@ extension HostStore {
             made(new)
             try await client.close(pane: paneID)
         }
-        // The old pane stays, and the new one, if made, shows beside it.
         if !done {
             ahead.replacing[paneID] = nil
             redraw()
@@ -91,9 +80,8 @@ extension HostStore {
 }
 
 extension HostStore {
-    /// herdr brings a card pane back from its saved session without a program when its saved folder is gone: a new
-    /// pane with the same label, so the card keeps its state, takes its place. Once per pane per launch, also after a
-    /// failure: no remake on every snapshot.
+    /// herdr brings a card pane back from its saved session without a program when its saved folder is gone. Once per
+    /// pane per launch, also after a failure: no remake on every snapshot.
     func remakeCard(_ pane: Pane, _ new: HerdrKit.Pane) {
         guard new.restoreError != nil, let label = PaneLabel(new.label), !pane.remade else { return }
         pane.remade = true
@@ -101,23 +89,15 @@ extension HostStore {
     }
 }
 
-/// What Replace Pane's new pane shows, and the red button of its question (ui/new-pane): Replace Pane gives an agent
-/// pane's new pane the chooser; Open Terminal Here and Start Agent Here are replaces too.
 struct Replacement {
     var button = "Replace Pane"
-    /// The chooser, or the loader while this agent starts.
     var chooser = false
     var agent: Chooser.Agent?
-    /// A browser or plugin pane (Open Browser Here, the chooser's Browser).
     var plugin: PluginManifest?
-    /// The plugin pane's folder, picked in the chooser; nil: the old pane's.
     var folder: String?
 }
 
 extension Page {
-    /// Replace Pane: asks first in this window when something besides the shell runs, as Close Pane does (D41). Not
-    /// the old keyboard card while a split's lit stand-in waits for herdr's pane, nor a held ⇧⌘R's
-    /// repeats.
     func replacePane(_ pane: HostStore.Pane?, _ replacement: Replacement? = nil) {
         let key = "replace \(pane?.id ?? "")", event = NSApp.currentEvent
         guard let pane, let client = store.client, store.ahead.replacing[pane.id] == nil, !asking.contains(key),
@@ -137,8 +117,6 @@ extension Page {
         }
     }
 
-    /// Without asking. The new pane gets the keyboard at herdr's answer, as a moved pane does; a floated one's
-    /// window as the old one's closes (`floatReplaced`).
     func replace(_ paneID: String, _ replacement: Replacement) async {
         let old = store.pane(paneID)?.terminalID
         await store.replace(paneID, plugin: replacement.plugin, folder: replacement.folder) { new in
@@ -157,9 +135,8 @@ extension Page {
         }
     }
 
-    /// A replaced floated pane's new pane floats in a window where the old one is, with its Stay on Top, in the
-    /// snapshot that shows it, before the old one's window closes (`HostStore.snapshotted`): it opens with its
-    /// terminal drawn, and a float-only page keeps a float.
+    /// In the snapshot that shows it, ahead of the replaced pane's window closing: it opens with its terminal drawn,
+    /// and a float-only page keeps a float.
     func floatReplaced() {
         for replaced in store.ahead.replaced.values {
             guard let old = replaced.terminal, let pinned = floating[old], let new = replaced.made?.terminalID

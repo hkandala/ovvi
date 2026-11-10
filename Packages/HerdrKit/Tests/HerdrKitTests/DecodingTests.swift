@@ -2,7 +2,6 @@ import Foundation
 @testable import HerdrKit
 import Testing
 
-/// A recorded reply's `result`, from `Fixtures/` (see `record.sh` for the layout).
 func fixture<T: Decodable>(_ name: String, _: T.Type) throws -> T {
     let url = try #require(Bundle.module.url(forResource: name, withExtension: "json", subdirectory: "Fixtures"))
     return try #require(JSONDecoder().decode(Reply<T>.self, from: Data(contentsOf: url)).result)
@@ -77,7 +76,6 @@ private func snapshot() throws -> Snapshot {
             second: .split(.right, ratio: 0.3, first: leaf("w1:p3"), second: leaf("w1:p4")),
         ),
     ))
-    // A split under the root's first child.
     #expect(try SplitNode(#require(layouts["w2:t1"])) == .split(
         .down,
         ratio: 0.5,
@@ -85,7 +83,6 @@ private func snapshot() throws -> Snapshot {
         second: leaf("w2:p2"),
     ))
     #expect(try SplitNode(#require(layouts["w1:t2"])) == leaf("w1:p5"))
-    // layout.export gives the same tree, nested.
     #expect(try fixture("layout-export", ExportResult.self).layout.root == w1t1)
 }
 
@@ -116,7 +113,6 @@ private func snapshot() throws -> Snapshot {
     #expect(try info(#"{"pid":9,"name":"sleep"}"#).program?.foreground == [
         Program.Foreground(pid: 9, argv: [], name: "sleep"),
     ])
-    // Ovvi's chat launch, kept with the pane.
     let pane = #"{"pane_id":"w1:p1","tab_id":"w1:t1","tokens":{"ovvi-chat":"pi 1 12,13"}}"#
     #expect(try JSONDecoder().decode(Pane.self, from: Data(pane.utf8)).chat == "pi 1 12,13")
     // npm's pi: Node with its title as argv[0], and no arguments.
@@ -125,11 +121,9 @@ private func snapshot() throws -> Snapshot {
     ])
     // While the shell starts, its rc files run in the foreground too.
     #expect(try info(#"{"pid":8,"name":"bash"},{"pid":7,"name":"zsh"}"#).program?.name == "bash")
-    // A Node CLI: the script is the first argument that is not an option.
     let node = #"{"pid":9,"name":"node","argv0":"node","argv":["node","--no-warnings","/usr/lib/pi/dist/cli.js","-c"]}"#
     #expect(try info(node).program?.script == "/usr/lib/pi/dist/cli.js")
     #expect(try info(node).program?.title == "cli.js")
-    // An exited shell.
     #expect(try info("").program == nil)
     // A plugin pane's placeholder, as herdr lists it: its `cat` and its shell, nothing else.
     let cat = #"{"pid":9,"name":"cat","argv":["cat"]}"#

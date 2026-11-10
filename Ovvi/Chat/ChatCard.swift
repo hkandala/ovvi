@@ -2,8 +2,6 @@ import HerdrKit
 import SwiftUI
 
 extension HostStore {
-    /// The pane's chat when its agent carries an adapter's launch marker (ui/chat-view#which-panes-have-it),
-    /// one per pane for every window of the session.
     func chat(_ pane: Pane) -> Chat? {
         guard let terminalID = pane.terminalID, let adapter = adapter(pane) else { return nil }
         if let chat = chats[terminalID], chat.adapter.token == adapter.token {
@@ -13,31 +11,21 @@ extension HostStore {
             }
             return chat
         }
-        // A new launch is a new chat (a closed pane's goes with the snapshot that drops it).
-        let chat = Chat(adapter: adapter, paneID: pane.id, store: self)
-        chat.showsChat = pane.relaunched
-        pane.relaunched = false
+        let chat = Chat(adapter: adapter, paneID: pane.id, terminalID: terminalID, store: self)
+        chat.showsChat = launches[terminalID].map { $0.opensChat && $0.token == adapter.token } == true
         chats[terminalID] = chat
         return chat
     }
 }
 
 extension Page {
-    /// The chat a pane's card shows in place of its terminal: not under a chooser, not floated, its switch on Chat.
     func shownChat(_ pane: HostStore.Pane) -> Chat? {
         guard store.chooser(pane.id) == nil, !floats(pane), let chat = store.chat(pane),
               chat.showsChat else { return nil }
         return chat
     }
-
-    /// The pane's card has the window's keyboard, or the pane floats: its window has its own.
-    func hasKeyboard(_ paneID: String) -> Bool {
-        keyboardPane?.id == paneID || store.pane(paneID).map(floats) == true
-    }
 }
 
-/// A chat card's row-2 control (ui/chat-view#switching-views): the Chat | TUI switch, which changes only what the
-/// card draws.
 struct ChatSwitch: View {
     @Bindable var chat: Chat
     let page: Page
@@ -47,15 +35,12 @@ struct ChatSwitch: View {
         Segments(id: "pane.\(id).view", options: [("Chat", true), ("TUI", false)], selection: $chat.showsChat)
             .fixedSize()
             .onChange(of: chat.showsChat) {
-                // The card keeps the keyboard: the reply box, or the terminal; in a floating window too.
-                guard page.hasKeyboard(id), let terminalID = page.store.pane(id)?.terminalID else { return }
-                Task { page.terminals.focus(terminalID) }
+                guard page.hasKeyboard(id) else { return }
+                Task { page.terminals.focus(chat.terminalID) }
             }
     }
 }
 
-/// An agent card's state as a `StateLabel`. A chat's follows its phase and shows none while
-/// idle; another agent's is herdr's.
 struct CardState: View {
     let chat: Chat?
     let state: AgentState?
@@ -79,39 +64,5 @@ struct CardState: View {
         case .waiting: return AgentState.needsYou.label(look)
         case .ready, .starting: return state == .finishedUnseen ? AgentState.finishedUnseen.label(look) : nil
         }
-    }
-}
-
-/// A small segmented control in the app's own style, as the tab bar. A segment with a symbol shows it alone, the
-/// title as its help, and dims while not picked, as the pane buttons beside it (Markdown's mode).
-struct Segments<Value: Hashable>: View {
-    let id: String
-    let options: [(String, Value)]
-    @Binding var selection: Value
-    /// By title.
-    var symbols: [String: String] = [:]
-    @Environment(\.look) private var look
-
-    var body: some View {
-        HStack(spacing: 0) {
-            ForEach(options, id: \.0) { title, value in
-                Button { selection = value } label: {
-                    if let symbol = symbols[title] {
-                        Image(symbol: symbol).font(.system(size: 11)).frame(width: 26, height: 20)
-                            .foregroundStyle(selection == value ? AnyShapeStyle(.primary) :
-                                AnyShapeStyle(look.paneButton))
-                    } else {
-                        Text(title).font(.system(size: 11, weight: .medium)).padding(.horizontal, 8).frame(height: 20)
-                    }
-                }
-                .buttonStyle(ChromeStyle(selected: selection == value, radius: 6))
-                .help(symbols[title] == nil ? "" : title)
-                .accessibilityLabel(title)
-                .accessibilityAddTraits(selection == value ? .isSelected : [])
-                .accessibilityIdentifier("\(id).\(title.lowercased())")
-            }
-        }
-        .padding(2)
-        .background(look.track, in: .rect(cornerRadius: 8))
     }
 }

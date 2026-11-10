@@ -15,33 +15,16 @@ without flags it reports its session to herdr (as herdr's Claude Code integratio
 import json
 import os
 import re
-import select
 import shutil
-import signal
 import subprocess
 import sys
-import termios
 import time
-import tty
 import uuid
 
-folder = os.path.join(os.environ.get("TMPDIR", "/tmp"), "ovvi-stand-in")
-os.makedirs(folder, exist_ok=True)
-# herdr prompts an agent only while a process of its name runs in the foreground: run again as `claude`.
-# A framework build's `python3` runs its Python.app, which would drop the name: link to that one.
-if os.environ.get("OVVI_STAND_IN") != "1":
-    os.environ["OVVI_STAND_IN"] = "1"
-    app = os.path.join(sys.base_prefix, "Resources/Python.app/Contents/MacOS/Python")
-    link = os.path.join(folder, "claude")
-    if os.path.islink(link):
-        os.remove(link)
-    os.symlink(app if os.path.exists(app) else os.path.realpath(sys.executable), link)
-    # OVVI_STAND_IN_TITLE=1: no arguments in its process's own, as a Node CLI that sets its process title (npm's pi).
-    rest = sys.argv[1:]
-    if os.environ.get("OVVI_STAND_IN_TITLE") == "1":
-        os.environ["OVVI_STAND_IN_ARGS"], rest = json.dumps(rest), []
-    os.execv(link, [link, os.path.abspath(__file__)] + rest)
-args = json.loads(os.environ.pop("OVVI_STAND_IN_ARGS", "null")) or sys.argv[1:]
+import stand_in
+from stand_in import folder, herdr, key, say, terminal
+
+args = stand_in.run_as("claude", __file__)
 settings = args[args.index("--settings") + 1] if "--settings" in args else '{"hooks":{}}'
 hooks = json.loads(settings)["hooks"]
 resumed = "--resume" in args
@@ -56,7 +39,6 @@ if failed and resumed and "--settings" in args and not os.path.exists(failed):
 
 
 def hook(event, payload):
-    """Runs the event's hook as Claude Code does (its JSON on stdin) and gives back what it printed."""
     for group in hooks.get(event, []):
         for command in group["hooks"]:
             return subprocess.run(["sh", "-c", command["command"]], input=json.dumps(payload),
@@ -64,33 +46,11 @@ def hook(event, payload):
     return ""
 
 
-def herdr(*arguments):
-    subprocess.run([os.environ["HERDR_BIN_PATH"], "--session", os.environ["HERDR_SESSION"], "pane", *arguments,
-                    os.environ["HERDR_PANE_ID"]], capture_output=True)
-
-
-def report(state):
-    herdr("report-agent", "--source", "ovvi-e2e", "--agent", "claude", "--state", state)
-
-
 def write(kind, **fields):
     line = {"type": kind, "uuid": str(uuid.uuid4()), "cwd": os.getcwd(),
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime()), **fields}
     with open(transcript, "a") as file:
         file.write(json.dumps(line) + "\n")
-
-
-def say(text):
-    sys.stdout.write(text.replace("\n", "\r\n") + "\r\n")
-    sys.stdout.flush()
-
-
-def key(timeout=None):
-    """The next input, without its bracketed paste marks; "" after `timeout`."""
-    if not select.select([0], [], [], timeout)[0]:
-        return ""
-    data = os.read(0, 4096).decode(errors="replace")
-    return data.replace("\x1b[200~", "").replace("\x1b[201~", "")
 
 
 def tool(command, output):
@@ -104,29 +64,29 @@ def tool(command, output):
 def reply(text, started):
     write("assistant", effort="high", message={"model": "claude-stand-in", "content": [{"type": "text", "text": text}]})
     write("system", subtype="turn_duration", durationMs=int((time.time() - started) * 1000))
-    report("idle")
+    stand_in.report("idle")
     say(text)
 
 
 def prompt(text, started):
     write("user", message={"content": text})
-    report("working")
+    stand_in.report("working")
     if text == "wait":
-        report("blocked")
+        stand_in.report("blocked")
         say("Allow this command?\n  1. Yes\n  2. No")
         while "1" not in key():
             pass
-        report("working")
+        stand_in.report("working")
         reply("Allowed.", started)
     elif text == "ask":
         questions = [{"question": "Which fruit?", "header": "Fruit", "multiSelect": False,
                       "options": [{"label": "Apple", "description": ""}, {"label": "Pear", "description": ""}]}]
-        report("blocked")
+        stand_in.report("blocked")
         say("Which fruit? 1. Apple 2. Pear")
         decision = hook("PermissionRequest", {"session_id": token, "hook_event_name": "PermissionRequest",
                                               "tool_name": "AskUserQuestion", "tool_input": {"questions": questions}})
         answers = json.loads(decision)["hookSpecificOutput"]["decision"]["updatedInput"]["answers"]
-        report("working")
+        stand_in.report("working")
         reply("You chose " + answers["Which fruit?"] + ".", started)
     elif text == "slow":
         tool("sleep 30", None)
@@ -134,7 +94,7 @@ def prompt(text, started):
         while time.time() < deadline and "\x1b" not in key(deadline - time.time()):
             pass
         write("user", message={"content": "[Request interrupted by user]"})
-        report("idle")
+        stand_in.report("idle")
         say("Interrupted")
     elif text == "steps":
         for said, commands in [("First, a look.", ["ls"]), ("Then two more.", ["pwd", "date"])]:
@@ -167,64 +127,60 @@ def prompt(text, started):
         reply("Echo: **" + text + "**", started)
 
 
+def cleanup():
+    if "--settings" in args and os.path.exists(transcript):
+        os.remove(transcript)
+    for side in re.findall(r"/\.cache/ovvi/chat/([0-9a-f-]{36})", settings)[:1]:
+        shutil.rmtree(os.path.expanduser("~/.cache/ovvi/chat/" + side), ignore_errors=True)
+    # Bracketed paste off again, as Claude Code leaves it: bash 3.2 would take herdr's next paste marks as text.
+    try:
+        sys.stdout.write("\x1b[?2004l")
+        sys.stdout.flush()
+    except OSError:
+        pass
+
+
 def main():
-    # A closed pane hangs up: clean up as on Ctrl-C.
-    signal.signal(signal.SIGHUP, lambda *_: sys.exit(0))
     hook("SessionStart", {"session_id": token, "transcript_path": transcript, "cwd": os.getcwd(),
                           "hook_event_name": "SessionStart", "source": "resume" if resumed else "startup"})
-    attributes = termios.tcgetattr(0)
-    tty.setraw(0)
-    # Bracketed paste on, as Claude Code has it: herdr's agent.prompt pastes, then presses Enter.
-    sys.stdout.write("\x1b[?2004h")
+    with terminal(cleanup):
+        loop()
+
+
+def loop():
     say("Claude Code stand-in " + token)
-    report("idle")
+    stand_in.report("idle")
     # Started by hand, as herdr's integration would: herdr takes a session once the pane has its agent, and takes no
     # state report after it (so not with the flags, whose tests need the states).
     if "--settings" not in args:
         herdr("report-agent-session", "--source", "herdr:claude", "--agent", "claude", "--agent-session-id", token)
     line, mute, armed = "", False, False
-    try:
-        while True:
-            data = key()
-            if "\x03" in data:
-                if not line and armed:
-                    break
-                armed, line = not line, ""
-                say("\r\x1b[KPress Ctrl-C again to exit" if armed else "")
-                continue
-            if "\x04" in data:
+    while True:
+        data = key()
+        if "\x03" in data:
+            if not line and armed:
                 break
-            armed = False
-            line += data.replace("\x1b", "")
-            if "\r" not in line:
-                sys.stdout.write(data.replace("\x1b", ""))
-                sys.stdout.flush()
-                continue
-            text, line = line.split("\r", 1)
-            say("")
-            if text.strip() == "/exit":
-                time.sleep(float(os.environ.get("OVVI_STAND_IN_EXIT_HOOKS", "0")))
-                break
-            if mute:
-                mute = False
-            elif text.strip():
-                prompt(text.strip(), time.time())
-                mute = text.strip() == "mute"
-    finally:
-        # What it and its hooks wrote goes with it; first, as a hung-up terminal takes no settings. A second hang-up
-        # would stop it halfway.
-        signal.signal(signal.SIGHUP, signal.SIG_IGN)
-        if "--settings" in args and os.path.exists(transcript):
-            os.remove(transcript)
-        for side in re.findall(r"/\.cache/ovvi/chat/([0-9a-f-]{36})", settings)[:1]:
-            shutil.rmtree(os.path.expanduser("~/.cache/ovvi/chat/" + side), ignore_errors=True)
-        # Bracketed paste off again, as Claude Code leaves it: bash 3.2 would take herdr's next paste marks as text.
-        try:
-            sys.stdout.write("\x1b[?2004l")
+            armed, line = not line, ""
+            say("\r\x1b[KPress Ctrl-C again to exit" if armed else "")
+            continue
+        if "\x04" in data:
+            break
+        armed = False
+        line += data.replace("\x1b", "")
+        if "\r" not in line:
+            sys.stdout.write(data.replace("\x1b", ""))
             sys.stdout.flush()
-        except OSError:
-            pass
-        termios.tcsetattr(0, termios.TCSADRAIN, attributes)
+            continue
+        text, line = line.split("\r", 1)
+        say("")
+        if text.strip() == "/exit":
+            time.sleep(float(os.environ.get("OVVI_STAND_IN_EXIT_HOOKS", "0")))
+            break
+        if mute:
+            mute = False
+        elif text.strip():
+            prompt(text.strip(), time.time())
+            mute = text.strip() == "mute"
 
 
 main()

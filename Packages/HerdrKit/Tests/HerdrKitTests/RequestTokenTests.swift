@@ -2,50 +2,6 @@ import Foundation
 @testable import HerdrKit
 import Testing
 
-@Test func `a pane's float tokens deliver one request per nonce, never again`() async throws {
-    let exec = FakeExec()
-    let client = client(exec)
-    let updates = try await started(client, exec)
-    let pane = { (target: String, nonce: String) in
-        #"{"event":"pane_updated","data":{"type":"pane_updated","pane":{"pane_id":"w1:p2","tokens":"#
-            + #"{"ovvi-float":"\#(target)","ovvi-float-id":"\#(nonce)"}}}}"#
-    }
-    exec.event(pane("pi-herd/w3:p1", "n1"))
-    exec.event(pane("pi-herd/w3:p1", "n1"))
-    exec.event(pane("pi-herd", "n2"))
-    exec.event(pane("/w3:p1", "n4"))
-    exec.event(pane("pi-herd/w3:p2", "n3"))
-    exec.event(pane("pi-herd/w3:p1", "n1"))
-    exec.event(pane("pi-herd/w3:p3", "last"))
-    var requests: [FloatRequest] = []
-    for await update in updates {
-        guard case let .float(request) = update else { continue }
-        requests.append(request)
-        if request.nonce == "last" {
-            break
-        }
-    }
-    #expect(requests.map(\.nonce) == ["n1", "n3", "last"])
-    #expect(requests.map(\.session) == ["pi-herd", "pi-herd", "pi-herd"])
-    #expect(requests.map(\.pane) == ["w3:p1", "w3:p2", "w3:p3"])
-}
-
-@Test func `a pane's copy token reads its file once per id, and only a UUID`() async throws {
-    let exec = FakeExec()
-    let client = client(exec)
-    let updates = try await started(client, exec)
-    let pane = { (id: String) in
-        #"{"event":"pane_updated","data":{"pane":{"pane_id":"w1:p2","tokens":{"ovvi-copy":"\#(id)"}}}}"#
-    }
-    let (first, second) = ("0a6e2b1c-4f1d-4c2e-9b7a-1d2e3f4a5b6c", "1b6e2b1c-4f1d-4c2e-9b7a-1d2e3f4a5b6c")
-    for id in [first, first, "../x", "\(first);rm", "", "0a-1", second] {
-        exec.event(pane(id))
-    }
-    let reads = { exec[\.argv].filter { $0.first == "sh" }.map(\.last) }
-    #expect(await eventually { reads() == [first, second] })
-    withExtendedLifetime(updates) {}
-}
-
 @Test func `a pane's ring delivers one request per id, only a UUID, the last 256 remembered`() async throws {
     let exec = FakeExec()
     let updates = try await started(client(exec), exec)
@@ -79,7 +35,6 @@ import Testing
         $0.panes = [#"{"pane_id":"w1:p2","tab_id":"w1:t1","tokens":{"ovvi-req":"\#(id)","ovvi-shown":"1"}}"#]
     }
     let updates = try await started(client(exec), exec)
-    // The same id again from another pane is a repeat.
     exec.event(#"{"event":"pane_updated","data":{"pane":{"pane_id":"w1:p3","tokens":{"ovvi-req":"\#(id)"}}}}"#)
     exec.event(#"{"event":"pane_updated","data":{"pane":{"pane_id":"w1:p4","tokens":{"ovvi-req":"\#(other)"}}}}"#)
     var requests: [String] = []

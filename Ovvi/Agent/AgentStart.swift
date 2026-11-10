@@ -2,7 +2,6 @@ import Foundation
 import HerdrKit
 
 extension AgentCommand {
-    /// When each asking pane (machine, session, terminal) last notified.
     @MainActor private static var notified: [String: ContinuousClock.Instant] = [:]
 
     static let notify = AgentCommand(
@@ -20,7 +19,7 @@ extension AgentCommand {
         let title = try call.argument("title"), body = try call.optionalArgument() ?? ""
         try call.done()
         let (store, pane) = try call.found(target)
-        guard UserDefaults.standard.bool(forKey: Notifications.fromAgents) else {
+        guard AppSettings().notifyFromAgents else {
             return AgentOutput(["pane": target.id, "notified": false])
         }
         // By terminal: herdr reuses pane ids.
@@ -38,14 +37,15 @@ extension AgentCommand {
     static let agent = AgentCommand(
         name: "agent", usage: "agent <name> [<place>]", summary: "Starts an agent with the chat view in a new pane",
         help: """
-        <name>: claude, codex, pi or opencode. <place> as for open, but not --replace. It types the agent's line \
+        <name>: \(Chooser.agents.dropLast().map(\.command).joined(separator: ", ")) or \
+        \(Chooser.agents.last?.command ?? ""). <place> as for open, but not --replace. It types the agent's line \
         with Ovvi's chat flags, as Start Agent Here does, and answers then, not when the agent is ready.
         """,
     ) { call in
         if call.args.contains("--replace") {
             throw AgentError.usage("--replace takes a browser or plugin card")
         }
-        // The options first, so the name is the next argument; a bad name is told before a bad place.
+        // The options first, so that the name is the next argument.
         let place: Result<AgentPlace, any Error>
         do {
             place = try await .success(call.place())
@@ -54,15 +54,14 @@ extension AgentCommand {
         }
         let name = try call.argument("name")
         try call.done()
-        guard let agent = Chooser.agents.first(where: { $0.command == name }) else {
-            throw AgentError(code: "bad_argument", message: """
+        guard let agent = Chooser.agent(name) else {
+            throw AgentError.badArgument("""
             no agent \(name); there are \(Chooser.agents.map(\.command).joined(separator: ", "))
             """)
         }
         let (store, id) = try await call.newPane(place.get())
-        // Its card opens on the chat, as after Relaunch with Chat.
-        store.pane(id)?.relaunched = true
         let chooser = Chooser()
+        chooser.opensChat = true
         chooser.paneID = id
         chooser.terminalID = store.pane(id)?.terminalID
         store.choosers.append(chooser)
@@ -94,13 +93,13 @@ extension AgentCommand {
             if store.chooser(pane.id)?.starting != nil {
                 throw AgentError(code: "busy", message: "\(name) in pane \(target.id) is starting again")
             }
-            let why = ChatAdapters.adapter(pane.agent) == nil ? "runs no agent with a chat view"
+            let why = Chooser.agent(pane.agent) == nil ? "runs no agent with a chat view"
                 : store.adapter(pane) != nil ? "shows the chat view already"
                 : "has no agent session that herdr knows"
-            throw AgentError(code: "bad_argument", message: "pane \(target.id) \(why)")
+            throw AgentError.badArgument("pane \(target.id) \(why)")
         }
         guard pane.state != .working, pane.state != .needsYou else { throw busy }
-        // Before it quits: herdr then lets go of the agent.
+        // Read ahead of the quit: herdr then lets go of the agent.
         let agent = pane.agent ?? ""
         store.enableChat(pane)
         try await store.typed(store.chooser(pane.id), "\(name) did not start again with chat")
@@ -117,7 +116,7 @@ extension AgentCommand {
         guard ["chat", "tui"].contains(view) else { throw AgentError.usage("\(view) is not chat or tui") }
         let (store, pane) = try call.found(target)
         guard let chat = store.chat(pane) else {
-            throw AgentError(code: "bad_argument", message: "pane \(target.id) runs no agent with a chat view")
+            throw AgentError.badArgument("pane \(target.id) runs no agent with a chat view")
         }
         chat.showsChat = view == "chat"
         return AgentOutput(["pane": target.id, "view": view])
@@ -125,12 +124,10 @@ extension AgentCommand {
 }
 
 extension HostStore {
-    /// Waits until the chooser typed its agent's line; one that ended first (its pane closed, the agent did not quit)
-    /// fails with `failure`.
     func typed(_ chooser: Chooser?, _ failure: String) async throws {
         while let chooser, !chooser.typed, choosers.contains(where: { $0 === chooser }) {
             try await Task.sleep(for: .milliseconds(50))
         }
-        guard chooser?.typed == true else { throw AgentError(code: "failed", message: failure) }
+        guard chooser?.typed == true else { throw AgentError.failed(failure) }
     }
 }

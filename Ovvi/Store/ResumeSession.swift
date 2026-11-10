@@ -1,25 +1,20 @@
-import Foundation
+import AppKit
 import HerdrKit
 
 extension Page {
-    /// Resume (ui/window#archived-sessions): the agent's own resume line, with Ovvi's flags, in a new pane in the
-    /// session's folder, shown with the keyboard: a new tab after the selected tab of the workspace whose folder holds
-    /// it (else a new workspace there), or `beside` the keyboard card. A session whose folder is gone resumes nowhere,
-    /// as Claude Code refuses one from another folder; but pi's, which keeps its folder in its file, in the home
-    /// folder.
-    /// Once: a second click before herdr reports the session would start a second agent on it.
+    /// Claude Code refuses a session from another folder; pi keeps its folder in its file, so it resumes in the home
+    /// folder. Once: a second click ahead of herdr's report of the session would start a second agent on it.
     func resume(_ session: ClosedSession, beside: Bool) {
-        guard let agent = Chooser.agents.first(where: { $0.command == session.agent }),
+        guard let agent = Chooser.agent(session.agent),
               store.resuming.insert(session.value).inserted else { return }
         Task {
             if let problem = await resumeNow(session, agent, beside: beside) {
                 store.resuming.remove(session.value)
-                await store.show(Notice(text: problem))
+                store.show(Notice(text: problem))
             }
         }
     }
 
-    /// Why it did not start, if it did not.
     private func resumeNow(_ session: ClosedSession, _ agent: Chooser.Agent, beside: Bool) async -> String? {
         if let installed = terminals.pages?.agents, !installed.contains(agent.command) {
             return "\(agent.name) is not on \(store.machine.name)"
@@ -28,8 +23,8 @@ extension Page {
         let exec = await store.machine.exec()
         guard let found = try? await exec.output(["sh", "-c", #"test -d "$1" && echo yes"#, "sh", session.folder])
             .contains("yes") else { return "\(store.machine.name) did not answer" }
-        guard found || session.agent == "pi" else {
-            return "\(PathField.short(session.folder, remote: store.machine.isRemote)) is gone"
+        guard found || agent.adapter.resumesAnywhere else {
+            return "\(MachinePath.short(session.folder, remote: store.machine.isRemote)) is gone"
         }
         let cwd = found ? session.folder : "~", card = beside ? keyboardPane : nil
         guard let workspace = card.flatMap({ store.workspace(of: $0.tabID) }) ?? workspace(holding: cwd) else {
@@ -40,7 +35,6 @@ extension Page {
             store.start(agent, chooser, closed: session.value)
             return nil
         }
-        // A failed write shows herdr's words itself.
         let made = await store.write { client in
             let spot = if let card {
                 PanePlace.split(tab: card.tabID, pane: card.id, .right)
@@ -57,8 +51,7 @@ extension Page {
         return nil
     }
 
-    /// The workspace whose folder holds `folder`, the deepest. A folder one or two levels deep (`/`, a home folder)
-    /// holds only itself: every session is under it.
+    /// A folder one or two levels deep (`/`, a home folder) holds only itself: every session is under it.
     private func workspace(holding folder: String) -> HostStore.Workspace? {
         store.workspaces.compactMap { workspace in store.root(of: workspace).map { (workspace, $0) } }
             .filter { $0.1 == folder || $0.1.split(separator: "/").count > 2 && folder.hasPrefix($0.1 + "/") }
@@ -69,5 +62,16 @@ extension Page {
 extension HostStore {
     func root(of workspace: Workspace) -> String? {
         workspace.worktree?.checkoutPath ?? workspace.tabs.first.flatMap { panes(in: $0.id).first?.cwd }
+    }
+}
+
+extension Page {
+    func resume(_ session: ClosedSession) {
+        resume(session, beside: NSEvent.modifierFlags.contains(.option))
+    }
+
+    var liveSessions: Set<String> {
+        let stores = HostStore.all.filter { $0.machine.id == store.machine.id }
+        return Set(stores.flatMap(\.agentPanes).compactMap(\.session)).union(stores.flatMap(\.resuming))
     }
 }

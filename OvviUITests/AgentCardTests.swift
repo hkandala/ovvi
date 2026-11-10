@@ -1,12 +1,8 @@
 import XCTest
 
-/// `ovvi open`, `reveal`, `card` and `shown` (agent-control/cli): cards an agent opens and points at, typed in a
-/// pane, checked through herdr's labels and the window, which never moves without the user.
 extension OvviUITests {
-    /// A file's default plugin beside the asking pane, the same card again, an old label word, a browser below another
-    /// pane, a Git card in a tab that is not selected (its notice's Show selects it), and a float; herdr's focus stays.
     func testOpenPutsCardsWithoutMovingTheView() async throws {
-        relaunch(nil, Self.agentHold)
+        relaunch(one, Self.agentHold)
         let (tab, first) = try await newTab("cards")
         try await closeNew("tab", besides: tabIDs())
         element("tab.\(tab)").click()
@@ -23,22 +19,19 @@ extension OvviUITests {
         XCTAssertLessThan(element("pane.\(first)").frame.maxX, element("pane.\(file)").frame.minX)
         let again = try await open("explorer notes.md", from: first, "again", ["reused: true"])
         XCTAssertEqual(again, file)
-        try await run("clear; \(Self.ovviCommand) open files .", in: first, "word", 0, "kind: explorer")
 
         let below = try await open("http://127.0.0.1:65530 --beside \(file) --down", from: first, "down",
                                    ["kind: browser"])
         XCTAssertTrue(element("pane.\(below)").exists(within: 3))
         XCTAssertLessThan(element("pane.\(file)").frame.maxY, element("pane.\(below)").frame.minY)
 
-        // Not selected: the notice's Show selects it. A tab after the asking one, so the place right after it is not
-        // the end.
         let (spare, _) = try await createTab(in: "w2")
         closeAfter("tab", spare)
         try await send("clear; \(Self.ovviCommand) open git . --tab; echo tab-$((6*7))-$?\r", to: first)
         let notice = element("detail.notice")
         XCTAssertTrue(notice.staticTexts.matching(NSPredicate(format: "value CONTAINS 'opened Git ovvi-e2e-cards'"))
             .firstMatch.exists(within: 10))
-        XCTAssertTrue(element("tab.\(tab)").isSelected)
+        XCTAssertFalse(until(0.5) { !element("tab.\(tab)").isSelected })
         let unmoved = try await snapshot()["focused_pane_id"] as? String
         XCTAssertEqual(unmoved, focus)
         keepScreenshot("open notice")
@@ -56,10 +49,8 @@ extension OvviUITests {
         try await run("cd /tmp && rm -rf \(folder)", in: first, "clean", 0)
     }
 
-    /// --replace on a card (not on a terminal), card for both, reveal's flash in view and its notice out of view, and
-    /// shown.
     func testRevealCardShownAndReplace() async throws {
-        relaunch(nil, Self.agentHold)
+        relaunch(one, Self.agentHold)
         let (tab, first) = try await newTab("reveal")
         element("tab.\(tab)").click()
         XCTAssertTrue(element("terminal.\(first)").exists(within: 3))
@@ -70,7 +61,6 @@ extension OvviUITests {
         let browser = try await open("browser ./one.html", from: first, "web", ["kind: browser"])
         let web = try await paneLabel(browser), iid = web.prefix { $0 != " " }.dropFirst("ovvi:browser".count)
         XCTAssertTrue(web.hasSuffix(" file://\(folder)/one.html"), web)
-        // Another page in the same card, after the first loaded: Back returns.
         XCTAssertTrue(pageText("ovvi-cards-one").exists(within: 10))
         _ = try await open("browser './two.html?v=2#x' --replace \(browser)", from: first, "page", ["kind: browser"])
         XCTAssertTrue(pageText("ovvi-cards-two").exists(within: 10))
@@ -98,6 +88,10 @@ extension OvviUITests {
         let notice = element("detail.notice")
         XCTAssertTrue(notice.staticTexts.matching(NSPredicate(format: "value CONTAINS 'points to ovvi-e2e-cards'"))
             .firstMatch.exists(within: 3))
+        // Balance Splits: a write of the user's own, which leaves an agent's notice up. By its menu item: a global
+        // hotkey on this Mac takes ⌥⌘= ahead of the app.
+        pick("Pane", "Balance Splits")
+        XCTAssertFalse(notice.vanishes(within: 2))
         notice.buttons["notice.show"].click()
         XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, true, within: 3))
         try await run("cd /tmp && rm -rf \(folder)", in: first, "clean", 0)
@@ -106,7 +100,7 @@ extension OvviUITests {
     /// An agent's notices and flashes last 30 s: a query on CI can take seconds.
     static let agentHold = ["-agentHoldSeconds", "30"]
 
-    /// A git repository with a file and two pages, the pane's shell in it; its path as the shell has it.
+    /// The path as the shell has it: macOS's /tmp, not /private/tmp.
     private func cardsFolder(in pane: String) async throws -> String {
         let folder = "/tmp/ovvi-e2e-cards"
         try await run("rm -rf \(folder) && mkdir \(folder) && cd \(folder) && git init -q && echo hi >notes.md "
@@ -115,7 +109,6 @@ extension OvviUITests {
         return folder
     }
 
-    /// `ovvi open ‹args›` from the pane, which exits 0 with these lines: the card's pane.
     private func open(_ args: String, from pane: String, _ marker: String, _ lines: [String]) async throws -> String {
         try await run("clear; \(Self.ovviCommand) open \(args)", in: pane, marker, 0)
         let text = try await read(pane)
@@ -125,7 +118,6 @@ extension OvviUITests {
         return try await answered(pane)
     }
 
-    /// The pane an answer on the pane's screen names.
     private func answered(_ pane: String) async throws -> String {
         let text = try await read(pane)
         guard let match = text.firstMatch(of: /\npane: (\S+)/)

@@ -2,10 +2,8 @@ import AppKit
 import UniformTypeIdentifiers
 import XCTest
 
-/// Ovvi's About window: the icon, name and version, and a button that opens every credit and license text,
-/// bundled in the app.
 extension OvviUITests {
-    func testAboutWindowOpensTheAcknowledgements() {
+    func testAboutWindowOpensTheAcknowledgements() throws {
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
         app.menuBarItems["Ovvi"].menuItems["About Ovvi"].click()
         let about = app.windows.matching(NSPredicate(format: "identifier BEGINSWITH 'about'")).firstMatch
@@ -20,11 +18,11 @@ extension OvviUITests {
         app.menuBarItems["Ovvi"].menuItems["About Ovvi"].click()
         XCTAssertTrue(about.exists(within: 3))
 
-        // The button opens the bundled texts in TextEdit, where it opens .txt files and is not open already: the test
-        // quits it after.
         let textEdit = XCUIApplication(bundleIdentifier: "com.apple.TextEdit")
         let opener = NSWorkspace.shared.urlForApplication(toOpen: .plainText)
-        guard opener?.lastPathComponent == "TextEdit.app", textEdit.state == .notRunning else { return }
+        guard opener?.lastPathComponent == "TextEdit.app", textEdit.state == .notRunning else {
+            throw XCTSkip("TextEdit is open, or is not this Mac's .txt opener: the acknowledgements are not checked")
+        }
         addTeardownBlock { textEdit.terminate() }
         element("about.acknowledgements", in: about).click()
         let texts = textEdit.windows.matching(NSPredicate(format: "title BEGINSWITH 'Acknowledgements'")).firstMatch

@@ -47,7 +47,9 @@
 				"Fixtures/agents/login-shell",
 				Fixtures/agents/opencode,
 				Fixtures/agents/pi,
+				"Fixtures/failing-herdr/herdr",
 				"Fixtures/late-herdr/herdr",
+				"Fixtures/no-server/herdr",
 				"Fixtures/no-herdr/install",
 				"Fixtures/no-herdr/login-shell",
 				"Fixtures/slow-herdr/herdr",
@@ -70,6 +72,7 @@
 				0A1B2C3D4E5F60718293A4B5 /* Exceptions for "Ovvi" folder in "Ovvi" target */,
 			);
 			explicitFileTypes = {
+				"Chat/opencode-ovvi.js" = text;
 				"Chat/pi-ovvi.ts" = text;
 			};
 			path = Ovvi;

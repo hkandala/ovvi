@@ -1,6 +1,5 @@
 import Foundation
 
-/// A checkout's branch and how far it is from its upstream (design D67).
 public struct GitStatus: Equatable, Sendable {
     public let branch: String
     public let ahead: Int
@@ -30,17 +29,15 @@ public extension GitStatus {
         self.behind = behind
     }
 
-    /// The checkout's status, or nil when the folder is not in a repository (no output) or git takes more than 5 s.
-    /// `git` is found in the login shell's PATH, like herdr. No untracked scan: the rows show no
-    /// file counts. No optional locks: a run every 10 s must not leave `index.lock` in the user's way.
+    /// No optional locks: a run every 10 s must not leave `index.lock` in the user's way.
     static func of(_ root: String, exec: any Exec) async -> GitStatus? {
         let argv = ["git", "--no-optional-locks", "-C", root, "status", "--porcelain=v2", "--branch",
                     "--untracked-files=no"]
         return await (try? exec.output(argv, timeout: .seconds(5))).flatMap(GitStatus.init(porcelain:))
     }
 
-    /// Whether git can run without macOS offering to install the developer tools: on a Mac `/usr/bin/git` is a stub
-    /// that opens that dialog when `xcode-select -p` finds none. Asked once at launch.
+    /// On a Mac `/usr/bin/git` is a stub that opens the developer tools' install dialog when `xcode-select -p` finds
+    /// none.
     static func usable(exec: any Exec) async -> Bool {
         await exec.succeeds(#"""
         g=$(command -v git) &&
@@ -49,18 +46,15 @@ public extension GitStatus {
     }
 }
 
-/// A repository's data for the plugin API (`PluginCalls`), through `Exec` on This Mac and remote machines alike.
 /// Callers check `GitStatus.usable` first: on a Mac without the developer tools, any git run opens the install
 /// dialog.
 public enum Git {
-    /// The repository's root folder, or nil when `folder` is in none.
     public static func root(_ folder: String, exec: any Exec) async -> String? {
         let root = await (try? exec.output(["git", "-C", folder, "rev-parse", "--show-toplevel"],
                                            timeout: .seconds(5))) ?? ""
         return root.isEmpty ? nil : root
     }
 
-    /// The hash of the commit a ref names (`main`, `HEAD~2`, a short hash), or nil when it names none.
     public static func commit(_ ref: String, in root: String, exec: any Exec) async -> String? {
         // Never an option.
         guard !ref.isEmpty, !ref.hasPrefix("-") else { return nil }
@@ -69,15 +63,17 @@ public enum Git {
         return hash.isEmpty ? nil : hash
     }
 
-    /// The changed files, each untracked file on its own.
     public static func status(_ root: String, exec: any Exec) async throws -> [Change] {
-        try await Change.parse(exec.checkedOutput(["git", "--no-optional-locks", "-C", root, "status",
-                                                   "--porcelain=v1", "-z", "--untracked-files=all"]))
+        try await Change.parse(porcelain(root, exec: exec))
     }
 
-    /// The last `limit` (500 when nil) commits of every branch, remote branch and tag, and HEAD (also detached),
-    /// newest first, each child before its parents. Not `--all`: the stash, notes and git's own refs would add lanes.
-    /// ponytail: Show More asks for the whole longer list again, as the graph's lanes need every row before; ask for
+    static func porcelain(_ root: String, exec: any Exec) async throws -> String {
+        try await exec.checkedOutput(["git", "--no-optional-locks", "-C", root, "status", "--porcelain=v1", "-z",
+                                      "--untracked-files=all"])
+    }
+
+    /// Not `--all`: the stash, notes and git's own refs would add lanes.
+    /// ponytail: Show More asks for the whole longer list again, as the graph's lanes need every row above; ask for
     /// the rows after a commit if long histories get slow. An orphan branch with no commit yet fails on `HEAD` and
     /// shows no history; drop `HEAD` there if that matters.
     public static func log(_ root: String, limit: Int? = nil, exec: any Exec) async throws -> [Commit] {
@@ -95,11 +91,9 @@ public enum Git {
 
 public extension Git {
     struct Change: Equatable, Sendable {
-        /// `M`, `A` (also a copy), `D`, `R`, `T`, `U` (untracked), `C` (conflict), or `!` (ignored).
         public let letter: Character
         /// From the repository's root; a folder's ends in `/`.
         public let path: String
-        /// The path before a rename.
         public let oldPath: String?
     }
 
@@ -114,30 +108,40 @@ public extension Git {
         public var refs: [String] = []
     }
 
-    /// One commit's row of the history graph. Lanes are columns, 0 on the left; a lane keeps its column while its
-    /// line runs, so a line that passes a row is straight.
+    /// A lane keeps its column while its line runs, so a line that passes a row is straight.
     struct GraphRow: Equatable, Sendable {
-        /// The commit's dot.
         public let lane: Int
-        /// The lanes whose lines come from the row's top into the dot.
         public let children: [Int]
-        /// The lanes the dot's lines go to at the row's bottom.
         public let parents: [Int]
-        /// The lanes that pass the row from top to bottom.
         public let through: [Int]
     }
 }
 
 extension Git.Change {
-    /// From `git status --porcelain=v1 -z`: `XY path`, and a rename's old path as the next field.
     static func parse(_ porcelain: String) -> [Self] {
-        entries(porcelain).map { Self(letter: letter($0.index, $0.tree), path: $0.path, oldPath: $0.oldPath) }
+        entries(porcelain).map { entry in
+            let letter = entry.whole ?? ("ARC".contains(entry.index) || entry.tree == " " ? entry.staged : entry.tree)
+            return Self(letter: letter, path: entry.path, oldPath: entry.oldPath)
+        }
     }
 
-    /// An entry of `git status --porcelain=v1 -z`: the index's and the work tree's letters, the path, and a rename's or
-    /// a copy's old path (the next field, also for a rename in the work tree after `add -N`).
+    /// In `git status --porcelain=v1 -z` a rename's or a copy's source path is the next field, also for a rename in
+    /// the work tree after `add -N`.
     struct Entry {
         let index: Character, tree: Character, path: String, oldPath: String?
+
+        var whole: Character? {
+            switch (index, tree) {
+            case ("?", "?"): "U"
+            case ("!", "!"): "!"
+            case ("U", _), (_, "U"), ("A", "A"), ("D", "D"): "C"
+            default: nil
+            }
+        }
+
+        var staged: Character {
+            index == "C" ? "A" : index
+        }
     }
 
     static func entries(_ porcelain: String) -> [Entry] {
@@ -154,21 +158,9 @@ extension Git.Change {
         }
         return entries
     }
-
-    private static func letter(_ index: Character, _ tree: Character) -> Character {
-        switch (index, tree) {
-        case ("?", "?"): "U"
-        case ("!", "!"): "!"
-        case ("U", _), (_, "U"), ("A", "A"), ("D", "D"): "C"
-        case ("C", _): "A" // a copy
-        case ("A", _), ("R", _), (_, " "): index
-        default: tree
-        }
-    }
 }
 
 extension Git.Commit {
-    /// One line of `git log --format=%H%x1f%P%x1f%an%x1f%at%x1f%D%x1f%s`.
     init?(_ line: Substring) {
         let fields = line.split(separator: "\u{1F}", maxSplits: 5, omittingEmptySubsequences: false)
         guard fields.count == 6, let time = TimeInterval(fields[3]) else { return nil }
@@ -179,7 +171,6 @@ extension Git.Commit {
 }
 
 public extension Git {
-    /// The graph's rows for `log`'s commits, in order.
     static func graph(_ commits: [Commit]) -> [GraphRow] {
         // Each lane waits for the commit it runs to; nil is a free column.
         var lanes: [String?] = []
@@ -213,8 +204,6 @@ public extension Git {
 }
 
 public extension Git {
-    /// A commit's page, as the plugin API's `git.show` gives it: its hash, parents, author and their email, its date
-    /// in milliseconds, its subject (`%s`, as the history's) and its body.
     static func show(_ root: String, _ hash: String, exec: any Exec) async throws -> [String: any Sendable] {
         // Never an option.
         guard !hash.isEmpty, hash.allSatisfy(\.isHexDigit) else { throw HerdrError.failed("No commit \(hash)") }
@@ -231,8 +220,6 @@ public extension Git {
                 "subject": String(fields[5]), "body": fields[6].trimmingCharacters(in: .whitespacesAndNewlines)]
     }
 
-    /// The patch as git prints it, with renames, of one commit against its first parent, or with `commit` nil of the
-    /// uncommitted changes: staged, unstaged and untracked files against HEAD (the plugin API's `git.diff`).
     static func patch(_ root: String, commit: String?, exec: any Exec) async throws -> String {
         // The user's config must not change the format: color, an external tool, other prefixes, quoted names.
         let git = ["git", "-c", "core.quotePath=false", "-c", "diff.suppressBlankEmpty=false"]
@@ -246,7 +233,7 @@ public extension Git {
                 timeout: .seconds(30),
             )
         }
-        // Before the first commit, against the empty tree.
+        // With no commit yet, against the empty tree.
         // ponytail: 16 MB of patch and 64 KB of untracked names (a cut last line reads as a shorter file), and the
         // pipe hides git's errors: an empty patch; a patch per file when bigger changes must show.
         let script = #"""

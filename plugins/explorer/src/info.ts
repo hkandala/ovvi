@@ -1,13 +1,13 @@
-// The info view of a file not shown (File and Preview): its icon, name, size and kind, in place of `parent`'s content.
 import type { Ovvi } from "@ovvi/plugin-api"
 
-/** A size as the Finder writes it (`ByteCountFormatter`'s file style): 950 bytes, 3 kB, 1.2 MB, 1.23 GB, half to
- *  even, in the user's locale. */
+/** A size in the Finder's numbers (`ByteCountFormatter`'s file style): 999 bytes, 3 kB, 1.3 MB, 1.23 GB, half up,
+ *  in the user's locale. A value that rounds to 1,000 takes the next unit. */
 function size(bytes: number) {
   if (bytes === 0) return "Zero kB"
-  if (bytes < 999) return bytes === 1 ? "1 byte" : `${bytes} bytes`
+  if (bytes < 1000) return bytes === 1 ? "1 byte" : `${bytes} bytes`
+  const digits = [0, 1, 2, 2]
   let value = bytes / 1000, unit = 0
-  while (value >= 999 && unit < 3) {
+  while (unit < 3 && value >= 1000 - 0.5 / 10 ** digits[unit]) {
     value /= 1000
     unit++
   }
@@ -15,12 +15,10 @@ function size(bytes: number) {
     style: "unit",
     unit: ["kilobyte", "megabyte", "gigabyte", "terabyte"][unit],
     unitDisplay: "short",
-    maximumFractionDigits: [0, 1, 2, 2][unit],
-    roundingMode: "halfEven",
+    maximumFractionDigits: digits[unit],
   }).format(value)
 }
 
-/** The file's facts from the app; its error text when there is no file to tell of. */
 export async function info(ovvi: Ovvi, path: string, parent: HTMLElement) {
   const file = await ovvi.files.info(path).catch((error) => failed(error, parent))
   if (!file) return
@@ -33,7 +31,6 @@ export async function info(ovvi: Ovvi, path: string, parent: HTMLElement) {
   parent.replaceChildren(view)
 }
 
-/** The app's error text (the file is gone, or not a file), in the info view's place. */
 export const failed = (error: unknown, parent: HTMLElement) => {
   const text = error instanceof Error ? error.message : String(error)
   parent.replaceChildren(Object.assign(document.createElement("div"), { className: "info", textContent: text }))

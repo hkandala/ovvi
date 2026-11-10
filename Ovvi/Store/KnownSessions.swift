@@ -1,9 +1,6 @@
 import Foundation
 import HerdrKit
 
-/// Each machine's sessions as last listed, so the new-window view shows them at once and reads again behind them
-/// (ui/window#new-window). By SSH target (This Mac by its id), in a file under the app's own caches; an isolated run
-/// (`-session`, `-machines`) keeps them in memory only.
 @MainActor
 enum KnownSessions {
     private static let file = URL.cachesDirectory.appending(path: Bundle.main.bundleIdentifier ?? "ovvi")
@@ -22,9 +19,9 @@ enum KnownSessions {
         set(sessions, key(machine))
     }
 
-    /// A machine removed, or one that needs a password again: its old rows would show, then flip.
+    /// A machine removed, or one that needs a password again: its listed rows would show, then flip.
     /// ponytail: a password host's rows are forgotten only when a read finds it needs one, so the launch after a
-    /// connect shows them once before Connect; forget them at quit when masters say whether they needed an answer.
+    /// connect shows them once ahead of Connect; forget them at quit when masters say whether they needed an answer.
     static func forget(_ machine: Machine) {
         set(nil, key(machine))
     }

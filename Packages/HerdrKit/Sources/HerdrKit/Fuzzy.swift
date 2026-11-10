@@ -1,9 +1,6 @@
 import Foundation
 
 public extension String {
-    /// How well a typed filter matches (the palette, D48): its letters in order, spaces ignored, case and accent
-    /// blind. Lower is better: a match that does not start a word costs 1, each break between matched letters 1, and
-    /// a break that does not land on a word start 1 more. nil when the letters are not all there in order.
     func fuzzyScore(_ filter: String) -> Int? {
         let fold = { (text: String) in Array(text.folding(options: [.caseInsensitive, .diacriticInsensitive],
                                                           locale: nil)) }

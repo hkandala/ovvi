@@ -1,7 +1,4 @@
-// The runtime: the `ovvi` object of a plugin's page (ovvi.d.ts), made from the card's context the app puts in the
-// page at document start, before the plugin's code runs. Its messages are the app's own (Ovvi/Plugins/Bridge.swift):
-// `{ call, args }` to the app, answered with JSON or rejected with "<code>: <text>"; `ovvi_receive(name, data)` from
-// it.
+// The app puts `ovvi_card` in the page at document start, ahead of the plugin's code.
 import type { Card, Controls, MenuItem, Off, Ovvi, OvviError, Page, RunResult, SettingValue, Theme } from "./ovvi"
 
 type Context = {
@@ -18,7 +15,6 @@ type Context = {
   controls: Record<string, string | boolean | string[]>
   theme: Theme
   settings: Record<string, SettingValue>
-  /** The entry's built file, from the page's folder. */
   entry: string
 }
 
@@ -46,7 +42,6 @@ async function call<T = void>(name: string, args: object = {}): Promise<T> {
   return (reply == null ? undefined : JSON.parse(reply)) as T
 }
 
-/** A call whose promise nobody awaits: its failure goes to the console. */
 const tell = (name: string, args: object = {}) => void call(name, args).catch((error) => console.error(error))
 
 type Handler = (data: any) => void
@@ -110,10 +105,9 @@ const card: Card = {
   },
 }
 
-/** Each control as the page last set it in the app. A menu pick reaches the page's record of it, not the app's (the
- *  page sets a menu's value), so a page setting the picked value must still send it. */
+/** A menu pick reaches the page's record of a control, not the app's (the page sets a menu's value), so a page
+ *  setting the picked value must still send it. */
 const sent = new Map<string, Record<string, unknown>>()
-/** The change says something the app's header was not told. */
 const news = (id: string, change: Record<string, unknown>) => !same({ ...sent.get(id), ...change }, sent.get(id))
 
 const controls: Controls = {
@@ -212,30 +206,22 @@ const ovvi: Ovvi = {
   },
 }
 
-// The card's pages (`ovvi.pages`): a router over the card's places that keeps the pages it showed. A hidden page is
-// `inert` (card.css hides it and keeps its layout and scroll); its handlers, watches and header controls wait.
 type Kept = {
   page: Page
   offs: Off[]
-  /** The header controls as the page left them: its own changes, the user's values, and the rest as at its first show. */
   controls: Map<string, Record<string, unknown>>
-  /** Watches that fired while hidden: they run when it shows. */
   due: Set<() => void>
-  /** Its `place` handlers: the card moved to it again. */
   places: Set<Handler>
   title?: string
-  /** The landing of a move to it while it was still being drawn. */
   landing?: string
   shownOnce: boolean
   drawn: boolean
   dropped: boolean
 }
-/** Two records of a control, whose keys can come in different orders. */
 const same = (a?: Record<string, unknown>, b?: Record<string, unknown>) =>
   JSON.stringify(a && Object.entries(a).sort()) === JSON.stringify(b && Object.entries(b).sort())
-/** The events a hidden page hears too. */
 const always = new Set(["theme", "visible", "settings"])
-/** The pages drawn and being drawn, the last shown last. */
+/** The last shown last. */
 let pages: Kept[] = []
 let current: Kept | undefined
 let draw: ((page: Page) => Promise<void>) | undefined
@@ -260,7 +246,6 @@ function make(arg: string, at?: string): Kept {
       value: {
         get: (id) => (kept.controls.get(id)?.value ?? context.controls[id]) as ReturnType<Controls["get"]>,
         set(id, change) {
-          // A focus or a shake is for now only.
           const { focus, refused, ...rest } = change
           const was = kept.controls.get(id) ?? {}, next = { ...was, ...rest }
           kept.controls.set(id, next)
@@ -292,7 +277,6 @@ function make(arg: string, at?: string): Kept {
   return kept
 }
 
-/** A new page for the place, shown once drawn (also when its draw failed) if the card is still there. */
 async function fill(arg: string, at?: string) {
   const kept = make(arg, at)
   try {
@@ -306,7 +290,7 @@ async function fill(arg: string, at?: string) {
   kept.title = document.title
   if (context.arg === arg) present(kept, kept.landing === undefined ? undefined : { arg, at: kept.landing })
   else if (current?.title !== undefined) document.title = current.title
-  // A page drawn again takes the old one's place, unless the old one shows: the card came back to it meanwhile.
+  // A redrawn page replaces the other page of its place, unless that one shows: the card came back to it meanwhile.
   for (const other of pages) if (other !== kept && other !== current && other.page.arg === arg) drop(other)
 }
 
@@ -339,7 +323,6 @@ function present(kept: Kept, again?: { arg: string; at?: string }) {
     kept.shownOnce = true
     for (const [id, value] of Object.entries(context.controls)) kept.controls.set(id, { value, ...kept.controls.get(id) })
   }
-  // Only what differs from the page before, or from what the app's header was told.
   for (const [id, change] of kept.controls) {
     if (!same(change, old?.controls.get(id)) || news(id, change)) controls.set(id, change)
   }
@@ -352,8 +335,7 @@ function present(kept: Kept, again?: { arg: string; at?: string }) {
   if (document.hasFocus()) dispatchEvent(new Event("focus"))
 }
 
-/** ⌘← and ⌘→ go Back and Forward, as ⌃- and ⌃⇧- do (the app's), unless a text field has the keyboard: there they move
- *  its caret. In the capture phase, before a page's own keys (a tree's ← goes to the parent row). */
+/** Runs ahead of a page's own keys: a tree's ← goes to the parent row. */
 function backForward(event: KeyboardEvent) {
   const back = event.key === "ArrowLeft"
   if (!back && event.key !== "ArrowRight") return
@@ -398,8 +380,6 @@ function drop(kept: Kept) {
   if (current === kept) current = undefined
 }
 
-// Console lines and uncaught errors go to the plugin's log too (~/Library/Logs/Ovvi/plugins/<id>.log), where its
-// author and their agents read them.
 const text = (value: unknown) => {
   if (typeof value === "string") return value
   if (value instanceof Error) return `${value.message}${value.stack ? `\n${value.stack.split("\n")[0]}` : ""}`
@@ -419,11 +399,10 @@ for (const level of ["log", "info", "warn", "error", "debug"] as const) {
 addEventListener("error", (event) => console.error(event.error ?? event.message))
 addEventListener("unhandledrejection", (event) => console.error(event.reason))
 
-// The app alone gives a card the keyboard. WebKit makes the web view the window's first responder on any `focus()` while
-// its page has none, which would take the keyboard from the pane in use (a tree that puts back its focused row after a
-// refresh). A page takes the keyboard on its window's `focus` event.
+// WebKit makes the web view the window's first responder on any `focus()` while its page has none, which takes the
+// keyboard from the pane in use. A page takes the keyboard on its window's `focus` event.
 const focus = HTMLElement.prototype.focus
-/** A press in the page, until its event ends: it can reach the page before WebKit marks the page focused. */
+/** A press can reach the page ahead of WebKit marking the page focused. */
 let pressed = false
 addEventListener("pointerdown", () => {
   pressed = true
@@ -434,7 +413,7 @@ HTMLElement.prototype.focus = function (options) {
 }
 
 try {
-  // Not a literal: the build leaves it to the page, which loads the plugin's own file.
+  // Not a literal, so the build leaves the import to the page.
   const entry = `./${context.entry}`
   const { default: main } = await import(entry)
   await main(ovvi)

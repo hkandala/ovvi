@@ -1,7 +1,3 @@
-// The find bar of File and Markdown (CodeMirror's search panel, drawn as the terminal's ⌘F bar): a capsule at the
-// editor's top right with the field, the match count, Match Case, Whole Word and Regular Expression, Previous, Next
-// and Close. ⌥⌘F adds a second row, Replace's field with Replace and Replace All, in a file that is not read only and
-// a view that edits (not a locked Markdown file).
 import {
   closeSearchPanel,
   findNext,
@@ -16,7 +12,7 @@ import {
 import type { EditorState } from "@codemirror/state"
 import { EditorView, type Panel, type ViewUpdate } from "@codemirror/view"
 import type { Ovvi } from "@ovvi/plugin-api"
-import { symbols } from "./place"
+import { sf, symbols } from "./place"
 
 type Flag = "caseSensitive" | "wholeWord" | "regexp"
 const FLAGS: [Flag, string, string][] = [
@@ -27,7 +23,6 @@ const FLAGS: [Flag, string, string][] = [
 /** Counting stops here: a count of every match of a short query in a big file would cost each keystroke. */
 const MOST = 1000
 
-/** "3 of 12": the match at the selection and how many there are. */
 function count(state: EditorState, query: SearchQuery) {
   if (!query.search) return ""
   if (!query.valid) return "Invalid"
@@ -43,23 +38,23 @@ function count(state: EditorState, query: SearchQuery) {
 const make = <K extends keyof HTMLElementTagNameMap>(tag: K, props: object) =>
   Object.assign(document.createElement(tag), props)
 
-/** An icon button with the symbol `--sf-<name>` as its mask. */
 function icon(symbol: string, title: string, onclick: () => void) {
   const button = make("button", { type: "button", className: "find-icon", title, ariaLabel: title, onclick })
-  button.style.setProperty("--symbol", `var(--sf-${symbol.replaceAll(".", "-")})`)
+  button.style.setProperty("--symbol", `var(${sf(symbol)})`)
   return button
 }
 
-/** The search config's panel, and `open`, which shows the bar (⌘F), with its Replace row for `replace` (⌥⌘F). */
 export function finder(ovvi: Ovvi) {
-  /** The open panel's: its Replace row shown or not. */
   let shown: ((replace: boolean) => void) | undefined
 
   function createPanel(view: EditorView): Panel {
     symbols(ovvi, ["chevron.up", "chevron.down", "xmark", ...FLAGS.map(([, symbol]) => symbol)])
-    // `name="search"`: WebKit tells VoiceOver it is a search field.
-    const field = make("input", { name: "search", className: "find-field", placeholder: "Find", ariaLabel: "Find" })
-    const swap = make("input", { name: "replace", className: "find-field", placeholder: "Replace", ariaLabel: "Replace" })
+    // `name="search"`: WebKit tells VoiceOver it is a search field. No spellcheck: with it, the Mac's text checking
+    // corrects and capitalizes code typed in the fields (`w = 5` became `W = 5`).
+    const field = make("input", { name: "search", className: "find-field", placeholder: "Find", ariaLabel: "Find",
+      spellcheck: false })
+    const swap = make("input", { name: "replace", className: "find-field", placeholder: "Replace",
+      ariaLabel: "Replace", spellcheck: false })
     field.setAttribute("main-field", "true")
     const counted = make("span", { className: "find-count", role: "status" })
     const toggles = FLAGS.map(([flag, symbol, title]) =>
@@ -69,7 +64,7 @@ export function finder(ovvi: Ovvi) {
       make("button", { type: "button", className: "find-button", textContent, title, ariaLabel: title,
         onclick: run(command) })
     const findRow = make("div", { className: "find-row" }), replaceRow = make("div", { className: "find-row" })
-    /** The keyboard back to the editor, or to a locked page's scroller (its text takes none), so the keys scroll it. */
+    /** A locked page's text takes no keyboard: its scroller does, so the keys scroll it. */
     const close = () => {
       closeSearchPanel(view)
       if (view.state.facet(EditorView.editable)) view.focus()
@@ -101,8 +96,7 @@ export function finder(ovvi: Ovvi) {
     swap.oninput = () => commit()
     // WebKit gives a clicked button no focus: the keyboard leaves the field for the page unless the press is stopped.
     dom.onmousedown = (event) => (event.target as Element).closest("button") && event.preventDefault()
-    // As the user types, the first match from where the selection starts, as in the Mac's editors. Not `findNext`: it
-    // selects the field's text, and the next letter would replace it.
+    // Not `findNext`: it selects the field's text, and the next letter would replace it.
     field.oninput = () => {
       commit()
       const query = getSearchQuery(view.state), state = view.state
@@ -131,7 +125,6 @@ export function finder(ovvi: Ovvi) {
       top: true,
       mount() {
         shown = show
-        // As CodeMirror's own panel: also when ⌘G opens it.
         field.select()
       },
       update(update: ViewUpdate) {
@@ -144,7 +137,6 @@ export function finder(ovvi: Ovvi) {
     }
   }
 
-  /** The bar, its field selected; with Replace's row and its field selected for `replace`, if the file is writable. */
   function open(view: EditorView, replace: boolean) {
     openSearchPanel(view)
     shown?.(replace)

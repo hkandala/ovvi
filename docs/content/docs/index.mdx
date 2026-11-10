@@ -32,7 +32,7 @@ cards laid out the way herdr splits them. Everything it does is in [Features](/d
    state, it holds it. A fresh app on a new Mac rebuilds everything from it.
    Everything the app keeps for itself is listed in [Data](/docs/data).
 2. **Use what exists.** herdr's API and CLI, OpenSSH, Apple's frameworks. On
-   each machine the app only runs commands over SSH. No daemon or server of
+   a remote machine the app only runs commands over SSH. No daemon or server of
    our own; the one exception is the relay, a script sent with each SSH
    connection, never installed, gone with it
    ([Machines](/docs/machines#the-ssh-connection)).
@@ -49,9 +49,10 @@ cards laid out the way herdr splits them. Everything it does is in [Features](/d
 
 <Cards>
   <Card title="Features" href="/docs/features" description="Everything the app does, in one list" />
-  <Card title="UI design" href="/docs/ui/window" description="The window, new panes, browser, default plugins, chat view, swiping, drag and drop, states, theme" />
-  <Card title="How it works" href="/docs/architecture" description="Architecture, data, talking to herdr, machines, layout, status" />
+  <Card title="UI design" href="/docs/ui/window" description="The window, new panes, browser, chat view, program icons, swiping, drag and drop, adding a machine, states, settings, theme" />
+  <Card title="Plugins" href="/docs/plugins" description="Plugin packages, the API, the manifest and the default plugins" />
+  <Card title="How it works" href="/docs/architecture" description="Architecture, data, talking to herdr, agent control, machines, layout, status, platform" />
   <Card title="Decisions" href="/docs/decisions" description="Design decisions, why, and what was rejected" />
-  <Card title="Future work" href="/docs/future-work" description="Designs for plugins, the changes panel, pills, iPhone and iPad, and Rex" />
+  <Card title="Future work" href="/docs/future-work" description="Designs for the changes panel, pills, iPhone and iPad, and Rex" />
   <Card title="Reference" href="/docs/reference/glossary" description="Glossary and herdr calls" />
 </Cards>

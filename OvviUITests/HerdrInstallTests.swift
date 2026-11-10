@@ -1,9 +1,7 @@
 import XCTest
 
-/// Install herdr (ui/states), each time with a fake installer, never herdr.dev's: on This Mac under a login shell with
-/// no herdr, and over SSH on CI's ovvi-pw, which has none.
+/// Always a fake installer, never herdr.dev's.
 extension OvviUITests {
-    /// The page shows the command and Install; the installer's lines while it runs; then the page connects.
     func testInstallingHerdrOnThisMacShowsItsProgressAndConnects() throws {
         let install = "\(Self.fixtures)/no-herdr/install"
         app.launchEnvironment["OVVI_E2E_HERDR"] = try env("OVVI_HERDR")
@@ -22,7 +20,6 @@ extension OvviUITests {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
     }
 
-    /// A failed install says what the installer printed, and Try Again runs it again.
     func testAFailedInstallOnARemoteMachineSaysWhy() async throws {
         try await skipWithoutSSH()
         try await Self.post("\(one)/ssh-drop", Data("ovvi-pw".utf8))
@@ -52,18 +49,12 @@ extension OvviUITests {
     }
 
     func addHost(_ name: String, _ target: String) {
-        // At rest first, as newTab's capsule: right after a launch the title row lays out again, and a click on an
-        // earlier frame opened no menu (on CI).
+        // At rest first: right after a launch the title row lays out again, and a click on an earlier frame opens no
+        // menu (on CI).
         let button = element("titlebar.machine")
-        var frame = CGRect.null
-        XCTAssertTrue(until(5) {
-            let now = button.frame
-            defer { frame = now }
-            return button.isHittable && now == frame
-        }, "\(button.frame)")
+        XCTAssertNotNil(steady(5) { button.isHittable ? button.frame : nil }, "\(button.frame)")
         button.click()
         app.menuItems["Add Machine…"].click()
-        // Settings ▸ Machines' add form; Add opens the machine in a new window and closes Settings.
         let settings = settingsWindow
         let field = element("settings.machine.name", in: settings)
         XCTAssertTrue(field.exists(within: 5))

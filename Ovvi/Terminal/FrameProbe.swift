@@ -2,36 +2,24 @@ import AppKit
 import IOSurface
 import Observation
 
-/// e2e (`-recordFrames YES`): for 1.5 s after the first window shows another tab (a tab, workspace or session
-/// change, or the overview closing), what each of the tab's cards showed at each run loop turn's Core Animation
-/// commit, each drawn (a display link's frames missed commits). A commit counts
-/// as a flicker when a card shows neither its first picture nor its last one: no terminal view in the window, no
-/// picture or an emptied one, a fade, a third picture, or its terminal moved (a held grid keeps its top left, so a
-/// size change is no move). `recorded`: "tab bad/states codes" per change, each card's states
-/// as they changed, the codes of bad ones (`-` gone, `0` no picture, `s` a small still, `f` fading, `p` another
-/// picture, `j` moved, with the first move in points).
-/// Not seen: commits off the main thread or from a flush within a turn, and a card's own SwiftUI opacity (only the
-/// terminal layer's fade). libghostty sets a new picture on the main thread, so each is a turn's commit.
+/// Each sample is drawn at the commit: a display link's frames miss commits. Not seen: commits off the main thread or
+/// from a flush within a turn, and a card's own SwiftUI opacity. libghostty sets a new picture on the main thread, so
+/// each is a turn's commit.
 @MainActor @Observable
 final class FrameProbe {
     static let shared = FrameProbe()
     static let isOn = UserDefaults.standard.bool(forKey: "recordFrames")
-    /// The changes' records, "; " between them.
     private(set) var recorded = ""
     @ObservationIgnored private var shown: (page: String, tab: String)?
     @ObservationIgnored private var start = 0.0
-    /// Each card's states of the change being recorded; nil while its terminal is in no card's host of the window.
     @ObservationIgnored private var samples: [ObjectIdentifier: [Sample?]] = [:]
-    /// The ink of each picture (surface and seed) seen in this change.
     @ObservationIgnored private var inks: [String: [Bool]?] = [:]
 
     private struct Sample: Equatable {
-        /// Ink per cell of a coarse grid; nil without a picture.
         let ink: [Bool]?
         let fading: Bool
-        /// A still narrower than the card's pixels shows (the overview's snapshot): blurred.
         let small: Bool
-        /// In the window (bottom-left based): a held view keeps its top left while its card's size changes.
+        /// Bottom-left based: a held view keeps its top left while its card's size changes.
         let topLeft: CGPoint
     }
 
@@ -44,7 +32,7 @@ final class FrameProbe {
     private func turned() {
         guard let pages = WindowPages.windows.first, let window = pages.window, let page = pages.current
         else { return }
-        // The tab's page after the overview is a change, also to the tab shown before.
+        // The tab's page after the overview counts as a change, even to the same tab.
         guard !pages.overview else {
             finish()
             shown = nil
@@ -81,7 +69,6 @@ final class FrameProbe {
             inks[key] = ink
             return ink
         }
-        // A snapshot's still (stretched, as `dropSmallStill` drops), narrower than the card.
         let still = view.still.flatMap { $0 !== view.layer && $0.superlayer != nil && $0.contentsGravity == .resize
             ? $0 : nil
         }
@@ -120,8 +107,6 @@ final class FrameProbe {
         inks = [:]
     }
 
-    /// Ink in each of 48 × 32 cells: a cell with a pixel of 4 × 4 far from the picture's corner (its
-    /// background). nil for an emptied surface.
     private static func ink(_ surface: IOSurface) -> [Bool]? {
         guard !surface.emptied, surface.bytesPerElement == 4, surface.width > 0,
               surface.height > 0 else { return nil }
@@ -143,7 +128,7 @@ final class FrameProbe {
         }
     }
 
-    /// The same picture but for a few cells (a cursor).
+    /// A few cells apart is the same picture: a cursor.
     private static func same(_ one: [Bool]?, _ two: [Bool]?) -> Bool {
         guard let one, let two else { return one == nil && two == nil }
         return zip(one, two).count { $0 != $1 } <= 8

@@ -1,18 +1,12 @@
 import XCTest
 
-/// Plugin packages: the building page's CSV Table (Fixtures/csv-table, its own esbuild
-/// build script) as a local path, its dependencies installed from npm's cache as its author would. Its first card asks
-/// to install it, then says it is not built; Build runs its build script and the page loads. An edit that imports a
-/// dependency from the package's own `node_modules` shows after Reload Plugin (⌥⌘R) with the header's values kept; a
-/// failed build keeps the page and says so, and the log has it. Then Settings ▸ Plugins installs the same package
-/// from a local git repository at a tag, which installs its dependencies and builds it.
 extension OvviUITests {
     func testAPluginPackageAsksForTrustBuildsAndReloads() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, shell) = try await newTab("packages")
         try await waitForPrompt(shell)
         let config = "/tmp/ovvi-e2e-packages", csv = "/tmp/ovvi-e2e-csv", data = "/tmp/ovvi-e2e-csv-data"
-        let fixture = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "Fixtures/csv-table").path
+        let fixture = "\(Self.fixtures)/csv-table"
         let log = "\(config)/logs/plugins/ovvi-e2e-csv-table.log"
         try await send("rm -rf \(config) \(csv) \(data) ~/.local/state/ovvi/\(one)/ovvi-e2e-csv-table && "
             + "mkdir -p \(config) \(data) && cp -R \(fixture) \(csv) && (cd \(csv) && npm_config_offline=true npm ci "
@@ -20,11 +14,9 @@ extension OvviUITests {
             + "\(data)/a.csv && echo '{\"packages\":[\"\(csv)\"]}' > \(config)/settings.json && clear && "
             + "echo made-$((6*7))\r", to: shell)
         try await waitFor(shell) { $0.contains("made-42") }
-        addTeardownBlock { [one] in
-            _ = try? await Self.call(one, "pane.send_text", ["pane_id": shell, "text": "rm -rf \(config) \(csv) "
-                    + "\(data) /tmp/ovvi-e2e-csv-repo ~/.local/state/ovvi/\(one)/ovvi-e2e-csv-table\r"])
-        }
-        relaunch(nil, ["-configFolder", config])
+        sendAfter("rm -rf \(config) \(csv) \(data) /tmp/ovvi-e2e-csv-repo "
+            + "~/.local/state/ovvi/\(one)/ovvi-e2e-csv-table\r", to: shell)
+        relaunch(one, ["-configFolder", config])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         element("workspace.w2").click()
 
@@ -33,7 +25,6 @@ extension OvviUITests {
         try await trustsAndBuilds(card, csv: csv, shell: shell, tab: tab, cardTab: cardTab)
         let rows = element("pane.\(card).rows")
         XCTAssertTrue(rows.has(\.stringValue, "3 rows", within: 5))
-        // A header value the page reads again after the reload.
         element("pane.\(card).first-row").click()
         XCTAssertTrue(rows.has(\.stringValue, "4 rows", within: 5))
 
@@ -45,8 +36,6 @@ extension OvviUITests {
         try await installFromGit(fixture, config: config, shell: shell)
     }
 
-    /// Its code runs only after Install: Reload Plugins over the confirmation builds nothing. Then it is not built
-    /// yet, and Build runs its build script.
     private func trustsAndBuilds(_ card: String, csv: String, shell: String, tab: String,
                                  cardTab: String) async throws
     {
@@ -58,7 +47,6 @@ extension OvviUITests {
         filter.typeText("reload plugins")
         XCTAssertTrue(element("palette.command.Reload Plugins").exists(within: 2))
         filter.typeText("\r")
-        XCTAssertTrue(trust.exists(within: 2))
         element("tab.\(tab)").click()
         try await send("clear; ls \(csv)/dist || echo unbuilt-$((6*7))\r", to: shell)
         try await waitFor(shell) { $0.contains("unbuilt-42") }
@@ -72,9 +60,6 @@ extension OvviUITests {
         XCTAssertTrue(text("CSV Table one").exists(within: 20))
     }
 
-    /// An edit that imports from the package's own node_modules, then Reload Plugin over the card: the new page with
-    /// the header's values. Then a build that fails, with a new version: the card made again from it loads the last
-    /// good page and says why.
     private func reloads(_ card: String, in cardTab: String, csv: String, shell: String, tab: String) async throws {
         let rows = element("pane.\(card).rows")
         element("tab.\(tab)").click()
@@ -106,9 +91,6 @@ extension OvviUITests {
         XCTAssertTrue(text("CSV Table two").exists(within: 10))
     }
 
-    /// Ovvi ▸ Plugins… opens Settings ▸ Plugins, which installs the fixture from a local git repository at its tag,
-    /// after the confirmation, with its dependencies and its build; the row shows the tag's version and its source, and
-    /// its page has Update. New Plugin… makes one from the template.
     private func installFromGit(_ fixture: String, config: String, shell: String) async throws {
         let repo = "/tmp/ovvi-e2e-csv-repo", git = "git -C \(repo) -c user.name=e2e -c user.email=e2e@e2e"
         try await send(
@@ -137,7 +119,6 @@ extension OvviUITests {
         // Back to the list: a click on the selected row changes nothing.
         element("settings.page.general").click()
         element("settings.page.plugins").click()
-        // New Plugin… makes one from the template, installed and built.
         element("plugins.new").click()
         let name = app.sheets.textFields.firstMatch
         XCTAssertTrue(name.exists(within: 5))

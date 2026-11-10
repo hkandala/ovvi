@@ -1,11 +1,9 @@
 import Foundation
 
-/// One `herdr terminal session control|observe` run: herdr's rendering of a pane comes out as
-/// frames, commands go in as NDJSON. Only `control` takes commands; `observe` only watches.
+/// Only `control` takes commands; `observe` only watches.
 public struct TerminalStream: Sendable {
     public enum Event: Sendable, Equatable {
         case frame(Frame)
-        /// The last event: the stream is over.
         case closed(Closed)
     }
 
@@ -17,7 +15,6 @@ public struct TerminalStream: Sendable {
         public let bytes: Data
     }
 
-    /// Why a stream ended, from herdr's reason text (design: how a stream ends).
     public enum Closed: Sendable, Equatable {
         /// Another client controls the pane, or took it with `--takeover`.
         case held
@@ -25,7 +22,6 @@ public struct TerminalStream: Sendable {
         case ended
         /// herdr is replacing itself; open again after a moment.
         case liveUpdate
-        /// Anything else, with herdr's text: a failed handshake, a stopped server.
         case failed(String)
 
         init(reason: String) {
@@ -64,7 +60,7 @@ public struct TerminalStream: Sendable {
                         break
                     }
                 }
-                // No `terminal.closed`: the CLI failed (exit 1, reason on stderr) or was killed.
+                // No `terminal.closed`: the CLI failed (exit 1, reason on stderr) or got killed.
                 let (status, stderr) = await channel.exit()
                 let text = stderr.trimmingCharacters(in: .whitespacesAndNewlines)
                 continuation.yield(.closed(.failed(text.isEmpty ? "herdr exited \(status)" : text)))
@@ -77,7 +73,6 @@ public struct TerminalStream: Sendable {
         }
     }
 
-    /// One stdout line as an event; nil for lines we do not know.
     static func event(_ line: String) -> Event? {
         struct Line: Decodable {
             let type: String
@@ -125,8 +120,7 @@ public struct TerminalStream: Sendable {
               "column": column, "row": row, "modifiers": modifiers])
     }
 
-    /// Lets go of the pane by closing stdin: herdr answers `detached` (input sent before still arrives) and the
-    /// run ends (talking-to-herdr, Running commands).
+    /// herdr answers `detached` (input already sent still arrives) and the run ends.
     public func close() {
         channel.closeInput()
         // The one fallback: a run still going 1 s later (a hung herdr, a write stuck on a full pipe) is killed.
@@ -142,19 +136,6 @@ public struct TerminalStream: Sendable {
     }
 }
 
-extension TerminalStream {
-    /// observe ignores stdin's end, so this wrapper ends it then (talking-to-herdr, Running commands). The watcher lets
-    /// go of stdout and stderr, so a run that exits by itself (a failed handshake) ends the stream with its status and
-    /// reason; fd 3 because a background job's stdin is /dev/null. The watcher kills until the run is gone: macOS's sh
-    /// (bash 3.2) can lose one TERM, in `wait` or in an `exec` while a trap is pending, and the chat's `tail -F` then
-    /// ran forever. Once the run ends the watcher goes too, so it never kills a reused pid.
-    /// ponytail: an observe wrapper killed by SIGKILL (the relay's `k`, the 1 s fallback) leaves its watcher, which may
-    /// signal a pid reused within the second after the run ended; a pidfd where the shell has one.
-    static let observeWrapper = #"exec 3<&0; "$@" & c=$!; { cat <&3 >/dev/null; while kill $c; do sleep 1; done; }"#
-        + #" >/dev/null 2>&1 & w=$!; "#
-        + "wait $c 2>/dev/null; s=$?; kill $w 2>/dev/null; exit $s"
-}
-
 public extension HerdrClient {
     /// Opens a pane's terminal by its `terminal_id`, so the stream survives the pane moving.
     /// `--session` wins over `HERDR_SOCKET_PATH` and `HERDR_SESSION`.
@@ -168,7 +149,7 @@ public extension HerdrClient {
         var argv = try await [herdr(), "--session", session, "terminal", "session", observe ? "observe" : "control",
                               terminalID, "--cols", "\(cols)", "--rows", "\(rows)"]
         if observe {
-            argv = ["sh", "-c", TerminalStream.observeWrapper, "sh"] + argv
+            argv = ["sh", "-c", observeWrapper, "sh"] + argv
         } else if takeover {
             argv.append("--takeover")
         }

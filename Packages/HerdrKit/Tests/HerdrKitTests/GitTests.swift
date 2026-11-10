@@ -31,7 +31,6 @@ import Testing
 }
 
 @Test func `status letters from real porcelain`() {
-    // `git status --porcelain=v1 -z` in a checkout with a staged rename, a conflict and odd names.
     let porcelain = " M sub/a.txt\0R  sub/de ep/f.txt\0sub/deep/f.txt\0UU both.txt\0AM new.txt\0?? sub/tab\tx\0"
         + "!! build/\0C  copy.txt\0orig.txt\0?? \u{301}x\0"
     #expect(Git.Change.parse(porcelain) == [
@@ -57,7 +56,6 @@ import Testing
             "U sub/tab\t\"x",
         ])
         let log = try await Git.log(repo.path, exec: exec)
-        // Topological: the merged branch first.
         #expect(log.map(\.subject) == ["Merge branch 'side'", "side", "main", "two", "init"])
         #expect(log[0].parents == [log[2].hash, log[1].hash])
         #expect(log[4] == Git.Commit(hash: log[4].hash, parents: [], author: "t",
@@ -67,7 +65,6 @@ import Testing
         #expect(await Git.commit(String(log[4].hash.prefix(7)), in: repo.path, exec: exec) == log[4].hash)
         #expect(await Git.commit("nope", in: repo.path, exec: exec) == nil)
         #expect(await Git.commit("--all", in: repo.path, exec: exec) == nil)
-        // The side branch takes lane 1 from the merge down to where it forked; main stays in lane 0.
         #expect(Git.graph(log) == [
             Git.GraphRow(lane: 0, children: [], parents: [0, 1], through: []),
             Git.GraphRow(lane: 1, children: [1], parents: [1], through: [0]),
@@ -82,7 +79,6 @@ import Testing
     let commit = { (hash: String, parents: [String]) in
         Git.Commit(hash: hash, parents: parents, author: "", date: .now, subject: "")
     }
-    // b and c are tips; their lines meet at their parent a, in lane 0.
     #expect(Git.graph([commit("c", ["a"]), commit("b", ["a"]), commit("a", [])]) == [
         Git.GraphRow(lane: 0, children: [], parents: [0], through: []),
         Git.GraphRow(lane: 1, children: [], parents: [1], through: [0]),
@@ -127,13 +123,10 @@ import Testing
         Git.Branch(name: "origin/side", remote: true, current: false),
     ])
     try await Git.run(other, ["pull"], exec: exec)
-    // A stash is no branch: not in the history.
     _ = try await exec.checkedOutput(["sh", "-c", "cd \"$1\" && echo x >>a && git stash -q", "sh", other])
     #expect(try await Git.log(other, exec: exec).map(\.subject) == ["two", "one"])
-    // As the branch menu switches to a remote branch.
     try await Git.run(other, ["switch", "--track", "origin/side"], exec: exec)
     #expect(try await Git.branches(other, exec: exec).filter(\.current).map(\.name) == ["side"])
-    // git's own words, not a prompt.
     let error = await #expect(throws: HerdrError.self) { try await Git.run(other, ["switch", "nope"], exec: exec) }
     #expect(error?.localizedDescription.contains("nope") == true)
 }

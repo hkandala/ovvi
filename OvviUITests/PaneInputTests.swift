@@ -1,8 +1,6 @@
 import XCTest
 
-/// Right clicks and drops in a terminal.
 extension OvviUITests {
-    /// A right click opens the card's menu, also in a mouse app, as herdr opens its pane menu; ⌥ sends it to the app.
     func testRightClickInATerminalOpensThePaneMenu() async throws {
         let (tab, first) = try await newTab("menu")
         element("tab.\(tab)").click()
@@ -16,14 +14,9 @@ extension OvviUITests {
         }
         keepScreenshot("terminal menu")
         menu["Split Right"].click()
-        let second = try await poll("a second pane in \(tab)") { () async throws -> String? in
-            let panes = try await snapshot()["panes"] as? [[String: Any]] ?? []
-            return panes.first { $0["tab_id"] as? String == tab && $0["pane_id"] as? String != first }?["pane_id"]
-                as? String
-        }
+        let second = try await sidePane(in: tab, besides: [first])
         try await waitForPrompt(second)
 
-        // Paste goes into the clicked terminal, not the one with the keyboard.
         let focused = NSPredicate(format: "hasKeyboardFocus == true")
         let (pane, other) = focused.evaluate(with: element("terminal.\(first)")) ? (second, first) : (first, second)
         let terminal = element("terminal.\(pane)")
@@ -50,13 +43,9 @@ extension OvviUITests {
         app.typeKey(.escape, modifierFlags: [])
     }
 
-    /// A dragged file pastes its shell-escaped path, as a drop on Ghostty (herdr's usual terminal) does. The drag comes
-    /// from a window of the helper's: from Finder, now and then no drag started on CI. A file in a `TemporaryItems`
-    /// folder (a screenshot's thumbnail) pastes the path of a copy the pane's programs can read. Dragged text pastes as
-    /// it is.
+    /// The drag comes from a window of the helper's: from Finder, at times no drag starts on CI.
     func testDroppingAFilePastesItsPath() async throws {
         let (tab, pane) = try await newTab("drop")
-        // A later tab's page, kept hidden over this one (TabPages).
         let (other, _) = try await createTab(in: workspace(of: tab), label: "over")
         closeAfter("tab", other)
         XCTAssertTrue(element("tab.\(other)").has(\.isHittable, true, within: 5))
@@ -67,7 +56,6 @@ extension OvviUITests {
         XCTAssertTrue(terminal.has(\.isHittable, true, within: 3))
         try await waitForPrompt(pane)
 
-        // From over the sidebar onto the card.
         let from = element("sidebar").frame, card = terminal.frame
         let points = "\(from.midX) \(from.midY) \(card.midX) \(card.midY)"
         try await send("cat ", to: pane)
@@ -90,15 +78,12 @@ extension OvviUITests {
         try await Self.call(one, "pane.send_keys", ["pane_id": pane, "keys": ["enter"]])
         try await waitFor(pane) { $0.components(separatedBy: "ovvi-e2e-dropped").count == 3 }
 
-        // Text pastes as it is (libghostty-spm's drop).
         _ = try await Self.post("\(one)/text-drag", Data("\(points) echo ovvi-e2e-$((6*7))".utf8))
         try await waitFor(pane, toShow: "echo ovvi-e2e-$((6*7))")
         try await Self.call(one, "pane.send_keys", ["pane_id": pane, "keys": ["enter"]])
         try await waitFor(pane) { $0.contains("ovvi-e2e-42") }
     }
 
-    /// A click on a card that has not drawn yet (its stream waits on a stopped server) keeps the keyboard once the
-    /// cards draw: the user's click wins over the tab's first pick, herdr's focused pane.
     func testAClickBeforeACardDrewKeepsTheKeyboard() async throws {
         let (tab, first) = try await newTab("early click")
         let second = try await split(first)

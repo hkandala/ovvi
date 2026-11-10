@@ -1,6 +1,5 @@
 // A trackpad pinch: the pointer to x y (screen points, top left), then a magnify gesture that begins, changes by
-// `step` (0.1 is 10 % larger) `steps` times 16 ms apart and ends, as a trackpad sends. Posted to the HID system, as
-// swipe.swift's, and only over the tests' app's window.
+// `step` (0.1 is 10 % larger) `steps` times 16 ms apart and ends, as a trackpad sends.
 // Usage: pinch <x> <y> <step> <steps>
 import CoreGraphics
 import Foundation
@@ -24,8 +23,7 @@ func post(_ phase: Int64, _ magnification: Double) {
     Thread.sleep(forTimeInterval: 0.016)
 }
 
-CGWarpMouseCursorPosition(point)
-Thread.sleep(forTimeInterval: 0.3)
+warp(to: point)
 post(1, 0)
 for _ in 0 ..< Int(args[3]) {
     post(2, args[2])

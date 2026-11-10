@@ -5,6 +5,8 @@ DERIVED_DATA ?= .build/DerivedData
 XCODEBUILD := xcodebuild -project Ovvi.xcodeproj -scheme Ovvi -derivedDataPath $(DERIVED_DATA)
 MAC := -destination 'platform=macOS,arch=$(shell uname -m)'
 comma := ,
+# `git rebase -x` in a worktree exports GIT_DIR: the tests' own git repos would write to this one.
+unexport GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
 # Swift's warnings-as-errors leaves some concurrency warnings as warnings: any warning in our own sources fails. Matched
 # by the path in the repo, since the compiler prints a symlinked path (/tmp) where CURDIR is the real one; the warned
 # files are touched so the next build compiles them again and fails again (Xcode does not replay warnings).
@@ -16,7 +18,7 @@ setup:
 	brew bundle
 	git config core.hooksPath .githooks
 
-# Optional artwork export; Pillow is only needed when regenerating the committed icons.
+# Needs Pillow, which setup does not install.
 icons:
 	python3 scripts/app-icon.py
 
@@ -27,16 +29,9 @@ format:
 lint:
 	swiftformat --lint .
 	swiftlint lint --strict --quiet
-	@# No pattern kills in scripts and tests (playbook/lessons.md): kill the exact pids you started.
-	@if git grep -nwE 'p[k]ill|kill[a]ll' -- '*.sh' '*.py' '*.bash' '*.zsh' Makefile '.github/*' '.githooks/*'; then \
+	@if git grep -nwE 'p[k]ill|kill[a]ll' -- . ':!docs' ':!playbook' ':!resources'; then \
 		echo 'No pattern kills: kill the exact pids you started'; exit 1; fi
 
-# What the app carries for its plugins (.build/web, copied into its resources): the plugin API's runtime (ovvi.js,
-# checked against its types) and card.css, which every plugin's page loads; the host types package (plugin-api), which
-# the app writes into the plugins folder for tsc; the default plugins' source (defaults/<id>, no node_modules or
-# dist), which the app installs into the plugins folder on first launch and builds there with their own build scripts;
-# and the template a new plugin starts from (template). Each one is installed, type-checked (against
-# plugins/node_modules/@ovvi/plugin-api, a link to web/ovvi) and built here too, as a user's would be.
 PLUGINS := explorer git template
 web: web/node_modules/.package-lock.json $(PLUGINS:%=plugins/%/node_modules/.package-lock.json)
 	rm -rf .build/web
@@ -61,25 +56,21 @@ web/node_modules/.package-lock.json: web/package-lock.json
 build: web
 	$(XCODEBUILD) $(MAC) build $(NOWARN) $(BEAUTIFY)
 
-# The app and the UI tests, built but not run (CI's push checks).
 build-tests: web
 	$(XCODEBUILD) $(MAC) build-for-testing $(NOWARN) $(BEAUTIFY)
 
 test:
 	swift test --package-path Packages/HerdrKit --scratch-path $(DERIVED_DATA)/HerdrKit
-	@# The About window's Acknowledgements hold every icon license as build.mjs writes it.
 	python3 -c 'import pathlib, sys; texts = pathlib.Path("Ovvi/Acknowledgements.txt").read_text(); \
 		sys.exit([f"{f} is not in Ovvi/Acknowledgements.txt" for f in pathlib.Path("resources/icons/licenses").iterdir() \
 			if f.read_text().strip() not in texts] or None)'
-	@# cli.mdx shows the script Ovvi carries.
+	python3 scripts/check-settings.py
 	python3 -c 'import pathlib, sys; sys.exit("```sh\n" + pathlib.Path("Ovvi/Agent/ovvi.sh").read_text() + "```" not in \
 		pathlib.Path("docs/content/docs/agent-control/cli.mdx").read_text() and "cli.mdx: The script differs from Ovvi/Agent/ovvi.sh")'
 
-# Runs the UI tests against throwaway herdr sessions, removed even when tests fail.
 # ONLY=OvviUITests/OvviUITests/testA,OvviUITests/OvviUITests/testB runs just those.
 # SHARD=i/n runs shard i (0-based) of n, split by the tests' measured times (scripts/shard.py, scripts/test-times.tsv).
-# Without ONLY, the ON_DEMAND tests are left out: the stress tests, the cost and frame-record measurements and the
-# look scenes (minutes in all, numbers and screenshots more than behaviour; playbook/ci.md). ON_DEMAND_ONLY=1 runs only them (CI: the on_demand input).
+# Without ONLY, the ON_DEMAND tests (minutes in all) are left out; ON_DEMAND_ONLY=1 runs only them.
 ON_DEMAND := testHundredsOfPanesStayQuick testOverviewOfManyTabsStaysBounded testMemoryAndCPUOverManyTabs \
 	testOverviewCostsAndLetsGoAfter testSessionSwipeIntoManyTabsDrawsThemWithTheSidebar \
 	testATabComesIntoViewWithoutAFlicker testACardNeverShowsTheOverviewsSmallSnapshot \
@@ -105,10 +96,8 @@ e2e: web
 run: build
 	open "$(DERIVED_DATA)/Build/Products/Debug/Ovvi Dev.app" $(if $(SESSION),--args -session $(SESSION))
 
-# A Release Ovvi.app to copy into ~/Applications, and a disk image of it. Ad-hoc signed: fine on this Mac;
-# another Mac needs right-click > Open once, and notifications need a real signing identity.
-# Only install and dmg build the installed app's bundle id: a Release build run by hand (a measure) with it shared the
-# user's saved windows and defaults, and its windows came back at the user's next launch.
+# Ad-hoc signed: fine on this Mac; another Mac needs right-click > Open once, and notifications need a real signing
+# identity. Only install and dmg get the installed app's bundle id: macOS keys saved windows and defaults by it.
 BUNDLE_ID ?= dev.ovvi.app.release
 URL_SCHEME ?= ovvi-release
 install dmg: BUNDLE_ID = dev.ovvi.app
@@ -118,8 +107,7 @@ app: web
 		build $(NOWARN) $(BEAUTIFY)
 	@echo "$(DERIVED_DATA)/Build/Products/Release/Ovvi.app"
 
-# Also links the ovvi skill for pi and Codex (~/.agents/skills) and Claude Code (~/.claude/skills), where no ovvi
-# skill is; -f replaces a link whose checkout is gone.
+# ~/.agents/skills: pi and Codex; ~/.claude/skills: Claude Code. -f replaces a dangling link, for which -e is false.
 install: app
 	rm -rf ~/Applications/Ovvi.app
 	cp -R $(DERIVED_DATA)/Build/Products/Release/Ovvi.app ~/Applications/

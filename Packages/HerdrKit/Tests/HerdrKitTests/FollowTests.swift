@@ -2,7 +2,6 @@ import Foundation
 @testable import HerdrKit
 import Testing
 
-/// A follow's lines one by one, as its batches bring them.
 private func lineByLine(_ path: String, from mark: FileMark,
                         skip: String = "0") async throws -> AsyncStream<FollowedLine>
 {
@@ -18,8 +17,6 @@ private func lineByLine(_ path: String, from mark: FileMark,
     return stream
 }
 
-/// The chat's file follower on This Mac (the relay runs the same script): a file made late, a split write, a resume
-/// from a mark, a rotated file, and a big file read whole.
 @Test func `follow reads whole lines and goes on from its mark`() async throws {
     let folder = FileManager.default.temporaryDirectory.appending(path: "ovvi-follow-\(UUID().uuidString)")
     try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -36,7 +33,6 @@ private func lineByLine(_ path: String, from mark: FileMark,
     try Data("a\n{\"b\":".utf8).write(to: file)
     guard case let .opened(first, restarted)? = await lines.next() else { Issue.record("not opened"); return }
     #expect(restarted && first.offset == 0)
-    // `loaded` before the line still being written.
     guard case .line("a", _)? = await lines.next(), case .loaded? = await lines.next() else {
         Issue.record("no a"); return
     }
@@ -45,13 +41,11 @@ private func lineByLine(_ path: String, from mark: FileMark,
     #expect(line == #"{"b":2}"#)
     #expect(mark.offset == 10)
 
-    // A new run from the mark reads only what came since.
     try append("c\n")
     var again = try await lineByLine(file.path, from: mark).makeAsyncIterator()
     guard case .opened(_, false)? = await again.next(), case .line("c", _)? = await again.next() else {
         Issue.record("no resume"); return
     }
-    // Rotated: another file under the name starts again.
     try FileManager.default.removeItem(at: file)
     try Data("d\n".utf8).write(to: file)
     var rotated = try await lineByLine(file.path, from: mark).makeAsyncIterator()
@@ -59,7 +53,6 @@ private func lineByLine(_ path: String, from mark: FileMark,
         Issue.record("no restart"); return
     }
 
-    // A new file is read whole, from its first line, also past 256 KiB; then `loaded`.
     let big = folder.appending(path: "big.jsonl")
     try Data(("first\n" + String(repeating: "é", count: 150_000) + "\nlast\n").utf8).write(to: big)
     var whole = try await lineByLine(big.path, from: FileMark()).makeAsyncIterator()
@@ -69,8 +62,6 @@ private func lineByLine(_ path: String, from mark: FileMark,
     #expect(end.offset == 300_012)
 }
 
-/// Skipped lines never come, but the mark counts their bytes; `loaded` comes at the open's last whole line, before the
-/// line still being written.
 @Test func `follow skips the lines no parser reads`() async throws {
     let file = FileManager.default.temporaryDirectory.appending(path: "ovvi-skip-\(UUID().uuidString).jsonl")
     defer { try? FileManager.default.removeItem(at: file) }
@@ -88,14 +79,14 @@ private func lineByLine(_ path: String, from mark: FileMark,
     #expect(last.offset == 61)
 }
 
-/// A follow dropped in the middle of its backlog sends no more of it: a remote one would flood the relay, and through
-/// awk a `head` left behind would hang on the FIFO. (Without awk, this Mac's reader drains the pipe before the kill.)
+/// Through awk a `head` left behind would hang on the FIFO. Without awk, this Mac's reader drains the pipe ahead of
+/// the kill.
 @Test(.timeLimit(.minutes(1))) func `a dropped follow stops its backlog`() async throws {
     let file = FileManager.default.temporaryDirectory.appending(path: "ovvi-drop-\(UUID().uuidString).jsonl")
     defer { try? FileManager.default.removeItem(at: file) }
     let line = String(repeating: "x", count: 999)
     try Data(String(repeating: line + "\n", count: 20000).utf8).write(to: file)
-    let channel = try await localExec.run(["sh", "-c", TerminalStream.observeWrapper, "sh", "sh", "-c",
+    let channel = try await localExec.run(["sh", "-c", observeWrapper, "sh", "sh", "-c",
                                            ProcessExec.followScript, "sh", file.path, "0", "", "/^skip/"])
     var after = 0, closed = false
     for await text in channel.lines where text == line {
@@ -103,8 +94,7 @@ private func lineByLine(_ path: String, from mark: FileMark,
             channel.closeInput()
             closed = true
             // A slow reader, as a relay over SSH: it reads on once the kill landed (no process has the file in its
-            // argv), with the pipes full. A fixed wait ran out on a starved Mac before the kill came, and the
-            // reader drained the whole backlog meanwhile.
+            // argv), with the pipes full. A set wait runs out on a starved Mac ahead of the kill.
             let end = ContinuousClock.now + .seconds(20)
             while try await !localExec.output(["pgrep", "-f", file.lastPathComponent]).isEmpty {
                 try #require(ContinuousClock.now < end, "the follow's processes outlived the kill")
@@ -117,9 +107,8 @@ private func lineByLine(_ path: String, from mark: FileMark,
     #expect(after < 10000)
 }
 
-/// A follow dropped just as its backlog ends, as a chat card scrolled past or the app quit, leaves no process: macOS's
-/// sh lost the wrapper's one kill (pending in its trap as it went on to `exec tail`), and `tail` lived on. awk's
-/// pattern holds the file's name, so a left awk shows too.
+/// macOS's sh can lose the wrapper's one kill (pending in its trap as it goes on to `exec tail`), and `tail` then
+/// lives on. awk's pattern holds the file's name, so a left awk shows too.
 @Test(.timeLimit(.minutes(3)), arguments: [false, true])
 func `a dropped follow leaves no process`(awk: Bool) async throws {
     let file = FileManager.default.temporaryDirectory.appending(path: "ovvi-left-\(UUID().uuidString).jsonl")
@@ -146,8 +135,8 @@ func `a dropped follow leaves no process`(awk: Bool) async throws {
 }
 
 /// A pi session can pass 100 MB: its backlog loads at `head`'s speed (0.9 s at a load of 15), not at macOS `tail`'s
-/// 17 MB a second (5.3 s). Measured against `tail` on the same file just before, so a busy Mac slows both, from each
-/// one's first line to its last: the follow starts a dozen processes before it reads, `tail` one, and on a starved Mac
+/// 17 MB a second (5.3 s). Measured against `tail` on the same file, so a busy Mac slows both, from each one's first
+/// line to its last: the follow starts a dozen processes ahead of its first read, `tail` one, and on a starved Mac
 /// a process can take seconds to start.
 @Test func `a big backlog loads fast`() async throws {
     let file = FileManager.default.temporaryDirectory.appending(path: "ovvi-backlog-\(UUID().uuidString).jsonl")
@@ -170,8 +159,6 @@ func `a dropped follow leaves no process`(awk: Bool) async throws {
     #expect(follow < tail / 2, "follow \(follow), tail \(tail)")
 }
 
-/// A burst written at once (150 turns of a long session) comes in one or two batches to a reader that is busy, as the
-/// app is while it draws: not one batch per line, each of which would draw the chat again.
 @Test func `a burst comes in few batches`() async throws {
     let file = FileManager.default.temporaryDirectory.appending(path: "ovvi-burst-\(UUID().uuidString).jsonl")
     defer { try? FileManager.default.removeItem(at: file) }
@@ -213,8 +200,6 @@ func `a dropped follow leaves no process`(awk: Bool) async throws {
     #expect(await lines.next() == #"{"status":"busy"}"#)
 }
 
-/// A recorded session with lines of the kinds its parser skips, in their real shapes: followed with the parser's
-/// pattern, it gives the same history as the whole file, from fewer lines.
 @Test(arguments: [
     ("claude-transcript", ClaudeTranscript.unread, [
         #"{"type":"api-request-blob","sessionId":"s","hash":"h","blob":"x"}"#,

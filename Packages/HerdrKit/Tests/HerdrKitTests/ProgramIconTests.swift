@@ -27,22 +27,17 @@ private func icon(agent: String? = nil, _ program: Program? = nil, title: String
 
 @Test func `herdr's agent wins`() {
     #expect(icon(agent: "claude", Program(name: "node"), title: "π - x") == "claude")
-    // An agent the catalog does not know falls through to the process.
     #expect(icon(agent: "someday", Program(name: "vim")) == "vim")
 }
 
 @Test func `the process matches by name, argv0, a Node CLI's script first`() {
     #expect(icon(Program(name: "vim")) == "vim")
     #expect(icon(Program(name: "nvim-wrapper", argv0: "/opt/homebrew/bin/nvim")) == "neovim")
-    // A login shell's dash; a nested shell is a program of its own.
     #expect(icon(Program(name: "-bash")) == "bash")
-    // A Node CLI run through its bin link: the link's name.
     #expect(icon(Program(name: "node", argv0: "node", script: "/opt/homebrew/bin/gemini")) == "gemini")
-    // Through the package's own path: its suffix (the name, node, would say Node.js otherwise).
     let piCLI = Program(name: "node", argv0: "node", script: "/x/node_modules/@earendil/pi-coding-agent/dist/cli.js")
     #expect(icon(piCLI) == "pi")
     #expect(icon(Program(name: "node", argv0: "node", script: "server.js")) == "node")
-    // Only a runtime's script counts: vim editing a file named git is vim.
     #expect(icon(Program(name: "vim", script: "git")) == "vim")
 }
 

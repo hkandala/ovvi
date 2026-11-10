@@ -1,7 +1,5 @@
 import XCTest
 
-/// Actions: close, zoom, new tab and workspace, the palette. Session one's t1 is
-/// p1 | (p2 / p3), t2 "second" holds p4; w2 is "beta".
 extension OvviUITests {
     func testClosingAPaneAsksUnlessOnlyItsShellRuns() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
@@ -9,13 +7,11 @@ extension OvviUITests {
         let second = try await split(first)
         element("tab.\(tab)").click()
 
-        // Something besides the shell runs: the app asks, and Esc keeps the pane.
         try await runSleep(second)
         hoverHeader(second)
         element("pane.\(second).close").click()
         let confirm = app.sheets.buttons["Close Pane"]
         XCTAssertTrue(confirm.exists(within: 2))
-        // Red, and still Return's (below).
         XCTAssertTrue(until(2) { isRed(confirm) })
         XCTAssertTrue(app.sheets.staticTexts["sleep is running in it and will end, here and in every herdr client. "
                 + "This cannot be undone."].exists)
@@ -23,19 +19,16 @@ extension OvviUITests {
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(confirm.vanishes(within: 2))
         XCTAssertTrue(element("pane.\(second)").exists)
-        // Return is the dialog's default button: it closes the pane.
         hoverHeader(second)
         element("pane.\(second).close").click()
         XCTAssertTrue(confirm.exists(within: 2))
         app.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(element("pane.\(second)").vanishes(within: 3))
 
-        // Only the shell (its startup over): the card goes at once.
         try await waitForPrompt(first)
         hoverHeader(first)
         element("pane.\(first).close").click()
         XCTAssertTrue(element("pane.\(first)").vanishes(within: 3))
-        // It asks herdr what runs after the card went: a wrong answer would ask late.
         XCTAssertFalse(confirm.exists(within: 1))
     }
 
@@ -52,12 +45,11 @@ extension OvviUITests {
         try await typeAndRead(right)
     }
 
-    /// A tab asks only while a pane of it runs a program, and names it (D41).
     func testClosingATabAsksOnlyWhileAProgramRuns() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("doomed")
         let second = try await split(pane)
-        // Its startup over too: a startup program would make the second close ask.
+        // A startup program still running would make the second close ask.
         try await waitForPrompt(pane)
         try await runSleep(second)
         let row = element("tab.\(tab)")
@@ -72,10 +64,9 @@ extension OvviUITests {
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(confirm.vanishes(within: 2))
 
-        // Only the shells: it closes at once.
         try await Self.call(one, "pane.send_keys", ["pane_id": second, "keys": ["ctrl+c"]])
         try await expect("the shell to be back") { try await !foreground(second).contains("sleep") }
-        // Off and back on: the pointer stayed on the capsule under the dialog, which saw no hover end, so no new start.
+        // Off and back on: the capsule under the dialog saw no hover end, so a hover there starts nothing.
         app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.9)).hover()
         row.hover()
         element("tab.\(tab).close").click()
@@ -102,7 +93,6 @@ extension OvviUITests {
         try await send("cd /usr\r", to: "w1:p2")
         element("terminal.w1:p2").click()
 
-        // ⌘T: the new tab opens in /usr and has the keyboard; ⌘W there closes it (only its shell runs).
         var pane = try await commandT()
         try await waitForPrompt(pane)
         pickTerminal(pane)
@@ -111,7 +101,6 @@ extension OvviUITests {
         app.typeKey("w", modifierFlags: .command)
         XCTAssertTrue(element("tab.\(tab)").vanishes(within: 3))
 
-        // After a zoom and a restore by double-click, ⌘T still knows the card.
         element("tab.w1:t1").click()
         let header = element("pane.w1:p2").coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 40, dy: 17))
         header.doubleClick()
@@ -135,7 +124,6 @@ extension OvviUITests {
 
     func testNewWorkspaceAppearsSelected() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        // From the second tab, after the sidebar was hidden and shown: a new workspace once came up blank then.
         element("tab.w1:t2").click()
         element("titlebar.sidebar").click()
         XCTAssertTrue(element("sidebar.filter").vanishes(within: 2))
@@ -169,13 +157,11 @@ extension OvviUITests {
         XCTAssertEqual(card.frame.width, page.width, accuracy: 2)
         try await expectPTYSize("w1:p2")
         keepScreenshot("zoom")
-        // Clicks and keys reach the zoomed terminal, not a hidden one under it.
         element("terminal.w1:p2").click()
         app.typeText("echo ovvi-zoom-$((6*7))")
         app.typeKey(.return, modifierFlags: [])
         try await waitFor("w1:p2") { $0.contains("\novvi-zoom-42") }
-        // The hidden cards keep their size: the same rows, and the columns within one (CI's 1x display rounds the
-        // hidden card's width differently).
+        // The columns within one: CI's 1x display rounds a hidden card's width differently.
         try await send("clear; stty size\r", to: "w1:p3")
         let grid = neighbor.split(separator: " ").compactMap { Int($0) }
         try await waitFor("w1:p3") { text in
@@ -227,8 +213,6 @@ extension OvviUITests {
     func testPaletteEnterTakesTheMovedRowAndKeysFollow() async throws {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         openPalette()
-        // "show": Show Overview, then Show Previous Tab (the menu's order); ↓ moves down to it, and t1 steps round to
-        // t2.
         app.typeText("show")
         XCTAssertTrue(element("palette.command.Show Overview").has(\.isSelected, true, within: 2))
         app.typeKey(.downArrow, modifierFlags: [])

@@ -1,20 +1,9 @@
 import Foundation
 
 extension SSHExec {
-    /// The remote command envelope (talking-to-herdr#running-commands): the machine's login shell may be bash, zsh or
-    /// fish, so it gets only base64, which every shell passes through; `sh` decodes and runs the quoted argv.
-    public static func envelope(_ argv: [String]) -> String {
-        #"sh -c 'eval "$(printf %s "$1" | base64 -d)"' sh "# + Data(quoted(argv).utf8).base64EncodedString()
-    }
-
-    static func quoted(_ argv: [String]) -> String {
-        argv.map { "'" + $0.replacingOccurrences(of: "'", with: #"'\''"#) + "'" }.joined(separator: " ")
-    }
-
-    /// The askpass helper's mark on a question it passes to the app (`start`).
     static let question = "ovvi-askpass "
 
-    /// The sockets' folder: per user, 0700, no spaces; a socket path stays under the 104-byte limit.
+    /// Per user, 0700, no spaces; a socket path stays under the 104-byte limit.
     static let folder: String = {
         let path = URL.cachesDirectory.appending(path: "ovvi").path(percentEncoded: false)
         try? FileManager.default.createDirectory(atPath: path, withIntermediateDirectories: true,
@@ -22,8 +11,7 @@ extension SSHExec {
         return path
     }()
 
-    /// The askpass helper, written beside the sockets on the first connect that may ask. A `none` prompt (a
-    /// security key's touch) only informs: it gets no question.
+    /// A `none` prompt (a security key's touch) only informs: it gets no question.
     static let askpass: String = {
         let path = folder + "/askpass"
         let script = """

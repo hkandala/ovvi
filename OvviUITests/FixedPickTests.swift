@@ -1,11 +1,6 @@
 import XCTest
 
-/// Settings ▸ General ▸ New panes open (ui/new-pane#a-fixed-pick): a new pane makes the set pick with no chooser; ⌥
-/// brings the chooser back.
 extension OvviUITests {
-    /// Settings ▸ General ▸ New panes open Browser (ui/new-pane#a-fixed-pick): ⌘D's stand-in shows the browser's
-    /// loader, never the chooser, also while herdr has not answered, and the pane becomes a browser; a split button's
-    /// ⌥-click shows the chooser.
     func testAFixedPickSkipsTheChooserAndOptionShowsIt() async throws {
         relaunch(one, ["-newPaneOpens", "browser"])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
@@ -29,7 +24,11 @@ extension OvviUITests {
         let browser = try await poll("a browser pane") { () async throws -> String? in
             // The chooser's pane closes as the browser's takes its place: read again then.
             let new = try await self.replaced(left, in: tab, besides: [left])
-            return try? await self.paneLabel(new).hasPrefix("ovvi:browser#") == true ? new : nil
+            do {
+                return try await self.paneLabel(new).hasPrefix("ovvi:browser#") ? new : nil
+            } catch is Failed {
+                return nil
+            }
         }
         XCTAssertTrue(hasKeyboard(element("browser.\(browser).address")))
         keepScreenshot("fixed pick browser")
@@ -45,8 +44,6 @@ extension OvviUITests {
         XCTAssertTrue(terminal.vanishes(within: 2))
     }
 
-    /// New panes open Terminal: ⌘T and ⌘D give a shell at once, with no chooser. Keys typed before herdr made the pane
-    /// go to the new shell in the order typed (text, then ← ×9, then text), none to the old one.
     func testAFixedTerminalTakesTheKeysTypedBeforeItsPane() async throws {
         relaunch(one, ["-newPaneOpens", "terminal"])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
@@ -82,8 +79,6 @@ extension OvviUITests {
         XCTAssertTrue(hasKeyboard("terminal.\(split)"))
     }
 
-    /// With a fixed pick, View ▸ Pane's splits have ⌥ items that show the chooser. Settings shows the pick and offers
-    /// every kind.
     func testAFixedPicksMenuItemsAndSetting() async throws {
         relaunch(one, ["-newPaneOpens", "terminal"])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
@@ -96,7 +91,7 @@ extension OvviUITests {
         submenu.hover()
         let alternate = submenu.menuItems["Split Right and Choose…"]
         XCTAssertTrue(alternate.exists(within: 2))
-        let main = app.windows.matching(NSPredicate(format: "identifier BEGINSWITH 'main-'")).firstMatch
+        let main = mainWindows.firstMatch
         XCUIElement.perform(withKeyModifiers: .option) {
             let shot = XCTAttachment(screenshot: main.screenshot())
             (shot.name, shot.lifetime) = ("split alternate", .keepAlways)

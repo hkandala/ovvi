@@ -1,20 +1,14 @@
 import AppKit
+import SwiftUI
 import UniformTypeIdentifiers
 import WebKit
 
-/// The web view, which takes the keyboard as a terminal does (`PaneSurfaceView`): now, or once it is in a window.
 class BrowserView: WKWebView {
     var onKeyboard: (() -> Void)?
-    /// A key the card takes before the page (its "Open this page?").
     var onKey: ((NSEvent) -> Bool)?
     private var wantsKeyboard = false
-    /// Open ‹Link› in New Tab or Open Link to the Side was picked: the page asks for its new window next
-    /// (`createWebViewWith`).
+    /// WebKit asks for the picked link's new window next (`createWebViewWith`).
     var opens: Opening?
-    /// In an overview's tile (D70): keys go to the overview; a claim waits until the card has it back.
-    var inTile = false
-    /// The page's last picture (`takePicture`): its overview tile, and its card's while a card made again loads.
-    /// Observed: a tile shows it as it comes.
     let shot = Shot()
     @MainActor @Observable final class Shot {
         var image: CGImage?
@@ -28,24 +22,21 @@ class BrowserView: WKWebView {
         // `_inspector show` opens nothing without it.
         configuration.preferences.setValue(true, forKey: "developerExtrasEnabled")
         self.init(frame: .zero, configuration: configuration)
-        // Safari's Develop menu reaches every card.
         isInspectable = true
         allowsBackForwardNavigationGestures = true
         allowsMagnification = true
     }
 
-    /// The key window's browser that has the keyboard: ⌘+ ⌘− ⌘0 zoom its page.
     static var focused: BrowserView? {
-        // Not a web card's: it keeps its text size, and the keys size the terminals' text.
-        (NSApp.keyWindow?.firstResponder as? BrowserView).flatMap { $0 is WebCardView ? nil : $0 }
+        // Not a web card (a subclass): there the keys size the terminals' text.
+        (NSApp.keyWindow?.firstResponder as? BrowserView).flatMap { type(of: $0) == BrowserView.self ? $0 : nil }
     }
 
     func takeKeyboard() {
         wantsKeyboard = true
         // After SwiftUI's update: a first responder set during one is undone.
         DispatchQueue.main.async { [weak self] in
-            // Not in a kept page out of view (the overview's): it takes it as the page shows (`viewDidUnhide`).
-            guard let self, wantsKeyboard, !inTile, let window, !isHiddenOrHasHiddenAncestor else { return }
+            guard let self, wantsKeyboard, let window, !isHiddenOrHasHiddenAncestor else { return }
             wantsKeyboard = false
             asking = true
             window.makeFirstResponder(self)
@@ -53,17 +44,14 @@ class BrowserView: WKWebView {
         }
     }
 
-    /// The app's own ask (`takeKeyboard`), which `becomeFirstResponder` lets through.
     private var asking = false
 
-    /// With no page (a card that asks "Open this page?", or is empty), the menu first: WebKit sends the key to a page
-    /// that is not there, which drops it (⌘1–⌘9).
+    /// With no page, the menu first: WebKit sends the key to the missing page, which drops it.
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         url == nil && window?.firstResponder === self && NSApp.mainMenu?.performKeyEquivalent(with: event) == true
             || super.performKeyEquivalent(with: event)
     }
 
-    /// Per card, ⌘+ ⌘− ⌘0 while it has the keyboard (the font size items); 0 resets, the pinch's magnification too.
     func zoom(_ step: Int) {
         pageZoom = step == 0 ? 1 : min(3, max(0.5, pageZoom + CGFloat(step) * 0.1))
         if step == 0 {
@@ -71,9 +59,8 @@ class BrowserView: WKWebView {
         }
     }
 
-    /// The menu holds no address: a New Tab item (and a link's to the Side) sends its New Window item's action, which
-    /// asks for a new window with the link's address, and `opens` makes that a tab or a side pane. No downloads: the
-    /// app does not save them.
+    /// WebKit's menu items hold no address: a relay sends the New Window item's action, and `opens` makes its window a
+    /// tab or a side pane.
     override func willOpenMenu(_ menu: NSMenu, with event: NSEvent) {
         super.willOpenMenu(menu, with: event)
         opens = nil
@@ -101,8 +88,7 @@ class BrowserView: WKWebView {
         NSApp.sendAction(action, to: item.target, from: item)
     }
 
-    /// A pick WebKit never asked a window for (New Tab on a `mailto:` link) must not make the page's next popup a tab
-    /// (also from a key, `keyDown`).
+    /// A pick WebKit asks no window for (New Tab on a `mailto:` link) must not make the page's next popup a tab.
     override func mouseDown(with event: NSEvent) {
         opens = nil
         super.mouseDown(with: event)
@@ -115,11 +101,9 @@ class BrowserView: WKWebView {
         }
     }
 
-    /// A picture was taken (the registry counts it under its cap).
     var pictured: (() -> Void)?
 
-    /// At 1x (6 MB for a full-window card on Retina, not 24): a tile is scaled down, a card shows it while loading.
-    /// About 8 ms in WebKit's process, also out of a window.
+    /// At 1x: 6 MB for a full-window card on Retina, not 24. About 8 ms in WebKit's process, also out of a window.
     func takePicture(then taken: ((CGImage) -> Void)? = nil) {
         guard !bounds.isEmpty, url != nil else { return }
         let configuration = WKSnapshotConfiguration()
@@ -135,9 +119,8 @@ class BrowserView: WKWebView {
         }
     }
 
-    /// WebKit claims every drag over the page, whatever it carries (WKWebView's `_hitTest:dragTypes:`), so a card's
-    /// drop zones would never hear of a pane dragged over it. The app's own drags go on to them; WebKit decides the
-    /// rest (files, text), so a page can take an upload.
+    /// WebKit claims every drag over the page, whatever it carries, so a card's drop zones would never hear of a pane
+    /// dragged over it.
     @objc(_hitTest:dragTypes:) private func hitTest(_ point: UnsafeMutablePointer<NSPoint>,
                                                     dragTypes types: NSSet?) -> NSView?
     {
@@ -147,8 +130,7 @@ class BrowserView: WKWebView {
 
     private static let dragHit = NSSelectorFromString("_hitTest:dragTypes:")
     private typealias DragHit = @convention(c) (AnyObject, Selector, UnsafeMutablePointer<NSPoint>, NSSet?) -> NSView?
-    /// WebKit's own answer (NSView's, if WebKit stops overriding it). A private method: if its shape ever changes,
-    /// nil, so a drag reaches the card's drop zones and never the page, instead of reading a wrong argument.
+    /// A private method: if its shape changes, nil, so a drag reaches the drop zones instead of a wrong argument.
     private static let webKitHit: DragHit? = {
         guard let method = class_getInstanceMethod(WKWebView.self, dragHit),
               let types = method_getTypeEncoding(method), String(cString: types) == "@32@0:8^{CGPoint=dd}16@24"
@@ -174,20 +156,14 @@ class BrowserView: WKWebView {
         }
     }
 
-    override var acceptsFirstResponder: Bool {
-        !inTile && super.acceptsFirstResponder
-    }
-
-    /// Only for the app's ask or a click. WebKit makes the view first responder itself when its page focuses an
-    /// element (a page or a Markdown card that loads), which took the keys of the palette and of the keyboard card
-    /// (a new browser card's address). By then they resigned: the panel's field takes them back (`FilterField`), else
-    /// the keyboard card, which is this card when it is the keyboard card. A floating window's card has its window.
+    /// WebKit makes the view first responder itself when its page focuses an element, which would take the keys of the
+    /// palette or the keyboard card. By then they resigned, so they take them back.
     override func becomeFirstResponder() -> Bool {
         let click = [.leftMouseDown, .rightMouseDown, .otherMouseDown].contains(NSApp.currentEvent?.type)
         if !asking, !click, let window, let pages = WindowPages.windows.first(where: { $0.window === window }) {
             DispatchQueue.main.async {
                 if pages.panelOpen {
-                    NotificationCenter.default.post(name: .panelKeysTaken, object: nil)
+                    NotificationCenter.default.post(name: FilterField.panelKeysTaken, object: nil)
                 } else {
                     pages.current?.focusKeyboardCard()
                 }
@@ -202,14 +178,75 @@ class BrowserView: WKWebView {
     }
 }
 
-extension Notification.Name {
-    /// A web view's page asked for the keys of an open panel, which its field had given up.
-    static let panelKeysTaken = Notification.Name("dev.ovvi.panelKeysTaken")
-}
-
 extension NSWindow {
-    /// A panel of the window's (the palette, Open Session) has its keys: no card takes them.
     var panelOpen: Bool {
         WindowPages.windows.first { $0.window === self }?.panelOpen == true
+    }
+}
+
+extension WKWebView {
+    /// No public API shows it; cmux ships this.
+    var inspector: NSObject? {
+        let selector = NSSelectorFromString("_inspector")
+        return responds(to: selector) ? perform(selector)?.takeUnretainedValue() as? NSObject : nil
+    }
+
+    var inspectorShown: Bool {
+        // KVC on a name WebKit dropped would throw.
+        guard let inspector, inspector.responds(to: NSSelectorFromString("isVisible")) else { return false }
+        return inspector.value(forKey: "visible") as? Bool == true
+    }
+
+    func toggleInspector() {
+        if inspectorShown {
+            inspector?.perform(NSSelectorFromString("close"))
+        } else {
+            showInspector()
+        }
+    }
+
+    func showInspector() {
+        let show = NSSelectorFromString("show")
+        guard let inspector, inspector.responds(to: show) else { return }
+        // Docked each time: WebKit keeps the last choice of a window in the app's defaults.
+        // ponytail: WebKit's private key; if it changes, the inspector opens where the user left it.
+        UserDefaults.standard.removeObject(forKey: "__WebInspectorPageGroupLevel1__.WebKit2InspectorStartsAttached")
+        inspector.perform(show)
+    }
+}
+
+struct WebHost: NSViewRepresentable {
+    let view: WKWebView
+    let hidden: Bool
+
+    func makeNSView(context _: Context) -> SettlingHost {
+        let host = SettlingHost(), box = NSView()
+        host.clipsToBounds = true
+        // WebKit docks the Web Inspector beside the web view by frames that take y as growing upward: in a plain box,
+        // which the (flipped) host fits.
+        host.addSubview(box)
+        adopt(box)
+        return host
+    }
+
+    func updateNSView(_ host: SettlingHost, context _: Context) {
+        if host.isHidden, !hidden, let box = host.subviews.first {
+            adopt(box)
+        }
+        host.hide(hidden)
+    }
+
+    /// As `TerminalHost.adopt`: a shown host takes the web view, a hidden one only a view no host has, and takes it as
+    /// its kept page comes into view.
+    private func adopt(_ box: NSView) {
+        guard view.superview !== box, !hidden || view.superview == nil else { return }
+        view.removeFromSuperview()
+        // The new host's zero size would lay the page out again and draw it blank.
+        if box.frame.isEmpty {
+            box.frame.size = view.frame.size
+        }
+        view.frame = box.bounds
+        view.autoresizingMask = [.width, .height]
+        box.addSubview(view)
     }
 }

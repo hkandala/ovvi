@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// A live session with no space (ui/states): Ovvi's icon over what a space is, then New Space and Open Folder….
 struct EmptySession: View {
     let page: Page
 

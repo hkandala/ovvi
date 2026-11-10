@@ -13,7 +13,6 @@ import Testing
 }
 
 @Test func `word starts beat letters inside words`() {
-    // "sd" lands on "Split Down"'s word starts; inside "Inside" it does not.
     #expect("Split Down".fuzzyScore("sd") == 1)
     #expect("Inside".fuzzyScore("sd") == 3)
     #expect("light dark".fuzzyScore("dark") == 0)
@@ -21,6 +20,5 @@ import Testing
 }
 
 @Test func `the best start wins`() {
-    // Greedy from the first "a" breaks; from the second it does not.
     #expect("a xab".fuzzyScore("ab") == 1)
 }

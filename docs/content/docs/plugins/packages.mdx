@@ -71,7 +71,8 @@ The install commands:
   package's own `build` script runs, and only after the user confirms it.
 - No peer dependency installs. `@ovvi/plugin-api` is the app's, and it is
   not on the npm registry ([Types](/docs/plugins/api#types)).
-- A command that runs over 10 minutes stops. A failure shows its last 20
+- A fetch (`npm pack`, `tar`, `git clone`, `git checkout`) stops after 5
+  minutes, and an install or build command after 10 minutes. A failure shows its last 20
   lines, and the plugin's log has the whole output.
 - An id that another package already has is refused: "The id ‹id› is taken
   by ‹folder›". So is a folder name that is already in the plugins folder.
@@ -107,9 +108,13 @@ The install commands:
   |---|---|---|
   | Update | npm and git installs ("Install" while its folder is missing) | fetches the source again. It does not ask again, unless the new version has another id |
   | Update to Version ‹x.y.z›, Reset to Default | the defaults, when the app offers it | [The default plugins](#the-default-plugins) |
-  | Show Log | every plugin but the browser | opens `<id>.log` in the app for `.log` files (Console) |
-  | Reload | every plugin but the browser | runs its build script and loads its cards again ([Reload](/docs/plugins/building#reload)) |
-  | Remove… | every plugin but the defaults | asks, then takes it off the list, takes its id out of `trust.json`, forgets its settings, and moves its folder to the Trash. A local path's folder stays where it is |
+  | Show Log | every installed plugin but the browser | opens `<id>.log` in the app for `.log` files (Console) |
+  | Reload | every installed plugin but the browser | runs its build script and loads its cards again ([Reload](/docs/plugins/building#reload)) |
+
+- **Remove…**, in a section of its own at the end of the page, "Remove
+  ‹name›" (every plugin but the defaults): asks, then takes it off the list,
+  takes its id out of `trust.json`, forgets its settings, and moves its
+  folder to the Trash. A local path's folder stays where it is.
 
 - **Its settings**, drawn from the manifest's `settings`
   ([Settings](/docs/plugins/manifest#settings)). A change is saved at once
@@ -158,9 +163,7 @@ package of an id wins, in this order:
 
 A package that is left out (a bad manifest, a taken id, a listed path with no
 `package.json`) is written to the log under the folder's name. A bad manifest
-also goes under the manifest's id when the id reads. The words of the kinds before the plugin system
-(`file`, `preview`, `markdown`, `files`, `diff`) are taken: they open File
-Explorer or Git.
+also goes under the manifest's id when the id reads.
 
 ## The default plugins
 
@@ -177,8 +180,8 @@ app's own build.
 - **They are the user's.** The user or an agent can edit them, then press
   Reload Plugin. They never ask for a confirmation.
 - **An app with a newer version** (the package's `version`) replaces an
-  unedited copy at launch. An older app never replaces a copy, so a Debug and
-  a Release build can share the folder.
+  unedited copy at launch. An older app never replaces a copy, so the installed
+  app and another Release build (`make app`) can share the folder.
 - **An edited copy**, or a copy whose source differs from the app's at the
   same version, stays. Its page offers **Update to Version ‹x.y.z›**
   (a newer version) or **Reset to Default**. For an edited copy it asks

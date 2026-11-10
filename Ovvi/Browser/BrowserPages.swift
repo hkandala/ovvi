@@ -3,10 +3,8 @@ import HerdrKit
 import WebKit
 
 extension Browser: WKNavigationDelegate {
-    /// The card shows the page once its document is parsed and drew, not when it finished: an image, a font or a fetch
-    /// that never answers (a stalled server, a dead connection after a sleep) kept the loader over a page that was
-    /// there, and Reload kept it too. In a world of the app's own, so the page's scripts see nothing. Weak: a hidden
-    /// page draws no frame, and a dropped card must not wait for one.
+    /// Not at `didFinish`: an image, a font or a fetch that never answers would keep the loader over a drawn page.
+    /// Weak: a hidden page draws no frame, and a dropped card must not wait for one.
     func webView(_ webView: WKWebView, didCommit _: WKNavigation!) {
         failure = nil
         loaded = true
@@ -54,8 +52,7 @@ extension Browser: WKNavigationDelegate {
         }
     }
 
-    /// The system ends a page's process (memory pressure, a long sleep): the page loads again by itself, once per load;
-    /// one that ends it again before it loaded says so, with Reload, instead of a blank card.
+    /// The system ends a page's process under memory pressure or after a long sleep.
     func webViewWebContentProcessDidTerminate(_: WKWebView) {
         guard !reloaded else {
             ready = true
@@ -66,8 +63,7 @@ extension Browser: WKNavigationDelegate {
         reload()
     }
 
-    /// A `mailto:` or an app's link clicked in the page goes to its app; the page stays. Never from script or a frame.
-    /// A ⌘-clicked link opens in a new tab, a ⌥-clicked one to the side (WebKit's download).
+    /// WebKit downloads a ⌥-clicked link.
     func webView(_: WKWebView, decidePolicyFor action: WKNavigationAction) async -> WKNavigationActionPolicy {
         let flags = action.modifierFlags
         if action.navigationType == .linkActivated, !flags.isDisjoint(with: [.command, .option]),
@@ -75,8 +71,7 @@ extension Browser: WKNavigationDelegate {
         {
             return .cancel
         }
-        // A remote page's link or redirect to `localhost` means its machine's, sent as it is (an OAuth `form_post`
-        // keeps its body). The content rule blocks the rest (`proxy`).
+        // Sent as it is: an OAuth `form_post` keeps its body.
         if alias != nil, action.targetFrame?.isMainFrame == true, let url = action.request.url,
            Self.loopback.contains(url.host?.lowercased() ?? "")
         {
@@ -100,9 +95,7 @@ extension Browser: WKNavigationDelegate {
 }
 
 extension Browser: WKUIDelegate {
-    /// `window.open` (an OAuth popup keeps its opener) in a sheet over the card. A link that asks for a new window
-    /// (`target=_blank`, also `rel=opener`: WebKit does not say) and Open Link in New Tab open a tab; a form that
-    /// does, and a page no label can hold (`blob:`), load in the card.
+    /// An OAuth popup needs its opener, and WebKit does not say whether a `target=_blank` link has `rel=opener`.
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration,
                  for action: WKNavigationAction, windowFeatures _: WKWindowFeatures) -> WKWebView?
     {
@@ -168,7 +161,6 @@ extension Browser: WKUIDelegate {
 }
 
 extension Browser {
-    /// The page takes the keyboard back if the popup had it: one that closes itself leaves the user's typing alone.
     func closePopup() {
         let had = popup.map { $0.view.window?.firstResponder === $0.view } ?? false
         popup = nil
@@ -177,19 +169,17 @@ extension Browser {
         }
     }
 
-    /// A new tab is left in the background, as Safari does. The user picked the link: its origin is approved, so the
-    /// new card loads it. False for an address a label cannot hold.
+    /// The user picked the link, so its origin is approved.
     func openTab(_ link: URL, side: Bool) -> Bool {
         // Not `mailto:`: `url` reads an address without `://` as a host.
         guard ["http", "https", "file"].contains(link.scheme?.lowercased() ?? ""), let store,
               let pane = store.pane(paneID), let workspace = store.workspace(of: pane.tabID),
-              let url = Self.url(Self.shown(link, alias).absoluteString, local: !store.machine.isRemote)
+              let url = url(Self.shown(link, alias).absoluteString)
         else { return false }
         approve(url)
         let label = store.newLabel(Registry.browser, arg: url.absoluteString)
-        // On the network of the card it came from, whatever the setting for new cards.
         if store.machine.isRemote {
-            Self.keep(viaMac, "\(store.session)/\(label.iid)", store.machine)
+            Self.keep(viaMac, label, store)
         }
         Task {
             await store.write {
@@ -213,7 +203,6 @@ extension Browser {
         }
     }
 
-    /// `[href, base64 or null]`; just the href when it is the one the card has. At most 1 MiB, in 5 s.
     private static let iconScript = """
     const link = document.querySelector('link[rel~=icon]')
     const href = link ? link.href : new URL('/favicon.ico', location.href).href

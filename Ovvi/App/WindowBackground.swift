@@ -13,13 +13,13 @@ struct WindowBackground: View {
     }
 }
 
-/// The Glass window's blur of the desktop. SwiftUI's materials blur only what is inside the window.
+/// SwiftUI's materials blur only what is inside the window.
 private struct Frosted: NSViewRepresentable {
     func makeNSView(context _: Context) -> NSVisualEffectView {
         let view = NSVisualEffectView()
         view.blendingMode = .behindWindow
         view.material = .hudWindow
-        // Blurred in an inactive window too, so the look holds.
+        // AppKit's default drops the blur in an inactive window.
         view.state = .active
         return view
     }

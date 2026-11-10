@@ -1,4 +1,3 @@
-/* Preview (preview.ts): the image centered in a scroll view, the PDF's pages, the player. */
 .scroller {
   display: flex;
   height: 100%;

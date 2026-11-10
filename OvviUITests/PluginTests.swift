@@ -1,12 +1,6 @@
 import XCTest
 
-/// Plugin panes: a herdr pane labeled `ovvi:<plugin>#<iid> <arg>` with a placeholder, shown as its plugin's card
-/// with two header rows.
 extension OvviUITests {
-    /// The chooser's Git and ⌘K Open File Explorer Here make labeled panes in the pane's place, rooted at its git
-    /// repository (a linked open's new tab: GitTests). File Explorer cards of a file from their labels (also an old
-    /// `preview` one), their tabs titled by kind and file (the dirty dot: FileTests). The cards come back after a
-    /// relaunch.
     func testPluginPanesOpenFromTheChooserThePaletteAndLinks() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("plugins")
@@ -28,7 +22,6 @@ extension OvviUITests {
         let diffLabel = try await paneLabel(diff)
         XCTAssertTrue(diffLabel.hasPrefix("ovvi:git#") && diffLabel.hasSuffix(" \(root)/"), diffLabel)
         XCTAssertTrue(element("git.\(diff).card").exists(within: 3))
-        // The Git home, titled by its root.
         XCTAssertTrue(element("pane.\(diff).title").has(\.stringValue, "ovvi-e2e-plugins", within: 3))
         try await waitFor(diff) { $0.contains("Git") && $0.contains("Shown in Ovvi") }
 
@@ -52,8 +45,6 @@ extension OvviUITests {
         XCTAssertTrue(element("git.\(diff).card").exists)
     }
 
-    /// A plugin pane with only a shell (as herdr brings one back after a restart, or as a pane labeled by hand) gets
-    /// its placeholder typed in, in place of the shell.
     func testAPluginPaneWithAShellGetsItsPlaceholder() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let reply = try await Self.call(one, "layout.apply", ["workspace_id": "w2", "focus": false, "root": [
@@ -64,15 +55,12 @@ extension OvviUITests {
         let pane: String = try field((layout?["root"] as? [String: Any])?["pane_id"], "layout's pane")
         closeAfter("tab", tab)
         try await waitFor(pane) { $0.contains("File Explorer") && $0.contains("Shown in Ovvi") }
-        let info = try await Self.call(one, "pane.process_info", ["pane_id": pane])
-        let names = ((info["process_info"] as? [String: Any])?["foreground_processes"] as? [[String: Any]] ?? [])
-            .compactMap { $0["name"] as? String }
+        let names = try await foreground(pane)
         XCTAssertTrue(names.contains("cat"), "\(names)")
 
-        // A shell pane the app has known for a while, labeled a card later as an agent does (a rename sends no event;
-        // the metadata token makes the app read the layout). zsh at its prompt with a line half typed, as the user's
-        // pane was: zsh turns bracketed paste on, so herdr pastes text into it, and a ⌃U in the text was a plain
-        // character (`command not found: ^U`); as a key it clears the line.
+        // A rename sends no herdr event; the metadata token makes the app read the layout. zsh turns bracketed paste
+        // on, so herdr pastes text into it, and a ⌃U in the text is a plain character (`command not found: ^U`); as a
+        // key it clears the line.
         let (relabel, shell) = try await newTab("relabel")
         try await show(relabel)
         try await waitForPrompt(shell)
@@ -81,35 +69,27 @@ extension OvviUITests {
         try await waitFor(shell) { $0.trimmingCharacters(in: .whitespacesAndNewlines).hasSuffix("%") }
         try await send("half typed", to: shell)
         try await waitFor(shell) { $0.contains("% half typed") }
-        // The app knows its shell: the card's title leads with it.
         let title = element("pane.\(shell).title")
         XCTAssertTrue(until(10) { title.stringValue.contains("sh ") }, title.stringValue)
-        try await Self.call(one, "pane.rename", ["pane_id": shell, "label": "ovvi:explorer#e2epl2 /tmp/"])
-        try await Self.call(one, "pane.report_metadata", ["pane_id": shell, "source": "ovvi-panes",
-                                                          "tokens": ["ovvi-label": "1"], "ttl_ms": 1000])
+        try await self.relabel(shell, "ovvi:explorer#e2epl2 /tmp/")
         try await waitFor(shell) { $0.contains("Shown in Ovvi") }
     }
 
-    /// A card pane whose saved folder went while herdr was stopped comes back with no program ("Saved directory is
-    /// unavailable"): the app makes it again in its place under the same label, with its placeholder.
     func testACardWhoseFolderWentComesBackWithItsPlaceholder() async throws {
-        let five = try env("OVVI_SESSION5")
         let (workspace, _) = try await shown(running(five))
         relaunch(five)
-        // A shell in session one, which keeps running.
         let (tab, shell) = try await createTab(in: "w2", label: "gone")
         closeAfter("tab", tab)
         try await waitForPrompt(shell)
         let folder = "/tmp/ovvi-e2e-gone", label = "ovvi:explorer#e2egon /tmp/"
         try await send("mkdir -p \(folder) && clear && echo made-$((6*7))\r", to: shell)
         try await waitFor(shell) { $0.contains("made-42") }
-        // Made as a card was made in the folder it was opened from.
         let reply = try await Self.call(five, "layout.apply", ["workspace_id": workspace, "focus": false, "root": [
             "type": "pane", "cwd": folder, "label": label, "command": ["sh", "-c", "cat", "sh"],
         ]])
         let old: String = try field(((reply["layout"] as? [String: Any])?["root"] as? [String: Any])?["pane_id"],
                                     "layout's pane")
-        addTeardownBlock { _ = try? await Self.call(five, "pane.close", ["pane_id": old]) }
+        closeAfter("pane", old, in: five)
         try await Self.post("\(five)/stop")
         XCTAssertTrue(element("detail.start").exists(within: 10))
         try await send("rm -rf \(folder) && clear && echo gone-$((6*7))\r", to: shell)
@@ -117,23 +97,20 @@ extension OvviUITests {
         try await Self.post("\(five)/start")
         let made = try await poll("the card made again", times: 200) { () async throws -> String? in
             // The started server's socket comes a moment after the start.
-            guard let snapshot = try? await Self.snapshot(five) else { return nil }
+            guard let snapshot = try await answer(five) else { return nil }
             let panes = snapshot["panes"] as? [[String: Any]] ?? []
             let card = panes.first { $0["label"] as? String == label }
             guard panes.allSatisfy({ $0["pane_id"] as? String != old }),
                   card?["restore_error"] == nil else { return nil }
             return card?["pane_id"] as? String
         }
-        addTeardownBlock { _ = try? await Self.call(five, "pane.close", ["pane_id": made]) }
+        closeAfter("pane", made, in: five)
         try await waitFor(made, in: five) { $0.contains("File Explorer") && $0.contains("Shown in Ovvi") }
     }
 
-    /// A card per file page: its card and page, Open With on This Mac, the tab's title.
     private func fileCards(in repo: String, root: String) async throws {
-        for (word, page, name) in [("explorer", "file", "main.swift"), ("preview", "preview", "icon.png"),
-                                   ("explorer", "markdown", "notes.md")]
-        {
-            let (tab, pane) = try await newCard("ovvi:\(word)#e2e42\(page.prefix(1)) \(root)/\(name)", cwd: repo)
+        for (page, name) in [("file", "main.swift"), ("preview", "icon.png"), ("markdown", "notes.md")] {
+            let (tab, pane) = try await newCard("ovvi:explorer#e2e42\(page.prefix(1)) \(root)/\(name)", cwd: repo)
             XCTAssertTrue(element("explorer.\(pane).card").exists(within: 5))
             XCTAssertTrue(element("\(page).\(pane).page").exists)
             XCTAssertTrue(element("pane.\(pane).title").has(\.stringValue, name, within: 3))
@@ -144,9 +121,6 @@ extension OvviUITests {
 }
 
 extension OvviUITests {
-    /// The registry: packages in the plugins folder and the settings' local paths get chooser rows after
-    /// Git, by id, and Open ‹chooser› Here; a bad manifest and a taken id are left out. A label naming a plugin not on
-    /// this Mac shows its missing card, whose Show Placeholder shows the pane's terminal.
     func testTheRegistryListsUserPackagesAndShowsAMissingPlugin() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("registry")
@@ -154,7 +128,7 @@ extension OvviUITests {
         let config = "/tmp/ovvi-e2e-config"
         try await send(packages(in: config) + "\r", to: pane)
         try await waitFor(pane) { $0.contains("made-42") }
-        relaunch(nil, ["-configFolder", config])
+        relaunch(one, ["-configFolder", config])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         element("workspace.w2").click()
 
@@ -170,7 +144,6 @@ extension OvviUITests {
         XCTAssertLessThan(row("git").frame.minY, row("kanban").frame.minY)
         XCTAssertLessThan(row("kanban").frame.minY, row("notes").frame.minY)
         keepScreenshot("user plugins in the chooser")
-        // Terminal, Agent, Browser, File Explorer, Git, Kanban, Notes: a folder plugin's label names the folder.
         app.typeKey("7", modifierFlags: [])
         let notes = try await replaced(new, in: newTab, besides: [])
         let label = try await paneLabel(notes)
@@ -187,8 +160,6 @@ extension OvviUITests {
         try await send("rm -rf \(config)\r", to: pane)
     }
 
-    /// Show in New Pane on Kanban's page in Settings, turned off: the chooser has no Kanban row, and settings.json says
-    /// so.
     private func hidesFromNewPane(_ shell: String, config: String) async throws {
         app.menuBars.menuBarItems["Ovvi"].click()
         app.menuBars.menuItems["Plugins…"].click()
@@ -203,7 +174,6 @@ extension OvviUITests {
             + "&& echo hidden-$((6*7))\r", to: shell)
         try await waitFor(shell) { $0.contains("hidden-42") }
         settingsWindow.buttons["_XCUI:CloseWindow"].click()
-        // The main window takes the keys again.
         element("terminal.\(shell)").click()
         let before = try await tabIDs()
         closeNew("tab", besides: before)
@@ -214,8 +184,6 @@ extension OvviUITests {
         app.typeKey(.escape, modifierFlags: [])
     }
 
-    /// A shell line that writes the config folder: two good packages (one from the settings' local path), a bad
-    /// manifest, and a second `explorer`.
     private func packages(in config: String) -> String {
         func package(_ id: String, _ more: String) -> String {
             #"{"version":"1.0.0","description":"\#(id) rows","ovvi":{"id":"\#(id)","name":"\#(id)","api":1,"#
@@ -235,7 +203,6 @@ extension OvviUITests {
             + " && clear && echo made-$((6*7))"
     }
 
-    /// A label naming a plugin not on this Mac: its card, then the pane's terminal.
     private func missingCard() async throws {
         let pane = try await newCard("ovvi:csv-table#e2emis /tmp/data.csv").pane
         XCTAssertTrue(element("pane.\(pane).missing").has(\.stringValue, "csv-table is not on this Mac", within: 5))

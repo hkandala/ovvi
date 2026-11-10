@@ -15,31 +15,19 @@ import itertools
 import json
 import os
 import queue
-import select
 import shutil
-import signal
 import socketserver
-import subprocess
 import sys
-import termios
 import threading
 import time
-import tty
+
+import stand_in
+from stand_in import key, say, terminal
 
 if os.environ.get("OVVI_STAND_IN_REFUSE") == "1" and "--port" in sys.argv:
     sys.exit("Unrecognized flag: --port")
 plain = "--port" not in sys.argv
-folder = os.path.join(os.environ.get("TMPDIR", "/tmp"), "ovvi-stand-in")
-os.makedirs(folder, exist_ok=True)
-# herdr prompts an agent only while a process of its name runs in the foreground: run again as `opencode`.
-if os.environ.get("OVVI_STAND_IN") != "1":
-    os.environ["OVVI_STAND_IN"] = "1"
-    app = os.path.join(sys.base_prefix, "Resources/Python.app/Contents/MacOS/Python")
-    link = os.path.join(folder, "opencode")
-    if os.path.islink(link):
-        os.remove(link)
-    os.symlink(app if os.path.exists(app) else os.path.realpath(sys.executable), link)
-    os.execv(link, [link, os.path.abspath(__file__)] + sys.argv[1:])
+stand_in.run_as("opencode", __file__)
 
 password = os.environ.get("OPENCODE_SERVER_PASSWORD")
 state_file = None if plain else os.environ.get("OVVI_OC_STATE")
@@ -170,7 +158,6 @@ class Server(http.server.BaseHTTPRequestHandler):
 
 
 def ask(kind, request):
-    """Asks through the server and waits for the reply (the chat's), or for 1 typed in the terminal."""
     request_id = new_id(kind[:3])
     request = {"id": request_id, "sessionID": session, **request}
     with lock:
@@ -191,25 +178,6 @@ def ask(kind, request):
     return answer
 
 
-def report(state):
-    subprocess.run([os.environ["HERDR_BIN_PATH"], "--session", os.environ["HERDR_SESSION"], "pane", "report-agent",
-                    "--source", "ovvi-e2e", "--agent", "opencode", "--state", state, os.environ["HERDR_PANE_ID"]],
-                   capture_output=True)
-
-
-def say(text):
-    sys.stdout.write(text.replace("\n", "\r\n") + "\r\n")
-    sys.stdout.flush()
-
-
-def key(timeout=None):
-    """The next input, without its bracketed paste marks; "" after `timeout`."""
-    if not select.select([0], [], [], timeout)[0]:
-        return ""
-    data = os.read(0, 4096).decode(errors="replace")
-    return data.replace("\x1b[200~", "").replace("\x1b[201~", "")
-
-
 def command(entry, text, output):
     tool = part(entry, "tool", tool="bash", callID=new_id("call"),
                 state={"status": "running", "input": {"command": text}, "time": {"start": now()}})
@@ -224,7 +192,7 @@ def answer(entry, text):
     part(entry, "text", text=text, time={"start": now(), "end": now()})
     finish(entry, finish="stop")
     status("idle")
-    report("idle")
+    stand_in.report("idle")
     say(text)
 
 
@@ -236,27 +204,27 @@ def prompt(text):
     user = message("user")
     part(user, "text", text=text)
     status("busy")
-    report("working")
+    stand_in.report("working")
     entry = message("assistant", parentID=user["info"]["id"])
     if text == "allow":
-        report("blocked")
+        stand_in.report("blocked")
         say("Permission required: touch allowed.txt  1. Allow once")
         tool = command(entry, "touch allowed.txt", None)
         reply = ask("permission", {"permission": "bash", "patterns": ["touch allowed.txt"],
                                    "metadata": {"command": "touch allowed.txt"}, "always": ["touch *"],
                                    "tool": {"messageID": entry["info"]["id"], "callID": tool["callID"]}})["reply"]
-        report("working")
+        stand_in.report("working")
         tool["state"] = {"status": "completed" if reply != "reject" else "error", "input": tool["state"]["input"],
                          "output": "", "error": "Rejected", "time": {"start": tool["state"]["time"]["start"],
                                                                       "end": now()}}
         update(tool)
         answer(entry, "Allowed." if reply != "reject" else "Rejected.")
     elif text == "ask":
-        report("blocked")
+        stand_in.report("blocked")
         say("Which color? 1. Red 2. Blue")
         chosen = ask("question", {"questions": [{"question": "Which color?", "header": "Color", "options": [
             {"label": "Red", "description": ""}, {"label": "Blue", "description": ""}]}]})["answers"][0][0]
-        report("working")
+        stand_in.report("working")
         answer(entry, "You chose " + chosen + ".")
     elif text == "pick":
         write_state(dialog=True)
@@ -272,7 +240,7 @@ def prompt(text):
             escapes += key(deadline - time.time()).count("\x1b")
         finish(entry, error={"name": "MessageAbortedError", "data": {"message": "Aborted"}})
         status("idle")
-        report("idle")
+        stand_in.report("idle")
         say("interrupted")
     else:
         time.sleep(0.5)
@@ -289,16 +257,11 @@ def main():
         server.daemon_threads = True
         url = "http://127.0.0.1:%d" % server.server_address[1]
         threading.Thread(target=server.serve_forever, daemon=True).start()
-    # A closed pane hangs up: clean up as on Ctrl-C.
-    signal.signal(signal.SIGHUP, lambda *_: sys.exit(0))
-    attributes = termios.tcgetattr(0)
-    tty.setraw(0)
-    sys.stdout.write("\x1b[?2004h")
-    say("OpenCode stand-in " + url)
-    write_state()
-    report("idle")
-    line = ""
-    try:
+    with terminal(cleanup):
+        say("OpenCode stand-in " + url)
+        write_state()
+        stand_in.report("idle")
+        line = ""
         while True:
             data = key()
             if "\x03" in data or "\x04" in data:
@@ -312,11 +275,11 @@ def main():
             say("")
             if text.strip():
                 prompt(text.strip())
-    finally:
-        signal.signal(signal.SIGHUP, signal.SIG_IGN)
-        if state_file:
-            shutil.rmtree(os.path.dirname(state_file), ignore_errors=True)
-        termios.tcsetattr(0, termios.TCSADRAIN, attributes)
+
+
+def cleanup():
+    if state_file:
+        shutil.rmtree(os.path.dirname(state_file), ignore_errors=True)
 
 
 main()

@@ -1,4 +1,3 @@
-/* The Markdown place (markdown.ts): the outline column, then the one editor, locked or not. */
 [data-place="markdown"] {
   display: flex;
   overflow: hidden;
@@ -36,17 +35,13 @@ nav button:hover {
   background: color-mix(in srgb, var(--text) 8%, transparent);
 }
 
-/* The live preview (live.ts): CodeMirror's lines drawn as rendered Markdown, the same locked or not. */
-/* Headings: h1 to h3 larger, h4 to h6 at the body size, all semibold with GitHub's 1.25 line height. The space above
-   and below is in the heading's own em, so a bigger heading gets more, and more above than below. Padding, not margin:
-   CodeMirror's height map leaves margins out. `.cm-line` in the selector beats CodeMirror's own `.cm-line` padding. A
-   blank source line around a heading adds a body line. */
+/* GitHub's 1.25 line height. Padding, not margin: CodeMirror's height map leaves margins out. `.cm-line` in the
+   selector beats CodeMirror's own `.cm-line` padding. */
 .cm-line:is(.cm-md-h1, .cm-md-h2, .cm-md-h3, .cm-md-h4, .cm-md-h5, .cm-md-h6) {
   line-height: 1.25;
   padding-top: 0.6em;
   padding-bottom: 0.2em;
 }
-/* A heading on the document's first line sits at the column's top padding. */
 .cm-content > :is(.cm-md-h1, .cm-md-h2, .cm-md-h3, .cm-md-h4, .cm-md-h5, .cm-md-h6):first-child {
   padding-top: 0;
 }
@@ -64,7 +59,6 @@ nav button:hover {
   color: var(--accent);
   text-decoration: none;
 }
-/* A drawn link: locked, and unlocked off the caret's line (on it a link shows its source and a click edits). */
 .cm-reading a:hover,
 .cm-content > :not(.cm-activeLine) a:hover {
   text-decoration: underline;
@@ -90,19 +84,15 @@ nav button:hover {
 .cm-md-pre-first.cm-md-pre-last {
   border-radius: 8px;
 }
-/* An indented block's padding, as a fenced block's fences give it. */
 .cm-md-pre-first:not(.cm-md-fence) {
   padding-top: 5px;
 }
 .cm-md-pre-last:not(.cm-md-fence) {
   padding-bottom: 5px;
 }
-/* A fence off the caret's line: no text, the code block's padding. */
 .cm-line.cm-md-fence {
   line-height: 10px;
 }
-/* A line's indent: a 12 px step per quote around it (`--quotes`, each with a 3 px bar) plus its list item's hang
-   (`--hang`), both set by live.ts. */
 .cm-line.cm-md-quote,
 .cm-line.cm-md-hang {
   padding-left: calc(var(--quotes, 0) * 12px + var(--hang, 0em) + 6px);
@@ -115,14 +105,12 @@ nav button:hover {
   background-size: calc(var(--quotes) * 12px) 100%;
   background-repeat: no-repeat;
 }
-/* A list item's bullet, number or task box at the end of its indent (live.ts's INDENT and GAP). */
 .cm-md-bullet {
   display: inline-block;
   margin-right: 0.4em;
   text-align: right;
   text-indent: 0;
 }
-/* A task's box: centered on the line's x-height, filled with the accent and a white check when ticked. */
 .cm-md-bullet input {
   appearance: none;
   box-sizing: border-box;
@@ -150,7 +138,6 @@ nav button:hover {
   vertical-align: middle;
   border-top: 1px solid var(--divider);
 }
-/* Breaks a word only when it alone is wider than the card, so a table's columns keep their words whole. */
 .cm-md-block {
   white-space: normal;
   word-break: normal;
@@ -172,7 +159,7 @@ nav button:hover {
   padding: 4px 10px;
   border: 1px solid var(--divider);
 }
-/* Every code element, also inline HTML's `<code>` and `<samp>`: WebKit's own default is a serif Courier. */
+/* WebKit's own default for `<code>` and `<samp>` is a serif Courier. */
 .cm-editor code,
 .cm-editor samp {
   font: 0.9em ui-monospace, monospace;
@@ -213,7 +200,6 @@ nav button:hover {
   max-width: 100%;
 }
 
-/* Source (split.ts): the source, the divider with its fold button, the rendered page. */
 main:has(> .split-divider) {
   display: flex;
 }
@@ -258,7 +244,6 @@ main[data-folded] > .cm-editor:last-child {
   -webkit-mask: var(--sf-chevron-right) center / contain no-repeat;
   mask: var(--sf-chevron-right) center / contain no-repeat;
 }
-/* Folded, the button sits inside the card's right edge and points back. */
 main[data-folded] .split-fold {
   left: -16px;
 }

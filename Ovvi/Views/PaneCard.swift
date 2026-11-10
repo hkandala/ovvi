@@ -1,31 +1,25 @@
 import HerdrKit
 import SwiftUI
 
-/// A translucent card: a header with the pane's title and buttons, and its terminal.
 struct PaneCard: View {
-    /// The header's height, and the terminal's inset from the card's sides (the overview's miniatures too).
     static let header: CGFloat = 36
     static let inset: CGFloat = 10
-    /// A browser's or an agent's second header row.
+
+    static func terminalSize(_ size: CGSize, header: CGFloat) -> CGSize {
+        CGSize(width: max(size.width - 2 * inset, 1), height: max(size.height - header - gap, 1))
+    }
+
     static let row: CGFloat = 32
-    /// A floating window's browser or plugin card: room above its row, which sits right under the title row. Its 22 pt
-    /// buttons, centered in the 36 pt row, then sit as far from the card's top edge as from its left (11 pt), and as
-    /// far from what is under the row: the browser's page after as much room again, a plugin's page
-    /// after its own 4 pt at its top.
     static let floatingTop: CGFloat = 4
     let id: String
     let page: Page
-    /// Under a zoomed card: hidden, but there, so its terminal keeps its size.
     let away: Bool
     @State private var hovering = false
-    /// A dragged pane over this card: an edge, or the center (`.some(nil)`).
     @State private var zone: Heading??
     @State private var size = CGSize.zero
-    /// Lit when its page last showed: a kept page out of view keeps it, so showing again changes no web card's theme.
     @State private var keptLit = false
     @Environment(\.appearsActive) private var active
     @Environment(\.look) private var look
-    /// In a kept page out of view (`TabPages`).
     @Environment(\.pageHidden) private var hidden
     private var settings = AppSettings()
 
@@ -34,8 +28,6 @@ struct PaneCard: View {
         let pane = store.pane(id)
         let zoomed = page.zoomedPaneID == id
         let terminal = pane.flatMap(page.terminal)
-        // The tab's keyboard card is lit, also while a text field has the keyboard; herdr's focus until one had it.
-        // A split's new card at once, its stand-in too, among the shown tab's cards; a new tab's stand-in.
         // Not read in a kept page out of view: each split changes them (the shown tab's tree, its newest card, the
         // keyboard), which would run every kept card's body again at each change.
         let shown = hidden ? [] : page.selectedTab?.tree?.paneIDs ?? []
@@ -47,11 +39,8 @@ struct PaneCard: View {
             ?? pane.map { page.keyboardCard($0.tabID) === $0 } ?? (id == page.standIn)
         let floated = pane.map(page.floats) ?? false
         let follow = hovering && settings.followMouse && !away && active && !floated
-        // The watching window's dim (D66), on the header and the terminal.
         let content = page.watched ? 0.85 : 1
-        // A new pane's chooser hides its terminal (ui/new-pane).
         let chooser = store.chooser(id), (browser, plugin) = page.cards(pane, make: !hidden)
-        // An agent Ovvi started with its flags: its chat or its terminal (ui/chat-view).
         let chat = chooser == nil && !floated ? pane.flatMap(page.store.chat) : nil
         VStack(spacing: 0) {
             header(
@@ -62,8 +51,8 @@ struct PaneCard: View {
                 chat: chat,
             )
             .opacity(content)
-            // A ZStack, not a Group: a Group's modifiers go on each child, so the chooser's overlay would be made
-            // again (a fade out and in) as the terminal comes, and dropped with no child (a stand-in's card).
+            // A ZStack, not a Group: a Group's modifiers go on each child, so the chooser's overlay would be made again
+            // (a fade out and in) as the terminal comes, and dropped with no child (a stand-in's card).
             ZStack {
                 if let pane, floated {
                     FloatedPlaceholder(page: page, pane: pane)
@@ -72,7 +61,6 @@ struct PaneCard: View {
                 } else if let plugin {
                     PluginCard(plugin: plugin, page: page)
                 } else if let pane, let label = pane.plugin, terminal == nil {
-                    // No card (a plugin with no page of its own): its last picture, else the loader.
                     if let plugin = label.manifest {
                         if let picture = pane.terminalID.flatMap(page.terminals.picture) {
                             CardPicture(picture: picture, pane: pane)
@@ -90,7 +78,6 @@ struct PaneCard: View {
                             hidden: hidden,
                         ) } }
                 } else if let terminal {
-                    // Rex's text starts 12 pt in from the card's edge.
                     TerminalCard(terminal: terminal, watched: page.watched, alpha: chooser == nil ? content : 0)
                         .overlay {
                             if let find = page.find, find.paneID == id {
@@ -98,8 +85,6 @@ struct PaneCard: View {
                             }
                         }
                         .padding(.horizontal, Self.inset).padding(.bottom, gap)
-                        // The terminal sends a right click here (without ⌥, see `PaneSurfaceView`), as herdr opens
-                        // its pane menu. Copy and the rest act on this terminal, not on the keyboard card.
                         .contextMenu {
                             TerminalItems(view: terminal.view)
                             PaneItems(page: page, pane: pane)
@@ -107,7 +92,6 @@ struct PaneCard: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity).environment(\.litCard, lit)
-            // The card's menu also over the chooser, which takes the terminal's clicks.
             .overlay {
                 NewPaneOverlay(chooser: floated ? nil : chooser, page: page, cardID: id)
                     .contextMenu { PaneItems(page: page, pane: pane) }
@@ -118,16 +102,16 @@ struct PaneCard: View {
                 }
             }
         }
-        // The whole card, also with no terminal (a split's stand-in): else the empty content takes no room and the
-        // card is a header-high band.
+        // The whole card, also with no terminal (a split's stand-in): else the empty content takes no room and the card
+        // is a header-high band.
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .onChange(of: lit, initial: true) {
             if !hidden {
                 keptLit = lit
             }
         }
-        // As the card shows: what runs in it now, for its icon (the snapshot's ask was when the pane was new). Not
-        // the view's task: a page that leaves at once (a quick switch) would cancel it. Hidden, it gets no hover end.
+        // Not the view's task: a page that leaves at once (a quick switch) would cancel it. Hidden, it gets no hover
+        // end.
         .onChange(of: hidden, initial: true) {
             if hidden {
                 hovering = false
@@ -138,14 +122,10 @@ struct PaneCard: View {
         .clipShape(CardSurface.shape)
         // The card's element is its background: a container would merge into a one-pane page's.
         .background {
-            CardSurface(keyboard: lit).accessibilityElement().accessibilityLabel(page.cardLabel(pane))
-                // A plain element has no value in XCUITest; the static text trait gives it one.
-                .accessibilityAddTraits(.isStaticText)
-                // "loading" until herdr's frames settled at the card's size.
-                .accessibilityValue(terminal.map { !$0.ready && !$0.state.isFailed } == true ? "loading" : "")
+            CardSurface(keyboard: lit)
+                .readableText(terminal.map { $0.state.isFailed ? "failed" : $0.ready ? "" : "loading" } ?? "")
+                .accessibilityLabel(page.cardLabel(pane))
                 .accessibilityIdentifier("pane.\(id)")
-                // The buttons show on hover only and the context menu is on the header: VoiceOver acts on the card,
-                // and VO-Shift-M opens its menu, which has every tab (made only when it opens).
                 .accessibilityActions { PaneActions(page: page, pane: pane) }
                 .contextMenu { PaneItems(page: page, pane: pane) }
         }
@@ -175,12 +155,9 @@ struct PaneCard: View {
         .clearsDrop(page) { zone = nil }
         .onHover { hovering = $0 }
         .task(id: follow) {
-            // Focus follows mouse: a pointer resting 0.15 s on another card, in a key window, no mouse button
-            // down, no text field typing, not under a zoomed card. Checked every 0.15 s while it rests, so a
-            // rename or a drag that ends under it still counts; once (keys may move the keyboard away again).
             guard follow, !lit else { return }
             while await (try? Task.sleep(for: .milliseconds(150))) != nil {
-                // Not after the page went to another tab (a palette pick): hover lasts until the mouse moves.
+                // Not once the page is on another tab (a palette pick): hover lasts until the mouse moves.
                 guard let pane = store.pane(id), pane.tabID == page.selectedTab?.id,
                       page.keyboardCard(pane.tabID) !== pane else { return }
                 // No button down, no open menu (hover stays on while one tracks), no text field typing.
@@ -195,13 +172,12 @@ struct PaneCard: View {
         .accessibilityHidden(away)
     }
 
-    /// `new`: the chooser shows (ui/new-pane), and the title says so. A browser's, a plugin's or an agent's card has a
-    /// second row with its kind's controls; a terminal's has one row.
     private func header(_ pane: HostStore.Pane?, zoomed: Bool, showsButtons: Bool, new: Bool, chat: Chat?)
         -> some View
     {
-        let (browser, plugin) = page.twoRows(pane) ? page.cards(pane, make: !hidden) : (nil, nil)
-        let agent = page.twoRows(pane) && pane?.plugin == nil
+        let twoRows = page.twoRows(pane)
+        let (browser, plugin) = twoRows ? page.cards(pane, make: !hidden) : (nil, nil)
+        let agent = twoRows && pane?.plugin == nil
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 3) {
                 title(pane, new: new, browser: browser, agent: agent)
@@ -209,8 +185,6 @@ struct PaneCard: View {
                     DirtyDot(paneID: id)
                 }
                 Spacer(minLength: 0)
-                // Hidden, they take no width from a narrow card. A zoomed card has only Restore and Close.
-                // Not on a split's or a new tab's empty card before herdr has its pane (`Ahead`).
                 if showsButtons, pane != nil {
                     buttons(zoomed: zoomed)
                 }
@@ -226,7 +200,6 @@ struct PaneCard: View {
                     let name = pane.agentLabel ?? pane.programName ?? ""
                     Text("\(name) \(Text(pane.folder ?? "").foregroundStyle(.secondary))")
                         .fontWeight(.regular).lineLimit(1).truncationMode(.middle).allowsHitTesting(false)
-                    // The agent's state on this row, clear of the title and of the buttons that show on hover.
                     CardState(chat: chat, state: pane.state, paneID: id).padding(.leading, 4)
                     Spacer(minLength: 0)
                     if let chat {
@@ -238,17 +211,12 @@ struct PaneCard: View {
                 .frame(height: Self.row)
             }
         }
-        // Also with a web card's row not made yet.
         .frame(height: page.headerHeight(pane), alignment: .top)
         .fontWeight(.medium)
-        // Rex's glyph sits 13.5 pt in and its title 30.5 pt.
         .padding(.leading, 11).padding(.trailing, 8)
-        // A card narrower than its header cuts the header (the card clips) instead of growing.
         .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-        // Behind the header, so its buttons still take their own clicks.
         .background {
             Color.clear.contentShape(.rect).onTapGesture(count: 2) { page.zoom(id) }
-                // The drag image is the whole card: the header starts at its top left.
                 .dragSource(.pane(id), page: page, previewSize: size)
         }
         .contextMenu { PaneItems(page: page, pane: pane) }
@@ -259,12 +227,9 @@ struct PaneCard: View {
         if let browser {
             BrowserIcon(browser: browser)
         } else if !agent {
-            // Clicks pass through to the header's double-click.
             ProgramGlyph(icon: pane?.iconID ?? "terminal", letter: pane?.letter).allowsHitTesting(false)
         }
         if page.renamingPaneID == id {
-            // Enter: herdr's label (an empty one clears it); the snapshot after it shows it. A click elsewhere
-            // keeps the keyboard and the selection where it went.
             RenameField(prompt: "Pane Name", initial: pane?.label ?? "", commit: { label in
                 Task { await page.store.rename(pane: id, label: label) }
             }, end: { stopRenaming(pane) }, blur: { page.renamingPaneID = nil })
@@ -294,7 +259,6 @@ private extension PaneCard {
         let store = page.store
         return HStack(spacing: 2) {
             if !zoomed {
-                // Lit on a floated pane's card, where it brings the window to the front.
                 IconButton(symbol: "pip.enter", help: "Float Pane", size: 22,
                            accent: store.pane(id).map(page.floats) == true, action: {
                                if let pane = store.pane(id) {
@@ -334,8 +298,8 @@ private extension PaneCard {
     }
 }
 
-/// The pane's menu items, with Move Pane to Tab's every tab of the session: their own view, so they are made when
-/// the menu opens, not in each card's body (300 tab titles per card, at every change of one).
+/// Their own view, so they are made when the menu opens, not in each card's body (300 tab titles per card, at every
+/// change of one).
 private struct PaneItems: View {
     let page: Page
     let pane: HostStore.Pane?
@@ -345,9 +309,8 @@ private struct PaneItems: View {
     }
 }
 
-/// VoiceOver's actions on the card, Move Pane to Tab ▸ flattened to New Tab and New Workspace: any accessibility
-/// client makes SwiftUI build them with the card, and one per tab made a switch to a big session 3 times
-/// slower. Their own view, as the menu items are.
+/// Move Pane to Tab ▸ flattened to New Tab and New Workspace: any accessibility client makes SwiftUI build them with
+/// the card, and one per tab makes a switch to a big session 3 times slower.
 private struct PaneActions: View {
     let page: Page
     let pane: HostStore.Pane?
@@ -363,7 +326,6 @@ private struct PaneActions: View {
     }
 }
 
-/// The keyboard card's border among two or more shown cards (ui/window), at once: no fade as the keyboard moves.
 private struct ActiveBorder: View {
     let id: String
     let shown: Bool

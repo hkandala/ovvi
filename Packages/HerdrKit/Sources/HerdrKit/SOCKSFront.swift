@@ -3,14 +3,11 @@ import Network
 import os
 import Synchronization
 
-/// A remote machine's proxy for its browser cards (ui/browser#remote-localhost): SOCKS5 on a loopback port of
-/// the app's own, in front of ssh's `-D` on the machine's ControlMaster. It does two things ssh's does not: a page that
-/// asks for `<name>.localhost` reaches the machine's `localhost`, so the machine need not resolve `*.localhost`; and a
-/// connection the machine cannot open gets a "refused" reply at once (ssh closes it without a reply, and WebKit then
-/// waits 60 s).
+/// In front of ssh's `-D`: a page that asks for `<name>.localhost` reaches the machine's `localhost`, so the
+/// machine need not resolve `*.localhost`; and a connection the machine cannot open gets a "refused" reply at
+/// once (ssh closes it without a reply, and WebKit then waits 60 s).
 final class SOCKSFront: Sendable {
-    /// The listener, replaced by a new one on the front's port when it ends by itself: the cards' store keeps that
-    /// port.
+    /// Replaced by a new one on the front's port when it ends by itself: the cards' store keeps that port.
     let current = Mutex(Current())
     struct Current {
         var listener: NWListener?
@@ -18,15 +15,11 @@ final class SOCKSFront: Sendable {
         var stopped = false
     }
 
-    /// Why the front asks for ssh's port again.
     enum Trouble: Sendable, Equatable {
-        /// Nothing listens on it: the forward is gone.
         case gone(UInt16)
-        /// ssh took a request there and did not answer within `patience`.
         case stalled(UInt16)
     }
 
-    /// ssh's `-D` port on the live master; after a trouble with it, the port to try next.
     private let upstream: @Sendable (Trouble?) async throws -> UInt16
 
     private init(upstream: @escaping @Sendable (Trouble?) async throws -> UInt16) {
@@ -39,7 +32,6 @@ final class SOCKSFront: Sendable {
         return front
     }
 
-    /// The front's port for its life.
     var port: NWEndpoint.Port {
         current.withLock { $0.port } ?? .any
     }
@@ -51,7 +43,7 @@ final class SOCKSFront: Sendable {
         }
     }
 
-    private static let log = Logger(subsystem: "dev.ovvi.app", category: "proxy")
+    private static let log = Logger(ovvi: "proxy")
 
     private func listen(on port: NWEndpoint.Port) async throws {
         let parameters = NWParameters.tcp
@@ -103,8 +95,6 @@ final class SOCKSFront: Sendable {
         }
     }
 
-    /// A listener that served and ended without `stop` comes back on the front's port, every 2 s until one listens
-    /// (the network back after a sleep) or the proxy stops.
     private func relisten() {
         Task {
             while let port = current.withLock({ $0.stopped ? nil : $0.port }) {
@@ -122,22 +112,19 @@ final class SOCKSFront: Sendable {
     private static let refused = Data([5, 5, 0, 1, 0, 0, 0, 0, 0, 0])
     private static let failed = Data([5, 1, 0, 1, 0, 0, 0, 0, 0, 0])
 
-    /// One page connection: the greeting and the CONNECT request here, then ssh's reply and the bytes both ways.
     private func serve(_ client: NWConnection) async {
         Self.start(client)
         guard let hello = await client.read(2), hello[0] == 5, hello[1] > 0,
               let methods = await client.read(Int(hello[1]))
         else { return client.cancel() }
-        // No authentication: any local account can use the port while a card is open, as with ssh's own `-D`
-        // (ui/browser#risks).
+        // No authentication: any local account can use the port while a card is open, as with ssh's own `-D`.
         guard methods.contains(0) else { return Self.answer(client, Data([5, 0xFF])) }
         client.send(content: Data([5, 0]), completion: .idempotent)
         guard let head = await client.read(4), head[0] == 5, head[1] == 1, let address = await address(client, head[3]),
               let port = await client.read(2)
         else { return client.cancel() }
         guard var local = try? await upstream(nil) else { return Self.answer(client, Self.failed) }
-        // Nothing listens on ssh's `-D` port: the forward is gone (its master ended, or lost it). Forwarded again,
-        // once.
+        // Nothing listens on ssh's `-D` port: the forward is gone (its master ended, or lost it).
         var connected = await Self.connect(local)
         if connected == nil, let again = try? await upstream(.gone(local)) {
             Self.log.error("ssh's forward on \(local) was gone: forwarded again on \(again)")
@@ -179,11 +166,10 @@ final class SOCKSFront: Sendable {
         Self.pump(ssh, client, done)
     }
 
-    /// How long ssh may take to open a page's connection on the machine: one round trip there, well under a second
+    /// How long ssh may take to open a page's connection on the machine: one trip there and back, well under a second
     /// (CI's localhost: milliseconds).
     static let patience = Duration.seconds(5)
 
-    /// Whether ssh greeted on `reading`; nil while it still waits after `limit` (the read goes on).
     private static func greeting(_ reading: Task<Data?, Never>, within limit: Duration) async -> Bool? {
         await withCheckedContinuation { continuation in
             let waiting = Mutex<CheckedContinuation<Bool?, Never>?>(continuation)
@@ -199,7 +185,6 @@ final class SOCKSFront: Sendable {
         }
     }
 
-    /// A connection to ssh's `-D` port, once open; nil when nothing listens there.
     private static func connect(_ local: UInt16) async -> NWConnection? {
         guard let port = NWEndpoint.Port(rawValue: local) else { return nil }
         let ssh = NWConnection(host: .ipv4(.loopback), port: port, using: .tcp)
@@ -218,7 +203,6 @@ final class SOCKSFront: Sendable {
         return opened ? ssh : nil
     }
 
-    /// The request's address, a `<name>.localhost` made `localhost`.
     private func address(_ client: NWConnection, _ type: UInt8) async -> Data? {
         switch type {
         case 1: return await client.read(4)
@@ -252,7 +236,6 @@ final class SOCKSFront: Sendable {
                     completion: .contentProcessed { _ in client.cancel() })
     }
 
-    /// Bytes one way, the next read once the last write went out; an end goes on as an end (half close).
     private static func pump(_ from: NWConnection, _ into: NWConnection, _ done: @escaping @Sendable () -> Void) {
         from.receive(minimumIncompleteLength: 1, maximumLength: 1 << 16) { data, _, end, error in
             guard error == nil else {
@@ -295,7 +278,6 @@ final class SOCKSFront: Sendable {
 }
 
 extension NWConnection {
-    /// Exactly `count` bytes; nil at the end or on an error.
     func read(_ count: Int) async -> Data? {
         await withCheckedContinuation { continuation in
             receive(minimumIncompleteLength: count, maximumLength: count) { data, _, _, error in
@@ -304,7 +286,6 @@ extension NWConnection {
         }
     }
 
-    /// What arrived, at least a byte; nil at the end or on an error.
     func readSome() async -> Data? {
         await withCheckedContinuation { continuation in
             receive(minimumIncompleteLength: 1, maximumLength: 1 << 16) { data, _, _, error in

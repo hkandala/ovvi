@@ -2,8 +2,6 @@ import Foundation
 @testable import HerdrKit
 import Testing
 
-/// A real Claude Code 2.1.312 session, cut to the lines the parser reads (`Fixtures/claude-transcript.jsonl`): six
-/// turns with a question, a write, an edit, a queued prompt, a failed command, an MCP tool and background tasks.
 private func history() throws -> ChatHistory {
     let url = try #require(Bundle.module.url(forResource: "claude-transcript", withExtension: "jsonl",
                                              subdirectory: "Fixtures"))
@@ -43,7 +41,6 @@ private func history() throws -> ChatHistory {
     #expect(tools.first { $0.name == "read" }?.result == "3 lines")
     let failed = try #require(tools.first { $0.failed })
     #expect(failed.target == "ls /nonexistent" && failed.result == "exit 1")
-    // Opened, a call shows its whole input and output.
     #expect(failed.input == "command: ls /nonexistent\ndescription: List a directory that does not exist")
     #expect(failed.output.hasPrefix("Exit code 1\n"), "\(failed.output)")
     #expect(tools.contains { $0.name == "search_files" && $0.category == .other })
@@ -60,9 +57,7 @@ private extension ChatRow {
     let history = try history()
     let rows = history.rows(working: false)
     #expect(rows.count { $0.kind == "user" } == 6 && Set(rows.map(\.id)).count == rows.count)
-    // Every reply, not only a turn's last one.
     #expect(rows.count { $0.kind == "reply" } == history.entries.count { $0.row?.kind == "reply" })
-    // The edit turn: its runs and the replies between them, then how long it worked.
     let turn = try #require(rows
         .firstIndex {
             if case let .user(_, text) = $0 {
@@ -75,7 +70,6 @@ private extension ChatRow {
     #expect(rows[(turn + 1) ..< next].map(\.kind).last == "worked")
     guard case let .worked(_, seconds?) = rows[next - 1] else { Issue.record("no time"); return }
     #expect(seconds > 30)
-    // A turn with no tool calls has no line and no time.
     #expect(rows.prefix(3).map(\.kind) == ["user", "reply", "user"])
 
     let runs = rows.compactMap { row -> ArraySlice<ChatEntry>? in
@@ -86,7 +80,6 @@ private extension ChatRow {
         "Asked 1 question", "Wrote 1 file, ran 1 command, edited 1 file, +1 more", "Ran 1 command",
         "Ran 3 commands, ran toolsearch 1 time, ran search_files 1 time, 2 failed",
     ])
-    // A run's range holds its steps only: its calls and the thinking between them, which has no row of its own.
     #expect(runs.allSatisfy { $0.allSatisfy { $0.tool != nil || $0.kind == .thinking } })
     #expect(runs.contains { $0.contains { $0.kind == .thinking } && $0.contains { $0.tool != nil } })
     #expect(!rows.contains { $0.kind == "thinking" })
@@ -99,14 +92,11 @@ private extension ChatRow {
         tool.calls = calls.map { ChatTool(id: $0, name: $0, category: .other, target: "", started: nil) }
         return tool
     }
-    // The largest counts first, ties in the order they first ran.
     #expect(ChatTool.summary([tool("read"), tool("bash", failed: true), tool("read"), tool("ls"), tool("ls")])
         == "Read 2 files, listed 2 directories, ran 1 command, 1 failed")
-    // One line: three counts, the rest as "+N more", and the failures.
     let many = ["agent_send", "bash", "bash", "read", "agent_stop", "agent_list", "edit"].map { tool($0) }
         + [tool("bash", failed: true)]
     #expect(ChatTool.summary(many) == "Ran 3 commands, talked to 1 agent, read 1 file, +3 more, 1 failed")
-    // codemode is a command, and its script's calls count as their own.
     #expect(ChatTool.summary([tool("codemode", calls: ["read", "web_fetch", "bash"]), tool("agent_list")])
         == "Ran 2 commands, read 1 file, fetched 1 web page, +1 more")
     #expect(ChatTool.summary([tool("explore"), tool("explore")]) == "Ran explore 2 times")
@@ -117,7 +107,6 @@ private extension ChatRow {
     ClaudeTranscript.read(#"{"type":"user","uuid":"u","message":{"content":"go"}}"#, into: &history)
     let tool = #"{"type":"tool_use","id":"t","name":"Bash","input":{"command":"npm test\nmore"}}"#
     ClaudeTranscript.read(#"{"type":"assistant","uuid":"a","message":{"content":[\#(tool)]}}"#, into: &history)
-    // No "Worked" while it runs: the chat's loader counts from the turn's start.
     #expect(history.rows(working: true).map(\.id) == ["u", "a.0"])
     #expect(history.rows(working: false).map(\.id) == ["u", "a.0", "u.worked"])
     guard case let .stack(_, steps) = history.rows(working: true).last else {
@@ -126,12 +115,10 @@ private extension ChatRow {
     #expect(history.entries[steps].first?.tool?.target == "npm test" && history.entries[steps].first?.tool?
         .result == nil)
     #expect(ChatTool.summary(history.entries[steps].compactMap(\.tool)) == "Ran 1 command")
-    // A turn's end ends its run: a turn with no user entry after it (a task notice) starts its own.
     history.append(ChatEntry(id: "e", .turnEnd(seconds: 1), time: nil))
     history.append(ChatEntry(id: "t2", .tool(ChatTool(id: "t2", name: "bash", category: .command, target: "ls",
                                                       started: nil)), time: nil))
     #expect(history.rows(working: false).map(\.id) == ["u", "a.0", "t2", "u.worked"])
-    // A torn line is no entry.
     #expect(!ClaudeTranscript.read(#"{"type":"assist"#, into: &history))
     #expect(ChatHistory.duration(108) == "1m 48s")
     ClaudeTranscript.read(

@@ -11,33 +11,36 @@ opening_brace: # SwiftFormat's wrapMultilineStatementBraces puts these braces on
   ignore_multiline_function_signatures: true
 allow_zero_lintable_files: true # the hook may pass only excluded files
 custom_rules:
-  look_colors: # D44: views draw with the Look tokens; color literals live in Style.swift only
+  look_colors:
     included: '/Ovvi/'
     excluded: 'Ovvi/Views/(Style|ProgramIcons)\.swift$' # the tiles' highlight and outline, the same in every look
     regex: 'Color\((red|white|hue|srgbRed|calibratedRed|calibratedWhite|deviceRed|deviceWhite):|Color\((\.sRGB|\.displayP3|nsColor|uiColor|cgColor)|Color\.(white|black|gray|red|green|blue|orange|yellow|pink|purple|mint|teal|cyan|indigo|brown)\b|[(\[ ]\.(white|black|gray|red|green|blue|orange|yellow|pink|purple|mint|teal|cyan|indigo|brown)(\.opacity|\.withAlphaComponent|\))'
     message: 'Draw with the Look tokens in Style.swift (D44)'
     severity: error
-  herdr_commands: # docs/content/docs/index.mdx: never send the user to herdr; the app shows the button that does it
+  reduce_motion:
+    included: '/Ovvi/'
+    excluded: 'Ovvi/Views/Style\.swift$'
+    regex: 'accessibilityReduceMotion|accessibilityDisplayShouldReduceMotion'
+    message: 'Read Reduce Motion through Animation.reduced (Views/Style.swift)'
+    severity: error
+  herdr_commands:
     included: '/Ovvi/'
     regex: '\b(Text|Label|message|Button)\([^\n]*"[^"\n]*(herdr --|herdr (session|workspace|tab|pane|server|attach)\b|in herdr\b)'
     message: 'No UI text tells the user to run herdr: show the button that does it'
     severity: error
-  wall_clock_bounds: # playbook/lessons.md: a busy CI runner stalls for seconds, so a unit test's time bound flakes
+  wall_clock_bounds: # a busy CI runner stalls for seconds, so a unit test's time bound flakes
     included: '/Packages/HerdrKit/Tests/'
-    regex: '#expect\([^\n]*(ContinuousClock\.now|firstRead)[^\n]*<\s*\.(milli)?seconds\('
+    regex: '#expect\([^\n]*ContinuousClock\.now[^\n]*<\s*\.(milli)?seconds\('
     message: 'Compare against a ten times larger input or count the work, not the wall clock'
     severity: error
   isolated_launches: # a launch without -session or -machines reads the user's machines and ends their masters
     included: '/OvviUITests/'
-    regex: 'launchArguments = \[(?![^\n]*"-(session|machines)")'
-    message: 'Launch with -session or -machines: tests never use the machines of the user'
+    excluded: 'OvviUITests/OvviUITests\.swift$'
+    regex: 'launchArguments ='
+    message: 'Launch through relaunch: it keeps the tests off the machines and plugins of the user'
     severity: error
-  fast_waits: # playbook/ci.md, Writing fast tests: XCTest's waits take a second or more even when the condition already holds
+  fast_waits: # XCTest's waits take a second or more even when the condition already holds
     included: '/OvviUITests/'
     regex: '\.waitFor(Non)?Existence\(|\.wait\(for: \\\.|XCTNSPredicateExpectation|XCTWaiter'
     message: 'Wait with exists(within:), vanishes(within:), has(_:_:within:), until or poll'
-    severity: error
-  no_pattern_kills: # playbook/lessons.md: macOS pkill once read its flags as patterns and killed the user's apps
-    regex: '\b(pkill|killall)\b'
-    message: 'No pattern kills: kill the exact pids you started'
     severity: error

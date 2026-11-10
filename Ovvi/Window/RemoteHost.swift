@@ -1,7 +1,6 @@
 import HerdrKit
 import SwiftUI
 
-/// A machine's icon: a button that opens a searchable grid of SF Symbols (Settings ▸ Machines).
 struct IconPicker: View {
     @Binding var icon: String
     @State private var open = false
@@ -44,7 +43,6 @@ struct IconPicker: View {
         }
     }
 
-    /// Computers first, then networks, places and things: SF Symbols that tell machines apart in the title row.
     static let icons = [
         "laptopcomputer", "desktopcomputer", "macmini", "macstudio", "macpro.gen3", "display", "server.rack",
         "externaldrive", "internaldrive", "cpu", "memorychip", "opticaldiscdrive", "terminal", "apple.terminal",
@@ -67,8 +65,6 @@ struct IconPicker: View {
     ]
 }
 
-/// One of ssh's questions (machines#the-ssh-connection): its text, and a hidden answer field (a password, a passcode,
-/// any code). A new host key asks only yes or no, with its fingerprint in the text.
 struct AskDialog: View {
     let question: WindowPages.Question
     let machine: Machine
@@ -95,7 +91,8 @@ struct AskDialog: View {
                         .onSubmit { question.answer(answer) }
                         .accessibilityIdentifier("ask.answer")
                 }
-                .dialogField()
+                .fieldCapsule().background(.background.opacity(0.6), in: .capsule)
+                .overlay(Capsule().strokeBorder(.primary.opacity(0.2)))
             }
             HStack {
                 Spacer()
@@ -111,8 +108,6 @@ struct AskDialog: View {
         .onAppear { AccessibilityNotification.Announcement(question.text).post() }
     }
 
-    /// A host key question's facts: without ssh's last line, which Connect says, and with the fingerprint on a line
-    /// of its own.
     static func facts(_ text: String) -> String {
         text.split(separator: "\n").filter { !$0.contains("(yes/no") }.joined(separator: "\n")
             .replacing(#/fingerprint is:? /#, with: "fingerprint is:\n")
@@ -120,19 +115,10 @@ struct AskDialog: View {
 }
 
 extension View {
-    /// A dialog's field: filled and outlined, so it reads on the glass over light and dark content (the palette's
-    /// soft capsule nearly vanished there).
-    func dialogField() -> some View {
-        fieldCapsule().background(.background.opacity(0.6), in: .capsule)
-            .overlay(Capsule().strokeBorder(.primary.opacity(0.2)))
-    }
-
-    /// In the middle of the window, in the palette's glass. The window behind takes no clicks: only the dialog's
-    /// buttons close it, and Esc is Cancel (not `floatingPanel`: its Esc and outside click close).
     func dialog() -> some View {
         Color.clear.contentShape(.rect).onTapGesture {}
             .overlay {
-                padding(20).frame(width: 440).floatingGlass(in: .rect(cornerRadius: 14))
+                padding(20).frame(width: 440).floatingGlass(in: .panel)
                     .accessibilityElement(children: .contain)
                     .accessibilityAddTraits(.isModal)
             }

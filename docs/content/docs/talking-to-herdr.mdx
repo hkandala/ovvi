@@ -7,7 +7,7 @@ description: "Running commands, requests, events, reconcile, the terminal plane,
 
 ```swift
 protocol Exec {
-    /// Run argv on the machine. Returns stdout as a byte stream and a stdin writer.
+    /// Run argv on the machine. Returns stdout as a stream of lines, a stdin writer and the exit.
     func run(_ argv: [String]) async throws -> Channel
     func herdr() async throws -> String?   // from the login shell
 }
@@ -23,7 +23,7 @@ and watch files and run git the same way
 
 - **This Mac:** `Process`. A GUI app does not get the shell's environment. So
   at launch the app reads `PATH`, `HOME`, `SSH_AUTH_SOCK`, every `XDG_*`
-  variable and herdr's path once with `$SHELL -lic` (stdin from `/dev/null`,
+  variable and herdr's path once with `$SHELL -lic` (stdin closed,
   3 s timeout, output parsed after a unique marker). `HERDR_*` variables are removed from
   child processes.
 - **A remote machine:** every run goes through the relay, one SSH
@@ -52,7 +52,7 @@ and watch files and run git the same way
 - `observe` and `tail -F` (the chat's followers) ignore a closed stdin, so
   they always run in this wrapper, on This Mac too:
   ```sh
-  sh -c '<cmd> & c=$!; cat >/dev/null; while kill $c; do sleep 1; done'
+  sh -c 'exec 3<&0; "$@" & c=$!; { cat <&3 >/dev/null; while kill $c; do sleep 1; done; } >/dev/null 2>&1 & w=$!; wait $c 2>/dev/null; s=$?; kill $w 2>/dev/null; exit $s' sh <cmd>
   ```
   The wrapper sends its kill again each second until `<cmd>` is gone:
   macOS's `sh` can lose one, and a `tail -F` that missed it ran forever.
@@ -81,17 +81,14 @@ and watch files and run git the same way
   the install command with **Install herdr** ([Install herdr](#install-herdr)) and asks the shell again, at most every 30 s while
   missing and one run at a time, so a herdr installed since is found. A path
   that is gone since (herdr moved or reinstalled elsewhere) is asked for again
-  the same way. herdr older than 0.9.1 has no
-  `remote-api-bridge`, so the first call fails. The page then shows
-  "‹session› is not running" with **Start**, or Reconnecting. A snapshot that
+  the same way. A snapshot that
   reports a version below 0.9.3 shows "herdr is too old" over "herdr ‹version›
   is too old; 0.9.3 or newer needed." The app asks again every 2 s, so the
   page clears by itself after an update.
 - The version comes from `session.snapshot`. Decoding is lenient, so a newer
   protocol needs nothing.
-- Commands start in the machine's home folder (sshd starts them there; on
-  This Mac the app sets the child's working folder), so the app passes paths
-  relative to it and never reads `$HOME`.
+- Paths in the home folder go to the machine relative to it, and the command
+  adds `$HOME`, so it works in any working folder.
 - Every herdr argv carries `--session <name>` (also `--session default`), so
   no inherited variable can point a command at another session.
 
@@ -167,9 +164,7 @@ and watch files and run git the same way
   `ovvi open` needs none: the app makes the change and reads the snapshot
   itself.
 - **Any event line means "read `session.snapshot` again".** Event payloads
-  are never decoded, except an [agent request](#agent-requests), and the
-  older [float request](#float-requests) and
-  [copy request](#copy-requests).
+  are never decoded, except an [agent request](#agent-requests).
 - **Snapshot pacing, per session:** at most one `session.snapshot` is in
   flight. An event, or the app's own write, starts a read at once if none is
   in flight; otherwise it sets "read again", and the read that ends with it
@@ -204,76 +199,26 @@ Ovvi does with no call to Ovvi (`ovvi status`):
 |---|---|
 | `ovvi-shown` on a pane | `pane.report_metadata` on each pane in view of a visible window (the shown tab of the page in view, only its zoomed card when one is, and the floated panes): source `ovvi`, `1` on This Mac, `remote` on another machine (for pi's copy), `ttl_ms` 30000. Written when a pane comes into view, again every 10 s while it stays, and cleared (`null`) when it leaves view, its page closes, its window hides or closes, or the app quits (which waits up to 1 s for it). Over the relay for a remote machine |
 | `ovvi-chat` on a pane | `pane.report_metadata` once a launch that dropped its arguments is bound to its processes ([Which panes have it](/docs/ui/chat-view#which-panes-have-it)): source `ovvi-chat`, `‹command› ‹marker› ‹pid›,…`, no `ttl_ms`, so it stays with the pane while herdr's server runs (a restart drops it with the terminal). Read at the first sight of a terminal (the app starting, a reconnect) |
-| `ovvi-open` on a space | `workspace.report_metadata` on each space of a session that a window has open (a float-only page too): source `ovvi`, `1` (the protocol version), `ttl_ms` 30000. Written on a snapshot with a new space and every 10 s, in the same burst as `ovvi-shown` and before it; cleared when the last window lets the session go and on quit |
+| `ovvi-open` on a space | `workspace.report_metadata` on each space of a session that a window has open (a float-only page too): source `ovvi`, `1` (the protocol version), `ttl_ms` 30000. Written on a snapshot with a new space and every 10 s, in the same burst as `ovvi-shown` and after it (before it at quit); cleared when the last window lets the session go and on quit |
 
 - herdr sends `pane.updated` with the whole pane, `tokens` included, on each
   report and again when a token expires. `pane.get` and `session.snapshot`
   list a pane's tokens, and `workspace.get` a space's.
+- The tokens are one map per pane, by name, whatever the source: a report
+  changes only the tokens it names. Ovvi's never touch pi's own metadata
+  (agent, title, state labels, its tokens). Two Macs showing one pane share
+  `ovvi-shown`: one's clear drops the other's mark until its next refresh.
+- Each token's `ttl_ms` is its own. An app that crashed stops claiming its
+  panes within 30 s. A pane herdr moves keeps its mark until then too (the
+  clear goes to its old pane id).
+- herdr 0.9.5: names match `^[A-Za-z0-9_-]{1,32}$` (no dots), 16 tokens per
+  report and 32 per pane at most, values cut at 80 characters.
 - Ovvi decodes `ovvi-req` only when it is a lowercase UUID version 4, and
   acts once per id: it keeps the last 256 ids per session.
 - When the app first connects to a session on a machine, it writes the
   command to `~/.cache/ovvi/bin/ovvi` there when the file is missing or
   older, and removes mailbox files older than 60 minutes
   ([How the command gets there](/docs/agent-control/remote#how-the-command-gets-there)).
-
-## Float requests
-
-Kept for older callers: a pi-hkandala checkout from before the `ovvi`
-command. New callers run `ovvi float`. A tool in a pane (pi-herd) asks
-Ovvi to float a pane through herdr's pane metadata tokens, so it works for
-an agent on any machine Ovvi follows (D50). Nothing waits for an answer:
-
-| Step | Who | What |
-|---|---|---|
-| Ask | the tool, at a click | `pane.get` of its own pane on its own herdr socket (a few ms, on the agent's machine). With `ovvi-shown`: `pane.report_metadata` on its pane, source `pi-herd`, tokens `ovvi-float` = `‹session›/‹pane id›` (a session on the same machine) and `ovvi-float-id` = a nonce (a UUID), `ttl_ms` 1000; no popup. Without it: herdr's popup at once |
-| Float | Ovvi | on the `pane.updated` event carrying `ovvi-float` with a nonce it has not seen: floats the pane over the window where the user last typed or clicked in a card of the asking session ([`ovvi://float`](/docs/ui/window#floating-pane)'s path, a float-only page when the session has none) |
-
-- herdr sends `pane.updated` with the whole pane, `tokens` included, on
-  each report and again when a token expires. `pane.get` and
-  `session.snapshot` list the tokens as well.
-- The tokens are one map per pane, by name, whatever the source: a report
-  changes only the tokens it names. Ovvi's never touch pi's own metadata
-  (agent, title, state labels, its tokens). Two Macs showing one pane share
-  `ovvi-shown`: one's clear drops the other's mark until its next refresh,
-  and both float a request.
-- Each token's `ttl_ms` is its own. An app that crashed stops claiming its
-  panes within 30 s. A pane herdr moves keeps its mark until then too (the
-  clear goes to its old pane id).
-- Every change of the asking pane (Ovvi's own mark too) sends the request
-  again until it expires, so Ovvi floats once per nonce. It acts only on
-  events: a request from before its stream opened, or while it reopens
-  (the agent panes changed), is lost, and the click does nothing.
-- A click in herdr's own TUI on a pane that Ovvi also shows floats it in
-  Ovvi, not in herdr's popup: the mark says only that Ovvi shows the pane.
-- herdr 0.9.5: names match `^[A-Za-z0-9_-]{1,32}$` (no dots), 16 tokens per
-  report and 32 per pane at most, values cut at 80 characters.
-
-## Copy requests
-
-Kept for older callers: a pi-hkandala checkout from before the `ovvi`
-command. New callers run `ovvi copy`. pi's extensions in such a checkout
-ask Ovvi to put text on the Mac's clipboard the same way, so a copy from pi
-on another machine lands on this Mac. herdr
-gives a pane's own clipboard write (OSC 52) only to its TUI, never to the
-app's streams ([Scrolling, queries and links](#scrolling-queries-and-links)).
-
-| Step | Who | What |
-|---|---|---|
-| Ask | the extension, at a copy | when its pane carries `ovvi-shown` = `remote` (`pane.get` on its own herdr socket), so pi is not on Ovvi's Mac: writes the text to `/tmp/ovvi-copy-‹id›` on its machine (mode 0600, `‹id›` a new UUID), then `pane.report_metadata` on its pane, source `pi-copy`, token `ovvi-copy` = `‹id›`, `ttl_ms` 1000. Otherwise pi's own copy (`pbcopy` on Ovvi's Mac) |
-| Copy | Ovvi | on the `pane.updated` event carrying an `ovvi-copy` it has not seen, in any open session: one run on that machine (over the relay for a remote one), `sh -c 'f=/tmp/ovvi-copy-$1; base64 <"$f" && rm -f "$f"' sh ‹id›`, and the text goes on `NSPasteboard` |
-
-- A token value holds at most 80 characters (herdr cuts it, and drops
-  control characters), 16 tokens per report and 32 per pane: a long prompt
-  does not fit, so the token carries only the id and the text goes in a
-  file. Ovvi builds the path itself and takes only a UUID's characters,
-  so a token can never name another file.
-- Once per id, as for a float. The app never reads the Mac's clipboard.
-- A request is lost when no Ovvi stream sees it within its 1 s (the stream
-  reopening, Ovvi gone). While pi runs, it deletes a file Ovvi missed
-  after 30 s.
-- Two Macs showing the pane both try; the first one's run deletes the file,
-  and the second copies nothing. They also share the mark: the last one to
-  write it says whether the pane is remote.
 
 ## Chat panes
 
@@ -284,7 +229,7 @@ below. Everything else goes to the agent's own files, on its machine.
   each process's `argv`. A chat pane is one where an adapter finds its launch
   marker there ([Launch flags](/docs/ui/chat-view#launch-flags)), asked at
   the times on [Program icons](/docs/ui/program-icons#when-the-app-asks-herdr).
-  The app writes no herdr state for a chat.
+  The app writes only the `ovvi-chat` token (above) for a chat.
 - **The session.** Each pane's `agent_session` in the snapshot names its
   agent's session, for [Session titles](/docs/ui/chat-view#session-titles)
   and [Relaunch with Chat](/docs/ui/chat-view#relaunch-with-chat).
@@ -476,7 +421,7 @@ handshake fails, it exits 1 with the reason on stderr.
 | `not found` or `exited` | drops the card; waits for the snapshot |
 | `detached` | does nothing (this device closed the stream) |
 | `live update` | opens the stream again after 1 s |
-| any other failure (exit 1, for example a handshake error after herdr updated but did not restart) | shows herdr's reason and **Retry** in the card |
+| any other failure (exit 1, for example a handshake error after herdr updated but did not restart) | shows herdr's reason and **Retry** in the card; opens again by itself at most every 5 s while the page is live, and at once when a page that reconnected is live again |
 
 ### Scrolling, queries and links
 

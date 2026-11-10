@@ -1,31 +1,23 @@
 import AppKit
 import HerdrKit
 
-/// The Plugins page's work (plugins/packages): install, update and remove of `npm:`, `git:` and local
-/// path sources, the `packages` list of `settings.json`, and the confirmation before a package's dependencies install.
 @MainActor @Observable
 final class PluginInstalls {
     static let shared = PluginInstalls()
 
-    /// What a row is doing (`Installing…`), by its id: a plugin's id, or a source not installed yet.
     private(set) var busy: [String: String] = [:]
-    /// The last install, update or remove that failed: its text, and the same again.
     var failure: (text: String, retry: (() -> Void)?)?
-
-    static var plugins: URL {
-        Registry.config.appending(path: "plugins")
-    }
 
     var rows: [InstalledPlugin] {
         let sources = PluginPackages.sources(Registry.settings)
         let pairs = sources.compactMap { text in PluginSource(text)?.folder.map { ($0, text) } }
         let installed = Dictionary(pairs) { first, _ in first }
-        let plugins = Registry.all.filter { $0.id != Registry.browser.id }.map { manifest -> InstalledPlugin in
+        let plugins = Registry.all.map { manifest -> InstalledPlugin in
             let folder = Registry.package(manifest.id)
             let kind: InstalledPlugin.Kind = if Registry.defaults.contains(manifest.id) {
                 .bundled
             } else if let folder, folder.deletingLastPathComponent().standardizedFileURL.path
-                == Self.plugins.standardizedFileURL.path
+                == Registry.plugins.standardizedFileURL.path
             {
                 installed[folder.lastPathComponent].map(InstalledPlugin.Kind.installed) ?? .folder
             } else {
@@ -33,21 +25,18 @@ final class PluginInstalls {
             }
             return InstalledPlugin(id: manifest.id, manifest: manifest, kind: kind)
         }
-        let present = Set((try? FileManager.default.contentsOfDirectory(atPath: Self.plugins.path)) ?? [])
+        let present = Set((try? FileManager.default.contentsOfDirectory(atPath: Registry.plugins.path)) ?? [])
         let missing = installed.filter { !present.contains($0.key) }.sorted { $0.key < $1.key }
         return plugins + missing.map { InstalledPlugin(id: $0.value, manifest: nil, kind: .installed($0.value)) }
     }
 
-    /// Install from the field, or from an agent (`ovvi plugins install`, which names it in the confirmation): an
-    /// `npm:` or `git:` source is fetched, its manifest shown in the confirmation, then its dependencies installed; a
-    /// local path is listed after the same confirmation. The plugin installed; `CancellationError` on its Cancel.
     func install(_ text: String, for agent: Asker? = nil) async throws -> PluginManifest {
         let text = text.trimmingCharacters(in: .whitespaces)
         guard let source = PluginSource(text) else {
             throw refuse("Enter npm:<package>, git:<repository> or a folder’s path")
         }
         if let folder = source.folder, !PluginPackages.sources(Registry.settings).contains(text),
-           FileManager.default.fileExists(atPath: Self.plugins.appending(path: folder).path)
+           FileManager.default.fileExists(atPath: Registry.plugins.appending(path: folder).path)
         {
             throw refuse("A plugin folder named \(folder) is already installed")
         }
@@ -68,8 +57,6 @@ final class PluginInstalls {
         }
     }
 
-    /// Update: the source fetched again (the newest version its spec allows) and put over the installed copy; it asks
-    /// only when its id changed, and then the old id is forgotten.
     func update(_ row: InstalledPlugin) async {
         guard case let .installed(text) = row.kind, let source = PluginSource(text) else { return }
         let manifest = try? await run(row.id, "Updating…") {
@@ -96,7 +83,7 @@ final class PluginInstalls {
         )
         else { return }
         try? await run(row.id, "Removing…") {
-            // First: a settings.json that does not read stops the removal before anything goes.
+            // First: a settings.json that does not read stops the removal ahead of any change.
             try PluginPackages.store(nil, nil, of: row.id, in: Registry.settings)
             if case let .installed(text) = row.kind {
                 try PluginPackages.list(text, in: Registry.settings, add: false)
@@ -119,37 +106,32 @@ final class PluginInstalls {
         _ = try? await create(named: typed)
     }
 
-    /// The app's template (`plugins/template`) copied into the plugins folder under a name, installed and built, and
-    /// trusted (the user, or their agent on This Mac, made it). Its row shows its folder, for an editor or an agent.
-    /// The new plugin's folder.
+    /// Trusted: the user, or their agent on This Mac, made it.
     func create(named typed: String) async throws -> URL {
         let name = typed.trimmingCharacters(in: .whitespaces).shown
         let id = name.lowercased().split { !($0.isASCII && ($0.isLetter || $0.isNumber)) }.joined(separator: "-")
         guard let template = Registry.folder?.appending(path: "template") else { throw refuse("Ovvi has no template") }
         guard !id.isEmpty else { throw refuse("Use letters or digits in a plugin’s name") }
-        let folder = Self.plugins.appending(path: id)
+        let folder = Registry.plugins.appending(path: id)
         guard Registry.plugin(id) == nil, !FileManager.default.fileExists(atPath: folder.path) else {
             throw refuse("A plugin named \(id) is already there")
         }
         return try await run(id, "Creating…") {
-            try FileManager.default.createDirectory(at: Self.plugins, withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(at: Registry.plugins, withIntermediateDirectories: true)
             try FileManager.default.copyItem(at: template, to: folder)
             do {
                 let file = folder.appending(path: "package.json")
-                // The name as a JSON string: a quote or a backslash in it stays text.
+                // A quote or a backslash in the name stays text.
                 let quoted = try String(decoding: JSONEncoder().encode(name), as: UTF8.self)
                 let text = try String(contentsOf: file, encoding: .utf8).replacing("my-plugin", with: id)
                     .replacing("\"My Plugin\"", with: quoted)
                 try text.write(to: file, atomically: true, encoding: .utf8)
                 let manifest = try PluginManifest(package: Data(contentsOf: file))
                 let exec = await localExec.value
-                let output = try await PluginPackages.dependencies(folder, exec: exec)
-                    + (PluginPackages.build(folder, exec: exec) ?? "")
-                PluginLog.add(id, "created from the template:\n"
-                    + output.trimmingCharacters(in: .whitespacesAndNewlines))
+                let output = try await PluginPackages.prepare(folder, exec: exec)
+                PluginLog.add(id, "created from the template", output: output)
                 PluginTrust.shared.allow(manifest)
             } catch {
-                // Try Again starts from the template again.
                 try? FileManager.default.removeItem(at: folder)
                 PluginLog.add(id, "New Plugin failed: \(error.localizedDescription)")
                 throw error
@@ -171,14 +153,13 @@ final class PluginInstalls {
 
     private func fetch(_ source: PluginSource, _ text: String, for agent: Asker?) async throws -> PluginManifest {
         let exec = await localExec.value
-        let staged = try await PluginPackages.fetch(source, into: Self.plugins, exec: exec)
+        let staged = try await PluginPackages.fetch(source, into: Registry.plugins, exec: exec)
         do {
-            let folder = Self.plugins.appending(path: source.folder ?? "")
+            let folder = Registry.plugins.appending(path: source.folder ?? "")
             try free(staged.manifest.id, for: folder)
             try await trusts(staged.manifest, from: text, folder: folder, for: agent)
-            let output = try await PluginPackages.finish(staged, into: Self.plugins, exec: exec).output
-            PluginLog.add(staged.manifest.id, "installed from \(text):\n"
-                + output.trimmingCharacters(in: .whitespacesAndNewlines))
+            let output = try await PluginPackages.finish(staged, into: Registry.plugins, exec: exec).output
+            PluginLog.add(staged.manifest.id, "installed from \(text)", output: output)
         } catch {
             PluginPackages.discard(staged)
             if !(error is CancellationError) {
@@ -212,9 +193,6 @@ final class PluginInstalls {
         Task { await Plugin.reload(manifest.id, build: false) }
     }
 
-    /// The confirmation at install: which plugin, its source (an npm or git one) and folder, the warning, and the
-    /// agent that asks for it. A new source always asks; an update only when its id changed. Cancel throws
-    /// `CancellationError`.
     private func trusts(_ manifest: PluginManifest, from source: String, folder: URL, for agent: Asker?) async throws {
         let new = !PluginPackages.sources(Registry.settings).contains(source)
         guard new || !PluginTrust.shared.allows(manifest) else { return }
@@ -228,7 +206,6 @@ final class PluginInstalls {
             throw refuse("no window to ask the user for \(agent.name)")
         }
         let alert = NSAlert()
-        // Its row in the New Pane chooser, on unless the user turned it off before.
         if manifest.chooser != nil {
             alert.showsSuppressionButton = true
             alert.suppressionButton?.title = "Show in New Pane"
@@ -241,9 +218,7 @@ final class PluginInstalls {
         }
     }
 
-    /// A sheet on the key window, or for an agent on its session's window. An agent's prompt never takes the user's
-    /// keys: Ovvi only asks for attention, and Return is not Install, so typing that lands here installs nothing.
-    /// `destructive`: the button is red, so not the default button; Return clicks it all the same (`NSWindow.confirm`).
+    /// An agent's prompt never takes the user's keys: Return is not Install, so typing here installs nothing.
     static func ask(_ title: String, _ text: String, button: String, destructive: Bool = false,
                     alert: NSAlert = NSAlert(), for agent: Asker? = nil) async -> Bool
     {
@@ -264,13 +239,15 @@ final class PluginInstalls {
         return await alert.beginSheetModal(for: window) == .alertFirstButtonReturn
     }
 
-    /// The page's notice for a refusal before any work, as an error for an agent.
+    func couldNotSave(_ error: any Error) {
+        failure = ("Could not save settings.json: \(error.localizedDescription)", nil)
+    }
+
     private func refuse(_ text: String) -> HerdrError {
         failure = (text, nil)
         return .failed(text)
     }
 
-    /// One at a time per row; a failure's Retry runs it again. A Cancel in a prompt is no failure.
     private func run<T>(_ id: String, _ doing: String, _ body: @escaping () async throws -> T) async throws -> T {
         if let busy = busy[id] {
             throw HerdrError.failed("\(id) is busy: \(busy)")
@@ -293,24 +270,16 @@ final class PluginInstalls {
     }
 }
 
-/// An agent that asks for an install (`ovvi plugins install`): its name in the confirmation, and the window of its
-/// session, which the prompt's sheet goes on.
 struct Asker {
     let name: String
-    /// Weak: a closed window takes no sheet, and the install fails.
     weak var window: NSWindow?
 }
 
-/// One row of the list: a plugin, or a listed source whose install is missing.
 struct InstalledPlugin: Identifiable {
     enum Kind: Equatable {
-        /// Came with the app, installed in the plugins folder on first launch.
         case bundled
-        /// Installed from this `npm:` or `git:` source; not on disk yet when `manifest` is nil.
         case installed(String)
-        /// A local path in the settings, loaded in place.
         case local(String)
-        /// A folder put in the plugins folder by hand (or by an agent).
         case folder
     }
 
@@ -318,7 +287,6 @@ struct InstalledPlugin: Identifiable {
     let manifest: PluginManifest?
     let kind: Kind
 
-    /// Its version, "Not installed" with no manifest; none for the browser, the app's own.
     var version: String? {
         guard let manifest else { return "Not installed" }
         return manifest.entry == nil ? nil : manifest.version.shown
@@ -328,7 +296,6 @@ struct InstalledPlugin: Identifiable {
         PluginInstalls.shared.busy[id] ?? (DefaultPlugins.shared.installing.contains(id) ? "Installing…" : nil)
     }
 
-    /// The line under its name.
     var source: String {
         switch kind {
         case .bundled: "Comes with Ovvi"

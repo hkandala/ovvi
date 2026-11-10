@@ -1,6 +1,3 @@
-// The tree's status bar (files.ts), under the tree in every folder: the machine on a remote one, the root's folders
-// and files (and the hidden ones while they hide); in a repository, at the right, the branch, the lines added and
-// removed, Pull and Push while there is something to pull or push, Fetch, and Git, which opens Git's home on it.
 import type { Ovvi } from "@ovvi/plugin-api"
 import { how, menu, open as opening, symbols } from "./place"
 
@@ -8,8 +5,6 @@ type Head = { branch: string; ahead: number; behind: number } | null
 
 const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`
 
-/** Fills `bar`. `folder` shows the root's counts; `repo` the repository's part, or none outside one. `again` reads the
- *  repository anew after a write. */
 export function footer(ovvi: Ovvi, bar: HTMLElement, again: () => void) {
   const machine = ovvi.card.machine
   bar.innerHTML = `<span class="machine" hidden></span><span class="folder"></span><span class="git" hidden><span
@@ -23,16 +18,13 @@ export function footer(ovvi: Ovvi, bar: HTMLElement, again: () => void) {
   where.hidden = !machine.remote
   where.textContent = machine.name
   let repo: string | null = null
-  // Git's home on the repository, as every open: a click in a new tab, selected (this card cannot show it); ⌘ in the
-  // background, ⌥ to the side; the menu's three.
   open.onclick = (event) => {
     if (repo) opening(ovvi, `${repo}/`, how(event), "git")
   }
   open.oncontextmenu = (event) => {
     if (repo) void menu(ovvi, event, `${repo}/`, { plugin: "git" })
   }
-  /** One write at a time, every button off meanwhile and Fetch's arrow turning; git's error in a toast, as the
-   *  sidebar shows it: without its `hint:` lines, which come first, the last two lines on one. */
+  /** git prints its `hint:` lines ahead of the error. */
   const write = (button: HTMLButtonElement, done: (root: string) => Promise<void>) => async () => {
     if (!repo) return
     button.toggleAttribute("data-busy", true)

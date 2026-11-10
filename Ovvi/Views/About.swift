@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Our own About window: the system panel showed the credits as a dump of text.
+/// The system About panel shows the credits as a dump of text.
 struct About: View {
     private var settings = AppSettings()
     @Environment(\.colorScheme) private var colorScheme
@@ -24,7 +24,7 @@ struct About: View {
         .frame(minWidth: 280)
         .containerBackground(for: .window) { WindowBackground(look: look) }
         .windowMinimizeBehavior(.disabled)
-        // ⌘W closes it, as it does the system's About panel: the menu bar's ⌘W is a main window's Close Pane.
+        // The menu bar's ⌘W is a main window's Close Pane.
         .background { Button("Close") { dismiss() }.keyboardShortcut("w").opacity(0).accessibilityHidden(true) }
     }
 }

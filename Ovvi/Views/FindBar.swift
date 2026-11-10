@@ -2,9 +2,7 @@ import GhosttyTerminal
 import HerdrKit
 import SwiftUI
 
-/// Find in a pane (⌘F): the pane's recent text from herdr, searched here; a match scrolls herdr's viewport to it,
-/// which every client of the pane shares (design: Find bar). The matches on the screen then are highlighted from
-/// herdr's visible text. One bar per page, on the card it opened on.
+/// A match scrolls herdr's viewport to it, which every client of the pane shares.
 @MainActor @Observable
 final class Find {
     let paneID: String
@@ -17,27 +15,21 @@ final class Find {
         }
     }
 
-    /// The lines of each match, top to bottom, a line once per match in it.
     private(set) var matches: [Int] = []
-    /// The selected match, in `matches`.
     private(set) var current: Int?
-    /// The matches on herdr's screen after the last scroll, for the highlights; the selected one, if shown.
     private(set) var shown: [Hit] = []
     private(set) var shownCurrent: Int?
-    /// Return went to the pane since the read: the next step reads again.
     @ObservationIgnored var stale = false
-    /// Lowercased: the search is case blind.
     @ObservationIgnored private var lines: [String] = []
     /// The screen's blank rows under its last text, which herdr's recent text leaves out but its offset counts.
     @ObservationIgnored private var blank = 0
-    /// herdr's screen height.
     @ObservationIgnored private var rows = 0
     @ObservationIgnored private let store: HostStore
-    /// The offset to scroll to next; one `pane.scroll` at a time, the latest wins.
     @ObservationIgnored private var target: Int?
-    /// The last frame since the highlights were placed.
     @ObservationIgnored private var lastFrame: ContinuousClock.Instant?
     @ObservationIgnored private var working = false
+    /// Set by its page: a read or step that ends later must not scroll herdr's shared viewport again.
+    @ObservationIgnored private var closed = false
 
     init(paneID: String, store: HostStore) {
         self.paneID = paneID
@@ -48,31 +40,29 @@ final class Find {
         query.isEmpty ? "" : "\(current.map { $0 + 1 } ?? 0) of \(matches.count)"
     }
 
-    /// The pane's last 5000 lines, read once as the bar opens and again after Return in the pane; herdr's buffer
-    /// size, for the blank rows under the text.
     func read() async {
         guard let client = store.client else { return }
         do {
+            // 5000: herdr's buffer; a text cut at 5000 lines cannot tell its blank rows.
             let text = try await client.recent(paneID, lines: 5000)
             let scroll = try await client.pane(paneID).scroll
             lines = Self.lines(text)
             rows = scroll?.viewportRows ?? 0
             if scroll?.offsetFromBottom == 0 {
-                // herdr's visible text also leaves the blank rows out: the screen's rows less its text.
+                // herdr's visible text also leaves the blank rows out.
                 blank = try await max(rows - Self.lines(client.screen(paneID)).count, 0)
             } else {
-                // The buffer less the text; a text cut at 5000 lines cannot tell (taken as a full screen).
                 let total = (scroll?.maxOffsetFromBottom ?? 0) + rows
                 blank = lines.count < 5000 ? max(total - lines.count, 0) : 0
             }
             stale = false
             search(last: false)
         } catch {
-            await store.show(Notice(text: error.localizedDescription))
+            guard !closed else { return }
+            store.show(Notice(text: error.localizedDescription))
         }
     }
 
-    /// The next match down (1) or up (-1), round the ends.
     func step(_ offset: Int) async {
         if stale {
             await read()
@@ -82,8 +72,6 @@ final class Find {
         show()
     }
 
-    /// Counts the matches, case blind. A new query selects the last match, nearest the bottom; a read again keeps
-    /// the selected one's number.
     private func search(last: Bool) {
         let query = query.lowercased()
         matches = query.isEmpty ? [] : lines.indices.flatMap { index in
@@ -97,7 +85,6 @@ final class Find {
         show()
     }
 
-    /// The selected match's distance from herdr's last row.
     private var distance: Int? {
         current.map { lines.count - 1 - matches[$0] + blank }
     }
@@ -108,13 +95,10 @@ final class Find {
         }
     }
 
-    /// The matches on the screen herdr shows now, from its visible text (which leaves out the blank rows at its
-    /// end). The selected one is the match nearest the row its line is on: its distance from the end, less herdr's
-    /// offset, up from the screen's last row.
-    /// ponytail: columns count characters, so a line with wide characters (CJK, emoji) before a match puts its
+    /// ponytail: columns count characters, so a line with wide characters (CJK, emoji) ahead of a match puts its
     /// highlight off; measure cell widths if that matters.
     private func locate(_ client: any Multiplexer) async {
-        // Taken before the reads; a query changed meanwhile drops the result (its own scroll locates again).
+        // Taken ahead of the reads: a query changed meanwhile drops the result (its own scroll locates again).
         let query = query.lowercased(), distance = distance
         guard let distance, !query.isEmpty, let screen = try? await client.screen(paneID),
               let scroll = try? await client.pane(paneID).scroll, let offset = scroll.offsetFromBottom
@@ -149,21 +133,24 @@ final class Find {
         let row, column, length: Int
     }
 
-    /// 0 scrolls back to the bottom.
-    func scroll(_ offset: Int) {
+    func close() {
+        closed = true
+        scroll(0)
+    }
+
+    private func scroll(_ offset: Int) {
+        guard !closed || offset == 0 else { return }
         target = offset
         work()
     }
 
-    /// A frame came: the highlights are placed again 0.3 s after the last frame of a burst (agent TUIs redraw
-    /// all the time), after at most 1 s of waiting. Our own scroll's frames place them a second time; harmless.
+    /// Placed 0.3 s after the last frame of a burst, at most 1 s on: agent TUIs redraw all the time.
     func screenChanged() {
         lastFrame = .now
         work()
     }
 
-    /// Scrolls, then places the highlights, one step at a time; what was asked for meanwhile goes after. Not a
-    /// `store.write`: not queued behind other writes between keystrokes, and `locate`'s `pane.get` is the read
+    /// Not a `store.write`: not queued behind other writes between keystrokes, and `locate`'s `pane.get` is the read
     /// after it.
     private func work() {
         guard !working, let client = store.client else { return }
@@ -175,10 +162,9 @@ final class Find {
                     do {
                         try await client.scroll(paneID, offsetFromBottom: offset)
                     } catch {
-                        Task { await store.show(Notice(text: error.localizedDescription)) }
+                        store.show(Notice(text: error.localizedDescription))
                     }
                 } else {
-                    // A scroll asked for meanwhile goes at once.
                     let began = ContinuousClock.now
                     while target == nil, let last = lastFrame, .now - last < .milliseconds(300),
                           .now - began < .seconds(1)
@@ -218,7 +204,6 @@ struct FindBar: View {
                 }
                 .onExitCommand { page.closeFind() }
                 .accessibilityIdentifier("find.field")
-            // A fixed slot, so the bar keeps its width as the count changes.
             Text(find.count)
                 .monospacedDigit()
                 .foregroundStyle(.secondary)
@@ -239,12 +224,11 @@ struct FindBar: View {
         .floatingGlass(in: .capsule)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("find")
-        // A second ⌘F while the bar is open: the field again.
         .onChange(of: page.findFocus) { focused = true }
     }
 }
 
-/// The matches on the terminal's screen, placed by the surface's cell size: the terminal has no padding.
+/// Placed by the surface's cell size: the terminal has no padding.
 struct FindHighlights: View {
     let find: Find
     let terminal: PaneTerminal
@@ -264,26 +248,20 @@ struct FindHighlights: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .allowsHitTesting(false)
-        // For tests: what is lit, not pixels.
-        .accessibilityElement()
-        .accessibilityAddTraits(.isStaticText)
-        .accessibilityLabel("Matches")
-        .accessibilityValue(
+        .readableText(
             "\(find.shown.count) shown, current row \(find.shownCurrent.map { "\(find.shown[$0].row)" } ?? "none")",
         )
+        .accessibilityLabel("Matches")
         .accessibilityIdentifier("find.highlights")
-        // Only while the card shows (a hidden tab's frames place nothing), and a terminal made again gets it too.
         .onAppear { [weak find] in terminal.onFrame = { find?.screenChanged() } }
         .onDisappear { terminal.onFrame = nil }
     }
 }
 
 extension Page {
-    /// ⌘F: the bar on the keyboard card (or a floating window's pane), its field focused; reads the pane's text.
     func openFind(_ target: HostStore.Pane?) {
         guard let pane = target ?? keyboardPane else { return }
         if find?.paneID != pane.id {
-            // The keyboard stays where it is: not `closeFind`.
             dropFind()
             let find = Find(paneID: pane.id, store: store)
             self.find = find
@@ -292,7 +270,6 @@ extension Page {
         findFocus += 1
     }
 
-    /// Esc or ×: the bar closes and the keyboard goes back to the card.
     func closeFind() {
         guard let paneID = find?.paneID else { return }
         dropFind()
@@ -301,7 +278,6 @@ extension Page {
         }
     }
 
-    /// The bar's card is out of view: another tab, or another card of its tab zoomed; never a floated pane's.
     var findHidden: Bool {
         guard let find, store.pane(find.paneID).map(floats) != true else { return false }
         let tabID = store.pane(find.paneID)?.tabID
@@ -309,9 +285,8 @@ extension Page {
             == true
     }
 
-    /// The bar goes and herdr's shared viewport goes back to the bottom; also when its page or window closes.
     func dropFind() {
-        find?.scroll(0)
+        find?.close()
         find = nil
     }
 }

@@ -2,9 +2,7 @@ import HerdrKit
 import SwiftUI
 
 extension CommandList {
-    /// The pane's actions (D48), for View ▸ Pane on the keyboard card and the card header's context menu. Actions
-    /// ask `target` for the pane when they run: the menu bar may be older than the last keyboard move. `tabs`: Move
-    /// Pane to Tab lists the session's tabs (not in the menu bar).
+    /// Actions ask `target` for the pane when they run: the menu bar can lag the last keyboard move.
     static func pane(_ page: Page?, tabs: Bool = true, _ target: @escaping @MainActor () -> HostStore.Pane?)
         -> [Command]
     {
@@ -13,7 +11,6 @@ extension CommandList {
                  symbol: String? = nil, enabled: Bool = true, id: String? = nil, heading: String? = nil,
                  _ run: @escaping (Page, HostStore.Pane) async -> Void) -> Command
         {
-            // A split's ⌥ title, with a fixed pick: it shows the chooser.
             let alternate = fixed && section == .pane && title.hasPrefix("Split") ? title + " and Choose…" : nil
             return Command(section: section, title: title, id: id, key: key, group: .panes, symbol: symbol,
                            heading: heading, keywords: "pane", enabled: pane != nil && enabled,
@@ -23,9 +20,7 @@ extension CommandList {
                                }
                            })
         }
-        // Every tab of the session, under its workspace's name, but the pane's own: herdr refuses
-        // that move. A move into a tab lands right of its last card, as a drop on its capsule does: without a
-        // target herdr splits the tab's focused pane.
+        // herdr refuses a move into the pane's own tab, and without a target it splits the tab's focused pane.
         let others = (tabs ? page?.sidebarWorkspaces ?? [] : []).flatMap { workspace in
             workspace.tabs.filter { $0.id != pane?.tabID }.map { other in
                 act(page?.titleText(other) ?? other.label, nil, .paneMove, id: other.id, heading: workspace.label) {
@@ -59,22 +54,19 @@ extension CommandList {
                     enabled: pane != nil, name: pane.map { pane in
                         (pane.label ?? "", { await page?.store.rename(pane: pane.id, label: $0) })
                     }) { page?.renamingPaneID = target()?.id },
-            // herdr's label goes: the header shows the program again. Not a plugin pane's: its label is its kind.
+            // A plugin pane's label is its kind.
             act("Reset Pane Name", nil, .paneMove, symbol: "arrow.uturn.backward",
                 enabled: pane?.label != nil && pane?.plugin == nil) { await $0.store.rename(pane: $1.id, label: "") },
-        ] + pluginCard(pane?.terminalID.flatMap { page?.terminals.builtPlugin($0) }) + ends(page, pane, target)
+        ] + pluginCard(pane?.terminalID.flatMap { page?.terminals.plugins[$0] }) + ends(page, pane, target)
     }
 
-    /// Replace Pane, the commands that change the pane's kind (ui/new-pane) and Close Pane: last in the pane's menus,
-    /// in the File menu in the menu bar.
     private static func ends(_ page: Page?, _ pane: HostStore.Pane?,
                              _ target: @escaping @MainActor () -> HostStore.Pane?) -> [Command]
     {
-        // A fresh shell in the pane's place: after a change to the shell's setup.
         let replace = Command(section: .close, title: "Replace Pane", key: .replacePane, group: .panes,
                               symbol: "arrow.clockwise.square", keywords: "pane restart new shell respawn reset",
                               enabled: pane != nil) { page?.replacePane(target()) }
-        // The program paints its screen again; not on a plugin card, whose ⌥⌘R is Reload Plugin.
+        // A plugin card's ⌥⌘R is Reload Plugin.
         let redraw = pane?.plugin != nil ? [] : [
             Command(
                 section: .close,
@@ -91,7 +83,6 @@ extension CommandList {
                 },
             ),
         ]
-        // Only on an agent or plugin pane: on a terminal it is Replace Pane.
         let terminal = pane?.agent == nil && pane?.plugin == nil ? [] : [
             Command(section: .close, title: "Open Terminal Here", group: .panes, symbol: "terminal",
                     keywords: "pane shell kind") { page?.replacePane(target(), Replacement(button: "Open Terminal")) },
@@ -107,7 +98,8 @@ extension CommandList {
                            })
         }
         let agent = Command(section: .close, title: "Start Agent Here", group: .panes, symbol: "sparkles",
-                            keywords: "pane kind claude code codex pi opencode", enabled: pane != nil,
+                            keywords: "pane kind " + Chooser.agents.map(\.name).joined(separator: " ").lowercased(),
+                            enabled: pane != nil,
                             menu: Chooser.agents.map { agent in
                                 Command(section: .close, title: agent.name, program: agent.command) {
                                     if let page, let pane = target() {
@@ -123,16 +115,14 @@ extension CommandList {
 }
 
 extension CommandList {
-    /// The floating window's commands (D50): only what applies to it.
     func floatingCommands(_ floating: Floating) -> [Command] {
         let terminalID = floating.terminalID
         guard let page = pages?.withFloats.first(where: { $0.id == floating.session }) else { return [] }
-        let pane = page.store.panes.first { $0.terminalID == terminalID }
+        let pane = page.store.terminalPane(terminalID)
         let terminal = pane.flatMap(page.terminal), editor = page.editor(pane)
         var main = self
         main.floating = nil
         let browser = pane.flatMap(page.browser)
-        // A floating browser zooms its own page and undoes its pinch, whatever the main window's keyboard card is.
         let steps = ["Increase Font Size": 1, "Decrease Font Size": -1, "Reset Font Size": 0]
         let sizes = main.all.filter { $0.section == .size || $0.title == "Font Size" }.map { size in
             guard let browser, let step = steps[size.title] else { return size }
@@ -156,16 +146,17 @@ extension CommandList {
                     enabled: palette != nil) { palette?.wrappedValue.toggle() },
             Command(section: .view, title: "Stay on Top", symbol: "pin", checked: page.floating[terminalID] == true,
                     setting: true) { page.floating[terminalID]?.toggle() },
-        ] + Self.editorCommands(page: page, pane: pane, terminal: pane.map { $0.plugin == nil } == true) { editor }
+        ] + Self.editorCommands(page: page, pane: pane, terminal: pane.map {
+            $0.plugin == nil && page.store.chat($0)?.showsChat != true
+        } == true) { editor }
             + [
                 edit("Copy", #selector(NSText.copy(_:)), "doc.on.doc"),
                 edit("Paste", #selector(NSText.paste(_:)), "doc.on.clipboard"),
             ] + Self.pane(page, tabs: false) { pane }.filter { $0.section == .close }.map {
-                // ⌘W detaches, as the red light.
                 var command = $0
                 command.key = command.key == .closePane ? .closeTab : command.key
                 return command
             } + sizes + Self.browser(browser, chooser: pane.flatMap { page.store.chooser($0.id) })
-        return list + Self.plugin(pane?.terminalID.flatMap(page.terminals.builtPlugin), besides: list)
+        return list + Self.plugin(pane?.terminalID.flatMap { page.terminals.plugins[$0] }, besides: list)
     }
 }

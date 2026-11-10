@@ -2,12 +2,10 @@ import HerdrKit
 import SwiftUI
 
 extension Page {
-    /// The card with the keyboard when it takes ⌘S or ⌘F: the menu's Save and Find go to its page.
     var editor: Plugin? {
         editor(keyboardPane)
     }
 
-    /// Find Next (1) or Previous (-1): in the editor's page, else in the terminal's find bar.
     func findStep(_ step: Int, in editor: Plugin?) {
         if let editor {
             editor.command(step > 0 ? "findNext" : "findPrevious")
@@ -16,22 +14,19 @@ extension Page {
         }
     }
 
-    /// The pane's card when it takes ⌘S or ⌘F (`handles`): File Explorer's File, Markdown and tree, and a Git diff.
     /// Only a card already made: a menu never makes one.
     func editor(_ pane: HostStore.Pane?) -> Plugin? {
-        pane?.terminalID.flatMap(terminals.builtPlugin).flatMap { $0.handles("save") || $0.handles("find") ? $0 : nil }
+        pane?.terminalID.flatMap { terminals.plugins[$0] }
+            .flatMap { $0.handles("save") || $0.handles("find") ? $0 : nil }
     }
 }
 
 extension CommandList {
-    /// Save, Find…, Find Next and Find Previous, in the main and the floating windows. Over a card that
-    /// takes them (`editor`, asked again when an item runs: the menu bar may be older than the last keyboard move)
-    /// they act in its page; else Find opens `pane`'s find bar (the keyboard card's when nil) when `terminal`. ⌘S and
-    /// ⇧⌘G have their key only over an editor: a disabled item would swallow them elsewhere (⇧⌘G is Go to Directory).
+    /// `editor` is asked again when an item runs: the menu bar can lag the last keyboard move. A disabled item would
+    /// swallow ⌘S and ⇧⌘G elsewhere (⇧⌘G is Go to Directory).
     static func editorCommands(page: Page?, pane: HostStore.Pane?, terminal: Bool,
                                _ editor: @escaping @MainActor () -> Plugin?) -> [Command]
     {
-        // A plugin's card takes only what its manifest `handles`.
         let finder = { editor().flatMap { $0.handles("find") ? $0 : nil } }
         let save = editor()?.handles("save") == true, over = finder() != nil, find = page?.find != nil
         return [

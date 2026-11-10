@@ -1,7 +1,5 @@
 import XCTest
 
-/// Pane cards and the layout: dividers, equal splits, keys, the header's context menu and zoom. Each test
-/// makes its own tab in w2 (closed after) and checks herdr's tree.
 extension OvviUITests {
     func testDividersDragDoubleClickAndBalance() async throws {
         let (tab, first) = try await newTab("dividers")
@@ -9,15 +7,13 @@ extension OvviUITests {
         let second = try await split(first), third = try await split(second)
         element("tab.\(tab)").click()
         let divider = element("divider.\(tab).root")
-        // The second split's divider: the app has all three panes.
         XCTAssertTrue(element("divider.\(tab).1").exists(within: 3))
 
-        // ⌥⌘= through its menu item: a global hotkey on this Mac takes the key before the app sees it.
+        // ⌥⌘= through its menu item: a global hotkey on this Mac takes the key ahead of the app.
         pick("Pane", "Balance Splits")
         try await expectWidths(tab, [first: 1 / 3, second: 1 / 3, third: 1 / 3])
         XCTAssertTrue(divider.has(\.stringValue, "33%", within: 3), divider.stringValue)
 
-        // The row less the page's two edges and the root's gap.
         let total = element("page.\(tab)").frame.width - 3 * 8
         let center = divider.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
         center.hover()
@@ -39,11 +35,8 @@ extension OvviUITests {
             element("pane.\(pane).split-right").click()
             try await expect("\(count) panes in herdr") { try await order(tab).count == count }
         }
-        // Not herdr's 50 / 25 / 25.
         let panes = try await order(tab)
         try await expectWidths(tab, Dictionary(uniqueKeysWithValues: panes.map { ($0, 1.0 / 3) }))
-        // After the motion each terminal fits its card again, 10 pt in from each side (it holds its size while cards
-        // move).
         for pane in panes {
             try await expect("terminal \(pane) fits its card") {
                 abs(element("terminal.\(pane)").frame.width - (element("pane.\(pane)").frame.width - 2 * 10)) <= 2
@@ -62,11 +55,9 @@ extension OvviUITests {
 
         app.typeKey(.rightArrow, modifierFlags: [.command, .option])
         XCTAssertTrue(hasKeyboard("terminal.\(second)"))
-        // Round the ends: after the last card is the first.
         app.typeKey("]", modifierFlags: .command)
         XCTAssertTrue(hasKeyboard("terminal.\(first)"))
 
-        // Resize Pane has no key: ⌃⌘→ resizes nothing.
         app.typeKey(.rightArrow, modifierFlags: [.command, .control])
         pick("Pane", "Resize Pane Right")
         try await expectRatio(tab, 0.55)
@@ -76,28 +67,22 @@ extension OvviUITests {
         try await expect("the two swapped") { try await order(tab) == [second, first] }
         XCTAssertTrue(hasKeyboard("terminal.\(first)"))
 
-        // Focus follows mouse: a pointer resting on the other card takes the keyboard there, also once a rename
-        // that held it back ends (Esc gives the keyboard back to the first card first).
         pick("Pane", "Focus Follows Mouse")
         addTeardownBlock { @MainActor in self.pick("Pane", "Focus Follows Mouse") }
         paneMenu(first, "Rename Pane…")
         XCTAssertTrue(hasKeyboard("pane.\(first).rename"))
         hoverHeader(second)
-        // For a second the rename keeps the keyboard: typing holds the move back.
         let rename = element("pane.\(first).rename")
         XCTAssertFalse(until(1) { !NSPredicate(format: "hasKeyboardFocus == true").evaluate(with: rename) })
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(hasKeyboard("terminal.\(second)"))
     }
 
-    /// Closing the keyboard card gives the keyboard to the card used before it in the tab, most recent first, not to
-    /// herdr's focused pane or the neighbor.
     func testClosingAPaneGivesTheKeyboardToThePaneUsedBefore() async throws {
         let (tab, first) = try await newTab("used-panes")
         let second = try await split(first), third = try await split(second), fourth = try await split(third)
         element("tab.\(tab)").click()
         try await settle([tab])
-        // The second, the fourth, then the first (herdr's focused pane: splits pass focus:false).
         for pane in [second, fourth, first] {
             element("terminal.\(pane)").click()
             XCTAssertTrue(hasKeyboard("terminal.\(pane)"), pane)
@@ -105,14 +90,11 @@ extension OvviUITests {
         app.typeKey("w", modifierFlags: .command)
         XCTAssertTrue(element("pane.\(first)").vanishes(within: 3))
         XCTAssertTrue(hasKeyboard("terminal.\(fourth)"))
-        // Two back: the second, not the fourth's neighbor, the third.
         app.typeKey("w", modifierFlags: .command)
         XCTAssertTrue(element("pane.\(fourth)").vanishes(within: 3))
         XCTAssertTrue(hasKeyboard("terminal.\(second)"))
     }
 
-    /// A split's new pane gets the keyboard (⌘D and the header's button); ⌘[ ⌘] step in the tree's order, not the
-    /// order the panes were made; ⇧⌘↩ zooms the keyboard card.
     func testSplitsGiveTheNewPaneTheKeyboardAndKeysFollowTheTree() async throws {
         let (tab, first) = try await newTab("split-keys")
         element("tab.\(tab)").click()
@@ -121,7 +103,6 @@ extension OvviUITests {
         app.typeKey("d", modifierFlags: .command)
         let second = try await poll("a pane right of the first") { try await order(tab).last { $0 != first } }
         XCTAssertTrue(hasKeyboard("terminal.\(second)"))
-        // Below the first: the tree's order is first, third, second.
         hoverHeader(first)
         element("pane.\(first).split-down").click()
         let third = try await poll("a pane below the first") { () async throws -> String? in
@@ -143,8 +124,6 @@ extension OvviUITests {
         XCTAssertTrue(element("pane.\(first)").exists(within: 2))
     }
 
-    /// ⌘D pressed fast three times splits the newest card each time, as Ghostty does, and the last one made keeps the
-    /// keyboard; ⌘W then steps back through them. Each new card comes once: herdr's pane takes its stand-in's card.
     func testQuickSplitsSplitTheNewestAndItKeepsTheKeyboard() async throws {
         relaunch(one, ["-recordMotion", "YES", "-forceMotion", "YES"])
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
@@ -159,7 +138,6 @@ extension OvviUITests {
         func counts(came: Int, went: Int) -> String {
             "\(before[0] + came) \(before[1] + went)"
         }
-        // Back to back: the second and third ⌘D come while herdr makes the first's pane (a split is 4 herdr runs).
         for _ in 0 ..< 3 {
             app.typeKey("d", modifierFlags: .command)
         }
@@ -167,8 +145,6 @@ extension OvviUITests {
             let panes = try await order(tab)
             return panes.count == 4 ? panes : nil
         }
-        // The newest is the rightmost, and herdr's tree is P | (Q | (R | S)): each ⌘D split the newest. A split of an
-        // older card nests apart (A | C | B | D: the second ⌘D split the first card).
         XCTAssertEqual(panes.first, first)
         var node = try await root(tab)
         for pane in panes.dropLast() {
@@ -176,7 +152,6 @@ extension OvviUITests {
             node = node["second"] as? [String: Any] ?? [:]
         }
         XCTAssertTrue(hasKeyboard("terminal.\(panes[3])"))
-        // herdr's cards shown: three came, none went.
         XCTAssertTrue(cards.has(\.stringValue, counts(came: 3, went: 0), within: 2), "came went: \(cards.stringValue)")
         pickTerminal(panes[3])
         try await typeAndRead(panes[3])
@@ -188,9 +163,6 @@ extension OvviUITests {
         XCTAssertTrue(cards.has(\.stringValue, counts(came: 3, went: 2), within: 2), "came went: \(cards.stringValue)")
     }
 
-    /// ⌥⌘ arrows pick from the layout, at once, as Ghostty does (the user's layout): three columns, the third
-    /// in four rows. Of the cards along the edge, the one used last, else the one sharing most of it, the top one on a
-    /// tie.
     func testSelectPaneKeysPickTheLastUsedElseTheTopNeighbor() async throws {
         let (tab, first) = try await newTab("arrows")
         let second = try await split(first)
@@ -205,7 +177,6 @@ extension OvviUITests {
         XCTAssertTrue(hasKeyboard("terminal.\(first)"))
         let steps: [(XCUIKeyboardKey, String)] = [
             (.rightArrow, second), (.rightArrow, rows[0]), (.downArrow, rows[1]), (.downArrow, rows[2]),
-            // Back to the row used last, not the top one.
             (.leftArrow, second), (.rightArrow, rows[2]),
             (.leftArrow, second), (.leftArrow, first), (.leftArrow, first), (.upArrow, first),
         ]
@@ -231,26 +202,21 @@ extension OvviUITests {
         let field = element("pane.\(pane).rename")
         XCTAssertTrue(hasKeyboard(field))
         field.typeText("renamed\r")
-        try await expect("herdr's label") { try await label(pane) == "renamed" }
+        try await expect("herdr's label") { try await paneLabel(pane) == "renamed" }
         XCTAssertTrue(element("pane.\(pane)").has(\.label, "renamed", within: 2))
-        // Reset Pane Name clears it: the header shows the program again.
         paneMenu(pane, "Reset Pane Name")
-        try await expect("no label") { try await label(pane) == nil }
+        try await expect("no label") { try await paneLabel(pane).isEmpty }
         XCTAssertTrue(until(2) { element("pane.\(pane)").label != "renamed" })
 
         let before = try await tabIDs()
         paneMenu(pane, "Move Pane to Tab", "New Tab")
         let moved = try await newTabID(after: before)
-        // Gone already after the move to a new workspace below, which takes its only pane.
         closeAfter("tab", moved)
         try await expect("the pane in the new tab") { try await order(moved) == [pane] }
-        // The page follows the pane.
         XCTAssertTrue(element("tab.\(moved)").has(\.isSelected, true, within: 3))
 
-        // To a new workspace: a new pane id, the same terminal, and it keeps the keyboard.
         let terminal = try await terminalID(pane)
         let workspaces = try await workspaceIDs()
-        XCTAssertFalse(workspaces.isEmpty)
         closeNew("workspace", besides: workspaces)
         paneMenu(pane, "Move Pane to Tab", "New Space")
         let away = try await poll("the pane in a new workspace") { () async throws -> String? in
@@ -282,7 +248,6 @@ extension OvviUITests {
         XCTAssertFalse(element("pane.\(first).split-down").exists)
         keepScreenshot("zoomed card")
 
-        // Its neighbor gone, the card is alone: the zoom ends.
         try await Self.call(one, "pane.close", ["pane_id": second])
         XCTAssertTrue(element("pane.\(first).split-right").exists(within: 3))
         XCTAssertEqual(element("pane.\(first).zoom").label, "Zoom Pane ⇧⌘↩")
@@ -291,7 +256,6 @@ extension OvviUITests {
 }
 
 extension OvviUITests {
-    /// Right-clicks the card's header and picks the item of its context menu.
     func paneMenu(_ pane: String, _ item: String, _ subitem: String? = nil, screenshot: String? = nil) {
         element("pane.\(pane)").coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 60, dy: 18))
             .rightClick()
@@ -325,7 +289,6 @@ extension OvviUITests {
         return try field(layout?["root"], "\(tab)'s layout")
     }
 
-    /// The tab's panes, first to last.
     func order(_ tab: String) async throws -> [String] {
         func leaves(_ node: [String: Any]) -> [String] {
             if let id = node["pane_id"] as? String {
@@ -336,7 +299,6 @@ extension OvviUITests {
         return try await leaves(root(tab))
     }
 
-    /// Each pane's share of the tab's width, within 0.02.
     func expectWidths(_ tab: String, _ widths: [String: Double]) async throws {
         func shares(_ node: [String: Any], _ share: Double) -> [String: Double] {
             if let id = node["pane_id"] as? String {
@@ -354,12 +316,7 @@ extension OvviUITests {
         }
     }
 
-    /// The ratio of the tab's root split, within 0.02.
     func expectRatio(_ tab: String, _ ratio: Double) async throws {
         try await expect("ratio \(ratio)") { try await abs((root(tab)["ratio"] as? Double ?? -1) - ratio) <= 0.02 }
-    }
-
-    func label(_ pane: String) async throws -> String? {
-        try await self.pane(pane)["label"] as? String
     }
 }

@@ -1,19 +1,15 @@
-// Preview: an image, a PDF (pdf.js), audio or video (WebKit's player) from the card's file, or the info view. Row 2:
-// a PDF's page, and zoom for images and PDFs.
 import type { OvviError } from "@ovvi/plugin-api"
 import { failed, info } from "./info"
 import { drawn, extension, type Place, type Reveal } from "./place"
 
 const ZOOM = ["fit", "actual", "out", "in"] as const
 type Zoom = (typeof ZOOM)[number]
-/** pdf.js's viewer styles, loaded once, by the first PDF. */
 let styled: Promise<unknown> | undefined
 
 export async function show(place: Place): Promise<Reveal> {
-  const { ovvi, arg: path, root, keep, live } = place
+  const { ovvi, arg: path, element: root, keep } = place
   const ext = extension(path), group = drawn(path)
   let zoom: (to: Zoom) => void = () => {}
-  /** What the file shown holds: an image's resize observer, a PDF's worker, a blob's address. */
   let release = () => {}
   keep(() => release())
   for (const step of ZOOM) ovvi.controls.set(`zoom.${step}`, { hidden: group !== "image" && group !== "pdf" })
@@ -28,7 +24,6 @@ export async function show(place: Place): Promise<Reveal> {
     const img = Object.assign(new Image(), { src: url, alt: path.split("/").pop() ?? "" })
     box.append(img)
     root.replaceChildren(box)
-    // Fit shrinks a large image to the card, never enlarges a small one.
     let scale: number | "fit" = "fit"
     const fit = () => Math.min(1, box.clientWidth / img.naturalWidth, box.clientHeight / img.naturalHeight)
     const apply = () => {
@@ -52,13 +47,13 @@ export async function show(place: Place): Promise<Reveal> {
     // The viewer reads the library from here.
     Object.assign(globalThis, { pdfjsLib: pdfjs })
     const { EventBus, PDFViewer } = await import("pdfjs-dist/web/pdf_viewer.mjs")
-    // pdf.js's viewer styles (124 KB, the build copies them) only in a card that shows a PDF.
+    // pdf.js's viewer styles are 124 KB: only in a card that shows a PDF.
     styled ??= new Promise((done) => {
       const link = Object.assign(document.createElement("link"), { rel: "stylesheet", href: "pdf_viewer.css" })
       document.head.append(Object.assign(link, { onload: done, onerror: done }))
     })
     await styled
-    if (!live()) return
+    if (place.dropped) return
     const container = Object.assign(document.createElement("div"), { className: "pdf" })
     container.append(Object.assign(document.createElement("div"), { className: "pdfViewer" }))
     root.replaceChildren(container)
@@ -74,9 +69,9 @@ export async function show(place: Place): Promise<Reveal> {
     // Ends the document and its worker, also of a load under way.
     release = () => void task.destroy()
     const document_ = await task.promise.catch(() => undefined)
-    if (!document_ || !live()) {
+    if (!document_ || place.dropped) {
       release()
-      return live() && fallback()
+      return !place.dropped && fallback()
     }
     viewer.setDocument(document_)
     page(`1 of ${document_.numPages}`)
@@ -88,13 +83,11 @@ export async function show(place: Place): Promise<Reveal> {
   }
 
   let hash: string | undefined
-  /** The file's bytes, drawn; the info view for a kind not drawn, or a file WebKit or pdf.js cannot decode. */
   const draw = async () => {
     if (!group) return info(ovvi, path, root)
-    // The card shown again, or a change that left the bytes as they were: the hash first, no bytes read.
     if (hash && (await ovvi.files.info(path).catch(() => undefined))?.hash === hash) return
     const file = await ovvi.files.readBytes(path).catch((error: OvviError) => error)
-    if (!live() || (!(file instanceof Error) && file.hash === hash)) return
+    if (place.dropped || (!(file instanceof Error) && file.hash === hash)) return
     zoom = () => {}
     release()
     release = () => {}
@@ -110,7 +103,6 @@ export async function show(place: Place): Promise<Reveal> {
       void info(ovvi, path, root)
     }
     if (group === "pdf") return pdf(file.data, fallback)
-    // The system's type, else the kind's group with the extension.
     const type = file.type === "application/octet-stream" ? `${group}/${ext}` : file.type
     const url = URL.createObjectURL(new Blob([file.data as BlobPart], { type }))
     const revoke = () => URL.revokeObjectURL(url)

@@ -1,5 +1,4 @@
-/* Every plugin page's base (PluginScheme.swift): the app sets the colors on the root element (WebCard.swift); the
-   card's fill draws behind the page. Cards keep one text size, as native ones do. */
+/* The card's fill draws behind the page. */
 :root {
   --font-size: 13px;
 }
@@ -11,9 +10,6 @@ body {
   color: var(--text);
   font: var(--font-size) system-ui;
 }
-/* A sidebar that slides in and out, as the system's do: a flex child with `--sidebar-width`, the attribute
-   `data-closed` slides it out of its row (its parent clips) and the content beside it takes the room. On the left, or
-   on the right with the class `end`. */
 .ovvi-sidebar {
   flex: none;
   box-sizing: border-box;
@@ -33,7 +29,7 @@ body {
     transition: none;
   }
 }
-/* A place's page (`ovvi.pages`), over the whole card. A hidden one is `inert`: it keeps its layout and its scroll. */
+/* A hidden page keeps its layout and its scroll. */
 .ovvi-page {
   position: absolute;
   inset: 0;

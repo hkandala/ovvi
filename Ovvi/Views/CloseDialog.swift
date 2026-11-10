@@ -1,11 +1,9 @@
+import Carbon.HIToolbox
 import HerdrKit
 import SwiftUI
 
-/// A close or a Replace Pane waiting for the user's yes (D41), in the window it was asked in: a floated pane's in
-/// its floating window (D50), every other in the main window.
 struct CloseDialog: ViewModifier {
     let page: Page
-    /// The floating window's pane; nil in the main window.
     var floated: String?
 
     func body(content: Content) -> some View {
@@ -16,7 +14,7 @@ struct CloseDialog: ViewModifier {
             return floated == id ? closing : nil
         }
         let dialog = dialog(closing)
-        // An alert: a confirmation dialog ignored Return. Its action is red, so not AppKit's default button: Return
+        // An alert: a confirmation dialog ignores Return. Its action is red, so not AppKit's default button: Return
         // clicks it all the same (`NSWindow.confirm`).
         content.alert(dialog?.title ?? "", isPresented: Binding { closing != nil } set: {
             if !$0 {
@@ -83,14 +81,13 @@ private extension HostStore.Close {
 
 @MainActor
 extension NSWindow {
-    /// Return (or Enter) in an alert whose action is red clicks that action (D41: Return confirms). AppKit draws a
-    /// destructive button red only while it is not the default button, and then gives it no Return; as the default it
-    /// is blue. Not in a sheet with a default button: AppKit's Return goes there. Whether it clicked.
+    /// AppKit draws a destructive button red only while it is not the default button, and then gives it no Return. Not
+    /// in a sheet with a default button: AppKit's Return goes there.
     static func confirm(_ event: NSEvent) -> Bool {
         func buttons(_ view: NSView) -> [NSButton] {
             [view as? NSButton].compactMap(\.self) + view.subviews.flatMap(buttons)
         }
-        guard [36, 76].contains(event.keyCode),
+        guard [kVK_Return, kVK_ANSI_KeypadEnter].contains(Int(event.keyCode)),
               event.modifierFlags.isDisjoint(with: [.command, .shift, .option, .control]),
               let window = NSApp.keyWindow, window.sheetParent != nil else { return false }
         let all = window.contentView.map(buttons) ?? []

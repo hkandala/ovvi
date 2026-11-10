@@ -39,16 +39,18 @@ Each library has its entry, with its license, in the app's `Acknowledgements.txt
    session pages; anything else goes to the view under the pointer. A gesture
    begun with ⌥ held goes to the window's sessions or the sidebar's rows
    ([Swiping](/docs/ui/swiping)).
-2. **SwiftUI destroys a tab's views when another tab shows.** The window
-   shows only the selected tab's page, a view of its own per tab, so a switch
-   replaces it at once. The PaneViewRegistry owns every terminal view. Each
-   SwiftUI wrapper makes its own container; the newest container adopts the
-   view, and a container removes it only if it still owns it. Stream lifetime
-   follows the HostStore, never whether a view is in a window. Off-screen
-   surfaces stop drawing but keep reading their stream (herdr drops a watcher
-   that reads nothing for 30 s). At most 25 streaming terminals and 25 web
-   cards out of view (D46), least recently used first out; an evicted card
-   frees its surface or its web view and keeps its last image.
+2. **SwiftUI destroys a tab's views when another tab shows.** The window shows
+   only the selected tab's page, a view of its own per tab, so a switch
+   replaces it at once. The PaneViewRegistry owns every terminal and web view.
+   Each SwiftUI wrapper makes its own container; a shown container takes the
+   view. A hidden one (a kept page out of view) takes only a view no container
+   has, and takes it as its page shows. A container removes the view only if
+   it still owns it. Stream lifetime follows the HostStore, never whether a
+   view is in a window. Off-screen surfaces stop drawing but keep reading
+   their stream (herdr drops a watcher that reads nothing for 30 s). At most
+   25 streaming terminals and 25 web cards out of view (D46), least recently
+   used first out; an evicted card frees its surface or its web view and keeps
+   its last image.
 3. **libghostty's default key bindings eat the app's shortcuts.** Every
    surface gets `keybind = clear`, and keys go to the main menu first.
 
@@ -92,10 +94,11 @@ Each library has its entry, with its license, in the app's `Acknowledgements.txt
   `scripts/swipe.swift` and `scripts/drag.swift`.
 - **Unit tests** in `HerdrKit` (`swift test`), only for logic with branches:
   decoding a recorded herdr snapshot, the split-tree rebuild, the equal-split
-  ratios, the snapshot pacing (one read in flight, read again), float
-  requests, the seen rules, git status parsing, fuzzy matching, program icon
+  ratios, the snapshot pacing (one read in flight, read again), agent
+  requests and their tokens, the seen rules, git status parsing, fuzzy matching, program icon
   matching, the terminal stream's frames, the remote command envelope and
-  the relay, and `Files` and `Git` (listings, reads, saves, the patch and the
+  the relay, the agents' transcripts and closed sessions, session titles,
+  pane labels, the plugin manifest, packages and calls, the SOCKS front, and `Files` and `Git` (listings, reads, saves, the patch and the
   graph) run through `ProcessExec` and the relay on a real repository.
 - **Plugin tests** (`PluginTests`, `FileTests`, `MarkdownTests`,
   `FilesTests`, `GitTests`, `HeaderTests`, `PluginAPITests`,

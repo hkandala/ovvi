@@ -63,11 +63,12 @@ The template's `package.json`:
   "ovvi": {
     "id": "my-plugin",
     "name": "My Plugin",
-    "api": 1,
+    "api": 3,
     "entry": "dist/main.js",
     "icon": "doc.plaintext",
     "opens": { "files": ["*.txt"], "priority": "option" },
-    "header": [{ "id": "lines", "type": "text", "style": "dim" }]
+    "header": [{ "id": "lines", "type": "text", "style": "dim" }],
+    "settings": [{ "id": "wrap", "type": "toggle", "title": "Wrap long lines", "default": true }]
   }
 }
 ```
@@ -293,7 +294,8 @@ An agent in a pane on This Mac makes a plugin with the `ovvi` command
    ([Errors and logs](/docs/plugins/errors)).
 
 A plugin folder that the agent makes by hand loads with
-`ovvi plugins reload <id>`. Its first card asks the user to confirm it. To
+`ovvi plugins reload`, with no id (with its id, the command answers that
+the plugin is not confirmed yet). Its first card asks the user to confirm it. To
 install from npm, git or a folder, the agent runs
 `ovvi plugins install <source>`, and the user answers the confirmation on
 the Mac.
@@ -310,8 +312,8 @@ the same `build`, `dev` and `check` scripts, a lockfile, their own
 
 | Plugin | Dependencies | Build |
 |---|---|---|
-| File Explorer (`plugins/explorer`) | CodeMirror 6 with its languages, `@pierre/trees`, markdown-it, `pdfjs-dist` | copies pdf.js's files into `dist/`, then esbuild with `.svg` and `.gif` left external |
-| Git (`plugins/git`) | `@pierre/diffs` | the template's esbuild line |
+| File Explorer (`plugins/explorer`) | CodeMirror 6 with its languages, `@pierre/trees`, markdown-it, `pdfjs-dist` | copies pdf.js's files into `dist/`, then the template's esbuild line |
+| Git (`plugins/git`) | `@pierre/diffs`, `@pierre/trees` | the template's esbuild line |
 
 - Each has one entry, `src/main.ts`, that routes the card's places and
   loads each heavy place with `import()`
@@ -328,13 +330,21 @@ Git's manifest:
 "ovvi": {
   "id": "git",
   "name": "Git",
-  "api": 1,
+  "api": 3,
   "entry": "dist/main.js",
   "icon": "source.branch",
   "opens": { "git": true },
   "chooser": "Git",
   "history": true,
   "handles": ["find"],
+  "settings": [
+    { "id": "diff-layout", "type": "choice", "title": "Diff layout", "default": "unified",
+      "options": [{ "value": "unified", "title": "Unified" }, { "value": "split", "title": "Side by Side" }] },
+    { "id": "wrap", "type": "toggle", "title": "Wrap long lines", "default": false },
+    { "id": "file-list", "type": "toggle", "title": "Show the file list when a diff opens", "default": false },
+    { "id": "commits", "type": "number", "title": "Commits in the history", "default": 500, "min": 100,
+      "max": 5000, "step": 100 }
+  ],
   "header": [
     { "type": "menu", "id": "git.branch", "symbol": "source.branch", "title": "—", "label": "Branch",
       "enabled": false, "hidden": true },
@@ -368,25 +378,21 @@ import type { Ovvi } from "@ovvi/plugin-api"
 import "./rows.css"
 import "./home.css"
 import "./diff.css"
+import { ovvi as manifest } from "../package.json"
 import * as Home from "./home"
+import { parse } from "./lib"
 
-const HOME = ["git.branch", "git.working", "git.fetch", "git.pull", "git.push"]
-const DIFF = ["diff.home", "diff.layout", "diff.wrap", "diff.file-list", "diff.previous", "diff.next"]
+const DIFF = manifest.header.flatMap(({ id }) => (id?.startsWith("diff.") ? [id] : []))
+const HOME = manifest.header.flatMap(({ id }) => (id && !id.startsWith("diff.") ? [id] : []))
 
 export default async function main(ovvi: Ovvi) {
-  let Diff: typeof import("./diff") | undefined
-
-  async function show(arg: string, at?: string) {
-    const diff = arg.includes("/ ")               // "<root>/ <source>" is a diff, "<root>/" the home
-    for (const id of HOME) ovvi.controls.set(id, { hidden: diff })
-    for (const id of DIFF) ovvi.controls.set(id, { hidden: !diff })
-    if (!diff) return Home.show(arg, at)
-    Diff ??= await import("./diff")               // @pierre/diffs loads on the first diff
-    return Diff.show(arg, at)
-  }
-
-  ovvi.on("place", ({ arg, at }) => void show(arg, at))
-  await show(ovvi.card.arg, ovvi.card.at)
+  await ovvi.pages.route(async (page) => {
+    const { root, source } = parse(page.arg)       // "<root>/ <source>" is a diff, "<root>/" the home
+    for (const id of HOME) page.ovvi.controls.set(id, { hidden: source !== undefined })
+    for (const id of DIFF) page.ovvi.controls.set(id, { hidden: source === undefined })
+    if (source === undefined) await Home.make(page, root)
+    else await (await import("./diff")).make(page, root, source)   // @pierre/diffs loads on the first diff
+  })
 }
 ```
 

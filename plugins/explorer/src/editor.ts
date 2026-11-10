@@ -1,6 +1,3 @@
-// The CodeMirror editor of a card's file, shared by File and Markdown: the file read through the app, the Edited dot,
-// ⌘S saved by the hash it was read with, ⌘F from the app's menu and ⌥⌘F (find.ts), and the file again after a change
-// on disk.
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands"
 import {
   bracketMatching,
@@ -29,10 +26,9 @@ import { finder } from "./find"
 import { failed, info } from "./info"
 import { name, type Place } from "./place"
 
-/** CodeMirror parses past the first screen in idle time, on a budget of the wall clock (3 s in 30 s), and starts a new
- *  budget only while the editor has focus. A page the system paused mid-parse (a hidden card's, a sleeping Mac's)
- *  spent it all at once, and a card that never takes focus (locked, or read beside a terminal) kept the lines in view
- *  unparsed: Markdown raw, code plain. The lines in view are parsed here, 50 ms at a time, whatever the focus. */
+/** CodeMirror parses past the first screen in idle time, on a wall-clock budget (3 s in 30 s) that renews only while
+ *  the editor has focus: a page the system paused mid-parse spends it at once, and a card that never takes focus keeps
+ *  the lines in view unparsed. */
 const parsed = ViewPlugin.fromClass(
   class {
     pending = 0
@@ -61,12 +57,9 @@ const parsed = ViewPlugin.fromClass(
   },
 )
 
-/** One color per look: the card's `color-scheme` picks the side. */
 const color = (light: string, dark: string) => `light-dark(${light}, ${dark})`
 
-/** The diff's colors: @pierre/diffs' default Shiki themes, Pierre Light and Pierre Dark (@pierre/theme), by the
- *  TextMate scope each tag stands for; Markdown's marks as punctuation, its links, code and quotes as the themes draw
- *  them in Markdown. */
+/** @pierre/diffs' default Shiki themes, Pierre Light and Pierre Dark, by the TextMate scope each tag stands for. */
 const highlight = HighlightStyle.define([
   { tag: [tags.keyword, tags.modifier, tags.controlKeyword, tags.operatorKeyword], color: color("#d32a61", "#ff678d") },
   { tag: [tags.string, tags.special(tags.string), tags.monospace], color: color("#199f43", "#5ecc71") },
@@ -89,7 +82,6 @@ const highlight = HighlightStyle.define([
   { tag: tags.invalid, color: "var(--error)" },
 ])
 
-/** Code as File and Markdown's Source draw it. */
 export const code = [lineNumbers(), highlightActiveLineGutter(), syntaxHighlighting(highlight)]
 
 const theme = EditorView.theme({
@@ -102,39 +94,33 @@ const theme = EditorView.theme({
   ".cm-gutters": { background: "transparent", color: "var(--dim)", border: "none" },
   ".cm-activeLine, .cm-activeLineGutter": { background: "color-mix(in srgb, var(--text) 6%, transparent)" },
   ".cm-searchMatch": { background: "color-mix(in srgb, var(--finished) 35%, transparent)" },
-  // The find bar floats at the top right over the text, as the terminal's (find.css); a match scrolls below it.
   ".cm-panels.cm-panels-top": {
     position: "absolute", top: "8px", right: "12px", left: "auto", background: "none", border: "none",
     maxWidth: "calc(100% - 24px)",
   },
 })
 
-/** The selection in the accent, also Source's page's (WebKit's own there). As specific as CodeMirror's light
- *  selection, which would win otherwise: a pale lilac under light text. */
+/** As specific as CodeMirror's light selection, which wins otherwise. */
 export const selected = EditorView.theme({
   "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, ::selection": {
     background: "color-mix(in srgb, var(--accent) 35%, transparent)",
   },
 })
 
-/** The editor, the caret's landing and ⌘S's save; undefined when the info view shows instead. */
 export type Editor = { view: EditorView; land(at: string | undefined): void; save(): Promise<void> } | undefined
 
-/** The place's file in an editor under `parent`, or the info view when it is not text or too large to show. A file
- *  that becomes read only, writable, too large or not text shows the place anew (`again`). */
 export async function editor(place: Place, extensions: Extension[], parent: HTMLElement): Promise<Editor> {
-  const { ovvi, arg: path, keep, again, live } = place
+  const { ovvi, arg: path, keep } = place
   const file = await (place.read ?? ovvi.files.read(path)).catch((error: OvviError) => error)
   if (file instanceof Error) {
     if (file.code === "notText" || file.code === "tooLarge") await info(ovvi, path, parent)
     else failed(file, parent)
     return undefined
   }
-  /** The text on disk as last read or saved, its hash, and the text a save in flight sent. */
   let disk: Text
   let hash = file.hash
   let saving: Text | undefined
-  /** Saves begun, so a check that read the disk before one does not answer after it. */
+  /** So a check that read the disk ahead of a save does not answer after it. */
   let saves = 0
   let dirty = false
   const find = finder(ovvi)
@@ -152,7 +138,6 @@ export async function editor(place: Place, extensions: Extension[], parent: HTML
     state: EditorState.create({
       doc: file.text,
       extensions: [
-        // A CRLF file saves as CRLF.
         file.text.includes("\r\n") ? EditorState.lineSeparator.of("\r\n") : [],
         EditorState.readOnly.of(!file.writable),
         highlightSpecialChars(),
@@ -178,7 +163,7 @@ export async function editor(place: Place, extensions: Extension[], parent: HTML
     if (dirty) ovvi.card.setDirty(false)
   })
 
-  /** The file's text from disk: only the changed middle is replaced, so the caret and the scroll stay. */
+  /** Only the changed middle is replaced, so the caret and the scroll stay. */
   const load = (text: string, now: string) => {
     hash = now
     // Positions count a line break as one character, whatever the file's.
@@ -190,28 +175,25 @@ export async function editor(place: Place, extensions: Extension[], parent: HTML
     const reload = view.state.update({
       changes: { from, to: old.length - end, insert: next.slice(from, shown.length - end) },
     })
-    // Before the update, which reports dirty against it.
+    // Set ahead of the dispatch, whose update reports dirty against it.
     disk = reload.state.doc
     view.dispatch(reload)
   }
 
-  /** The file from disk; undefined when it is gone or the place left. One now too large, not text, read only or
-   *  writable shows the place anew. */
   const read = async () => {
     const now = await ovvi.files.read(path).catch((error: OvviError) => error)
-    if (!live()) return undefined
-    if (now instanceof Error) return void (now.code === "notText" || now.code === "tooLarge" ? again() : undefined)
-    if (now.writable === view.state.readOnly) return void again()
+    if (place.dropped) return undefined
+    if (now instanceof Error) return void (now.code === "notText" || now.code === "tooLarge" ? place.redraw() : undefined)
+    if (now.writable === view.state.readOnly) return void place.redraw()
     return now
   }
 
-  /** The file again, the edits dropped. */
   const reload = async () => {
     const now = await read()
     if (now) load(now.text, now.hash)
   }
 
-  /** A toast of this file is up: a change on disk meanwhile asks nothing more, so it never takes a save's place. */
+  /** While a toast is up, a change on disk asks nothing more, so it never takes a save's place. */
   let asking = 0
   const ask = async (text: string, buttons: [string, string]) => {
     asking++
@@ -222,11 +204,11 @@ export async function editor(place: Place, extensions: Extension[], parent: HTML
     }
   }
 
-  /** Only edits: a save of the text on disk would still wake every watcher of the file. One at a time: a second
-   *  would check the first's old hash; its edits keep the dot for the next ⌘S. `over` null overwrites. */
+  /** Only edits: a save of the text on disk still wakes every watcher of the file. One at a time: a second would
+   *  check the first's stale hash. */
   const save = async (over: string | null = hash) => {
-    // Not after the place left: after Discard its handlers live until the next place drew.
-    if (!live() || view.state.readOnly || !dirty || saving) return
+    // After Discard the handlers live until the next place draws.
+    if (place.dropped || view.state.readOnly || !dirty || saving) return
     saves++
     const sent = (saving = view.state.doc)
     let failure: OvviError | undefined
@@ -234,13 +216,13 @@ export async function editor(place: Place, extensions: Extension[], parent: HTML
       // In the file's own line breaks.
       hash = (await ovvi.files.write(path, view.state.sliceDoc(), { over: over ?? undefined })).hash
       disk = sent
-      if (live()) update(view.state)
+      if (!place.dropped) update(view.state)
     } catch (error) {
       failure = error as OvviError
     } finally {
       saving = undefined
     }
-    if (!live()) return
+    if (place.dropped) return
     if (failure?.code === "changed") {
       const picked = await ask(`${name(path)} changed on disk since you opened it.`, ["Overwrite", "Reload"])
       if (picked === "Overwrite") await save(null)
@@ -251,12 +233,10 @@ export async function editor(place: Place, extensions: Extension[], parent: HTML
     }
   }
 
-  /** After a change on disk: a clean file reloads; a dirty one asks. Not for the card's own save, nor before the file
-   *  changed: the hash first (the card shown again reads no file). */
   const check = async () => {
     const before = hash, started = saves
     // Not after a save began meanwhile: its own answer (saved, or its toast) is the newer one.
-    const stale = () => !live() || saving || saves !== started || hash !== before
+    const stale = () => place.dropped || saving || saves !== started || hash !== before
     const onDisk = await ovvi.files.info(path).catch(() => undefined)
     if (!onDisk || onDisk.hash === before || stale()) return
     if (!dirty) {
@@ -265,15 +245,13 @@ export async function editor(place: Place, extensions: Extension[], parent: HTML
       return
     }
     if (asking) return
-    // Edits are never dropped without the question, also for a file now too large or read only.
+    // Edits are never dropped without the question, also for a file grown too large or read only.
     const picked = await ask(`${name(path)} changed on disk.`, ["Reload", "Keep Mine"])
-    if (!live()) return
+    if (place.dropped) return
     if (picked === "Reload") void reload()
-    // The next ⌘S writes over the disk's new version.
     if (picked === "Keep Mine") hash = onDisk.hash
   }
 
-  /** The caret on a 1-based line, in the middle of the card. */
   const land = (at: string | undefined) => {
     const line = Number(at)
     if (!(line >= 1 && line <= view.state.doc.lines)) return
@@ -281,8 +259,7 @@ export async function editor(place: Place, extensions: Extension[], parent: HTML
     view.dispatch({ selection: { anchor: pos }, effects: EditorView.scrollIntoView(pos, { y: "center" }) })
   }
   land(place.at)
-  // The top line in the page's session, which WebKit keeps when the system ends the page's process: the page loaded
-  // again shows the same lines. A landing wins.
+  // WebKit keeps sessionStorage when the system ends the page's process: the reloaded page shows the same lines.
   const top = `top ${path}`, kept = Number(sessionStorage.getItem(top))
   if (!place.at && kept > 1 && kept <= view.state.doc.lines) {
     view.dispatch({ effects: EditorView.scrollIntoView(view.state.doc.line(kept).from, { y: "start" }) })
@@ -299,10 +276,8 @@ export async function editor(place: Place, extensions: Extension[], parent: HTML
 
   ovvi.on("save", () => void save())
   ovvi.on("find", () => find.open(view, false))
-  // Find and Replace, as in the Mac's editors: the menu has no item for it, so the page takes the key, also from
-  // a locked Markdown page, whose keyboard is on the scroller.
   const replace = (event: KeyboardEvent) => {
-    if (!place.shown() || event.code !== "KeyF" || !event.metaKey || !event.altKey || event.shiftKey || event.ctrlKey) {
+    if (!place.shown || event.code !== "KeyF" || !event.metaKey || !event.altKey || event.shiftKey || event.ctrlKey) {
       return
     }
     event.preventDefault()
@@ -315,8 +290,7 @@ export async function editor(place: Place, extensions: Extension[], parent: HTML
   ovvi.files.watch(path, () => void check())
   // A change between the read and the watch's start.
   void check()
-  // The app gives the card's web view the keyboard: the editor takes it.
-  const focus = () => place.shown() && view.focus()
+  const focus = () => place.shown && view.focus()
   addEventListener("focus", focus)
   keep(() => removeEventListener("focus", focus))
   if (document.hasFocus()) view.focus()

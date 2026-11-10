@@ -1,33 +1,27 @@
 import Foundation
 import Synchronization
 
-/// Where a followed file was read up to, so a new run goes on from there
-/// (ui/chat-view#where-messages-come-from).
 public struct FileMark: Equatable, Sendable {
     public var inode = ""
-    /// Bytes read, whole lines only.
+    /// Whole lines only.
     public var offset = 0
 
     public init() {}
 }
 
-/// One line of a followed file, and the mark after it.
 public enum FollowedLine: Sendable {
-    /// The file is read from `mark` on: a new file (another inode, or shorter than the old mark) starts again, from its
-    /// start. The lines before it belong to another file when `restarted`.
+    /// A new file (another inode, or shorter than the mark) starts from its start. The lines ahead of it belong to
+    /// another file when `restarted`.
     case opened(FileMark, restarted: Bool)
     case line(String, FileMark)
-    /// Read up to the whole lines the file had when it was opened: the lines after it come as they are written.
     case loaded
 }
 
 public extension Exec {
-    /// Follows a file on the machine (a relative path is under the home folder) as `tail -F` does, from `mark` on,
-    /// also before the file exists, until the stream is dropped. A file rotated meanwhile starts again at the next
-    /// follow, which compares its inode with the mark's. `skip`: an awk pattern of the lines no parser reads
-    /// (`0`: none), dropped on the machine so they never cross a remote machine's relay. Each element is what came
-    /// since the reader last asked: a burst (a long turn written at once, a reconnect) lands in one update of a busy
-    /// reader, not in one per line.
+    /// As `tail -F` does, also while the file does not exist yet. A file rotated meanwhile starts again at the next
+    /// follow, which compares its inode with the mark's. `skip`'s lines are dropped on the machine so they never cross
+    /// a remote machine's relay. Each element is what came since the reader last asked: a burst (a long turn written at
+    /// once, a reconnect) lands in one update of a busy reader, not in one per line.
     func follow(_ path: String, from mark: FileMark,
                 skip: String = "0") async throws -> some AsyncSequence<[FollowedLine], Never> & Sendable
     {
@@ -65,23 +59,18 @@ public extension Exec {
             }
             signal.finish()
         }
-        // Ends `lines`, and so the script.
         signal.onTermination = { _ in reader.cancel() }
         return ready.map { pending.withLock { lines in defer { lines = [] }; return lines } }.filter { !$0.isEmpty }
     }
 
-    /// Prints a file's whole text each time it changes, as one line (a JSON record the program rewrites), checked
-    /// every 0.3 s; the first of `paths` (relative ones under the home folder) that exists, or an empty line when none
-    /// does.
     func watch(_ paths: [String]) async throws -> AsyncStream<String> {
         try await lines(Self.watchScript, paths)
     }
 
-    /// A long-running script's lines until the stream is dropped, which closes its stdin: the wrapper then ends it
-    /// (neither the script nor `tail` reads stdin). No kill: one that came before the wrapper started its watcher left
-    /// the script running.
+    /// Closing stdin makes the wrapper end the script (neither the script nor `tail` reads stdin). No kill: one that
+    /// comes ahead of the wrapper's watcher leaves the script running.
     internal func lines(_ script: String, _ arguments: [String]) async throws -> AsyncStream<String> {
-        let channel = try await run(["sh", "-c", TerminalStream.observeWrapper, "sh", "sh", "-c", script, "sh"]
+        let channel = try await run(["sh", "-c", observeWrapper, "sh", "sh", "-c", script, "sh"]
             + arguments)
         let (stream, continuation) = AsyncStream<String>.makeStream()
         Task {
@@ -94,15 +83,13 @@ public extension Exec {
         return stream
     }
 
-    /// Waits for the file, then tells its inode, where it reads from (the old mark when it is the same file and no
-    /// shorter, else its start) and where its whole lines end (a last line still being written comes later; both read
-    /// from the first `s` bytes, which a write meanwhile does not change). awk passes the lines on and tells the bytes
-    /// of each skipped one, so the mark still counts the file's bytes. The whole lines go out through `head` from a
-    /// seek (`dd … count=0`), and only the rest through `tail`: macOS's `tail` copies 17 MB a second, and a pi session
-    /// can pass 100 MB. With nothing to skip, no awk (macOS's passes 30 MB a second). awk reads a pipe that only
-    /// `head`, then `tail` write to (a FIFO opened, then removed at once): the wrapper's kill ends `tail`, or ends
-    /// `head` through the trap (a dropped follow sends no more of its backlog over the relay), and awk ends on its
-    /// EOF. mawk (Debian's and Ubuntu's awk) holds lines until 8 KiB come unless it reads interactively.
+    /// The start and the end of the whole lines both come from the first `s` bytes, which a write meanwhile does not
+    /// change. awk tells the bytes of each skipped line, so the mark still counts the file's bytes. The whole lines
+    /// go out through `head` from a seek (`dd … count=0`), and only the rest through `tail`: macOS's `tail` copies
+    /// 17 MB a second, and a pi session can pass 100 MB. With nothing to skip, no awk (macOS's passes 30 MB a second).
+    /// awk reads a FIFO that only `head`, then `tail` write to: the wrapper's kill ends `tail`, or ends `head` through
+    /// the trap (a dropped follow sends no more of its backlog over the relay), and awk ends on its EOF. mawk (Debian's
+    /// and Ubuntu's awk) holds lines until 8 KiB come unless it reads interactively.
     static var followScript: String {
         #"""
         f=$1; case $f in /*) ;; *) f=$HOME/$f ;; esac

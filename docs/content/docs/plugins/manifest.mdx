@@ -32,7 +32,7 @@ CSV table's manifest:
   "ovvi": {
     "id": "csv-table",
     "name": "CSV Table",
-    "api": 1,
+    "api": 3,
     "entry": "dist/main.js",
     "icon": "tablecells",
     "opens": { "files": ["*.csv", "*.tsv", "public.comma-separated-values-text"] },
@@ -75,9 +75,7 @@ In the `ovvi` key:
 | `settings` | no | Values the user sets on the plugin's page in Settings, which its cards read ([Settings](#settings)). |
 
 - The app reads the manifest leniently. An unknown field is ignored, so a
-  manifest written for a newer app still loads. So does an older manifest
-  with `permissions`: every plugin can use the whole API
-  ([What a plugin can do](/docs/plugins/security#what-a-plugin-can-do)).
+  manifest written for a newer app still loads.
 - A missing required field or a wrong value leaves the plugin out. The log
   and the plugin's cards name the field: `ovvi.entry must be a built .js
   file in the package`, `ovvi.header.1 has the wrong type`
@@ -154,7 +152,7 @@ wins over it. A path that ends in `/` opens in the first plugin with
 
 `header` lists the controls of row 2, left to right
 ([The card](/docs/plugins/default-plugins#the-card)). The app draws them
-natively: the row is 32 pt tall, buttons are 22 × 22 pt in the card buttons'
+natively: the row is 32 pt tall in a pane (36 pt in a floating window), buttons are 22 × 22 pt in the card buttons'
 color, and the row ends where row 1 does. They show before the page loads,
 in a pane and in a floating window. The page changes them with
 `ovvi.controls.set` and hears them with `ovvi.on("control")`
@@ -184,7 +182,7 @@ or a menu item gives the card the keyboard, as a click on its page does.
   the row starts at the left.
 - **Ids.** A control's `id` is unique in the plugin. It is also the end of
   its accessibility identifier: `pane.<paneID>.<id>`. A segment adds its
-  title in lower case: `pane.<paneID>.mode.read`.
+  title in lower case: `pane.<paneID>.mode.source`.
 - **Values.** A toggle's value is a boolean, a `path` text's a list of
   strings, the others' a string. The app keeps each value in the card's
   state file under `"controls"` ([State](/docs/plugins/api#state)). A card
@@ -195,7 +193,7 @@ or a menu item gives the card the keyboard, as a click on its page does.
   switch ran). The same segment again,
   or a field set to its own text, sends nothing.
 - **Asks of the page.** `controls.set(id, { focus: true })` gives a plain
-  field (not a path field) the keyboard (File Explorer's ⌘F). `controls.set(id, { refused: true })`
+  field (not a path field) the keyboard (a page's ⌘F). `controls.set(id, { refused: true })`
   shakes a path field, which keeps the typed path: the path names no place
   to go.
 - **One header for many places.** A control that only some places use
@@ -266,7 +264,7 @@ Every setting has these fields:
 | `choice` | one option's `value` | `options`: 2 to 12 of `{ "value", "title" }`, each value once | a segmented control for up to 4 options whose titles have 24 characters in all, else a pop-up menu |
 | `number` | a number | `min`, `max`, `step`, `unit` (all optional; `min` under `max`, `step` over 0) | a field with a stepper, held in the range |
 | `text` | a string of up to 1 KB | `placeholder` (up to 1 KB) | a text field, saved on Return or when it loses the keyboard |
-| `path` | an absolute path (it starts with `/` or `~/`), or empty | `kind`: `file` or `folder`; `placeholder` | a path field, saved as a text field is |
+| `path` | an absolute path (it starts with `/` or `~/`, or is `~`), or empty | `kind`: `file` or `folder`; `placeholder` | a path field, saved as a text field is |
 
 - A setting is a value. There is no secret type: no plugin can ask for a
   password or a token in Settings.

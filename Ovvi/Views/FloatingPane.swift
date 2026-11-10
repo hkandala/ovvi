@@ -2,151 +2,6 @@ import AppKit
 import HerdrKit
 import SwiftUI
 
-/// A floated pane's window (D50), by its session and terminal: opening one that is open brings it to the front.
-struct Floating: Codable, Hashable {
-    let session: String
-    let terminalID: String
-}
-
-extension Page {
-    func floats(_ pane: HostStore.Pane) -> Bool {
-        pane.terminalID.map { floating[$0] != nil } ?? false
-    }
-
-    /// Floats the pane in a window of its own, or brings its window to the front, with the keyboard (its window
-    /// takes it as it shows); an `agent`'s float leaves the keyboard where it is (agent-control/cli). herdr keeps the
-    /// pane in its tab. One window per terminal: one another main window floats comes to the front.
-    func float(_ pane: HostStore.Pane, agent: Bool = false) {
-        guard let terminalID = pane.terminalID else { return }
-        if floating[terminalID] != nil {
-            if !agent {
-                terminals.focus(terminalID)
-            }
-        } else if !WindowPages.windows.contains(where: { $0.floats(terminalID) }) {
-            floating[terminalID] = false
-            if zoomedPaneID == pane.id {
-                zoomedPaneID = nil
-            }
-            // The main window's keyboard leaves it for another card of the tab.
-            focusKeyboardCard()
-        }
-        FloatFrames.open(Floating(session: id, terminalID: terminalID), over: terminals.pages?.window, agent: agent,
-                         with: WindowPages.openWindow)
-    }
-
-    /// The card header's kind and detail; nil for a terminal.
-    func kindTitle(_ pane: HostStore.Pane) -> (name: String, detail: String?)? {
-        if store.chooser(pane.id) != nil {
-            return ("New Pane", nil)
-        }
-        if let label = pane.browser {
-            return ("Browser", browserTitle(pane, label))
-        }
-        if let label = pane.plugin {
-            return (label.manifest?.name ?? label.plugin, pluginTitle(pane, label))
-        }
-        return pane.agentTitle.map { (pane.agentLabel ?? "", $0) }
-    }
-}
-
-extension WindowPages {
-    /// `ovvi://float?session=‹herdr session›&pane=‹pane id›`, optionally `&machine=‹machine id›` (This Mac's
-    /// otherwise), from pi-herd or any tool: floats the pane over the machine's front main window, also when the
-    /// session is not open there; again for the same pane brings its window forward.
-    static func float(_ url: URL) {
-        let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
-        func value(_ name: String) -> String? {
-            items.first { $0.name == name }?.value
-        }
-        guard url.host() == "float", let session = value("session"), let pane = value("pane") else { return }
-        float(session: session, pane: pane, machine: value("machine") ?? Machine.thisMac.id)
-    }
-
-    /// Also a float request on a session a store follows (talking-to-herdr#float-requests), from pi-herd on any
-    /// machine: over the window the user last typed or clicked in a card of that store (`over`).
-    static func float(session: String, pane: String, machine: String, over: WindowPages? = nil, agent: Bool = false) {
-        // Any app or pane can ask: the name goes into a herdr argv.
-        guard Session.isValidName(session) else {
-            windows.first?.cannotFloat(pane, of: session, "not a session name.")
-            return
-        }
-        guard let window = over ?? windows.first(where: { $0.machine.id == machine }) else {
-            if windows.isEmpty {
-                ask(machine, session) { float(session: session, pane: pane, machine: machine, agent: agent) }
-            } else {
-                windows.first?.cannotFloat(pane, of: session, "no window of machine \(machine).")
-            }
-            return
-        }
-        // One still waiting gives way.
-        if let old = window.floatPending?.page, old.floating.isEmpty {
-            window.dropFloatOnly(old)
-        }
-        window.floatPending = (window.pageToFloat(session), pane)
-        window.floatPendingForAgent = agent
-        window.showFloatPending()
-    }
-
-    func floats(_ terminalID: String) -> Bool {
-        withFloats.contains { $0.floating[terminalID] != nil }
-    }
-
-    var withFloats: [Page] {
-        list + floatOnly
-    }
-
-    private func pageToFloat(_ session: String) -> Page {
-        if let page = withFloats.first(where: { $0.id == session }) {
-            return page
-        }
-        let store = HostStore.named(session, on: machine)
-        store.windows.append(self)
-        let page = Page(store: store, terminals: terminals)
-        floatOnly.append(page)
-        return page
-    }
-
-    /// A float-only page with no float left leaves.
-    func dropFloatOnly(_ page: Page) {
-        guard let index = floatOnly.firstIndex(where: { $0 === page }) else { return }
-        floatOnly.remove(at: index)
-        leave(page.store)
-        showTerminals()
-    }
-
-    /// The URL's pane floats once its session answered; a session or pane that is not there says so.
-    func showFloatPending() {
-        guard let (page, paneID) = floatPending, page.store.state != .connecting else { return }
-        floatPending = nil
-        if let pane = page.store.panes.first(where: { $0.id == paneID && $0.terminalID != nil }) {
-            page.float(pane, agent: floatPendingForAgent)
-            // It streams now, not at the next snapshot: its page may not be in view.
-            showTerminals()
-        } else {
-            let why = if case let .failed(error) = page.store.state {
-                error.localizedDescription
-            } else {
-                "no such pane."
-            }
-            // An agent's: its answer says so.
-            if !floatPendingForAgent {
-                cannotFloat(paneID, of: page.id, why)
-            }
-        }
-        // A float that failed, or went to another main window's floating window.
-        if page.floating.isEmpty {
-            dropFloatOnly(page)
-        }
-    }
-
-    private func cannotFloat(_ pane: String, of session: String, _ why: String) {
-        let notice = Notice(text: "Can't float pane \(pane) of \(session): \(why)", tone: .warning)
-        Task { await current?.store.show(notice) }
-    }
-}
-
-/// The floating window. It closes when its page lets the pane go (Detach, herdr closed the pane, the main window
-/// closed).
 struct FloatingWindow: View {
     let floating: Floating
     @State private var palette = false
@@ -163,7 +18,7 @@ struct FloatingWindow: View {
     var body: some View {
         let pages = WindowPages.windows.first { $0.floats(floating.terminalID) }
         let page = pages?.withFloats.first { $0.id == floating.session && $0.floating[floating.terminalID] != nil }
-        let pane = page?.store.panes.first { $0.terminalID == floating.terminalID }
+        let pane = page?.store.terminalPane(floating.terminalID)
         Group {
             if let pages, let page {
                 content(pages, page, pane)
@@ -178,16 +33,14 @@ struct FloatingWindow: View {
         .background(FloatReader(terminalID: floating.terminalID,
                                 pinned: page?.floating[floating.terminalID] == true,
                                 closed: { page?.floating[floating.terminalID] = nil }))
-        // Its pane is the one the user looks at while it is key (D14).
         .onChange(of: appearsActive, initial: true) { _, active in
             if active, let page {
                 HostStore.look(pane, in: page.store)
             }
         }
-        // Also gone before it first drew (a Detach right after the Float).
         .onChange(of: page == nil, initial: true) { _, gone in
             if gone {
-                dismissWindow(id: "float", value: floating)
+                dismissWindow(id: WindowPages.floatScene, value: floating)
             }
         }
     }
@@ -251,7 +104,7 @@ struct FloatingWindow: View {
                               _ commands: CommandList) -> some View
     {
         TerminalCard(terminal: terminal, watched: page.watched, alpha: faded ? 0 : page.watched ? 0.85 : 1)
-            // In this window by now: a claim made while it was still the main window's card would take that window's
+            // In this window already: a claim made while it is the main window's card would take that window's
             // keyboard.
             .onAppear { terminal.view.takeKeyboard() }
             .overlay {
@@ -259,11 +112,10 @@ struct FloatingWindow: View {
                     FindHighlights(find: find, terminal: terminal)
                 }
             }
-            .padding(.horizontal, 10).padding(.vertical, gap)
+            .padding(.horizontal, PaneCard.inset).padding(.vertical, gap)
             .contextMenu { CommandItems(commands: commands.all, sections: [.palette, .close]) }
     }
 
-    /// A plugin's pane (a browser) shows no place: its tab's title is another pane's program and folder.
     private func header(_ page: Page, _ pane: HostStore.Pane?, chat: Chat?) -> some View {
         let workspace = pane.flatMap { page.store.workspace(of: $0.tabID) }
         let tab = workspace?.tabs.first { $0.id == pane?.tabID }
@@ -279,15 +131,12 @@ struct FloatingWindow: View {
                 if pane != nil {
                     Rectangle().fill(look.divider).frame(width: 1, height: 12)
                 }
-                // One line; the session's name gives way first, in its middle.
                 HStack(spacing: 0) {
                     Text(page.store.title).truncationMode(.middle)
                     Text(rest).layoutPriority(1)
                 }
                 .font(.system(size: 11)).foregroundStyle(.tertiary).lineLimit(1)
-                .accessibilityElement(children: .ignore)
-                .accessibilityAddTraits(.isStaticText)
-                .accessibilityValue(page.store.title + rest)
+                .readableText(page.store.title + rest)
                 .accessibilityIdentifier("\(id).place")
             }
             Spacer(minLength: 0)
@@ -311,10 +160,8 @@ struct FloatingWindow: View {
             .accessibilityIdentifier("\(id).detach")
         }
         .foregroundStyle(look.chrome)
-        // The main window's title row: its height, and its start after the traffic lights.
         .padding(.leading, TitleBar.inset(fullScreen: false)).padding(.trailing, gap)
         .frame(height: TitleBar.height)
-        // The title bar is hidden, so the row's empty space moves the window.
         .background { Color.clear.contentShape(.rect).gesture(WindowDragGesture()) }
     }
 }
@@ -341,29 +188,5 @@ private struct PaneInfo: View {
             CardState(chat: chat, state: pane.state, paneID: pane.id)
         }
         .accessibilityElement(children: .combine)
-    }
-}
-
-extension WindowPages {
-    /// A click or URL that came before any window (one that started the app), and the machine id and session it asks
-    /// for: the first window opens that session instead of the new-window view, then runs it.
-    static var early: (() -> Void)?
-    static var asked: (machine: String, session: String)?
-    /// The new-window view on screen, which takes an ask at once (`SessionPicker`).
-    static var takeAsked: (() -> Void)?
-
-    /// A click or URL with no window yet: it runs once a window joins, which opens its session.
-    static func ask(_ machine: String, _ session: String, then click: @escaping () -> Void) {
-        early = click
-        asked = (machine, session)
-        takeAsked?()
-    }
-
-    /// The click that came before any window, as one joins.
-    static func runEarly() {
-        guard let early else { return }
-        self.early = nil
-        asked = nil
-        early()
     }
 }

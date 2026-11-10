@@ -1,62 +1,46 @@
 import HerdrKit
 import SwiftUI
 
-/// The gap between cards, the one fixed size.
 nonisolated let gap: CGFloat = 8
 
 extension Animation {
-    /// e2e (`-forceMotion YES`): layout motion and the sidebar's slide even with Reduce Motion, which CI's Mac has on.
-    static let forceMotion = UserDefaults.standard.bool(forKey: "forceMotion")
+    /// CI's Mac has Reduce Motion on.
+    private static let forceMotion = UserDefaults.standard.bool(forKey: "forceMotion")
+
+    static var reduced: Bool {
+        NSWorkspace.shared.accessibilityDisplayShouldReduceMotion && !forceMotion
+    }
 }
 
-/// The appearance setting (D44): Auto follows macOS.
-enum Appearance: String {
-    case auto, light, dark
-}
-
-/// The interface style setting (D44): Glass blurs the desktop behind the window, Classic is an opaque window.
-enum InterfaceStyle: String {
-    case glass, classic
-}
-
-/// Every color the views draw, for one interface style and appearance (D44). Values from Rex's Glass (Modern) and
-/// Classic (System) material files, tuned by eye.
+/// Values from Rex's Glass (Modern) and Classic (System) material files, tuned by eye.
 struct Look {
     let style: InterfaceStyle
     let dark: Bool
-    /// Increase Contrast: the dim colors below are stronger. The system's own colors follow it by themselves.
+    /// The system's own colors follow Increase Contrast by themselves.
     var contrast = false
-    /// Text on the accent color: a lit row, a sent bubble.
     static let onAccent = Color.white
 
-    /// Glass: over the behind-window blur, blended `overlay` under `window`; it darkens the blur in dark.
     var backdrop: Color {
         dark ? .black.opacity(0.6) : .clear
     }
 
-    /// Glass: the tint over the behind-window blur, so it depends less on the desktop (light: Rex's Modern 0.7). Dark:
-    /// dense enough that a bright window behind shows only as a soft light. A plain tint, not Liquid Glass, which
-    /// costs WindowServer about a quarter more GPU time over the whole window. Classic: the whole window.
+    /// A plain tint, not Liquid Glass, which costs WindowServer about a quarter more GPU time over the whole window.
     var window: Color {
         pick(Color(white: 0x1D / 255).opacity(0.845), .white.opacity(0.7),
              Color(white: 0x1E / 255), Color(white: 0xF6 / 255))
     }
 
-    /// The palette's field on its glass panel (#141414 dark, white light), in both styles: a flat color, as a
-    /// hierarchical fill there is vibrant and shows at about a fifth of its strength.
+    /// A flat color: a hierarchical fill on the glass panel is vibrant and shows at about a fifth of its strength.
     var paletteField: Color {
         dark ? .white.opacity(0.08) : .black.opacity(0.06)
     }
 
     var cardFill: Color {
-        // Glass: a step brighter than the window; `keyboardFill` keeps the keyboard card close (D64). Classic dark:
-        // #222 on #1e1e1e, as in Rex.
         pick(.white.opacity(0.03), .white.opacity(0.6), .white.opacity(0.018), .white.opacity(0.6))
     }
 
-    /// An opaque stand-in for a card's fill (`cardFill`, and `keyboardFill` over it on the keyboard card), for a web
-    /// card's parts that text scrolls under (the diff's sticky file header, Markdown's fold button). Classic's is
-    /// exact; Glass's is measured on the screen over a black window (light Glass is the same over a white one).
+    /// Classic's is exact; Glass's is measured on the screen over a black window (light Glass is the same over a white
+    /// one).
     /// ponytail: a bright window or wallpaper behind lightens dark Glass's card by up to 18 levels, and the header then
     /// shows darker; an opaque card body under web cards if that matters.
     func cardSolid(keyboard: Bool = false) -> Color {
@@ -64,15 +48,11 @@ struct Look {
         return Color(white: Double(level) / 255)
     }
 
-    /// Over `cardFill` on the card that has the keyboard: Glass a little brighter; light cards end at white 0.7
-    /// (Glass) and 0.8 (Classic).
     var keyboardFill: Color {
         pick(.white.opacity(0.02), .white.opacity(0.25), .black.opacity(0.1), .white.opacity(0.5))
     }
 
-    /// A 0.7 pt rim inside the card's edge, drawn `plusLighter`, and over it along the top edge Rex's glass rim: a 1 pt
-    /// line that fades out round the corners and a glow under it at about half. Glass only (Rex's Classic cards have a
-    /// flat edge). Dark matches Rex's Retina pixels: the line about 45 steps over the card, the sides 15.
+    /// Dark matches Rex's Retina pixels: the line about 45 steps over the card, the sides 15.
     var rim: (all: Color, top: Color) {
         pick(
             (.white.opacity(0.06), .white.opacity(0.09)),
@@ -82,50 +62,42 @@ struct Look {
         )
     }
 
-    /// The stroke just outside the card's edge. Glass: the same on every card. Classic: a hairline that sets the card
-    /// off the window about as far as Glass's stroke does (1.3:1 in dark), a step stronger on the keyboard card.
     func edge(keyboard: Bool) -> (color: Color, width: CGFloat) {
         pick((.black.opacity(0.5), 1), (.black.opacity(0.1), 1),
              keyboard ? (.white.opacity(0.16), 0.8) : (.white.opacity(0.1), 0.7),
              keyboard ? (.black.opacity(0.18), 0.8) : (.black.opacity(0.14), 0.7))
     }
 
-    /// A 1 pt line inside the keyboard card's edge while its tab shows two or more cards: the label color, dimmed.
     var activeBorder: Color {
         .primary.opacity(dark ? 0.3 : 0.22)
     }
 
-    /// A divider's grip: 3.3:1 or more on the window too (gorex's muted icon color was 2.1:1 in light).
+    /// 3.3:1 or more on the window.
     var grip: Color {
         paneButton
     }
 
-    /// Glass light only, as in Rex (Classic light has none).
     var cardShadow: ShadowStyle? {
         style == .glass && !dark ? .drop(color: .black.opacity(0.1), radius: 5, y: 2) : nil
     }
 
-    /// The tab bar's track.
     var track: Color {
         .primary.opacity(contrast ? 0.1 : 0.05)
     }
 
-    /// Text and glyphs of the title row and the sidebar, a step dimmer than primary text as in Rex.
     var chrome: Color {
         (dark ? Color.white : .black).opacity(contrast ? 0.85 : 0.65)
     }
 
-    /// A divider between tabs, as in Rex.
     var divider: Color {
         dark ? .white.opacity(contrast ? 0.3 : 0.17) : .black.opacity(contrast ? 0.28 : 0.14)
     }
 
-    /// The selected tab's and workspace row's title.
     var selected: Color {
         (dark ? Color.white : .black).opacity(contrast ? 1 : 0.9)
     }
 
-    /// A card header's buttons, dimmer than the title row's; 3.3:1 or more on the card (Rex's was 2.3:1 in light).
+    /// 3.3:1 or more on the card.
     var paneButton: Color {
         (dark ? Color.white : .black).opacity(dark ? (contrast ? 0.6 : 0.42) : (contrast ? 0.65 : 0.45))
     }
@@ -139,20 +111,34 @@ struct Look {
         dark ? Color(hex: 0xFB923C) : Color(hex: 0xEA580C)
     }
 
-    /// Also a workspace row's ↑ahead.
     var finished: Color {
         dark ? Color(hex: 0x34D399) : Color(hex: 0x10B981)
     }
 
-    /// Also a workspace row's ↓behind.
     var error: Color {
         dark ? Color(hex: 0xF85149) : Color(hex: 0xCF222E)
     }
 
-    /// A chat's bubbles, as macOS Messages draws them (ChatKit's `CKBlueBalloonColor1` and gray balloon): the user's
-    /// with white text, the agent's with the label color.
+    /// As macOS Messages draws them (ChatKit's `CKBlueBalloonColor1` and gray balloon).
     var sentBubble: Color {
         contrast ? Color(hex: 0x0040DD) : dark ? Color(hex: 0x0091FF) : Color(hex: 0x0088FF)
+    }
+
+    /// A Settings page's icon tile; its fill and edge go from top to bottom.
+    var settingsGlyph: Color {
+        dark ? Color(white: 236 / 255) : Color(hex: 0x48484E)
+    }
+
+    var settingsFill: [Color] {
+        dark ? [Color(hex: 0x505056), Color(hex: 0x36363B)] : [.white, Color(hex: 0xECECF0)]
+    }
+
+    var settingsEdge: [Color] {
+        dark ? [.white.opacity(0.22), .white.opacity(0.05)] : [.black.opacity(0.1), .black.opacity(0.16)]
+    }
+
+    var settingsShadow: Color {
+        .black.opacity(dark ? 0.35 : 0.08)
     }
 
     var receivedBubble: Color {
@@ -173,12 +159,10 @@ struct Look {
 
 extension EnvironmentValues {
     @Entry var look = Look(style: .glass, dark: true)
-    /// The card is its tab's keyboard card, lit (`CardSurface(keyboard:)`).
     @Entry var litCard = false
 }
 
 extension Color {
-    /// `#rrggbb` from the icon catalog; the neutral tile when missing.
     init(hex: String?) {
         self.init(hex: hex.flatMap { Int($0.dropFirst(), radix: 16) } ?? 0x2B2D31)
     }
@@ -190,7 +174,8 @@ extension Color {
 }
 
 struct CardSurface: View {
-    static let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
+    static let radius: CGFloat = 10
+    static let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
     let keyboard: Bool
     @Environment(\.look) private var look
 
@@ -200,7 +185,7 @@ struct CardSurface: View {
             // On an opaque copy cut out under the card: on the translucent fill it would be as faint as the fill.
             .background {
                 if let shadow = look.cardShadow {
-                    // An overlay did not cut (it darkened the card by about black 0.1); a ZStack does.
+                    // An overlay does not cut (it darkens the card by about black 0.1); a ZStack does.
                     ZStack { shape.fill(Color.black.shadow(shadow)); shape.fill(.black).blendMode(.destinationOut) }
                         .compositingGroup()
                 }
@@ -221,7 +206,6 @@ struct CardSurface: View {
     }
 }
 
-/// The selected tab or row: a Liquid Glass capsule in Glass, a raised pill in Classic.
 struct Pill: View {
     let shape: RoundedRectangle
     @Environment(\.look) private var look
@@ -231,7 +215,6 @@ struct Pill: View {
         case (.glass, _):
             Color.clear.glassEffect(.regular, in: shape)
         case (.classic, true):
-            // Flat, with a hairline edge: a fill alone (Rex's #292929 on #1e1e1e) hardly showed.
             shape.fill(.white.opacity(0.07)).overlay(shape.strokeBorder(.white.opacity(0.12)))
         case (.classic, false):
             shape.fill(.white)
@@ -241,55 +224,35 @@ struct Pill: View {
     }
 }
 
-/// A `FilterList` row.
 struct MenuRow: View {
     let item: FilterList.Item
-    /// On the accent pill.
     let selected: Bool
     let height: CGFloat
 
     var body: some View {
         HStack(spacing: 8) {
-            if let icon = item.pane?.iconID ?? item.program {
-                ProgramTile(icon: icon, letter: item.pane?.letter)
-            } else if let state = item.state {
+            if let state = item.state {
                 StateIcon(state: state, color: selected ? .white : nil).frame(width: 22)
             } else {
-                // As wide as a program tile, so the titles line up.
                 Image(symbol: item.symbol ?? "circle").opacity(item.symbol == nil ? 0 : 1).frame(width: 22)
                     .accessibilityHidden(true)
             }
-            // A long typed name keeps both ends, and takes the free space before the detail does.
             Text(item.title).lineLimit(1).truncationMode(.middle).layoutPriority(1)
-            if let note = item.note {
-                // The row's value says it (`FilterList`).
-                Text(note).font(.system(size: 12)).lineLimit(1).accessibilityHidden(true)
-                    .foregroundStyle(selected ? AnyShapeStyle(Color.white.opacity(0.6)) : AnyShapeStyle(.tertiary))
-            }
             Spacer(minLength: 4)
             if item.busy {
                 ProgressView().controlSize(.small)
             } else {
-                // Readable on the accent pill; a long branch gives way to the title.
-                Text([item.detail, item.opens ? "›" : ""].filter { !$0.isEmpty }.joined(separator: " "))
+                Text(item.detail)
                     .foregroundStyle(selected ? Color.white.opacity(0.75) : .secondary).lineLimit(1)
                     .truncationMode(.middle)
             }
-            if !item.keys.isEmpty {
-                HStack(spacing: 3) {
-                    ForEach(item.keys, id: \.self) { Keycap(text: $0) }
-                }
-                .accessibilityElement(children: .ignore).accessibilityLabel(item.keys.joined())
-            }
         }
-        // White on the accent pill: the symbol, the title and the keycaps (the note and the detail set their own).
         .foregroundStyle(selected ? Color.white : .primary)
         .padding(.horizontal, 8)
         .frame(height: height)
     }
 }
 
-/// A lit row's own button (`FilterList.Item.button`), readable on the accent pill; red when destructive.
 struct RowButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         RowButton(configuration: configuration)
@@ -310,14 +273,17 @@ struct RowButtonStyle: ButtonStyle {
 }
 
 extension View {
-    /// Floating glass (panels, hover panels, the find bar, notices): the system glass over a material, so the text
-    /// behind is only a soft blur. Liquid Glass alone is thin on a small panel, and a terminal read clearly through
-    /// the hover card.
+    /// A plain element's value reaches XCUITest only with the static text trait.
+    func readableText(_ value: String) -> some View {
+        accessibilityElement().accessibilityAddTraits(.isStaticText).accessibilityValue(value)
+    }
+
+    /// The system glass over a material: Liquid Glass alone is thin on a small panel, and a terminal reads clearly
+    /// through the hover card.
     func floatingGlass(in shape: some Shape) -> some View {
         glassEffect(.regular, in: shape).background(.regularMaterial, in: shape)
     }
 
-    /// A panel over the window (the workspace menu, Open Session, the palette): a click outside it or Esc closes it.
     func floatingPanel(open: Binding<Bool>, alignment: Alignment) -> some View {
         Color.clear.contentShape(.rect).onTapGesture { open.wrappedValue = false }
             .overlay(alignment: alignment) {
@@ -326,7 +292,6 @@ extension View {
             }
     }
 
-    /// Fades out over `start` pt at the leading or top edge and `end` pt at the other; 0 is no fade.
     func fadeEdges(_ axis: Axis, start: CGFloat, end: CGFloat) -> some View {
         let horizontal = axis == .horizontal
         let (from, until): (UnitPoint, UnitPoint) = horizontal ? (.leading, .trailing) : (.top, .bottom)
@@ -342,9 +307,14 @@ extension View {
         }
     }
 
-    /// A vertical scroll view fades 18 pt (`end` at its end) at an edge that rows lie past.
     func fadesScrolledEdges(end: CGFloat = 18) -> some View {
         modifier(ScrolledFades(end: end))
+    }
+}
+
+extension Shape where Self == RoundedRectangle {
+    static var panel: Self {
+        .rect(cornerRadius: 14)
     }
 }
 
@@ -364,8 +334,8 @@ private struct ScrolledFades: ViewModifier {
     }
 }
 
-/// The palette's AppKit rows (`RowView`), as SwiftUI draws `MenuRow` and `Keycap` on the panel's glass (measured on
-/// its pixels): its hierarchical styles are fuller there than AppKit's label colors, but with Increase Contrast.
+/// Measured on the palette's glass, where SwiftUI's hierarchical styles are fuller than AppKit's label colors, but with
+/// Increase Contrast.
 @MainActor
 enum RowInk {
     static let primary = ink(1, 1, .labelColor), secondary = ink(0.4, 0.42, .secondaryLabelColor),
@@ -374,7 +344,6 @@ enum RowInk {
         .white.withAlphaComponent(alpha)
     }
 
-    /// A keycap's fill, its rim's 0.5 pt bands from the edge in (`sides` of each on the sides), its outline in light.
     struct Cap { let fill: NSColor, rim: [CGFloat], sides: CGFloat; var outline: NSColor? }
 
     static func cap(dark: Bool, lit: Bool) -> Cap {

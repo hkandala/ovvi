@@ -2,15 +2,12 @@ import Foundation
 import HerdrKit
 import Observation
 
-/// An agent pane's chat (ui/chat-view). The session's store keeps it by terminal id, for every window; its adapter
-/// follows the agent while a card shows the chat.
 @MainActor @Observable
 final class Chat {
     enum Phase: Equatable {
         case starting, ready, working, waiting
     }
 
-    /// A message sent with `agent.prompt`, shown until the history has it.
     struct Outgoing: Identifiable, Equatable {
         let id = UUID()
         let text: String
@@ -19,49 +16,39 @@ final class Chat {
 
     let adapter: any ChatAdapter
     var paneID: String
+    let terminalID: String
     @ObservationIgnored weak var store: HostStore?
     var history = ChatHistory() {
         // Not `oldValue`: reading it copies the whole history at every line.
         didSet { confirm() }
     }
 
-    /// The history's entries when `confirm` last looked.
     @ObservationIgnored private var seen = 0
 
-    /// The card shows the chat; else its TUI, which shows first (kept in memory per pane).
     var showsChat = false
-    /// The phase the agent itself records (a session record, a state file, its server); nil: herdr's status.
     var recorded: Phase?
-    /// What the agent asks that the chat can answer, shown while it waits.
     var question: ChatQuestion?
-    /// Why the chat cannot read the session; Show TUI then.
     var problem: String?
     var outgoing: [Outgoing] = []
-    /// The reply box's text, shared by every card of the pane.
     var draft = ""
-    /// The reply box takes the keyboard when it shows, or now (the card got the keyboard).
     var wantsKeyboard = false
-    /// Where each followed file was read up to, so a card shown again goes on from there.
     @ObservationIgnored var marks: [String: FileMark] = [:]
-    /// While a follow reads a history file up to where it ended when opened, the history it builds off screen.
     @ObservationIgnored var backlog = ChatHistory()
-    /// The empty chat shows the loader meanwhile.
     var loading = false
-    /// A run of the backlog's lines is being read off the main actor: changes wait in `queued` until it is in.
+    /// Lines read off the main actor: changes wait in `queued` until they are in.
     @ObservationIgnored var reading = false
     @ObservationIgnored var queued: [(source: String?, body: (inout ChatHistory) -> Void)] = []
-    /// Where the history comes from: its file, or OpenCode's server and session.
     @ObservationIgnored var source: String?
     @ObservationIgnored private var viewers = 0
     @ObservationIgnored private var following: Task<Void, Never>?
 
-    init(adapter: any ChatAdapter, paneID: String, store: HostStore) {
+    init(adapter: any ChatAdapter, paneID: String, terminalID: String, store: HostStore) {
         self.adapter = adapter
         self.paneID = paneID
+        self.terminalID = terminalID
         self.store = store
     }
 
-    /// The agent's own record, else herdr's status (ui/chat-view#ready-working-waiting).
     var phase: Phase {
         if let recorded {
             return recorded
@@ -74,17 +61,14 @@ final class Chat {
         }
     }
 
-    /// Its pane still runs this launch of the agent.
     var live: Bool {
         store?.pane(paneID).flatMap { store?.adapter($0) }?.token == adapter.token
     }
 
-    /// Waiting on something the chat cannot answer: the live terminal takes the bottom of the card.
     var drawer: Bool {
         phase == .waiting && question == nil
     }
 
-    /// While a card shows the chat, the adapter follows the agent; the last card to go stops it.
     func viewed() async {
         viewers += 1
         if viewers == 1, let store {
@@ -93,13 +77,11 @@ final class Chat {
                 // A card gone and back at once: the last follow ends first, so two never read from one mark.
                 await old?.value
                 let exec = await store.machine.exec()
-                // Again after a lost connection, from the marks.
                 while !Task.isCancelled {
                     await adapter.follow(self, on: exec)
                     try? await Task.sleep(for: .seconds(2))
                 }
-                // Not followed, it would go stale: herdr's status until a card shows the chat again. Once the adapter
-                // returned, so no task of its writes after.
+                // Reset once the adapter returns, so that none of its tasks writes after.
                 if viewers == 0 {
                     recorded = nil
                 }
@@ -115,8 +97,6 @@ final class Chat {
         while await (try? Task.sleep(for: .seconds(3600))) != nil {}
     }
 
-    /// Sends the text when the agent can take it (ready, or working: it queues it); text that starts with `/` is typed
-    /// into the terminal instead, which the card shows.
     func send(_ text: String) {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, let client = store?.client else { return }
@@ -137,8 +117,8 @@ final class Chat {
                 notSent(message.id)
                 return
             }
-            // Sent means the history has it (Claude Code's company hooks can take a few seconds). pi steers: a message
-            // sent while it works shows in its history when it takes it, after the running tool (or its dialog).
+            // Claude Code's company hooks can take a few seconds to log a prompt; pi logs one sent while it works
+            // when it takes it, after the running tool (or its dialog).
             try? await Task.sleep(for: .seconds(5))
             while phase == .working || phase == .waiting {
                 try? await Task.sleep(for: .seconds(1))
@@ -147,7 +127,6 @@ final class Chat {
         }
     }
 
-    /// The draft comes back unless the user typed another.
     private func notSent(_ id: UUID) {
         guard let index = outgoing.firstIndex(where: { $0.id == id && !$0.notSent }) else { return }
         outgoing[index].notSent = true
@@ -156,14 +135,12 @@ final class Chat {
         }
     }
 
-    /// The messages on their way that the history's new entries have, by their text: not only its last entry, as a
-    /// burst brings the user's message with the reply after it.
+    /// All the new entries, not only the last: a burst brings the user's message with the reply after it.
     private func confirm() {
         let (old, count) = (seen, history.entries.count)
         seen = count
         guard !outgoing.isEmpty else { return }
-        // The same count: an entry changed in place, the last only (an older same text is an earlier message). Fewer:
-        // a new history, all.
+        // The same count: only the last entry changed in place (an earlier same text is an earlier message).
         for entry in history.entries.dropFirst(count > old ? old : count == old ? max(count - 1, 0) : 0) {
             guard case let .user(text) = entry.kind else { continue }
             let sent = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -182,8 +159,6 @@ final class Chat {
         Task { try? await client.sendKeys(keys, pane: paneID) }
     }
 
-    /// An answer that did not reach the agent (its hook gone, the server or the connection failed) drops the card:
-    /// the live terminal takes it.
     func answer(_ answers: [String: String]) {
         guard let question, !question.answered, let store else { return }
         self.question?.answered = true
@@ -195,8 +170,6 @@ final class Chat {
     }
 }
 
-/// A question the chat can answer (ui/chat-view#waiting), and in `raw` what the adapter needs to answer it (the
-/// questions as the agent sent them, a request's id).
 struct ChatQuestion: Equatable {
     struct Item: Equatable {
         let text: String
@@ -205,13 +178,12 @@ struct ChatQuestion: Equatable {
 
     let items: [Item]
     let raw: Data
-    /// Answered in the chat: it stays, disabled, until the agent goes on (no drawer meanwhile).
     var answered = false
 }
 
 extension ChatQuestion {
-    /// Questions as Claude Code and OpenCode send them (`question`, `options[].label`); nil when one takes several
-    /// answers (`several` is the agent's key for it) or has no options: the live terminal answers those.
+    /// Claude Code's and OpenCode's questions (`question`, `options[].label`); nil when one takes several answers
+    /// (`several` is the agent's key for it) or has no options: the live terminal answers those.
     static func items(_ questions: [[String: Any]], several: String) -> [Item]? {
         let items = questions.map { question in
             Item(text: question["question"] as? String ?? "",

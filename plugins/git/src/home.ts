@@ -1,8 +1,5 @@
-// The Git card's home, a page of its own (`ovvi.pages`): the commit message and Commit, the staged and the unstaged
-// changes with Revert, Stage and Unstage (or "No changes"), then the history of every branch as a graph. Row 2 has the
-// branch, Working Tree, Fetch, Pull and Push. A folder that is no repository shows Initialize Repository instead.
 import type { Change, Commit, Page } from "@ovvi/plugin-api"
-import { element, failed, fileIcon, home, how, keep, kept, menu, nameAndFolder, open, ovvi, symbol } from "./lib"
+import { coalesce, element, failed, fileIcon, home, how, keep, kept, menu, nameAndFolder, open, ovvi, symbol } from "./lib"
 
 const WORDS: Record<string, string> = {
   M: "Modified", T: "Type changed", A: "Added", D: "Deleted", R: "Renamed", U: "Untracked", C: "Conflict",
@@ -13,7 +10,6 @@ const COLORS = ["var(--accent)", "var(--finished)", "var(--working)", "var(--nee
 const color = (lane: number) => COLORS[lane % COLORS.length]
 const x = (lane: number) => 9 + lane * LANE
 
-/** Today's time, this year's day, or an older day with its year. */
 function when(ms: number) {
   const date = new Date(ms), now = new Date()
   if (date.toDateString() === now.toDateString()) return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
@@ -21,8 +17,6 @@ function when(ms: number) {
   return date.toLocaleDateString(undefined, { year, month: "short", day: "numeric" })
 }
 
-/** The home of a root in its page, drawn once read, at a change or a commit (`at`) when it lands on one. Its header
- *  controls, handlers and watch are the page's own (`place.ovvi`). */
 export async function make(place: Page, root: string) {
   const api = place.ovvi
   const page = element("div")
@@ -62,46 +56,20 @@ export async function make(place: Page, root: string) {
 
   let staged: Change[] = []
   let unstaged: Change[] = []
-  /** git's error when the root is no repository (or git cannot run). */
   let failure: string | undefined
-  /** The history's length asked for, from the setting: Show More adds 500. */
   let limit = ovvi.settings.get<number>("commits")
   let branches: { name: string; remote: boolean; current: boolean }[] = []
-  /** The writes with a spinner (fetch, pull, push, switch, commit) in the order they run: the app runs a card's writes
-   *  one at a time. */
+  /** In the order they run: the app runs a card's writes one at a time. */
   const running: string[] = []
-  /** What the page drew last: a read that finds the same draws nothing. */
   let drawn = ""
 
-  let loading: Promise<void> | undefined
-  let again = false
-
-  /** Reads everything again and draws what changed; a call during a read reads once more after it. */
-  async function load() {
-    if (loading) {
-      again = true
-      return loading
-    }
-    // A read that throws ends here too: the next change or write reads again.
-    loading = (async () => {
-      try {
-        do {
-          again = false
-          await read()
-        } while (again)
-      } finally {
-        loading = undefined
-      }
-    })()
-    return loading
-  }
+  const load = coalesce(read)
 
   async function read() {
     const asked = limit
     const [changes, head, list, commits] = await Promise.allSettled([
       ovvi.git.changes(root), ovvi.git.head(root), ovvi.git.branches(root), ovvi.git.log(root, { limit: asked }),
     ])
-    // git's message when git cannot read a repository; none when the folder is no repository: it can become one.
     // ponytail: any failure of `git.root` (a folder gone, a repository git refuses) reads as none; match git's message
     // if those must show it.
     const bare = changes.status === "rejected" && (await ovvi.git.root(root).catch(() => "")) === null
@@ -123,27 +91,21 @@ export async function make(place: Page, root: string) {
     api.controls.set("git.pull", count(branch?.behind ?? 0, "Pull"))
     api.controls.set("git.push", count(branch?.ahead ?? 0, "Push"))
     buttons()
-    // None before the first commit. A full page may have more.
     const history = commits.status === "fulfilled" ? commits.value : []
     const state = changes.status === "fulfilled"
       ? { ...changes.value, commits: history, more: history.length >= asked }
       : { failure, bare }
-    // Keys sorted: the app's replies come in any key order, and a draw under a click loses the click.
-    const json = JSON.stringify(state, (_, value) => value && typeof value === "object" && !Array.isArray(value)
-      ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => (a < b ? -1 : 1)))
-      : value)
+    // A draw under a click loses the click: only a change draws. The app's replies have their keys sorted.
+    const json = JSON.stringify(state)
     if (json === drawn) return
     drawn = json
     draw(state)
   }
 
-  /** The branch, Working Tree and the three buttons: a spinner on the one that runs, all off while one runs or git cannot
-   *  read (Working Tree only then). */
   function buttons() {
     const off = Boolean(failure || running.length)
     api.controls.set("git.branch", { busy: running[0] === "switch", enabled: branches.length > 0 && !running.length })
     for (const name of ["fetch", "pull", "push"]) api.controls.set(`git.${name}`, { busy: running[0] === name, enabled: !off })
-    // Nothing to show where git cannot read.
     api.controls.set("git.working", { enabled: !failure })
   }
 
@@ -159,7 +121,6 @@ export async function make(place: Page, root: string) {
     if (state.failure) return
     staged = state.staged ?? []
     unstaged = state.unstaged ?? []
-    // With no changes, the placeholder alone: no lists, no message, no Commit.
     clean.hidden = Boolean(staged.length || unstaged.length)
     changesBox.hidden = !clean.hidden
     section("staged", "Staged Changes", staged, true)
@@ -213,7 +174,6 @@ export async function make(place: Page, root: string) {
     return node
   }
 
-  /** After a write, a read; a failure shows git's message in the toast. */
   async function write(done: Promise<void>, busy?: string) {
     if (busy) {
       running.push(busy)
@@ -231,9 +191,7 @@ export async function make(place: Page, root: string) {
     return worked
   }
 
-  /** A row that opens with a click, Return or Space: in the card, or with ⌘ in a new tab, with ⌥ to the side; its
-   * menu has the three. Its button holds what it shows; a Stage button is the row's own, beside it: a button in a
-   * button is no button to VoiceOver. */
+  /** A button in a button is no button to VoiceOver. */
   function row(label: string, arg: string, at?: string) {
     const node = element("div", "row"), button = element("button", "open")
     button.ariaLabel = label
@@ -263,8 +221,6 @@ export async function make(place: Page, root: string) {
 
   const paths = (change: Change) => [change.path, ...(change.oldPath ? [change.oldPath] : [])]
 
-  /** Asks, then puts the files back as HEAD has them (both lists'). The question names the new files (untracked, or
-   *  added in the index), which go. */
   async function revert(changes: Change[]) {
     const added = new Set(staged.filter((change) => change.letter === "A").map((change) => change.path))
     const fresh = changes.filter((change) => change.letter === "U" || added.has(change.path))
@@ -279,16 +235,12 @@ export async function make(place: Page, root: string) {
     await write(ovvi.git.revert(root, changes.flatMap(paths)))
   }
 
-  /** The history: one graph width for every row, so the subjects line up. */
   function graph(commits: Commit[]) {
     const lanes = Math.max(0, ...commits.flatMap(({ lane, children, parents, through }) => [lane, ...children, ...parents, ...through]))
     const width = x(lanes) + 9
     return commits.map((commit) => commitRow(commit, width))
   }
 
-  /** A row of the graph as `Git.graph` lays it out: lines from the row's top into the dot, from the dot to its
-   *  bottom, and straight through; a line between two lanes takes the color of the one that is not the dot's. HEAD's
-   *  dot is a ring. */
   function commitRow(commit: Commit, width: number) {
     const { hash, subject, date, lane, children, parents, through, refs } = commit
     const mid = HEIGHT / 2
@@ -303,8 +255,7 @@ export async function make(place: Page, root: string) {
     const { node, open } = row(label, `${home(root)} ${hash}`)
     node.id = `commit.${hash}`
     node.classList.add("commit")
-    // As File Explorer's rows: a click selects, a double-click's second click opens, as does a press (VoiceOver: no
-    // clicks counted); ⌘ and ⌥ open in a new tab or to the side.
+    // VoiceOver's press counts no clicks.
     node.onclick = (event) => (how(event) === "card" && event.detail === 1 ? select(node) : openCommit(event, node))
     node.title = `${subject}\n${commit.author} · ${hash.slice(0, 10)}`
     open.insertAdjacentHTML("afterbegin", `<svg width="${width}" height="${HEIGHT}" fill="none" stroke-width="1.5">${[
@@ -317,10 +268,8 @@ export async function make(place: Page, root: string) {
     return node
   }
 
-  /** The selected commit's hash: a redraw keeps it selected. */
   let selected: string | undefined
 
-  /** The commit row selected, with the keyboard; none clears it. */
   function select(node: HTMLElement | null) {
     page.querySelector(".commit.selected")?.classList.remove("selected")
     selected = node?.id.slice("commit.".length)
@@ -334,14 +283,10 @@ export async function make(place: Page, root: string) {
     open(`${home(root)} ${node.id.slice("commit.".length)}`, { how: how(event), plugin: "git" })
   }
 
-  // A click elsewhere clears the selection, as in File Explorer, also on a row's own buttons; the ring shows from an
-  // arrow key on, until the next click.
   page.addEventListener("click", (event) => {
     if (!(event.target as Element).closest(".commit")) select(null)
   }, true)
   page.addEventListener("pointerdown", () => page.removeAttribute("data-keys"), true)
-  // ↑ and ↓ move the selection; the first arrow selects the first commit (↑ the last). Return on the selected commit
-  // opens it. Not while the message has the keyboard, nor under git's error.
   const keys = (event: KeyboardEvent) => {
     const target = event.target as Element
     if (!place.shown || content.hidden || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey
@@ -360,7 +305,6 @@ export async function make(place: Page, root: string) {
   document.addEventListener("keydown", keys)
   place.keep(() => document.removeEventListener("keydown", keys))
 
-  /** A branch, remote branch or tag on its commit; the checked-out branch on the accent. */
   function badge(ref: string) {
     const head = ref.startsWith("HEAD -> "), full = head ? ref.slice(8) : ref
     const kinds: [string, string][] = [["refs/heads/", "source.branch"], ["refs/remotes/", "cloud"], ["tag: refs/tags/", "tag"]]
@@ -388,13 +332,10 @@ export async function make(place: Page, root: string) {
   })
 
   initialize.onclick = () => {
-    // Once at a time.
     initialize.disabled = true
     void write(ovvi.git.init(root)).then(() => (initialize.disabled = false))
   }
 
-  // The message grows to five lines, then scrolls; the card keeps it (`state`). Commit is on the accent when it can
-  // commit: a message and changes. With none staged it is Commit All, which stages everything first. ⌘↩ commits.
   let committing = false
   function enable() {
     commitButton.textContent = staged.length ? "Commit" : "Commit All"
@@ -433,14 +374,12 @@ export async function make(place: Page, root: string) {
     enable()
   })
 
-  // While the page shows, a read after each change under the root; when it shows again, one for the changes meanwhile.
   api.files.watch(root, () => void load())
   message.value = kept().draft ?? ""
   await load()
   document.title = ""
   // Once its form shows: hidden, it has no height.
   if (message.value) grow()
-  // From a diff's Git Home: at the change or the commit it opened.
   const at = place.at ?? "", ids = at.startsWith(`${home(root)} `) ? [`commit.${at.split(" ").pop()}`]
     : [`change.${at}`, `staged.${at}`]
   if (at) [...page.querySelectorAll("[id]")].find((node) => ids.includes(node.id))?.scrollIntoView({ block: "center" })

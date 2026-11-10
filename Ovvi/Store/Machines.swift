@@ -1,13 +1,12 @@
 import Foundation
 import HerdrKit
+import IOKit.ps
 import Observation
 import SystemConfiguration
 
-/// A computer that runs herdr (D43): This Mac, or a remote machine of the app's own list (D54).
 struct Machine: Codable, Hashable, Identifiable {
     var id: String
     var name: String
-    /// What `ssh` connects to, as the user types it in a terminal; empty for This Mac.
     var target: String
     var icon: String
 
@@ -16,17 +15,28 @@ struct Machine: Codable, Hashable, Identifiable {
     }
 }
 
+/// `hw.model` says no MacBook on M2 and later laptops: a laptop is a Mac with an internal battery.
+let thisMacIcon: String = {
+    guard let info = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
+          let sources = IOPSCopyPowerSourcesList(info)?.takeRetainedValue() as? [CFTypeRef]
+    else { return "desktopcomputer" }
+    let battery = sources.contains { source in
+        let description = IOPSGetPowerSourceDescription(info, source)?.takeUnretainedValue() as? [String: Any]
+        return description?[kIOPSTypeKey] as? String == kIOPSInternalBatteryType
+    }
+    return battery ? "laptopcomputer" : "desktopcomputer"
+}()
+
 extension Machine {
     static let thisMac = Machine(id: "local", name: "This Mac", target: "", icon: thisMacIcon)
     static var new: Machine {
         Machine(id: UUID().uuidString, name: "", target: "", icon: "server.rack")
     }
 
-    /// This Mac's own name, as set in System Settings ("Hari's MacBook Pro"). Read once: a rename shows after a
-    /// relaunch.
+    /// Read once: a rename shows after a relaunch.
     static let computerName = SCDynamicStoreCopyComputerName(nil, nil) as String? ?? thisMac.name
 
-    /// Its one Exec for the app's life; the sessions of a remote machine share its ControlMaster.
+    /// The sessions of a remote machine share its ControlMaster.
     @MainActor func exec() async -> any Exec {
         let local = await localExec.value
         guard isRemote else { return local }
@@ -41,14 +51,12 @@ extension Machine {
     /// By target, as the sockets are: two machines of one target share a master.
     @MainActor private static var execs: [String: SSHExec] = [:]
 
-    /// The app quits: each remote machine's master ends (machines#the-ssh-connection).
     @MainActor static func disconnectAll() {
         execs.values.forEach { $0.disconnect() }
     }
 }
 
-/// The remote machines, in `UserDefaults` (D54). A run with `-session` (the tests, a run against a throwaway
-/// session) never sees the user's machines: it takes `-machines <json>` or none, and saves nothing.
+/// A run with `-session` (the tests, a run against a throwaway session) never sees the user's machines.
 @MainActor @Observable
 final class MachineList {
     static let shared = MachineList()
@@ -61,10 +69,12 @@ final class MachineList {
         }
     }
 
-    /// The raw arguments: the argument domain drops a JSON value it cannot read as a property list (`-machines []`),
-    /// and a test's launch without `-session` then read the user's machines.
+    /// The raw arguments: the argument domain drops a JSON value it cannot read as a property list (`-machines []`).
     static let isolated = ProcessInfo.processInfo.arguments
         .contains { ["-session", "-defaultSession", "-machines"].contains($0) }
+    private static let arguments = UserDefaults.standard.volatileDomain(forName: UserDefaults.argumentDomain)
+    static let session = arguments["session"] as? String
+    static let defaultSession = arguments["defaultSession"] as? String
 
     private init() {
         // The argument as given: the argument domain reads a JSON array as something else.
@@ -75,8 +85,7 @@ final class MachineList {
         list = json.flatMap { try? JSONDecoder().decode([Machine].self, from: Data($0.utf8)) } ?? []
     }
 
-    /// An edit of a listed machine. Its open windows take it all, so their next windows and pages use the new
-    /// target; its open sessions take the name and icon only, as they stay connected to the old target.
+    /// Open sessions take the name and icon only: they stay connected to the target they opened on.
     func save(_ machine: Machine) {
         guard let index = list.firstIndex(where: { $0.id == machine.id }) else { return }
         list[index] = machine
@@ -89,7 +98,6 @@ final class MachineList {
         }
     }
 
-    /// Settings' Add or Save: the name is the target when empty. A new machine opens in a new window, which connects.
     func keep(_ draft: Machine, target: String) -> Machine {
         var machine = draft
         let name = machine.name.trimmingCharacters(in: .whitespaces)
@@ -110,7 +118,16 @@ final class MachineList {
         KnownSessions.forget(machine)
     }
 
+    var all: [Machine] {
+        [.thisMac] + list
+    }
+
     func machine(_ id: String) -> Machine? {
         id == Machine.thisMac.id ? .thisMac : list.first { $0.id == id }
     }
+}
+
+extension Session {
+    /// The session herdr makes when a command names none.
+    static let defaultName = "default"
 }

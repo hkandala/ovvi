@@ -1,6 +1,5 @@
 import Foundation
 
-/// At most `count` holders at once; the others wait in order (HostStore's writes and program asks).
 @MainActor
 final class Gate {
     private var free: Int
@@ -14,7 +13,6 @@ final class Gate {
         free == 0
     }
 
-    /// `first`: ahead of the others waiting (what the user waits on, before work in the background).
     func enter(first: Bool = false) async {
         if free > 0 {
             free -= 1

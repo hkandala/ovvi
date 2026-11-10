@@ -1,24 +1,18 @@
 import HerdrKit
 import SwiftUI
 
-/// One session: its workspaces in the sidebar's order, each its name over a grid of its tabs. Equatable: the
-/// overview's body runs again on every change of the live set, which would make every tile's body again.
+/// Equatable: the overview's body runs again on every change of the live set, which would make every tile's body again.
 struct OverviewPage: View, Equatable {
     let pages: WindowPages
     let page: Page
-    /// The tab's page.
     let size: CGSize
-    /// The margin left and right; the grid between them.
     let side: CGFloat
-    /// Tiles a row: 2 to 4 by the window's width.
     let columns: Int
     let open: (HostStore.Workspace, HostStore.Tab) -> Void
     @State private var scrolling = false
 
     var body: some View {
         ScrollView(.vertical) {
-            // Lazy by row: only the tiles in or near view are made, whatever the session's size. Fixed columns:
-            // a short last row keeps their width.
             let grid = Array(repeating: GridItem(.flexible(), spacing: 16), count: columns)
             VStack(alignment: .leading, spacing: 16) {
                 Text(page.store.title).font(.system(size: 13, weight: .semibold))
@@ -37,7 +31,6 @@ struct OverviewPage: View, Equatable {
                                     .equatable()
                             }
                         } header: {
-                            // 32 pt below the rows above, 12 pt above its own.
                             Text(workspace.label).font(.system(size: 13, weight: .semibold))
                                 .foregroundStyle(.secondary)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -60,8 +53,8 @@ struct OverviewPage: View, Equatable {
                 pages.settleOverview()
             }
         }
-        // Another session shows: its tiles report no leaving, and would stay live out of view; a scroll that went
-        // with it never ends.
+        // Another session shows: its tiles report no leaving, and would stay live out of view; a scroll that goes with
+        // it never ends.
         .onDisappear {
             pages.overviewTabs[page.id] = nil
             pages.overviewScrolling = false
@@ -77,10 +70,9 @@ struct OverviewPage: View, Equatable {
 }
 
 extension View {
-    /// No hover or hit test reaches the views under it while `shielding` (a scroll): SwiftUI
-    /// looked for the tile under the pointer at every frame (a tenth of the main thread). Not
-    /// `allowsHitTesting`, whose change made every tile's body again, equatable or not (30–60 tiles,
-    /// 20–40 ms at a scroll's start).
+    /// SwiftUI looks for the tile under the pointer at every frame (a tenth of the main thread). Not
+    /// `allowsHitTesting`, whose change makes every tile's body again, equatable or not (30–60 tiles, 20–40 ms at a
+    /// scroll's start).
     func shielded(_ shielding: Bool) -> some View {
         overlay {
             if shielding {
@@ -90,15 +82,12 @@ extension View {
     }
 }
 
-/// A tab as one card: its title row (icon stack, title, status; × on hover) over the miniature of its page. The
-/// selected tab of its workspace has the keyboard card's look. Equatable: the page's body runs again when its grid
-/// starts or stops scrolling (30–70 tiles, 40 ms).
+/// Equatable: the page's body runs again when its grid starts or stops scrolling (30–70 tiles, 40 ms).
 private struct Tile: View, Equatable {
     let pages: WindowPages
     let page: Page
     let workspace: HostStore.Workspace
     let tab: HostStore.Tab
-    /// The tab's page.
     let size: CGSize
     let open: () -> Void
     @State private var hovering = false
@@ -114,7 +103,6 @@ private struct Tile: View, Equatable {
                 FadeText(text: page.titleLabel(tab)).fontWeight(.medium)
                 Spacer(minLength: 0)
                 if hovering {
-                    // As the tab bar's ×: asks first only when a program runs.
                     IconButton(symbol: "xmark", help: "Close Tab", key: .closeTab, size: 22) {
                         page.close(.tab(tab.id))
                     }
@@ -127,15 +115,12 @@ private struct Tile: View, Equatable {
             .padding(.trailing, 8)
             .frame(height: PaneCard.header)
             Miniature(tab: tab, page: page, size: size, live: pages.overviewLive)
-                // A card with no picture yet (never drawn, or its snapshot gone): it loads in turn (`overviewCards`).
                 .overlay {
                     if loading {
                         Loader(id: "overview.tab.\(tab.id).loading")
-                            // e2e (`-recordLatency`): it showed, however briefly.
                             .onAppear { Latency.shared.note("loader \(tab.id)") }
                     }
                 }
-                // It drew: a tile waiting loads.
                 .onChange(of: loading) { pages.settleOverview() }
                 .aspectRatio(size, contentMode: .fit)
                 .onGeometryChange(for: CGFloat.self, of: \.size.width) { pages.tileScale = $0 / size.width }
@@ -143,7 +128,6 @@ private struct Tile: View, Equatable {
         }
         .frame(maxWidth: .infinity)
         .background(CardSurface(keyboard: selected))
-        // The tiles in view may be live (`showTerminals`); the others show their snapshot.
         .onScrollVisibilityChange(threshold: 0.01) { laidOut($0) }
         .contentShape(.rect)
         .onTapGesture(perform: open)
@@ -163,9 +147,7 @@ private struct Tile: View, Equatable {
     }
 
     private func laidOut(_ shown: Bool) {
-        // Closing: `closeOverview` lets them all go at once.
         guard pages.overview else { return }
-        // The latest in view last: they go live first.
         pages.overviewTabs[page.id, default: []].removeAll { $0 == tab.id }
         if shown {
             pages.overviewTabs[page.id, default: []].append(tab.id)

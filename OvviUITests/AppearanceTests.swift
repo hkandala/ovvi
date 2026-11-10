@@ -1,13 +1,10 @@
 import XCTest
 
-/// Appearance and interface style. The window's `window.look` element says which look it draws, from
-/// the effective appearance and the style setting.
 extension OvviUITests {
-    /// View ▸ Appearance and View ▸ Interface Style switch the look, with a screenshot of each of the four.
     func testMenuSwitchesTheLook() {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
-        // Settings persist (in the app's own defaults): start from the defaults whatever an earlier run left, and
-        // go back to them even when a step fails.
+        // Settings persist across runs in the app's own defaults: start from the defaults, and go back to them even
+        // when a step fails.
         pick("Interface Style", "Glass")
         addTeardownBlock { @MainActor [self] in
             pick("Interface Style", "Glass")
@@ -20,7 +17,6 @@ extension OvviUITests {
             expectLook(look)
             keepScreenshot(look)
         }
-        // Auto follows macOS, from the other appearance so that an Auto that does nothing fails.
         let (system, other) = UserDefaults.standard.string(forKey: "AppleInterfaceStyle") == "Dark"
             ? ("dark", "light") : ("light", "dark")
         pick("Appearance", other.capitalized)
@@ -39,8 +35,7 @@ extension OvviUITests {
         }
     }
 
-    /// In Glass the cards look alike: the keyboard card at most a little brighter. Read from pixels, the one place the
-    /// look shows (as `RevealTests` do).
+    /// Read from pixels, the one place the look shows.
     func testCardsLookAlikeWithAndWithoutTheKeyboard() {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         element("terminal.w1:p1").click()
@@ -62,9 +57,8 @@ extension OvviUITests {
         }
     }
 
-    /// Glass cards carry Rex's rim: brighter along the top edge than down the sides. Read on the card without the
-    /// keyboard: the keyboard card's active border lies over its rim. Asserted in dark; light's rim and the card both
-    /// end near white, so its screenshot is for people.
+    /// Read on the card without the keyboard: the keyboard card's active border lies over its rim. Asserted in dark;
+    /// light's rim and the card both end near white.
     func testGlassCardsHaveABrighterTopRim() {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         element("terminal.w1:p1").click()
@@ -81,9 +75,7 @@ extension OvviUITests {
         }
     }
 
-    /// A dark Glass window looks the same when another window has the keyboard: its blur stays active and its tints
-    /// are plain colors (macOS draws Liquid Glass grey and faint in an inactive window). Read on a workspace row that
-    /// is not selected: the background with a short label, no capsule.
+    /// macOS draws Liquid Glass grey and faint in an inactive window.
     func testGlassLooksTheSameInAnInactiveWindow() {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         pick("Interface Style", "Glass")
@@ -99,15 +91,13 @@ extension OvviUITests {
         XCTAssertTrue(active > 0 && abs(active - inactive) <= 4, "active \(active), inactive \(inactive)")
     }
 
-    /// Text selected in a terminal reads well in all four looks: its own color over the selection,
-    /// where libghostty's default drew it in the window background, about the selection's own grey. A drag over a
-    /// plain shell selects locally (herdr drops mouse events for a program without mouse mode).
+    /// herdr drops mouse events for a program without mouse mode, so a drag over a plain shell selects locally.
     func testSelectedTextIsReadable() async throws {
         let terminal = element("terminal.w1:p1")
         XCTAssertTrue(terminal.exists(within: connect))
         try await waitForPrompt("w1:p1")
-        // Every row full: full blocks (3 cells in 10) draw the cell's text color edge to edge. printf makes their
-        // bytes, so the line editor gets ASCII in any locale.
+        // Full blocks (3 cells in 10) draw the cell's text color edge to edge. printf makes their bytes, so the line
+        // editor gets ASCII in any locale.
         try await send(
             "clear; for i in $(seq 600); do printf '\\342\\226\\210\\342\\226\\210\\342\\226\\210 ovvi '; done; "
                 + "echo; echo ovvi-$((6*7))\r",
@@ -123,14 +113,13 @@ extension OvviUITests {
             pick("Appearance", appearance)
             let look = "\(style) \(appearance)".lowercased()
             expectLook(look)
-            // The top half of the rows, every one full width.
             terminal.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.01))
                 .click(
                     forDuration: 0.2,
                     thenDragTo: terminal.coordinate(withNormalizedOffset: CGVector(dx: 0.99, dy: 0.5)),
                 )
             // WCAG's 4.5 for text; libghostty's default is 1.2 in dark, 1.4 in light. The selection shows on the card
-            // (about 1.0 when no selection was drawn). The terminal takes the look a frame or two after the window.
+            // (about 1.0 with no selection drawn). The terminal takes the look a frame or two after the window.
             var last = (text: 0.0, selection: 0.0)
             do {
                 try await expect("\(look): readable selected text", times: 20) {
@@ -144,9 +133,7 @@ extension OvviUITests {
         }
     }
 
-    /// In the image's top third (selected), the contrast of its text color with the selection's: the most common
-    /// color there, and a pixel at the 85th percentile of contrast with it (full blocks fill 30 %). And the
-    /// selection's contrast with the most common color of the bottom pixel row (the card under the unselected rows).
+    /// The 85th percentile of contrast: full blocks fill 30 % of the selected rows.
     private static func contrast(_ image: NSImage) -> (text: Double, selection: Double) {
         let pixels = pixels(image)
         guard let width = image.cgImage(forProposedRect: nil, context: nil, hints: nil)?.width, width > 0,
@@ -162,7 +149,6 @@ extension OvviUITests {
         func ratio(_ one: Double, _ other: Double) -> Double {
             (max(one, other) + 0.05) / (min(one, other) + 0.05)
         }
-        // The offset of a pixel of the most common color.
         func common(_ offsets: [Int]) -> Int {
             let colors = Dictionary(grouping: offsets) { pixels[$0 ..< $0 + 3].reduce(0) { $0 << 8 | Int($1) } }
             return colors.max { $0.value.count < $1.value.count }?.value.first ?? 0
@@ -174,8 +160,6 @@ extension OvviUITests {
         return (text, ratio(background, card))
     }
 
-    /// How much brighter than the card's median (its fill) the brightest of its top 3 pixel rows round its middle is,
-    /// and the brightest of its left 3 columns round its middle.
     private func rim(_ card: XCUIElement) -> (top: Int, side: Int) {
         let image = card.screenshot().image
         let brightness = Self.brightness(image)
@@ -192,7 +176,6 @@ extension OvviUITests {
         return (top - fill, side - fill)
     }
 
-    /// The median brightness of a card or a button: its fill, as its text is a small share.
     func median(_ card: XCUIElement) -> Int {
         let brightness = Self.brightness(card.screenshot().image).sorted()
         return brightness.isEmpty ? 0 : brightness[brightness.count / 2]

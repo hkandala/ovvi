@@ -2,8 +2,6 @@ import Foundation
 import HerdrKit
 import SwiftUI
 
-/// The plugins the user confirmed (plugins/security#the-confirmation), by id in `trust.json` in the config folder. A
-/// plugin asks once before its code first runs; the default plugins never ask.
 @MainActor @Observable
 final class PluginTrust {
     static let shared = PluginTrust()
@@ -15,16 +13,13 @@ final class PluginTrust {
 
     private init() {
         let data = (try? Data(contentsOf: Self.file)) ?? Data()
-        // An older Ovvi kept each id with its permissions: those ids count as confirmed.
-        trusted = Set((try? JSONDecoder().decode([String].self, from: data))
-            ?? (try? JSONDecoder().decode([String: [String]].self, from: data))?.keys.map(\.self) ?? [])
+        trusted = Set((try? JSONDecoder().decode([String].self, from: data)) ?? [])
     }
 
     func allows(_ manifest: PluginManifest) -> Bool {
         Registry.defaults.contains(manifest.id) || trusted.contains(manifest.id)
     }
 
-    /// Install: kept, and the plugin's cards waiting on the confirmation load.
     func allow(_ manifest: PluginManifest) {
         trusted.insert(manifest.id)
         save()
@@ -33,8 +28,6 @@ final class PluginTrust {
         }
     }
 
-    /// Remove: a page still running (its card shows the plugin missing) can call nothing more (`Bridge.call`), and its
-    /// watches stop.
     func forget(_ id: String) {
         trusted.remove(id)
         save()
@@ -55,7 +48,7 @@ final class PluginTrust {
 }
 
 extension String {
-    /// Text from a manifest, without control or direction-override characters: a plugin picks its own words.
+    /// Without control or direction-override characters: a plugin picks its own words.
     var shown: String {
         String(String.UnicodeScalarView(unicodeScalars.filter {
             ![.control, .format].contains($0.properties.generalCategory)
@@ -72,7 +65,6 @@ struct TrustPrompt: View {
     var body: some View {
         let manifest = plugin.manifest, id = "pane.\(plugin.paneID).trust"
         let folder = Registry.package(manifest.id)
-        // The npm or git source installed into its folder; a local path or a hand-made folder has none.
         let name = folder?.lastPathComponent
         let source = PluginPackages.sources(Registry.settings).first { name != nil && PluginSource($0)?.folder == name }
         VStack(spacing: 12) {
@@ -108,5 +100,15 @@ struct TrustPrompt: View {
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(look.cardSolid(keyboard: lit))
+    }
+}
+
+struct NewPaneSwitch: View {
+    let manifest: PluginManifest
+
+    var body: some View {
+        Toggle("Show in New Pane", isOn: Binding { Registry.inNewPane(manifest) } set: {
+            Registry.show(manifest.id, inNewPane: $0)
+        })
     }
 }

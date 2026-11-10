@@ -1,24 +1,17 @@
 import HerdrKit
 import SwiftUI
 
-/// ⌘K (D48): every command with its shortcut, the selected workspace's tabs, the window's workspaces and its
-/// pages. A command with choices or a name opens a sub-page; ⌫ on an empty field or Esc goes back.
 struct Palette: View {
     let pages: WindowPages
     let page: Page
     let commands: CommandList
     @Binding var open: Bool
-    /// The window's height: the list takes what is left under the field, as in Rex.
     let height: CGFloat
-    /// The command whose sub-page shows; nil on the root. Sub-pages hold no sub-pages, so one level is the stack.
     @State private var sub: Command?
     @State private var lit: String?
-    /// The choice a preview page opened on: it keeps the checkmark, and leaving without Enter picks it again.
     @State private var kept: String?
-    /// The root's filter when it names a file or folder on the page's machine, and its path: an Open row first.
     @State private var pasted: (filter: String, path: String)?
-    /// The root's rows and its lit row as the palette opened: made again on each body, the list followed every
-    /// change of a tab's title or panes while it was open.
+    /// Made once: made again on each body, the list would follow every change of a tab's title or panes while open.
     @State private var made: Made?
 
     private struct Made {
@@ -41,12 +34,10 @@ struct Palette: View {
         }
         .padding([.horizontal, .top], 10)
         .frame(width: 480)
-        .floatingGlass(in: .rect(cornerRadius: 14))
-        // Rex's preview delay.
+        .floatingGlass(in: .panel)
         .task(id: lit) {
             guard command?.previews == true, let lit,
                   await (try? Task.sleep(for: .seconds(0.75))) != nil,
-                  // Not after the page was left or a row chosen meanwhile.
                   kept != nil else { return }
             command?.menu.first { lit == Self.choiceID($0) }?.action()
         }
@@ -63,7 +54,7 @@ struct Palette: View {
             items: command.map(subItems) ?? { rootItems($0, made) },
             start: command.map(start) ?? made.start,
             maxHeight: min(460, max(84, height - 154)),
-            // Only a preview page reads it: on the others each new light drew the whole palette again.
+            // Only a preview page reads it: on the others each new light draws the whole palette again.
             lit: command?.previews == true ? $lit : nil,
             text: command?.name?.current ?? "",
             submit: command?.name.map { name in { text in Task { await name.save(text) } } } ?? command?.field?.open,
@@ -74,7 +65,6 @@ struct Palette: View {
             inset: 10,
         ) { open = false }
             .controlSize(.large)
-            // A new page starts with a new field and list.
             .id(sub?.title)
     }
 
@@ -82,17 +72,10 @@ struct Palette: View {
         "choice.\(choice.id ?? choice.title)"
     }
 
-    /// A page's title and its row's: no "…" (Rename Pane… in the menu bar).
     static func pageTitle(_ command: Command) -> String {
         command.title.replacing("…", with: "")
     }
 
-    /// Empty field: each group under its header, in `Command.Group`'s order: the tabs, workspaces and sessions
-    /// first in theirs, then its commands. Typed: one list, best match first, each row with its group's name; a
-    /// tie goes to the whole title ("open file": Open File › before Open File Explorer Here), then to a title that
-    /// starts with the filter ("font size": Font Size › before Increase Font Size), then to commands before places,
-    /// then to the earlier row (the menu's and the sidebar's order). A keyword match
-    /// ranks under a title match.
     private func rootItems(_ filter: String, _ made: Made) -> [FilterList.Item] {
         let commands = made.commands, places = made.places
         guard !filter.trimmingCharacters(in: .whitespaces).isEmpty else {
@@ -121,17 +104,12 @@ struct Palette: View {
     }
 
     private func make() -> Made {
-        // A floating window's palette lists only its commands (D50).
         let floating = commands.floating != nil
-        // The root lights the selected tab: ↩ on a fresh palette stays put.
         let start = floating ? 0 : page.selectedWorkspace?.tabs.firstIndex { $0.id == page.selectedTab?.id } ?? 0
         return Made(commands: commandRows(commands.all), places: floating ? [] : placeRows(), start: start)
     }
 
-    /// The enabled commands; a setting says what it does now ("Turn On Focus Follows Mouse").
     private func commandRows(_ list: [Command]) -> [(item: FilterList.Item, keywords: String)] {
-        // The menu bar's order, then the palette's own; not the places on ⌘1…⌘9 (the place rows list them). Not
-        // Command Palette: it is open.
         Command.Section.allCases.filter { ![.tabs, .workspaces, .sessions].contains($0) }
             .flatMap { section in list.filter { $0.section == section } }
             .filter { $0.enabled && $0.key != .palette }.map { command in
@@ -159,7 +137,6 @@ struct Palette: View {
         let tabs = (page.selectedWorkspace?.tabs ?? []).map { tab in
             FilterList.Item(id: "tab.\(tab.id)", pane: page.stack(tab).first, title: page.titleText(tab),
                             section: Command.Group.tabs.rawValue, act: {
-                                // Not a tab closed since the palette opened.
                                 if let workspace = page.selectedWorkspace,
                                    workspace.tabs.contains(where: { $0.id == tab.id })
                                 {
@@ -183,7 +160,6 @@ struct Palette: View {
             FilterList.Item(id: "session.\(other.id)", symbol: "rectangle.stack", title: other.id,
                             section: Command.Group.sessions.rawValue, act: { pages.show(other) })
         }
-        // A workspace also matches its session's name.
         return tabs.map { ($0, "") } + workspaces.map { ($0, $0.detail) } + sessions.map { ($0, "") }
     }
 
@@ -202,7 +178,6 @@ struct Palette: View {
         }
     }
 
-    /// A filter that looks like a path (`/`, `~`, `./`, `../`) and names a file or folder offers to open it.
     private func check(_ filter: String) async {
         let text = filter.trimmingCharacters(in: .whitespacesAndNewlines)
         guard ["/", "~", "./", "../"].contains(where: text.hasPrefix) else { return pasted = nil }
@@ -214,7 +189,6 @@ struct Palette: View {
         }
     }
 
-    /// The current choice is lit first.
     private func start(_ command: Command) -> Int {
         command.menu.filter(\.enabled).firstIndex { command.previews ? $0.title == kept : $0.checked == true } ?? 0
     }

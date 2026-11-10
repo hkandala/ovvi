@@ -47,7 +47,6 @@ struct PluginsPage: View {
                 .frame(maxWidth: .infinity)
             }
             Section {
-                PluginLink(row: InstalledPlugin(id: Registry.browser.id, manifest: Registry.browser, kind: .bundled))
                 ForEach(installs.rows) { PluginLink(row: $0) }
             } header: {
                 HStack {
@@ -101,7 +100,6 @@ private struct PluginLink: View {
                 }
             }
         }
-        // One element, whose label reads its texts: "Git, 1.9.0, Comes with Ovvi".
         .accessibilityIdentifier("plugins.\(row.id)")
     }
 }

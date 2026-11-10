@@ -253,10 +253,9 @@ concurrency). The rest:
   deliberate shortcut gets a `// ponytail:` comment with its ceiling and upgrade path. A type gets its own
   file when more than one file uses it or it passes about 200 lines.
 - **Swift.** No `@unchecked Sendable` or `nonisolated(unsafe)` without a one-line reason. UI state is
-  `@Observable` classes on the main actor; no Combine or `ObservableObject` (except where libghostty-spm
-  needs it). `async`/`await`, `AsyncStream`, structured tasks; cancel what you start. Errors: `throws` with
-  a small enum per module, shown in the UI as text; never crash on bad input from herdr; no `try!` or force
-  unwraps outside tests. Decoding: hand-written lenient `Decodable` models with only the fields the app uses.
+  `@Observable` classes on the main actor; no Combine or `ObservableObject`. `async`/`await`, `AsyncStream`,
+  structured tasks; cancel what you start. Errors: `throws` with a small enum per module, shown in the UI as
+  text; never crash on bad input from herdr; no `try!` or force unwraps outside tests. Decoding: hand-written lenient `Decodable` models with only the fields the app uses.
   Names follow the design's words (machine, session, page, window, workspace, tab, pane, card; the design's
   space is `Workspace` in code, herdr's API word). Comments say why, not what or when; no commented-out code.
 - **Design bar.** Every new or changed surface (window, panel, dialog, sheet, popover, About, a menu we

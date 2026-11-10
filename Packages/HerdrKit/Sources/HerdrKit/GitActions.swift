@@ -1,23 +1,18 @@
 import Foundation
 
 public extension Git {
-    /// The changes in two lists: staged (the index against HEAD) and unstaged (the work tree against the index,
-    /// untracked files included). A file can be in both. A conflict is unstaged only.
     static func changes(_ root: String, exec: any Exec) async throws
         -> (staged: [Change], unstaged: [Change])
     {
-        try await Change.split(exec.checkedOutput(["git", "--no-optional-locks", "-C", root, "status",
-                                                   "--porcelain=v1", "-z", "--untracked-files=all"]))
+        try await Change.split(porcelain(root, exec: exec))
     }
 
     struct Branch: Equatable, Sendable {
-        /// `main`, or `origin/main` for a remote one.
         public let name: String
         public let remote: Bool
         public let current: Bool
     }
 
-    /// The local branches, then the remote ones that have no local branch of their name (a switch to one makes it).
     static func branches(_ root: String, exec: any Exec) async throws -> [Branch] {
         let lines = try await exec.checkedOutput(["git", "-C", root, "for-each-ref", "--format=%(HEAD)%(refname)",
                                                   "refs/heads", "refs/remotes"]).split(separator: "\n")
@@ -37,10 +32,9 @@ public extension Git {
         return local + remote
     }
 
-    /// Puts the paths (literal, from the root) back as HEAD has them, in the index and the work tree: the tracked
-    /// ones restored (`git restore`, which knows no untracked path), then the untracked ones deleted (`git clean`,
-    /// which leaves ignored files), so a failed restore deletes nothing. With a tracked path it fails before the first
-    /// commit: there is no HEAD to go back to.
+    /// Tracked paths first (`git restore`, which knows no untracked path), then untracked ones (`git clean`, which
+    /// leaves ignored files), so a failed restore deletes nothing. A tracked path fails with no commit yet: there is no
+    /// HEAD to go back to.
     /// ponytail: the paths go in argv, twice; thousands of them (an unignored `node_modules`) can pass the argument
     /// limit, then `--pathspec-from-file=-` on stdin.
     static func revert(_ root: String, _ paths: [String], exec: any Exec) async throws {
@@ -61,7 +55,6 @@ public extension Git {
     enum Sync: String, Sendable {
         case fetch, pull, push
 
-        /// Fetch from every remote; Push sets the upstream of a branch that has none.
         public var arguments: [String] {
             switch self {
             case .fetch: ["fetch", "--all"]
@@ -71,8 +64,6 @@ public extension Git {
         }
     }
 
-    /// `git <arguments>` in the repository, for a button: git never asks for a password (it fails instead), and
-    /// git's own message is the error. Its output.
     @discardableResult
     static func run(_ root: String, _ arguments: [String], timeout: Duration = .seconds(120),
                     exec: any Exec) async throws -> String
@@ -83,23 +74,20 @@ public extension Git {
 }
 
 extension Git.Change {
-    /// From `git status --porcelain=v1 -z`: the index's letter for the staged list, the work tree's for the other.
     static func split(_ porcelain: String) -> (staged: [Self], unstaged: [Self]) {
         var staged: [Self] = [], unstaged: [Self] = []
         for entry in entries(porcelain) {
-            let (index, tree, path, oldPath) = (entry.index, entry.tree, entry.path, entry.oldPath)
-            switch (index, tree) {
-            case ("?", "?"): unstaged.append(Self(letter: "U", path: path, oldPath: nil))
-            case ("!", "!"): continue
-            case ("U", _), (_, "U"), ("A", "A"), ("D", "D"):
-                unstaged.append(Self(letter: "C", path: path, oldPath: nil))
-            default:
-                if index != " " {
-                    staged.append(Self(letter: index == "C" ? "A" : index, path: path, oldPath: oldPath))
+            if let whole = entry.whole {
+                if whole != "!" {
+                    unstaged.append(Self(letter: whole, path: entry.path, oldPath: nil))
                 }
-                if tree != " " {
-                    unstaged.append(Self(letter: tree, path: path, oldPath: nil))
-                }
+                continue
+            }
+            if entry.index != " " {
+                staged.append(Self(letter: entry.staged, path: entry.path, oldPath: entry.oldPath))
+            }
+            if entry.tree != " " {
+                unstaged.append(Self(letter: entry.tree, path: entry.path, oldPath: nil))
             }
         }
         return (staged, unstaged)

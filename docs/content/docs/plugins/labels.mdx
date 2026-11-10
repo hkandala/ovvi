@@ -6,17 +6,13 @@ description: "How a plugin pane is stored in herdr: label, placeholder and insta
 Every browser and plugin pane is stored in herdr this way
 ([Browser](/docs/ui/browser#the-label),
 [File Explorer and Git](/docs/plugins/default-plugins#the-label)). The
-plugin id is the manifest's `id` ([The manifest](/docs/plugins/manifest)),
-and a plugin has one pane kind, so its labels have no pane name. A
-manifest's `id` uses no `.` or `_`, so a label with one shows the missing
-card.
+plugin id is the manifest's `id` ([The manifest](/docs/plugins/manifest)).
 
 ## Label format
 
 ```text
-label     = "ovvi:" plugin-id [ "/" pane-name ] "#" iid [ " " arg ]
-plugin-id = [a-z0-9][a-z0-9._-]{0,63}
-pane-name = [a-z0-9][a-z0-9-]{0,31}
+label     = "ovvi:" plugin-id "#" iid [ " " arg ]
+plugin-id = [a-z0-9][a-z0-9-]{0,63}
 iid       = [a-z0-9]{6}
 arg       = the rest: no control characters, at most 1024 characters
 ```
@@ -27,12 +23,9 @@ Examples, as a herdr TUI user sees them in the pane border:
 ovvi:git-history#k3f9q2 main
 ovvi:explorer#q2m0zd /Users/me/code/ovvi/README.md
 ovvi:git#a81xw0 /Users/me/code/ovvi/ uncommitted
-ovvi:kanban/board#7tt1qe
 ovvi:browser#m4p8sa http://localhost:3000/dashboard
 ```
 
-- The parser accepts `/<pane-name>`, and no plugin uses it: a plugin has one
-  pane kind. A label with a pane name opens the plugin's one kind.
 - The `ovvi:` prefix keeps a user's own label (`todo: fix login`) from turning
   into a plugin.
 - The argument goes last, so the useful part is what a TUI user reads. herdr
@@ -72,7 +65,8 @@ Browser and plugin panes are created the same way.
      with no `opens`, which uses it), starts in the source pane's folder.
    - The script prints the title, the argument without its scheme and "Shown
      in Ovvi" in the middle of the pane. On `SIGWINCH` it reads the label's
-     argument from herdr (`herdr pane get $HERDR_PANE_ID`) and draws again: on
+     argument from herdr (`herdr --session "$HERDR_SESSION" pane get "$HERDR_PANE_ID"`, with herdr's
+     own `HERDR_BIN_PATH`) and draws again: on
      a resize, and when the app signals its processes by pid after the label
      changed (a browser's new address). herdr still finds a pane by its old id
      after a move to another space. A placeholder from before the app

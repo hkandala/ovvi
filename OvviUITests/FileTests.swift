@@ -1,31 +1,20 @@
 import XCTest
 
-/// File Explorer's File and Preview places: a pane labeled `ovvi:explorer#<iid> <path>` (or an old `ovvi:file#…`,
-/// `ovvi:preview#…`) shows the explorer's page, which reads the file with the plugin API.
 extension OvviUITests {
-    /// The file in CodeMirror; the breadcrumbs follow the caret; an edit shows the dirty dot and ⌘Z clears it; ⌘S
-    /// saves; a change on disk reloads a clean file, and a dirty one gets the toast (Keep Mine, then Reload); ⌘F opens
-    /// the editor's search, as do ⌘G and ⇧⌘G; the overview's tile shows it; Word Wrap turns the wrap off and on.
-    /// ⇧⌘← selects in the editor, not Move Tab Left; ⌘[ reaches the app before CodeMirror. Closing it with edits asks,
-    /// and Discard closes it.
     func testAFileCardEditsSavesAndReloadsItsFile() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("file")
         try await waitForPrompt(left)
         let folder = "/tmp/ovvi-e2e-file", file = "\(folder)/src/main.swift"
-        // A repository: the breadcrumbs start at its root, which git names `/private/tmp/…`.
+        // git names the repository's root `/private/tmp/…`.
         try await send("rm -rf \(folder) && mkdir -p \(folder)/src && git -C \(folder) init -q "
             + "&& printf 'struct Box {\\n    func open() {\\n        let x = 1\\n    }\\n}\\n' >\(file) && clear\r",
             to: left)
         try await waitFor(left) { !$0.contains("printf") }
-        addTeardownBlock { [one] in _ = try? await Self.call(
-            one,
-            "pane.send_text",
-            ["pane_id": left, "text": "rm -rf \(folder)\r"],
-        ) }
+        sendAfter("rm -rf \(folder)\r", to: left)
         element("tab.\(tab)").click()
         let card = try await split(left)
-        try await relabel(card, "ovvi:file#e2efil \(file)")
+        try await relabel(card, "ovvi:explorer#e2efic \(file)")
         let editor = element("file.\(card).page").textViews.firstMatch
         XCTAssertTrue(until(10) { editor.exists && editor.stringValue.contains("let x = 1") })
         let jump = element("pane.\(card).jump"), dirty = element("pane.\(card).dirty")
@@ -58,7 +47,6 @@ extension OvviUITests {
         findKeys(card)
         tiled(card)
         try await keysStayInTheEditor(card, shell: left)
-        // Closing it with edits asks; Discard closes it.
         element("file.\(card).page").textViews.firstMatch.click()
         XCTAssertTrue(dirty.exists)
         app.typeKey("w", modifierFlags: .command)
@@ -100,7 +88,6 @@ extension OvviUITests {
         XCTAssertTrue(replace.vanishes(within: 2))
     }
 
-    /// Word Wrap off: the long last line runs past the card; on again, it wraps.
     private func wraps(_ card: String, file: String, shell: String) async throws {
         try await send("printf '// \(String(repeating: "word ", count: 80))\\n' >>\(file)\r", to: shell)
         let editor = element("file.\(card).page").textViews.firstMatch, wrap = element("pane.\(card).wrap")
@@ -117,15 +104,6 @@ extension OvviUITests {
         element("pane.\(card).jump").has(\.stringValue, value, within: 3)
     }
 
-    /// A new label, and the metadata report that makes the app read the snapshot (herdr sends no event for a rename),
-    /// as an agent's `ovvi-panes` does.
-    private func relabel(_ pane: String, _ label: String) async throws {
-        try await Self.call(one, "pane.rename", ["pane_id": pane, "label": label])
-        try await Self.call(one, "pane.report_metadata", ["pane_id": pane, "source": "ovvi-panes",
-                                                          "tokens": ["ovvi-label": "1"], "ttl_ms": 1000])
-    }
-
-    /// The card's page shows in its overview tile.
     private func tiled(_ card: String) {
         app.typeKey("o", modifierFlags: [.command, .control])
         XCTAssertTrue(element("overview.card.\(card)").has(\.stringValue, "explorer", within: 3))
@@ -133,8 +111,6 @@ extension OvviUITests {
         XCTAssertTrue(element("overview").vanishes(within: 2))
     }
 
-    /// ⇧⌘← (Move Tab Left) selects the line in the editor; ⌘[ (Select Previous Pane) reaches the app, and there ⌘F
-    /// is the terminal's Find.
     private func keysStayInTheEditor(_ card: String, shell: String) async throws {
         let editor = element("file.\(card).page").textViews.firstMatch
         editor.click()
@@ -148,15 +124,11 @@ extension OvviUITests {
         XCTAssertEqual(after, order)
         app.typeKey("[", modifierFlags: .command)
         XCTAssertTrue(hasKeyboard("terminal.\(shell)"))
-        // Back in the terminal, ⌘F is its own Find again.
         app.typeKey("f", modifierFlags: .command)
         XCTAssertTrue(hasKeyboard(element("find.field")))
         element("find.close").click()
     }
 
-    /// Show in File Explorer and Close Pane while dirty ask first. A change on disk while dirty: the toast; Keep Mine
-    /// keeps the edit and the next ⌘S writes it over the change; a ⌘S over it offers Overwrite; Reload takes the disk's
-    /// text and clears the dot.
     private func diskChangesWhileDirty(_ card: String, file: String, shell: String) async throws {
         let editor = element("file.\(card).page").textViews.firstMatch, dirty = element("pane.\(card).dirty")
         let toast = element("pane.\(card).toast")
@@ -164,12 +136,10 @@ extension OvviUITests {
         app.typeKey(.downArrow, modifierFlags: .command)
         app.typeText("mine")
         XCTAssertTrue(dirty.exists(within: 3))
-        // Leaving the file with edits asks first; Keep Editing stays.
         element("pane.\(card).reveal").click()
         XCTAssertTrue(toast.has(\.stringValue, "main.swift has unsaved edits.", within: 3))
         element("pane.\(card).toast.main").click()
         XCTAssertTrue(toast.vanishes(within: 2) && dirty.exists)
-        // Closing it asks too (⌘W over the card); Keep Editing keeps the pane.
         editor.click()
         app.typeKey("w", modifierFlags: .command)
         XCTAssertTrue(toast.has(\.stringValue, "main.swift has unsaved edits.", within: 3))
@@ -188,7 +158,6 @@ extension OvviUITests {
         try await send("grep -q mine \(file) && ! grep -q 'z = 3' \(file) && echo kept-$((6*7))\r", to: shell)
         try await waitFor(shell) { $0.contains("\nkept-42") }
 
-        // ⌘S over the toast: the disk changed since the read, so the save asks; Overwrite writes.
         app.typeText("over")
         XCTAssertTrue(dirty.exists(within: 3))
         try await send("printf 'let v = 5\\n' >\(file)\r", to: shell)
@@ -209,8 +178,6 @@ extension OvviUITests {
         XCTAssertTrue(dirty.vanishes(within: 3))
     }
 
-    /// An image at Fit, Actual Size and zoomed in, and again after a change on disk; a PDF's page `n of m`, which
-    /// follows a scroll; the info view of another file and of an image that does not decode; audio's player.
     func testAPreviewCardShowsImagesPDFsAndOtherFiles() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("preview")
@@ -222,19 +189,13 @@ extension OvviUITests {
             + "&& head -c 3000 /dev/urandom >notes.bin && printf nope >broken.png "
             + "&& say -o hi.m4a --data-format=aac hi && clear && echo ready-$((6*7))\r", to: left)
         try await waitFor(left) { $0.contains("ready-42") }
-        addTeardownBlock { [one] in _ = try? await Self.call(
-            one,
-            "pane.send_text",
-            ["pane_id": left, "text": "rm -rf \(folder)\r"],
-        ) }
+        sendAfter("rm -rf \(folder)\r", to: left)
         element("tab.\(tab)").click()
         let card = try await split(left)
-        let label = "ovvi:preview#e2eprv \(folder)/"
+        let label = "ovvi:explorer#e2eprv \(folder)/"
         try await relabel(card, label + "icon.png")
         let page = element("preview.\(card).page"), image = page.images["icon.png"]
-        // Outside a repository and the home folder: the breadcrumbs start at `/`.
         XCTAssertTrue(image.exists(within: 10) && crumbs(card, "/ › tmp › ovvi-e2e-preview › icon.png"))
-        // Fit: as wide as the card at most.
         XCTAssertTrue(until(3) { image.frame.width > 100 && image.frame.width <= page.frame.width + 1 })
         element("pane.\(card).zoom.actual").click()
         XCTAssertTrue(until(3) { abs(image.frame.width - 1200) < 2 })
@@ -245,7 +206,6 @@ extension OvviUITests {
         XCTAssertTrue(until(3) { abs(image.frame.width - fit * 1.25) < 2 })
         XCTAssertFalse(element("pane.\(card).page").exists)
         keepScreenshot("preview card, image")
-        // A change on disk shows the new image, at Fit.
         try await send("sips -z 200 300 icon.png >/dev/null\r", to: left)
         XCTAssertTrue(until(5) { abs(image.frame.width - 300) < 2 })
 
@@ -258,14 +218,12 @@ extension OvviUITests {
         XCTAssertTrue(until(3) { pages.stringValue != first })
         keepScreenshot("preview card, PDF")
 
-        // The info view: another file, and an image that does not decode (never an empty card).
         for file in ["notes.bin", "broken.png"] {
             try await relabel(card, label + file)
             let name = text(file, in: page)
             XCTAssertTrue(name.exists(within: 10), file)
         }
         XCTAssertFalse(pages.exists)
-        // Audio in WebKit's player.
         try await relabel(card, label + "hi.m4a")
         XCTAssertTrue(until(10) { page.buttons.firstMatch.exists })
         tiled(card)

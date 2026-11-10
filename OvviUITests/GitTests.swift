@@ -1,18 +1,6 @@
 import XCTest
 
-/// The Git card: a pane labeled `ovvi:git#<iid> <root>/` shows its home (`plugins/git/home.ts`) with row
-/// 2's branch and buttons; `<root>/ <source>` shows a diff (`plugins/git/diff.ts`). The writes run in a throwaway
-/// repository.
 extension OvviUITests {
-    /// The home lists every branch's commits and the changes; Stage moves a file to the staged list, Commit commits it
-    /// with the typed message, Push sends it to the remote; a click selects a commit, ↑ moves the selection and Return
-    /// opens it; a double-click opens a commit's diff in the card, and Back and Forward walk between the home and the
-    /// diff; Revert and Revert All put the changes back; the branch menu switches the branch. The diff: a commit's
-    /// subject is its title, and its Parent opens in the card; the working tree from a change follows the work tree,
-    /// also in a file it shows, and a file growing above the one in view does not move it; Open File opens the file
-    /// in a new tab right after the card's; Viewed folds the file; Next Change scrolls to a change the page has not
-    /// drawn; ⌘-click on a line opens the file at the line, in Unified and in Side by Side; Word Wrap toggles in
-    /// Unified only; the file list starts closed and opens.
     func testGitCardCommitsPushesAndOpensDiffs() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("git")
@@ -24,15 +12,12 @@ extension OvviUITests {
         try await Self.call(one, "pane.rename", ["pane_id": card, "label": "ovvi:git#e2egit \(root)/"])
 
         let home = element("git.\(card).page")
-        // Every branch: the side branch's commit is not in main's history.
         XCTAssertTrue(commit("on the side", in: home).exists(within: 10))
         XCTAssertTrue(commit("second", in: home).exists)
         XCTAssertTrue(home.buttons["Untracked: b.md"].exists)
         keepScreenshot("git home")
         try await commitAndPush(home, card: card, shell: left, repo: repo)
 
-        // A click selects a commit and opens nothing: ↑ then selects its child above it (`--topo-order`), and Return
-        // opens that one.
         commit("second", in: home).click()
         app.typeKey(.upArrow, modifierFlags: [])
         app.typeKey(.return, modifierFlags: [])
@@ -54,7 +39,6 @@ extension OvviUITests {
         element("pane.\(card).diff.home").click()
         let branch = element("pane.\(card).git.branch")
         XCTAssertTrue(branch.has(\.isHittable, true, within: 5))
-        // a.txt's change would be lost: git refuses, and its words show in the toast.
         branch.click()
         branch.menuItems["side"].click()
         let toast = element("pane.\(card).toast")
@@ -67,8 +51,6 @@ extension OvviUITests {
         try await send("cd / && rm -rf \(repo) \(repo).git\r", to: left)
     }
 
-    /// A folder that is no repository offers Initialize Repository; an empty one shows only "No changes"; with none
-    /// staged, Commit All commits every change; a history past 500 commits ends with Show More, which reads the rest.
     func testGitHomeInitializesCommitsAllAndShowsMore() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("git-new")
@@ -91,7 +73,6 @@ extension OvviUITests {
         XCTAssertFalse(home.textViews["Message"].exists)
         try await expectGit("rev-parse --is-inside-work-tree", "true", in: left, repo: folder)
 
-        // 501 commits, then a new file.
         try await send("git config user.name e2e && git config user.email e2e@ovvi && git config commit.gpgsign false "
             + "&& seq 501 | awk -v ref=$(git symbolic-ref HEAD) '{printf \"commit %s\\n"
             + "committer e2e <e2e@ovvi> %d +0000\\ndata <<E\\nc%d\\nE\\n\\n\", ref, 1000000000+$1, $1}' "
@@ -114,7 +95,6 @@ extension OvviUITests {
         try await send("cd / && rm -rf \(folder)\r", to: left)
     }
 
-    /// A change opens the working tree at its file, which follows the work tree; row 2's Working Tree opens it too.
     private func workingTree(_ home: XCUIElement, _ page: XCUIElement, card: String, root: String,
                              shell left: String) async throws
     {
@@ -138,29 +118,24 @@ extension OvviUITests {
         try await expect("Working Tree from row 2") { try await paneLabel(card).hasSuffix(" \(root)/ uncommitted") }
     }
 
-    /// Scrolled into c.txt from the file list, a new change in a.txt above it does not move it.
     private func holdsItsPlace(_ page: XCUIElement, card: String, shell left: String) async throws {
         let list = element("pane.\(card).diff.file-list")
         list.click()
         XCTAssertTrue(page.buttons["c.txt"].has(\.isHittable, true, within: 3))
         page.buttons["c.txt"].click()
-        // By its header's Open File: at the top of the view, and below it once the box moves down.
         let header = page.buttons["Open c.txt"]
         XCTAssertTrue(header.exists(within: 3))
         let top = header.frame.minY
         XCTAssertLessThan(top, page.frame.minY + 50, "c.txt is not at the top: \(top), page \(page.frame)")
         try await send("sed -i '' 's/^line 250$/x250/' a.txt\r", to: left)
-        // a.txt's second hunk draws.
         XCTAssertTrue(page.staticTexts.matching(NSPredicate(format: "value == 'x250'")).firstMatch.exists(within: 10))
         XCTAssertEqual(header.frame.minY, top, accuracy: 2, "c.txt moved")
         list.click()
     }
 
-    /// ⇧[ and ⇧] step to the previous and next file's top: from c.txt at the top, the file before it, then c.txt again.
     private func stepsByFile(_ page: XCUIElement) {
         let header = page.buttons["Open c.txt"], top = page.frame.minY + 50
         XCTAssertLessThan(header.frame.minY, top, "c.txt is not at the top: \(header.frame), page \(page.frame)")
-        // The keyboard to the page: row 2's file list button last had the click.
         page.staticTexts.matching(NSPredicate(format: "value == 'new 3'")).firstMatch.click()
         app.typeKey("[", modifierFlags: .shift)
         XCTAssertTrue(until(3) { header.frame.minY > top }, "⇧[ left c.txt at \(header.frame)")
@@ -168,8 +143,6 @@ extension OvviUITests {
         XCTAssertTrue(until(3) { header.frame.minY < top }, "⇧] put c.txt at \(header.frame)")
     }
 
-    /// Revert puts a.txt back after a question; Revert All then deletes the untracked c.txt and d.txt, which its
-    /// question names. Working Tree with no changes shows "No changes", with the file list button off.
     private func revert(_ home: XCUIElement, _ page: XCUIElement, card: String, shell left: String,
                         repo: String) async throws
     {
@@ -199,9 +172,7 @@ extension OvviUITests {
         element("pane.\(card).diff.home").click()
     }
 
-    /// Stage moves b.md to the staged list, Commit commits it with the typed message, Push sends it to the remote.
     private func commitAndPush(_ home: XCUIElement, card: String, shell left: String, repo: String) async throws {
-        // Stage shows under the pointer.
         home.buttons["Untracked: b.md"].hover()
         home.buttons["Stage b.md"].click()
         XCTAssertTrue(home.buttons["Added: b.md"].exists(within: 5))
@@ -221,21 +192,17 @@ extension OvviUITests {
         try await expectGit("--git-dir \(repo).git log -1 --format=%s main", "e2e commit", in: left, repo: repo)
     }
 
-    /// The diff's own controls, on the diff of the commit that changes lines 1-150 and 290.
     private func diff(_ page: XCUIElement, card: String, tab: String, root: String) async throws {
-        // VoiceOver reads the subject too, once Forward's place drew; the page names the parent, which opens in the
-        // card, and Back comes back.
         let surface = element("pane.\(card)"), title = element("pane.\(card).title")
         XCTAssertTrue(surface.has(\.label, "second", within: 10), surface.label)
-        // XCUITest sees no blank frame: Parent's draw in one step is shown in the Findings, not here.
+        // XCUITest sees no blank frame: Parent's draw in one step goes unchecked here.
         page.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Parent '")).firstMatch.click()
         XCTAssertTrue(title.has(\.stringValue, "first", within: 10), title.stringValue)
         element("pane.\(card).go-back").click()
         XCTAssertTrue(title.has(\.stringValue, "second", within: 10), title.stringValue)
-        // Clicks in the page wait for what it draws: its layout comes back late after the card was hidden.
+        // Clicks in the page wait for what it draws: its layout comes back late after the card hides.
         let open = page.buttons["Open a.txt"]
         XCTAssertTrue(open.has(\.isHittable, true, within: 3))
-        // The card's tab is last here, so only the ⌘-clicks below tell beside from the end.
         _ = try await opens("\(root)/a.txt", beside: tab) { open.click() }
         try await show(tab)
         let viewed = page.checkBoxes["Viewed a.txt"], line = page.staticTexts.matching(
@@ -260,13 +227,11 @@ extension OvviUITests {
         try await show(tab)
     }
 
-    /// A commit's row in the history: its label starts with the subject, then its names and its date.
     private func commit(_ subject: String, in home: XCUIElement) -> XCUIElement {
         home.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", subject + ",")).firstMatch
     }
 
-    /// `git <command>` in the shell pane prints the line `expected`, now or within a few tries (the app's write may
-    /// still run).
+    /// Within a few tries: the app's write may still run.
     private func expectGit(_ command: String, _ expected: String, in pane: String, repo: String) async throws {
         try await expect("git \(command) gives \(expected)", times: 10) {
             try await send("clear && git -C \(repo) \(command); echo done-$((6*7))\r", to: pane)
@@ -276,8 +241,6 @@ extension OvviUITests {
         }
     }
 
-    /// ⌘-click on the line opens the file at the line in a new tab right after the card's, behind it; the editor draws
-    /// only the lines in view.
     private func commandClick(_ line: XCUIElement, behind tab: String, root: String) async throws {
         let file = try await opens("\(root)/a.txt", beside: tab, behind: true) {
             XCUIElement.perform(withKeyModifiers: .command) { line.click() }
@@ -286,11 +249,8 @@ extension OvviUITests {
         XCTAssertTrue(until(5) { (editor.value as? String)?.contains("far290") == true })
     }
 
-    /// Side by Side puts the old line and the new one on one row; the file list, closed at first, opens and closes.
     private func sideBySide(_ card: String, _ page: XCUIElement, _ far: XCUIElement) async throws {
-        // Word Wrap wraps the long line in Unified; Side by Side always wraps, so there it is off.
         let wrap = element("pane.\(card).diff.wrap")
-        // By the next line's top: a wrapped line pushes it down.
         let wide = page.staticTexts.matching(NSPredicate(format: "value BEGINSWITH 'wide292'")).firstMatch
         let next = page.staticTexts.matching(NSPredicate(format: "value BEGINSWITH 'line 293'")).firstMatch
         XCTAssertTrue(wide.exists && next.exists)
@@ -302,7 +262,6 @@ extension OvviUITests {
         element("pane.\(card).diff.layout.side by side").click()
         XCTAssertTrue(wrap.has(\.isEnabled, false, within: 3))
         let old = page.staticTexts.matching(NSPredicate(format: "value CONTAINS 'line 290'")).firstMatch
-        // By their tops: a narrow column wraps the old line.
         XCTAssertTrue(until(3) {
             old.exists && abs(old.frame.minY - far.frame.minY) < 2 && old.frame.maxX < far.frame.minX
         }, "old \(old.exists ? old.frame : .zero), new \(far.exists ? far.frame : .zero)")
@@ -314,10 +273,7 @@ extension OvviUITests {
         XCTAssertTrue(page.buttons["a.txt"].vanishes(within: 3))
     }
 
-    /// A repository with two commits and uncommitted changes, made in the shell pane; HEAD's hash.
     private func makeRepo(_ repo: String, in pane: String) async throws -> String {
-        // A commit that changes lines 1-150, 290 and 292: its second change is far below the first; line 292 is long.
-        // A side branch with its own commit, a bare remote as the upstream, no signing.
         try await send("rm -rf \(repo) \(repo).git && git init -q --bare -b main \(repo).git && mkdir \(repo) "
             + "&& cd \(repo) && git init -q -b main && git config user.name e2e && git config user.email e2e@ovvi "
             + "&& git config commit.gpgsign false && git remote add origin \(repo).git "
@@ -336,7 +292,6 @@ extension OvviUITests {
         }
     }
 
-    /// The action opens a file card for the path in a new tab right after `tab`, selected, or behind it; its pane.
     private func opens(_ path: String, beside tab: String, behind: Bool = false,
                        _ action: () -> Void) async throws -> String
     {
@@ -344,8 +299,6 @@ extension OvviUITests {
         action()
         let opened = try await newTabID(after: before)
         closeAfter("tab", opened)
-        // Once the bar shows it: a ⌘-click opens behind, and the card's tab stays selected (the app follows a new tab
-        // only after it shows).
         try await expectBeside(opened, tab)
         if behind {
             XCTAssertFalse(until(0.5) { !element("tab.\(tab)").isSelected }, "\(opened) took the selection")

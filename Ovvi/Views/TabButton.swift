@@ -1,33 +1,26 @@
 import HerdrKit
 import SwiftUI
 
-/// One tab's capsule: its program icons and title, × while hovered. Its own view, so a status change redraws this
-/// tab only (design D6).
 struct TabButton: View {
     let tab: HostStore.Tab
     let workspace: HostStore.Workspace
     let page: Page
     let hovering: Bool
-    /// Before a click selects it.
     let clicked: () -> Void
     @State private var renaming = false
-    /// "codex needs you" for 3 s in place of the title.
     @State private var announcement: String?
     @State private var announcing: Task<Void, Never>?
     @State private var bounces = 0
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.look) private var look
 
     var body: some View {
         let selected = workspace.id == page.selectedWorkspaceID && tab.id == page.selectedTabIDs[workspace.id]
         let stack = page.stack(tab)
-        let agent = tab.agent, state = agent?.state == .idle ? nil : agent?.state
+        let agent = tab.agent, state = agent?.state?.shown
         Button {
             clicked()
             page.select(workspace, tab: tab.id)
-            // Anywhere on the capsule. AppKit's double-click, counted from the events' times: SwiftUI's
-            // TapGesture(count: 2) missed one while the app drew the first click (as on a workspace row).
-            if let event = NSApp.currentEvent, event.type == .leftMouseUp, event.clickCount == 2 {
+            if NSApp.isDoubleClick {
                 renaming = true
             }
         } label: {
@@ -39,21 +32,16 @@ struct TabButton: View {
                         SpringKeyframe(1.15, duration: 0.15)
                         SpringKeyframe(1, duration: 0.3)
                     }
-                // Not once the user selected the tab.
                 FadeText(text: announcement.flatMap { selected ? nil : Text($0) } ?? page.titleLabel(tab))
                     .opacity(renaming ? 0 : 1)
                     .foregroundStyle(selected ? look.selected : look.chrome)
             }
             .padding(.leading, 11)
-            // The title fades out before the × (its 22 pt circle ends 28 pt from the end) or the state icon, else at
-            // 12 pt.
             .padding(.trailing, hovering && !renaming || state != nil ? 28 : 12)
             .frame(width: TabBar.width, height: TabBar.height, alignment: .leading)
         }
-        // The selection is the tab bar's marker.
         .buttonStyle(ChromeStyle(radius: TabBar.radius, inset: TabBar.inset, hovered: hovering))
         .dragSource(.tab(tab.id), page: page)
-        // On the capsule alone: the rename field and the × over it have their own.
         .accessibilityIdentifier("tab.\(tab.id)")
         .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityValue([agent.flatMap { agent in
@@ -63,27 +51,23 @@ struct TabButton: View {
         .hoverPanel(place: .under, action: "Show Panes") { close in
             HoverCard(tabID: tab.id, page: page, close: close)
         }
-        // Over the button, after the icons: in the button's label it could not take the keyboard.
+        // Over the button, after the icons: in the button's label it cannot take the keyboard.
         .overlay(alignment: .leading) {
             if renaming {
-                // Enter: herdr's label; the snapshot after it shows it.
                 RenameField(prompt: "Tab Name", initial: tab.label, commit: { label in
                     Task { await page.store.rename(tab: tab.id, label: label) }
                 }, end: stopRenaming)
-                    .padding(.leading, 11 + 22 + CGFloat(max(stack.count - 1, 0)) * 4 + 10)
+                    .padding(.leading, 11 + IconStack.width(stack.count) + 10)
                     .padding(.trailing, 8)
                     .accessibilityIdentifier("tab.\(tab.id).rename")
             }
         }
-        // The status slot: × while hovered, else the state icon of its strongest agent (the selected tab too);
-        // centered where the × is.
         .overlay(alignment: .trailing) {
             if let state, !hovering, !renaming {
                 StateIcon(state: state).padding(.trailing, 11).stateElement(state, "tab.\(tab.id).state")
             }
         }
         .overlay(alignment: .trailing) {
-            // Over the capsule, so it never changes the tab's width.
             if hovering, !renaming {
                 Button { page.close(.tab(tab.id)) } label: {
                     Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(.secondary)
@@ -98,13 +82,13 @@ struct TabButton: View {
         }
         .contextMenu { menu }
         .onChange(of: agent?.state) { _, new in
-            guard let new, new >= .finishedUnseen, !selected else { return }
+            guard let new, new.calls, !selected else { return }
             announce("\(agent?.agentName ?? "agent") \(new.word)")
         }
     }
 
     private func announce(_ text: String) {
-        if !reduceMotion {
+        if !Animation.reduced {
             bounces += 1
         }
         announcement = text
@@ -140,68 +124,8 @@ struct TabButton: View {
 }
 
 extension Page {
-    /// Close Other Tabs, or Close Tabs to the Right (`right`), of the tab: asks first when a program runs in them.
-    func closeTabs(besides tabID: String, right: Bool) {
-        guard let tabs = store.workspace(of: tabID)?.tabs.map(\.id), let index = tabs.firstIndex(of: tabID)
-        else { return }
-        let others = right ? Array(tabs[(index + 1)...]) : tabs.filter { $0 != tabID }
-        if !others.isEmpty {
-            close(.otherTabs(others, right: right))
-        }
-    }
-
     func titleLabel(_ tab: HostStore.Tab) -> Text {
         let title = title(tab)
         return Text("\(title.name)\(Text(title.folder.map { " \($0)" } ?? "").foregroundStyle(.secondary))")
-    }
-}
-
-extension Page {
-    /// The tab's title, from herdr's label; herdr's default label (a bare number) gives the front card's program
-    /// and folder instead (D65), "New Tab" until the program is known (a new pane's is asked a second late).
-    func title(_ tab: HostStore.Tab) -> (name: String, folder: String?) {
-        guard tab.label.allSatisfy(\.isNumber) else { return (tab.label, nil) }
-        // The stack's first, without the stack: the menus ask for every tab's title.
-        let front = keyboardCard(tab.id) ?? store.panes(in: tab.id).first
-        // "Browser" and its page dimmed, as a terminal's "zsh ovvi"; "File Explorer ovvi".
-        if let pane = front, pane.plugin != nil, let (name, detail) = kindTitle(pane) {
-            return (name, detail)
-        }
-        // Its front card asks what it runs (ui/new-pane): "New Tab", as the card's header says "New Pane".
-        let choosing = front.map { store.chooser($0.id) != nil } ?? false
-        guard let pane = front, let name = pane.programName, !choosing else {
-            // A new tab (a stand-in, or a pane whose shell still starts): "New Tab", never a number. Else the
-            // number, for a pane whose program herdr cannot say.
-            return (front?.starting == false && !choosing ? tab.label : "New Tab", nil)
-        }
-        // An agent's session title ("Claude Code Fix login"); else the folder's name ("zsh ovvi"), as in Rex: a tab is
-        // narrow.
-        if let title = pane.agentTitle {
-            return (pane.agentLabel ?? name, title)
-        }
-        return (name, pane.cwd.map { $0 == Self.home ? "~" : ($0 as NSString).lastPathComponent })
-    }
-
-    private static let home = NSHomeDirectory()
-
-    /// The tab's panes for its icon stack, at most 5: the keyboard card's first (herdr's focused pane until one
-    /// had the keyboard), then herdr's order.
-    func stack(_ tab: HostStore.Tab) -> [HostStore.Pane] {
-        let tabPanes = store.panes(in: tab.id)
-        let front = keyboardCard(tab.id)
-        return Array(([front].compactMap(\.self) + tabPanes.filter { $0 !== front }).prefix(5))
-    }
-
-    /// "‹workspace› · ‹tab›", for agent rows and notifications.
-    func place(_ pane: HostStore.Pane) -> String {
-        let workspace = store.workspace(of: pane.tabID)
-        let tab = workspace?.tabs.first { $0.id == pane.tabID }
-        return [workspace?.label, tab.map(titleText)].compactMap(\.self).joined(separator: " · ")
-    }
-
-    /// The title in one string, for the window title and menus.
-    func titleText(_ tab: HostStore.Tab) -> String {
-        let title = title(tab)
-        return [title.name, title.folder].plainTitle
     }
 }

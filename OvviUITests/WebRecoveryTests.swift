@@ -1,17 +1,13 @@
 import XCTest
 
-/// Web cards whose WebKit processes end (the system ends one under memory pressure, after a sleep or a long idle)
-/// come back by themselves with their page where it was: a browser's address and scroll, a Markdown card's file
-/// rendered and its scroll; shown, in a kept tab out of view, and after the GPU or the network process ended.
+/// The system ends WebKit processes under memory pressure, after a sleep or a long idle.
 extension OvviUITests {
     func testWebCardsComeBackAfterTheirProcessEnds() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, shell) = try await newTab("ended")
         try await waitForPrompt(shell)
         let folder = "/tmp/ovvi-e2e-ended"
-        addTeardownBlock { [one] in
-            _ = try? await Self.call(one, "pane.send_text", ["pane_id": shell, "text": "rm -rf \(folder)\r"])
-        }
+        sendAfter("rm -rf \(folder)\r", to: shell)
         // Short Markdown lines: CI's narrow cards wrap long ones, and one wheel scroll must reach the end.
         try await send("mkdir -p \(folder) && cd \(folder) && { echo '<title>Long</title>'; for i in $(seq 200); do "
             + "echo \"<p>Paragraph $i</p>\"; done; } >long.html && { echo '# Notes'; for i in $(seq 120); do "
@@ -22,14 +18,13 @@ extension OvviUITests {
         try await Self.call(one, "pane.rename", ["pane_id": browser,
                                                  "label": "ovvi:browser#e2eend file://\(folder)/long.html"])
         try await Self.call(one, "pane.rename", ["pane_id": markdown,
-                                                 "label": "ovvi:markdown#e2emde \(folder)/notes.md"])
+                                                 "label": "ovvi:explorer#e2emde \(folder)/notes.md"])
         try await show(tab)
         let notes = element("markdown.\(markdown).page")
         let heading = notes.staticTexts.matching(NSPredicate(format: "value == 'Notes'")).firstMatch
         let last = notes.staticTexts.matching(NSPredicate(format: "value BEGINSWITH 'Line 120,'")).firstMatch
         XCTAssertTrue(pageText("Paragraph 1").exists(within: 15))
         XCTAssertTrue(heading.exists(within: 15))
-        // To their ends, again while a card still shows its loader over the page (which takes the wheel).
         XCTAssertTrue(until(20) {
             element("browser.\(browser)").scroll(byDeltaX: 0, deltaY: -10000)
             return pageText("Paragraph 200").isHittable
@@ -38,7 +33,6 @@ extension OvviUITests {
             notes.scroll(byDeltaX: 0, deltaY: -10000)
             return last.exists
         })
-        // Both pages drawn at their ends, the Markdown file rendered.
         func atTheirEnds(_ what: String) {
             XCTAssertTrue(until(15) { pageText("Paragraph 200").isHittable }, "the browser's page, \(what)")
             XCTAssertTrue(until(15) { last.exists && !heading.exists }, "the Markdown page, \(what)")
@@ -46,12 +40,10 @@ extension OvviUITests {
             XCTAssertFalse(raw.exists, "a line with its marks, \(what): \(raw.exists ? raw.value ?? "" : "")")
         }
         atTheirEnds("at first")
-        // The scroll noted (WebKit's history item, the page's session).
         try await Task.sleep(for: .milliseconds(500))
         let killed = try await end()
         XCTAssertGreaterThanOrEqual(killed.count, 2, "both cards' page processes")
         atTheirEnds("after their process ended")
-        // In a kept tab out of view: shown again.
         let (other, _) = try await createTab(in: "w2", label: "other")
         closeAfter("tab", other)
         try await show(other)
@@ -61,8 +53,6 @@ extension OvviUITests {
         try await survivesHelperProcesses(browser, notes: notes, heading: heading, shell: shell)
     }
 
-    /// A page whose process ends again before it loaded (an image that never comes keeps it loading) says so, and
-    /// Reload brings it back: never a blank card.
     func testABrowserPageThatEndsTwiceSaysSoAndReloads() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, shell) = try await newTab("twice")
@@ -81,7 +71,6 @@ extension OvviUITests {
         try await show(tab)
         XCTAssertTrue(pageText("ovvi-hang").exists(within: 15))
         _ = try await end()
-        // Its page process again, as the page loads anew: the image keeps it from ever finishing.
         let message = element("browser.\(browser).message")
         try await poll("the card to say its page stopped", times: 10) { () async throws -> Bool? in
             _ = try await end()
@@ -93,9 +82,8 @@ extension OvviUITests {
         XCTAssertTrue(pageText("ovvi-hang").exists(within: 15))
     }
 
-    /// WebKit gives up on a GPU process that stops answering (a starved Mac) but cannot end it, so every page kept its
-    /// drawing connection to it and stayed blank, Reload too. After it the cards draw again by themselves, a kept
-    /// tab's Git card when shown, and after Reload, a file's change and a new commit. Needs a GPU process (not CI's).
+    /// WebKit gives up on a GPU process that stops answering (a starved Mac) but cannot end it, so every page keeps its
+    /// drawing connection to it and stays blank, Reload too. Needs a GPU process (not CI's).
     func testWebCardsDrawAgainAfterTheGPUProcessHangs() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, shell) = try await newTab("hang")
@@ -115,20 +103,18 @@ extension OvviUITests {
         closeAfter("tab", kept)
         let git = try await split(keptShell)
         for (pane, label) in [(browser, "browser#e2ehng file://\(folder)/long.html"),
-                              (markdown, "markdown#e2ehmd \(folder)/notes.md"), (git, "git#e2ehgt /private\(folder)/")]
+                              (markdown, "explorer#e2ehmd \(folder)/notes.md"), (git, "git#e2ehgt /private\(folder)/")]
         {
             try await Self.call(one, "pane.rename", ["pane_id": pane, "label": "ovvi:\(label)"])
         }
         try await show(tab)
         XCTAssertTrue(pageText("Paragraph 1").exists(within: 15))
         // CI's virtual Mac has none (and its screen shows these pages blank).
-        let gpu = try? await poll("the app's GPU process", times: 50) { try await web("web-pids").first }
-        try XCTSkipIf(gpu == nil, "no GPU process")
+        try await skipWithoutGPU()
         let notes = element("markdown.\(markdown).page"), page = element("browser.\(browser)")
         let heading = { notes.staticTexts.matching(NSPredicate(format: "value == %@", $0)).firstMatch }
         XCTAssertTrue(drawn(pageText("Paragraph 1"), in: page, within: 15), "the browser at first")
         XCTAssertTrue(drawn(heading("Notes"), in: notes, within: 15), "the Markdown card at first")
-        // Made once, then kept out of view.
         try await show(kept)
         let home = element("git.\(git).page")
         let commit = { home.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", $0 + ",")).firstMatch }
@@ -138,7 +124,6 @@ extension OvviUITests {
         let stopped = try await web("web-stop")
         let ended = try await waitsOut(stopped, scrolling: page)
         XCTAssertTrue(ended, "the app ended the GPU process WebKit gave up on")
-        // By themselves; the browser back at its top, which Reload keeps.
         page.scroll(byDeltaX: 0, deltaY: 10000)
         XCTAssertTrue(drawn(pageText("Paragraph 1"), in: page, within: 10), "the browser by itself")
         XCTAssertTrue(drawn(heading("Notes"), in: notes, within: 10), "the Markdown card by itself")
@@ -152,9 +137,7 @@ extension OvviUITests {
         XCTAssertTrue(drawn(commit("after"), in: home, within: 10), "the kept Git card's new commit")
     }
 
-    /// Scrolls the browser's page while the stopped GPU process holds its draws, until WebKit gives up on it (10 to
-    /// 25 s here) and the app ends it: false if it still runs after 30 s. On the old code it lived on, and once let
-    /// go 30 s or more after WebKit gave up, it answered no page: every card stayed blank, Reload too.
+    /// WebKit gives up on the stopped GPU process 10 to 25 s in.
     private func waitsOut(_ stopped: Set<String>, scrolling page: XCUIElement) async throws -> Bool {
         var delta = -3000.0
         let deadline = Date.now + 30
@@ -168,7 +151,6 @@ extension OvviUITests {
         return false
     }
 
-    /// The element shows its text: both dark and light pixels in its frame, not one blank fill.
     private func drawn(_ element: XCUIElement, in page: XCUIElement, within seconds: Double) -> Bool {
         until(seconds) {
             // Only in its page's view: one out of it, or with an empty frame (a blank page's text), has no screenshot.
@@ -178,14 +160,20 @@ extension OvviUITests {
         }
     }
 
-    /// The app's GPU processes, after the action on them.
+    private func skipWithoutGPU() async throws {
+        do {
+            try await poll("the app's GPU process", times: 50) { try await web("web-pids").first }
+        } catch is Waited {
+            throw XCTSkip("no GPU process")
+        }
+    }
+
     private func web(_ action: String) async throws -> Set<String> {
         let pids = try await Self.post("\(one)/\(action)", Data("GPU".utf8))
         return Set(String(decoding: pids, as: UTF8.self).split(separator: "\n").map(String.init))
     }
 
-    /// WebKit starts its GPU and network processes again by itself: the pages still draw, the browser's Reload loads,
-    /// a file change still shows.
+    /// WebKit starts its GPU and network processes again by itself.
     private func survivesHelperProcesses(_ browser: String, notes: XCUIElement, heading: XCUIElement,
                                          shell: String) async throws
     {
@@ -207,7 +195,6 @@ extension OvviUITests {
             .exists(within: 10))
     }
 
-    /// Kills the app's WebKit page processes, or its GPU or network process: the pids killed.
     private func end(_ kind: String = "") async throws -> [String] {
         let killed = try await String(decoding: Self.post("\(one)/web-kill", Data(kind.utf8)), as: UTF8.self)
         return killed.split(separator: "\n").map(String.init)

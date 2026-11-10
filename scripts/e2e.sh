@@ -1,32 +1,25 @@
 #!/usr/bin/env bash
-# Run a command (the UI tests) against two throwaway herdr sessions and the e2e helper, and remove
-# the sessions after, even when the command fails.
 # Usage: scripts/e2e.sh <command>...
 set -euo pipefail
 cd "$(dirname "$0")/.."
-# Inside a herdr pane these point at the user's own session; keep them out of herdr and the helper.
+# Inside a herdr pane these point at the user's own session.
 unset "${!HERDR_@}"
 
 id=$(openssl rand -hex 3)
 one=ovvi-e2e-$id-a
 two=ovvi-e2e-$id-b
-# Listed but stopped, for the Stopped rows of Open Session and a new window.
 three=ovvi-e2e-$id-c
-# Made by the app's New Session.
 four=ovvi-e2e-$id-d
-# Stopped and started again by a test.
 five=ovvi-e2e-$id-e
-# Made by the app in a start that fails first (`-startTimeout 0`), then by Retry.
 six=ovvi-e2e-$id-f
-# Stopped and deleted from Open Session by a test.
 seven=ovvi-e2e-$id-g
-# Made and removed by the stress test (the helper's `stress`).
 eight=ovvi-e2e-$id-h
-# A session joins the cleanup only once it is up: a failed `up` must not remove a session it did not make.
+# A session joins the cleanup only once it is up: a failed `up` must not remove a session it did not make. The tests
+# make four, six and eight.
 made=("$four" "$six" "$eight")
-# Browser panes' state files (plugins/api#state) go with their sessions.
-# The homes of the tests' login shell without herdr (OvviUITests/Fixtures/no-herdr) go too.
-trap 'for s in "${made[@]}"; do scripts/herdr-session.sh down "$s" || true; rm -rf "$HOME/.local/state/ovvi/$s"; done
+# The app keeps a state folder and a server log per session.
+trap 'for s in "${made[@]}"; do scripts/herdr-session.sh down "$s" || true
+        rm -rf "$HOME/.local/state/ovvi/$s" "$HOME/Library/Logs/Ovvi/$s.log"; done
     rm -rf /tmp/ovvi-e2e-no-herdr-*' EXIT
 for s in "$one" "$two" "$three" "$five" "$seven"; do
     scripts/herdr-session.sh up "$s"
@@ -34,8 +27,7 @@ for s in "$one" "$two" "$three" "$five" "$seven"; do
 done
 herdr session stop "$three" >/dev/null
 
-# The tests' config folder (OvviUITests.noConfig): this build's default plugins install there afresh.
 rm -rf /tmp/ovvi-e2e-no-config
 
-# The sandboxed test runner cannot reach herdr; the helper serves it on localhost while the tests run.
+# The sandboxed test runner cannot reach herdr's sockets.
 python3 scripts/e2e-helper.py "$one" "$two" "$three" "$four" "$five" "$six" "$seven" "$eight" -- "$@"

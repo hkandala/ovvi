@@ -1,17 +1,12 @@
 import SwiftUI
 
-/// The app's one look for an empty, failed or not-installed place (ui/states): at most two buttons, the first one
-/// prominent. `compact` in a list or a small panel.
 struct EmptyState<Actions: View>: View {
     let symbol: String
     let title: String
     var text: String?
-    /// The line is a command or a program's output: monospaced, selectable, up to 12 lines.
     var code = false
-    /// A command under the line, monospaced and selectable (`<id>.command`): what the first button runs.
     var command: String?
     var compact = false
-    /// The title's identifier; the line's is `<id>.text`.
     var id: String?
     @ViewBuilder var actions: Actions
 
@@ -47,8 +42,6 @@ extension EmptyState where Actions == EmptyView {
     }
 }
 
-/// The app's one loader (ui/states): an icon over a small spinner and one line, after `delay` so a quick load shows
-/// nothing; `detail` under it says what the work is doing (an installer's last line, a reconnect's reason).
 struct Loader<Icon: View>: View {
     var text = ""
     var detail: String?
@@ -90,7 +83,6 @@ struct Loader<Icon: View>: View {
 }
 
 extension Loader where Icon == Image? {
-    /// With an SF Symbol (or one of the app's own), or none: a spinner and its line alone.
     init(symbol: String? = nil, text: String = "", detail: String? = nil, id: String? = nil,
          delay: Duration = .zero)
     {
@@ -99,7 +91,7 @@ extension Loader where Icon == Image? {
 }
 
 private extension View {
-    /// An identifier only when there is one: an empty one would hide what a caller sets around the view.
+    /// An empty identifier would hide what a caller sets around the view.
     @ViewBuilder func identifier(_ id: String?) -> some View {
         if let id {
             accessibilityIdentifier(id)

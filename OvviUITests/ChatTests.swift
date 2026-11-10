@@ -1,14 +1,6 @@
 import XCTest
 
-/// The chat view (ui/chat-view) with Claude Code's stand-in (`scripts/claude-stand-in.py`; CI has no Claude
-/// Code), started by the chooser with Ovvi's flags: it runs their hooks, writes a transcript in Claude Code's format
-/// and reports its state to herdr.
 extension OvviUITests {
-    /// In this checkout, which the pane's shell reads (the runner itself is sandboxed).
-    static let scripts = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-        .appending(path: "scripts")
-
-    /// Sends, stops, every message with its tool calls folded, slash text to the terminal, and "Not sent", on This Mac.
     func testAChatSendsStopsAndFoldsItsToolCalls() async throws {
         let pane = try await startChat().pane
         try await say("hello", in: pane)
@@ -16,15 +8,12 @@ extension OvviUITests {
         try await waitFor(pane) { $0.contains("Echo: **hello**") }
 
         XCTAssertTrue(twoRows(pane, above: "pane.\(pane).view.chat"))
-        // The run's line of counts, closed, and the turn's time under the reply.
         let stacks = app.descendants(matching: .any).matching(identifier: "chat.\(pane).stack")
         XCTAssertTrue(stacks.element(boundBy: 0).has(\.stringValue, "closed", within: 2))
         XCTAssertEqual(stacks.element(boundBy: 0).label, "Ran 1 command")
         XCTAssertTrue(element("chat.\(pane).worked").stringValue.hasPrefix("Worked "))
         keepScreenshot("chat")
 
-        // Every message of a turn, each run of tool calls between them one closed line; a run's calls are made only
-        // while it is open.
         try await say("steps", in: pane)
         XCTAssertTrue(row(pane, "reply", "Done.").exists(within: 5))
         XCTAssertTrue(row(pane, "reply", "First, a look.").exists)
@@ -48,7 +37,6 @@ extension OvviUITests {
         XCTAssertTrue(row(pane, "note", "Interrupted").exists(within: 5))
         XCTAssertTrue(element("chat.\(pane).send").exists(within: 5))
 
-        // Not confirmed by the transcript within 5 s: "Not sent", and the draft comes back.
         try await say("mute", in: pane)
         app.typeText("lost\r")
         XCTAssertTrue(element("chat.\(pane).not-sent").exists(within: 8))
@@ -60,12 +48,20 @@ extension OvviUITests {
         XCTAssertTrue(element("chat.\(pane).composer").vanishes(within: 3))
         try await waitFor(pane) { $0.contains("/help") }
         XCTAssertTrue(element("pane.\(pane).view.tui").isSelected)
+        XCTAssertTrue(findEnabled())
         element("pane.\(pane).view.chat").click()
         XCTAssertTrue(element("chat.\(pane).composer").exists(within: 3))
+        // Its bar would scroll the TUI under the chat, with nothing to highlight.
+        XCTAssertFalse(findEnabled())
     }
 
-    /// A new chat shows the agent's icon; an open tool call's long output scrolls inside its box under two fingers,
-    /// not the chat around it.
+    private func findEnabled() -> Bool {
+        let edit = app.menuBars.menuBarItems["Edit"]
+        edit.click()
+        defer { app.typeKey(.escape, modifierFlags: []) }
+        return edit.menuItems["Find…"].isEnabled
+    }
+
     func testAToolOutputScrollsInsideItsBox() async throws {
         let pane = try await startChat().pane
         let empty = element("chat.\(pane).empty")
@@ -74,7 +70,6 @@ extension OvviUITests {
         try await say("long", in: pane)
         XCTAssertTrue(empty.vanishes(within: 2))
         XCTAssertTrue(row(pane, "reply", "Counted.").exists(within: 5))
-        // More room under the user's message than between a turn's rows.
         let user = row(pane, "user", "long"), stack = element("chat.\(pane).stack")
         XCTAssertGreaterThanOrEqual(stack.frame.minY - user.frame.maxY, 16, "\(user.frame) \(stack.frame)")
         stack.click()
@@ -83,9 +78,7 @@ extension OvviUITests {
         let output = element("chat.\(pane).tool.output")
         XCTAssertTrue(output.exists(within: 2))
         keepScreenshot("tool output")
-        // Where the text sits under its row: the same while the chat scrolls, higher once the box scrolls.
         let place = { output.frame.minY - tool.frame.minY }, start = place()
-        // The box's middle (its text starts 8 pt in); either way, by natural scrolling.
         let point = "\(output.frame.minX + 40) \(output.frame.minY + 82)"
         for step in [-10, 10] {
             _ = try await Self.post("\(one)/swipe", Data("\(point) \(step) 14 100 1".utf8))
@@ -96,10 +89,9 @@ extension OvviUITests {
         XCTAssertLessThan(place(), start - 50)
     }
 
-    /// A floated chat pane's window shows the chat with the keyboard, and its title row has the switch.
     func testAFloatingWindowShowsTheChat() async throws {
         let pane = try await startChat().pane
-        let window = try float(pane)
+        let window = float(pane)
         let composer = element("chat.\(pane).composer", in: window)
         XCTAssertTrue(composer.exists(within: 5))
         XCTAssertTrue(hasKeyboard(composer))
@@ -108,7 +100,6 @@ extension OvviUITests {
         XCTAssertTrue(reply.exists(within: 5))
         XCTAssertEqual(composer.placeholderValue, "Ask Anything")
         XCTAssertEqual(composer.frame.minX, reply.frame.minX, accuracy: 1)
-        // Grown to 5 lines, it keeps the last message clear of it.
         for _ in 1 ... 4 {
             app.typeKey(.return, modifierFlags: .shift)
         }
@@ -124,7 +115,6 @@ extension OvviUITests {
         XCTAssertTrue(hasKeyboard("terminal.\(pane)", in: window))
         element("pane.\(pane).view.chat", in: window).click()
         XCTAssertTrue(hasKeyboard(composer))
-        // At its narrowest, every title-row button still fits.
         let origin = window.coordinate(withNormalizedOffset: .zero)
         let corner = origin.withOffset(CGVector(dx: window.frame.width - 2, dy: window.frame.height - 2))
         corner.click(forDuration: 0.1, thenDragTo: origin.withOffset(CGVector(dx: 200, dy: 200)))
@@ -135,8 +125,6 @@ extension OvviUITests {
         XCTAssertTrue(element("chat.\(pane).composer").exists(within: 3))
     }
 
-    /// A tool call opens on its own to its input and output. A click on a reply or on the chat's empty side gives the
-    /// card the keyboard in its reply box, which grows with its lines up to 5 and then scrolls.
     func testAChatTakesTheKeyboardOnAnyClickAndItsBoxGrows() async throws {
         let (tab, pane) = try await startChat()
         try await say("hello", in: pane)
@@ -165,17 +153,14 @@ extension OvviUITests {
         app.typeKey("a", modifierFlags: .command)
         app.typeKey(.delete, modifierFlags: [])
 
-        // A new pane beside it takes the keyboard; a click on the reply's text gives it back.
         app.typeKey("d", modifierFlags: .command)
         let chooser = try await replaced(pane, in: tab, besides: [pane])
         XCTAssertTrue(element("pane.\(chooser).chooser.terminal").exists(within: 3))
         let unfocused = NSPredicate(format: "hasKeyboardFocus == false")
         XCTAssertTrue(until(2) { unfocused.evaluate(with: composer) })
-        // On its first word.
         let word = reply.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0.5)).withOffset(CGVector(dx: 12, dy: 0))
         word.click()
         XCTAssertTrue(hasKeyboard(composer))
-        // A word selected with a double click keeps the keyboard, so Copy copies it.
         NSPasteboard.general.clearContents()
         word.doubleClick()
         XCTAssertTrue(until(2) { unfocused.evaluate(with: composer) })
@@ -183,15 +168,12 @@ extension OvviUITests {
         composer.click()
         app.typeKey("v", modifierFlags: .command)
         XCTAssertTrue(until(2) { composer.stringValue == "Echo" }, composer.stringValue)
-        // And from the chooser again, a click on the chat's empty side.
         element("pane.\(chooser).chooser.terminal").click()
         XCTAssertTrue(until(2) { unfocused.evaluate(with: composer) })
         element("chat.\(pane)").coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.2)).click()
         XCTAssertTrue(hasKeyboard(composer))
     }
 
-    /// The live terminal while it waits; a question answered in the chat; the chat again after a relaunch, whole past
-    /// 256 KiB (a first read once took only the file's end).
     func testAChatShowsTheTerminalWhileItWaitsAndAnswersQuestions() async throws {
         let (tab, pane) = try await startChat()
         try await say("wait", in: pane)
@@ -212,31 +194,25 @@ extension OvviUITests {
         keepScreenshot("question")
         pear.click()
         XCTAssertTrue(row(pane, "reply", "You chose Pear.").exists(within: 5))
-        // The reply comes from the transcript before the hook ends the wait, and Return sends nothing while the agent
-        // waits: the question goes once it has.
         XCTAssertTrue(element("chat.\(pane).question").vanishes(within: 5))
         try await say("big", in: pane)
         XCTAssertTrue(row(pane, "reply", "Big.").exists(within: 5))
 
-        // No state kept in the app: the marker comes back from pane.process_info.
         relaunch()
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         element("workspace.w2").click()
         XCTAssertTrue(element("tab.\(tab)").exists(within: 3))
         element("tab.\(tab)").click()
-        // The TUI first, as at every launch.
         XCTAssertTrue(element("pane.\(pane).view.tui").has(\.isSelected, true, within: 10))
         element("pane.\(pane).view.chat").click()
         XCTAssertTrue(row(pane, "reply", "Big.").exists(within: 5))
-        // At once: the first turn came with the last.
         XCTAssertTrue(row(pane, "user", "wait").exists)
         XCTAssertTrue(row(pane, "reply", "Allowed.").exists)
     }
 
-    /// The same chat on a remote machine: hooks, transcript and answers over the relay.
     func testAChatOnARemoteMachine() async throws {
         try await skipWithoutSSH()
-        let pane = try await startChat(["-machines", Self.keyHost, "-machine", "e2e-key"]).pane
+        let pane = try await startChat(Self.onKeyHost).pane
         try await say("hello", in: pane)
         XCTAssertTrue(row(pane, "reply", "Echo: **hello**").exists(within: 5))
         try await say("ask", in: pane)
@@ -246,16 +222,14 @@ extension OvviUITests {
         XCTAssertTrue(row(pane, "reply", "You chose Pear.").exists(within: 5))
     }
 
-    /// Claude Code started by hand has no chat: Relaunch with Chat starts it again with the flags, in the same session
-    /// (its reply from before shows in the chat). Its tab shows the session's title, none yet. It quits 12 s after
-    /// `/exit`, as Claude Code with slow SessionEnd hooks: the wait for it is longer than that.
+    /// The stand-in quits 12 s after `/exit`, as Claude Code with slow SessionEnd hooks: the wait for it is longer than
+    /// that.
     func testEnableChatStartsAnAgentAgainInItsSession() async throws {
         let (tab, pane) = try await startChat(["-appearance", "dark"], environment: "OVVI_STAND_IN_EXIT_HOOKS=12 ",
                                               chat: false, plain: true)
         let enable = element("pane.\(pane).enable-chat")
         XCTAssertTrue(enable.exists(within: 10))
         XCTAssertEqual(enable.label, "Relaunch with Chat")
-        // Row 1 the session's title, row 2 the button where Chat | TUI sits.
         XCTAssertTrue(until(3) { self.twoRows(pane, title: "Untitled", above: "pane.\(pane).enable-chat") })
         let label = { self.element("tab.\(tab)").label }
         XCTAssertTrue(until(3) { label().contains("Claude Code Untitled") }, label())
@@ -263,16 +237,13 @@ extension OvviUITests {
         try await waitFor(pane) { $0.contains("Echo: **hello**") }
         keepScreenshot("enable-chat")
         enable.click()
-        // Asked for, the chat shows first.
         XCTAssertTrue(element("chat.\(pane).composer").exists(within: 35))
         XCTAssertTrue(row(pane, "reply", "Echo: **hello**").exists(within: 5))
         XCTAssertEqual(element("chat.\(pane).model").stringValue, "claude-stand-in · high")
         XCTAssertFalse(enable.exists)
     }
 
-    /// A relaunch whose agent ends at once (a build that refuses Ovvi's flags) says why, with Retry. The retry's agent
-    /// lists no arguments, as npm's pi whose process title overwrites them, and its chat still opens: Ovvi knows the
-    /// launch it typed.
+    /// The retry's agent lists no arguments, as npm's pi whose process title overwrites them.
     func testRelaunchSaysWhyAndRetriesWithoutArguments() async throws {
         let failed = NSTemporaryDirectory() + "ovvi-fail-resume-" + UUID().uuidString
         defer { try? FileManager.default.removeItem(atPath: failed) }
@@ -293,11 +264,6 @@ extension OvviUITests {
         XCTAssertFalse(enable.exists)
     }
 
-    /// A new tab of w2 whose chooser starts the agent at `agent` (its place in the chooser) as its stand-in,
-    /// `scripts/<command>-stand-in.py`, once its TUI showed first and then, switched to, the chat with the keyboard in
-    /// its reply box.
-    /// `environment`: assignments before the stand-in's command; `chat: false` returns once the agent was picked.
-    /// `plain`: typed into the shell with no flags instead, the chooser closed.
     func startChat(_ arguments: [String] = [], agent: Int = 0, environment: String = "", chat: Bool = true,
                    plain: Bool = false) async throws -> (tab: String, pane: String)
     {
@@ -336,7 +302,6 @@ extension OvviUITests {
         return (tab, pane)
     }
 
-    /// Types a message into the reply box and waits until the transcript has it (the bubble on its way is `sending`).
     func say(_ text: String, in pane: String) async throws {
         app.typeText(text + "\r")
         XCTAssertTrue(row(pane, "user", text).exists(within: 5))

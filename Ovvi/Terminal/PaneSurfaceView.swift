@@ -1,44 +1,32 @@
 import AppKit
+import Carbon.HIToolbox
 import GhosttyTerminal
 import HerdrKit
 import SwiftUI
 
-/// libghostty's view with herdr's input path. herdr's frames carry none of the app's input
-/// modes (cursor keys, kitty keyboard, mouse), so libghostty would encode keys and clicks for
-/// a plain terminal. Keys whose bytes depend on those modes go to herdr by name, clicks and the
-/// wheel go as cells; herdr encodes them for the app.
+/// herdr's frames carry none of the app's input modes (cursor keys, kitty keyboard, mouse), so libghostty would encode
+/// keys and clicks for a plain terminal: keys whose bytes depend on those modes go to herdr by name, clicks and the
+/// wheel go as cells, and herdr encodes them for the app.
 final class PaneSurfaceView: AppTerminalView {
     weak var terminal: PaneTerminal?
-    /// libghostty's grid and cell size, for cells under the pointer. The in-memory session's own
-    /// sizes carry no cell size.
+    /// The in-memory session's own sizes carry no cell size.
     private(set) var metrics: TerminalGridMetrics?
     private var dragged: (column: Int, row: Int)?
-    /// The button went down with ⌘ (a link click): its drag and release stay local too.
     private var commandClick = false
-    /// The button went down with ⌥ on a link, which opened to the side: its drag and release go nowhere.
     private var sideClick = false
-    /// Links (`Links`): libghostty's surface, the link it reports under the pointer with ⌘ down, and the card's
-    /// opens (false: the link opens nothing).
     weak var linkSurface: TerminalSurface?
     var hoveredLink: String?
-    /// ⌥ alone was down at the last modifier change (`flagsChanged`).
     var sideHeld = false
     var openLink: ((String, Opening) -> Bool)?
     private var scrolled: CGFloat = 0
 
-    /// Takes the keyboard once it is in a window (again).
     var wantsKeyboard = false
     var onKeyboard: (() -> Void)?
-    /// Return, with or without modifiers, not repeated.
     var onReturn: (() -> Void)?
-    /// Its window's overview tiles' scale of the tab's page: its snapshot's (`takeSnapshot`).
-    var tileScale: () -> CGFloat = { 0.35 }
-    /// Its page's store: a file dropped on a remote machine's card is copied there (`FileDrop`).
+    var tileScale: () -> CGFloat = { WindowPages.tile }
     var store: () -> HostStore? = { nil }
-    /// The surface's last picture while it has none (`free`), and over a new surface until that draws.
     var still: CALayer?
     var stillWatch: NSKeyValueObservation?
-    /// The layer's pictures since `dropStill` began to wait.
     var stillFrames = 0
 
     override init(frame: NSRect) {
@@ -48,8 +36,7 @@ final class PaneSurfaceView: AppTerminalView {
         setAccessibilityRole(.group)
         setAccessibilityLabel("Terminal")
         registerForDraggedTypes(Self.dropTypes)
-        // Files and images are this card's (`FileDrop`): libghostty-spm would paste a path on This Mac, also on a
-        // remote card.
+        // libghostty-spm would paste a path on This Mac, also on a remote card.
         acceptsFileDrops = false
     }
 
@@ -59,8 +46,8 @@ final class PaneSurfaceView: AppTerminalView {
         claimKeyboard()
     }
 
-    /// This view holds its window's latest keyboard request: the registry drops the others' (`dropClaim`), so an
-    /// older one cannot steal the keyboard back. Per window: a claim in one window leaves another's alone.
+    /// The registry drops the other views' claims (`dropClaim`), so that an earlier one cannot steal the keyboard back.
+    /// Per window: a claim in one window leaves another's alone.
     private var claimed = false
 
     func dropClaim() {
@@ -68,7 +55,7 @@ final class PaneSurfaceView: AppTerminalView {
         claimed = false
     }
 
-    /// After SwiftUI's update: a first responder set during one (a tab that just arrived) is undone.
+    /// After SwiftUI's update: a first responder set during one is undone.
     private func claimKeyboard() {
         DispatchQueue.main.async { [weak self] in
             guard let self, claimed else { return }
@@ -78,18 +65,16 @@ final class PaneSurfaceView: AppTerminalView {
                 wantsKeyboard = true
                 return
             }
-            // Not over a panel (as a web card's, `BrowserView.takeKeyboard`).
             guard !window.panelOpen else { return }
             window.makeFirstResponder(self)
-            // Also when it already was the first responder (no becomeFirstResponder then).
+            // Also when it is the first responder already (no becomeFirstResponder then).
             terminal?.hasKeyboard = window.firstResponder === self
         }
     }
 
-    /// SwiftUI moves the view to a new host when the layout changes (a split); leaving the
-    /// window drops the first responder, so it takes the keyboard back once it is in again. Not when another
-    /// terminal asked for it since (a drop gives the moved card the keyboard while the layout moves): that claim
-    /// dropped this one.
+    /// SwiftUI moves the view to a new host when the layout changes (a split); leaving the window drops the first
+    /// responder, so it takes the keyboard back once it is in again. Not when another terminal asked for it since:
+    /// that claim dropped this one.
     override func viewWillMove(toWindow newWindow: NSWindow?) {
         if newWindow == nil, claimed, window?.firstResponder === self {
             wantsKeyboard = true
@@ -108,7 +93,6 @@ final class PaneSurfaceView: AppTerminalView {
         }
     }
 
-    /// Not in an overview's miniature (D70): keys go to the overview, whatever claims the keyboard meanwhile.
     override var acceptsFirstResponder: Bool {
         !(superview is MiniTerminal.Mini) && super.acceptsFirstResponder
     }
@@ -120,7 +104,6 @@ final class PaneSurfaceView: AppTerminalView {
         super.viewWillMove(toSuperview: newSuperview)
     }
 
-    /// Back in its card from a miniature, which refused it: a claim made meanwhile (the overview closing) lands.
     override func viewDidMoveToSuperview() {
         super.viewDidMoveToSuperview()
         dropSmallStill()
@@ -133,7 +116,6 @@ final class PaneSurfaceView: AppTerminalView {
         let became = super.becomeFirstResponder()
         terminal?.hasKeyboard = became
         if became {
-            // However it came (a click, the app), it holds the window's latest claim.
             claimed = true
             onKeyboard?()
         }
@@ -149,8 +131,7 @@ final class PaneSurfaceView: AppTerminalView {
     }
 
     override func keyDown(with event: NSEvent) {
-        // Return and the keypad's Enter; a held key asks once.
-        if [36, 76].contains(event.keyCode), !event.isARepeat, !hasMarkedText() {
+        if [kVK_Return, kVK_ANSI_KeypadEnter].contains(Int(event.keyCode)), !event.isARepeat, !hasMarkedText() {
             onReturn?()
         }
         if !hasMarkedText(), let key = Self.herdrKey(event) {
@@ -170,7 +151,6 @@ final class PaneSurfaceView: AppTerminalView {
         }
     }
 
-    // Clicks go to herdr and to libghostty, for local selection and Copy in a plain shell.
     // ponytail: in a mouse app a drag also draws libghostty's highlight; select locally only on
     // Shift+drag if that noise bothers users.
     override func mouseDown(with event: NSEvent) {
@@ -238,7 +218,6 @@ final class PaneSurfaceView: AppTerminalView {
     }
 
     override func scrollWheel(with event: NSEvent) {
-        // Up and down only: a terminal has no sideways scroll.
         guard let cell = cell(event), let metrics else { return }
         // Trackpads report points, wheels report lines.
         scrolled += event.hasPreciseScrollingDeltas
@@ -246,7 +225,7 @@ final class PaneSurfaceView: AppTerminalView {
         let lines = Int(scrolled)
         scrolled -= CGFloat(lines)
         if lines != 0 {
-            // A positive delta shows older lines: up.
+            // A positive delta shows earlier lines: up.
             terminal?.scroll(lines: -lines, column: cell.column, row: cell.row, modifiers: modifiers(event))
         }
     }
@@ -274,7 +253,6 @@ final class PaneSurfaceView: AppTerminalView {
         window?.backingScaleFactor ?? 2
     }
 
-    /// The 0-based cell under the pointer. No padding (see `PaneTerminal.controller`).
     private func cell(_ event: NSEvent) -> (column: Int, row: Int)? {
         guard let metrics, metrics.cellWidthPixels > 0, metrics.cellHeightPixels > 0 else { return nil }
         let point = convert(event.locationInWindow, from: nil)
@@ -291,11 +269,11 @@ final class PaneSurfaceView: AppTerminalView {
     }
 
     private static let names: [UInt16: String] = [
-        36: "enter", 76: "enter", 48: "tab", 51: "backspace", 53: "esc",
-        123: "left", 124: "right", 125: "down", 126: "up",
-        122: "f1", 120: "f2", 99: "f3", 118: "f4", 96: "f5", 97: "f6",
-        98: "f7", 100: "f8", 101: "f9", 109: "f10", 103: "f11", 111: "f12",
-    ]
+        kVK_Return: "enter", kVK_ANSI_KeypadEnter: "enter", kVK_Tab: "tab", kVK_Delete: "backspace", kVK_Escape: "esc",
+        kVK_LeftArrow: "left", kVK_RightArrow: "right", kVK_DownArrow: "down", kVK_UpArrow: "up",
+        kVK_F1: "f1", kVK_F2: "f2", kVK_F3: "f3", kVK_F4: "f4", kVK_F5: "f5", kVK_F6: "f6",
+        kVK_F7: "f7", kVK_F8: "f8", kVK_F9: "f9", kVK_F10: "f10", kVK_F11: "f11", kVK_F12: "f12",
+    ].reduce(into: [:]) { $0[UInt16($1.key)] = $1.value }
 
     /// The US character of each letter, digit and symbol key (kVK_ANSI_*), for Ctrl chords on
     /// layouts whose letters are not Latin.
@@ -353,7 +331,6 @@ final class PaneSurfaceView: AppTerminalView {
 }
 
 extension PaneSurfaceView {
-    /// Its kept page shows again: a claim made while it was hidden lands (`claimKeyboard`).
     override func viewDidUnhide() {
         super.viewDidUnhide()
         if wantsKeyboard, window != nil {
@@ -366,7 +343,6 @@ extension PaneSurfaceView {
         terminal.map { "terminal.\($0.paneID)" } ?? ""
     }
 
-    /// The grid as `stty size` prints it (rows, columns), for e2e tests.
     /// ponytail: grid size until VoiceOver gets the screen text (design: accessibility).
     override func accessibilityValue() -> Any? {
         metrics.map { "\($0.rows) \($0.columns)" }

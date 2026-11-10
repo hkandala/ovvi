@@ -1,14 +1,11 @@
 import AppKit
 import SwiftUI
 
-/// The window's AppKit side: whether it is in full screen (or on its way in), from its style and its
-/// notifications, and its close, which ends the window's pages (D66 hand-off). A window macOS restores in full
-/// screen keeps AppKit's empty title bar over the title row (the toolbar's on-hover full screen look holds only
-/// when the user enters), so it leaves full screen again: windows never restore in it.
+/// A window macOS restores in full screen keeps AppKit's empty title bar over the title row (the toolbar's on-hover
+/// full screen look holds only when the user enters), so it leaves full screen again.
 struct WindowReader: NSViewRepresentable {
     let pages: WindowPages
     @Binding var fullScreen: Bool
-    /// e2e: the run loop turns that drew a traffic light off its place.
     @Binding var lightsOff: Int
     static let recordLights = UserDefaults.standard.bool(forKey: "recordLights")
 
@@ -27,7 +24,6 @@ struct WindowReader: NSViewRepresentable {
         var changed: (Bool) -> Void = { _ in }
         var lightsOff: () -> Void = {}
         weak var pages: WindowPages?
-        /// e2e: the `-recordLights` counter.
         private var lightsObserver: CFRunLoopObserver?
 
         override func viewDidMoveToWindow() {
@@ -43,7 +39,7 @@ struct WindowReader: NSViewRepresentable {
                     self?.stop()
                 }
             })
-            // The did ones too: a reader that came during the change (a window's start, then its content) saw no will.
+            // The did ones too: a reader that comes during the change sees no will.
             let notifications = [NSWindow.willEnterFullScreenNotification: true,
                                  NSWindow.willExitFullScreenNotification: false,
                                  NSWindow.didEnterFullScreenNotification: true,
@@ -84,21 +80,18 @@ struct WindowReader: NSViewRepresentable {
 }
 
 extension View {
-    /// The title row takes the hidden title bar's line, in the main window and the floating ones; `TrafficLights`
-    /// centers the buttons on it. No toolbar: an empty one's accessibility frame covered the title row on a notched
-    /// Mac, so a hit test at a tab capsule found the toolbar (VoiceOver, and XCUITest clicked a capsule's edge).
+    /// No toolbar: an empty one's accessibility frame covers the title row on a notched Mac, so a hit test at a tab
+    /// capsule finds the toolbar (VoiceOver, XCUITest).
     func windowChrome(_ look: Look) -> some View {
         ignoresSafeArea(edges: .top)
             .containerBackground(for: .window) { WindowBackground(look: look) }
             .toolbar(removing: .title)
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
-            // In full screen the title bar would cover the title row; it shows on hover only.
             .windowToolbarFullScreenVisibility(.onHover)
     }
 }
 
-/// Rex's traffic lights: centered on a title row of `TitleBar.height` at 23, 46 and 69 pt from the left (the
-/// compact toolbar centers them at 19, 20), in the main window and the floating ones. Public AppKit: plain frame
+/// Rex's traffic lights: 23, 46 and 69 pt from the left, centered on the title row. Public AppKit: plain frame
 /// changes of the standard buttons.
 class TrafficLights: NSView {
     var observers: [NSObjectProtocol] = []
@@ -108,9 +101,9 @@ class TrafficLights: NSView {
         stop()
         guard let window else { return }
         // AppKit lays the buttons out again on title changes (each tab or workspace switch), resizes, key
-        // changes and full screen. They go back in this view's layout, after AppKit's tiling and before the
+        // changes and full screen. They go back in this view's layout, after AppKit's tiling and ahead of the
         // draw: a move from the frame notification is dropped for the button AppKit is moving
-        // (`setFrameOrigin:ignoreRentry:`), and one on the next turn came after a draw.
+        // (`setFrameOrigin:ignoreRentry:`), and one on the next turn comes after a draw.
         let place: @Sendable (Notification) -> Void = { [weak self] _ in
             MainActor.assumeIsolated { self?.needsLayout = true }
         }
@@ -145,7 +138,6 @@ class TrafficLights: NSView {
         }
     }
 
-    /// The buttons off their place, each with its place in its superview; none in full screen.
     func moved() -> [(button: NSButton, origin: NSPoint)] {
         guard let window, !window.styleMask.contains(.fullScreen) else { return [] }
         return buttons(of: window).enumerated().compactMap { index, button in

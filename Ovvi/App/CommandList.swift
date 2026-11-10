@@ -1,8 +1,9 @@
+import var Carbon.HIToolbox.Events.kVK_LeftArrow // not all of Carbon: its EventModifiers clashes with SwiftUI's
+import var Carbon.HIToolbox.Events.kVK_RightArrow
 import HerdrKit
 import SwiftUI
 
-/// Every command of a window (D48), for its menu bar and its palette. Actions find what they act on when they
-/// run: the menu bar may be older than the last selection or keyboard move.
+/// Actions find what they act on when they run: the menu bar can lag the last selection or keyboard move.
 struct CommandList {
     var pages: WindowPages?
     var palette: Binding<Bool>?
@@ -10,18 +11,15 @@ struct CommandList {
     var openSession: Binding<Bool>?
     var shortcuts: Binding<Bool>?
     let settings: AppSettings
-    /// A floating window's list (D50): only what applies to it.
     var floating: Floating?
-    /// What the menu bar shows and acts on, when it was made (`menuBar`), and its commands then: the menu bar takes
-    /// them, not a second list of its own (each list makes every command, 2–3 ms).
+    /// The menu bar takes these, not a second list of its own: each list makes every command (2–3 ms).
     var shown: [String] = []
     var menu: [Command] = []
 
     private var tabs = true
 
-    /// The menu bar's: Move Pane to Tab without the session's tabs. AppKit's key equivalent search walks
-    /// the whole menu bar at every key (about 30 ms at 300 tabs), and each tab's new title made the menu bar again.
-    /// The card's menus and the palette list them.
+    /// Move Pane to Tab without the session's tabs: AppKit's key equivalent search walks the whole menu bar at
+    /// every key (about 30 ms at 300 tabs), and each tab's new title makes the menu bar again.
     var menuBarList: [Command] {
         var bar = self
         bar.tabs = false
@@ -35,14 +33,14 @@ struct CommandList {
         let page = pages?.current, pages = pages, workspace = page?.selectedWorkspace, tab = page?.selectedTab
         let live = page?.store.state == .live, editor = page?.editor
         let file = [
-            Command(section: .app, title: "Plugins…", group: .plugins, symbol: Registry.missing,
+            Command(section: .app, title: "Plugins…", group: .plugins, symbol: SettingsPage.plugins.symbol,
                     keywords: "install update remove packages npm git settings",
                     action: { SettingsRoute.shared.open(.plugins) }),
             Command(section: .file, title: "New Window", key: .init("n"), symbol: "macwindow.badge.plus") {
                 WindowPages.open(machine: nil)
             },
             Command(section: .file, title: "New Tab", key: .newTab, group: .tabs, symbol: "plus.square",
-                    enabled: workspace != nil) { Task { await page?.newTab() } },
+                    enabled: live && workspace != nil) { Task { await page?.newTab() } },
             Command(section: .file, title: "New Space", key: .newWorkspace,
                     group: .workspaces, symbol: "folder.badge.plus", keywords: "workspace", enabled: live,
                     alternate: Chooser.fixed == nil ? nil : "New Space and Choose…",
@@ -52,7 +50,6 @@ struct CommandList {
                     keywords: "create start switch", enabled: openSession != nil, action: {
                         openSession?.wrappedValue = true
                     }),
-            // Over a File or Markdown card ⇧⌘G is Find Previous, as in a text editor.
             Command(section: .file, title: "Go to Directory…", key: editor == nil ? .findPrevious : nil,
                     group: .edit, symbol: "folder", keywords: "cd folder path navigate",
                     enabled: page?.keyboardPane.map { $0.program?.isShell == true && $0.plugin == nil } == true,
@@ -88,7 +85,7 @@ struct CommandList {
                         }
                     }),
             Command(section: .close, title: "Detach Session", key: .init("w", modifiers: [.command, .option]),
-                    group: .sessions, symbol: "rectangle.stack.badge.minus", enabled: (pages?.list.count ?? 0) > 1,
+                    group: .sessions, symbol: "rectangle.stack.badge.minus", enabled: pages?.canDetach == true,
                     action: {
                         if let pages, let page = pages.current {
                             pages.close(page)
@@ -98,20 +95,20 @@ struct CommandList {
         ]
         let terminal = page?.keyboardPane.map { $0.plugin == nil } == true
         let browser = page?.keyboardPane.flatMap { page?.browser($0) }
+        let chat = page?.keyboardPane.flatMap { page?.shownChat($0) } != nil
         let edit = [
             Command(section: .edit, title: "Insert Path…", key: .init("i", modifiers: [.command, .shift]),
                     symbol: "text.insert", keywords: "file folder path",
                     enabled: terminal) { Task { await page?.choosePath(directory: false) } },
-        ] + Self.editorCommands(page: page, pane: nil, terminal: live && terminal) { [page] in page?.editor }
+        ] + Self.editorCommands(page: page, pane: nil, terminal: live && terminal && !chat) { [page] in page?.editor }
         let list = file + Self.pane(page, tabs: tabs) { [page] in page?.keyboardPane } + close + edit + Self
             .browser(browser, chooser: page?.keyCardID.flatMap { page?.store.chooser($0) })
             + view + paneKeys
             + palette(page) + Self.opens(page) + window(page, pages)
-        let all = list + Self.plugin(page?.keyboardPane?.terminalID.flatMap { page?.terminals.builtPlugin($0) },
+        let all = list + Self.plugin(page?.keyboardPane?.terminalID.flatMap { page?.terminals.plugins[$0] },
                                      besides: list)
         guard pages == nil else { return all }
-        // No main window's list (Settings or About is key, or no window): ⌘W closes the key window. A disabled Close
-        // Pane would swallow it.
+        // With no main window's list, ⌘W closes the key window: a disabled Close Pane would swallow it.
         return all.map { command in
             var command = command
             command.key = command.title == "Close Window" ? .closePane : command.key == .closePane ? nil : command.key
@@ -123,10 +120,9 @@ struct CommandList {
         let size = settings.fontSize, sizes = PaneTerminal.fontSizes
         let current = pages?.current
         let page = current?.keyboardPane?.browser
-        // A browser card with the keyboard (its page or its address field) zooms its page instead.
         func zoom(_ step: Int, else text: @escaping () -> Void) -> () -> Void {
             {
-                let card = current?.keyboardPane.flatMap { $0.terminalID.flatMap { current?.terminals.built($0) } }
+                let card = current?.keyboardPane.flatMap { $0.terminalID.flatMap { current?.terminals.browsers[$0] } }
                 if let view = BrowserView.focused ?? card?.view {
                     view.zoom(step)
                 } else {
@@ -154,7 +150,6 @@ struct CommandList {
                         Command(section: .view, title: value.rawValue.capitalized,
                                 checked: settings.style == value) { settings.style = value }
                     }, previews: true),
-            // The text size (design: theme and accessibility); the key monitor takes ⌘=.
             Command(section: .size, title: "Increase Font Size", key: .bigger, symbol: "textformat.size.larger",
                     keywords: "bigger text", enabled: size < sizes.upperBound || page != nil,
                     action: zoom(1) { PaneTerminal.stepFontSize(1) }),
@@ -167,7 +162,6 @@ struct CommandList {
         ]
     }
 
-    /// Sub-pages and commands the menu bar has elsewhere (the capsule and row context menus, AppKit's View menu).
     private func palette(_ page: Page?) -> [Command] {
         let tab = page?.selectedTab, workspace = page?.selectedWorkspace
         let fullScreen = NSApp.keyWindow?.styleMask.contains(.fullScreen) == true
@@ -192,15 +186,13 @@ struct CommandList {
                     }
                 },
             ),
-            // AppKit's View menu has the item and its key.
+            // AppKit's View menu has its own item and key.
             Command(section: .palette, title: fullScreen ? "Exit Full Screen" : "Enter Full Screen",
                     key: .init("f", modifiers: [.command, .control]),
                     symbol: "arrow.up.left.and.arrow.down.right") { NSApp.keyWindow?.toggleFullScreen(nil) },
             Self.reloadPlugins,
-            // The app menu has Settings… (⌘,) of its own (`AppCommands`).
             Command(section: .palette, title: "Settings…", symbol: "gearshape", keywords: "preferences options",
-                    action: { WindowPages.openWindow?(id: "settings") }),
-            // Settings ▸ Agents has the switches; the palette keeps a command for each (D48).
+                    action: { WindowPages.openWindow?(id: WindowPages.settingsScene) }),
             Command(section: .palette, title: "Notifications When an Agent Needs You", symbol: "bell",
                     keywords: "alerts banners", checked: settings.notifyNeedsYou, setting: true,
                     action: { settings.notifyNeedsYou.toggle() }),
@@ -213,7 +205,6 @@ struct CommandList {
         ]
     }
 
-    /// The Window menu's tab, workspace and page steps, and the places on ⌘1…⌘9.
     private func window(_ page: Page?, _ pages: WindowPages?) -> [Command] {
         let tabs = page?.selectedWorkspace?.tabs ?? []
         let tab = page?.selectedTab
@@ -248,17 +239,18 @@ struct CommandList {
 }
 
 extension CommandList {
-    /// ⇧⌘← ⇧⌘→, as iTerm2 (most Mac keyboards have no Page Up or Down).
+    /// Most Mac keyboards have no Page Up or Down.
     private static func moveTab(_ page: Page?, _ offset: Int, enabled: Bool) -> Command {
         let side = offset < 0 ? "left" : "right"
         return Command(section: .tabSteps, title: "Move Tab \(side.capitalized)",
                        key: .init(offset < 0 ? .leftArrow : .rightArrow, modifiers: [.command, .shift]),
                        symbol: "arrow.\(side).to.line", enabled: enabled, action: {
-                           // The menu takes the arrow before a text field or a web card: there it still selects to
-                           // the line's end. Not from the palette or a click (the palette's field has the keyboard
-                           // then).
+                           // The menu takes the arrow ahead of a text field or a web card: there it still selects
+                           // to the line's end. Not from the palette or a click (the palette's field has the
+                           // keyboard then).
                            let event = NSApp.currentEvent
-                           let arrow = event?.type == .keyDown && [123, 124].contains(event?.keyCode)
+                           let arrow = event?.type == .keyDown && [kVK_LeftArrow, kVK_RightArrow]
+                               .contains(event.map { Int($0.keyCode) })
                            let select = offset < 0 ? #selector(NSResponder.moveToBeginningOfLineAndModifySelection)
                                : #selector(NSResponder.moveToEndOfLineAndModifySelection)
                            let responder = NSApp.keyWindow?.firstResponder
@@ -273,7 +265,6 @@ extension CommandList {
                        })
     }
 
-    /// Keys that move the keyboard, the pane or a divider; and Focus Follows Mouse.
     private var paneKeys: [Command] {
         let enabled = pages?.current?.keyboardPane != nil, tab = pages?.current?.selectedTab
         let arrows: [(Heading, KeyEquivalent)] = [
@@ -289,7 +280,6 @@ extension CommandList {
                         symbol: "arrow.\(heading.rawValue)\(suffix)",
                         keywords: "pane",
                         enabled: enabled, action: {
-                            // A held key's repeat while a write runs is dropped, not queued behind it each time.
                             // `isARepeat` raises on a click (the palette, the menu bar).
                             let event = NSApp.currentEvent
                             if let page = pages?.current, let pane = page.keyboardPane,
@@ -300,7 +290,7 @@ extension CommandList {
                         })
             }
         }
-        // Even when it looks even: the menu may be older than the tab's last change.
+        // Enabled even when it looks even: the menu can lag the tab's last change.
         let balance = Command(section: .paneKeys, title: "Balance Splits",
                               key: .init("=", modifiers: [.command, .option]), symbol: "equal.square",
                               keywords: "pane even", enabled: tab != nil, action: {
@@ -321,7 +311,6 @@ extension CommandList {
             + each("Move Pane", [.command, .option, .shift], symbol: ".square") {
                 await $0.store.swap($1.id, $2)
             }
-            // No key: dividers and Balance Splits cover it.
             + each("Resize Pane", nil, symbol: ".to.line") {
                 await $0.store.resize($1.id, $2)
             }
@@ -330,9 +319,7 @@ extension CommandList {
                        action: { settings.followMouse.toggle() })]
     }
 
-    /// The places on 1…9, one modifier per level: ⌘ the workspace's tabs, ⌃⌘ the sidebar's
-    /// workspaces, ⌥⌘ the window's sessions. Each finds its place when the key is pressed: the menu may be older
-    /// than a switch.
+    /// Each finds its place when the key is pressed: the menu can lag a switch.
     static func jumps(_ page: Page?, _ pages: WindowPages?) -> [Command] {
         func jump(_ section: Command.Section, _ level: String, _ modifiers: EventModifiers, _ titles: [String],
                   _ show: @escaping (Int) -> Void) -> [Command]
@@ -345,7 +332,6 @@ extension CommandList {
                         family: ("Show \(level) 1–9", "1–9")) { show(index) }
             }
         }
-        // The first 9 only: the menu bar is made again when what they read changes.
         let tabs = (page?.selectedWorkspace?.tabs ?? []).prefix(9), workspaces = page?.sidebarWorkspaces ?? []
         return jump(.tabs, "Tab", .command, tabs.map { page?.titleText($0) ?? $0.label }) { index in
             if let page, let workspace = page.selectedWorkspace, workspace.tabs.indices.contains(index) {

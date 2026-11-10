@@ -1,9 +1,5 @@
 import XCTest
 
-/// What kept cards cost (on demand): a workspace whose first tab shows a terminal beside a browser, then `kept`
-/// terminal tabs and `kept` web tabs (browsers on local pages and Markdown cards, half each), each shown once, so the
-/// kept sets are full; then the app at rest on the first tab, in use (tab switches), and with the overview open (its
-/// open's latency, then CPU and memory). The numbers are in the result bundle (`usage, …` and `latency`).
 extension OvviUITests {
     func testKeptCardsCost() async throws {
         try await keptCardsCost(20)
@@ -15,23 +11,20 @@ extension OvviUITests {
 
     private func keptCardsCost(_ kept: Int) async throws {
         executionTimeAllowance = 1200
-        // Made in herdr before the launch, so the app's first snapshot has them: a workspace made right after a launch
-        // showed in the sidebar 3.4 s later on CI (herdr and the app busy with the launch's asks and streams).
+        // Made in herdr ahead of the launch, so the app's first snapshot has them: a workspace made right after a
+        // launch shows in the sidebar 3.4 s later on CI (herdr and the app busy with the launch's asks and streams).
         let (opened, titles) = try await keptTabs(kept)
-        relaunch(nil, ["-spareTerminals", "\(kept)", "-spareWebCards", "\(kept)", "-recordLatency", "YES"])
+        relaunch(one, ["-spareTerminals", "\(kept)", "-spareWebCards", "\(kept)", "-recordLatency", "YES"])
         addTeardownBlock { @MainActor in self.keep(self.element("app.latency").stringValue, as: "latency") }
         let row = element("workspace.\(workspace(of: opened[0].0))")
         XCTAssertTrue(row.exists(within: connect))
         row.click()
-        // Each tab once, by Show Next Tab, until its card shows; then back to the first. The app has every tab: by the
-        // count, as the row makes only the capsules in view.
         XCTAssertTrue(element("tabs.count").has(\.stringValue, "\(opened.count)", within: 10))
         app.typeKey("1", modifierFlags: .command)
         for (tab, pane) in opened.dropFirst() {
             app.typeKey("]", modifierFlags: [.command, .shift])
             XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, true, within: 5), tab)
             XCTAssertTrue(element("pane.\(pane)").exists(within: 10), pane)
-            // A browser's page loaded: its title.
             if let title = titles[pane] {
                 XCTAssertTrue(element("pane.\(pane).title").has(\.stringValue, title, within: 10), pane)
             }
@@ -55,13 +48,10 @@ extension OvviUITests {
         XCTAssertTrue(element("overview").vanishes(within: 5))
     }
 
-    /// A workspace of a terminal beside a browser, then terminal and web tabs in turn, in herdr: each tab and its pane,
-    /// and the browsers' page titles.
     private func keptTabs(_ kept: Int) async throws -> ([(String, String)], [String: String]) {
         let (first, shell) = try await createWorkspace("kept")
         let workspace = workspace(of: first), folder = "/tmp/ovvi-e2e-kept"
         try await waitForPrompt(shell)
-        // Pages with some text to lay out, a different one per card.
         let html = "{ echo \"<title>Page $i</title><h1>Page $i</h1>\"; for j in $(seq 300); do echo \"<p>Paragraph $j "
             + "of page $i, words to lay out and paint.</p>\"; done; } >$i.html"
         let markdown = "{ echo \"# Notes $i\"; for j in $(seq 300); do "
@@ -81,7 +71,7 @@ extension OvviUITests {
         var opened = [(first, browser)], titles: [String: String] = [:]
         for index in 1 ... 2 * kept {
             let web = index.isMultiple(of: 2), page = (index + 1) / 2
-            let root = web ? leaf(page.isMultiple(of: 2) ? "browser" : "markdown",
+            let root = web ? leaf(page.isMultiple(of: 2) ? "browser" : "explorer",
                                   page.isMultiple(of: 2) ? "file://\(folder)/\(page).html" : "\(folder)/\(page).md")
                 : ["type": "pane", "cwd": "/tmp"]
             let layout = try await Self.call(one, "layout.apply", ["workspace_id": workspace, "focus": false,

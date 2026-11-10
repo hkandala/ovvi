@@ -1,7 +1,5 @@
 import XCTest
 
-/// Each level's keys: `T` new, `W` close, `[` `]` step, 1–9 jump, the modifier names the level (⌘ tabs,
-/// ⌃⌘ workspaces, ⌥⌘ sessions); the Keyboard Shortcuts panel on ⌘/.
 extension OvviUITests {
     func testWorkspaceAndSessionKeysStepAndJump() async throws {
         let alpha = element("workspace.w1"), beta = element("workspace.w2")
@@ -11,7 +9,6 @@ extension OvviUITests {
         XCTAssertTrue(beta.has(\.isSelected, true, within: 2))
         app.typeKey("[", modifierFlags: [.command, .control])
         XCTAssertTrue(alpha.has(\.isSelected, true, within: 2))
-        // Round the ends, as tabs.
         app.typeKey("[", modifierFlags: [.command, .control])
         XCTAssertTrue(beta.has(\.isSelected, true, within: 2))
         app.typeKey("1", modifierFlags: [.command, .control])
@@ -26,7 +23,6 @@ extension OvviUITests {
             try await Self.ids("workspace", in: one).first { !before.contains($0) }
         }
         XCTAssertTrue(element("workspace.\(made)").has(\.isSelected, true, within: 3))
-        // ⌃⌘W closes it: only its shell runs, so it does not ask.
         let tabs = try await snapshot()["panes"] as? [[String: Any]] ?? []
         try await settle(tabs.filter { $0["workspace_id"] as? String == made }.compactMap { $0["tab_id"] as? String })
         app.typeKey("w", modifierFlags: [.command, .control])
@@ -49,13 +45,12 @@ extension OvviUITests {
         XCTAssertTrue(until(2) { !pageList().contains(two) })
     }
 
-    /// The menu bar acts on the key window: two floating windows of one session each detach their own pane with ⌘W.
     func testEachFloatingWindowsKeysActOnItsOwnPane() async throws {
         let (tab, first) = try await newTab("float-keys")
         let second = try await split(first)
         element("tab.\(tab)").click()
-        let firstWindow = try float(first)
-        let secondWindow = try float(second)
+        let firstWindow = float(first)
+        let secondWindow = float(second)
         // Show Window sits in the card's middle, under the floating windows: the main window comes forward first.
         element("tab.\(tab)").click()
         element("pane.\(second).show").click()
@@ -70,8 +65,7 @@ extension OvviUITests {
         XCTAssertTrue(firstWindow.vanishes(within: 3))
     }
 
-    /// ⌃⇥ and ⌃⇧⇥ step the tabs, never the panes: in a tab of three panes, also with one tab, where
-    /// they do nothing (AppKit's key view loop stepped the terminals).
+    /// Never the panes: AppKit's key view loop steps the terminals.
     func testControlTabStepsTabsNeverPanes() async throws {
         let first = element("tab.w1:t1"), second = element("tab.w1:t2")
         XCTAssertTrue(first.has(\.isSelected, true, within: connect))
@@ -85,14 +79,12 @@ extension OvviUITests {
             XCTAssertTrue(first.has(\.isSelected, true, within: 2))
             XCTAssertTrue(hasKeyboard(card))
         }
-        // A workspace of one tab and two panes: nothing moves.
         let (tab, pane) = try await createWorkspace("one-tab")
         let other = try await split(pane)
         element("workspace.\(workspace(of: tab))").click()
         XCTAssertTrue(element("terminal.\(other)").exists(within: 3))
         element("terminal.\(pane)").click()
         XCTAssertTrue(hasKeyboard("terminal.\(pane)"))
-        // Each way on its own: with two panes, a step and a step back would land on the first again.
         for flags: XCUIElement.KeyModifierFlags in [.control, [.control, .shift]] {
             app.typeKey(.tab, modifierFlags: flags)
             XCTAssertFalse(hasKeyboard("terminal.\(other)"))
@@ -100,8 +92,6 @@ extension OvviUITests {
         }
     }
 
-    /// ⌃⇥ and ⌃⇧⇥ go round w2's tabs from every card, also from a text field (a chat's reply box, a browser's
-    /// address).
     func testControlTabStepsFromChatAndBrowserCards() async throws {
         let (chatTab, chat) = try await startChat()
         let (browserTab, left) = try await newTab("ctrl-tab")
@@ -125,8 +115,6 @@ extension OvviUITests {
         }
     }
 
-    /// A key acts on the key window: with two windows on different tabs, ⌘D right after switching
-    /// splits the key window's tab only, each time.
     func testCommandDSplitsInTheKeyWindowOnly() async throws {
         let (first, second) = try newWindow()
         var tabs: [String] = []
@@ -143,7 +131,6 @@ extension OvviUITests {
             try await (snapshot()["panes"] as? [[String: Any]] ?? []).count { $0["tab_id"] as? String == tab }
         }
         var counts = [1, 1]
-        // Then right after the switch, with no wait: a window just made key.
         for round in 0 ..< 4 {
             for (index, window) in [first, second].enumerated() {
                 if round < 2 {
@@ -168,10 +155,7 @@ extension OvviUITests {
         for section in ["Panes", "Tabs", "Spaces", "Sessions", "View", "Edit"] {
             XCTAssertTrue(element("shortcuts.section.\(section)").exists, section)
         }
-        // Only over a plugin card.
         XCTAssertFalse(element("shortcuts.section.Plugins").exists)
-        // A family is one row; a second key is on its first's row. One pattern: the key says the action,
-        // the modifier the level.
         let rows = [
             "Split Right": "⌘D", "Select Pane": "⌥⌘←→↑↓", "Show Tab 1–9": "⌘1–9", "New Space": "⌃⌘T",
             "Show Space 1–9": "⌃⌘1–9", "Show Session 1–9": "⌥⌘1–9", "Show Previous Tab": "⇧⌘[ or ⌃⇧⇥",
@@ -183,10 +167,8 @@ extension OvviUITests {
         for (title, keys) in rows {
             XCTAssertEqual(element("shortcuts.\(title)").value as? String, keys, title)
         }
-        // Keys the app does not have.
         XCTAssertFalse(element("shortcuts.Resize Pane").exists)
         XCTAssertFalse(element("shortcuts.Close Window").exists)
-        // Two columns.
         XCTAssertGreaterThan(element("shortcuts.section.Sessions").frame.minX,
                              element("shortcuts.section.Panes").frame.maxX)
         keepScreenshot("keyboard shortcuts")
@@ -205,13 +187,12 @@ extension OvviUITests {
         app.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(panel.exists(within: 2))
 
-        // Glass like the palette in the other look too (for the screenshot).
         relaunch(one, ["-appearance", "light", "-interfaceStyle", "classic"])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         app.typeKey("/", modifierFlags: .command)
         XCTAssertTrue(panel.exists(within: 2))
         keepScreenshot("keyboard shortcuts, light classic")
-        // A click outside closes it (beside it: in CI's short window it reaches the bottom).
+        // Beside it: in CI's short window it reaches the bottom.
         app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.03, dy: 0.6)).click()
         XCTAssertTrue(panel.vanishes(within: 2))
     }

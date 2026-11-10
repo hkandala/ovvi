@@ -1,8 +1,6 @@
 import HerdrKit
 import SwiftUI
-import WebKit
 
-/// A machine's page; the id `new` is Add Machine's.
 struct MachinePage: View {
     static let new = "new"
     let id: String
@@ -20,7 +18,6 @@ struct MachinePage: View {
         HostStore.all.contains { $0.machine.id == machine.id && $0.state == .live }
     }
 
-    /// The header's line, what the fields do not say: This Mac's own name, a remote machine's state, Add Machine's.
     private static func state(_ saved: Machine?) -> [String] {
         guard let saved else { return ["Not added yet"] }
         return [saved.isRemote ? isLive(saved) ? "Connected" : "Not connected" : Machine.computerName]
@@ -51,7 +48,6 @@ struct MachinePage: View {
         Form {
             Section {
                 SettingsHeader(title: saved?.name ?? (name.isEmpty ? "New Machine" : name), lines: Self.state(saved)) {
-                    // On a tile of a plugin's size: the headers match.
                     Image(systemName: saved?.icon ?? draft.icon).font(.system(size: 20)).foregroundStyle(.secondary)
                         .frame(width: 44, height: 36).background(.quaternary, in: .rect(cornerRadius: 10))
                 }
@@ -88,7 +84,7 @@ struct MachinePage: View {
         .alert(question, isPresented: confirming, presenting: confirm) { which in
             Button(which == .clear ? "Clear" : "Remove", role: .destructive) {
                 if let saved, which == .clear {
-                    Self.clear(saved)
+                    Browser.clear(saved)
                 } else if let saved {
                     MachineList.shared.remove(saved)
                     dismiss()
@@ -103,7 +99,7 @@ struct MachinePage: View {
 
     private func connection(_ saved: Machine?, target: String) -> some View {
         Section {
-            // A set width: a form's text field asks for all the room, which narrowed the sidebar.
+            // A set width: a form's text field asks for all the room and narrows the sidebar.
             LabeledContent("Name") {
                 TextField("Name", text: $draft.name, prompt: Text(target.isEmpty ? "Optional" : target))
                     .labelsHidden().multilineTextAlignment(.trailing).truncationMode(.middle).frame(width: 220)
@@ -139,7 +135,7 @@ struct MachinePage: View {
                     // The new machine's window comes forward, where ssh asks what it asks.
                     if saved == nil {
                         dismiss()
-                        dismissWindow(id: "settings")
+                        dismissWindow(id: WindowPages.settingsScene)
                     }
                 }
                 .buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
@@ -147,11 +143,5 @@ struct MachinePage: View {
                 .accessibilityIdentifier("settings.machine.save")
             }
         }
-    }
-
-    private static func clear(_ machine: Machine) {
-        UserDefaults.standard.removeObject(forKey: "browserApprovals.\(machine.id)")
-        Browser.dataStore(machine).removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(),
-                                              modifiedSince: .distantPast) {}
     }
 }

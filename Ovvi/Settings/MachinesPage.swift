@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// The machines in the machine menu's order.
 /// ponytail: no drag to reorder (a grouped form takes no `onMove`); a List section if users ask.
 struct MachinesPage: View {
     var body: some View {
@@ -64,21 +63,20 @@ private struct MachineLabel: View {
     }
 }
 
-/// A machine's section shows with no approved site too: a site can be added before any card opens it.
 struct PrivacyPage: View {
-    /// Read again after a change: the approvals are plain defaults.
+    /// The approvals are plain defaults: no view observes them.
     @State private var version = 0
 
     var body: some View {
         let _ = version // swiftlint:disable:this redundant_discardable_let
         Form {
-            ForEach([.thisMac] + MachineList.shared.list) { machine in
-                let sites = Browser.approvals(machine)
+            ForEach(MachineList.shared.all) { machine in
+                let sites = Browser.approvals(machine.id)
                 Section {
                     ForEach(sites, id: \.self) { site in
                         LabeledContent(site) {
-                            // The list as it is now: a card may have approved a site since this drew.
-                            Button("Remove") { set(Browser.approvals(machine).filter { $0 != site }, machine) }
+                            // A card may have approved a site since this drew.
+                            Button("Remove") { set(Browser.approvals(machine.id).filter { $0 != site }, machine) }
                                 .accessibilityIdentifier("settings.privacy.\(machine.id).\(site).remove")
                         }
                     }
@@ -87,7 +85,8 @@ struct PrivacyPage: View {
                             .accessibilityIdentifier("settings.privacy.\(machine.id).empty")
                     }
                     AddSite(machine: machine) { site in
-                        set(Array((Browser.approvals(machine).filter { $0 != site } + [site]).suffix(200)), machine)
+                        Browser.approve(site, machine.id)
+                        version += 1
                     }
                 } header: {
                     HStack {
@@ -95,7 +94,6 @@ struct PrivacyPage: View {
                         Spacer()
                         if !sites.isEmpty {
                             Button("Clear All") { set([], machine) }.controlSize(.small)
-                                .accessibilityIdentifier("settings.privacy.\(machine.id).clear")
                         }
                     }
                 }
@@ -107,20 +105,12 @@ struct PrivacyPage: View {
         }
     }
 
-    /// An empty list leaves no key behind.
     private func set(_ sites: [String], _ machine: Machine) {
-        let key = "browserApprovals.\(machine.id)"
-        if sites.isEmpty {
-            UserDefaults.standard.removeObject(forKey: key)
-        } else {
-            UserDefaults.standard.set(sites, forKey: key)
-        }
+        Browser.setApprovals(sites, machine.id)
         version += 1
     }
 }
 
-/// A field and Add: an address becomes its origin, as a page the user opens is approved. With no scheme, `https`, and
-/// `http` for a loopback name.
 private struct AddSite: View {
     let machine: Machine
     let add: (String) -> Void
@@ -129,7 +119,7 @@ private struct AddSite: View {
     private var origin: String? {
         let typed = text.trimmingCharacters(in: .whitespaces)
         let host = URL(string: "http://\(typed)")?.host?.lowercased() ?? ""
-        let loopback = Browser.loopback.contains(host) || host.hasSuffix(".localhost")
+        let loopback = Browser.isLoopback(host)
         let full = typed.contains("://") ? typed : (loopback ? "http://" : "https://") + typed
         return Browser.url(full, local: false).map(Browser.origin)
     }

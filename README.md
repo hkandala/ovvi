@@ -22,11 +22,11 @@ Website and docs: [ovvi.dev](https://ovvi.dev).
 ## Requirements
 
 - macOS 26 or later.
-- herdr 0.9.3 or later on each machine, found by `command -v herdr` in the login shell. The Mac needs it only
-  for its own sessions.
+- herdr 0.9.3 or later on each machine, found by `command -v herdr` in the login shell (else
+  `~/.local/bin/herdr`). The Mac needs it only for its own sessions.
 - Perl on remote machines (the SSH relay is a small Perl script; nearly every Unix has it).
-- Dependencies: libghostty-spm (a Swift package at an exact pin, which brings DisplayLink) and the system
-  `ssh`; nothing else ships in the app.
+- Dependencies: libghostty-spm (which brings DisplayLink) and swift-markdown (which brings cmark-gfm), Swift
+  packages at exact pins, and the system `ssh`; nothing else ships in the app.
 - To build: Xcode 27 and Homebrew (`make setup` installs SwiftFormat, SwiftLint, xcbeautify and Node from
   the `Brewfile`). The docs site needs Node 22 and pnpm 10.
 
@@ -38,7 +38,8 @@ make install    # a Release build copied to ~/Applications
 make app        # the Release app only
 make dmg        # a disk image of it
 make run        # build and open the app (SESSION=<name> for one session; agents: ovvi-dev-* only)
-make lint build test   # checks, the build, the unit checks
+make format     # SwiftLint's fixes and SwiftFormat
+make lint build test   # checks, the build, the unit tests and the docs and license checks
 make e2e        # the UI tests against throwaway herdr sessions (ONLY=… for some)
 ```
 

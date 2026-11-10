@@ -1,18 +1,12 @@
 import AppKit
 
-/// Fits the terminal (or a browser card's web view) to itself once its size stops changing (a window drag, a
-/// divider drag, the sidebar or layout motion): meanwhile the terminal keeps its grid, clipped, so neither
-/// libghostty nor the program reflows at every step. A web view laid its page out at every step, and the
-/// motion stuttered.
+/// Fits the view to itself once its size stops changing: meanwhile the terminal keeps its grid, clipped, so neither
+/// libghostty nor the program reflows at every step, and a web view does not lay its page out at every step.
 final class SettlingHost: NSView {
     private var fitting: Task<Void, Never>?
-    /// e2e (`-recordMotion YES`): the sizes this host took, and the ms from the first to the last size of the
-    /// latest motion, as its accessibility label ("12 113"). Layout motion gives many sizes; a card made again,
-    /// or one that jumps, only one or two.
     static let record = UserDefaults.standard.bool(forKey: "recordMotion")
     private var sizes = 0, motion: (start: TimeInterval, last: TimeInterval)?
 
-    /// A held terminal stays at the top, as the card's content does.
     override var isFlipped: Bool {
         true
     }
@@ -20,28 +14,19 @@ final class SettlingHost: NSView {
     override func resizeSubviews(withOldSize old: NSSize) {
         if Self.record, frame.size != old {
             sizes += 1
-            // A motion's sizes come a frame apart; a pause starts the next one.
             let now = ProcessInfo.processInfo.systemUptime
             let start = motion.map { now - $0.last < 0.1 ? $0.start : now } ?? now
             motion = (start, now)
             setAccessibilityLabel("\(sizes) \(Int((now - start) * 1000))")
         }
         fitting?.cancel()
-        // At once until its first stream opened (it opens at the card's size; the terminal waits for that to
-        // settle), for a view that never had a frame, and on a new host's first size: a card shown again (its tab)
-        // comes with its old size, and nothing moves.
         let surface = view as? PaneSurfaceView
         guard let view, surface == nil || surface?.terminal?.grid != nil, !view.frame.isEmpty, old != .zero
         else {
             fit()
             return
         }
-        fitting = Task {
-            try? await Task.sleep(for: .milliseconds(150))
-            if !Task.isCancelled {
-                fit()
-            }
-        }
+        Self.settle(&fitting) { self.fit() }
     }
 
     override func viewDidEndLiveResize() {
@@ -50,22 +35,34 @@ final class SettlingHost: NSView {
         fit()
     }
 
-    /// Gone from here once a newer host adopted it.
     private var view: NSView? {
         subviews.first
     }
 
-    private func fit() {
+    func fit() {
         guard let view, !bounds.isEmpty, view.frame.size != bounds.size else { return }
-        // Before libghostty hears of the size.
+        Self.place(view, bounds)
+    }
+
+    static func settle(_ fitting: inout Task<Void, Never>?, _ fit: @escaping @MainActor () -> Void) {
+        fitting?.cancel()
+        fitting = Task {
+            try? await Task.sleep(for: .milliseconds(150))
+            if !Task.isCancelled {
+                fit()
+            }
+        }
+    }
+
+    /// A terminal holds its frames ahead of libghostty hearing of the size.
+    static func place(_ view: NSView, _ frame: CGRect) {
         (view as? PaneSurfaceView)?.terminal?.hold()
-        view.frame = bounds
+        view.frame = frame
     }
 }
 
 extension NSView {
-    /// Hidden in a kept page out of view (`TabPages`): no mouse moves, cursor or hover reach its views. The keyboard
-    /// leaves it first, to the window: AppKit would hand it to the next key view, which would claim it.
+    /// The keyboard leaves it first, to the window: AppKit would hand it to the next key view, which would claim it.
     func hide(_ hidden: Bool) {
         guard hidden != isHidden else { return }
         if hidden, let window, let responder = window.firstResponder as? NSView, responder.isDescendant(of: self) {

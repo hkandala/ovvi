@@ -1,13 +1,9 @@
 import XCTest
 
-/// The command palette and the key map.
 extension OvviUITests {
-    /// ⌘K lists each group under its header, the places first in theirs; "split r" ranks Split Right first with
-    /// its group's name, and Enter splits the keyboard card.
     func testPaletteSplitsTheKeyboardCardRight() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("palette")
-        // Its page first: a tab not selected shows no card to click.
         element("tab.\(tab)").click()
         element("terminal.\(pane)").click()
         XCTAssertTrue(hasKeyboard("terminal.\(pane)"))
@@ -37,9 +33,6 @@ extension OvviUITests {
         XCTAssertLessThan(element("pane.\(pane)").frame.maxX, element("pane.\(other)").frame.minX)
     }
 
-    /// The pointer lights a row; the list scrolled under the still pointer keeps the light where it was; a move
-    /// lights the row under it again. The list's bottom padding sits after its last row, inside the scroll: a row is
-    /// cut at the panel's edge, and the gap shows only at the end.
     func testPaletteLightStaysWhileTheListScrolls() {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         openPalette()
@@ -47,7 +40,6 @@ extension OvviUITests {
         XCTAssertTrue(lit.exists(within: 2))
         lit.hover()
         XCTAssertTrue(lit.has(\.isSelected, true, within: 2))
-        // The pointer rests on the row's middle: the scroll takes the row off it.
         let pointer = lit.frame.midY
         lit.scroll(byDeltaX: 0, deltaY: -40)
         XCTAssertTrue(until(2) { lit.frame.maxY < pointer }, "not scrolled off: \(pointer) → \(lit.frame)")
@@ -55,18 +47,16 @@ extension OvviUITests {
         other.hover()
         XCTAssertTrue(other.has(\.isSelected, true, within: 2))
 
-        // Its frame first: at the end the lazy list no longer holds New Tab, which found it.
+        // Its frame first: at the end the lazy list holds no New Tab, which finds it.
         let list = app.scrollViews.containing(.button, identifier: "palette.command.New Tab").firstMatch
         let bottom = list.frame.maxY
         list.scroll(byDeltaX: 0, deltaY: -10000)
-        // The lowest row is the last: the rows past the end are never built.
         let rows = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'palette.'"))
         let gap = { bottom - (rows.allElementsBoundByIndex.map(\.frame.maxY).max() ?? 0) }
         XCTAssertTrue(until(3) { abs(gap() - 10) < 1.5 }, "the end's gap: \(gap())")
         app.typeKey(.escape, modifierFlags: [])
     }
 
-    /// Rename Tab › holds the current name; Enter saves it to herdr. ⌫ on an empty field goes back to the root.
     func testPaletteRenamesTheTab() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, _) = try await newTab("before")
@@ -97,8 +87,6 @@ extension OvviUITests {
         XCTAssertTrue(element("palette.section.Tabs").exists(within: 2))
     }
 
-    /// Rename Space › and Rename Pane… › hold the current name; Enter saves it to herdr. Reset Pane Name clears
-    /// the pane's.
     func testPaletteRenamesTheWorkspaceAndThePane() async throws {
         let (tabs, pane) = try await newWorkspace("before")
         element("terminal.\(pane)").click()
@@ -122,19 +110,18 @@ extension OvviUITests {
         app.typeText("named")
         app.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(filter.vanishes(within: 2))
-        try await expect("herdr's pane label") { try await label(pane) == "named" }
+        try await expect("herdr's pane label") { try await paneLabel(pane) == "named" }
 
         openPalette()
         app.typeText("reset pane name")
         XCTAssertTrue(element("palette.command.Reset Pane Name").has(\.isSelected, true, within: 2))
         app.typeKey(.return, modifierFlags: [])
-        try await expect("no pane label") { try await label(pane) == nil }
+        try await expect("no pane label") { try await paneLabel(pane).isEmpty }
     }
 
-    /// Appearance › previews a highlighted row on the window after 0.75 s; Esc puts the old one back.
     func testPaletteAppearancePreviewsAndEscRestores() {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
-        // Settings persist (the app's own defaults): start dark, and end dark even when a step fails.
+        // Settings persist in the app's own defaults: start dark, and end dark even when a step fails.
         pick("Appearance", "Dark")
         addTeardownBlock { @MainActor [self] in pick("Appearance", "Dark") }
         let look = element("window.look")
@@ -148,17 +135,14 @@ extension OvviUITests {
         XCTAssertTrue(element("palette.choice.Dark").has(\.isSelected, true, within: 2))
         app.typeKey(.upArrow, modifierFlags: [])
         XCTAssertTrue(element("palette.choice.Light").has(\.isSelected, true, within: 2))
-        // Not at once: after 0.75 s.
         XCTAssertEqual(look.stringValue, dark)
         XCTAssertTrue(look.has(\.stringValue, light, within: 2))
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(look.has(\.stringValue, dark, within: 2))
-        // Back on the root, still open; Esc there closes it.
         XCTAssertTrue(element("palette.section.Tabs").exists(within: 2))
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(filter.vanishes(within: 2))
 
-        // Enter keeps the previewed choice when the palette closes.
         openPalette()
         app.typeText("dark")
         app.typeKey(.return, modifierFlags: [])
@@ -170,8 +154,6 @@ extension OvviUITests {
         XCTAssertFalse(until(1) { look.stringValue != light })
     }
 
-    /// ⇧⌘P, Rex's key, also opens the palette; ⌘= is Increase Font Size (second shortcuts).
-    /// A setting's row says what it does now.
     func testSecondShortcuts() {
         XCTAssertTrue(element("tab.w1:t1").has(\.isSelected, true, within: connect))
         element("terminal.w1:p1").click()
@@ -181,21 +163,18 @@ extension OvviUITests {
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(filter.vanishes(within: 2))
 
-        // ⌘=: Reset Font Size turns on (the menu's state, not the grid: a 1x display may round one step away).
+        // The menu's state, not the grid: on a 1x display one step can keep the grid.
         addTeardownBlock { @MainActor [self] in app.typeKey("0", modifierFlags: .command) }
         app.typeKey("0", modifierFlags: .command)
         XCTAssertTrue(resetFontSize(enabled: false))
         app.typeKey("=", modifierFlags: .command)
         XCTAssertTrue(resetFontSize(enabled: true))
 
-        // The palette uses Ghostty's words, as the menu bar does. Font Size › lights the current size,
-        // scrolled into view below the fold.
         openPalette()
         app.typeText("font size")
         for title in ["Increase Font Size", "Decrease Font Size", "Reset Font Size"] {
             XCTAssertTrue(element("palette.command.\(title)").exists(within: 2), title)
         }
-        // Font Size › starts with the filter, so it comes before Increase Font Size.
         app.typeKey(.return, modifierFlags: [])
         app.typeText("30")
         app.typeKey(.return, modifierFlags: [])
@@ -226,8 +205,6 @@ extension OvviUITests {
         app.typeKey(.return, modifierFlags: [])
     }
 
-    /// "open session" opens the Open Session panel; "new window" opens a second window, whose pick opens that session
-    /// only.
     func testPaletteOpensThePanelAndANewWindow() throws {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         openPalette()
@@ -250,7 +227,6 @@ extension OvviUITests {
         XCTAssertFalse(pageList(in: window).contains(two))
     }
 
-    /// The Sessions section lists the window's pages; Enter shows that page.
     func testPaletteShowsAnotherOpenPage() {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         openPage(two)
@@ -263,23 +239,17 @@ extension OvviUITests {
         XCTAssertTrue(element("sidebar.header").has(\.stringValue, two, within: 3))
     }
 
-    /// ⇧⌘G: the folder panel; the chosen folder is typed into the shell as a `cd`. ⇧⌘I types a chosen file's path,
-    /// quoted, without Return.
     func testGoToDirectoryAndInsertPath() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        // Shown first: a tab not selected shows no card to click.
         let (tab, pane) = try await newTab("paths")
         element("tab.\(tab)").click()
         XCTAssertTrue(element("terminal.\(pane)").has(\.isHittable, true, within: 3))
         let folder = "/private/tmp/ovvi-e2e-go-\(Int.random(in: 1000 ... 9999))"
         try await waitForPrompt(pane)
         try await send("mkdir -p \(folder) && touch '\(folder)/a b'; clear\r", to: pane)
-        addTeardownBlock { [one] in
-            _ = try? await Self.call(one, "pane.send_text", ["pane_id": pane, "text": "rm -rf \(folder)\r"])
-        }
+        sendAfter("rm -rf \(folder)\r", to: pane)
         element("terminal.\(pane)").click()
         XCTAssertTrue(hasKeyboard("terminal.\(pane)"))
-        // A program in the card: the pick is refused (D41), nothing is typed.
         try await send("cat\r", to: pane)
         try await expect("cat in the pane") { try await foreground(pane).contains("cat") }
         app.typeKey("g", modifierFlags: [.command, .shift])
@@ -305,7 +275,6 @@ extension OvviUITests {
         try await waitFor(pane, toShow: "'\(folder)/a b'", times: 100)
     }
 
-    /// In the open panel: Go to Folder with the path, then Open.
     private func choose(_ path: String) {
         let panel = app.sheets.firstMatch
         XCTAssertTrue(panel.exists(within: 3))
@@ -318,19 +287,15 @@ extension OvviUITests {
         XCTAssertTrue(panel.vanishes(within: 10))
     }
 
-    /// Move Pane to Tab ▸ ‹tab› puts the pane right of the tab's last card, not beside herdr's focused pane.
     func testMoveToTabLandsBesideTheLastCard() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        // Its tab goes with its only pane.
         let (mover, pane) = try await newTab("mover")
         let (target, first) = try await newTab("target")
         let last = try await split(first)
-        // herdr's focus stays on the first card (focus: false).
         element("tab.\(target)").click()
         XCTAssertTrue(element("pane.\(last)").exists(within: 2))
         element("tab.\(mover)").click()
         XCTAssertTrue(element("pane.\(pane)").has(\.isHittable, true, within: 3))
-        // Every tab of the session under its workspace's name, New Tab and New Space first.
         paneMenu(pane, "Move Pane to Tab")
         let entry = app.windows.firstMatch.menuItems["Move Pane to Tab"]
         XCTAssertTrue(entry.menuItems["second"].exists(within: 2))
@@ -340,14 +305,15 @@ extension OvviUITests {
         keepScreenshot("move pane to tab")
         entry.menuItems["target"].click()
         try await expect("the pane right of the last card") { try await order(target) == [first, last, pane] }
-        // Drawn there too before the click: herdr's order comes first, and a click on the card's earlier frame went to
+        // Drawn there ahead of the click: herdr's order comes first, and a click on the card's earlier frame goes to
         // the last card (on CI).
         let (card, lastCard) = (element("pane.\(pane)"), element("pane.\(last)"))
         XCTAssertTrue(until(3) { card.frame.minX > lastCard.frame.maxX })
 
+        XCTAssertTrue(element("terminal.\(pane)").exists(within: 5))
         element("terminal.\(pane)").click()
         XCTAssertTrue(hasKeyboard("terminal.\(pane)"))
-        // The menu bar's has no tabs: AppKit searched them at every key.
+        // The menu bar's has no tabs: AppKit searches them at every key.
         app.menuBars.menuBarItems["View"].click()
         app.menuBars.menuItems["Pane"].hover()
         let bar = app.menuBars.menuItems["Move Pane to Tab"]
@@ -369,7 +335,7 @@ extension OvviUITests {
         try await expect("the pane alone in the new tab") { try await order(moved) == [pane] }
     }
 
-    /// View ▸ Reset Font Size, read with the menu open (SwiftUI updates a closed menu's items late).
+    /// Read with the menu open: SwiftUI updates a closed menu's items late.
     private func resetFontSize(enabled: Bool) -> Bool {
         app.menuBars.menuBarItems["View"].click()
         let found = app.menuBars.menuItems["Reset Font Size"].has(\.isEnabled, enabled, within: 2)
@@ -377,7 +343,7 @@ extension OvviUITests {
         return found
     }
 
-    /// The sub-page's header (a heading: XCUITest may give its text as the label or the value).
+    /// A heading: XCUITest may give its text as the label or the value.
     private func pageTitle(is title: String) -> Bool {
         let header = element("palette.title")
         return until(2) { header.exists && [header.label, header.stringValue].contains(title) }

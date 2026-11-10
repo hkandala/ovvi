@@ -1,21 +1,14 @@
 import AppKit
 import SwiftUI
 
-/// A card in its own hosting view, moved and sized by Core Animation: a split's, a close's, a swap's or a zoom's
-/// motion runs in the render server, so a busy main thread (herdr's answer, a new terminal, a web page, other apps)
-/// drops none of its frames. During the motion the card keeps the larger of its two sizes, clipped by its moving
-/// frame; it lays out at its new size once the motion ends.
+/// Moved and sized by Core Animation: the motion runs in the render server, so a busy main thread (herdr's answer, a
+/// new terminal, a web page, other apps) drops none of its frames.
 struct CardMotion<Content: View>: NSViewRepresentable {
     let rect: CGRect
-    /// Changes with each layout that moves the cards (the tree's, the zoom's): a new place with a new value is a
-    /// motion; one with the same value a resize (the window, the sidebar, a divider's drag).
     let move: Int
-    /// A new card at its start beside its place: it slides in from there, fading in over half its slide.
     let entering: Bool
     let hidden: Bool
-    /// Its pane, for its e2e identifier.
     let id: String
-    /// The card's edge (`Look.edge`), drawn by its layer while the motion's mask cuts the card's own.
     let edge: (color: NSColor, width: CGFloat)
     let content: Content
 
@@ -48,14 +41,11 @@ struct CardMotion<Content: View>: NSViewRepresentable {
 final class MovingCard: NSView {
     let host: NSHostingView<AnyView>
     private(set) var move: Int
-    /// Its place in the page as last given.
     var rect: CGRect
     var entering = false
     var edge = (color: NSColor.clear, width: CGFloat(0))
-    /// The card's size where the motion under way started: it keeps the larger size until it ends.
     private var from: CGSize?
     private var motions = 0
-    /// e2e (`-recordMotion YES`): the motions it made, as its accessibility label ("slides 3").
     private var slides = 0
 
     init(_ content: AnyView, move: Int, rect: CGRect) {
@@ -63,7 +53,7 @@ final class MovingCard: NSView {
         (self.move, self.rect) = (move, rect)
         super.init(frame: .zero)
         wantsLayer = true
-        layer?.cornerRadius = 10
+        layer?.cornerRadius = CardSurface.radius
         layer?.cornerCurve = .continuous
         host.safeAreaRegions = []
         addSubview(host)
@@ -78,13 +68,12 @@ final class MovingCard: NSView {
         true
     }
 
-    /// Moves from where the card shows now (its last place, or where a motion under way has it) to `rect`, whether
-    /// SwiftUI sets its new frame before this or after.
+    /// SwiftUI sets the card's new frame ahead of this call or after it.
     func arm(_ move: Int, to rect: CGRect, fade: Bool) {
         let old = self.rect
         (self.move, self.rect) = (move, rect)
         guard let layer, old.width > 0 else { return }
-        // In its superlayer's space, whose y grows upward: the old place's bottom edge from the new one's.
+        // The superlayer's y grows upward.
         var size = old.size, offset = CGPoint(x: old.minX - rect.minX, y: rect.maxY - old.maxY)
         if let shown = layer.presentation(), layer.animation(forKey: "motion.position") != nil {
             size = shown.bounds.size
@@ -102,7 +91,7 @@ final class MovingCard: NSView {
         position.isAdditive = true
         var animations = [animation("bounds.size", NSValue(size: size), NSValue(size: rect.size)), position]
         if fade {
-            animations.append(animation("opacity", 0, 1, duration: TabPage.slide / 2))
+            animations.append(animation("opacity", 0, 1, duration: HostStore.slide / 2))
         }
         motions += 1
         let motion = motions
@@ -122,14 +111,12 @@ final class MovingCard: NSView {
             slides += 1
             setAccessibilityLabel("slides \(slides)")
             let start = ProcessInfo.processInfo.systemUptime
-            DispatchQueue.main.asyncAfter(deadline: .now() + TabPage.slide / 2) { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + HostStore.slide / 2) { [weak self] in
                 self?.recordMid(since: start)
             }
         }
     }
 
-    /// e2e: where the card shows halfway through its motion, the ms since it started, and where it ends, on screen with
-    /// y down: "slides 3 mid x y w h at 70 end x y w h".
     private func recordMid(since start: TimeInterval) {
         guard let layer, let shown = layer.presentation(), let window, let content = window.contentView,
               let root = content.layer, let rootShown = root.presentation() else { return }
@@ -152,7 +139,7 @@ final class MovingCard: NSView {
     }
 
     private func animation(_ key: String, _ from: Any, _ end: Any,
-                           duration: Double = TabPage.slide) -> CABasicAnimation
+                           duration: Double = HostStore.slide) -> CABasicAnimation
     {
         let animation = CABasicAnimation(keyPath: key)
         (animation.fromValue, animation.toValue, animation.duration) = (from, end, duration)

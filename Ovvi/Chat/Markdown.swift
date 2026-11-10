@@ -4,8 +4,6 @@ import SwiftUI
 /// swift-markdown has its own `Text`, `Image`, `Link` and `Table`: SwiftUI's `Text` here, the others by module.
 private typealias Text = SwiftUI::Text
 
-/// A reply's Markdown (ui/chat-view#what-it-looks-like), parsed by swift-markdown (cmark-gfm, with tables, task lists
-/// and strikethrough) and drawn block by block.
 struct Markdown: View {
     let text: String
 
@@ -15,9 +13,7 @@ struct Markdown: View {
             .lineSpacing(4)
             .textSelection(.enabled)
             .fixedSize(horizontal: false, vertical: true)
-            .accessibilityElement(children: .ignore)
-            .accessibilityAddTraits(.isStaticText)
-            .accessibilityValue(text)
+            .readableText(text)
     }
 }
 
@@ -107,7 +103,6 @@ private struct ListBlock: View {
         }
     }
 
-    /// How many lists hold this one.
     private var depth: Int {
         sequence(first: list.parent) { $0?.parent }.prefix { $0 != nil }.count { $0 is ListItemContainer }
     }
@@ -150,14 +145,13 @@ private struct TableGrid: View {
     }
 }
 
-/// A block's inline styles as one string: `Text` draws its emphasis, strikethrough and links.
 private enum Inline {
     static func text(_ markup: any Markup, size: CGFloat) -> AttributedString {
         markup.children.reduce(into: AttributedString()) { result, child in
             switch child {
             case let text as Markdown::Text: result += linked(text.string)
             case let code as InlineCode:
-                // At 0.9 of its block's size (a monospaced face reads larger), on a faint fill.
+                // A monospaced face reads larger.
                 var code = AttributedString(code.code)
                 code.font = .system(size: size * 0.9, design: .monospaced)
                 code.backgroundColor = .primary.opacity(0.08)
@@ -175,7 +169,6 @@ private enum Inline {
                 var label = Self.text(image, size: size)
                 label.link = image.source.flatMap(URL.init(string:))
                 result += label
-            // A break as a space or a newline, HTML as written.
             default: result += AttributedString((child as? InlineMarkup)?.plainText ?? "")
             }
         }
@@ -193,8 +186,7 @@ private enum Inline {
 
     private static let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
 
-    /// A bare web address as a link (GFM's autolinks, which swift-markdown leaves as text); not a bare name such as
-    /// `Ovvi.app`.
+    /// GFM's autolinks, which swift-markdown leaves as text; not a bare name such as `Ovvi.app`.
     private static func linked(_ string: String) -> AttributedString {
         var text = AttributedString(string)
         // Every link starts so: most text has none, and the detector shows in a long chat's scroll.

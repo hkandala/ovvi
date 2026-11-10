@@ -4,39 +4,22 @@
 Started by the chooser with Ovvi's flags (`-e <pi-ovvi-<sha8>.ts> --ovvi <state file>`), it needs the extension
 file whole (its sha256 starts with the name's sha8), writes the state lines pi-ovvi writes and a session file in pi's
 format, reports its state to herdr and answers prompts on its terminal: "wait" opens a dialog until 1 is typed, "slow"
-works until Esc and takes a message sent meanwhile after its tool, as pi steers, "/tree" moves the leaf back before
-the last user message, "tools" runs every kind of tool, anything else gets one command and the reply "Echo: <prompt>".
+works until Esc and takes a message sent meanwhile after its tool, as pi steers, "/tree" moves the leaf to the
+parent of the last user message, "tools" runs every kind of tool, anything else gets one command and the reply
+"Echo: <prompt>".
 """
 import hashlib
 import json
 import os
-import select
 import shutil
-import signal
-import subprocess
 import sys
-import termios
 import time
-import tty
 import uuid
 
-folder = os.path.join(os.environ.get("TMPDIR", "/tmp"), "ovvi-stand-in")
-os.makedirs(folder, exist_ok=True)
-# herdr prompts an agent only while a process of its name runs in the foreground: run again as `pi`.
-# A framework build's `python3` runs its Python.app, which would drop the name: link to that one.
-if os.environ.get("OVVI_STAND_IN") != "1":
-    os.environ["OVVI_STAND_IN"] = "1"
-    app = os.path.join(sys.base_prefix, "Resources/Python.app/Contents/MacOS/Python")
-    link = os.path.join(folder, "pi")
-    if os.path.islink(link):
-        os.remove(link)
-    os.symlink(app if os.path.exists(app) else os.path.realpath(sys.executable), link)
-    # OVVI_STAND_IN_TITLE=1: no arguments in its process's own, as a Node CLI that sets its process title (npm's pi).
-    rest = sys.argv[1:]
-    if os.environ.get("OVVI_STAND_IN_TITLE") == "1":
-        os.environ["OVVI_STAND_IN_ARGS"], rest = json.dumps(rest), []
-    os.execv(link, [link, os.path.abspath(__file__)] + rest)
-args = json.loads(os.environ.pop("OVVI_STAND_IN_ARGS", "null")) or sys.argv[1:]
+import stand_in
+from stand_in import folder, key, say, terminal
+
+args = stand_in.run_as("pi", __file__)
 extension, state = args[args.index("-e") + 1], args[args.index("--ovvi") + 1]
 if not os.path.isfile(extension):
     sys.exit("Failed to load extension: Extension path does not exist: " + extension)
@@ -48,19 +31,12 @@ transcript = os.path.join(folder, os.path.basename(os.path.dirname(state)) + ".j
 leaf = None
 
 
-def report(state):
-    subprocess.run([os.environ["HERDR_BIN_PATH"], "--session", os.environ["HERDR_SESSION"], "pane", "report-agent",
-                    "--source", "ovvi-e2e", "--agent", "pi", "--state", state, os.environ["HERDR_PANE_ID"]],
-                   capture_output=True)
-
-
 def line(path, value):
     with open(path, "a") as file:
         file.write(json.dumps(value) + "\n")
 
 
 def entry(role, **fields):
-    """Appends a message entry to the leaf, as pi does."""
     global leaf
     entry_id = uuid.uuid4().hex[:8]
     line(transcript, {"type": "message", "id": entry_id, "parentId": leaf,
@@ -70,19 +46,6 @@ def entry(role, **fields):
     return entry_id
 
 
-def say(text):
-    sys.stdout.write(text.replace("\n", "\r\n") + "\r\n")
-    sys.stdout.flush()
-
-
-def key(timeout=None):
-    """The next input, without its bracketed paste marks; "" after `timeout`."""
-    if not select.select([0], [], [], timeout)[0]:
-        return ""
-    data = os.read(0, 4096).decode(errors="replace")
-    return data.replace("\x1b[200~", "").replace("\x1b[201~", "")
-
-
 def assistant(content, stop, **fields):
     entry("assistant", content=content, api="stand-in", provider="stand-in", model="pi-stand-in", stopReason=stop,
           **fields)
@@ -90,7 +53,6 @@ def assistant(content, stop, **fields):
 
 def prompt(text):
     if text == "/tree":
-        # Back to the parent of the last user entry, as picking it in /tree does.
         entries = {}
         with open(transcript) as file:
             for row in file:
@@ -107,15 +69,15 @@ def prompt(text):
         return
     entry("user", content=[{"type": "text", "text": text}])
     line(state, {"type": "working"})
-    report("working")
+    stand_in.report("working")
     if text == "wait":
         line(state, {"type": "blocked"})
-        report("blocked")
+        stand_in.report("blocked")
         say("Allow this command?\n  1. Yes\n  2. No")
         while "1" not in key():
             pass
         line(state, {"type": "unblocked"})
-        report("working")
+        stand_in.report("working")
         assistant([{"type": "text", "text": "Allowed."}], "stop")
     elif text == "tools":
         tools()
@@ -143,12 +105,10 @@ def prompt(text):
         assistant([{"type": "text", "text": "Echo: **" + text + "**"}], "stop")
         say("Echo: **" + text + "**")
     line(state, {"type": "idle"})
-    report("idle")
+    stand_in.report("idle")
 
 
 def tools():
-    """A run with every kind of step, in pi's real shapes: thinking, then read, write, edit, grep, find, ls, bash,
-    codemode with the read its script made and agent_start, each its own message with its result, then a reply."""
     calls = [("read", {"path": os.path.join(os.getcwd(), "a.txt")}, {}),
              ("write", {"path": "b.txt", "content": "x\ny\n"}, {}),
              ("edit", {"path": "b.txt", "edits": [{"oldText": "x", "newText": "z"}]},
@@ -168,20 +128,21 @@ def tools():
     say("All tools.")
 
 
+def cleanup():
+    line(state, {"type": "shutdown"})
+    if os.path.exists(transcript):
+        os.remove(transcript)
+    shutil.rmtree(os.path.dirname(state), ignore_errors=True)
+
+
 def main():
-    # A closed pane hangs up: clean up as on Ctrl-C.
-    signal.signal(signal.SIGHUP, lambda *_: sys.exit(0))
     line(transcript, {"type": "session", "version": 3, "id": str(uuid.uuid4()),
                       "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime()), "cwd": os.getcwd()})
     line(state, {"type": "session", "path": transcript})
-    attributes = termios.tcgetattr(0)
-    tty.setraw(0)
-    # Bracketed paste on, as pi has it: herdr's agent.prompt pastes, then presses Enter.
-    sys.stdout.write("\x1b[?2004h")
-    say("pi stand-in " + state)
-    report("idle")
-    text = ""
-    try:
+    with terminal(cleanup):
+        say("pi stand-in " + state)
+        stand_in.report("idle")
+        text = ""
         while True:
             data = key()
             if "\x03" in data or "\x04" in data:
@@ -196,15 +157,6 @@ def main():
             if text.strip():
                 prompt(text.strip())
             text = rest
-    finally:
-        # What it wrote goes with it; first, as a hung-up terminal takes no settings. A second hang-up would stop it
-        # halfway.
-        signal.signal(signal.SIGHUP, signal.SIG_IGN)
-        line(state, {"type": "shutdown"})
-        if os.path.exists(transcript):
-            os.remove(transcript)
-        shutil.rmtree(os.path.dirname(state), ignore_errors=True)
-        termios.tcsetattr(0, termios.TCSADRAIN, attributes)
 
 
 main()

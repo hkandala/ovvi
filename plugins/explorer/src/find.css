@@ -1,5 +1,3 @@
-/* The find bar (find.ts), as the terminal's ⌘F bar: a capsule of the card's fill with a blur behind, a plain field,
-   the count, 22 pt icon buttons; Replace's row under it makes it a rounded rectangle. */
 .find {
   display: flex;
   flex-direction: column;
@@ -43,7 +41,6 @@
 .find-field::placeholder {
   color: var(--dim);
 }
-/* Replace's field sits in a row fill, so the two fields read apart. */
 .find-row + .find-row .find-field {
   align-self: stretch;
   margin: 0 4px 0 -6px;

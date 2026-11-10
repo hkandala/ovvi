@@ -1,10 +1,9 @@
 import Foundation
 
-// Lenient models of herdr's JSON: only the fields the app uses. Unknown fields are ignored and
-// unknown enum values fall back, so a newer herdr does not break decoding.
+// Only the fields the app uses, most optional, and unknown enum values fall back: one odd entry or a newer herdr
+// cannot fail a snapshot.
 
 public struct Snapshot: Decodable, Sendable {
-    /// herdr's version: the snapshot read is also the version check.
     let version: String?
     public let focusedWorkspaceID: String?
     public let workspaces: [Workspace]
@@ -12,9 +11,8 @@ public struct Snapshot: Decodable, Sendable {
     public let panes: [Pane]
     public let agents: [Agent]
     let layouts: [Layout]
-    /// Each tab's split tree by tab id. Filled by `HerdrClient.snapshot()`.
     public internal(set) var trees: [String: SplitNode] = [:]
-    /// Each tab's focused pane; herdr's global `focused` marks only one pane of all tabs.
+    /// herdr's global `focused` marks only one pane of all tabs.
     public var focusedPaneIDs: Set<String> {
         Set(layouts.compactMap(\.focusedPaneID))
     }
@@ -37,7 +35,6 @@ public struct Workspace: Decodable, Sendable, Identifiable {
     }
 }
 
-/// A workspace's git checkout, as herdr tracks it.
 public struct Worktree: Decodable, Equatable, Sendable {
     /// The repository's shared `.git` directory: the same for a repository and its linked worktrees.
     public let repoKey: String
@@ -54,7 +51,6 @@ public struct Tab: Decodable, Sendable, Identifiable {
     public let workspaceID: String
     public let label: String
 
-    /// A tab the app draws before herdr has it (a new tab shows at once).
     public init(id: String, workspaceID: String, label: String) {
         self.id = id
         self.workspaceID = workspaceID
@@ -68,12 +64,10 @@ public struct Tab: Decodable, Sendable, Identifiable {
 
 public struct Pane: Decodable, Sendable, Identifiable {
     public let id: String
-    /// Optional so one odd pane cannot fail the whole snapshot.
     public let terminalID: String?
     public let tabID: String
     public let label: String?
     public let cwd: String?
-    /// herdr's agent kind (`claude`), detected or reported.
     public let agent: String?
     /// The terminal title without the status glyphs herdr strips (`✳`, spinners).
     public let title: String?
@@ -81,16 +75,13 @@ public struct Pane: Decodable, Sendable, Identifiable {
     public let scroll: PaneScroll?
     /// The agent's status; `unknown` until herdr read it from the agent's screen.
     public let agentStatus: AgentStatus?
-    /// The agent's session, as its herdr integration reported it.
     public let agentSession: AgentSession?
-    /// Of its tokens only the `ovvi` command's ring and the chat launch.
-    let tokens: Ring?
-    /// Why herdr brought the pane back from its saved session without a program: its saved folder is gone.
+    let tokens: Tokens?
+    /// Set when herdr brings the pane back from its saved session without a program: its saved folder is gone.
     public let restoreError: String?
 
-    /// Ovvi's chat launch in it (`mark(_:chat:)`).
     public var chat: String? {
-        tokens?.chat
+        tokens?[Tokens.chat]
     }
 
     enum CodingKeys: String, CodingKey {
@@ -100,11 +91,18 @@ public struct Pane: Decodable, Sendable, Identifiable {
     }
 }
 
-struct Ring: Decodable {
-    let request: String?
-    let chat: String?
+struct Tokens: Decodable {
+    static let request = "ovvi-req", chat = "ovvi-chat", shown = "ovvi-shown", open = "ovvi-open"
 
-    enum CodingKeys: String, CodingKey { case request = "ovvi-req", chat = "ovvi-chat" }
+    private let values: [String: String]
+
+    init(from decoder: any Decoder) throws {
+        values = (try? decoder.singleValueContainer().decode([String: String].self)) ?? [:]
+    }
+
+    subscript(_ name: String) -> String? {
+        values[name]
+    }
 }
 
 /// herdr's `agent_session`: `value` is the session's id (Claude Code, Codex, OpenCode) or its file (pi). It can be an
@@ -115,9 +113,7 @@ public struct AgentSession: Decodable, Sendable {
 }
 
 public struct PaneScroll: Decodable, Sendable {
-    /// Lines from the bottom; 0 is the bottom.
     public let offsetFromBottom: Int?
-    /// The scrollback above the screen.
     public let maxOffsetFromBottom: Int?
     public let viewportRows: Int?
 
@@ -127,34 +123,16 @@ public struct PaneScroll: Decodable, Sendable {
     }
 }
 
-/// A float request on a pane (talking-to-herdr#float-requests): its token `ovvi-float` names the pane to float as
-/// `‹session›/‹pane id›`, `ovvi-float-id` is a nonce.
-public struct FloatRequest: Sendable {
-    public let session: String
-    public let pane: String
-    public let nonce: String
-
-    init?(_ tokens: [String: String]?) {
-        let parts = tokens?["ovvi-float"]?.split(separator: "/", maxSplits: 1).map(String.init) ?? []
-        guard parts.count == 2, let nonce = tokens?["ovvi-float-id"] else { return nil }
-        session = parts[0]
-        pane = parts[1]
-        self.nonce = nonce
-    }
-}
-
-/// An agent pane. Only the pane id is required, so one odd entry cannot fail the snapshot.
 public struct Agent: Decodable, Sendable {
     public let paneID: String
     public let terminalID: String?
-    /// herdr's agent kind (`codex`).
     public let agent: String?
     /// A label set through `pane.report_metadata`; wins over `agent` as the name.
     public let displayAgent: String?
     public let status: AgentStatus
     /// The number of the agent's last finish (working or blocked to idle); null again at its next status change.
     public let completionSeq: Int?
-    /// The number of the agent's last change of status, counted over the session: the newest is the largest.
+    /// Counted over the session: the newest is the largest.
     public var stateChangeSeq: Int?
 
     enum CodingKeys: String, CodingKey {
@@ -185,8 +163,6 @@ public enum AgentStatus: String, Decodable, Sendable {
     }
 }
 
-/// What `workspace.create`, `tab.create` and `pane.split` return: the new pane (its tab's first, `root_pane`). Any
-/// other reply decodes as one too (its panes are optional).
 struct Created: Decodable {
     let rootPane: Pane?
     let pane: Pane?
@@ -194,14 +170,13 @@ struct Created: Decodable {
     enum CodingKeys: String, CodingKey { case rootPane = "root_pane", pane }
 }
 
-/// `pane.move`: the pane where it went (a move to another workspace gives it a new id).
+/// A move to another workspace gives the pane a new id.
 struct Moved: Decodable {
     let moveResult: Change
 
     enum CodingKeys: String, CodingKey { case moveResult = "move_result" }
 }
 
-/// `layout.apply`: the new tab's one pane.
 struct Applied: Decodable {
     struct Root: Decodable {
         let root: Layout.Pane
@@ -210,12 +185,10 @@ struct Applied: Decodable {
     let layout: Root
 }
 
-/// `pane.swap`.
 struct Swapped: Decodable {
     let swap: Change
 }
 
-/// A move or a swap: `changed:false` with herdr's reason when it refused.
 struct Change: Decodable {
     let changed: Bool?
     let reason: String?
@@ -228,7 +201,6 @@ struct Change: Decodable {
     }
 }
 
-/// `pane.read`.
 struct Read: Decodable {
     struct Text: Decodable {
         let text: String
@@ -237,24 +209,19 @@ struct Read: Decodable {
     let read: Text
 }
 
-/// `pane.process_info`: the pane's shell and its foreground processes.
 struct ProcessInfoResult: Decodable {
     let processInfo: PaneProcesses
 
     enum CodingKeys: String, CodingKey { case processInfo = "process_info" }
 }
 
-/// What runs in a pane's foreground, as the icon matcher and the card header need it.
 public struct Program: Equatable, Sendable {
     public let name: String
     public let argv0: String?
-    /// The first argument that is not an option: the script a `node` or `bun` runs (`pi`'s cli.js).
-    /// ponytail: `node --require x.js cli.js` or `bun run dev` pick the wrong one (the header and the base-name
-    /// match); skip option values if it matters.
+    /// ponytail: the first argument that is not an option, so `node --require x.js cli.js` or `bun run dev` pick the
+    /// wrong one (the header and the base-name match); skip option values if it matters.
     public let script: String?
-    /// Only the pane's shell runs.
     public let isShell: Bool
-    /// Every foreground process with its arguments: a chat agent's launch marker is in them (ui/chat-view).
     public var foreground: [Foreground] = []
 
     public struct Foreground: Equatable, Sendable {
@@ -273,16 +240,11 @@ public struct Program: Equatable, Sendable {
         self.isShell = isShell
     }
 
-    /// What a plugin pane's placeholder looks like: its `cat` under its shell and nothing else (herdr lists no argv
-    /// for the script's `sh`). The caller asks it only of a pane with a plugin label.
-    public var isPlaceholder: Bool {
-        name == "cat" && foreground.count <= 2
-    }
+    static let runtimes: Set = ["node", "bun"]
 
-    /// The name people know it by: a Node CLI's script name (`gemini`), else the process name.
     public var title: String {
-        guard let script, ["node", "bun"].contains(name) else { return name }
-        // Not `URL(filePath:)`: for a relative path it reads the working folder (`ProgramIcon`'s note).
+        guard let script, Self.runtimes.contains(name) else { return name }
+        // Not `URL(filePath:)`: for a relative path it reads the working folder.
         return script.split(separator: "/").last.map(String.init) ?? name
     }
 }
@@ -294,7 +256,6 @@ struct PaneProcesses: Decodable {
         let argv0: String?
         let argv: [String]?
 
-        /// A login shell (`-zsh`) or a known shell by name.
         var isShell: Bool {
             argv0?.hasPrefix("-") == true || ["sh", "bash", "zsh", "fish", "dash", "ksh", "tcsh", "csh", "nu"]
                 .contains(name)
@@ -304,9 +265,7 @@ struct PaneProcesses: Decodable {
     let shellPID: Int
     let foregroundProcesses: [Process]
 
-    /// What runs in the foreground besides the shell, else the shell itself (`isShell`, design D41); nil when
-    /// herdr lists nothing. A program the shell `exec`ed has the shell's pid, so the shell's pid counts only while
-    /// it is still a shell.
+    /// A program the shell `exec`ed has the shell's pid, so the shell's pid counts only while it is a shell.
     var program: Program? {
         let program = foregroundProcesses.first { $0.pid != shellPID || !$0.isShell }
         return (program ?? foregroundProcesses.first).map { process in
@@ -327,7 +286,7 @@ public struct Session: Codable, Equatable, Sendable {
     public let running: Bool
 
     /// herdr's rule for session names: ASCII letters, digits, `.`, `_` and `-`, at most 64 bytes, not `.` or `..`.
-    /// Not a leading `-` either: names from outside (float requests) go into argv, where it reads as an option.
+    /// Not a leading `-` either: names from outside (`ovvi://float`) go into argv, where it reads as an option.
     public static func isValidName(_ name: String) -> Bool {
         !name.isEmpty && name.utf8.count <= 64 && name != "." && name != ".." && !name.hasPrefix("-")
             && name.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber || "._-".contains($0)) }

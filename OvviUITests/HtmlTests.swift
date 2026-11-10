@@ -1,17 +1,12 @@
 import XCTest
 
-/// HTML (ui/window#opening-links-and-files): a Markdown link to an HTML file opens its page in the browser
-/// (⌘-click: in a new tab behind, ⌥-click: to the side); File Explorer shows the file as text, and its header's Open
-/// in Browser opens the page in a new tab, selected. A file of another kind has no Open in Browser.
 extension OvviUITests {
     func testHtmlOpensInTheBrowserFromLinksAndTheFileCard() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, shell) = try await newTab("html")
         let folder = "/tmp/ovvi-e2e-html"
         try await waitForPrompt(shell)
-        addTeardownBlock { [one] in
-            _ = try? await Self.call(one, "pane.send_text", ["pane_id": shell, "text": "rm -rf \(folder)\r"])
-        }
+        sendAfter("rm -rf \(folder)\r", to: shell)
         try await send("mkdir -p \(folder) && cd \(folder) && printf '<h1>Hi</h1>\\n' >page.html "
             + "&& printf '[Page](page.html)\\n' >notes.md && printf 'x\\n' >plain.txt && clear "
             + "&& echo ready-$((6*7))\r", to: shell)
@@ -47,18 +42,13 @@ extension OvviUITests {
         XCTAssertFalse(element("pane.\(plain).browser").exists)
     }
 
-    /// A file that is gone says so in a notice, "File not found: ‹path›": a terminal link (⌥-click on an absolute path
-    /// with an extension), `ovvi open` from a shell and a Markdown link. A word that only looks like a path opens
-    /// nothing, silently.
     func testGoneFilesSayFileNotFound() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, shell) = try await newTab("gone")
         element("tab.\(tab)").click()
         let folder = "/tmp/ovvi-e2e-gone"
         try await waitForPrompt(shell)
-        addTeardownBlock { [one] in
-            _ = try? await Self.call(one, "pane.send_text", ["pane_id": shell, "text": "rm -rf \(folder)\r"])
-        }
+        sendAfter("rm -rf \(folder)\r", to: shell)
         try await send("mkdir -p \(folder) && cd \(folder) && printf '[Gone](gone.md)\\n' >notes.md && clear; "
             + "echo /reload your open pi; echo \(folder)/gone.md\r", to: shell)
         try await waitFor(shell) { $0.hasPrefix("/reload your open pi\n") }
@@ -87,7 +77,6 @@ extension OvviUITests {
         XCTAssertEqual(element("pane.\(notes).title").stringValue, "notes.md")
     }
 
-    /// The notice says the file is not found, then closes with its ✕.
     private func notFound(_ notice: XCUIElement, _ end: String) {
         let text = notice.staticTexts.matching(NSPredicate(
             format: "value BEGINSWITH 'File not found: ' AND value ENDSWITH %@",
@@ -98,7 +87,6 @@ extension OvviUITests {
         XCTAssertTrue(notice.vanishes(within: 3))
     }
 
-    /// The pane is a browser card on the file's `file:` page.
     private func browserLabel(_ pane: String, _ path: String) async throws {
         try await expect("a browser on \(path) in \(pane)") {
             let label = try await paneLabel(pane)

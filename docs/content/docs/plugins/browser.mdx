@@ -23,19 +23,20 @@ written in Swift (`Registry.browser`):
 ```swift
 static let browser = PluginManifest(
     id: "browser", name: "Browser", icon: "globe", description: "Web page", keywords: ["web", "url", "localhost"],
-    opens: .init(urls: ["http://*", "https://*", "file://*"]), chooser: "Browser",
+    opens: .init(urls: ["http://*", "https://*", "file://*"]), chooser: "Browser", settings: [network],
 )
 ```
 
 - **The fields that apply** are a plugin's: `id` (its label is
   `ovvi:browser#<iid> <url>`), `name`, `icon`, `description`, `keywords`,
-  `opens` and `chooser`. So the chooser, ⌘K's Open Browser Here and linked
+  `opens`, `chooser` and `settings` (the remote network choice,
+  [This Mac's network](/docs/ui/browser#this-macs-network)). So the chooser, ⌘K's Open Browser Here and linked
   opens of web addresses read every kind from one registry.
 - **No `entry`** means native content. The app draws the browser's own card,
   its toolbar in row 2 and its address field. It has no `header`
   or `commands` in the manifest: they are the browser's own.
   Its version is 1.0.0.
-- **Its id is taken first**, so no package can be named `browser`.
+- **Its id is taken first**, so no package can use the id `browser`.
 - **Opens.** An `http` or `https` address from `ovvi.open` with no `plugin`
   opens in a `default` plugin whose `urls` match it, else in the browser
   ([What a plugin opens](/docs/plugins/manifest#what-a-plugin-opens)).

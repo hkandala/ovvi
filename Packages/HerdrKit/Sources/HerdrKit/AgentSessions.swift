@@ -1,16 +1,10 @@
 import Foundation
 
-/// A session of an agent, from the agent's own store on its machine: what the sidebar's Archived Sessions lists and
-/// resumes.
 public struct ClosedSession: Sendable, Hashable, Identifiable {
-    /// herdr's agent name, the chooser's command (`claude`).
     public let agent: String
-    /// As herdr's `agent_session` value: pi's session file, the others' ids.
     public let value: String
     public let title: String
-    /// The folder the agent ran in.
     public let folder: String
-    /// Its last activity.
     public let date: Date
 
     public var id: String {
@@ -18,20 +12,14 @@ public struct ClosedSession: Sendable, Hashable, Identifiable {
     }
 }
 
-/// One agent's page of sessions, newest first.
 public struct ClosedPage: Sendable, Equatable {
     public var sessions: [ClosedSession] = []
-    /// The store may hold older ones.
     public var more = false
-    /// Why the store could not be read, for the user ("needs sqlite3").
     public var problem: String?
-    /// The sessions looked at, those left out too: the next page's offset.
     public var looked = 0
-    /// The last activity of the oldest one looked at.
     public var oldest: Date?
 }
 
-/// The pages read so far of each agent, as one list newest first.
 public struct ClosedList: Sendable, Equatable {
     public private(set) var agents: [String: ClosedPage] = [:]
 
@@ -39,7 +27,7 @@ public struct ClosedList: Sendable, Equatable {
 
     public mutating func add(_ page: ClosedPage, for agent: String) {
         var all = agents[agent] ?? ClosedPage()
-        // A session that moved up since the page before comes again.
+        // A session that moved to the top between pages comes again.
         let seen = Set(all.sessions.map(\.id))
         all.sessions += page.sessions.filter { !seen.contains($0.id) }
         (all.more, all.problem, all.looked) = (page.more, page.problem, all.looked + page.looked)
@@ -47,14 +35,13 @@ public struct ClosedList: Sendable, Equatable {
         agents[agent] = all
     }
 
-    /// The sessions of the `shown` agents, newest first, down to where every one with more pages has been read: an
-    /// agent's next page may hold newer ones than another's last.
+    /// Down to where every agent with more pages has been read: an agent's next page may hold newer ones than
+    /// another's last.
     public func sessions(of shown: [String]) -> [ClosedSession] {
         let cutoff = cutoff(shown) ?? .distantPast
         return shown.flatMap { agents[$0]?.sessions ?? [] }.filter { $0.date >= cutoff }.sorted { $0.date > $1.date }
     }
 
-    /// The agents whose next page the list's end needs: those read least far back.
     public func next(of shown: [String]) -> [String] {
         let cutoff = cutoff(shown)
         return shown.filter { agents[$0]?.more == true && agents[$0]?.oldest == cutoff }
@@ -65,14 +52,10 @@ public struct ClosedList: Sendable, Equatable {
     }
 }
 
-/// One script per agent, one process for a page, never one per session file (a process costs about 20 ms on a Mac with
-/// endpoint security). `$1` how many sessions with a prompt a page holds (the perl readers look at `files` at
-/// most, so a store of left-out runs still answers within the read's 10 s), `$2` how many newer ones to skip, `$3` the
-/// perl prelude. Each prints a JSON line per session it looked at, `{"t": seconds, "v": value, "c": folder, "n":
-/// title}`, with an empty title for one with no prompt (left out here, but counted, so a page of noise still has a next
-/// one). pi and Claude Code keep a JSONL file a session, newest by its modification time; their strings are cut from
-/// the JSON as they are (still escaped), so perl decodes nothing. Codex and OpenCode keep an SQLite index, sorted on
-/// its own index. Only reads.
+/// One process per page, never one per session file: a process costs about 20 ms on a Mac with endpoint security.
+/// The perl readers look at `files` at most, so a store of left-out runs still answers within the read's 10 s. A
+/// session with no prompt prints an empty title and is counted, so a page of noise still has a next one. pi and
+/// Claude Code keep a JSONL file a session, newest by its modification time; Codex and OpenCode keep an SQLite index.
 /// ponytail: pages are offsets into lists that change while the shelf is open: a session that moves to the top shifts
 /// the next page (`ClosedList.add` drops the repeat), and one deleted between pages hides one row until a new open.
 enum ClosedSessions {
@@ -107,7 +90,7 @@ enum ClosedSessions {
         """#,
         // The id is the file's name; the folder and the first typed prompt (not its commands' wrappers, which start
         // with `<`) in the first 100 lines; the title the last `/rename`, else Claude Code's own, else the prompt. Left
-        // out: the Agent SDK's sessions, as Codex's exec runs.
+        // out: the Agent SDK's sessions.
         "claude": #"""
         exec perl -e "$3"'
         for (newest($ARGV[1], glob("$ENV{HOME}/.claude/projects/*/*.jsonl"))) { my ($p, $m) = @$_;
@@ -154,10 +137,8 @@ enum ClosedSessions {
         """#,
     ]
 
-    /// The files a page of a perl reader looks at, at most.
     static let files = 2000
 
-    /// The page in a script's output: `limit` sessions with a prompt, or `files` looked at, means there may be more.
     static func parse(agent: String, _ text: String, limit: Int) -> ClosedPage {
         var page = ClosedPage()
         let lines = text.split(separator: "\n")
@@ -183,6 +164,10 @@ enum ClosedSessions {
         return page
     }
 
+    static func home(_ argument: Int) -> String {
+        "[ -z \"$\(argument)\" ] || { HOME=$\(argument); unset XDG_DATA_HOME; }"
+    }
+
     static func clean(_ text: String) -> String? {
         let line = text.map { $0.isNewline || $0 == "\t" ? " " : $0 }.filter { !$0.isControl }
         // A 300-byte cut can end inside a character.
@@ -192,16 +177,12 @@ enum ClosedSessions {
 }
 
 public extension Exec {
-    /// A page of an agent's sessions, newest first, from its own store on the machine: `limit` of them after the
-    /// `offset` newest. Empty when the agent has no store there. Throws when the machine did not answer in 10 s.
-    /// `home`: the stores' home folder, for UI tests (never the user's).
     func closedSessions(agent: String, offset: Int, limit: Int = 50, home: String? = nil) async throws -> ClosedPage {
         guard let script = ClosedSessions.scripts[agent] else { return ClosedPage() }
-        let reset = "[ -z \"$4\" ] || { HOME=$4; unset XDG_DATA_HOME; }"
         let text = try await checkedOutput([
             "sh",
             "-c",
-            "{ \(reset)\n\(script)\n} 2>/dev/null",
+            "{ \(ClosedSessions.home(4))\n\(script)\n} 2>/dev/null",
             "sh",
             "\(limit)",
             "\(offset)",
@@ -209,5 +190,72 @@ public extension Exec {
             home ?? "",
         ])
         return ClosedSessions.parse(agent: agent, text, limit: limit)
+    }
+}
+
+/// Claude Code keeps a session's title in its transcript (`ai-title` lines it writes itself, `custom-title` from
+/// `/rename`), Codex in `~/.codex/session_index.jsonl` (`thread_name`), pi in its session file (`session_info` from
+/// `/name`; pi names no session itself), OpenCode in its database (`session.title`, the same as its server's). With
+/// no title yet, the first typed prompt: Claude Code's and pi's from their files' first lines, Codex's from its state
+/// database's `preview`; OpenCode titles its own sessions.
+enum SessionTitle {
+    static let scripts = [
+        // The prompt's lines only with no title line: a transcript's first user lines can be long.
+        "claude": #"f=$(ls "$HOME"/.claude/projects/*/"$1".jsonl | head -n 1); "#
+            + #"t=$(grep -a '"type":"custom-title"' "$f" | tail -n 1; grep -a '"type":"ai-title"' "$f" | tail -n 1); "#
+            + #"if [ -n "$t" ]; then printf '%s\n' "$t"; else head -n 100 "$f" | grep -a '"type":"user"' | "#
+            + #"grep -av '"tool_result"' | head -n 10; fi"#,
+        "codex": #"t=$(grep -a -F "\"id\":\"$1\"" "$HOME/.codex/session_index.jsonl" | tail -n 1); "#
+            + #"if [ -n "$t" ]; then printf '%s\n' "$t"; else d=$(ls -t "$HOME"/.codex/state_*.sqlite | head -n 1); "#
+            + #"[ -n "$d" ] && sqlite3 -readonly -cmd '.timeout 1000' "$d" "#
+            + #""select json_object('prompt', substr(preview, 1, 300)) from threads where id = '$1'"; fi"#,
+        "pi": #"t=$(grep -a '"type":"session_info"' "$1" | tail -n 1); if [ -n "$t" ]; then printf '%s\n' "$t"; "#
+            + #"else head -n 40 "$1" | grep -a '"role":"user"' | head -n 1; fi"#,
+        "opencode": #"sqlite3 -readonly -cmd '.timeout 1000' "${XDG_DATA_HOME:-$HOME/.local/share}/opencode/"#
+            + #"opencode.db" "select title from session where id = '$1'""#,
+    ]
+
+    static func parse(agent: String, _ text: String) -> String? {
+        let lines = text.split(separator: "\n").map(String.init)
+        if agent == "opencode" {
+            return lines.first.flatMap { $0.hasPrefix("New session - ") || $0.hasPrefix("Child session - ") ? nil : $0 }
+                .flatMap(ClosedSessions.clean)
+        }
+        let objects = lines.compactMap { try? JSONSerialization.jsonObject(with: Data($0.utf8)) as? [String: Any] }
+        let title = objects.lazy.compactMap { object in
+            ["customTitle", "aiTitle", "thread_name", "name"].lazy.compactMap { object[$0] as? String }.first
+                .flatMap(ClosedSessions.clean)
+        }.first
+        return title ?? objects.lazy.compactMap(prompt).compactMap(ClosedSessions.clean).first.map { prompt in
+            prompt.count > 100 ? prompt.prefix(100).trimmingCharacters(in: .whitespaces) + "…" : prompt
+        }
+    }
+
+    /// Not Claude Code's meta lines or its commands' wrappers, which start with `<`.
+    private static func prompt(_ object: [String: Any]) -> String? {
+        if let preview = object["prompt"] as? String {
+            return preview
+        }
+        guard let message = object["message"] as? [String: Any], message["role"] as? String == "user",
+              object["isMeta"] as? Bool != true else { return nil }
+        let content = message["content"]
+        let text = content as? String
+            ?? (content as? [[String: Any]])?.first { $0["type"] as? String == "text" }?["text"] as? String
+        return text.flatMap { $0.hasPrefix("<") ? nil : $0 }
+    }
+}
+
+public extension Exec {
+    func sessionTitle(agent: String, session: String, home: String? = nil) async -> String? {
+        // pi's is a file; the others' ids go into OpenCode's SQL and Claude Code's file name: letters, digits, `-` and
+        // `_` only.
+        let plain = session.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber || "-_".contains($0)) }
+        let id = !session.isEmpty && plain
+        guard let script = SessionTitle.scripts[agent], agent == "pi" ? session.hasPrefix("/") : id else { return nil }
+        let text = try? await output(
+            ["sh", "-c", "{ \(ClosedSessions.home(2)); \(script); } 2>/dev/null", "sh", session, home ?? ""],
+            timeout: .seconds(5),
+        )
+        return SessionTitle.parse(agent: agent, text ?? "")
     }
 }

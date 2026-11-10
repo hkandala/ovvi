@@ -19,7 +19,8 @@ every command except `status`, which the script answers from herdr alone.
   wants the short name adds
   `export PATH="$HOME/.cache/ovvi/bin:$PATH"` to their shell.
 - No file means that no Ovvi ever opened a session on this machine.
-- It needs `sh`, `sed`, `date`, `mv`, `head`, `tail`, `tr`, `uuidgen` or
+- It needs `sh`, `sed`, `date`, `mv`, `rm`, `cat`, `mkdir`, `head`, `tail`,
+  `tr`, a `sleep` that takes fractions of a second, `uuidgen` or
   `/proc/sys/kernel/random/uuid`, and herdr at `$HERDR_BIN_PATH` (herdr sets
   it in each pane) or on `PATH`.
 
@@ -35,7 +36,7 @@ ovvi [--pane <pane>] [--timeout <seconds>] <command> [<args>] [--json]
 - `--timeout` is how long the command waits for Ovvi's answer once Ovvi
   took the request, in whole seconds. The default is 10. Give `plugins new`,
   `reload` and `install` a longer one (they install and build), and `chat`
-  20 s.
+  40 s.
 - `--pane` and `--timeout` go before the command. After the command, an
   option belongs to that command (`notify --pane`).
 - `--json` prints one JSON value on standard output, also for an error. It
@@ -273,9 +274,7 @@ ovvi open explorer . --float                      # a file tree in a floating wi
 ```
 
 - **Kind or path.** A first word that is a kind's id (from `ovvi plugins`)
-  is the kind. The words of the kinds before the plugins (`file`, `preview`,
-  `markdown`, `files`, `diff`) open File Explorer or Git, as labels do. A
-  path with the same name as a kind is written `./name`. A word that is not a
+  is the kind. A path with the same name as a kind is written `./name`. A word that is not a
   kind, with more words after it, is `plugin_not_found`.
 - **A path or URL alone** opens with its default plugin, by the order of
   `ovvi plugins --for`. An `http` or `https` URL opens with a plugin whose
@@ -376,9 +375,8 @@ $ ovvi card w1:p3 --json
 ```
 
 - `kind` is a browser or plugin id, `terminal` or `agent`. An agent card adds
-  `"agent": "claude"` and `"chat": true` when it shows the chat view. An agent
-  that has the chat view also has `"view"`: `"chat"` or `"tui"`, the card's
-  Chat | TUI switch.
+  `"agent"` (for example `"claude"`). An agent that has the chat view also
+  has `"view"`: `"chat"` or `"tui"`, the card's Chat | TUI switch.
 - `arg` is the label's argument. For a terminal or an agent, it is the
   folder.
 - `title` is the card's title
@@ -413,7 +411,8 @@ $ ovvi notify "Review ready" --pane w2:p1
 ```
 
 - The title is the agent's title, the body its body, and the subtitle
-  "‹agent› · ‹session›".
+  "‹agent› · ‹session›" (on a remote machine "‹agent› · ‹machine›", or
+  "‹agent› · ‹machine› · ‹session›" for a session other than `default`).
 - A click brings Ovvi to the front and shows the pane: the asking pane, or
   `--pane`'s. Showing it there is the user's own action.
 - One per asking pane every 10 s, whatever `--pane` names: a second is

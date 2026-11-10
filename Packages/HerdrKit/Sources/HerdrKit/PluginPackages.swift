@@ -1,8 +1,5 @@
 import Foundation
 
-/// A plugin package's source in `settings.json`'s `packages`, as pi's (plugins/packages):
-/// `npm:<spec>` (`npm:@scope/name@1.2.0`), `git:<repository>[@ref]` (`git:github.com/x/y@v1`, also a URL or a local
-/// repository's path), or a local path, which loads in place and is never installed or changed.
 public enum PluginSource: Equatable, Sendable {
     case npm(String)
     case git(url: String, ref: String?)
@@ -36,16 +33,13 @@ public enum PluginSource: Equatable, Sendable {
         }
     }
 
-    /// The folder in the plugins folder an npm or git source installs into: the package's or the repository's last
-    /// name (a tarball's file name). Nil for a local path.
     public var folder: String? {
         let name: Substring
         switch self {
         case let .npm(spec):
             // A tarball's path, `@scope/name@range` or `name@range`.
             let path = ["/", ".", "~"].contains(spec.prefix(1)) || spec.hasPrefix("file:")
-            let bare = path ? Substring(spec)
-                : spec.dropFirst().split(separator: "@", maxSplits: 1).first.map { spec.prefix(1) + $0 } ?? ""
+            let bare = path ? Substring(spec) : spec.prefix(1) + spec.dropFirst().prefix { $0 != "@" }
             name = (bare.split(separator: "/").last ?? "").replacing(/\.(tgz|tar\.gz)$/, with: "")
         case let .git(url, _):
             name = (url.split(separator: "/").last ?? "").replacing(/\.git$/, with: "")
@@ -56,11 +50,8 @@ public enum PluginSource: Equatable, Sendable {
     }
 }
 
-/// Install, update and remove of plugin packages from npm and git into the plugins folder, with the npm, pnpm or bun
-/// on the login `PATH` (the app ships no package manager), and the `packages` list of `settings.json`.
 public enum PluginPackages {
-    /// A package fetched into a folder of its own in the plugins folder, its manifest read before any of its code or
-    /// scripts ran: the trust prompt shows it, then `finish` or `discard`.
+    /// Its manifest is read ahead of any of its code or scripts: the trust prompt shows it, then `finish` or `discard`.
     public struct Staged: Sendable {
         public let source: PluginSource
         public let manifest: PluginManifest
@@ -68,10 +59,10 @@ public enum PluginPackages {
         let staging: URL
     }
 
-    /// Fetches an npm or git source: `npm pack` and its tarball unpacked, or a clone at the ref. No scripts run.
+    /// No scripts run.
     public static func fetch(_ source: PluginSource, into plugins: URL, exec: any Exec) async throws -> Staged {
         guard source.folder != nil else { throw HerdrError.failed("A local path is not installed") }
-        let staging = plugins.appending(path: ".install-\(UUID().uuidString)")
+        let staging = staging(in: plugins)
         let folder = staging.appending(path: "package")
         try FileManager.default.createDirectory(at: staging, withIntermediateDirectories: true)
         do {
@@ -109,9 +100,7 @@ public enum PluginPackages {
         }
     }
 
-    /// Installs its dependencies, builds it when it has a `build` script and no built entry yet (a published package
-    /// ships its build), and puts it in place as the source's folder, over an older install. Its path, and what the
-    /// package manager printed.
+    /// Builds it only with no built entry yet: a published package ships its build.
     public static func finish(_ staged: Staged, into plugins: URL, exec: any Exec) async throws
         -> (folder: URL, output: String)
     {
@@ -126,7 +115,6 @@ public enum PluginPackages {
         return (target, output)
     }
 
-    /// Moves a folder over `target`; the old one waits in `staging` until the move worked, else it goes back.
     public static func place(_ folder: URL, at target: URL, keeping staging: URL) throws {
         let files = FileManager.default, old = staging.appending(path: "old"),
             had = files.fileExists(atPath: target.path)
@@ -143,11 +131,16 @@ public enum PluginPackages {
         }
     }
 
+    public static func staging(in plugins: URL) -> URL {
+        plugins.appending(path: stagingPrefix + UUID().uuidString)
+    }
+
+    public static let stagingPrefix = ".install-"
+
     public static func discard(_ staged: Staged) {
         try? FileManager.default.removeItem(at: staged.staging)
     }
 
-    /// No npm, pnpm or bun on the login `PATH`: a plugin's card says to install Node.js.
     public struct NoManager: LocalizedError {
         public var errorDescription: String? {
             "Ovvi installs and builds plugins with npm, pnpm or bun, and none is on your PATH. Install Node.js from "
@@ -155,10 +148,8 @@ public enum PluginPackages {
         }
     }
 
-    /// The package's `dependencies` and `devDependencies` in its own `node_modules`, from its lockfile when it has
-    /// one. No install scripts run, and no peer dependencies install: `@ovvi/plugin-api` is the app's. What the
-    /// manager printed; empty with no dependencies.
-    public static func dependencies(_ folder: URL, exec: any Exec) async throws -> String {
+    /// No install scripts run, and no peer dependencies install: `@ovvi/plugin-api` is the app's.
+    static func dependencies(_ folder: URL, exec: any Exec) async throws -> String {
         let json = package(folder)
         guard ["dependencies", "devDependencies"].contains(where: { !((json[$0] as? [String: Any]) ?? [:]).isEmpty })
         else { return "" }
@@ -173,7 +164,10 @@ public enum PluginPackages {
         return try await run(argv, in: folder, exec: exec)
     }
 
-    /// The package's own `build` script, as its author runs it: what it printed; nil when it has none.
+    public static func prepare(_ folder: URL, exec: any Exec) async throws -> String {
+        try await dependencies(folder, exec: exec) + (build(folder, exec: exec) ?? "")
+    }
+
     public static func build(_ folder: URL, exec: any Exec) async throws -> String? {
         guard builds(folder) else { return nil }
         // `--silent`: the script's own lines, not the manager's banner, head an error.
@@ -196,8 +190,6 @@ public enum PluginPackages {
         (package(folder)["scripts"] as? [String: Any])?["build"] is String
     }
 
-    /// The manager of the package's lockfile, else the first of npm, pnpm and bun on the `PATH`; `frozen` when it
-    /// is the lockfile's.
     static func manager(_ folder: URL, exec: any Exec) async throws -> (name: String, frozen: Bool) {
         let has = { (name: String) in FileManager.default.fileExists(atPath: folder.appending(path: name).path) }
         let locked = has("package-lock.json") ? "npm" : has("pnpm-lock.yaml") ? "pnpm"
@@ -210,7 +202,6 @@ public enum PluginPackages {
         throw NoManager()
     }
 
-    /// Runs argv in the folder, its stderr with its stdout: the output, or an error with its last lines.
     static func run(_ argv: [String], in folder: URL, exec: any Exec) async throws -> String {
         let channel = try await exec.run(["sh", "-c", #"cd "$1" && shift && exec "$@" 2>&1"#, "sh", folder.path] + argv)
         channel.closeInput()
@@ -236,15 +227,12 @@ public enum PluginPackages {
 
     // MARK: settings.json
 
-    /// A list of `settings.json`: the `packages`, strings or objects with their `source` (pi's form); or
-    /// `hideInNewPane`, the ids of the plugins the New Pane chooser leaves out.
     public static func sources(_ settings: URL, key: String = "packages") -> [String] {
         ((try? read(settings))?[key] as? [Any] ?? []).compactMap {
             $0 as? String ?? ($0 as? [String: Any])?["source"] as? String
         }
     }
 
-    /// Adds the entry (a source, or a plugin's id) to the list (once), or takes it out; the file's other keys stay.
     public static func list(_ source: String, in settings: URL, add: Bool, key: String = "packages") throws {
         var json = try read(settings)
         var packages = (json[key] as? [Any] ?? []).filter {
@@ -257,13 +245,10 @@ public enum PluginPackages {
         try write(json, to: settings)
     }
 
-    /// A plugin's values in `settings.json`'s `plugins` (plugins/manifest#settings), by setting id.
     public static func values(of id: String, in settings: URL) -> [String: Any] {
         ((try? read(settings))?["plugins"] as? [String: Any])?[id] as? [String: Any] ?? [:]
     }
 
-    /// Sets a plugin's value, or takes it out (nil); with no setting, takes out all of the plugin's values. An empty
-    /// object goes too. The file's other keys stay.
     public static func store(_ value: Any?, _ setting: String?, of id: String, in settings: URL) throws {
         var json = try read(settings), plugins = json["plugins"] as? [String: Any] ?? [:]
         var values = setting == nil ? [:] : plugins[id] as? [String: Any] ?? [:]
@@ -283,8 +268,7 @@ public enum PluginPackages {
             .write(to: settings, options: .atomic)
     }
 
-    /// The file's keys; none while it is missing. A file there that is no JSON object throws, so a write never
-    /// replaces a hand edit with a typo in it.
+    /// A file there that is no JSON object throws, so a write never replaces a hand edit with a typo in it.
     private static func read(_ settings: URL) throws -> [String: Any] {
         guard let data = try? Data(contentsOf: settings) else { return [:] }
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {

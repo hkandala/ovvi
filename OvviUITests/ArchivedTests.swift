@@ -1,14 +1,7 @@
 import XCTest
 
-/// The sidebar's Archived Sessions (ui/window#archived-sessions): the closed sessions in the agents' stores of a
-/// fixture home (`OvviUITests.archivedHome`), never the user's.
 extension OvviUITests {
-    /// The home folder whose agents' stores the Archived shelf reads (`-archivedHome`).
-    static let archivedHome = "/tmp/ovvi-e2e-archived"
-
-    /// Newest first with the title and folder, the agent menu, then Resume: the agent's resume line in a new workspace
-    /// in the session's folder (no workspace holds it). The resume only past a check for Claude Code: the new pane's
-    /// shell would start the real one.
+    /// The resume only past a check for Claude Code: the new pane's shell would start the real one.
     func testArchivedListsClosedSessionsFiltersAndResumes() async throws {
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
         let id = UUID().uuidString.lowercased()
@@ -30,8 +23,6 @@ extension OvviUITests {
         try await resumes(first, id, in: folder, shell)
     }
 
-    /// Many sessions: the open shelf builds only the rows in view, and reads an agent's next page (pi's 51st to 55th
-    /// sessions, the oldest) once its end scrolls into view.
     func testArchivedReadsTheNextPageAtItsEnd() async throws {
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
         try await writePages()
@@ -49,8 +40,6 @@ extension OvviUITests {
         }, "the 55th session never came")
     }
 
-    /// A search reads the older pages by itself, then says nothing matched, never the endless loader. Esc folds the
-    /// shelf and gives the keyboard to the pane.
     func testArchivedSearchSaysWhenNothingMatchesAndEscReturnsToThePane() async throws {
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
         let (tab, shell) = try await writePages()
@@ -66,14 +55,12 @@ extension OvviUITests {
         keepScreenshot("archived search, no match")
         search.typeKey("a", modifierFlags: .command)
         search.typeText("Page 55")
-        // The 55th session, the oldest, on the second page.
         XCTAssertTrue(element("agents.archived.pi.page-55.jsonl").exists(within: 10))
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(element("agents.shelf.Archived Sessions").has(\.stringValue, "collapsed", within: 2))
         XCTAssertTrue(hasKeyboard(element("terminal.\(shell)")))
     }
 
-    /// 55 pi sessions, an hour apart, "Page 1" the newest; the tab and shell that wrote them.
     @discardableResult
     func writePages() async throws -> (tab: String, shell: String) {
         let (tab, shell) = try await newTab("archived-pages")
@@ -89,15 +76,12 @@ extension OvviUITests {
         return (tab, shell)
     }
 
-    /// An agent that does not answer holds the others back 2 s at most: their rows show, then its own line with Retry
-    /// once its 10 s run out.
     func testArchivedShowsTheOthersPastAStuckAgent() async throws {
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
         try await writeStuckStores()
         showsTheOthersPastAStuckAgent(on: "This Mac")
     }
 
-    /// A pi session, and a FIFO in Claude Code's store, whose open never returns.
     func writeStuckStores() async throws {
         let (_, shell) = try await newTab("archived-stuck")
         try await waitForPrompt(shell)
@@ -111,9 +95,7 @@ extension OvviUITests {
         try await waitFor(shell) { $0.contains("ready-42") }
     }
 
-    /// The loader, the rows and the failure in one height: the shelf's header holds still.
     func showsTheOthersPastAStuckAgent(on machine: String) {
-        // Taken under the loader, while Claude Code and pi read.
         let shelf = openArchived(), top = shelf.frame.minY, window = app.windows.firstMatch
         let row = element("agents.archived.pi.stuck.jsonl")
         let failure = window.staticTexts["Could not read Claude Code sessions on \(machine)."]
@@ -127,8 +109,6 @@ extension OvviUITests {
         keepScreenshot("archived stuck agent")
     }
 
-    /// Opens Archived Sessions at the sidebar's foot, showing all agents, read anew (one left open read before the
-    /// test's stores); folded again after the test.
     @discardableResult
     func openArchived() -> XCUIElement {
         let shelf = element("agents.shelf.Archived Sessions")
@@ -138,7 +118,6 @@ extension OvviUITests {
             XCTAssertTrue(shelf.has(\.stringValue, "collapsed", within: 2))
         }
         shelf.click()
-        // Opened, its search field takes the keyboard.
         XCTAssertTrue(hasKeyboard("agents.archived.search"))
         addTeardownBlock { @MainActor [self] in
             let shelf = element("agents.shelf.Archived Sessions")
@@ -147,7 +126,7 @@ extension OvviUITests {
             }
         }
         XCTAssertTrue(shelf.has(\.stringValue, "expanded", within: 2))
-        // A run that stopped in the middle left another agent picked.
+        // A run that stops midway leaves another agent picked.
         let menu = element("agents.archived.filter")
         if menu.value as? String != "All Agents" {
             menu.click()
@@ -202,22 +181,12 @@ extension OvviUITests {
         try await waitFor(shell) { $0.contains("ready-42") }
     }
 
-    /// A click on Claude Code's row types its resume line in a new workspace in the folder. Not where the new pane's
-    /// shell would start a real Claude Code (this Mac); CI's is the stand-in (`OvviUITests.agents`), which only exits.
+    /// Not where the new pane's shell would start a real Claude Code; CI's is the stand-in, which only exits.
     private func resumes(_ row: XCUIElement, _ id: String, in folder: String, _ pane: String) async throws {
-        try await send(
-            "case $(command -v claude) in \(Self.agents)/*) echo stand-$((6*7));; *) echo real-$((6*7));; "
-                + "esac\r",
-            to: pane,
-        )
-        try await waitFor(pane) { $0.contains("\nstand-42") || $0.contains("\nreal-42") }
-        if try await read(pane).contains("\nreal-42") {
-            throw XCTSkip("this Mac has claude, which the resume would start")
-        }
+        try await skipIfThisMacHasClaude(pane, "the resume would start")
         let before = try await workspaceIDs()
         closeNew("workspace", besides: before)
         row.click()
-        // Out of Archived while it starts: a second click cannot start it twice.
         XCTAssertTrue(row.vanishes(within: 2))
         var resumed: String?
         try await expect("a new workspace in the folder") {
@@ -229,7 +198,6 @@ extension OvviUITests {
         }
         // Wrapped at the pane's width.
         try await waitFor(XCTUnwrap(resumed), toShow: "claude --resume \(id)")
-        // The stand-in exits, or the shell has no claude: the session is closed again, back in Archived.
         XCTAssertTrue(row.exists(within: 15))
     }
 }

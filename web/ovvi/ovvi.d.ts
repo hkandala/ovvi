@@ -1,10 +1,8 @@
-// The plugin API, version 3 (plugins/api): the object a plugin's entry gets. The app ships it as the host
+// The plugin API, version 3: the object a plugin's entry gets. The app ships it as the host
 // types package `@ovvi/plugin-api`; a plugin lists that in `peerDependencies` as "*" and imports only its types:
 //
 //   import type { Ovvi } from "@ovvi/plugin-api"
 //   export default async function main(ovvi: Ovvi) { … }
-//
-// A member added after version 1 says `@since <api>`.
 
 export interface Ovvi {
   /** The API version the app gives this page: the manifest's `api`. */
@@ -15,9 +13,7 @@ export interface Ovvi {
   readonly state: State
   readonly controls: Controls
   readonly theme: Theme
-  /** @since 2 */
   readonly pages: Pages
-  /** @since 3 */
   readonly settings: Settings
   readonly clipboard: { write(text: string): Promise<void> }
   /** The native context menu at the pointer. Resolves with the picked item's value, or undefined. */
@@ -36,7 +32,7 @@ export interface Ovvi {
     plugin?: string
     how?: "card" | "tab" | "side"
     at?: string
-    /** @since 2. A new tab or pane opens behind: the selected tab and the keyboard stay where they are (a ⌘- or
+    /** A new tab or pane opens behind: the selected tab and the keyboard stay where they are (a ⌘- or
      *  ⌥-click). */
     background?: boolean
   }): Promise<void>
@@ -58,7 +54,7 @@ export interface Ovvi {
   on(event: "save" | "find" | "findNext" | "findPrevious", fn: () => void): Off
   on(event: "visible" | "keyboard", fn: (yes: boolean) => void): Off
   on(event: "theme", fn: (theme: Theme) => void): Off
-  /** @since 3. The user changed settings of this plugin on its page in Settings: the new values by id. Every open card
+  /** The user changed settings of this plugin on its page in Settings: the new values by id. Every open card
    *  of the plugin hears it, hidden ones too. */
   on(event: "settings", fn: (changed: Record<string, SettingValue>) => void): Off
 }
@@ -66,7 +62,7 @@ export interface Ovvi {
 /** A toggle's value is a boolean, a number's a number, a choice's, a text's and a path's a string. */
 export type SettingValue = boolean | number | string
 
-/** @since 3. The values of the manifest's `settings`, which the user sets on the plugin's page in Settings. Read only:
+/** The values of the manifest's `settings`, which the user sets on the plugin's page in Settings. Read only:
  *  a card keeps its own choices in `state`. */
 export interface Settings {
   /** The value the user set, else the manifest's default. There at the page's first load, with no wait. */
@@ -78,27 +74,27 @@ export interface Settings {
 /** Stops the handler or the watch. Every one ends with the page. */
 export type Off = () => void
 
-/** @since 2. A card of many places draws each in a page of its own, and keeps the last five pages it showed, hidden,
+/** A card of many places draws each in a page of its own, and keeps the last five pages it showed, hidden,
  *  so Back and Forward show a place at once, as the user left it: its scroll, its open rows, its header controls. */
 export interface Pages {
-  /** Draws the card's places from now on, its place now: resolves once that page shows. A move to a place with a kept
-   *  page shows that page at once; to another place, `draw` fills a new page, which shows when its promise ends, and
-   *  the page before stays until then. A page left with unsaved edits is dropped. From then on ⌘← and ⌘→ go Back and
-   *  Forward (manifest `history`), before the page's own keys, unless a text field has the keyboard. */
+  /** Draws the card's places from this call on, starting with its current place: resolves once that page shows. A
+   *  move to a place with a kept page shows that page at once; to another place, `draw` fills a new page, which shows
+   *  when its promise ends, and the shown page stays until then. A page left with unsaved edits is dropped. From this
+   *  call on ⌘← and ⌘→ go Back and Forward (manifest `history`), ahead of the page's own keys, unless a text field has
+   *  the keyboard. */
   route(draw: (page: Page) => Promise<void>): Promise<void>
 }
 
-/** @since 2 */
 export interface Page {
   readonly arg: string
   /** The landing of the move that drew it. */
   readonly at?: string
   /** Over the whole card (`.ovvi-page`); hidden pages are `inert`. */
   readonly element: HTMLElement
-  /** The page's own `ovvi`: its `on` handlers run only while it shows (`theme` and `visible` always), its watches call
-   *  back while it shows (a change while hidden calls once when it shows again), its header controls apply while it
-   *  shows and come back when it shows again; all end when it drops. Its `place` fires when the card moves to this
-   *  page again (Back, Forward, the same place with a landing). */
+  /** The page's own `ovvi`: its `on` handlers run only while it shows (`theme`, `visible` and `settings` always), its
+   *  watches call back while it shows (a change while hidden calls once when it shows again), its header controls apply
+   *  while it shows and come back when it shows again; all end when it drops. Its `place` fires when the card moves to
+   *  this page again (Back, Forward, the same place with a landing). */
   readonly ovvi: Ovvi
   readonly shown: boolean
   /** Gone: work that ends after does nothing. */
@@ -144,10 +140,10 @@ export interface Files {
   /** Every file under the root, from it: the files git does not ignore in a repository, else every file, up to 8 MB
    *  of names. */
   paths(root: string): Promise<string[]>
-  /** Writes a new file beside the old one and moves it over. With `over`, fails with `changed` if the file's hash
+  /** Writes a new file beside the path and moves it over. With `over`, fails with `changed` if the file's hash
    *  differs. */
   write(path: string, data: string | Uint8Array, options?: { over?: string }): Promise<{ hash: string }>
-  /** @since 2. Renames or moves a file or a folder; never replaces: fails when something is at `to`. */
+  /** Renames or moves a file or a folder; never replaces: fails when something is at `to`. */
   move(path: string, to: string): Promise<void>
   /** Calls fn after a change under path, only while the card shows, and once on showing again. */
   watch(path: string, fn: () => void): Off
@@ -156,7 +152,8 @@ export interface Files {
 /** Writes run one at a time per card, and never ask for a password (they fail with git's message). */
 export interface Git {
   root(folder: string): Promise<string | null>
-  /** The changed files from the root, each untracked file on its own: the work tree's letter, else the index's. */
+  /** The changed files from the root, each untracked file on its own: the index's letter for a file it adds or
+   *  renames, else the work tree's, else the index's. */
   status(root: string): Promise<Change[]>
   /** The changes as the index keeps them: staged (the index against HEAD) and unstaged (untracked included). */
   changes(root: string): Promise<{ staged: Change[]; unstaged: Change[] }>
@@ -180,7 +177,7 @@ export interface Git {
   stage(root: string, paths?: string[]): Promise<void>
   unstage(root: string, paths?: string[]): Promise<void>
   /** The paths (literal) back as HEAD has them, in the index and the work tree; untracked ones are deleted. With a
-   *  tracked path it fails before the first commit. */
+   *  tracked path it fails in a repository with no commits. */
   revert(root: string, paths: string[]): Promise<void>
   commit(root: string, message: string): Promise<void>
   fetch(root: string): Promise<void>
@@ -194,7 +191,7 @@ export interface Git {
 }
 
 export interface Change {
-  /** M, A, D, R, C (a conflict), U (untracked); `status` also ? for untracked. */
+  /** M, T (the type changed), A, D, R, C (a conflict), U (untracked). */
   letter: string
   path: string
   oldPath?: string
@@ -219,7 +216,7 @@ export interface RunResult {
   stdout: string
   /** The last 8 KB. */
   stderr: string
-  /** stdout went past 4 MiB: the command was stopped there. */
+  /** stdout passed 4 MiB: the command stops there. */
   truncated: boolean
 }
 
@@ -238,7 +235,7 @@ export interface Controls {
   set(id: string, change: {
     value?: string | boolean | string[]
     title?: string
-    /** An SF Symbol: a button's or a toggle's icon, or drawn before a text's last part; "" clears. */
+    /** An SF Symbol: a button's or a toggle's icon, or drawn ahead of a text's last part; "" clears. */
     symbol?: string
     /** What VoiceOver reads, when not the title ("Push, 1 ahead"); "" clears. */
     label?: string

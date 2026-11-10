@@ -1,15 +1,10 @@
 import HerdrKit
-import IOKit.ps
 import SwiftUI
 
-/// The title row (D45): sidebar toggle, machine button, workspace button while the sidebar is collapsed, the tab
-/// bar, then the overview, ⌘ and +; in the overview only its ×.
 struct TitleBar: View {
-    /// Rex's bar; `WindowReader` centers the traffic lights on it.
     static let height: CGFloat = 46
 
-    /// Where the row starts: after the traffic lights (Rex's sidebar toggle is centered 82 pt right of the red
-    /// light's center); full screen has none.
+    /// Rex's sidebar toggle is centered 82 pt right of the red light's center.
     static func inset(fullScreen: Bool) -> CGFloat {
         fullScreen ? gap : 91
     }
@@ -18,14 +13,11 @@ struct TitleBar: View {
     let page: Page
     let fullScreen: Bool
     @Binding var sidebar: Bool
-    /// While the sidebar is open, the tabs start where the cards do, at its width.
     let sidebarWidth: CGFloat
     @Binding var palette: Bool
     @Binding var workspaceMenu: Bool
     @Binding var openSession: Bool
-    /// Where the workspace button starts in the window, for its menu.
     @Binding var workspaceButtonX: CGFloat
-    /// A pane dragged over the `+`.
     @State private var plus = false
     @Environment(\.look) private var look
 
@@ -35,9 +27,7 @@ struct TitleBar: View {
         }
         .underOverview(pages)
         .overlay(alignment: .trailing) {
-            // The overview (D70): the traffic lights and one × that leaves it.
             if pages.overview {
-                // ⌃⌘O is the menu's.
                 IconButton(symbol: "xmark", help: "Close Overview", key: .overview) { pages.toggleOverview() }
                     .accessibilityIdentifier("overview.close")
                     .underOverview(pages, own: true)
@@ -47,15 +37,12 @@ struct TitleBar: View {
         .padding(.trailing, gap)
         .frame(height: Self.height)
         .foregroundStyle(look.chrome)
-        // The title bar is hidden, so the row's empty space moves the window.
         .background { Color.clear.contentShape(.rect).gesture(WindowDragGesture()) }
     }
 
     @ViewBuilder private var row: some View {
         HStack(spacing: gap) {
-            // ⌃⌘S is the menu's.
-            // Its sidebar part filled while open; no highlight: the icon says open or closed.
-            // `rectangle.leftthird.inset.filled` alone drew too thin a bar at 13 pt to tell the two apart.
+            // `rectangle.leftthird.inset.filled` alone draws too thin a bar at 13 pt to tell open and closed apart.
             IconButton(symbol: "sidebar.left", help: "Toggle Sidebar", key: .toggleSidebar) { sidebar.toggle() }
                 .overlay {
                     if sidebar {
@@ -82,23 +69,18 @@ struct TitleBar: View {
            let workspace = page.selectedWorkspace
         {
             TabBar(workspace: workspace, page: page, plus: plus)
-                // Made anew per session: herdr's ids repeat across sessions ("w1:t1"), so a tab's announcement or
-                // rename, and the row's scroll, carried over to the other session's tab.
+                // Made anew per session: herdr's ids repeat across sessions ("w1:t1").
                 .id(page.id)
         } else {
             Spacer(minLength: 0)
         }
-        // ⌃⌘O is the menu's.
         IconButton(symbol: "square.grid.2x2", help: "Show Overview", key: .overview) { pages.toggleOverview() }
             .accessibilityIdentifier("titlebar.overview")
-        // ⌘K is the menu's.
         IconButton(symbol: "command", help: "Command Palette", key: .palette) { palette.toggle() }
             .accessibilityIdentifier("titlebar.palette")
-        // ⌘T is the menu's.
         IconButton(symbol: "plus", help: "New Tab", key: .newTab) { Task { await page.newTab() } }
-            .disabled(page.selectedWorkspace == nil)
+            .disabled(page.selectedWorkspace == nil || page.store.state != .live)
             .accessibilityIdentifier("titlebar.new-tab")
-            // Highlighted too: a full track has no room for the ghost capsule.
             .overlay {
                 if plus, page.dragging != nil {
                     DropIndicator(radius: 7)
@@ -111,19 +93,6 @@ struct TitleBar: View {
     }
 }
 
-/// This Mac's icon: a laptop when it has an internal battery (`hw.model` no longer says MacBook on M2 and later
-/// laptops).
-let thisMacIcon: String = {
-    guard let info = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
-          let sources = IOPSCopyPowerSourcesList(info)?.takeRetainedValue() as? [CFTypeRef]
-    else { return "desktopcomputer" }
-    let battery = sources.contains { source in
-        let description = IOPSGetPowerSourceDescription(info, source)?.takeUnretainedValue() as? [String: Any]
-        return description?[kIOPSTypeKey] as? String == kIOPSInternalBatteryType
-    }
-    return battery ? "laptopcomputer" : "desktopcomputer"
-}()
-
 private struct MachineButton: View {
     let pages: WindowPages
     @Binding var openSession: Bool
@@ -131,11 +100,9 @@ private struct MachineButton: View {
     var body: some View {
         let current = pages.machine
         Menu {
-            // Another machine shows in its own window: the one used last comes forward, else a new one opens; this
-            // one and its sessions stay. Picking the current machine does nothing.
-            // macOS 27 draws no images in these menus (an AppKit NSMenuItem.image does not show either); the icons
-            // are here for systems that do.
-            ForEach([Machine.thisMac] + MachineList.shared.list) { machine in
+            // macOS 27 draws no images in these menus (an AppKit NSMenuItem.image does not show either); the icons are
+            // here for systems that do.
+            ForEach(MachineList.shared.all) { machine in
                 Toggle(isOn: Binding { machine == current } set: { _ in
                     guard machine != current else { return }
                     if let window = WindowPages.windows.first(where: { $0.machine == machine }) {
@@ -146,10 +113,8 @@ private struct MachineButton: View {
                 }) { Label(machine.name, systemImage: machine.icon) }
             }
             Divider()
-            // The machine's other sessions, also from here (not found in a remote window).
             Button("Open Session…", systemImage: "plus.square.on.square") { openSession = true }
             Divider()
-            // Settings ▸ Machines, the one place that adds and edits machines.
             Button("Add Machine…", systemImage: "plus") {
                 SettingsRoute.shared.open(.machines, .machine(MachinePage.new))
             }
@@ -169,8 +134,6 @@ private struct MachineButton: View {
     }
 }
 
-/// While the sidebar is collapsed: "‹session› | ‹workspace›"; a click opens the workspace menu, and so does a pane
-/// or a tab held over it, whose rows then take the drop.
 private struct WorkspaceButton: View {
     let page: Page
     let workspace: String
@@ -183,13 +146,11 @@ private struct WorkspaceButton: View {
         Button { open.toggle() } label: {
             HStack(spacing: 6) {
                 Image(systemName: "folder").fontWeight(.medium)
-                // A long session name stops at 110 pt, so a long workspace name fades instead of hiding it.
                 Capped(width: 110) { Text(page.store.title).lineLimit(1) }.layoutPriority(1)
                 Rectangle().fill(look.divider).frame(width: 1, height: 12)
                 FadeText(text: Text(workspace)).foregroundStyle(look.selected)
                 Image(systemName: "chevron.down").font(.system(size: 8, weight: .bold))
             }
-            // Rex's session picker label.
             .fontWeight(.semibold)
             .padding(.horizontal, 8)
             .frame(height: 28)
@@ -213,8 +174,7 @@ private struct WorkspaceButton: View {
     }
 }
 
-/// Offers its view at most `width` and takes the view's own size, so short content hugs (a `frame(maxWidth:)` takes
-/// the whole offer).
+/// Offers its view at most `width` and takes the view's own size: a `frame(maxWidth:)` takes the whole offer.
 private struct Capped: Layout {
     let width: CGFloat
 
@@ -228,11 +188,8 @@ private struct Capped: Layout {
     }
 }
 
-/// The workspace button's menu: every workspace of every page of the window under its session's header, with
-/// its branch; a typed name that matches none to make in the page in view; New Space and Open Session under the
-/// scrolled rows. With the sidebar collapsed it is there, hidden, through every drag of the page in view, until a
-/// hold over the button opens it: macOS 27 finds no drop target added after the drag entered the window (the rows
-/// in view take drops).
+/// With the sidebar collapsed it is there, hidden, through every drag of the page in view, until a hold over the button
+/// opens it: macOS 27 finds no drop target added after the drag entered the window.
 struct WorkspaceMenu: View {
     let pages: WindowPages
     let page: Page
@@ -247,19 +204,16 @@ struct WorkspaceMenu: View {
             .padding(8)
             .frame(width: 300)
             .floatingGlass(in: .rect(cornerRadius: 12))
-            // It closes with the drag.
             .clearsDrop(page) { open = false }
     }
 
     private func items(_ filter: String) -> [FilterList.Item] {
         let workspaces = pages.list.flatMap { page in
             page.store.workspaces.filter { $0.label.matches(filter) }.map { workspace in
-                // Another page's workspace shows that page.
                 FilterList.Item(id: "\(page.id).\(workspace.id)",
                                 state: workspace.state,
                                 title: workspace.label,
                                 detail: workspace.git?.branch ?? "", section: page.id,
-                                // The page in view's drag: a pane or a tab goes there.
                                 drop: page === self.page ? MenuRowDrop.Target(
                                     page: page, destination: .newTab(workspaceID: workspace.id), shown: open,
                                 ) : nil, act: {

@@ -1,6 +1,5 @@
 import CoreGraphics
 
-/// One tab's split tree, as herdr stores it.
 public indirect enum SplitNode: Hashable, Sendable {
     case leaf(paneID: String)
     case split(Direction, ratio: Double, first: SplitNode, second: SplitNode)
@@ -33,7 +32,6 @@ public indirect enum SplitNode: Hashable, Sendable {
     }
 }
 
-/// The nested form `layout.export` returns.
 extension SplitNode: Decodable {
     private enum CodingKeys: String, CodingKey {
         case type, paneID = "pane_id", direction, ratio, first, second
@@ -55,7 +53,6 @@ extension SplitNode: Decodable {
 }
 
 public extension SplitNode {
-    /// The leaves, first to last (herdr's `panes[]` order).
     var paneIDs: [String] {
         switch self {
         case let .leaf(id): [id]
@@ -63,9 +60,8 @@ public extension SplitNode {
         }
     }
 
-    /// The moves that build the tree again in another tab once its first pane is there (herdr 0.9.5 moves no tab to
-    /// another workspace): each puts a pane beside one placed before, split that way at the split's ratio. Top down,
-    /// so the pane it goes beside holds the whole split's place then.
+    /// herdr 0.9.5 moves no tab to another workspace. Top down, so the pane each move goes beside holds the whole
+    /// split's place.
     var rebuild: [Move] {
         guard case let .split(direction, ratio, first, second) = self else { return [] }
         return [Move(paneID: second.paneIDs[0], beside: first.paneIDs[0], direction: direction, ratio: ratio)]
@@ -78,8 +74,7 @@ public extension SplitNode {
         public let ratio: Double
     }
 
-    /// The tree as herdr makes it when it splits the pane: the pane and the new one share its place (the new one
-    /// second, or first when `before`), then the run holding the new one evened out, as `HostStore.split` asks.
+    /// As herdr splits a pane: the pane and the new one share its place.
     func split(_ paneID: String, _ direction: Direction, new newID: String, before: Bool) -> SplitNode {
         let pair: (SplitNode, SplitNode) = before ? (.leaf(paneID: newID), .leaf(paneID: paneID))
             : (.leaf(paneID: paneID), .leaf(paneID: newID))
@@ -104,8 +99,7 @@ public extension SplitNode {
             : .split(direction, ratio: ratio, first: first.setting(new, at: rest), second: second)
     }
 
-    /// The tree without these panes: a split that loses one side becomes its other side, as herdr closes a pane. Nil
-    /// when none is left.
+    /// A split that loses one side becomes its other side, as herdr closes a pane.
     func removing(_ paneIDs: Set<String>) -> SplitNode? {
         switch self {
         case let .leaf(id): paneIDs.contains(id) ? nil : self
@@ -118,14 +112,11 @@ public extension SplitNode {
         }
     }
 
-    /// Equal splits, like Rex: the ratio changes that even out the run of same-direction splits holding the pane (all
-    /// runs when nil), so its n panes get 1/n each:
-    /// each split gets the units on its first side over the units under it, where a child split in the other
+    /// Each split gets the units on its first side over the units under it, where a child split in the other
     /// direction counts as one unit. Paths as `layout.set_split_ratio` takes them (`false` = first child).
     func evened(around paneID: String? = nil) -> [(path: [Bool], ratio: Double)] {
         guard let paneID else { return run([], whole: true) }
         guard let path = path(to: paneID), !path.isEmpty else { return [] }
-        // The pane's parent, then up while the parent splits the same way.
         var top = Array(path.dropLast())
         let direction = node(at: top)?.direction
         while !top.isEmpty, node(at: Array(top.dropLast()))?.direction == direction {
@@ -150,7 +141,6 @@ public extension SplitNode {
         }
     }
 
-    /// This split's run (its children that split the same way, and theirs), or every split below when `whole`.
     private func run(_ path: [Bool], whole: Bool) -> [(path: [Bool], ratio: Double)] {
         guard case let .split(direction, ratio, first, second) = self else { return [] }
         let even = Double(first.units(direction)) / Double(units(direction))
@@ -175,11 +165,7 @@ public extension SplitNode {
     }
 }
 
-/// ⌥⌘ arrows: the neighbor from the tree itself, no herdr call.
 public extension SplitNode {
-    /// The pane next to this one that way, as Ghostty and kitty pick it: of the panes along that edge, the one used
-    /// last (`used`, latest last), else the one sharing most of the edge, the top or left one on a tie. Nil at the
-    /// tab's edge.
     func neighbor(of paneID: String, _ heading: Heading, used: [String] = []) -> String? {
         let rects = rects(in: CGRect(x: 0, y: 0, width: 1, height: 1))
         guard let from = rects.first(where: { $0.id == paneID })?.rect else { return nil }

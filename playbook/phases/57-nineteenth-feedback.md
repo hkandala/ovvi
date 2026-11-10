@@ -1364,6 +1364,16 @@ you did, no need of reverting them".
     improvement, see if we can improve that" (Track T).
 67. "once all these are done invoke this skill https://github.com/caldoai/skills/blob/main/skills/untangle-codebase/SKILL.md
     and improve and clean" (Track O, after the rest of round 7).
+    Follow-up to item 67: "wait we can actually do land all the cleanup, but merge to main as one commit, so its easier
+    to revert. the comment cleanup is removal of comments right, not addition of comments? we should have few comments
+    that mention only on some assumptions or implicit things which cannot be changed. no mention of old code, or old
+    design etc, no backward compatibility shit, just the current code and clean, lets make sure we do run e2e and we are
+    confident that this will not break anything, get things reviewed etc, and once we have confidence, let's merge it as
+    one commit".
+    Then: "yep no backward compat code at all, we don't have any users yet, and we don't need all our old design and
+    compat code, cleanup all of that too". And, for a pass over the cleaned code: "Read this entire project and find
+    everything that’s broken, inconsistent, inefficient, or no longer needed. Fix what you’re sure about and list the
+    rest for me to review".
 68. "let's also plan on onboarding flow ... start with very brief intro of what ovvi is, how it works etc, then start
     with empty pane and split panes, then show about tabs and then show spaces, basically incrementally adding things
     ... mention about agent integrations and chat view, and after that show the default plugins like file explorer,
@@ -1596,12 +1606,6 @@ you did, no need of reverting them".
 - **Runs.** CI 42749499750: 10 chosen tests green (Archived search, stuck agent here and over the relay, filters,
   pages, dots, Recent, scroll into view, untitled agent, the session menu).
 - **Pictures**, before and after, dark and light: `~/Downloads/ovvi-research/p57b/r7b/index.html`.
-    Follow-up to item 67: "wait we can actually do land all the cleanup, but merge to main as one commit, so its easier
-    to revert. the comment cleanup is removal of comments right, not addition of comments? we should have few comments
-    that mention only on some assumptions or implicit things which cannot be changed. no mention of old code, or old
-    design etc, no backward compatibility shit, just the current code and clean, lets make sure we do run e2e and we are
-    confident that this will not break anything, get things reviewed etc, and once we have confidence, let's merge it as
-    one commit".
 76. "so we also have this report: file:///Users/hkandala/Downloads/ovvi-research/state-machines.html, let's address the
     8 bugs identified in it if they are still relevant, and also any minor fixes that have good impact but minimal
     changes, let's do fix all of them. provide this to cleanup agent itself, so it can work on it with its subagents,
@@ -1669,3 +1673,30 @@ you did, no need of reverting them".
   windows (the tests ignore saved state).
 - **Onboarding** is not on main yet: its first window must open after the app's appearance is set (Track Y).
 - **Pictures.** Launch frames and recordings: `~/Downloads/ovvi-research/p57t/r7b/index.html`.
+
+### Track O, round 7 (items 67, 76)
+
+- **What landed.** One commit, `refactor: untangle the codebase`: 60,588 → 55,584 lines (−5,004), comment lines 7,641
+  → 2,510. The untangle-codebase skill's audit (409 problems) became model code out of view files, `Window/` and
+  `Sidebar/` feature folders, one owner for each defaults key, path, token, agent list and constant, HerdrKit's run
+  helpers out of its client, shared test helpers and stand-ins. Comments stay only for facts the code cannot show.
+- **Compatibility removed** (no users yet): the old sidebar keys' cleanup, trust.json's old shape, the old float and
+  copy tokens (and migration.mdx), the old label words (`ovvi:files`, `ovvi:diff`, file/preview/markdown kinds),
+  Markdown's old modes, manifest `permissions`, the API's `@since` history, `ovvi card`'s old `chat` field.
+- **Bugs fixed, each with a test red on the old code:** a moved card's terminal or web view taken by a hidden page's
+  late host (blank card: the full-run flake of `testMoveToTabLandsBesideTheLastCard`); a close with no question
+  dismissing another close's dialog; a closed find bar's late read scrolling herdr's viewport; Find on a chat card;
+  a write clearing every notice, and a notice's 4 s holding its caller; Start's reason lost after 4 s and no Starting
+  progress; New Tab while a session is not live; a failed stream retrying up to 4×/s and blinking under
+  Reconnecting; the browser's stale error over a prompt, Reload off after a failed first load, the remote alias lost
+  by Not Now; a plugin toast that never settled after a failed Reload Plugin or a page reload; sh quoting of a `'`
+  with a combining mark; a browser state write after its pane closed or over a newer one; macOS auto-correct in the
+  explorer's find fields; the sidebar's scroll ask landing before its lazy row was built.
+- **State-machine report.** Of its 8 P1s, 7 were real and fixed by cause (no Phase or Halt enums: each fix is a guard
+  or one owned field); CH-1 was already covered by Track G's round 5. Triage:
+  `~/Downloads/ovvi-research/p57o/r7/state-machines-triage.md`.
+- **Decisions.** `make lint`'s grep is the one pattern-kill check (the pre-commit hook no longer has it). The
+  future-work pages stay (plans, not old designs). `-forceMotion` turns on every motion (test only).
+- **For the user.** `~/Downloads/ovvi-research/p57o/r7/for-the-user.md` (about 50 one-line items found and not
+  fixed); report `~/Downloads/ovvi-research/p57o/r7/report.md`. By hand: move a pane and a browser card to another
+  tab; drop a remote link while a card streams; Start a stopped session.

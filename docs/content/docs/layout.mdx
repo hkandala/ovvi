@@ -55,7 +55,8 @@ build(path) = split at path exists ? Split(dir, ratio, build(path+0), build(path
 - **Hit area.** Each split's 8 pt gap is its divider, with a 16 pt hit area
   centered on it and the column or row resize pointer. On hover, and while it
   is dragged, a grip shows: a 36 × 3 pt capsule (3 × 36 pt for a side-by-side
-  split) in the secondary color at 0.6 opacity (gorex's muted icon color). It
+  split) in the pane buttons' color (white 0.42 in dark, black 0.45 in light;
+  0.6 and 0.65 with Increase Contrast). It
   fades in over 0.2 s.
 - **Drag.** The split moves in the view at once. The app holds its own ratio
   for that split until herdr's snapshot shows a new ratio, herdr refuses the
@@ -98,21 +99,21 @@ In Glass the two are close: the keyboard card is only a little brighter.
   content (its host view, not an overlay, so card edges stay crisp) to 0.85
   (D66).
 - The card's accessibility value is "loading" until herdr's frames settle at the
-  card's size, and empty after.
+  card's size, "failed" while its stream is stopped, and empty otherwise.
 
 ## Layout motion
 
 - When the tree changes (a split, a close, a move, a ratio from herdr) or a
   card zooms or restores, the cards move and size over 0.13 s, ease-out (0.2 s
-  felt slow). A new card slides in from its side and fades in
+  feels slow). A new card slides in from its side and fades in
   over half the slide (0.06 s) as the others make room, its edge on theirs; a
   closed card fades away as the others grow (a scale would leave its terminal
   view at full size); a zoomed card grows to the full page and back while the
   others fade.
 - Each card and divider is placed in the page by the rectangle the tree
   gives it, and keeps its view (by pane id, or the split's path) whatever
-  the tree does. Nested stacks, one per split, made a new card for a pane
-  whose leaf became a split or whose sibling closed, so it jumped.
+  the tree does. Nested stacks, one per split, would make a new card for a
+  pane whose leaf becomes a split or whose sibling closes, so it would jump.
 - Core Animation moves the cards, in the render server: each card is its own
   hosting view, and its frame takes its new place at once while an animation
   of its layer goes from the old place to the new one. The main thread draws
@@ -163,7 +164,7 @@ herdr's focus methods (D13):
   tree at once, with no herdr call: of the cards along that edge,
   the one used last, else the one that shares most of the edge, the top (or
   left) one on a tie, as in Ghostty. So → then ← comes back to the same card.
-  herdr's `pane.neighbor` took a round trip per key and picked the card at
+  herdr's `pane.neighbor` takes a round trip per key and picks the card at
   the middle of the edge.
 - ⌘[ and ⌘] (Select Previous Pane, Select Next Pane): the previous and next
   card in the tree's order (left before right, top before bottom, as in
@@ -205,8 +206,8 @@ herdr's focus methods (D13):
 - The zoomed card takes the whole page; the other cards keep their
   rectangles, hidden under it. The same views stay in place, so no
   terminal view moves between hosts and no other PTY resizes. (Drawing the
-  zoomed card in a layer of its own moved its terminal view to a new host,
-  and SwiftUI did not give it back on restore.)
+  zoomed card in a layer of its own would move its terminal view to a new
+  host, and SwiftUI does not give it back on restore.)
 - herdr's `pane.zoom` is not used. It moves herdr's focus, marks the whole tab
   seen, and makes herdr refuse moves into or out of that tab.
 - If a herdr TUI user zoomed a tab, the app ignores that flag and draws the
@@ -267,8 +268,8 @@ herdr's focus methods (D13):
   - herdr's own `done` status is not used, because herdr goes straight to
     `idle` when a herdr TUI is already looking at that tab.
   - The first time the app sees an agent, it records the agent's current
-    `completion_seq` as seen, so old finishes do not flood the Agents
-    view or the notifications.
+    `completion_seq` as seen, so old finishes do not flood the sidebar
+    or the notifications.
   - Leaving the agent's pane records the current value. The pane looked at
     is the keyboard card on the page in view of the last key window, or a
     floating window's pane while that window was key last; the app going to

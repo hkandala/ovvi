@@ -3,16 +3,14 @@ import SwiftUI
 import WebKit
 
 extension Page {
-    /// A browser pane's card, made on first use.
     func browser(_ pane: HostStore.Pane) -> Browser? {
         guard let terminalID = pane.terminalID, let label = pane.browser else { return nil }
         return terminals.browser(pane, label, terminalID: terminalID, store: store)
     }
 
-    /// A browser pane's page: its title, else its host, else its address; nil before it has one. Builds no card:
-    /// menus ask for every tab's title.
+    /// Builds no card: menus ask for every tab's title.
     func browserTitle(_ pane: HostStore.Pane, _ label: PaneLabel) -> String? {
-        let browser = pane.terminalID.flatMap(terminals.built)
+        let browser = pane.terminalID.flatMap { terminals.browsers[$0] }
         let address = browser?.address ?? label.arg
         return browser.map(\.title).flatMap { $0.isEmpty ? nil : $0 } ?? URL(string: address)?.host
             ?? (address.isEmpty ? nil : address)
@@ -20,12 +18,10 @@ extension Page {
 }
 
 extension CommandList {
-    /// A browser card's (ui/browser#commands-on-a-browser-card), in the main and the floating windows. Open Location
-    /// edits a new pane's folder line too (ui/new-pane#the-folder).
     static func browser(_ browser: Browser?, chooser: Chooser?) -> [Command] {
         [
             Command(section: .view, title: "Reload Page", key: .init("r"), symbol: "arrow.clockwise",
-                    keywords: "refresh browser", enabled: browser?.loaded == true) { browser?.reload() },
+                    keywords: "refresh browser", enabled: browser?.canReload == true) { browser?.reload() },
             Command(section: .edit, title: "Open Location", key: .init("l"), symbol: "link",
                     keywords: "address url browser folder", enabled: browser != nil || chooser != nil,
                     action: {
@@ -42,7 +38,6 @@ extension CommandList {
 struct BrowserCard: View {
     let browser: Browser
     let page: Page
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.pageHidden) private var hidden
 
     var body: some View {
@@ -58,11 +53,9 @@ struct BrowserCard: View {
                         .frame(height: 2).scaleEffect(y: 0.5)
                 }
             }
-            // A click anywhere on the empty, error or loading card makes it the keyboard card, as one on a page
-            // does: the hidden web view takes no click.
+            // The hidden web view takes no click.
             .overlay {
                 if !shows {
-                    // Also on its buttons (Reload, Open).
                     cover.frame(maxWidth: .infinity, maxHeight: .infinity).contentShape(.rect)
                         .simultaneousGesture(TapGesture().onEnded {
                             page.tookKeyboard(browser.terminalID)
@@ -75,20 +68,20 @@ struct BrowserCard: View {
                     Popup(view: popup.view, title: popup.host, close: browser.closePopup).padding(24)
                 }
             }
-            // No fade over a picture: half way, both showed the card's fill through.
-            .animation(reduceMotion && !Animation.forceMotion || browser.view.shot.image != nil ? nil
+            // No fade over a picture: half way, both show the card's fill through.
+            .animation(Animation.reduced || browser.view.shot.image != nil ? nil
                 : .easeOut(duration: 0.15), value: browser.ready)
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("browser.\(browser.paneID).card")
     }
 
     @ViewBuilder private var cover: some View {
-        if let failure = browser.failure {
-            failed(failure.text, hint: failure.hint)
-        } else if let url = browser.asking {
+        // As Reload and Return: a page waiting for Open wins over an older failure.
+        if let url = browser.asking {
             Asking(browser: browser, url: url)
+        } else if let failure = browser.failure {
+            failed(failure.text, hint: failure.hint)
         } else if !browser.ready {
-            // A card made again (its old one dropped, ui/browser): its last picture until its page drew.
             if let picture = browser.view.shot.image, let pane = browser.store?.pane(browser.paneID) {
                 CardPicture(picture: picture, pane: pane)
             } else {
@@ -139,7 +132,6 @@ private struct Asking: View {
     }
 }
 
-/// A `window.open` page over the card; `window.close()`, Esc and the × close it.
 private struct Popup: View {
     let view: WKWebView
     let title: String
@@ -157,40 +149,10 @@ private struct Popup: View {
             .padding(.leading, 11).padding(.trailing, 6).frame(height: 32)
             WebHost(view: view, hidden: hidden)
         }
-        // Floating glass, not the card's fill: over a white page that left the × white on white.
+        // Not the card's fill: over a white page the × is white on white.
         .clipShape(shape)
         .floatingGlass(in: shape)
         .shadow(radius: 12)
-    }
-}
-
-/// Shows a web view the registry owns; the newest host adopts it. A card whose page goes takes its web view out of the
-/// window with it, and the web view lives on; a kept page out of view hides the host (`SettlingHost.hide`). The host
-/// fits it to itself once a motion ends, as a terminal's does.
-struct WebHost: NSViewRepresentable {
-    let view: WKWebView
-    /// In a kept page out of view (as `TerminalHost`'s).
-    let hidden: Bool
-
-    func makeNSView(context: Context) -> SettlingHost {
-        let host = SettlingHost(), box = NSView()
-        host.clipsToBounds = true
-        // Only an overview's tile disables its card.
-        (view as? BrowserView)?.inTile = !context.environment.isEnabled
-        // WebKit docks the Web Inspector beside the web view by frames that take y as growing upward: in a plain box,
-        // which the (flipped) host fits.
-        view.removeFromSuperview()
-        // At the size it has: one set to the new host's zero size laid the page out again and drew it blank.
-        box.frame.size = view.frame.size
-        view.frame = box.bounds
-        view.autoresizingMask = [.width, .height]
-        box.addSubview(view)
-        host.addSubview(box)
-        return host
-    }
-
-    func updateNSView(_ host: SettlingHost, context _: Context) {
-        host.hide(hidden)
     }
 }
 
@@ -206,9 +168,7 @@ struct BrowserIcon: View {
                 ProgramGlyph(icon: "globe")
             }
         }
-        .accessibilityElement()
-        .accessibilityAddTraits(.isStaticText)
-        .accessibilityValue(icon == nil ? "globe" : "page")
+        .readableText(icon == nil ? "globe" : "page")
         .accessibilityIdentifier("browser.\(browser.paneID).icon")
     }
 }

@@ -7,8 +7,7 @@ struct PluginHeader: View {
     let page: Page
 
     var body: some View {
-        // Bordered buttons show their words all together or not at all: the row without them when it is narrow. Only
-        // then: a row made again would lose a typing field's keyboard.
+        // Only with bordered buttons: a row made again loses a typing field's keyboard.
         if plugin.header.controls.contains(where: { $0.style == "bordered" && $0.hidden != true }) {
             ViewThatFits(in: .horizontal) {
                 row(words: true)
@@ -33,11 +32,9 @@ struct PluginHeader: View {
                     HeaderItem(control: control, plugin: plugin, page: page, words: words)
                         .disabled(control.enabled == false || control.busy == true)
                         .padding(.leading, before == nil && !history ? 0 : CGFloat(control.gap ?? 6))
-                        // A text its whole width before a spacer takes any: cut only when the row is full.
                         .layoutPriority(control.type == "text" ? 1 : 0)
                 }
             }
-            // Free space goes after the controls unless a spacer or a field takes it.
             if !controls.contains(where: { $0.hidden != true && ["spacer", "field"].contains($0.type) }) {
                 Spacer(minLength: 0)
             }
@@ -49,7 +46,6 @@ private struct HeaderItem: View {
     let control: PluginManifest.Control
     let plugin: Plugin
     let page: Page
-    /// A bordered button's title is shown (`PluginHeader`).
     let words: Bool
     @Environment(\.look) private var look
 
@@ -133,7 +129,7 @@ private struct HeaderItem: View {
         default: []
         }
         let chevron = Text(" › ").foregroundStyle(.tertiary)
-        let symbol = control.symbol.map { Text("\(Text(Image(systemName: $0)).foregroundStyle(.secondary)) ") }
+        let symbol = control.symbol.map { Text("\(Text(Image(symbol: $0)).foregroundStyle(.secondary)) ") }
         let shown = parts.indices.reduce(Text("")) { line, index in
             var part = Text(parts[index])
             if index == parts.count - 1, let symbol {
@@ -160,8 +156,6 @@ private struct HeaderItem: View {
     }
 }
 
-/// `"style": "icon"` shows the symbol alone (Markdown's mode, which leaves the row to the breadcrumbs). A `{ title }`
-/// item starts a section, `"-"` is a divider.
 private struct HeaderMenu: View {
     let control: PluginManifest.Control
     let header: Header
@@ -235,10 +229,8 @@ private struct HeaderMenu: View {
     }
 }
 
-/// Open With, as other editors draw it. A plugin's pick turns the card into that plugin's.
 private struct OpenWith: View {
     let path: String
-    /// The Mac's apps: on This Mac.
     let apps: Bool
     let plugins: [PluginManifest]
     let pick: (PluginManifest) -> Void
@@ -269,9 +261,8 @@ private struct OpenWith: View {
     }
 }
 
-/// Their own view: SwiftUI asks LaunchServices again only when the path changes, not at every render of the card.
+/// A view of its own: SwiftUI asks LaunchServices again only when the path changes, not at every render of the card.
 private struct OpenWithItems: View {
-    /// Nil: no apps (a remote machine's file).
     let url: URL?
     let plugins: [PluginManifest]
     let pick: (PluginManifest) -> Void
@@ -306,7 +297,7 @@ private struct OpenWithItems: View {
         }
     }
 
-    /// The app's icon at menu size: LaunchServices gives it at 32 pt.
+    /// LaunchServices gives it at 32 pt.
     static func icon(_ app: URL) -> NSImage {
         let icon = NSWorkspace.shared.icon(forFile: app.path)
         icon.size = NSSize(width: 16, height: 16)

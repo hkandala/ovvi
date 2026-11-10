@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Start or remove a throwaway headless herdr session.
 # Usage: scripts/herdr-session.sh up|down <ovvi-e2e-*|ovvi-dev-*>
 set -euo pipefail
 
@@ -10,8 +9,9 @@ case $name in
 ovvi-e2e-* | ovvi-dev-*) ;;
 *) echo "refusing '$name': only ovvi-e2e-* and ovvi-dev-* sessions are throwaway" >&2 && exit 2 ;;
 esac
-# Inside a herdr pane these point at the user's own session; keep them out of the server.
+# Inside a herdr pane these point at the user's own session.
 unset "${!HERDR_@}"
+log="${TMPDIR:-/tmp}/herdr-$name.log"
 
 exists() {
     local list
@@ -22,7 +22,6 @@ exists() {
 case $cmd in
 up)
     exists && echo "refusing '$name': it already exists" >&2 && exit 1
-    log="${TMPDIR:-/tmp}/herdr-$name.log"
     nohup herdr --session "$name" server >"$log" 2>&1 &
     pid=$!
     for _ in $(seq 50); do
@@ -34,7 +33,8 @@ up)
     echo "herdr session '$name' did not start:" >&2 && cat "$log" >&2 && exit 1
     ;;
 down)
-    # The app starts servers as one-shot launchd jobs (design D47); launchd keeps them loaded after they stop.
+    rm -f "$log"
+    # The app starts servers as one-shot launchd jobs; launchd keeps them loaded after they stop.
     launchctl bootout "gui/$(id -u)/dev.ovvi.app.herdr.$name" 2>/dev/null || true
     exists || exit 0
     herdr session stop "$name" >/dev/null 2>&1 || true

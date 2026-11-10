@@ -1,7 +1,7 @@
+import var Carbon.HIToolbox.Events.kVK_Tab // not all of Carbon: its EventModifiers clashes with SwiftUI's
 import HerdrKit
 import SwiftUI
 
-/// Shortcuts written in more than one place: the command list, the chrome buttons' tooltips, the second keys.
 extension KeyboardShortcut {
     static let newTab = KeyboardShortcut("t")
     static let openSession = KeyboardShortcut("t", modifiers: [.command, .option])
@@ -12,26 +12,20 @@ extension KeyboardShortcut {
     static let splitRight = KeyboardShortcut("d")
     static let splitDown = KeyboardShortcut("d", modifiers: [.command, .shift])
     static let zoom = KeyboardShortcut(.return, modifiers: [.command, .shift])
-    /// Close Pane; in a floating window Detach Pane, which closes the window and puts the pane back in its tab.
     static let closePane = KeyboardShortcut("w")
     /// ⇧⌘R: ⌘R reloads a browser card.
     static let replacePane = KeyboardShortcut("r", modifiers: [.command, .shift])
-    /// Redraw Terminal on a terminal card, Reload Plugin on a plugin card: never both. Terminal's Soft Reset key.
     static let redraw = KeyboardShortcut("r", modifiers: [.command, .option])
-    /// Close Tab; in a floating window Close Pane.
     static let closeTab = KeyboardShortcut("w", modifiers: [.command, .shift])
     static let previousTab = KeyboardShortcut("[", modifiers: [.command, .shift])
     static let nextTab = KeyboardShortcut("]", modifiers: [.command, .shift])
-    /// A plugin card's Back and Forward, as VS Code's Go Back and Go Forward (`WebCardView` takes them).
     static let back = KeyboardShortcut("-", modifiers: .control)
     static let forward = KeyboardShortcut("-", modifiers: [.control, .shift])
     static let bigger = KeyboardShortcut("+")
     static let findNext = KeyboardShortcut("g")
     static let save = KeyboardShortcut("s")
-    /// Go to Directory, and Find Previous over a File or Markdown card.
     static let findPrevious = KeyboardShortcut("g", modifiers: [.command, .shift])
 
-    /// A command's second shortcut runs its first's command (OvviApp's key monitor); the menu shows the first.
     static let seconds: [(second: KeyboardShortcut, first: KeyboardShortcut)] = [
         (KeyboardShortcut("p", modifiers: [.command, .shift]), .palette),
         (KeyboardShortcut(.tab, modifiers: [.control, .shift]), .previousTab),
@@ -39,7 +33,6 @@ extension KeyboardShortcut {
         (KeyboardShortcut("="), .bigger),
     ]
 
-    /// As the menu bar draws it: "⌥⌘T".
     var glyphs: String {
         caps.joined()
     }
@@ -64,19 +57,16 @@ extension KeyboardShortcut {
         return NSEvent.ModifierFlags(pairs.filter { modifiers.contains($0.0) }.map(\.1))
     }
 
-    /// The key event is this shortcut's: its modifiers, and its key with or without Shift's character (⇧⌘[ types
-    /// "{"). Tab by its key code: with Shift its character is backtab.
+    /// ⇧⌘[ types "{", so the key matches with or without Shift's character. With Shift, Tab's character is backtab.
     func matches(_ event: NSEvent) -> Bool {
-        let keys = event.keyCode == 48 ? "\t"
+        let keys = Int(event.keyCode) == kVK_Tab ? "\t"
             : (event.charactersIgnoringModifiers ?? "") + (event.characters(byApplyingModifiers: []) ?? "")
         return event.modifierFlags.intersection([.command, .shift, .option, .control]) == modifierFlags
             && keys.lowercased().contains(key.character)
     }
 
-    /// The second shortcut's key went down in an Ovvi window: runs its first's command there, when enabled, and
-    /// takes the key either way. A disabled Show Next Tab (one tab) let ⌃⇥ go on to AppKit's key view loop, which
-    /// stepped the panes. In a text field too, as its first does: one that skipped it (a chat's composer, a browser's
-    /// address) held ⌃⇥ on its tab. Whether it took the key.
+    /// Takes the key even when the command is disabled, and in a text field too: else ⌃⇥ goes on to AppKit's key
+    /// view loop, which steps the panes.
     @MainActor static func second(_ event: NSEvent) -> Bool {
         guard let first = seconds.first(where: { $0.second.matches(event) })?.first,
               let commands = CommandList.keyWindow else { return false }
@@ -86,7 +76,6 @@ extension KeyboardShortcut {
 }
 
 extension FocusedValues {
-    /// The key window's commands, for the menu bar.
     @Entry var commands: CommandList?
 }
 
@@ -97,10 +86,8 @@ extension CommandList: Equatable {
 }
 
 extension View {
-    /// The window's commands for the menu bar, again whenever what it shows of them changes. SwiftUI rebuilds the
-    /// menu bar only when this value changes: `Commands` do not observe. Zoom Pane, disabled while the tab had one
-    /// card, stayed so after a split, and ⇧⌘↩ did nothing. A modifier, so reading `all` re-runs only its
-    /// body, not the window's.
+    /// SwiftUI rebuilds the menu bar only when this value changes: `Commands` do not observe. A modifier, so reading
+    /// `all` re-runs only its body, not the window's.
     func menuBar(_ commands: CommandList) -> some View {
         modifier(MenuBar(commands: commands))
     }
@@ -108,14 +95,13 @@ extension View {
 
 private struct MenuBar: ViewModifier {
     let commands: CommandList
-    /// The settings the commands read (Reset Font Size's state): their change runs this body again, which the menu bar
-    /// takes its list from. `commands.settings` is no dynamic property of this view.
+    /// Their change runs this body again: `commands.settings` is no dynamic property of this view.
     private var settings = AppSettings()
 
     func body(content: Content) -> some View {
         var commands = commands
-        // What the actions act on too: an equal value keeps the old one, and its actions (another floating
-        // window's pane, another page). The keyboard card, read here so a keyboard move redraws the menu.
+        // Ids too: SwiftUI keeps the first of two equal values, and its actions (another floating window's pane,
+        // another page). The keyboard card is read here so a keyboard move redraws the menu.
         let page = commands.pages?.current
         commands.menu = commands.menuBarList
         commands.shown = [
@@ -129,13 +115,11 @@ private struct MenuBar: ViewModifier {
 
 @MainActor
 extension CommandList {
-    /// The key window's commands, made when the key is pressed: the menu bar's list may still be another
-    /// window's. nil without one (a sheet, no window).
+    /// Made when the key is pressed: the menu bar's list may still be another window's.
     static var keyWindow: [Command]? {
         KeyWindowList.Holder.all.allObjects.first { $0.window?.isKeyWindow == true }?.commands?.menuBarList
     }
 
-    /// Brings the frontmost main window forward and runs its command of that title (Settings' Show Shortcuts).
     static func runInMainWindow(_ title: String) {
         let holders = KeyWindowList.Holder.all.allObjects.filter { $0.commands?.floating == nil }
         guard let holder = NSApp.orderedWindows.lazy.compactMap({ window in holders.first { $0.window === window } })
@@ -153,7 +137,6 @@ extension [Command] {
     }
 }
 
-/// The window's commands where a key finds them (`CommandList.keyWindow`).
 private struct KeyWindowList: NSViewRepresentable {
     let commands: CommandList
 
@@ -173,25 +156,18 @@ private struct KeyWindowList: NSViewRepresentable {
     }
 }
 
-/// One command (D48). The menu bar and the palette read the one list of them (`CommandList`).
 struct Command {
-    /// Its group in the menu bar, divided from the others; in the menu bar's order, which the palette follows too.
+    /// In the menu bar's order, which the palette follows too.
     enum Section: CaseIterable {
-        /// The app menu, after About.
         case app
         case file, close, edit, view
-        /// View ▸ Pane's setting, first.
         case paneSetting
-        /// View ▸ Pane, and the card header's context menu.
         case pane, paneMove
-        /// View ▸ Pane, keys only.
         case paneKeys
         case size, tabSteps, workspaceSteps, pages, tabs, workspaces, sessions
-        /// The palette only.
         case palette
         case help
 
-        /// Its group in the palette and on the Keyboard Shortcuts panel, unless the command names its own.
         var group: Group {
             switch self {
             case .edit: .edit
@@ -204,7 +180,7 @@ struct Command {
         }
     }
 
-    /// The palette's and the Keyboard Shortcuts panel's groups: what a command acts on. In the palette's order.
+    /// In the palette's order.
     enum Group: String, CaseIterable {
         case tabs = "Tabs", workspaces = "Spaces", sessions = "Sessions", panes = "Panes", view = "View"
         case edit = "Edit", plugins = "Plugins"
@@ -212,61 +188,40 @@ struct Command {
 
     let section: Section
     let title: String
-    /// The palette row's id when the title may repeat (a move's target tabs); else the title.
     var id: String?
     var key: KeyboardShortcut?
-    /// The palette's and the Keyboard Shortcuts panel's group, when not its section's.
     var group: Group?
-    /// The Keyboard Shortcuts panel's one row for a set of commands that differ by the key: "Select Pane" and
-    /// one keycap for the keys, "←→↑↓", after the modifiers'.
     var family: (title: String, keys: String)?
-    /// The palette row's SF Symbol.
     var symbol: String?
-    /// A program icon's id instead of the symbol (an agent of Start Agent Here).
     var program: String?
-    /// The header of its section in a submenu and a palette sub-page: a workspace's name over its tabs.
     var heading: String?
-    /// More words the palette's filter matches.
     var keywords = ""
     var enabled = true
-    /// On or off, or a choice that is the current one (a checkmark).
     var checked: Bool?
-    /// A setting: the palette's title says what it does now ("Turn On Focus Follows Mouse").
     var setting = false
-    /// A submenu instead of an action; a sub-page in the palette.
     var menu: [Command] = []
-    /// The palette's sub-page tries a highlighted row on the window (Appearance, Interface Style).
     var previews = false
-    /// The palette's name page: the current name, and what Enter does with the field.
     var name: (current: String, save: (String) async -> Void)?
-    /// The palette's field page that opens what it names (Open File…): the field's prompt, and what Enter does with
-    /// the field, as the key comes in.
     var field: (prompt: String, open: (String) -> Void)?
-    /// Its menu item's title while ⌥ is held: a split or a New Space that shows New Pane's chooser instead of the fixed
-    /// pick (ui/new-pane#a-fixed-pick). ⌥ is read as the pane is made, so both items run the same action.
+    /// ⌥ is read as the pane is made, so both items run the same action.
     var alternate: String?
     var action: () -> Void = {}
 
-    /// What the menu bar shows of it.
     var shown: String {
         "\(title) \(enabled) \(String(describing: checked)) \(key?.glyphs ?? "") \(menu.map(\.shown))"
             + (alternate ?? "")
     }
 }
 
-/// The menu bar, drawn from the focused window's command list; its keys run the key window's commands
-/// (`CommandList.keyWindow`), wherever the keyboard is.
 struct AppCommands: Commands {
     @FocusedValue(\.commands) private var commands
     @Environment(\.openWindow) private var openWindow
     private var settings = AppSettings()
 
     var body: some Commands {
-        // Every main window and Settings open through it. `_ =` is no statement in a builder.
+        // `_ =` is no statement in a builder.
         // swiftlint:disable:next redundant_discardable_let
         let _ = WindowPages.openWindow = openWindow
-        // A key runs the key window's command for it, whichever window's list the menu bar holds; behind a sheet,
-        // none. With no window: New Window and the settings.
         let list = (commands?.menu ?? CommandList(settings: settings).menuBarList).map { command in
             var keyed = command
             if let key = command.key {
@@ -278,18 +233,17 @@ struct AppCommands: Commands {
                     }
                 }
             } else if command.section == .app {
-                // The app menu reads no window's list as it opens (it showed the windowless one): the key window's.
+                // The app menu reads no window's list as it opens: it shows the windowless one.
                 keyed.action = { CommandList.keyWindow?.first { $0.title == command.title }?.action() }
             }
             return keyed
         }
-        CommandGroup(replacing: .appInfo) { Button("About Ovvi") { openWindow(id: "about") } }
+        CommandGroup(replacing: .appInfo) { Button("About Ovvi") { openWindow(id: WindowPages.aboutScene) } }
         CommandGroup(replacing: .appSettings) {
-            Button("Settings…") { openWindow(id: "settings") }.keyboardShortcut(",")
+            Button("Settings…") { openWindow(id: WindowPages.settingsScene) }.keyboardShortcut(",")
         }
         CommandGroup(after: .appInfo) { items(list, .app) }
         CommandGroup(replacing: .newItem) { items(list, .file) }
-        // ⌘W closes the keyboard card, ⇧⌘W the tab, ⌃⌘W the workspace, ⌥⌘W detaches the session (design: keyboard).
         CommandGroup(replacing: .saveItem) { items(list, .close) }
         CommandGroup(after: .pasteboard) { items(list, .edit) }
         CommandGroup(after: .sidebar) {
@@ -311,8 +265,6 @@ struct AppCommands: Commands {
     }
 }
 
-/// Menu items for commands: a toggle for a choice, a submenu, else a button. With sections, those sections'
-/// commands in that order, divided.
 struct CommandItems: View {
     let commands: [Command]
     var sections: [Command.Section]?
@@ -321,7 +273,6 @@ struct CommandItems: View {
         let shown = sections.map { sections in
             sections.flatMap { section in commands.filter { $0.section == section } }
         } ?? commands
-        // Each run under one heading is a section of the menu (Move Pane to Tab's workspaces).
         let starts = shown.indices.filter { $0 == 0 || shown[$0].heading != shown[$0 - 1].heading }
         ForEach(starts, id: \.self) { start in
             let run = start ..< (starts.first { $0 > start } ?? shown.count)

@@ -1,22 +1,16 @@
 import HerdrKit
 import SwiftUI
 
-/// A new pane's chooser over its hidden terminal (ui/new-pane): a compact list in the middle of the card's own fill,
-/// the palette's accent pill on the selected row; Agent opens its agents under it. A short card scrolls the list to
-/// the selected row. Then the loader while a picked agent starts.
 struct NewPane: View {
     let chooser: Chooser
     let page: Page
     let cardID: String
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var fade: Animation? {
-        reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.15)
+        Animation.reduced ? nil : .easeOut(duration: 0.15)
     }
 
     @Environment(\.look) private var look
     @AccessibilityFocusState private var focus: Chooser.Row?
-    /// Where the pointer was when it showed or the selection last moved: only a pointer moved since selects, not a
-    /// list that shows under a pointer at rest (as the palette's rows).
     @State private var pointer = NSEvent.mouseLocation
     private static let row: CGFloat = 28, spacing: CGFloat = 2
 
@@ -31,7 +25,6 @@ struct NewPane: View {
                 } else {
                     let rows = chooser.rows, width = max(0, min(300, size.width - 24))
                     let height = CGFloat(rows.count) * (Self.row + Self.spacing) - Self.spacing
-                    // The folder line under the list, on a card with room for both.
                     let folder = size.height - 16 >= height + 12 + NewPaneFolder.height
                     VStack(spacing: 12) {
                         list(rows, details: size.width >= 300, scrolls: height > size.height - 16)
@@ -45,7 +38,6 @@ struct NewPane: View {
             }
             .frame(width: size.width, height: size.height)
         }
-        // A click beside the list gives the card the keyboard, not the hidden terminal a click.
         .background {
             Color.clear.contentShape(.rect).onTapGesture {
                 if let pane = page.store.pane(cardID) {
@@ -61,8 +53,6 @@ struct NewPane: View {
             Latency.shared.step("list")
         }
         .onChange(of: chooser.selected) { pointer = NSEvent.mouseLocation }
-        // It leaves when the pane runs something else (typed from herdr's TUI): a program besides the shell, or an
-        // agent herdr reports. Not the programs of a new shell's startup.
         .onChange(of: runs, initial: true) {
             if runs, chooser.starting == nil, chooser.opening == nil {
                 page.store.drop(chooser)
@@ -95,7 +85,6 @@ struct NewPane: View {
                 stack
             }
         }
-        // At once, not crossfaded under Agent's opening.
         .animation(nil, value: scrolls)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("New Pane")
@@ -104,11 +93,9 @@ struct NewPane: View {
     private func row(_ row: Chooser.Row, details: Bool) -> some View {
         let selected = chooser.selected == row, (name, detail) = row.labels
         let agent = row.agent, missing = Chooser.missing(row, page.terminals.pages?.agents)
-        // Readable on the accent pill.
         let dim = selected ? AnyShapeStyle(Look.onAccent.opacity(0.75))
             : look.contrast ? AnyShapeStyle(.secondary) : AnyShapeStyle(.tertiary)
         return Button {
-            // The card takes the keyboard, as a click on its terminal does.
             if let pane = page.store.pane(cardID) {
                 page.go(to: pane)
             }
@@ -133,7 +120,6 @@ struct NewPane: View {
                 }
             }
             .foregroundStyle(selected ? AnyShapeStyle(Look.onAccent) : AnyShapeStyle(.primary))
-            // An agent sits under Agent.
             .padding(.leading, agent != nil ? 28 : 8)
             .padding(.trailing, 8)
             .frame(height: Self.row)
@@ -174,13 +160,10 @@ struct NewPane: View {
     }
 }
 
-/// The chooser on a card, fading out over 0.15 s after a pick as the terminal fades in (`TerminalHost`). A split's
-/// new card slides in with its list: a list that shows only once the card landed makes the split feel slow.
 struct NewPaneOverlay: View {
     let chooser: Chooser?
     let page: Page
     let cardID: String
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
@@ -188,6 +171,6 @@ struct NewPaneOverlay: View {
                 NewPane(chooser: chooser, page: page, cardID: cardID).transition(.opacity)
             }
         }
-        .animation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.15), value: chooser == nil)
+        .animation(Animation.reduced ? nil : .easeOut(duration: 0.15), value: chooser == nil)
     }
 }

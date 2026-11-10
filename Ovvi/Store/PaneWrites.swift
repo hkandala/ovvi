@@ -2,13 +2,10 @@ import Foundation
 import HerdrKit
 
 extension HostStore {
-    /// Split Right or Down, or Left or Up (`before`): herdr splits only right and down, so a swap puts the new pane
-    /// first. Then the run of same-direction splits holding the new pane is evened out, from herdr's tree after
-    /// the split, as Rex does (33 / 33 / 33, not herdr's 50 / 25 / 25).
-    /// Shown at once with an empty card for the new pane, until a snapshot has herdr's. The pane may be an
-    /// earlier split's stand-in: its write, before this one, made herdr's. Returns the new pane, nil when
-    /// herdr made none. The new card asks what it runs.
-    func split(_ paneID: String, _ direction: SplitNode.Direction, before: Bool = false,
+    /// herdr splits only right and down, so a swap puts the new pane first, and halves the split pane, 50 / 25 / 25:
+    /// the run is evened after, 33 / 33 / 33.
+    /// The pane may be an earlier split's stand-in: its write, ahead of this one, makes herdr's.
+    func split(_ paneID: String, _ direction: SplitNode.Direction, before: Bool,
                standIn: String) async -> HerdrKit.Pane?
     {
         // herdr's pane may still show as its stand-in, until the snapshot after its split.
@@ -31,14 +28,13 @@ extension HostStore {
         var made: HerdrKit.Pane?, closedLate = false
         let done = await write { client in
             let paneID = ahead.splitPanes[paneID] ?? paneID
-            // The split before failed: its notice says so. Or the stand-in closed (⌘W right after ⌘D): no split.
-            // ponytail: a header × on an older stand-in herdr has not made drops the quick splits of it (with
-            // herdr's error as the notice when it closed as herdr made it); split the closed card's own target if
+            // ponytail: a header × on an earlier stand-in herdr has not made drops the quick splits of it (with
+            // herdr's error as the notice when it closes as herdr makes it); split the closed card's own target if
             // that window (under a second) ever matters.
             guard !Ahead.isStandIn(paneID), !ahead.closing.contains(standIn),
                   let new = try await client.split(paneID, direction) else { return }
-            // Closed while herdr made it: closed before a snapshot shows it, and hidden while the split settles (a
-            // snapshot read before the split has no such pane, and one read before the close has it).
+            // Hidden while the split settles: a snapshot read ahead of the split has no such pane, and one read ahead
+            // of the close has it.
             if ahead.closing.contains(standIn) {
                 closedLate = true
                 ahead.splitPanes[standIn] = new.id
@@ -58,11 +54,9 @@ extension HostStore {
             if before {
                 try await client.swap(paneID, direction == .right ? .right : .down)
             }
-            try await even(client, tab: new.tabID, around: new.id)
+            try await balance(new.tabID, client, around: new.id)
         }
-        // Not a later split's stand-in, which took the slot. No pane comes (herdr made none, or the split before
-        // failed): the stand-in goes now, not after two more snapshots, which an idle session may never send. Closed
-        // as herdr made it: the next snapshot ends it, and keeps herdr's pane hidden (`Ahead.forget`).
+        // With no pane, the stand-in goes at once: an idle session may never send two more snapshots.
         if made == nil {
             drop(chooser)
         }
@@ -76,26 +70,18 @@ extension HostStore {
         return made
     }
 
-    /// The run of splits holding the pane evened out, from herdr's tree now.
-    private func even(_ client: any Multiplexer, tab tabID: String, around paneID: String) async throws {
-        for change in try await client.snapshot().trees[tabID]?.evened(around: paneID) ?? [] {
+    /// Inside a write: herdr's tree, which the writes ahead of it change.
+    func balance(_ tabID: String, _ client: any Multiplexer, around paneID: String? = nil) async throws {
+        guard let tree = try await client.snapshot().trees[tabID] else { return }
+        for change in paneID.map({ tree.evened(around: $0) }) ?? tree.evened() {
             try await client.setRatio(tab: tabID, path: change.path, ratio: change.ratio)
         }
     }
 
-    /// Every run of the tab evened out (Balance Splits), inside a write: herdr's tree, which the writes before changed.
-    func balance(_ tabID: String, _ client: any Multiplexer) async throws {
-        for change in try await client.snapshot().trees[tabID]?.evened() ?? [] {
-            try await client.setRatio(tab: tabID, path: change.path, ratio: change.ratio)
-        }
-    }
-
-    /// One divider's ratio (the divider keeps it in herdr's 0.1–0.9). Whether herdr took it.
     func setRatio(tab tabID: String, path: [Bool], ratio: Double) async -> Bool {
         await write { try await $0.setRatio(tab: tabID, path: path, ratio: ratio) }
     }
 
-    /// The keyboard card's nearest divider that way, 5 %.
     func resize(_ paneID: String, _ heading: Heading) async {
         await write { try await $0.resize(paneID, heading, amount: 0.05) }
     }
@@ -104,21 +90,17 @@ extension HostStore {
         await write { try await $0.swap(paneID, heading) }
     }
 
-    /// Two cards of one tab trade places (a drop on a card's center).
     func swap(_ paneID: String, with targetID: String) async {
         await write { try await $0.swap(paneID, with: targetID) }
     }
 
-    /// A drop beside a card (an edge), or on a tab's capsule (no target: right of the tab's last card, as herdr would
-    /// split its focused pane, wherever that is). herdr splits only right or down, so a left or top edge swaps after;
-    /// it refuses a move into the pane's own tab, so the pane goes to a new tab first. Then the run of splits holding
-    /// it is evened out, as after a split. If a later step fails, the pane stays where it got to and the notice says
-    /// so. The pane where it went.
+    /// With no target herdr would split the tab's focused pane. herdr splits only right or down, so a left or top edge
+    /// swaps after; it refuses a move into the pane's own tab, so the pane goes to a new tab first.
     func place(_ paneID: String, in tabID: String, beside targetID: String? = nil,
                _ edge: Heading = .right) async -> HerdrKit.Pane?
     {
         var placed: HerdrKit.Pane?
-        let targetID = targetID ?? workspace(of: tabID)?.tabs.first { $0.id == tabID }?.tree?.paneIDs.last
+        let targetID = targetID ?? tab(tabID)?.tree?.paneIDs.last
         await write { client in
             var id = paneID, done: String?
             do {
@@ -137,7 +119,7 @@ extension HostStore {
                     try await client.swap(moved.id, with: targetID)
                 }
                 done = nil
-                try await even(client, tab: tabID, around: moved.id)
+                try await balance(tabID, client, around: moved.id)
             } catch {
                 throw done.map { HerdrError.failed("\($0): herdr refused the next step") } ?? error
             }
@@ -145,21 +127,17 @@ extension HostStore {
         return placed
     }
 
-    /// The pane where it went: a move to another workspace gives it a new id.
+    /// A move to another workspace gives the pane a new id.
     func move(_ paneID: String, to destination: Destination) async -> HerdrKit.Pane? {
         var moved: HerdrKit.Pane?
         await write { moved = try await $0.move(pane: paneID, to: destination) }
         return moved
     }
 
-    /// The tab, with its panes, split tree and ratios, to another workspace of the session, last there, or (nil) to a
-    /// new workspace. herdr 0.9.5's `tab.move` stays inside a workspace, so its first pane goes to a new tab there (or
-    /// in a new workspace) with its label, unless herdr's number, and each other pane beside one moved before
-    /// (`SplitNode.rebuild`); each move gives a new pane id. The tree is herdr's when the write's turn comes (a write
-    /// before it may change the tab). The source tab closes with its last pane, its workspace with its last tab. A
-    /// failed step leaves the panes where they got to. Each pane where it went, by its old id, the first pane first.
+    /// herdr 0.9.5's `tab.move` stays inside a workspace, so the panes move one by one (`SplitNode.rebuild`), each to a
+    /// new pane id. The tree is herdr's when the write's turn comes: a write ahead of it may change the tab.
     func move(tab tabID: String, to workspaceID: String?) async -> [(old: String, new: HerdrKit.Pane)] {
-        guard let tab = workspace(of: tabID)?.tabs.first(where: { $0.id == tabID }),
+        guard let tab = tab(tabID),
               tab.tree?.paneIDs.contains(where: Ahead.isStandIn) == false else { return [] }
         let label = tab.label.allSatisfy(\.isNumber) ? nil : tab.label
         var moved: [(old: String, new: HerdrKit.Pane)] = []
@@ -193,15 +171,13 @@ extension HostStore {
         await write { try await $0.rename(pane: paneID, label: label.isEmpty ? nil : label) }
     }
 
-    /// One place left (-1) or right (1); none past the ends (a snapshot may land after the menu opened).
     func move(tab tabID: String, by offset: Int) {
         guard let tabs = workspace(of: tabID)?.tabs, let index = tabs.firstIndex(where: { $0.id == tabID }),
               tabs.indices.contains(index + offset) else { return }
-        // herdr inserts before the tab now at the index, so one place right is two on.
+        // herdr inserts ahead of the tab at the index, so one place right is two on.
         move(tab: tabID, to: index + (offset > 0 ? 2 : -1))
     }
 
-    /// Before the tab now at `index` (the count puts it last). Shown before this returns (`Ahead.order`).
     func move(tab tabID: String, to index: Int) {
         // herdr has no such tab yet.
         guard !Ahead.isStandIn(tabID) else { return }
@@ -212,7 +188,6 @@ extension HostStore {
                 ids.remove(at: from)
                 ids.insert(tabID, at: min(from < index ? index - 1 : index, ids.count))
                 ahead.order = Ahead.NewOrder(workspaceID: workspace.id, ids: ids)
-                // The user's order wins over a new tab still held beside its opener.
                 ahead.beside.removeAll { $0.workspaceID == workspace.id }
                 asked = ids
                 redraw()
@@ -230,7 +205,6 @@ extension HostStore {
         }
     }
 
-    /// One row group (a workspace and its worktrees) up (-1) or down (1) past the next group; none past the ends.
     func move(workspace workspaceID: String, by offset: Int) {
         let groups = groups
         guard let index = groups.firstIndex(where: { $0.first?.id == workspaceID }),
@@ -240,7 +214,6 @@ extension HostStore {
         move(workspaces: groups[index].map(\.id), before: before)
     }
 
-    /// The workspaces, in this order, before another one, or last. Shown before this returns (`Ahead.rows`).
     func move(workspaces workspaceIDs: [String], before workspaceID: String?) {
         var ids = workspaces.map(\.id).filter { !workspaceIDs.contains($0) }
         ids.insert(contentsOf: workspaceIDs, at: workspaceID.flatMap(ids.firstIndex) ?? ids.count)
@@ -265,28 +238,23 @@ extension Page {
         selectedTab.flatMap { Ahead.isStandIn($0.id) ? $0.id : nil }
     }
 
-    /// Closes it, or asks first in this window (D41). A plugin card with unsaved edits asks in its card first, as a
-    /// move does (Discard, Keep Editing); `discarded` are the cards whose edits the user let go for this close.
     func close(_ close: HostStore.Close, discarded: Set<String> = []) {
         // herdr's pane for a split's stand-in, which still shows under the stand-in's id: herdr's is closed.
         let close = close.paneID.flatMap { store.ahead.splitPanes[$0] }.map(HostStore.Close.pane) ?? close
         // The same close again (a second ⇧⌘W while herdr is asked) would ask twice; another close goes on.
         let key = String(describing: close)
-        // The old pane of a replace that runs: herdr closes it already.
+        // A pane a running replace takes: herdr closes it already.
         guard !asking.contains(key), close.paneID.flatMap({ store.ahead.replacing[$0] }) == nil else { return }
-        // The lit split card, also before herdr's pane took its stand-in's place. ponytail: it steps back before a
-        // question too, so a cancelled one leaves the card before it lit; a split card runs only its shell that soon.
+        // ponytail: it steps back ahead of a question too, so a cancelled one leaves the prior card lit; a split card
+        // runs only its shell that soon.
         if let id = close.paneID, id == newest.map({ store.ahead.splitPanes[$0.id] ?? $0.id }) {
             closedNewest()
         }
         let before = (selectedWorkspaceID, selectedTabIDs)
         if let (pane, card) = store.panes(closedBy: close).lazy.compactMap({ pane in
-            pane.terminalID.flatMap(self.terminals.builtPlugin).map { (pane, $0) }
+            pane.terminalID.flatMap { self.terminals.plugins[$0] }.map { (pane, $0) }
         }).first(where: { $0.1.web.dirty && !discarded.contains($0.1.terminalID) }) {
-            // Its tab shows (Close Other Tabs may take one out of view); Discard comes back to where the user was.
-            if !floats(pane),
-               let workspace = store.workspaces.first(where: { $0.tabs.contains { $0.id == pane.tabID } })
-            {
+            if !floats(pane), let workspace = store.workspace(of: pane.tabID) {
                 select(workspace, tab: pane.tabID)
             }
             let shown = (selectedWorkspaceID, selectedTabIDs)
@@ -302,32 +270,27 @@ extension Page {
         let hidden = (selectedWorkspaceID, selectedTabIDs)
         asking.insert(key)
         Task {
-            closing = await asked.value
-            // A close shown at once that asks after all comes back: so does the selection it moved, unless the
-            // user moved it since.
-            if closing != nil, selectedWorkspaceID == hidden.0, selectedTabIDs == hidden.1 {
-                (selectedWorkspaceID, selectedTabIDs) = before
+            // Only a question writes the dialog: a close that asks nothing leaves another close's dialog up.
+            if let asked = await asked.value {
+                closing = asked
+                if selectedWorkspaceID == hidden.0, selectedTabIDs == hidden.1 {
+                    (selectedWorkspaceID, selectedTabIDs) = before
+                }
             }
             asking.remove(key)
         }
     }
 
-    /// A split restores a zoomed layout first, as tmux does: the new pane shows. The new pane gets the keyboard, as
-    /// in Ghostty. Pressed again before herdr made it (⌘D, fast), the newest card is split, not
-    /// the old one that still has the first responder, and only the newest split's pane takes the keyboard; the
-    /// older ones join the keyboard history before it.
     func split(_ paneID: String, _ direction: SplitNode.Direction, before: Bool = false) async {
         Latency.shared.split()
         zoomedPaneID = nil
-        // Also the old card asked for: ⌘D read the keyboard card before a snapshot made the split before's pane it
-        // (the second ⌘D split the first card, A | C | B | D).
+        // ⌘D can read the keyboard card ahead of the snapshot that makes the prior split's pane it.
         let target = newest.flatMap { newest in
             let old = store.pane(paneID)?.terminalID.map { $0 == newest.from } == true
             return paneID == keyboardPane?.id || old ? newest.id : nil
         } ?? paneID
         if let newest {
-            // The split before's pane, if made, takes the keyboard no more (`follow`): this one's does. Nor does a
-            // claim it made already: landing now, it would end this split's turn (`tookKeyboard`).
+            // A claim the prior split's pane made would end this split's turn on landing (`tookKeyboard`).
             movedTerminal = nil
             keyboardTabID = selectedTab?.id
             if let from = newest.from {
@@ -349,8 +312,6 @@ extension Page {
         follow(new, new?.terminalID, select: false)
     }
 
-    /// Close Pane: the pane, else the shown stand-in, which has no pane yet; ⌘W closes it too. While a quick split's
-    /// card is lit and herdr's pane does not show yet, that card, not the old one that still has the first responder.
     func closePane(_ pane: HostStore.Pane?) {
         let lit = newest.flatMap { store.pane($0.id) == nil && pane?.id == keyboardPane?.id ? $0.id : nil }
         if let id = lit ?? pane?.id ?? standIn {
@@ -358,8 +319,6 @@ extension Page {
         }
     }
 
-    /// The lit split card closed: the quick split before it that still shows is lit, and takes the keyboard once
-    /// herdr's pane shows under its own id.
     private func closedNewest() {
         guard let newest else { return }
         let shown = selectedTab?.tree?.paneIDs ?? []
@@ -373,9 +332,19 @@ extension Page {
         if let pane = store.pane(id), shown.contains(id) {
             go(to: pane)
         } else {
-            // Its terminal is the latest used (`split`): the `shown` after its card has its id gives it the keyboard.
             store.pane(id)?.terminalID.map(use)
             keyboardTabID = nil
+        }
+    }
+}
+
+extension Page {
+    func closeTabs(besides tabID: String, right: Bool) {
+        guard let tabs = store.workspace(of: tabID)?.tabs.map(\.id), let index = tabs.firstIndex(of: tabID)
+        else { return }
+        let others = right ? Array(tabs[(index + 1)...]) : tabs.filter { $0 != tabID }
+        if !others.isEmpty {
+            close(.otherTabs(others, right: right))
         }
     }
 }

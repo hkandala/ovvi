@@ -10,13 +10,10 @@ struct OvviApp: App {
         SwipeRouter.install()
         Latency.shared.install()
         FrameProbe.shared.install()
-        // Windows, not window tabs: no tab bar or tab menu items of AppKit's own.
         NSWindow.allowsAutomaticWindowTabbing = false
-        // Before any surface exists, so none starts at libghostty's default size.
+        // Ahead of any surface, so none starts at libghostty's default size.
         PaneTerminal.configure()
-        // Second shortcuts (⇧⌘P, ⌃⇥, ⌃⇧⇥, ⌘=) run their first's command. A monitor sees them before any view: an
-        // invisible button's shortcut kept its first action. Return in a red confirmation clicks it. A new pane's
-        // chooser takes its keys before the terminal under it.
+        // A monitor sees keys ahead of any view: an invisible button's shortcut keeps its first action.
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             MainActor.assumeIsolated {
                 KeyboardShortcut.second(event) || NSWindow.confirm(event) || Page.chooserKey(event)
@@ -25,23 +22,20 @@ struct OvviApp: App {
     }
 
     var body: some Scene {
-        WindowGroup(id: "main") {
+        WindowGroup(id: WindowPages.mainScene) {
             ContentView()
         }
         .windowToolbarStyle(.unifiedCompact)
-        // The screen's visible frame, as a zoom (not full screen); a restored window keeps its frame.
         .defaultWindowPlacement { _, context in
             WindowPlacement(.center, size: context.defaultDisplay.visibleRect.size)
         }
         .windowIdealSize(.maximum)
-        // Content never grows the window (the title-bar tabs would, when the sidebar hides).
+        // The title-bar tabs would grow the window when the sidebar hides.
         .windowResizability(.contentMinSize)
         .commands { AppCommands() }
-        // A folder dropped on the Dock icon opens a workspace (AppDelegate), not a window.
+        // Else SwiftUI opens a window for a folder dropped on the Dock icon.
         .handlesExternalEvents(matching: [])
         .onChange(of: settings.terminal) { PaneTerminal.configure() }
-        // Every window (the new-window view's too), sheet and menu, and the terminals' palettes, follow the app's
-        // appearance.
         .onChange(of: settings.appearance, initial: true) {
             NSApp.appearance = switch settings.appearance {
             case .auto: nil
@@ -49,8 +43,8 @@ struct OvviApp: App {
             case .dark: NSAppearance(named: .darkAqua)
             }
         }
-        // A floated pane (D50). Its main window saves and opens it, so SwiftUI does not restore it.
-        WindowGroup(id: "float", for: Floating.self) { $floating in
+        // Its main window saves and opens it, so SwiftUI must not restore it.
+        WindowGroup(id: WindowPages.floatScene, for: Floating.self) { $floating in
             if let floating {
                 FloatingWindow(floating: floating)
             }
@@ -60,20 +54,18 @@ struct OvviApp: App {
         .defaultWindowPlacement { _, _ in FloatFrames.placement() }
         .windowResizability(.contentMinSize)
         .restorationBehavior(.disabled)
-        // Its scene's own File items (Close on ⌘W) came back over the main window's: ⌘W closed the main window.
+        // Else its scene's File items (Close on ⌘W) take the main window's place: ⌘W closes the main window.
         .commandsRemoved()
-        // Nor does it take a folder dropped on the Dock icon: it opened an empty floating window.
+        // Else a folder dropped on the Dock icon opens an empty floating window.
         .handlesExternalEvents(matching: [])
-        // Ovvi ▸ About Ovvi. No Window menu item of its own, no restore, no Dock-icon drops.
-        Window("About Ovvi", id: "about") { About() }
+        Window("About Ovvi", id: WindowPages.aboutScene) { About() }
             .windowStyle(.hiddenTitleBar)
             .windowResizability(.contentSize)
             .restorationBehavior(.disabled)
             .commandsRemoved()
             .handlesExternalEvents(matching: [])
-        // Ovvi ▸ Settings… (⌘,). A `Window`: the `Settings` scene's window grew on a pushed page and put Back on a
-        // row of its own, unlike System Settings.
-        Window("Settings", id: "settings") { SettingsWindow() }
+        // Not a `Settings` scene: its window grows on a pushed page and puts Back on a row of its own.
+        Window("Settings", id: WindowPages.settingsScene) { SettingsWindow() }
             .defaultSize(width: 715, height: 560)
             .windowResizability(.contentSize)
             .restorationBehavior(.disabled)
@@ -84,20 +76,15 @@ struct OvviApp: App {
 
 struct ContentView: View {
     @State private var pages = WindowPages()
-    /// The open pages' names and the one in view (D43), for a window macOS restores.
     @SceneStorage("pages") private var savedPages = ""
     @SceneStorage("page") private var savedPage = ""
-    /// The window's machine's id (D43).
     @SceneStorage("machine") private var savedMachine = ""
-    /// Each page's selected workspace and tabs and its floated panes, as JSON.
     @SceneStorage("selection") private var savedSelection = ""
     @SceneStorage("sidebar") private var sidebar = true
     @SceneStorage("sidebarWidth") private var sidebarWidth = 300.0
-    /// `SessionPicker` until a pick opens the first page, also in a window macOS restores.
     @SceneStorage("picking") private var picking = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openWindow) private var openWindow
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Group {
@@ -110,23 +97,21 @@ struct ContentView: View {
                 WindowStart(pages: pages)
             }
         }
-        .animation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.2),
+        .animation(Animation.reduced ? nil : .easeOut(duration: 0.2),
                    value: pages.current == nil && !picking)
         .onChange(of: pages.current == nil && !picking) { WindowStart.started = true }
         .task {
             let opening = WindowPages.opening
             WindowPages.opening = nil
-            // New Window: a session to pick, none opened by itself; it joins the windows with its first page.
             if let opening, opening.machine == nil {
                 picking = true
             }
             guard !picking else { return }
             await restore(opening?.machine)
-            // Closed while it restored: nothing of it may stay.
+            // Closed while it restores: nothing of it may stay.
             if Task.isCancelled {
                 pages.closed()
             } else if pages.list.isEmpty, !openAsked() {
-                // Nothing to restore or asked for (a launch, a Dock reopen): never a session by itself.
                 picking = true
             } else {
                 pages.opened()
@@ -136,7 +121,6 @@ struct ContentView: View {
                                          with: openWindow)
                     }
                 }
-                // A machine just added connects now, asking what ssh asks in this window.
                 if opening?.connect == true, let store = pages.current?.store {
                     await store.connect(in: pages)
                 }
@@ -151,7 +135,6 @@ struct ContentView: View {
         .onChange(of: pages.current?.id) { savedPage = $1 ?? "" }
         .onChange(of: pages.machine.id) { savedMachine = $1 }
         .onChange(of: selection) { savedSelection = $1 }
-        // Git status for the page in view of a visible window: now and every 10 s (D67).
         .task(id: scenePhase == .active ? pages.current?.id : nil) {
             pages.visible = scenePhase == .active
             pages.markShown()
@@ -162,7 +145,6 @@ struct ContentView: View {
         }
     }
 
-    /// A notification click or a float URL that started the app: its session opens, as the user asked for it.
     private func openAsked() -> Bool {
         guard let asked = WindowPages.asked,
               let machine = MachineList.shared.machine(asked.machine) else { return false }
@@ -171,7 +153,7 @@ struct ContentView: View {
         return true
     }
 
-    /// Each page's selection, for `savedSelection`; sorted keys, so the same selection is the same text.
+    /// Sorted keys, so the same selection is the same text.
     private var selection: String {
         let pages = Dictionary(uniqueKeysWithValues: pages.list.map { page in
             (page.id, Selection(workspace: page.selectedWorkspaceID, tabs: page.selectedTabIDs,
@@ -182,7 +164,6 @@ struct ContentView: View {
         return (try? encoder.encode(pages)).map { String(decoding: $0, as: UTF8.self) } ?? ""
     }
 
-    /// Each page's saved selection; an id that is gone falls back to herdr's focus on the next snapshot.
     private func restoreSelection() {
         let selection = (try? JSONDecoder().decode([String: Selection].self, from: Data(savedSelection.utf8))) ??
             [:]
@@ -191,7 +172,6 @@ struct ContentView: View {
             page.floating = saved.floating
             page.selectedWorkspaceID = saved.workspace
             page.selectedTabIDs = saved.tabs
-            // A store another window has loaded settles now; a new one on its first snapshot.
             if page.store.state == .live {
                 page.settle()
             }
@@ -204,14 +184,10 @@ struct ContentView: View {
         var floating: [String: Bool]
     }
 
-    /// The machine: `opening`, else `-machine <id>`, else the saved one. Pages: `-session`, else the saved ones
-    /// that still run, else a machine's `default` when the window opened for that machine (the machine menu, Add
-    /// Machine); This Mac's first page starts when stopped. None by itself: then the window shows `SessionPicker`, or
-    /// the session a click or URL that started the app asks for.
     private func restore(_ opening: Machine?) async {
         guard pages.list.isEmpty else { return }
         // A window macOS restores gets its scene storage a moment after it first shows; a restored window always
-        // saved its pages.
+        // has saved pages.
         if AppDelegate.restoring {
             for _ in 0 ..< 50 where savedPages.isEmpty {
                 try? await Task.sleep(for: .milliseconds(20))
@@ -220,23 +196,20 @@ struct ContentView: View {
         // Closed meanwhile: no session may start for it.
         guard !Task.isCancelled else { return }
         // A run against a throwaway session must open only it.
-        let arguments = UserDefaults.standard.volatileDomain(forName: UserDefaults.argumentDomain)
-        let argument = arguments["session"] as? String
-        let id = arguments["machine"] as? String ?? savedMachine
+        let argument = MachineList.session
+        let id = UserDefaults.standard.volatileDomain(forName: UserDefaults.argumentDomain)["machine"] as? String
+            ?? savedMachine
         let machine = opening ?? MachineList.shared.machine(id)
         if let machine {
             pages.machine = machine
         }
-        // A removed machine's window opens no page: its saved pages were the remote's sessions.
+        // A removed machine's window opens no page: its saved pages are the remote's sessions.
         let removed = machine == nil && !id.isEmpty
         // A test run (`-defaultSession`) shares saved windows with Debug runs: it restores only throwaway sessions.
-        let test = UserDefaults.standard.string(forKey: "defaultSession")
         let saved = argument == nil && !removed ? savedPages.split(separator: " ").map(String.init)
-            .filter { test == nil || $0.hasPrefix("ovvi-e2e-") } : []
+            .filter { MachineList.defaultSession == nil || $0.hasPrefix("ovvi-e2e-") } : []
         if !saved.isEmpty {
             let client: any Multiplexer = await HerdrClient(session: saved[0], exec: pages.machine.exec())
-            // A machine that does not answer (a remote one that needs a password) keeps every page: each shows
-            // why.
             let running = await (try? client.sessions())?.filter(\.running).map(\.name)
             guard !Task.isCancelled else { return }
             for name in saved where running?.contains(name) ?? true {
@@ -246,39 +219,35 @@ struct ContentView: View {
                 pages.show(page)
             }
         }
-        if pages.list.isEmpty, let name = argument ?? (opening == nil ? nil : "default") {
+        if pages.list.isEmpty, let name = argument ?? (opening == nil ? nil : Session.defaultName) {
             pages.open(name, start: !pages.machine.isRemote)
         }
         restoreSelection()
-        pages.showTerminals() // The restored tab streams now, not at the next snapshot.
+        pages.showTerminals() // The restored tab streams at once, not at the next snapshot.
     }
 }
 
-/// The window once it has a page: the title row, the sidebar and the page's selected workspace.
 private struct WindowContent: View {
     let pages: WindowPages
     let page: Page
     @Binding var sidebar: Bool
     @Binding var sidebarWidth: Double
-    /// The one floating panel open: the workspace menu, the palette, Open Session or Keyboard Shortcuts.
     @State private var panel: Panel?
     @State private var workspaceButtonX: CGFloat = 0
     @State private var fullScreen = false
     @State private var lightsOff = 0
-    /// The window's content height, for the palette's list.
     @State private var height: CGFloat = 0
     private var settings = AppSettings()
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         let style = settings.style
         let look = Look(style: style, dark: colorScheme == .dark, contrast: colorSchemeContrast == .increased)
         let commands = CommandList(pages: pages, palette: open(.palette), sidebar: $sidebar,
                                    openSession: open(.openSession), shortcuts: open(.shortcuts), settings: settings)
-        // The page's and the sidebar's 4 pt top room (for the cards' strokes) lies under the title row, so the
-        // cards start at its bottom edge, as in Rex; the row stays on top for its clicks and window drags.
+        // The page's and the sidebar's 4 pt top room (for the cards' strokes) lies under the title row; the row
+        // stays on top for its clicks and window drags.
         VStack(spacing: -4) {
             TitleBar(
                 pages: pages,
@@ -294,7 +263,7 @@ private struct WindowContent: View {
             .zIndex(1)
             HStack(spacing: 0) {
                 if sidebar {
-                    // As in Rex, the cards start at the sidebar's width: its handle lies over the page's 8 pt gap.
+                    // The cards start at the sidebar's width: its handle lies over the page's 8 pt gap.
                     Sidebar(pages: pages, width: $sidebarWidth) { panel = .openSession }
                         .padding(.bottom, gap)
                         // Rex's page header and first row sit 3 pt lower than the page's 4 pt room.
@@ -304,10 +273,9 @@ private struct WindowContent: View {
                         .zIndex(1)
                         .transition(.move(edge: .leading).combined(with: .opacity))
                 }
-                // Also under the overview, hidden, so its kept pages stay (ui/window#tab-page).
+                // Kept under the overview, hidden, so its kept pages stay.
                 Detail(pages: pages, page: page).frame(maxWidth: .infinity, maxHeight: .infinity)
                     .opacity(pages.overview ? 0 : 1)
-                    // At once, also in the sidebar's animation.
                     .animation(nil, value: pages.overview)
                     .allowsHitTesting(!pages.overview)
                     // Not `accessibilityHidden(false)`, which overrides the hidden ones inside.
@@ -316,14 +284,13 @@ private struct WindowContent: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .overlay {
                 if pages.overview {
-                    // Gone at once, also when the sidebar moves in the same update.
                     Overview(pages: pages, leading: sidebar ? sidebarWidth - gap : 0)
                         .transition(.identity)
                 }
             }
         }
-        // Rex's collapse time, for the title row too (tabs over the cards); the toggle and ⌃⌘S only flip the value.
-        .animation(reduceMotion && !Animation.forceMotion ? nil : .easeInOut(duration: 0.3), value: sidebar)
+        // Rex's collapse time.
+        .animation(Animation.reduced ? nil : .easeInOut(duration: 0.3), value: sidebar)
         .hoverPanelHost()
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
         .overlay {
@@ -348,7 +315,6 @@ private struct WindowContent: View {
         }
         .modifier(CloseDialog(page: page))
         .overlay {
-            // A new question gets a new field.
             if let question = pages.question {
                 AskDialog(question: question, machine: pages.machine).id(question.id).dialog()
             }
@@ -358,8 +324,7 @@ private struct WindowContent: View {
         .testValue("window.look", "Appearance", "\(style.rawValue) \(look.dark ? "dark" : "light")")
         .testValue("app.latency", "Latency", Latency.shared.recorded.joined(separator: "; "), shown: Latency.isOn)
         .testValue("app.frames", "Frames", FrameProbe.shared.recorded, shown: FrameProbe.isOn)
-        // No card takes a panel's keys, nor a claim from before it opened (a new browser card's took the palette's);
-        // a closed panel gives them back. In one handler: the keys go back only once the panel counts as closed.
+        // In one handler: the keys go back only once the panel counts as closed.
         .onChange(of: panel, initial: true) { old, new in
             pages.panelOpen = new != nil
             if new != nil {
@@ -368,7 +333,6 @@ private struct WindowContent: View {
                 page.focusKeyboardCard()
             }
         }
-        // The sidebar counts as a drawn change too.
         .onChange(of: "\(panel.map { "\($0)" } ?? "") \(sidebar)", initial: true) {
             Latency.shared.panel = $1
         }
@@ -379,7 +343,6 @@ private struct WindowContent: View {
                    shown: WindowReader.recordLights)
         .navigationTitle(page.selectedTab.map { "\(page.titleText($0)) - \(page.store.title)" } ?? page.store.name)
         .menuBar(commands)
-        // The workspace menu belongs to the collapsed sidebar's button.
         .onChange(of: sidebar) {
             if sidebar, panel == .workspaces {
                 panel = nil
@@ -393,7 +356,6 @@ private struct WindowContent: View {
         case workspaces, palette, openSession, shortcuts
     }
 
-    /// Whether this panel is the open one; opening it closes the other.
     private func open(_ which: Panel) -> Binding<Bool> {
         Binding { panel == which } set: { panel = $0 ? which : panel == which ? nil : panel }
     }

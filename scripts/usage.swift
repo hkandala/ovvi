@@ -1,7 +1,7 @@
 // What an app and the processes it is responsible for (WebKit's, its herdr runs) use over some seconds: their count,
 // footprint at the end, CPU, threads and interrupt wake-ups a second, for the app, WebKit's processes and all of them.
 // A process started meanwhile counts no CPU or wake-ups.
-// Usage: usage <pid> <seconds>   (the e2e helper's `usage`)
+// Usage: usage <pid> <seconds>
 import Darwin
 import Foundation
 
@@ -27,7 +27,6 @@ func parent(_ pid: pid_t) -> pid_t {
     return proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, &info, size) == size ? pid_t(info.pbi_ppid) : 0
 }
 
-/// The app and every process it started or is responsible for, by pid.
 func sample() -> [pid_t: Sample] {
     var pids = [pid_t](repeating: 0, count: 8192)
     let count = Int(max(proc_listallpids(&pids, Int32(pids.count * MemoryLayout<pid_t>.size)), 0))

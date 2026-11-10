@@ -1,12 +1,10 @@
 import XCTest
 
-/// Pictures of the window's empty, connecting, loading, failed and not-installed states, in dark and in light, for a
-/// designer's look (on demand). A state that does not show in time is shot anyway: the picture says what came.
 extension OvviUITests {
     func testStateScenes() async throws {
         executionTimeAllowance = 900
         continueAfterFailure = true
-        let ssh = await (try? Self.post("\(one)/ssh-connections")) != nil
+        let ssh = try await hasSSH()
         let machines = #"[{"id":"e2e-down","name":"devbox","target":"ovvi-e2e@192.0.2.1","icon":"server.rack"},"#
             + #"{"id":"e2e-pw","name":"Password Host","target":"ovvi-pw","icon":"cpu"}]"#
         for look in ["dark", "light"] {
@@ -58,9 +56,7 @@ extension OvviUITests {
         }
     }
 
-    /// A session that stopped; one with no workspaces (the app starts it with one, which closes).
     private func sessionScenes(_ look: String, _ base: [String]) async throws {
-        let five = try env("OVVI_SESSION5"), eight = try env("OVVI_SESSION8")
         relaunch(five, base)
         _ = element("workspace.w1").exists(within: connect)
         _ = try? await Self.post("\(five)/stop")
@@ -75,8 +71,6 @@ extension OvviUITests {
         _ = try? await Self.post("\(eight)/stress", Data())
     }
 
-    /// No herdr on This Mac (a login shell whose PATH and home have none), a herdr that never answers, and a machine
-    /// that does not answer: Connecting for ssh's 10 s, then Reconnecting.
     private func herdrScenes(_ look: String, _ base: [String]) async {
         app.launchEnvironment["SHELL"] = "\(Self.fixtures)/no-herdr/login-shell"
         app.launchEnvironment["PATH"] = "/usr/bin:/bin"
@@ -105,7 +99,6 @@ extension OvviUITests {
         await stateShot(look, "W8 reconnecting, machine unreachable")
     }
 
-    /// A machine that asks: Disconnected with Connect, ssh's question, then no herdr there (CI's sshd).
     private func askingScenes(_ look: String, _ base: [String]) async throws {
         try await Self.post("\(one)/ssh-drop", Data("ovvi-pw".utf8))
         try await Self.post("\(one)/ssh-forget", Data("ovvi-pw".utf8))
@@ -141,17 +134,14 @@ extension OvviUITests {
         app.typeKey("w", modifierFlags: .command)
     }
 
-    /// The new-window view in each look: This Mac's sessions with Password Host not connected (CI's sshd), a typed
-    /// name, and This Mac without herdr.
-    func testNewWindowScenes() async {
-        let ssh = await (try? Self.post("\(one)/ssh-connections")) != nil
+    func testNewWindowScenes() async throws {
+        let ssh = try await hasSSH()
         let host = #"[{"id":"e2e-pw","name":"Password Host","target":"ovvi-pw","icon":"cpu"}]"#
         for look in ["dark", "light"] {
             relaunch(one, ["-appearance", look, "-machines", ssh ? host : "[]"])
             _ = element("terminal.w1:p1").exists(within: connect)
             let first = app.windows.firstMatch.identifier
             app.typeKey("n", modifierFlags: .command)
-            // Its first frames, as soon as the window is there: what shows before any read answers.
             if let window = until(3, { app.windows.count > 1 }) ? app.windows.allElementsBoundByIndex
                 .first(where: { $0.identifier != first }) : nil
             {
@@ -169,12 +159,9 @@ extension OvviUITests {
             await newWindowShot(look, "N4 new window, Add Machine")
             app.launchEnvironment["SHELL"] = "\(Self.fixtures)/no-herdr/login-shell"
             app.launchEnvironment["PATH"] = "/usr/bin:/bin"
-            app.terminate()
             // A fake installer: a stray Return on Install herdr must never run herdr.dev's.
-            app.launchArguments = ["-defaultSession", one, "-machines", "[]", "-appearance", look,
-                                   "-herdrInstall", "\(Self.fixtures)/no-herdr/install",
-                                   "-ApplePersistenceIgnoreState", "YES"] + Self.noConfig
-            app.launch()
+            relaunch(one, ["-appearance", look, "-herdrInstall", "\(Self.fixtures)/no-herdr/install",
+                           "-ApplePersistenceIgnoreState", "YES"], windows: .restored)
             _ = element("picker.local.+install").exists(within: connect)
             await newWindowShot(look, "N3 new window, no herdr")
             app.launchEnvironment["SHELL"] = nil
@@ -182,9 +169,7 @@ extension OvviUITests {
         }
     }
 
-    /// A session with no space in each look: the window's start, and the sidebar's quiet page.
-    func testEmptySessionScenes() async throws {
-        let eight = try env("OVVI_SESSION8")
+    func testEmptySessionScenes() async {
         for look in ["dark", "light"] {
             _ = try? await Self.post("\(eight)/stress", Data())
             relaunch(eight, ["-appearance", look])
@@ -197,7 +182,6 @@ extension OvviUITests {
         _ = try? await Self.post("\(eight)/stress", Data())
     }
 
-    /// The front window, the pointer off it.
     private func newWindowShot(_ look: String, _ name: String) async {
         let window = app.windows.firstMatch
         window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1.3)).hover()
@@ -205,13 +189,10 @@ extension OvviUITests {
         keepScreenshot("\(look) \(name)", of: window)
     }
 
-    /// The main window, the pointer off it.
     private func stateShot(_ look: String, _ name: String) async {
-        let main = app.windows.matching(NSPredicate(format: "identifier BEGINSWITH 'main-'")).firstMatch
+        let main = mainWindows.firstMatch
         main.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1.3)).hover()
         try? await Task.sleep(for: .seconds(0.4))
         keepScreenshot("\(look) \(name)", of: main.exists ? main : nil)
     }
-
-    static let fixtures = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "Fixtures").path
 }

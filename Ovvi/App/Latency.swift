@@ -3,8 +3,8 @@ import HerdrKit
 import Observation
 import SwiftUI
 
-/// Runs `body` on the main run loop after Core Animation's commit (order 2000000), which runs before waiting and on
-/// a loop's exit: what the turn drew (before waiting alone missed a flicker). Also on the `extra` activities.
+/// Core Animation commits at order 2000000, ahead of waiting and on a loop's exit; ahead of waiting alone misses a
+/// flicker.
 @discardableResult
 func afterCommit(_ extra: CFRunLoopActivity = [], _ body: @escaping @MainActor (CFRunLoopActivity) -> Void)
     -> CFRunLoopObserver
@@ -17,29 +17,20 @@ func afterCommit(_ extra: CFRunLoopActivity = [], _ body: @escaping @MainActor (
     return observer!
 }
 
-/// e2e (`-recordLatency YES`): for each key or click, the time from the event to the end of the run loop turn whose
-/// Core Animation commit drew a change of the key window (its page, workspace, tab, tabs, cards, panel or dialog),
-/// how many turns that took, the time from the app taking the event to that end (an accessibility client's queries
-/// can hold the event back for seconds), and how many times a panel's list was made for it: "⌘T 12ms 0 9ms 0".
 @MainActor @Observable
 final class Latency {
     static let shared = Latency()
     static let isOn = UserDefaults.standard.bool(forKey: "recordLatency")
-    /// The sidebar's rows made (a space's or an agent's body), for the scroll and main records.
     private(set) static var rows = 0
 
-    static func madeRow() -> Bool {
+    static func madeRow() {
         if isOn {
             rows += 1
         }
-        return true
     }
 
     private(set) var recorded: [String] = []
-    /// The window's open panel, as it was last drawn.
     @ObservationIgnored var panel = ""
-    /// The filter of the list made last: a typed key changes what the window shows. Each list made counts, so one
-    /// made many times for one key shows in the key's record.
     @ObservationIgnored var filter = "" {
         didSet { lists += 1 }
     }
@@ -48,12 +39,11 @@ final class Latency {
     @ObservationIgnored private var pending: Pending?
     private struct Pending {
         let name: String, time: TimeInterval, state: String
-        /// When the app took the event: what came before is waiting (another app's queries, an earlier turn).
+        /// An accessibility client's queries can hold an event back for seconds ahead of this.
         let taken = ProcessInfo.processInfo.systemUptime
         var turns = 0
     }
 
-    /// Once, at launch.
     func install() {
         guard Self.isOn else { return }
         NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .leftMouseUp]) { event in
@@ -80,10 +70,7 @@ final class Latency {
         }
     }
 
-    /// The main thread's work in the last 5 s: run loop turns from wake to sleep, the longest, the
-    /// snapshots applied and their own time, and the sidebar's rows made: "main 812ms 120ms 34 210ms 40".
     private func recordMain() {
-        // A turn still running counts up to now, so a main thread that never sleeps does not show as idle.
         endTurn(next: awake.map { _ in ProcessInfo.processInfo.systemUptime })
         let line = "main \(Int(busy * 1000))ms \(Int(longest * 1000))ms \(snapshots) \(Int(applying * 1000))ms"
             + " \(Self.rows - rowsBefore)"
@@ -92,7 +79,6 @@ final class Latency {
         (busy, longest, snapshots, applying) = (0, 0, 0, 0)
     }
 
-    /// The turn since `awake` ends now; `next` starts another.
     private func endTurn(next: TimeInterval? = nil) {
         if let awake {
             let turn = ProcessInfo.processInfo.systemUptime - awake
@@ -102,20 +88,16 @@ final class Latency {
         awake = next
     }
 
-    /// In `recorded`, and on stderr (unbuffered) for a run by hand: there no accessibility client's queries take
-    /// the main thread.
     private func record(_ line: String) {
         recorded.append(line)
         FileHandle.standardError.write(Data("\(line)\n".utf8))
     }
 
-    /// The main thread's own time, for `applied`: not the wall clock, which also counts a time the process was
-    /// stopped (the e2e helper's `heap` stops it for seconds, and once did so inside an apply: 10.8 s).
+    /// Not the wall clock: the e2e helper's `heap` stops the process for seconds.
     static var threadTime: TimeInterval {
         TimeInterval(clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID)) / 1e9
     }
 
-    /// A snapshot's apply on the main thread, from `start` (`threadTime`) on.
     func applied(since start: TimeInterval) {
         guard Self.isOn else { return }
         let time = Self.threadTime - start
@@ -157,20 +139,16 @@ final class Latency {
         }
     }
 
-    /// What the key window shows, in short; the overview too.
     private var state: String {
         guard let pages = WindowPages.windows.first, let page = pages.current else { return "" }
         let workspace = page.selectedWorkspace, tab = page.selectedTab
         return [page.id, workspace?.id ?? "", tab?.id ?? "", workspace?.tabs.map(\.id).joined(separator: ",") ?? "",
                 tab?.tree?.paneIDs.joined(separator: ",") ?? "", page.zoomedPaneID ?? "",
                 page.closing == nil ? "" : "closing", panel, filter, pages.overview ? "overview" : "",
-                // A space's fold.
                 UserDefaults.agents.string(forKey: Page.openShelves) ?? ""]
             .joined(separator: " ")
     }
 
-    /// The sidebar's pages after a swipe's lift: their offset at each frame for 0.8 s, in ms from the lift; first the
-    /// ms to the last change, last the ms to the session's show (-1: none): "swipe 230ms 0:145.0,8:152.4,… 190".
     func lifted(_ offset: Double) {
         guard Self.isOn else { return }
         lifted = ProcessInfo.processInfo.systemUptime
@@ -190,8 +168,6 @@ final class Latency {
         slide.append((Int((ProcessInfo.processInfo.systemUptime - lifted) * 1000), offset))
     }
 
-    /// The swipe's session is about to show; its own record, as a key's, gives the time to the turn whose commit
-    /// drew it ("session 40ms 0 40ms"). One record waits at a time: a key during the switch takes its place.
     func shown() {
         if let lifted {
             let now = ProcessInfo.processInfo.systemUptime
@@ -200,15 +176,12 @@ final class Latency {
         }
     }
 
-    /// A split starts (a key, a button, the palette): its frames' record.
     func split() {
         if Self.isOn {
             meter.split()
         }
     }
 
-    /// A step of the split being recorded: its name, its time from the split and the CPU of the frame it fell in,
-    /// "list@12/9".
     func step(_ name: String) {
         if Self.isOn {
             meter.step(name)
@@ -231,11 +204,6 @@ final class Latency {
     }
 }
 
-/// Frames while the window scrolls or splits, at the display's full rate: a display link runs from a scroll event
-/// until 0.3 s after the last ("scroll <frames> <hitches> <ms> <p50> <p95> <max> <the main thread's CPU> <the sidebar's
-/// rows made> <each hitch: its end+gap/CPU>"; a hitch, a frame over 25 ms after the one before), or for 1.2 s from a
-/// split, its slide and what lands after ("split <frames> <hitches> <ms> <p50> <p95> <max> <the main thread's CPU>
-/// <each hitch> <each step: name@time/CPU>", in ms; a hitch, over one and a half display frames).
 @MainActor
 private final class FrameMeter: NSObject {
     let record: (String) -> Void
@@ -271,7 +239,7 @@ private final class FrameMeter: NSObject {
         cpu = Latency.threadTime
         (lastCPU, cpus, rowsBefore) = (cpu, [], Latency.rows)
         link = screen.displayLink(target: self, selector: #selector(frame))
-        // The display's full rate: ProMotion runs at 60 Hz or less when nothing asks for more.
+        // ProMotion runs at 60 Hz or less when nothing asks for more.
         link?.preferredFrameRateRange = CAFrameRateRange(minimum: 120, maximum: 120, preferred: 120)
         link?.add(to: .main, forMode: .common)
     }
@@ -289,8 +257,7 @@ private final class FrameMeter: NSObject {
         let time = Int((now - start) * 1000)
         let sorted = gaps.sorted()
         let part = { (share: Double) in Int(sorted[Int(Double(sorted.count - 1) * share)] * 1000) }
-        // Each hitch's end from the start, its gap, and the main thread's CPU in it: "130+41/30". A gap with little CPU
-        // waited on the render server.
+        // A gap with little CPU waits on the render server.
         var elapsed = 0.0
         let hitch = name == "scroll" ? 0.025 : link.duration * 1.5
         let hitches = zip(gaps, cpus).compactMap { gap, cpu in
@@ -305,7 +272,6 @@ private final class FrameMeter: NSObject {
         }
         record("split \(gaps.count) \(hitches.count) \(time)ms \(part(0.5)) \(part(0.95)) \(part(1)) \(busy)ms "
             + hitches.joined(separator: ",") + " " + steps.map { step, time in
-                // The CPU of the frame it fell in.
                 var end = 0.0
                 let cpu = zip(gaps, cpus).first { gap, _ in
                     end += gap

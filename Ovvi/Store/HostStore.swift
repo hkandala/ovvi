@@ -2,9 +2,8 @@ import AppKit
 import HerdrKit
 import Observation
 
-/// The live model of one herdr session. Snapshots land on stable objects keyed by id; Observation
-/// skips fields that did not change, so one status change redraws one row (design D6). The selection is the
-/// window's (`Page`).
+/// Snapshots land on stable objects keyed by id: Observation skips fields that do not change, so one status change
+/// redraws one row.
 @MainActor @Observable
 final class HostStore {
     enum State: Equatable {
@@ -13,51 +12,35 @@ final class HostStore {
     }
 
     let session: String
-    /// An edit changes its name and icon (`MachineList.save`).
     var machine: Machine
     private(set) var state = State.connecting
-    /// Every session herdr knows on the machine.
     private(set) var sessions: [Session] = []
     private(set) var workspaces: [Workspace] = []
     private(set) var panes: [Pane] = []
-    /// Each tab's panes in herdr's order, set only when it changes: a view of one tab reads its own.
+    /// Set only when it changes: a view of one tab reads its own.
     private(set) var tabPanes: [String: [Pane]] = [:]
     private(set) var waiting = 0
-    /// herdr's focused workspace: a page's first selection.
     private(set) var focusedWorkspaceID: String?
-    /// The last failed write, shown for a few seconds; ✕ clears it.
     var notice: Notice?
-    /// The card whose border flashes now (`ovvi reveal`).
+    /// The not-running page's reason, until the session answers or the next Start.
+    var startProblem: String?
+    var starting = false
     var flashing: String?
-    /// The closed sessions a Resume is starting: out of Archived, and not started twice.
     var resuming: Set<String> = []
-    /// New panes' choosers (ui/new-pane) and agent panes' chats by terminal id: the app's own, for every window.
     var choosers: [Chooser] = []
     @ObservationIgnored var chats: [String: Chat] = [:]
-    /// The agents Ovvi typed with their chat flags, by terminal id (`Launch`). Not observed: an observed write
-    /// (`program`, `choosers`) follows each change.
+    /// Not observed: an observed write (`program`, `choosers`) follows each change.
     @ObservationIgnored var launches: [String: Launch] = [:]
-    /// Writes, one at a time in order: a quick second close or split waits for the first (both show at once).
     @ObservationIgnored let writes = Gate(1)
-    /// A write in flight (not observed: read when a key or a drag acts).
     var writing: Bool {
         writes.busy
     }
 
-    /// What shows before herdr has it.
     @ObservationIgnored var ahead = Ahead()
-    /// A split's cards slide until then (`TabPage.slide`).
     @ObservationIgnored var sliding = ContinuousClock.now
-    /// The last snapshot, drawn again with `ahead`.
     @ObservationIgnored private(set) var last: Snapshot?
-    /// Panes being closed (`Ahead`), kept with what was asked of them in case the close comes back. A closing card
-    /// fades out with its header, not a stand-in's "terminal".
     @ObservationIgnored private(set) var parked: [String: Pane] = [:]
-    /// The tab the user looks at (D14): selected on the page in view of the key window. Its notifications go.
     @ObservationIgnored var lookingTabID: String?
-    /// The pane the user looks at (D14), as `Seen` keys it (its terminal: a moved pane stays looked at): the keyboard
-    /// card on the page in view of the last key window, or a key floating window's pane; kept while the app is in the
-    /// background. Its finish counts as seen once it is another pane (`Seen`).
     @ObservationIgnored private var lookingKey: String? {
         didSet {
             if lookingKey != oldValue {
@@ -67,31 +50,24 @@ final class HostStore {
         }
     }
 
-    /// The windows that have its page open, the controller first (D66): the window where the user last typed or
-    /// clicked in a card of the session. The others watch.
+    /// The controller first: the window where the user last typed or clicked in a card of the session.
     var windows: [WindowPages] = []
-    /// Its panes marked as shown (`markShown`), and the marks in flight.
     @ObservationIgnored var marked: Set<String> = []
-    /// Its workspaces marked `ovvi-open`.
     @ObservationIgnored var openMarked: Set<String> = []
     @ObservationIgnored var marking: Task<Void, Never>?
-    /// The session's page is in view in a visible window: git status runs only then (D67).
-    var showsGit: Bool {
+    var onScreen: Bool {
         windows.contains { $0.visible && $0.current?.store === self }
     }
 
-    /// `connect` runs, and how many began: an error from before it, whose session list waited for its start, does
-    /// not show.
+    /// An error from ahead of a connect, whose session list waits for its start, does not show.
     @ObservationIgnored private var connecting = false
     @ObservationIgnored private var connects = 0
     @ObservationIgnored private(set) var client: (any Multiplexer)?
     @ObservationIgnored private var task: Task<Void, Never>?
-    /// Workspaces with a git run in flight: one at a time each.
-    @ObservationIgnored var gitRuns: Set<String> = []
-    /// Program asks in flight, 8 at most: a 600-pane session's first snapshot made 600 herdr runs.
+    @ObservationIgnored var gitReads: Set<String> = []
+    /// 8 at most: a 600-pane session's first snapshot makes 600 herdr runs.
     @ObservationIgnored let asks = Gate(8)
     @ObservationIgnored private var seen: Seen
-    /// `seen`'s marks as last kept in the defaults (`keepMarks`).
     @ObservationIgnored private var marks: [String: Seen.Mark]
 
     private init(session: String, machine: Machine) {
@@ -102,19 +78,16 @@ final class HostStore {
         seen = Seen(marks: marks)
     }
 
-    /// The app's stores, one per machine and session open in a window (design D43). A session with no page has none.
-    private static var open: [String: HostStore] = [:]
+    private(set) static var open: [String: HostStore] = [:]
 
     static func key(_ session: String, _ machine: Machine) -> String {
         "\(machine.id) \(session)"
     }
 
-    /// Every open session's store, each once however many windows show it.
     static var all: [HostStore] {
         open.values.sorted { $0.session < $1.session }
     }
 
-    /// The session's store, made and connected on first use; `start` starts its server first (stopped or new).
     static func named(_ session: String, on machine: Machine, start: Bool = false) -> HostStore {
         if let store = open[key(session, machine)] {
             return store
@@ -125,17 +98,13 @@ final class HostStore {
         return store
     }
 
-    /// Its page closed: the events stream and every herdr run of it end; the session keeps running.
     func disconnect() {
         task?.cancel()
         Self.open[Self.key(session, machine)] = nil
     }
 
-    /// The Connect button and a new machine: connects to the remote machine, asking the user what ssh asks in the
-    /// window that connects (machines#health-check: only this may prompt). The page shows Connecting from the click
-    /// until the session answers.
+    /// Only this may prompt for what ssh asks.
     func connect(in pages: WindowPages) async {
-        // A second click joins the first.
         guard machine.isRemote, !connecting else { return }
         connecting = true
         connects += 1
@@ -146,29 +115,24 @@ final class HostStore {
         do {
             try await (machine.exec() as? SSHExec)?.connect { question in await pages.ask(question) }
         } catch HerdrError.disconnected {
-            // The Disconnected page says it.
         } catch {
             failure = error
         }
         connecting = false
-        // Its first check failed when the machine was not connected yet.
+        // Its first check fails while the machine is not connected.
         pages.findAgents()
-        // The read's answer ends Connecting now; the notice's 4 s do not hold it.
         await client?.refresh()
         if let failure {
-            await show(Notice(text: failure.localizedDescription))
+            show(Notice(text: failure.localizedDescription))
         }
     }
 
-    /// Follows the session until the task is cancelled. A failed start says why, then connects anyway: the page
-    /// shows "not running" with Start.
     private func run(start: Bool) async {
         if start {
             do {
                 try await Self.start(session, on: machine)
             } catch {
-                // Kept until the session answers.
-                notice = Notice(text: error.localizedDescription)
+                startProblem = error.localizedDescription
             }
         }
         let client: any Multiplexer = await HerdrClient(session: session, exec: machine.exec())
@@ -182,13 +146,13 @@ final class HostStore {
                 let start = Latency.threadTime
                 let changes = apply(snapshot)
                 state = .live
+                startProblem = nil
+                starting = false
                 snapshotted(changes)
                 Latency.shared.applied(since: start)
                 // After the first snapshot, so the session list never delays the layout.
                 if !loadedSessions {
                     loadedSessions = true
-                    notice = nil
-                    // State files of plugin panes closed elsewhere (plugins/api#state), and the `ovvi` command.
                     Task { [machine, session] in await machine.exec().pruneState(session: session) }
                     Task { [machine] in
                         if let script = AgentCommands.script {
@@ -197,15 +161,9 @@ final class HostStore {
                     }
                     await loadSessions()
                 }
-            case let .copy(text):
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(text, forType: .string)
             case let .request(id, pane):
                 // ponytail: not cancelled with the store; its runs' timeouts and the float's 8 s wait end it.
                 Task { await answer(request: id, from: pane) }
-            case let .float(request):
-                WindowPages.float(session: request.session, pane: request.pane, machine: machine.id,
-                                  over: windows.first)
             case let .error(error):
                 await failed(error)
             }
@@ -213,13 +171,17 @@ final class HostStore {
     }
 
     private func failed(_ error: HerdrError) async {
-        // Not while Connect runs, nor one that waited for its start: Connect's own read follows.
+        // Not while Connect runs, nor one that waits for its start: Connect's own read follows.
         let connects = connects
         guard !connecting else { return }
         // First, to tell "not running" from other failures without a flash of the other text.
         await loadSessions()
         guard connects == self.connects else { return }
         state = .failed(error)
+        // Not a read that failed while the start still runs.
+        if Self.starts[Self.key(session, machine)] == nil {
+            starting = false
+        }
         snapshotted([])
     }
 
@@ -231,28 +193,28 @@ final class HostStore {
         panes.first { $0.id == id }
     }
 
-    /// False only when herdr lists the session as stopped (or not at all).
+    func terminalPane(_ id: String) -> Pane? {
+        panes.first { $0.terminalID == id }
+    }
+
     var isRunning: Bool {
         sessions.isEmpty || sessions.contains { $0.name == session && $0.running }
     }
 
-    /// herdr's session list again: a session started since shows up.
     func loadSessions() async {
         guard let client, let listed = try? await client.sessions() else { return }
         sessions = listed
         KnownSessions.keep(listed, of: machine)
     }
 
-    /// The last snapshot drawn again, with what the app shows ahead of herdr.
     func redraw() {
         if let last {
             snapshotted(apply(last))
         }
     }
 
-    /// The snapshot onto the objects, as the app shows it (`ahead`); its agent changes.
     private func apply(_ snapshot: Snapshot) -> [Seen.Change] {
-        // A pane closed at its chooser or chat: herdr's raw panes, so one made since the last snapshot stays.
+        // herdr's raw panes, so one made since the last snapshot stays.
         let gone = Set(last?.panes.compactMap(\.terminalID) ?? []).subtracting(snapshot.panes.compactMap(\.terminalID))
         drop(closed: gone)
         last = snapshot
@@ -303,21 +265,17 @@ final class HostStore {
         return changes
     }
 
-    /// Each workspace's branch (D67): `all` for the 10 s refresh, else only a workspace that is new or whose root
-    /// changed. Only while the page is in view.
     func updateGit(all: Bool) async {
-        guard showsGit, await gitUsable.value else { return }
+        guard onScreen, await gitUsable.value else { return }
         for workspace in workspaces {
-            // The page left view (or closed) during the runs before.
-            guard showsGit, !Task.isCancelled else { return }
+            guard onScreen, !Task.isCancelled else { return }
             let root = root(of: workspace)
-            // A root that changes during a run waits for the next tick.
-            guard let root, all || root != workspace.gitRoot, !gitRuns.contains(workspace.id) else { continue }
+            guard let root, all || root != workspace.gitRoot, !gitReads.contains(workspace.id) else { continue }
             workspace.gitRoot = root
-            gitRuns.insert(workspace.id)
+            gitReads.insert(workspace.id)
             // One after another: 30 workspaces are not 30 git processes at once.
             workspace.git = await GitStatus.of(root, exec: machine.exec())
-            gitRuns.remove(workspace.id)
+            gitReads.remove(workspace.id)
         }
     }
 }
@@ -337,8 +295,7 @@ extension HostStore {
         keepMarks()
     }
 
-    /// Each tab's strongest agent, each workspace's state and the panes that need you, kept here: views
-    /// that read every pane's state for them drew again on any agent's change, every capsule and sidebar row.
+    /// Kept here: views that read every pane's state redraw on any agent's change, every capsule and sidebar row.
     private func showStrongest() {
         for workspace in workspaces {
             for tab in workspace.tabs {
@@ -354,12 +311,11 @@ extension HostStore {
         waiting = panes.count { $0.state == .needsYou }
     }
 
-    /// Where `seen`'s marks are kept, so an agent's time outlives a relaunch.
     private static func marksKey(_ session: String, _ machine: Machine) -> String {
         "agentMarks.\(machine.id) \(session)"
     }
 
-    /// Keeps `seen`'s marks once a snapshot came: before it they are empty.
+    /// Only once a snapshot comes: until then they are empty.
     private func keepMarks() {
         guard last != nil, seen.marks != marks else { return }
         marks = seen.marks
@@ -371,7 +327,6 @@ extension HostStore {
         }
     }
 
-    /// The user looks at `pane` of `store` (a key window's), and at nothing in the other sessions.
     static func look(_ pane: Pane?, in store: HostStore) {
         let key = pane.map { Seen.key(terminalID: $0.terminalID, paneID: $0.id) }
         for other in all {
@@ -380,8 +335,4 @@ extension HostStore {
     }
 }
 
-/// This Mac's, for the app's life: it reads the login shell's environment once.
 let localExec = Task { await ProcessExec() }
-/// Checked once at launch, so the developer tools dialog never opens.
-/// ponytail: This Mac's check, for remote machines' git too; ask each machine when one lacks git.
-let gitUsable = Task { await GitStatus.usable(exec: localExec.value) }

@@ -1,13 +1,11 @@
 import HerdrKit
 import SwiftUI
 
-/// The selected tab's page: its cards in herdr's layout. A switch shows another tab's page at once (a view of its own
-/// per tab, made by `TabPages`).
 struct TabPage: View {
     let tab: HostStore.Tab
     let page: Page
-    /// A kept page out of view (`TabPages`) leaves the accessibility tree. Not by `accessibilityHidden(false)` when
-    /// shown, which overrides the hidden ones inside (a zoom's cards under it).
+    /// Not by `accessibilityHidden(false)` when shown, which overrides the hidden ones inside (a zoom's cards under
+    /// it).
     @Environment(\.pageHidden) private var hidden
 
     var body: some View {
@@ -26,10 +24,6 @@ struct TabPage: View {
         .accessibilityIdentifier(hidden ? "" : "page.\(tab.id)")
     }
 
-    /// A split's, a close's, a swap's or a zoom's motion, in seconds. 0.2 s felt slow.
-    static let slide = 0.13
-
-    /// A page's cards inside its page: room for the cards' outer stroke and shadow.
     static let inset = EdgeInsets(top: 4, leading: gap, bottom: gap, trailing: gap)
 
     static func area(_ size: CGSize) -> CGRect {
@@ -38,32 +32,22 @@ struct TabPage: View {
     }
 }
 
-/// herdr's split tree, drawn flat: each card and divider is placed in the page by its rectangle, and keeps its view
-/// (by pane id, or the split's path) whatever the tree does. So a split, a close, a swap or a zoom moves and sizes
-/// the same cards: Core Animation moves them (`CardMotion`), and no terminal view changes host.
+/// Drawn flat: each card and divider keeps its view (by pane id, or the split's path) whatever the tree does, so no
+/// terminal view changes host.
 private struct SplitLayout: View {
     let tree: SplitNode
-    /// The tab's zoomed card (D11): it fills the page; the others stay at their size, hidden under it, so their
-    /// terminals keep their size.
     let zoomed: String?
     let page: Page
     let tabID: String
-    /// The cards in their place, in the tree's order, with the id their view goes by: one new since the page first
-    /// drew starts beside its place and slides in. Not a transition: `.move` and `.offset` transitions moved
-    /// nothing here (CI recordings), only their fade ran.
+    /// Not a transition: `.move` and `.offset` transitions move nothing here, only their fade runs.
     @State private var placed: [(id: String, view: String)]?
-    /// The app's ratio of a split (by path) while its divider is dragged or sent, until herdr's snapshot shows its
-    /// own.
     @State private var held: [[Bool]: Double] = [:]
-    /// e2e (`-recordMotion YES`): the cards that came into the page and went from it.
     @State private var cards = (came: 0, went: 0)
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.pageHidden) private var hidden
     @Environment(\.look) private var look
 
-    /// A split, a close, a swap or a zoom; the terminals keep their size until it ends (`TerminalHost`).
     private var motion: Animation? {
-        reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: TabPage.slide)
+        Animation.reduced ? nil : .easeOut(duration: HostStore.slide)
     }
 
     var body: some View {
@@ -75,7 +59,6 @@ private struct SplitLayout: View {
             ZStack(alignment: .topLeading) {
                 ForEach(parts.cards.map { (view: views[$0.id] ?? $0.id, card: $0) }, id: \.view) { _, card in
                     let away = zoomed != nil && zoomed != card.id
-                    // A new card slides in from its side as the others make room, its edge on theirs.
                     let entering = placed != nil && views[card.id] == nil
                     let rect = zoomed == card.id ? area : entering ? card.start : card.rect
                     let edge = look.edge(keyboard: false)
@@ -85,14 +68,10 @@ private struct SplitLayout: View {
                                    .overlay { CardFlash(store: page.store, id: card.id) }
                                    .environment(\.look, look).environment(\.pageHidden, hidden))
                         .place(rect)
-                        // A move's frame jumps to its place, and `CardMotion` animates it; the sidebar's slide and a
-                        // window resize size it at every step.
                         .transaction(value: move) { $0.animation = nil }
-                        // Under the zoomed card, which covers it, so its terminal views get no clicks.
                         .animation(motion) { $0.opacity(away ? 0 : 1) }
                         .zIndex(away ? 0 : 1)
                         .allowsHitTesting(!away)
-                        // A closed card fades as the others grow. A new one fades in with its slide (`entering`).
                         .transition(.asymmetric(insertion: .identity, removal: .opacity))
                         .onAppear {
                             if SettlingHost.record {
@@ -113,7 +92,6 @@ private struct SplitLayout: View {
                         .opacity(zoomed == nil ? 1 : 0)
                         .allowsHitTesting(zoomed == nil)
                         .accessibilityHidden(zoomed != nil)
-                        // Over both sides' edges: its hit area reaches 4 pt into each card.
                         .zIndex(2)
                 }
             }
@@ -130,9 +108,6 @@ private struct SplitLayout: View {
         }
     }
 
-    /// The view id of each of these cards already in place. herdr's panes that took splits' stand-ins (`Ahead`) keep
-    /// their views, in order, so each new card comes once, where it ends up; a replaced pane's new pane keeps its card,
-    /// in place (no slide in, no fade out).
     private func views(_ ids: [String]) -> [String: String] {
         guard let placed else { return [:] }
         // Not `uniqueKeysWithValues`: a pane twice in herdr's tree must not crash the app.
@@ -148,43 +123,22 @@ private struct SplitLayout: View {
     }
 }
 
-extension HostStore {
-    /// Draws a split ahead of herdr (`ahead.split`); its cards slide from now (`sliding`), unless under Reduce Motion.
-    func slide() {
-        redraw()
-        if !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion || Animation.forceMotion {
-            sliding = .now + .seconds(TabPage.slide)
-        }
-    }
-
-    /// Once a split's slide ended: herdr's answer comes during it, and its apply and the views it changes (the new
-    /// pane's card and terminal, the menus) took 30–60 ms of the main thread, frames the slide lost.
-    func slid() async {
-        // A quick second split slides on.
-        while sliding > .now, !Task.isCancelled {
-            try? await Task.sleep(until: sliding)
-        }
-    }
-}
-
 private extension NSWindow {
     /// Not movable while the cards slide: at each frame of a layout change AppKit works out a movable window's drag
-    /// region, for which SwiftUI walks every view under the title row (15–25 % of a split's frames). Nothing drags
-    /// the window meanwhile; not while a button is down (a window drag under way).
+    /// region, for which SwiftUI walks every view under the title row (15–25 % of a split's frames).
     func holdStill() {
         guard NSEvent.pressedMouseButtons == 0 else { return }
         isMovable = false
         Task {
-            try? await Task.sleep(for: .seconds(TabPage.slide))
+            try? await Task.sleep(for: .seconds(HostStore.slide))
             isMovable = true
         }
     }
 }
 
 private extension View {
-    /// At this rectangle of the page, by layout (`position`), not `.offset`: a layout change animates every view in
-    /// it, the terminal's too. (Padding gave a card sliding in from the left a size below zero, and it came in
-    /// header high.)
+    /// By layout (`position`), not `.offset`: a layout change animates every view in it, the terminal's too. Not
+    /// padding: it gives a card sliding in from the left a size below zero.
     func place(_ rect: CGRect) -> some View {
         frame(width: rect.width, height: rect.height)
             .position(x: rect.midX, y: rect.midY)

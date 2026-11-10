@@ -4,7 +4,6 @@ import { appName, docsRoute, gitConfig } from './shared';
 export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
-      // JSX supported
       title: appName,
       url: docsRoute,
     },

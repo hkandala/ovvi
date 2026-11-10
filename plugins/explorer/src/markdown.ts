@@ -1,9 +1,3 @@
-// The Markdown place: one CodeMirror view of the file in two modes, each locked or not. Rich Text draws it as rendered
-// Markdown (a live preview, live.ts): locked, the view is not editable and every line is drawn; unlocked, the marks of
-// the caret's lines come back, so the lock moves nothing on screen but the caret's line. Source draws the file as code
-// cards do, with the rendered page beside it, folded until the user shows it (split.ts); locked, neither edits. The
-// outline lists the headings; row 2 picks the mode, the lock and the outline (its toggle shows only while the file has a
-// heading), and the page sets them when it changes them itself.
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown"
 import { yamlFrontmatter } from "@codemirror/lang-yaml"
 import { ensureSyntaxTree, syntaxTree, syntaxTreeAvailable } from "@codemirror/language"
@@ -16,24 +10,14 @@ import { choose, fileURL, how, htmlPage, menu, open, own, type Place, type Revea
 import { sideBySide } from "./split"
 
 type Mode = "rich" | "source"
-/** The mode, the lock, and Source's page shown or folded. */
 type Look = { mode: Mode; locked: boolean; preview: boolean }
 const mode = (value: unknown): Mode | undefined => (value === "rich" || value === "source" ? value : undefined)
-/** The card's look, the last its Markdown pages showed: a page shown anew or again shows it. */
 let cardLook: Look | undefined
-/** A card's mode from before the lock: Read and Live Edit are Rich Text, locked and not; Side by Side is Source with
- *  its page shown (Source is Source, folded). */
-const OLD: Record<string, Partial<Look>> = {
-  read: { mode: "rich", locked: true },
-  live: { mode: "rich", locked: false },
-  split: { mode: "source", preview: true },
-}
 
-/** GitHub's anchor of a heading's text, for `#` links. */
+/** As GitHub makes a heading's anchor. */
 const slug = (text: string) => text.trim().toLowerCase().replace(/[^\p{L}\p{N}\s_-]/gu, "").replace(/\s/g, "-")
 
-/** Locked: no text box for VoiceOver, an article; a drop changes nothing. Not read only: the editor's read only is
- *  the file's (`editor`), and a tick while locked writes. */
+/** Not read only: read only is the file's, and a tick while locked writes. */
 const markdownMode = (edit: boolean) => [
   EditorView.editable.of(edit),
   edit ? [] : [
@@ -44,8 +28,6 @@ const markdownMode = (edit: boolean) => [
 const modeClass = EditorView.editorAttributes.compute([EditorView.editable], (state) => ({
   class: editing(state) ? "" : "cm-reading",
 }))
-/** Rich Text's look, and Source's page: prose in the system font at 14 pt (the app's
- *  13 pt text size plus one), over the shared monospace, in a 640 pt column. */
 const rendered = [
   live,
   modeClass,
@@ -59,7 +41,6 @@ const rendered = [
     },
   })),
 ]
-/** The headings in the editor's syntax tree, at the top level, in lists and in quotes: their line and text. */
 function headings(state: EditorState, tree = syntaxTree(state)) {
   const found: { from: number; level: number; text: string }[] = []
   tree.iterate({
@@ -67,7 +48,6 @@ function headings(state: EditorState, tree = syntaxTree(state)) {
       const level = /^(?:ATX|Setext)Heading(\d)$/.exec(node.name)?.[1]
       if (!level) return containers.includes(node.name)
       const line = state.doc.lineAt(node.from)
-      // The text between an ATX heading's marks, or a setext heading's first line.
       const [first, last] = node.node.getChildren("HeaderMark")
       const text = node.name.startsWith("ATX")
         ? state.sliceDoc(first?.to ?? node.from, last?.from ?? node.to)
@@ -79,11 +59,9 @@ function headings(state: EditorState, tree = syntaxTree(state)) {
   return found
 }
 
-/** Every heading of the document: the background parse stops past the viewport. */
+/** The background parse stops past the viewport. */
 const all = (state: EditorState) => headings(state, ensureSyntaxTree(state, state.doc.length, 200) ?? undefined)
 
-/** A locked view's selection as source text: the page's selection mapped onto the document (an end outside the editor is the
- *  document's end), else the editor's own; undefined when the selection is not in the editor. */
 function copied(view: EditorView) {
   const selection = getSelection(), content = view.contentDOM
   const range = selection && !selection.isCollapsed ? selection.getRangeAt(0) : undefined
@@ -98,44 +76,36 @@ function copied(view: EditorView) {
 }
 
 export async function show(place: Place): Promise<Reveal> {
-  const { ovvi, arg, keep, root } = place
+  const { ovvi, arg, keep, element: root } = place
   const outline = Object.assign(document.createElement("nav"), { className: "ovvi-sidebar" })
   const pane = document.createElement("main")
-  // Shown once the file is: not beside the info view. Closed until the outline is on, then it slides.
   outline.hidden = true
   outline.toggleAttribute("data-closed", true)
   root.append(outline, pane)
-  // The card's look: as another Markdown page left it, else as the card's own choices (a relaunch), else the settings.
-  const choices = own(ovvi), old = OLD[choices.mode ?? ""]
-  const kept = { ...old, ...choices, mode: old?.mode ?? choices.mode }
+  const kept = own(ovvi)
   const first: Look = cardLook ?? {
     mode: mode(kept.mode) ?? mode(ovvi.settings.get("markdown")) ?? "rich",
     locked: kept.locked ?? ovvi.settings.get<boolean>("markdown-lock") !== false,
     preview: kept.preview ?? false,
   }
-  /** As drawn: the editor starts as Rich Text, locked. */
+  /** The editor starts as Rich Text, locked. */
   let now: Look = { mode: "rich", locked: true, preview: false }
   let outlined = false
-  /** The file has a heading: the outline's toggle shows only then. */
   let titled = false
-  /** The first look drew: before it, the page's own landing or kept top line is still to scroll. */
+  /** Until the first look draws, the page's own landing or kept top line is still to scroll. */
   let presented = false
   const editable = new Compartment(), look = new Compartment()
-  /** Source's page, while Source shows. */
   let split: ReturnType<typeof sideBySide> | undefined
   keep(() => split?.destroy())
 
-  /** Shows the look and the outline or not, and sets row 2 and Lock Editing to match. */
   function present(view: EditorView, next: Look, nowOutlined: boolean) {
     const effects = []
     if (next.locked !== now.locked) {
-      // Locked keeps no selection drawn, nor a search panel opened with Replace's row.
       if (next.locked) closeSearchPanel(view)
       effects.push(editable.reconfigure(markdownMode(!next.locked)))
     }
     if (next.mode !== now.mode) {
       effects.push(look.reconfigure(next.mode === "source" ? source : rendered))
-      // A new look keeps the line at the top in place.
       const top = view.lineBlockAtHeight(view.scrollDOM.scrollTop - view.documentPadding.top).from
       if (presented) effects.push(EditorView.scrollIntoView(top, { y: "start" }))
     }
@@ -153,31 +123,26 @@ export async function show(place: Place): Promise<Reveal> {
     if (outlined) list(view, all(view.state))
     focus(view)
     ovvi.controls.set("mode", { value: next.mode })
-    // A pencil, lit while the page edits; its help says what a click does.
     ovvi.controls.set("lock", { value: !next.locked, title: next.locked ? "Edit" : "Stop Editing" })
     ovvi.controls.set("outline", { value: outlined })
     ovvi.controls.set("lock-editing", { enabled: true, checked: next.locked })
   }
 
-  /** The user folded Source's page or showed it: the card keeps it. */
   function folded(preview: boolean) {
     now = cardLook = { ...now, preview }
     choose(ovvi, { preview })
   }
 
-  /** The look's change the user made in row 2 or with ⌘E: the card keeps it. */
   function change(view: EditorView, to: Partial<Look>) {
     choose(ovvi, to)
     present(view, { ...now, ...to }, outlined)
   }
 
-  /** Unlocked, the editor takes the keyboard; locked, the page, so the keys scroll it. */
   function focus(view: EditorView) {
     if (!now.locked) view.focus()
     else view.scrollDOM.focus({ preventScroll: true })
   }
 
-  /** The outline's toggle shows while the file has headings; with none, the outline closes. */
   function titles(view: EditorView, found: ReturnType<typeof headings>) {
     if (found.length > 0 !== titled) {
       titled = found.length > 0
@@ -187,7 +152,6 @@ export async function show(place: Place): Promise<Reveal> {
     if (outlined) list(view, found)
   }
 
-  /** The outline's rows; a click scrolls to its heading, and unlocked puts the caret there. */
   function list(view: EditorView, found: ReturnType<typeof headings>) {
     outline.replaceChildren(...found.map((heading) => {
       const row = document.createElement("button")
@@ -202,7 +166,6 @@ export async function show(place: Place): Promise<Reveal> {
     }))
   }
 
-  /** A link's place: a web address, or a relative path's file; none for an anchor or another scheme. */
   function address(link: Element) {
     const target = link.getAttribute("href") ?? ""
     if (/^https?:/i.test(target)) return target
@@ -210,14 +173,11 @@ export async function show(place: Place): Promise<Reveal> {
     return decodeURIComponent(new URL(target, fileURL(arg)).pathname)
   }
 
-  /** A link's HTML file's page (`htmlPage`), with the link's query and fragment. */
   function html(link: Element, to: string) {
     const page = htmlPage(ovvi, to)
     return page && page + (/[?#].*$/.exec(link.getAttribute("href") ?? "")?.[0] ?? "")
   }
 
-  /** The link draws as one: locked, and unlocked off the caret's lines. On a caret's line it shows its source,
-   *  and a click there edits it. */
   function linked(view: EditorView, link: Element) {
     if (!editing(view.state)) return true
     const { doc, selection } = view.state
@@ -225,9 +185,6 @@ export async function show(place: Place): Promise<Reveal> {
     return !selection.ranges.some((range) => doc.lineAt(range.from).from <= to && doc.lineAt(range.to).to >= from)
   }
 
-  /** A click on a link: `#` scrolls to its heading, else it opens as every link does (ui/window#opening-links-and-
-   *  files): in the card for a file, a new tab for a web page or an HTML file (`htmlPage`), ⌘ a new tab behind, ⌥ to the
-   *  side. */
   function follow(view: EditorView, event: MouseEvent) {
     const link = (event.target as Element).closest("a")
     if (!link) return false
@@ -242,7 +199,7 @@ export async function show(place: Place): Promise<Reveal> {
       } catch {
         // A `%` with no hex after it: the anchor as written.
       }
-      // A footnote's number links to its definition; a heading's anchor is GitHub's, `-1` on for a second of a name.
+      // GitHub adds `-1` to the anchor of a second heading of a name.
       const note = anchor.startsWith("fn:") ? view.state.field(referenceField).notes.get(anchor.slice(3)) : undefined
       const seen = new Map<string, number>()
       const heading = note ?? all(view.state).find((each) => {
@@ -258,19 +215,18 @@ export async function show(place: Place): Promise<Reveal> {
     return true
   }
 
-  // The outline closed until the file shows.
   ovvi.controls.set("mode", { value: first.mode })
   ovvi.controls.set("outline", { value: false })
   ovvi.controls.set("lock-editing", { enabled: true, checked: first.locked })
   symbols(ovvi, ["chevron.left", "chevron.right"])
   let shown: Editor
-  /** The saves of ticks made while locked, one after the other: a save under way skips a second one. */
+  /** One after the other: a save under way skips a second one. */
   let ticks = Promise.resolve()
   // Front matter as YAML, not as a rule and a heading.
   const language = yamlFrontmatter({ content: markdown({ base: markdownLanguage }) })
   const links = EditorView.domEventHandlers({
     click: (event, view) => follow(view, event),
-    // A drawn link opens on its click unlocked too, as locked: no caret first, which would show its source.
+    // No caret first: it shows the link's source.
     mousedown: (event, view) => {
       const link = (event.target as Element).closest("a")
       if (!link || event.button || event.shiftKey || !editing(view.state) || !linked(view, link)) return false
@@ -286,7 +242,6 @@ export async function show(place: Place): Promise<Reveal> {
     },
   })
   const source = [code, Prec.highest(EditorView.theme({ ".cm-content": { paddingBottom: "48px" } }))]
-  /** Source's page: Rich Text's look, locked, with its links and its ticks. */
   const page = [language, rendered, selected, markdownMode(false), EditorView.lineWrapping, links]
   shown = await editor(place, [
     language,
@@ -296,8 +251,6 @@ export async function show(place: Place): Promise<Reveal> {
     links,
     EditorView.updateListener.of((update) => {
       split?.follow(update)
-      // A box ticked while locked is saved at once, as the card's ⌘S, after any save under way; unlocked it waits for
-      // ⌘S as any edit.
       if (now.locked && update.transactions.some((tr) => tr.annotation(ticked))) {
         ticks = ticks.then(() => shown?.save())
       }
@@ -310,7 +263,6 @@ export async function show(place: Place): Promise<Reveal> {
     }),
   ], pane)
 
-  // None when the file is too large to show: the info view is there instead, and Lock Editing does nothing.
   if (!shown) {
     ovvi.controls.set("lock-editing", { enabled: false })
     ovvi.controls.set("mode", { hidden: true })
@@ -318,21 +270,19 @@ export async function show(place: Place): Promise<Reveal> {
     return undefined
   }
   const { view, land } = shown
-  // Copy while locked, when the keyboard is on the scroller: the source of the selection, also of lines not drawn
-  // (Select All's selection reaches past the editor). Not from the find field or Source's page.
+  // The source of the selection, also of lines not drawn: Select All's selection reaches past the editor.
   const copy = (event: ClipboardEvent) => {
     const mine = view.scrollDOM.contains(document.activeElement)
-    const text = !now.locked || !mine || event.defaultPrevented || !place.shown() ? undefined : copied(view)
+    const text = !now.locked || !mine || event.defaultPrevented || !place.shown ? undefined : copied(view)
     if (text === undefined) return
     event.clipboardData?.setData("text/plain", text)
     event.preventDefault()
   }
   document.addEventListener("copy", copy)
   keep(() => document.removeEventListener("copy", copy))
-  // Select All while locked selects the file, as unlocked. WebKit's, of the whole page (its `selectstart` on the body),
-  // would start at the line numbers or the outline and end in Source's page: CodeMirror took none of it.
+  // WebKit's Select All, of the whole page, starts at the line numbers or the outline and ends in Source's page.
   const selectAll = (event: Event) => {
-    if (!now.locked || !place.shown() || event.target !== document.body) return
+    if (!now.locked || !place.shown || event.target !== document.body) return
     if (!view.scrollDOM.contains(document.activeElement)) return
     event.preventDefault()
     view.dispatch({ selection: { anchor: 0, head: view.state.doc.length } })
@@ -345,19 +295,16 @@ export async function show(place: Place): Promise<Reveal> {
     if (id === "lock") change(view, { locked: value !== true })
     if (id === "lock-editing") change(view, { locked: !now.locked })
   })
-  // A new setting, while the card has no choice of its own (an old mode is one).
   ovvi.on("settings", (changed) => {
     const next = mode(changed.markdown), locked = changed["markdown-lock"], choices = own(ovvi)
     if (next && choices.mode === undefined) present(view, { ...now, mode: next }, outlined)
     if (typeof locked === "boolean" && choices.locked === undefined) present(view, { ...now, locked }, outlined)
   })
   titles(view, all(view.state))
-  // A linked open at a line (a diff's) puts the caret there (`editor`), unlocked or not. Back's landing is a path.
   present(view, first, false)
-  // A kept page shown again (Back, Forward, a link) takes the card's look.
   ovvi.on("place", () => cardLook && present(view, cardLook, outlined))
-  // The app gives the card the keyboard: after the editor's own handler, a locked page takes it.
-  const take = () => place.shown() && focus(view)
+  // After the editor's own handler: a locked page takes the keyboard.
+  const take = () => place.shown && focus(view)
   addEventListener("focus", take)
   keep(() => removeEventListener("focus", take))
   return land

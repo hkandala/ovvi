@@ -2,13 +2,10 @@ import AppKit
 import HerdrKit
 import SwiftUI
 
-/// A tab's page at the size it is given: its cards in herdr's layout (or its zoomed card), each with its picture at
-/// its place in the card, scaled from the tab's page (`size`).
 struct Miniature: View {
     let tab: HostStore.Tab
     let page: Page
     let size: CGSize
-    /// The terminals that stream and draw here until they have a snapshot.
     let live: Set<String>
 
     var body: some View {
@@ -30,23 +27,19 @@ struct Miniature: View {
     }
 }
 
-/// A card at `scale`: its terminal's snapshot, or the terminal live until it has one, or for a terminal never shown
-/// the fill.
 private struct MiniCard: View {
     let id: String
     let page: Page
-    /// The card's size in the tab's page, before `scale`.
     let size: CGSize
     let scale: CGFloat
     let live: Set<String>
     @Environment(\.look) private var look
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: 10 * scale, style: .continuous),
+        let shape = RoundedRectangle(cornerRadius: CardSurface.radius * scale, style: .continuous),
             edge = look.edge(keyboard: false)
         let pane = page.store.pane(id), header = page.headerHeight(pane)
-        let terminal = CGSize(width: max(size.width - 2 * PaneCard.inset, 1),
-                              height: max(size.height - header - gap, 1))
+        let terminal = PaneCard.terminalSize(size, header: header)
         let content = CGSize(width: size.width, height: max(size.height - header, 1))
         shape.fill(look.cardFill)
             .overlay(shape.stroke(edge.color, lineWidth: edge.width))
@@ -55,9 +48,8 @@ private struct MiniCard: View {
                     Image(systemName: "pip").foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if let pane, pane.plugin != nil || page.shownChat(pane) != nil {
-                    // Not a terminal: a web card's or a chat's last picture, else its kind's symbol. A tile makes no
-                    // web view, proxy or transcript read, and takes no web view from its card (which then drew blank
-                    // as it went back).
+                    // A tile makes no web view, proxy or transcript read, and takes no web view from its card, which
+                    // then draws blank as it goes back.
                     if let picture = pane.terminalID.flatMap(page.terminals.picture) {
                         scaled(CardPicture(picture: picture, pane: pane)
                             .miniCard(pane.id, pane.plugin.map { $0.manifest?.id ?? $0.plugin } ?? "chat"), content,
@@ -69,19 +61,16 @@ private struct MiniCard: View {
                     }
                 } else if let pane, let id = pane.terminalID {
                     let isLive = live.contains(id)
-                    // Not made for a tile that is not live (a view and a session each, while it scrolls).
                     let view = isLive ? page.terminal(pane) : page.terminals.terminals([id]).first
                     let drawsLive = isLive && view?.snapshot == nil
                     ZStack {
                         Color.clear
                         if drawsLive, let view {
-                            // Its snapshot is its picture until it drew (`dropPicture`).
                             MiniTerminal(terminal: view, size: terminal)
                         } else if let snapshot = view?.snapshot {
                             Snapshot(surface: snapshot)
                         }
                     }
-                    // e2e: and its snapshot's width in pixels.
                     .miniCard(pane.id, "\(view?.pictured != true ? "loading" : drawsLive ? "live" : "snapshot") "
                         + "\(view?.snapshot?.width ?? 0)")
                     .frame(width: terminal.width * scale, height: terminal.height * scale)
@@ -91,13 +80,10 @@ private struct MiniCard: View {
             }
     }
 
-    /// A card's own view at the card's size under its header, scaled to the tile. The tile takes its clicks, wheel
-    /// and keyboard.
     private func scaled(_ view: some View, _ content: CGSize, under header: CGFloat) -> some View {
         view.frame(width: content.width, height: content.height)
             .scaleEffect(scale, anchor: .topLeading)
             .frame(width: content.width * scale, height: content.height * scale, alignment: .topLeading)
-            // `WebHost` reads this as "in a tile" (`BrowserView.inTile`): no other card is disabled.
             .disabled(true)
             .allowsHitTesting(false)
             .padding(.top, header * scale)
@@ -105,17 +91,12 @@ private struct MiniCard: View {
 }
 
 private extension View {
-    /// A card's element in its tile, with a value for the tests; its children are not elements (the tile is a button).
-    /// A group's value does not reach XCUITest; static text's does (as the pane card's).
+    /// A group's value does not reach XCUITest; static text's does.
     func miniCard(_ paneID: String, _ value: String) -> some View {
-        accessibilityElement()
-            .accessibilityAddTraits(.isStaticText)
-            .accessibilityIdentifier("overview.card.\(paneID)")
-            .accessibilityValue(value)
+        readableText(value).accessibilityIdentifier("overview.card.\(paneID)")
     }
 }
 
-/// A terminal's snapshot, stretched to the tile's terminal (it keeps the terminal's proportions).
 private struct Snapshot: NSViewRepresentable {
     let surface: IOSurface
 
@@ -131,9 +112,8 @@ private struct Snapshot: NSViewRepresentable {
     }
 }
 
-/// The pane's own terminal view, drawn at the miniature's size: its bounds are the card's terminal size, so
-/// AppKit scales the layer and libghostty keeps its grid (herdr's PTY never resizes). Clicks and scrolls go to
-/// the tile. The newest host adopts the view, as `TerminalHost`'s do.
+/// Its bounds are the card's terminal size, so AppKit scales the layer and libghostty keeps its grid (herdr's PTY never
+/// resizes).
 struct MiniTerminal: NSViewRepresentable {
     let terminal: PaneTerminal
     let size: CGSize
@@ -153,8 +133,6 @@ struct MiniTerminal: NSViewRepresentable {
         mini.fit()
     }
 
-    /// The view goes back to the card's host it came from, in a kept page under the overview (`TabPages`), unless a
-    /// newer host took it.
     static func dismantleNSView(_ mini: Mini, coordinator _: ()) {
         if let view = mini.subviews.first, let lender = mini.lender, lender.window != nil {
             lender.addSubview(view)
@@ -185,25 +163,15 @@ struct MiniTerminal: NSViewRepresentable {
             fit(now: true)
         }
 
-        /// The bounds at once; the terminal's size as the card's host fits it: at once for one with no grid yet
-        /// (it opens at this size), else 150 ms after the last change, so a window drag reflows nothing meanwhile.
         func fit(now: Bool = false) {
             guard !frame.isEmpty, size.width > 0, size.height > 0 else { return }
             setBoundsSize(size)
             fitting?.cancel()
             guard let view = subviews.first as? PaneSurfaceView, view.frame.size != size else { return }
             guard now || view.terminal?.grid == nil || view.frame.isEmpty else {
-                fitting = Task { [weak self] in
-                    try? await Task.sleep(for: .milliseconds(150))
-                    if !Task.isCancelled {
-                        self?.fit(now: true)
-                    }
-                }
-                return
+                return SettlingHost.settle(&fitting) { [weak self] in self?.fit(now: true) }
             }
-            // Before libghostty hears of the size, as the card's host does.
-            view.terminal?.hold()
-            view.frame = CGRect(origin: .zero, size: size)
+            SettlingHost.place(view, CGRect(origin: .zero, size: size))
         }
     }
 }

@@ -24,6 +24,8 @@ private func package(_ folder: URL, version: String, extra: [String: Any] = [:])
     #expect(PluginSource("npm:@scope/csv-table@1.2.0")?.folder == "csv-table")
     #expect(PluginSource("npm:csv-table@^1")?.folder == "csv-table")
     #expect(PluginSource("npm:csv-table")?.folder == "csv-table")
+    #expect(PluginSource("npm:q@1.5")?.folder == "q")
+    #expect(PluginSource("npm:q")?.folder == "q")
     #expect(PluginSource("npm:/tmp/csv-table-0.1.0.tgz")?.folder == "csv-table-0.1.0")
     #expect(PluginSource("npm:/Users/me/@work/csv.tgz")?.folder == "csv")
     #expect(PluginSource("git:github.com/x/node_modules")?.folder == nil)
@@ -34,7 +36,6 @@ private func package(_ folder: URL, version: String, extra: [String: Any] = [:])
     #expect(PluginSource("git:/tmp/repo@abc123") == .git(url: "/tmp/repo", ref: "abc123"))
     #expect(PluginSource("~/plugins/csv") == .local("~/plugins/csv"))
     #expect(PluginSource("./csv")?.folder == nil)
-    // Nothing that reads as an option to npm or git, and no bare words.
     for bad in ["npm:", "npm:--global", "git:/tmp/repo@-x", "git:-u/x", "csv-table"] {
         #expect(PluginSource(bad) == nil, "\(bad)")
     }
@@ -58,7 +59,6 @@ private func package(_ folder: URL, version: String, extra: [String: Any] = [:])
     #expect(staged.manifest.version == "1.0.0")
     let folder = try await PluginPackages.finish(staged, into: plugins, exec: offline).folder
     #expect(folder == plugins.appending(path: "csv-table"))
-    // Only the installed package is left in the plugins folder.
     #expect(try FileManager.default.contentsOfDirectory(atPath: plugins.path) == ["csv-table"])
 
     let latest = try await PluginPackages.fetch(#require(PluginSource("git:\(repo.path)")), into: plugins,
@@ -73,7 +73,6 @@ private func package(_ folder: URL, version: String, extra: [String: Any] = [:])
     let scratch = try scratchFolder()
     defer { try? FileManager.default.removeItem(at: scratch) }
     let source = scratch.appending(path: "source"), plugins = scratch.appending(path: "plugins")
-    // A dependency from the package's own files, and the host types as a peer, which must not install.
     try package(source, version: "1.0.0", extra: [
         "dependencies": ["pad": "file:vendor/pad"], "peerDependencies": ["@ovvi/plugin-api": "*"],
     ])
@@ -146,14 +145,12 @@ private func package(_ folder: URL, version: String, extra: [String: Any] = [:])
     try PluginPackages.store(nil, "hidden-files", of: "explorer", in: settings)
     let json = try JSONSerialization.jsonObject(with: Data(contentsOf: settings)) as? [String: Any]
     #expect(json?["plugins"] == nil && PluginPackages.sources(settings) == ["npm:a"])
-    // A hand edit with a typo is never written over.
     try Data("{oops".utf8).write(to: settings)
     #expect(throws: HerdrError.self) { try PluginPackages.store(true, "a", of: "git", in: settings) }
     #expect(throws: HerdrError.self) { try PluginPackages.list("npm:b", in: settings, add: true) }
     #expect(try String(contentsOf: settings, encoding: .utf8) == "{oops")
 }
 
-/// A package whose `build` script copies its entry into `dist`, or fails.
 private func buildable(_ folder: URL, build: String = "mkdir -p dist && cp main.js dist/main.js && echo built-ok")
     throws
 {
@@ -173,10 +170,8 @@ private func buildable(_ folder: URL, build: String = "mkdir -p dist && cp main.
     let (folder, output) = try await PluginPackages.finish(PluginPackages.fetch(source, into: plugins, exec: offline),
                                                            into: plugins, exec: offline)
     #expect(FileManager.default.fileExists(atPath: folder.appending(path: "dist/main.js").path))
-    // The script's own lines, not npm's banner (`--silent`).
     #expect(output.contains("built-ok") && !output.contains("> csv-table"))
 
-    // A build in the repository (a published package's `dist`) needs no build: this script would fail.
     try buildable(repo, build: "exit 3")
     try FileManager.default.createDirectory(at: repo.appending(path: "dist"), withIntermediateDirectories: true)
     try Data().write(to: repo.appending(path: "dist/main.js"))
@@ -196,7 +191,6 @@ private func buildable(_ folder: URL, build: String = "mkdir -p dist && cp main.
     } catch let HerdrError.failed(text) {
         #expect(text.contains("main.ts:3:1: ERROR: Expected identifier"))
     }
-    // No npm, pnpm or bun on the PATH.
     let bare = ProcessExec(offline.environment.merging(["PATH": "/usr/bin:/bin"]) { $1 }, herdr: nil, asked: .now)
     await #expect(throws: PluginPackages.NoManager.self) { try await PluginPackages.build(scratch, exec: bare) }
     #expect(try await PluginPackages.build(scratch.appending(path: "none"), exec: bare) == nil)
@@ -215,7 +209,6 @@ private func buildable(_ folder: URL, build: String = "mkdir -p dist && cp main.
     #expect(try PluginPackages.served("main.js", in: dist, within: package).map { try Data(contentsOf: $0) }
         == Data("x".utf8))
     #expect(PluginPackages.served("k", in: dist, within: package) == nil)
-    // A build folder that is itself a symlink out of the package.
     #expect(PluginPackages.served("secret", in: package.appending(path: "out"), within: package) == nil)
     for name in ["", ".env", "../secret", "a/b"] {
         #expect(PluginPackages.served(name, in: dist, within: package) == nil, "\(name)")

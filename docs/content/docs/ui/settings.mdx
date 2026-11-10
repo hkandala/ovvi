@@ -130,7 +130,6 @@ without opening a stream again.
 - Show closed sessions: the sidebar's Archived Sessions, which lists the
   sessions of Claude Code, Codex, Pi and OpenCode that no pane runs. Off, the
   shelf hides and the app reads nothing ([Archived Sessions](/docs/ui/window#archived-sessions)).
-  The app removes the old `settleAfter` key on launch.
 - Agents in New Pane lists Claude Code, Codex, Pi and OpenCode, each with its
   program tile, its command and two controls:
   - The extra arguments go into the agent's typed line right after its
@@ -155,7 +154,8 @@ without opening a stream again.
 ## Machines
 
 This Mac, then each remote machine, in the machine menu's order. Each row
-shows the machine's icon, name and SSH target, and for a remote machine
+shows the machine's icon, name and SSH target (This Mac: the Mac's own
+name), and for a remote machine
 Connected (a window of it is connected) or Not connected. Add Machine… opens
 an empty machine page.
 
@@ -173,7 +173,7 @@ A machine's page:
   the machine's browser cards, and its approved websites, after a
   confirmation. This Mac's page has the header and this row.
 - **Remove ‹machine›: Remove…**, last, takes the machine off the list after a
-  confirmation, as the dialog's Remove does. Its terminals keep running on
+  confirmation. Its terminals keep running on
   the machine.
 
 ## Plugins
@@ -183,8 +183,9 @@ the browser first, then the plugins that come with Ovvi, then yours. Each row
 shows the plugin's icon, name, version and source. A row opens the plugin's page:
 
 - **The header**: the icon, name, version, description and source, and on
-  its right Update, Update to Version ‹x› or Reset to Default when offered,
-  Show Log and Reload.
+  its right Update (Install when its package did not load), Update to
+  Version ‹x› or Reset to Default when offered, and Show Log and Reload for
+  a plugin with code (not the browser).
 - **Settings** that the plugin declares in its manifest
   ([Settings](/docs/plugins/manifest#settings)), then Show in New Pane. A
   plugin's cards read them and hear each change

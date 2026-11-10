@@ -1,21 +1,12 @@
 import Foundation
 
-/// pi's session file (`~/.pi/agent/sessions/…/<time>_<id>.jsonl`, pi's docs/session-format.md), one entry per line.
-/// Entries form a tree by `id` and `parentId`; the history is the branch from the leaf back to the root
-/// (resources/research/agents/pi.md#3-file-watching-and-the-parser). The core reads `message` entries: user text,
-/// assistant text, thinking and tool calls, and tool results; errors, interrupts, `!` commands and compaction are
-/// extras. Anything else is skipped. It keeps the tree; the history it builds is the caller's (the chat's), changed in
-/// place.
+/// pi's entries form a tree by `id` and `parentId`; the history is the branch from the leaf back to the root.
 public struct PiTranscript: Sendable {
-    /// Each entry read, by id: its parent and what it does to the history, so another branch is built again without
-    /// reading the file again.
     private var nodes: [String: Node] = [:]
     private var leaf: String?
-    /// The session's folder, from the header: tool paths under it show from there.
     private var cwd: String?
-    /// Where the file was read up to, and the `/tree` moves it has not been read up to yet.
-    /// ponytail: a file pi rewrites in place (it migrates an old one) keeps the old offsets and nodes; the nodes
-    /// heal by id, a pending move may be lost.
+    /// ponytail: a file pi rewrites in place keeps the offsets and nodes read from it; the nodes heal by id, a pending
+    /// move may be lost.
     private var offset = 0
     private var moves: [(leaf: String?, size: Int)] = []
 
@@ -33,8 +24,7 @@ public struct PiTranscript: Sendable {
         case model(String, effort: String?)
     }
 
-    /// Adds the entry, which ends `end` bytes into the file; it is the leaf now (pi appends to its leaf). False when
-    /// the line is not JSON (a torn line).
+    /// The entry becomes the leaf: pi appends to its leaf.
     @discardableResult
     public mutating func read(_ line: String, end: Int, into history: inout ChatHistory) -> Bool {
         offset = end
@@ -65,9 +55,9 @@ public struct PiTranscript: Sendable {
         return true
     }
 
-    /// `/tree` moved the leaf (nil: before the first entry) when the file was `size` bytes long; pi writes nothing
-    /// then. The move shows once the file is read up to there (the state file and this one are two streams), and never
-    /// when it was read past it: the entries after it grew from the new leaf already.
+    /// pi writes nothing to the file for a `/tree` move (`leaf` nil: ahead of the first entry). The move shows once the
+    /// file is read up to `size` (the state file and this one are two streams), and never when the file is read past
+    /// it: the entries after it grew from the new leaf.
     public mutating func tree(_ leaf: String?, at size: Int, into history: inout ChatHistory) {
         if size == offset {
             move(to: leaf, into: &history)
@@ -124,9 +114,8 @@ public struct PiTranscript: Sendable {
             guard let call = message["toolCallId"] as? String else { return [] }
             return [result(message, blocks, call: call, time: time)]
         case "bashExecution":
-            // A `!command` the user ran: a command row with its exit.
             let code = message["exitCode"] as? Int
-            let tool = ChatTool(id: id, name: "bash", category: .command,
+            let tool = ChatTool(id: id, name: "bash",
                                 target: ChatHistory.firstLine(message["command"]),
                                 input: ChatHistory.detail(message["command"]), started: time)
             let result = message["cancelled"] as? Bool == true ? "cancelled" : code.map { "exit \($0)" } ?? ""
@@ -167,37 +156,30 @@ public struct PiTranscript: Sendable {
         return steps
     }
 
-    /// pi's own tools by name; any other tool shows its name and first text argument.
     private func tool(_ block: [String: Any], id: String, time: Date?) -> ChatTool {
         let name = block["name"] as? String ?? "tool", input = block["arguments"] as? [String: Any] ?? [:]
         let path = ChatHistory.short(input["path"] as? String ?? "", cwd)
-        let (category, target): (ChatTool.Category, String) = switch name {
-        case "read": (.read, path)
-        case "edit", "write": (.edit, path)
-        case "bash": (.command, ChatHistory.firstLine(input["command"]))
-        case "grep", "find": (.search, ChatHistory.firstLine(input["pattern"]))
-        case "ls": (.search, path)
-        // The first text argument by name: a parsed object has no order.
-        default: (.other, ChatHistory.firstLine(input.sorted { $0.key < $1.key }.first { $0.value is String }?.value))
+        let (category, target): (ChatTool.Category?, String) = switch name {
+        case "read", "edit", "write", "ls": (nil, path)
+        case "bash": (nil, ChatHistory.firstLine(input["command"]))
+        case "grep", "find": (nil, ChatHistory.firstLine(input["pattern"]))
+        default: (.other, ChatHistory.firstText(input))
         }
         return ChatTool(id: block["id"] as? String ?? id, name: name, category: category, target: target,
                         input: ChatHistory.detail(input), started: time)
     }
 
-    /// Arguments as JSON text; cut, the first path, command or pattern it still holds.
     private static func arguments(_ text: String) -> Any? {
         let match = text.firstMatch(of: /"(path|command|pattern)":"(?:[^"\\]|\\.)*"/)
         return (try? JSONSerialization.jsonObject(with: Data(text.utf8)))
             ?? match.flatMap { try? JSONSerialization.jsonObject(with: Data("{\($0.0)}".utf8)) }
     }
 
-    /// A result as its row says it: lines read, lines changed with the diff, a failed command's exit, else its first
-    /// line.
     private func result(_ message: [String: Any], _ blocks: [[String: Any]], call: String, time: Date?) -> Step {
         let failed = message["isError"] as? Bool == true, details = message["details"] as? [String: Any]
         let content = blocks.compactMap { $0["text"] as? String }.joined(separator: "\n")
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        // `-12 old`, `+12 new`, ` 13 same`; `   ...` between hunks has no number.
+        // `-12 removed`, `+12 added`, ` 13 same`; `   ...` between hunks has no number.
         let diff: [ChatTool.DiffLine] = (details?["diff"] as? String ?? "")
             .split(separator: "\n").compactMap { line in
                 guard let mark = line.first, "+- ".contains(mark) else { return nil }

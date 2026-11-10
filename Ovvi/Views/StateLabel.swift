@@ -1,8 +1,8 @@
 import HerdrKit
 import SwiftUI
 
-/// t3code's state icons, still and round: lucide's `circle-dashed` (Working), `circle-alert` (Needs you, and a chat's
-/// Error) and `circle-check` (Done), stroked as lucide draws them (2 of 24 units, round ends). Idle draws nothing.
+/// lucide's `circle-dashed`, `circle-alert` and `circle-check`, stroked as lucide draws them (2 of 24 units, rounded
+/// ends).
 struct StateIcon: View {
     let state: AgentState
     var color: Color?
@@ -17,7 +17,7 @@ struct StateIcon: View {
             .frame(width: 12, height: 12)
     }
 
-    /// The shapes on lucide's 24-unit grid: a circle of radius 10 round (12, 12).
+    /// The shapes on lucide's 24-unit grid: a circle of radius 10 centered on (12, 12).
     private nonisolated struct Lucide: Shape {
         let state: AgentState
 
@@ -48,17 +48,14 @@ struct StateIcon: View {
 }
 
 extension View {
-    /// A state icon as one element a test reads: its word as the value.
     func stateElement(_ state: AgentState, _ id: String) -> some View {
-        accessibilityElement().accessibilityAddTraits(.isStaticText).accessibilityValue(state.title)
+        readableText(state.title)
             .accessibilityIdentifier(id)
     }
 }
 
-/// A state: its icon and word in the state's color, 11 pt medium (a card's header, an overview tile).
 struct StateLabel: View {
     let text: String
-    /// Whose icon: a chat's Error takes Needs you's.
     let icon: AgentState
     let color: Color
 
@@ -69,14 +66,10 @@ struct StateLabel: View {
         }
         .font(.system(size: 11, weight: .medium)).foregroundStyle(color)
         .fixedSize()
-        .accessibilityElement(children: .ignore)
-        .accessibilityAddTraits(.isStaticText)
-        .accessibilityValue(text)
+        .readableText(text)
     }
 }
 
-/// An agent row's state: its icon, and for Working how long it has worked ("<1m", "3m", "1h 5m"), in the state's
-/// color, on a 14 % tint with a 1 pt border at 45 % and 6 pt corners.
 struct StateBox: View {
     let state: AgentState
     let since: Date?
@@ -93,15 +86,12 @@ struct StateBox: View {
             }
         }
         .font(.system(size: 11, weight: .semibold)).foregroundStyle(color)
-        // The CSS box's padding inside its 1 pt border.
         .padding(.horizontal, 7).padding(.vertical, 2)
         .background(color.opacity(0.14), in: .rect(cornerRadius: 6))
         .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(color.opacity(0.45)))
         .fixedSize()
     }
 
-    /// Minutes, then hours and minutes (shorter than a chat turn's "1m 48s", `ChatHistory.duration`, to fit a sidebar
-    /// row); no seconds, so the text changes once a minute.
     static func elapsed(_ interval: TimeInterval) -> String {
         let minutes = max(0, Int(interval)) / 60
         return minutes < 1 ? "<1m" : minutes < 60 ? "\(minutes)m" : "\(minutes / 60)h \(minutes % 60)m"

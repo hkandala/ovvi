@@ -1,21 +1,19 @@
 import Foundation
 import Synchronization
 
-/// Runs argv on a machine. The one seam for This Mac and remote machines.
 public protocol Exec: Sendable {
     func run(_ argv: [String]) async throws -> Channel
-    /// herdr's absolute path on the machine, from its login shell; nil when it has none. Asked again at most every
-    /// 30 s while missing or gone, so a herdr installed or moved since is found
-    /// (talking-to-herdr#herdr-on-each-machine). Throws when the machine cannot be reached.
     func herdr() async throws -> String?
-    /// Drops the herdr path it knows (or that it has none): the next `herdr()` asks the login shell again, as after
-    /// an install.
     func forgetHerdr() async
-    /// A file under the home folder, trimmed, or nil when it is missing, unreadable or empty.
     func read(home path: String) async -> String?
+    var isRemote: Bool { get }
 }
 
 public extension Exec {
+    var isRemote: Bool {
+        false
+    }
+
     func forgetHerdr() async {}
 
     func read(home path: String) async -> String? {
@@ -23,7 +21,6 @@ public extension Exec {
         return text?.isEmpty == false ? text : nil
     }
 
-    /// A command's whole stdout, trimmed; past `timeout` the command is killed and this throws.
     func output(_ argv: [String], timeout: Duration = .seconds(10)) async throws -> String {
         let channel = try await run(argv)
         channel.closeInput()
@@ -34,8 +31,6 @@ public extension Exec {
 }
 
 extension Exec {
-    /// A command's stdout, its lines joined by "\n" (NUL bytes kept), with `input` on its stdin, a line per write.
-    /// Throws the command's stderr when it exits non-zero; past `timeout` the command is killed.
     func checkedOutput(_ argv: [String], input: [String] = [],
                        timeout: Duration = .seconds(10)) async throws -> String
     {
@@ -53,7 +48,6 @@ extension Exec {
         return output
     }
 
-    /// Runs `sh -c script` with the arguments and `input` on its stdin, a line per write: true when it exits 0.
     @discardableResult
     public func succeeds(_ script: String, _ arguments: [String], input: [String] = []) async -> Bool {
         guard let channel = try? await run(["sh", "-c", script, "sh"] + arguments) else { return false }
@@ -62,10 +56,6 @@ extension Exec {
         return await channel.exit().status == 0
     }
 
-    /// Copies the file to a new folder of its own in `ovvi-drops-<uid>` in the machine's temporary folder and gives
-    /// back its path there, as herdr's remote client does with a dropped image (`herdr-clipboard-images-<uid>`): the
-    /// folder is the user's alone (0700), and each copy removes the folders older than a day. The bytes go as base64
-    /// lines, which the relay's line protocol carries.
     /// ponytail: the whole file is queued on the machine's one relay at once, ahead of its panes' streams and keys, so
     /// files over 16 MB (herdr's limit for a dropped image) are refused; stream it with backpressure if bigger files
     /// are needed.
@@ -93,25 +83,16 @@ extension Exec {
     }
 }
 
-/// The bytes as base64 lines, for a run's stdin: whole groups of 3 bytes, so no padding inside the stream.
-func base64Lines(_ data: Data) -> [String] {
-    stride(from: 0, to: data.count, by: 49152).map { data[$0 ..< min($0 + 49152, data.count)].base64EncodedString() }
-}
-
 public struct Channel: Sendable {
-    /// Stdout, one element per line. Ends when the command closes stdout.
     public let lines: AsyncStream<String>
-    /// Writes one line to stdin, in order, without blocking the caller.
+    /// One line, no line break in it: over a remote machine's relay the rest would be read as a relay command.
     public let write: @Sendable (String) -> Void
     /// Every long-running command the app starts exits when its stdin closes (talking-to-herdr, Running commands).
     public let closeInput: @Sendable () -> Void
-    /// Stops reading now and kills the command if it still runs.
     public let terminate: @Sendable () -> Void
-    /// Waits for the command to end and gives back its exit status and the last 8 KB of stderr.
     public let exit: @Sendable () async -> (status: Int32, stderr: String)
 }
 
-/// Runs commands on This Mac with the user's login-shell environment.
 public final class ProcessExec: Exec {
     let environment: [String: String]
     private let lookup: Mutex<Lookup>
@@ -120,7 +101,6 @@ public final class ProcessExec: Exec {
         var asked: ContinuousClock.Instant
     }
 
-    /// Reads the login shell once (herdr again while it has none); keep one instance for the app's life.
     public convenience init() async {
         Self.prepare()
         var env = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("HERDR_") }
@@ -217,8 +197,7 @@ public final class ProcessExec: Exec {
     /// shell's PATH may not have (macOS's zsh has not).
     public static let herdrLookup = #"command -v herdr || command -v "$HOME/.local/bin/herdr""#
 
-    /// The keys taken from the login shell and given to This Mac's server. The rest of the app's environment
-    /// (`__CFBundleIdentifier`, `XPC_*`, `DYLD_*`) must not reach a pane (design D47).
+    /// The rest of the app's environment (`__CFBundleIdentifier`, `XPC_*`, `DYLD_*`) must not reach a pane.
     static func isUserKey(_ key: String) -> Bool {
         ["PATH", "HOME", "SSH_AUTH_SOCK"].contains(key) || key.hasPrefix("XDG_")
     }
@@ -333,14 +312,11 @@ public final class ProcessExec: Exec {
     }
 }
 
-/// A pipe's bytes as lines, chunk by chunk.
 struct LineBuffer {
     private var data = Data()
-    /// The bytes searched for a newline so far: about the bytes taken (a test counts it).
     private(set) var scanned = 0
 
-    /// The lines the chunk ends. Only its bytes are scanned: a scan from the start for each chunk made a 280 KB
-    /// snapshot line cost O(n²), the app's top function in a stress profile.
+    /// Only the chunk's bytes are scanned: a scan from the start per chunk costs O(n²) on a 280 KB snapshot line.
     mutating func take(_ chunk: Data) -> [String] {
         var from = data.endIndex, lines: [String] = []
         data.append(chunk)
@@ -355,7 +331,6 @@ struct LineBuffer {
         return lines
     }
 
-    /// The last line, with no newline after it.
     var rest: String? {
         data.isEmpty ? nil : String(decoding: data, as: UTF8.self)
     }

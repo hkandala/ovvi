@@ -1,13 +1,11 @@
 import XCTest
 
-/// Drag and drop. Each test makes its own workspace in session one (closed after) and checks herdr.
 extension OvviUITests {
     func testDropOnACardsCenterSwapsAndOnItsEdgePlacesBeside() async throws {
         let (tabs, first) = try await newWorkspace("swap")
         let tab = tabs[0]
         let second = try await split(first), third = try await split(second)
         restoreHerdrFocusAfter()
-        // A later tab's page, kept hidden over this one (TabPages): its drop targets must not take the drags.
         let over = try await createTab(in: workspace(of: tab), label: "over").tab
         XCTAssertTrue(element("tab.\(over)").has(\.isHittable, true, within: 5))
         element("tab.\(over)").click()
@@ -17,11 +15,9 @@ extension OvviUITests {
 
         drag(first, to: card(second, 0.5, 0.6))
         try await expect("the two swapped") { try await order(tab) == [second, first, third] }
-        // No highlight stays on the card now under the pointer.
         XCTAssertTrue(element("drop.indicator").vanishes(within: 2))
 
-        // Its own tab's capsule is not a target: no write, so no refusal shows; the drop below checks nothing moved
-        // (writes go one at a time).
+        // Writes go one at a time, so the drop below checks that nothing moved.
         let before = try await tabIDs()
         drag(third, to: element("tab.\(tab)").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
         XCTAssertFalse(element("detail.notice").exists(within: 1))
@@ -30,8 +26,7 @@ extension OvviUITests {
         try await expect("the pane left of its neighbor") { try await order(tab) == [third, second, first] }
         let after = try await tabIDs()
         XCTAssertEqual(after, before)
-        // The three share the width, as after a split.
-        XCTAssertTrue(element("tab.\(tab)").isSelected)
+        XCTAssertFalse(until(0.5) { !element("tab.\(tab)").isSelected })
         XCTAssertTrue(hasKeyboard("terminal.\(third)"))
         try await expectWidths(tab, [third: 1 / 3, second: 1 / 3, first: 1 / 3])
         XCTAssertTrue(element("drop.indicator").vanishes(within: 2))
@@ -52,7 +47,7 @@ extension OvviUITests {
         restoreHerdrFocusAfter()
         try await Self.call(one, "pane.zoom", ["pane_id": third, "mode": "on"])
         try await press(second, over: capsule)
-        // Its page drawn before the drop; released before any assertion stops the test.
+        // Released ahead of any assertion that stops the test.
         let sprung = capsule.has(\.isSelected, true, within: 2)
             && element("pane.\(third)").has(\.isHittable, true, within: 2)
         try await release()
@@ -66,7 +61,6 @@ extension OvviUITests {
         let still = try await order(tab)
         XCTAssertEqual(still, [first, second])
 
-        // The same refused move onto a workspace row: only the row's spring-load selects beta.
         XCTAssertTrue(element("pane.\(third)").exists(within: 3))
         let betaTab = try await tabIDs().first { workspace(of: $0) == "w2" } ?? "none"
         try await press(third, over: element("workspace.w2"))
@@ -97,7 +91,6 @@ extension OvviUITests {
         let terminal = try await terminalID(second)
         XCTAssertTrue(element("pane.\(second)").exists(within: 3))
 
-        // The tab track's empty end: a new tab in this workspace (the pane keeps its id).
         let end = element("tab.\(tab)").coordinate(withNormalizedOffset: CGVector(dx: 1, dy: 0.5))
             .withOffset(CGVector(dx: 80, dy: 0))
         drag(second, to: end)
@@ -107,7 +100,6 @@ extension OvviUITests {
         }
         XCTAssertTrue(element("tab.\(moved)").has(\.isSelected, true, within: 3))
 
-        // beta's row: a new tab there, with a new pane id.
         let betaTabs = try await tabIDs().filter { $0.hasPrefix("w2:") }
         try await closeNew("tab", besides: tabIDs())
         drag(second, to: element("workspace.w2").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
@@ -116,10 +108,8 @@ extension OvviUITests {
             let place = try await place(of: terminal)
             return place.map { $0.tab.hasPrefix("w2:") && !betaTabs.contains($0.tab) } == true ? place?.pane : nil
         }
-        // The row's highlight goes with the drag.
         XCTAssertTrue(element("drop.indicator").vanishes(within: 2))
 
-        // The sidebar's empty space: a new workspace.
         let workspaces = try await workspaceIDs()
         closeNew("workspace", besides: workspaces)
         XCTAssertTrue(element("pane.\(inBeta)").exists(within: 3))
@@ -134,7 +124,6 @@ extension OvviUITests {
         }
         XCTAssertTrue(element("drop.indicator").vanishes(within: 2))
 
-        // The page header's `+`: a new workspace too (a full page has no empty space under its rows).
         let before = try await workspaceIDs()
         XCTAssertTrue(element("pane.\(away)").exists(within: 3))
         drag(away, to: element("sidebar.new-workspace").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
@@ -150,13 +139,11 @@ extension OvviUITests {
         let tab = tabs[0], second = try await split(first)
         restoreHerdrFocusAfter()
         XCTAssertTrue(element("pane.\(second)").exists(within: 3))
-        // Bottom: out of the row and back in under its neighbor; top: over it.
         drag(first, to: card(second, 0.5, 0.9))
         try await expectStack(tab, [second, first])
         drag(first, to: card(second, 0.5, 0.15))
         try await expectStack(tab, [first, second])
 
-        // The `+`, as the track's end: a new tab in this workspace.
         let terminal = try await terminalID(second)
         drag(second, to: element("titlebar.new-tab").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
         try await expect("the pane in a new tab of its workspace") {
@@ -174,8 +161,6 @@ extension OvviUITests {
         try await expect("herdr's tab order") {
             try await tabIDs().filter { $0.hasPrefix("\(workspace(of: tabs[0])):") } == [tabs[2], tabs[0], tabs[1]]
         }
-        // Let go with its capsule 0.7 of a tab past the second, the first goes last (the place under the capsule), and
-        // the second, under the pointer, has the × at once, not the dropped one. In view on CI's narrow bar.
         during(element("tab.\(tabs[2])").coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5)),
                to: element("tab.\(tabs[0])").coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)))
         XCTAssertFalse(element("tab.\(tabs[2]).close").exists, "the dropped tab kept the hover")
@@ -185,16 +170,12 @@ extension OvviUITests {
         }
     }
 
-    /// A tab dragged onto another workspace's row moves there whole: its terminals, split tree, ratios and
-    /// label, and the page follows it. Its own workspace's row is not a target. Then back from a collapsed sidebar:
-    /// held over the workspace button, the menu opens and its row takes the drop.
     func testDraggingATabOntoAWorkspaceRowOrMenuRowMovesItWithItsLayout() async throws {
         let (tab, terminal) = try await movingTab(), layout = try await terminalLayout(tab)
         let home = workspace(of: tab)
         let capsule = element("tab.\(tab)")
         XCTAssertTrue(capsule.has(\.isHittable, true, within: 3))
 
-        // Its own row: no move (the drag below would find no capsule).
         during(capsule.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
                to: element("workspace.\(home)").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
         XCTAssertFalse(element("detail.notice").exists(within: 1))
@@ -202,20 +183,19 @@ extension OvviUITests {
         XCTAssertEqual(stayed, tab)
         during(capsule.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
                to: element("workspace.w2").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
-        let moved = try await movedTab(of: terminal, layout, "moving") { $0 == "w2" }
+        let moved = try await movedTab(of: terminal, layout) { $0 == "w2" }
         let after = try await tabIDs()
         XCTAssertFalse(after.contains(tab))
         XCTAssertTrue(element("tab.\(moved)").has(\.isSelected, true, within: 3))
-        XCTAssertTrue(element("workspace.w2").isSelected)
+        XCTAssertTrue(element("workspace.w2").has(\.isSelected, true, within: 3))
         let inBeta = try await place(of: terminal)
         let keyboard = try XCTUnwrap(inBeta).pane
         XCTAssertTrue(hasKeyboard("terminal.\(keyboard)"))
         XCTAssertTrue(element("drop.indicator").vanishes(within: 2))
 
-        // The collapsed sidebar's workspace menu.
         element("titlebar.sidebar").click()
         let row = try await dragThroughWorkspaceMenu(moved, onto: "workspaces.\(one).\(home)")
-        let back = try await movedTab(of: terminal, layout, "moving") { $0 == home }
+        let back = try await movedTab(of: terminal, layout) { $0 == home }
         XCTAssertTrue(row.vanishes(within: 2))
         XCTAssertTrue(element("tab.\(back)").has(\.isSelected, true, within: 3))
         let arrived = try await place(of: terminal)
@@ -224,26 +204,21 @@ extension OvviUITests {
         element("titlebar.sidebar").click()
     }
 
-    /// A tab dragged onto New Workspace moves there whole: the collapsed sidebar's workspace menu row (held
-    /// over the workspace button), then the sidebar's empty space under its rows; the workspace it leaves closes with
-    /// its last tab.
     func testDraggingATabOntoNewWorkspaceMovesItWithItsLayout() async throws {
         let (tab, terminal) = try await movingTab(), layout = try await terminalLayout(tab)
         let workspaces = try await workspaceIDs()
         closeNew("workspace", besides: workspaces)
         XCTAssertTrue(element("tab.\(tab)").has(\.isHittable, true, within: 3))
 
-        // The collapsed sidebar's workspace menu's New Workspace row.
         element("titlebar.sidebar").click()
         let row = try await dragThroughWorkspaceMenu(tab, onto: "workspaces.new")
-        let away = try await movedTab(of: terminal, layout, "moving") { !workspaces.contains($0) }
+        let away = try await movedTab(of: terminal, layout) { !workspaces.contains($0) }
         XCTAssertTrue(row.vanishes(within: 2))
         XCTAssertTrue(element("tab.\(away)").has(\.isSelected, true, within: 3))
         let arrived = try await place(of: terminal)
         XCTAssertTrue(try hasKeyboard("terminal.\(XCTUnwrap(arrived).pane)"))
         XCTAssertTrue(element("drop.indicator").vanishes(within: 2))
 
-        // The sidebar's empty space under its rows (the ghost row).
         element("titlebar.sidebar").click()
         let made = workspace(of: away)
         XCTAssertTrue(element("workspace.\(made)").exists(within: 3))
@@ -253,7 +228,7 @@ extension OvviUITests {
         during(element("tab.\(away)").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
                to: sidebar.coordinate(withNormalizedOffset: .zero)
                    .withOffset(CGVector(dx: sidebar.frame.width / 2, dy: bottom + 40 - sidebar.frame.minY)))
-        let last = try await movedTab(of: terminal, layout, "moving") { !workspaces.contains($0) && $0 != made }
+        let last = try await movedTab(of: terminal, layout) { !workspaces.contains($0) && $0 != made }
         XCTAssertTrue(element("tab.\(last)").has(\.isSelected, true, within: 3))
         XCTAssertTrue(element("workspace.\(made)").vanishes(within: 3))
         XCTAssertTrue(element("drop.indicator").vanishes(within: 2))
@@ -269,15 +244,12 @@ extension OvviUITests {
                to: secondRow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9)))
         try await expect("first below second") { try await workspaceIDs().suffix(2) == [second, first] }
 
-        // A repository with a linked worktree, last: dragged above second, its worktree comes right after it.
         let root = "/tmp/ovvi-e2e-drag-\(Int.random(in: 10000 ... 99999))"
         try await send("(mkdir -p \(root) && cd \(root) && git init -q -b main repo && cd repo && "
             + "git -c user.name=e2e -c user.email=e2e@ovvi commit -q --allow-empty -m one && "
             + "git worktree add -q ../tree -b feature) && echo built-$((6*7))\r", to: pane)
-        addTeardownBlock { [one] in
-            // Before the workspace (and its pane) closes: teardowns run last first.
-            _ = try? await Self.call(one, "pane.send_text", ["pane_id": pane, "text": "rm -rf \(root)\r"])
-        }
+        // Teardowns run last first: this one runs ahead of the workspace's close.
+        sendAfter("rm -rf \(root)\r", to: pane)
         try await waitFor(pane) { $0.contains("\nbuilt-42") }
         let repo = try await workspace(of: createWorkspace("repo", cwd: "\(root)/repo").tab)
         let tree = try await id(Self.call(one, "worktree.open", ["workspace_id": repo, "path": "\(root)/tree",
@@ -294,7 +266,6 @@ extension OvviUITests {
 
     // MARK: - Helpers
 
-    /// Where herdr has the terminal now.
     func place(of terminal: String) async throws -> (pane: String, tab: String)? {
         let panes = try await snapshot()["panes"] as? [[String: Any]] ?? []
         return panes.first { $0["terminal_id"] as? String == terminal }.flatMap { pane in
@@ -303,8 +274,7 @@ extension OvviUITests {
         }
     }
 
-    /// The tab's split tree with each pane's terminal and the ratios to 0.01: the same after a move to another
-    /// workspace, which gives the panes new ids.
+    /// By terminal: a move to another workspace gives the panes new ids.
     private func terminalLayout(_ tab: String) async throws -> String {
         let panes = try await snapshot()["panes"] as? [[String: Any]] ?? []
         func text(_ node: [String: Any]) -> String {
@@ -318,7 +288,6 @@ extension OvviUITests {
         return try await text(root(tab))
     }
 
-    /// A 3-pane tab at 0.3 / 0.7 labelled "moving", the first of two in a new workspace, and its first pane's terminal.
     private func movingTab() async throws -> (tab: String, terminal: String) {
         let (tabs, first) = try await newWorkspace("tabs", tabs: 2)
         let tab = tabs[0], second = try await split(first)
@@ -331,20 +300,15 @@ extension OvviUITests {
         return try await (tab, terminalID(first))
     }
 
-    /// The terminal's tab once herdr has it in a workspace that passes `found`, with this layout and label.
-    private func movedTab(of terminal: String, _ layout: String, _ label: String,
-                          in found: (String) -> Bool) async throws -> String
-    {
+    private func movedTab(of terminal: String, _ layout: String, in found: (String) -> Bool) async throws -> String {
         try await poll("the tab moved as it was") { () async throws -> String? in
             guard let tab = try await place(of: terminal)?.tab, found(self.workspace(of: tab)) else { return nil }
             let tabs = try await snapshot()["tabs"] as? [[String: Any]] ?? []
             let same = try await terminalLayout(tab) == layout
-            return same && tabs.first { $0["tab_id"] as? String == tab }?["label"] as? String == label ? tab : nil
+            return same && tabs.first { $0["tab_id"] as? String == tab }?["label"] as? String == "moving" ? tab : nil
         }
     }
 
-    /// Drags the tab's capsule onto a row of the collapsed sidebar's workspace menu: where the row is (the menu opened
-    /// by a click), then a drag held over the workspace button, which opens the menu, and onto the row. The row.
     private func dragThroughWorkspaceMenu(_ tab: String, onto id: String) async throws -> XCUIElement {
         let button = element("titlebar.workspace")
         XCTAssertTrue(button.has(\.isHittable, true, within: 3))
@@ -360,7 +324,6 @@ extension OvviUITests {
         return row
     }
 
-    /// The tab is one split down, with these panes top to bottom.
     private func expectStack(_ tab: String, _ panes: [String]) async throws {
         try await expect("\(panes) stacked") {
             let root = try await root(tab), order = try await order(tab)
@@ -368,20 +331,18 @@ extension OvviUITests {
         }
     }
 
-    /// A point on a card, as fractions of its size.
     func card(_ pane: String, _ across: CGFloat, _ down: CGFloat) -> XCUICoordinate {
         element("pane.\(pane)").coordinate(withNormalizedOffset: CGVector(dx: across, dy: down))
     }
 
-    /// Drags a card by its title (30.5 pt in): on CI a quarter-wide card's shown buttons start at 52 pt, and take it.
+    /// By its title (30.5 pt in): on CI a quarter-wide card's shown buttons start at 52 pt, and take it.
     func drag(_ pane: String, to target: XCUICoordinate, hold: TimeInterval = 0.6) {
         during(card(pane, 0, 0).withOffset(CGVector(dx: 32, dy: 17)), to: target, hold: hold)
     }
 
-    /// Presses on the pane's card and holds over `target`'s middle until `release()` (scripts/drag.swift), so the test
-    /// drops once it saw what the hold did. A timed hold failed both ways on CI: XCUITest plays a drag on a timetable
-    /// from its start (late moves cut a 1.2 s hold to 0.4 s in the app), and drag.swift's release 0.5 s after a
-    /// spring-load left a drag session that never ended (likely: it came while the app built the new page).
+    /// A timed hold fails both ways on CI: XCUITest plays a drag on a timetable from its start (late moves cut a 1.2 s
+    /// hold to 0.4 s in the app), and drag.swift's release 0.5 s after a spring-load can leave a drag session that
+    /// never ends.
     func press(_ pane: String, over target: XCUIElement) async throws {
         let from = element("pane.\(pane)").frame, over = target.frame
         try await Self.post("\(one)/press", Data("\(from.minX + 60) \(from.minY + 17) \(over.midX) \(over.midY)".utf8))
@@ -391,8 +352,8 @@ extension OvviUITests {
         try await Self.post("\(one)/release")
     }
 
-    /// A drag that holds at `target` before the drop. XCUITest runs nothing else while it drags (not even the main
-    /// queue), so a drag in progress shows only in the run's screen recording.
+    /// XCUITest runs nothing else while it drags (not even the main queue), so a drag in progress shows only in the
+    /// run's screen recording.
     func during(_ from: XCUICoordinate, to target: XCUICoordinate, hold: TimeInterval = 0.6) {
         from.click(forDuration: 0.3, thenDragTo: target, withVelocity: .default, thenHoldForDuration: hold)
     }

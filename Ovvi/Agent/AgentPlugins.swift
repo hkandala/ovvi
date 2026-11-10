@@ -2,9 +2,6 @@ import AppKit
 import HerdrKit
 
 extension AgentCommand {
-    /// The plugin registry for agents (agent-control, Plugins): the list, and for a pane on This Mac New Plugin, Reload
-    /// Plugin(s) and Install, through the Plugins page's own code. Remove and Update stay the user's, on the plugin's
-    /// page in Settings.
     static let plugins = AgentCommand(
         name: "plugins", usage: "plugins [--for <path or URL> | new <name> | reload [<id>] | install <source>]",
         summary: "Lists the kinds an agent can open; makes, reloads and installs plugins",
@@ -45,7 +42,6 @@ extension AgentCommand {
             let entries = Registry.all.map { (rows.entry($0), rows.line($0)) } + broken
             return AgentOutput(entries.map(\.0), text: table(entries.map(\.1)))
         }
-        // As `open` takes it: from the command's folder, a folder by the disk; a missing path by its name.
         var full = path, file = false
         if URL(string: path)?.scheme == nil {
             full = call.absolute(path)
@@ -54,7 +50,6 @@ extension AgentCommand {
             file = !full.hasSuffix("/")
         }
         var openers = Registry.openers(for: full)
-        // A file's Open With choices after them: `open <id> <file>` opens with those too.
         if file {
             openers += Registry.openers(full, options: true)
                 .filter { plugin in !openers.contains { $0.id == plugin.id } }
@@ -77,20 +72,13 @@ extension AgentCommand {
     private static func installPlugin(_ call: inout AgentCall) async throws -> AgentOutput {
         let typed = try call.argument("source")
         try call.done()
-        // A relative folder from the command's folder, not the settings' as in settings.json.
         let source = typed.hasPrefix(".") ? call.absolute(typed) : typed
         guard PluginSource(source) != nil else {
-            throw AgentError(
-                code: "bad_argument",
-                message: "\(typed) is not npm:<package>, git:<repository> or a folder",
-            )
+            throw AgentError.badArgument("\(typed) is not npm:<package>, git:<repository> or a folder")
         }
-        // Again would be an Update, which asks only when its id changed: the user's, on the plugin's page.
+        // A second install is an Update, which asks the user only when its id changes.
         guard !PluginPackages.sources(Registry.settings).contains(source) else {
-            throw AgentError(
-                code: "bad_argument",
-                message: "\(source) is installed; Update is on its page in Settings ▸ Plugins",
-            )
+            throw AgentError.badArgument("\(source) is installed; Update is on its page in Settings ▸ Plugins")
         }
         guard let window = call.store.windows.first?.window else { throw AgentError.noWindow(call.store.session) }
         let asker = Asker(name: "\(call.agent) in pane \(call.pane)", window: window)
@@ -100,29 +88,26 @@ extension AgentCommand {
         } catch is CancellationError {
             throw AgentError(code: "declined", message: "the user did not allow \(source)")
         }
-        // Its row's source now, before the reload the install started.
+        // The row's source, ahead of the reload that the install starts.
         Registry.reload()
         let rows = AgentPluginRows(call)
         return AgentOutput(rows.entry(manifest), text: table([rows.line(manifest)]))
     }
 
-    /// Reload Plugin, or Reload Plugins without an id. Unsaved edits stop it with `dirty`: Ovvi never discards them
-    /// for an agent.
     private static func reloadPlugins(_ call: inout AgentCall) async throws -> AgentOutput {
         let id = try call.optionalArgument()
         try call.done()
-        // A folder made since the last read loads too.
         Registry.reload()
         var ids = Set(Plugin.cards.map(\.manifest.id)).sorted()
         if let id {
             guard let manifest = Registry.plugin(id) else {
-                throw AgentError(code: "plugin_not_found", message: Registry.problem(id) ?? "no plugin \(id)")
+                throw AgentError.pluginNotFound(Registry.problem(id) ?? "no plugin \(id)")
             }
             guard manifest.entry != nil else {
-                throw AgentError(code: "bad_argument", message: "\(id) is part of Ovvi and has nothing to build")
+                throw AgentError.badArgument("\(id) is part of Ovvi and has nothing to build")
             }
             guard PluginTrust.shared.allows(manifest) else {
-                throw AgentError(code: "failed", message: "\(id) is not confirmed yet: its card asks the user first")
+                throw AgentError.failed("\(id) is not confirmed yet: its card asks the user first")
             }
             ids = [manifest.id]
         }
@@ -132,7 +117,7 @@ extension AgentCommand {
             return AgentError(code: "dirty", message: "\(call.naming(dirty)) has unsaved edits in \(dirty.manifest.id)"
                 + more + (done.isEmpty ? "" : "; reloaded before it: \(done.joined(separator: ", "))"))
         }
-        // Before anything builds, and again before each plugin: a card can get edits while another one builds.
+        // Checked ahead of each build: a card can get edits while another plugin builds.
         for (index, id) in ids.enumerated() {
             if let dirty = Plugin.cards.first(where: { ids[index...].contains($0.manifest.id) && $0.dirty }) {
                 throw stop(dirty)
@@ -142,12 +127,11 @@ extension AgentCommand {
             if let problem {
                 failures.append("\(problem.title):\n\(problem.text)")
             } else if let dirty = Plugin.cards.first(where: { $0.manifest.id == id && $0.dirty }) {
-                // Edits made during its build: that card kept its page, its other cards loaded the new build.
                 throw stop(dirty, " and kept its page; \(id)'s other cards reloaded")
             }
             results.append([
                 "id": id,
-                // A plugin not confirmed yet builds nothing: its cards still ask the user.
+                // An unconfirmed plugin builds nothing: its cards ask the user.
                 "built": problem == nil && Registry.plugin(id).map(PluginTrust.shared.allows) == true,
                 "ms": Int((ContinuousClock.now - start) / .milliseconds(1)),
                 "cards": Plugin.cards.count { $0.manifest.id == id },
@@ -165,7 +149,6 @@ extension AgentCommand {
         }.joined())
     }
 
-    /// Columns, two spaces apart.
     private static func table(_ lines: [[String]]) -> String {
         let widths = (0 ..< (lines.map(\.count).max() ?? 0)).map { column in
             lines.map { column < $0.count ? $0[column].count : 0 }.max() ?? 0
@@ -177,7 +160,6 @@ extension AgentCommand {
     }
 }
 
-/// A plugin as `ovvi plugins` tells it: its manifest's fields as written, and its Plugins page row's source.
 @MainActor
 private struct AgentPluginRows {
     let sources: [String: String]
@@ -221,8 +203,6 @@ private struct AgentPluginRows {
 }
 
 private extension AgentCall {
-    /// A plugin card's pane as this caller names it: `w1:p3` in its session, `‹session›/‹pane›` on its machine, else
-    /// with the machine's name.
     func naming(_ card: Plugin) -> String {
         guard let other = card.web.store, other !== store else { return "pane \(card.paneID)" }
         return other.machine.id == store.machine.id ? "pane \(other.session)/\(card.paneID)"

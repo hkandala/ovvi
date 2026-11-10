@@ -3,13 +3,9 @@ import GhosttyTerminal
 import HerdrKit
 import UniformTypeIdentifiers
 
-/// Drops paste their paths shell-escaped, as Ghostty (herdr's usual terminal) does; an image with no file is saved
-/// as a PNG first, or received from its source (a browser's image may be only a file promise). On a remote machine
-/// the files are copied there first and their copies' paths pasted (`Exec.upload`). On This Mac, a file in a
-/// `TemporaryItems` folder is copied to a new folder first (`reachable`). A pane drag carries none of these types, so
-/// it goes on to the card's drop zones. Text and links paste as libghostty-spm drops them.
+/// A pane drag carries none of these types, so that it goes on to the card's drop zones.
 extension PaneSurfaceView {
-    /// File promises, beside libghostty-spm's own types (files, images, links, text).
+    /// libghostty-spm registers files, images, links and text itself.
     static let dropTypes = NSFilePromiseReceiver.readableDraggedTypes.map { NSPasteboard.PasteboardType($0) }
 
     override func draggingEntered(_: any NSDraggingInfo) -> NSDragOperation {
@@ -62,7 +58,7 @@ extension PaneSurfaceView {
                 }
                 _ = paste(text: paths.joined(separator: " "))
             } catch {
-                await store.show(Notice(text: error.localizedDescription))
+                store.show(Notice(text: error.localizedDescription))
             }
         }
         return true
@@ -82,10 +78,9 @@ extension PaneSurfaceView {
         }
     }
 
-    /// The file, or a copy of it in a new folder when it is in a `TemporaryItems` folder: macOS lets only the app that
-    /// made a file there and the drop's receiver read it, not the pane's programs (herdr's server runs them). A
-    /// screenshot's floating thumbnail drops a file there, as any app's `itemReplacementDirectory` does. The copy
-    /// keeps the file's name; if it fails, the file's own path goes.
+    /// macOS lets only the app that made a file in a `TemporaryItems` folder and the drop's receiver read it, not the
+    /// pane's programs (herdr's server runs them). A screenshot's floating thumbnail drops a file there, as any app's
+    /// `itemReplacementDirectory` does.
     private static func reachable(_ url: URL) -> URL {
         guard url.pathComponents.contains("TemporaryItems"),
               let copy = newFolder()?.appending(path: url.lastPathComponent),
@@ -94,7 +89,7 @@ extension PaneSurfaceView {
         return copy
     }
 
-    /// The dragged image as a PNG. Not `NSImage(pasteboard:)`, which would load a dragged web link.
+    /// Not `NSImage(pasteboard:)`, which would load a dragged web link.
     private static func savedImage(_ board: NSPasteboard) -> URL? {
         guard let type = board
             .availableType(from: [.png, .tiff] + [UTType.jpeg, .gif, .webP].map { .init($0.identifier) }),
@@ -105,8 +100,7 @@ extension PaneSurfaceView {
         return (try? png.write(to: file)).map { file }
     }
 
-    /// A new folder in the user's temporary folder (`$TMPDIR`, only the user reads it), so a promised file keeps
-    /// its name; the system's cleanup of temporary files removes it.
+    /// `$TMPDIR`: only the user reads it, and the system's cleanup of temporary files removes it.
     private static func newFolder() -> URL? {
         let folder = URL.temporaryDirectory.appending(path: "ovvi-\(UUID().uuidString)")
         return (try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true))
@@ -115,10 +109,7 @@ extension PaneSurfaceView {
 }
 
 extension Page {
-    /// Go to Directory (`directory`, a `cd`) or Insert Path: the system panel at the keyboard card's folder, fresh
-    /// from herdr, then the chosen path typed into the card, quoted. Go to Directory asks again that the card runs
-    /// only its shell (D41). On a remote machine Insert Path picks a file of This Mac and types the path of its copy
-    /// there, as a drop does. ponytail: Go to Directory is This Mac's only; a remote machine needs another picker.
+    /// ponytail: Go to Directory is This Mac's only; a remote machine needs another picker.
     func choosePath(directory: Bool) async {
         guard let pane = keyboardPane, let client = store.client, let window = NSApp.keyWindow else { return }
         let remote = store.machine.isRemote
@@ -135,11 +126,11 @@ extension Page {
                 path = try await store.machine.exec().upload(url)
             }
             if directory, try await client.program(pane.id)?.isShell != true {
-                await store.show(Notice(text: "A program is running in the pane", tone: .warning))
+                store.show(Notice(text: "A program is running in the pane", tone: .warning))
                 return
             }
         } catch {
-            await store.show(Notice(text: error.localizedDescription))
+            store.show(Notice(text: error.localizedDescription))
             return
         }
         await store.write { client in
@@ -149,11 +140,5 @@ extension Page {
                 pane: pane.id,
             )
         }
-    }
-}
-
-extension String {
-    var shellQuoted: String {
-        "'" + replacing("'", with: #"'\''"#) + "'"
     }
 }

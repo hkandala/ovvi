@@ -82,8 +82,9 @@ server's terminal.
   Then the card buttons, on the keyboard card and on a hovered card. Row 2
   (32 pt) is the toolbar: Back, Forward and Reload (Stop while a page
   loads), 22 × 22 pt buttons with 11 pt glyphs, then the address field,
-  which takes the free width, then the Web Inspector button (`hammer`). 6 pt
-  between items. The toolbar's buttons have the card buttons' color and dim
+  which takes the free width, then the Web Inspector button (`hammer`). Back,
+  Forward and Reload touch; 6 pt between them, the address field and the Web
+  Inspector button. The toolbar's buttons have the card buttons' color and dim
   as any disabled card button when they cannot act. Row 2 ends where row 1
   does, 8 pt in.
 - **Swipes.** A two-finger sideways swipe over the page goes back or forward,
@@ -123,7 +124,7 @@ server's terminal.
 - **Loading.** A 2 pt progress line in the accent runs under the header while
   a page loads.
 - **Loader.** Only while a card first opens or reads its saved state: the
-  `globe` at 28 pt, and under it a spinner left of "Opening Browser…" in
+  `globe` at 32 pt, and under it a spinner left of "Opening Browser…" in
   13 pt secondary. It fades out over 0.15 s (at once with Reduce Motion). A
   typed address shows the progress line alone. A card made again after it
   was dropped ([What stays in memory](#what-stays-in-memory)) shows its last
@@ -132,7 +133,7 @@ server's terminal.
   frame), not when every image and script finished: one that never answers
   would keep the loader over the page.
 - **Error.** A page that fails shows, in the middle of the card, a warning
-  symbol, the app's words in 14 pt, a line in secondary text for a refused
+  symbol, the app's words in 15 pt semibold, a line in secondary text for a refused
   local port, and **Reload**:
 
   | Case | Text |
@@ -209,7 +210,8 @@ its page, for its overview tile and for a card made again:
   A plugin card comes back at the place in its label, with its state from
   its state file ([State](/docs/plugins/api#state)), and with no Back and
   Forward.
-- A floated card and a plugin card with unsaved edits are never dropped.
+- A floated card, a plugin card with unsaved edits and a browser with a popup
+  open (a sign-in window) are never dropped.
 - On critical memory pressure from macOS
   (`DispatchSource.makeMemoryPressureSource`), the kept cards out of view go
   down to half the bound, and so do the kept terminals. A warning does
@@ -270,7 +272,8 @@ the instance state file
   `history` is WebKit's `interactionState` (the back and forward list) in
   base64, left out at 128 KiB and over.
 - Written 500 ms after a navigation ends or the address changes (a
-  single-page app's route). Last writer wins.
+  single-page app's route). Last writer wins. Nothing is written after the
+  pane closed.
 - Read when the card is built: a relaunch, a session restart, another
   device. The card opens the saved page with its history, else the label's
   address. Both follow the load rule below, and so does the history's current
@@ -417,7 +420,7 @@ machine again.
 
 | Keys | Command | Menu |
 |---|---|---|
-| ⌘R | Reload Page (enabled once there is a page) | View |
+| ⌘R | Reload Page (enabled once there is a page or an error, not while the card asks) | View |
 | ⌘L | Open Location: the address field, all selected | Edit |
 | ⌥⌘I | Show Web Inspector | Edit |
 | ⌘+ ⌘− ⌘0 | zoom the page, 50 to 300 % in 10 % steps, while the card has the keyboard (in a floating window, its own card's); ⌘0 also undoes a pinch | View |
@@ -463,7 +466,7 @@ ovvi open browser ./report.html                     # a file, on This Mac only
 - An address from an agent that is not approved or safe waits for Open
   ([When a page loads by itself](#when-a-page-loads-by-itself)).
 
-The label is still how it works: any process that labels a pane by hand
+The label is how it works underneath: any process that labels a pane by hand
 gets the same card.
 1. `herdr pane split "$HERDR_PANE_ID" --direction right --no-focus` makes a
    pane beside its own.
@@ -535,7 +538,7 @@ gets the same card.
   before ssh's `-D`. One forward covers every port and name on the machine,
   refusals come at once, and nothing is installed there. Rejected: a forward
   per port (ports clash between machines and with the Mac, and the origin
-  changes); a server helper of our own now.
+  changes); a server helper of our own.
 - **The typed address in the label, the current one in the state file.**
   Coming back to a browser card, on any device or after a restart, shows the
   page where the user left it. Rejected: rewriting the label on every

@@ -294,8 +294,8 @@ const LIC = {
   'jj repo': ['jj-Apache-2.0.txt', `${WORK}/lic/jj.txt`, 'Apache-2.0'],
   original: [null, null, 'CC0-1.0: drawn for Ovvi from simple geometric shapes, dedicated to the public domain'],
 };
-fs.rmSync(path.join(OUT, 'licenses'), { recursive: true, force: true });
-fs.mkdirSync(path.join(OUT, 'licenses'));
+// Kept, not cleared: licenses/ also holds files the catalog does not copy (Material Design Icons').
+fs.mkdirSync(path.join(OUT, 'licenses'), { recursive: true });
 const count = {};
 for (const c of catalog) count[c.source] = (count[c.source] ?? 0) + 1;
 const licLines = Object.keys(count).map((s) => {

@@ -1,58 +1,49 @@
 import AppKit
+import Carbon.HIToolbox
 import HerdrKit
 import Observation
 import WebKit
 
-/// A browser pane's card (ui/browser). Built once from the label; the registry keeps it, so a tab shown again does
-/// not reload it.
 @MainActor @Observable
 final class Browser: NSObject {
     let terminalID: String
     var paneID: String
     let label: PaneLabel
     @ObservationIgnored weak var store: HostStore?
-    /// Made again when the card changes its network (`toggleNetwork`).
     private(set) var view: BrowserView
-    /// As the address field shows it when not editing; empty before the first load.
     var address = ""
     private(set) var title = ""
-    /// The page's icon and where it came from; nil: the globe.
     var icon: (href: String, image: NSImage?)?
     private(set) var loading = false
     private(set) var progress = 0.0
     private(set) var canGoBack = false
     private(set) var canGoForward = false
     var failure: (text: String, hint: String?)?
-    /// A page from an origin not approved, which the machine put in the label or the state file: "Open ‹url›?".
     private(set) var asking: URL?
-    /// The web view has shown a page; until then it stays hidden (an empty one draws white).
+    /// An empty web view draws white.
     var loaded = false
-    /// The loader shows until the first page drew, or at once with nothing to load.
     var ready = false
-    /// A `window.open` page over the card (OAuth needs its opener).
+    /// Over the card, not in a tab: OAuth needs its opener.
     var popup: (view: WKWebView, host: String)?
-    /// The address field takes the keyboard when it shows, or now (⌘L, a new empty card).
     var wantsAddress = false
-    /// The pane got the keyboard while the state file was read: given once the address is known.
     @ObservationIgnored private var claimed = false
     @ObservationIgnored private var reading = true
-    /// The label's address this card follows (`follow`): the one it was built from or its last rename.
     @ObservationIgnored private var labelled: String
-    /// The address `labelled` replaced: a snapshot read before the rename still has it.
+    /// A snapshot read ahead of the rename still has it.
     @ObservationIgnored private var replaced: String?
-    /// The saved back and forward list (WebKit's `interactionState`), restored with the saved page.
     @ObservationIgnored private var history: Data?
-    /// The page's process ended since the last load finished: it loads again once.
     @ObservationIgnored var reloaded = false
     @ObservationIgnored private var watches: [NSKeyValueObservation] = []
     @ObservationIgnored private var saving: Task<Void, Never>?
-    /// A remote machine's `<machine>` in `<machine>.localhost`; its proxy, which every load waits for.
     @ObservationIgnored private let remoteAlias: String?
     @ObservationIgnored private var proxy: Task<SSHExec?, Never>?
-    /// A remote machine's card that loads through This Mac's network (ui/browser#this-macs-network).
     private(set) var viaMac: Bool
     var alias: String? {
         viaMac ? nil : remoteAlias
+    }
+
+    var canReload: Bool {
+        asking == nil && (loaded || failure != nil)
     }
 
     init(terminalID: String, paneID: String, label: PaneLabel, store: HostStore) {
@@ -60,13 +51,12 @@ final class Browser: NSObject {
         self.paneID = paneID
         self.label = label
         labelled = label.arg
-        // A new pane has no state file to read: its address field takes the keyboard at once (a claim held across a
-        // read is lost when the replaced pane's view leaves).
+        // A claim held across a read is lost when the replaced pane's view leaves.
         reading = !label.arg.isEmpty
         self.store = store
         let machine = store.machine
         remoteAlias = machine.isRemote ? Self.alias(machine.name) : nil
-        let viaMac = machine.isRemote && Self.viaMacCards(machine).contains("\(store.session)/\(label.iid)")
+        let viaMac = machine.isRemote && Self.isViaMac(label, store)
         self.viaMac = viaMac
         view = BrowserView(store: Self.dataStore(viaMac ? .thisMac : machine))
         super.init()
@@ -74,7 +64,7 @@ final class Browser: NSObject {
         Task { await start() }
     }
 
-    /// The toolbar's values, by KVO on the main thread, where WebKit changes them.
+    /// WebKit changes these on the main thread.
     private func watch() -> [NSKeyValueObservation] {
         func mirror(_ path: KeyPath<BrowserView, some Any>,
                     _ update: @escaping @MainActor (Browser) -> Void) -> NSKeyValueObservation
@@ -107,8 +97,7 @@ final class Browser: NSObject {
         }
     }
 
-    /// The load rule: the saved address (the state file on the pane's machine), else the label's; a machine's own
-    /// page loads by itself only from an approved or safe origin.
+    /// A process on the machine writes the label and the state file: only an approved or safe origin loads by itself.
     private func start() async {
         guard let store else { return }
         let state = await store.machine.exec().read(home: label.statePath(session: store.session))
@@ -123,7 +112,7 @@ final class Browser: NSObject {
             }
         }
         // Not over an address typed meanwhile.
-        guard address.isEmpty, let url = Self.url(saved ?? label.arg, local: !store.machine.isRemote) else {
+        guard address.isEmpty, let url = url(saved ?? label.arg) else {
             ready = true
             return
         }
@@ -137,13 +126,12 @@ final class Browser: NSObject {
     }
 
     func go(_ text: String) {
-        guard let store, let url = Self.url(Self.typed(text), local: !store.machine.isRemote) else { return }
-        asking = nil
+        guard let store, let url = url(Self.typed(text)) else { return }
         approve(url)
         load(url)
         replaced = labelled
         labelled = url.absoluteString
-        // The saved address goes: a typed load that fails opens the typed one after a relaunch.
+        // A typed load that fails saves nothing, and the saved address would win over the label after a relaunch.
         saving?.cancel()
         let path = label.statePath(session: store.session)
         Task { await store.machine.exec().remove(home: path) }
@@ -159,14 +147,14 @@ final class Browser: NSObject {
         restore(url)
     }
 
-    /// Esc closes the popup; Return opens and Esc dismisses "Open this page?" while the card has the keyboard.
     func key(_ event: NSEvent) -> Bool {
-        if popup != nil, event.keyCode == 53 {
+        let code = Int(event.keyCode)
+        if popup != nil, code == kVK_Escape {
             closePopup()
             return true
         }
-        guard asking != nil, [36, 76, 53].contains(event.keyCode) else { return false }
-        if event.keyCode == 53 {
+        guard asking != nil, [kVK_Return, kVK_ANSI_KeypadEnter, kVK_Escape].contains(code) else { return false }
+        if code == kVK_Escape {
             notNow()
         } else {
             open()
@@ -175,18 +163,15 @@ final class Browser: NSObject {
     }
 
     func notNow() {
-        asking = nil
-        history = nil
-        address = view.url?.absoluteString ?? ""
+        (asking, failure, history) = (nil, nil, nil)
+        address = view.url.map { Self.shown($0, alias).absoluteString } ?? ""
     }
 
-    /// The label got another address from elsewhere (an agent's `herdr pane rename`): it loads as a new page in the
-    /// card's history, by the load rule.
     func follow(_ arg: String) {
-        guard arg != labelled, arg != replaced, let store else { return }
+        guard arg != labelled, arg != replaced, store != nil else { return }
         replaced = nil
         labelled = arg
-        guard let url = Self.url(arg, local: !store.machine.isRemote) else { return }
+        guard let url = url(arg) else { return }
         address = url.absoluteString
         if approved(url) {
             load(url)
@@ -195,7 +180,7 @@ final class Browser: NSObject {
         }
     }
 
-    /// The history's current page must pass the load rule too: a process on the machine writes the state file.
+    /// The history's current page must be approved too: a process on the machine writes the state file.
     private func restore(_ url: URL) {
         if let history {
             self.history = nil
@@ -221,7 +206,7 @@ final class Browser: NSObject {
     }
 
     private func load(_ url: URL) {
-        failure = nil
+        (failure, asking) = (nil, nil)
         if url.isFileURL {
             view.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
         } else {
@@ -229,8 +214,7 @@ final class Browser: NSObject {
         }
     }
 
-    /// At once on This Mac; on a remote machine once its proxy is in the store, never without it:
-    /// `<machine>.localhost` would reach This Mac.
+    /// Never without the proxy: `<machine>.localhost` would reach This Mac.
     func proxied(_ load: @escaping () -> Void) {
         guard let proxy else { return load() }
         Task {
@@ -238,7 +222,7 @@ final class Browser: NSObject {
             // Not on a network the card switched away from meanwhile.
             guard proxy == self.proxy else { return }
             guard ssh != nil else {
-                // Reload asks again: a listener that could not start then (no network) may start now.
+                // A listener that fails with no network can start on Reload.
                 startProxy()
                 failure = ("Ovvi could not start the proxy to \(store?.machine.name ?? "")", nil)
                 ready = true
@@ -267,16 +251,17 @@ final class Browser: NSObject {
         }
     }
 
-    /// A save still pending would bring back the state file a close removed.
     isolated deinit {
-        saving?.cancel()
         if let proxy {
             Task { await proxy.value?.closeProxy() }
         }
     }
 
-    /// The address after a navigation, on the pane's machine, 500 ms after the last one; last writer wins.
-    /// The back and forward list too, while it is under 128 KiB (the state file holds at most 256 KiB).
+    func url(_ text: String) -> URL? {
+        store.flatMap { Self.url(text, local: !$0.machine.isRemote) }
+    }
+
+    /// The state file holds at most 256 KiB.
     func save() {
         guard let store, let url = view.url.map({ Self.shown($0, alias).absoluteString }), url != "about:blank"
         else { return }
@@ -285,13 +270,7 @@ final class Browser: NSObject {
             state["history"] = history.base64EncodedString()
         }
         guard let data = try? JSONSerialization.data(withJSONObject: state) else { return }
-        let path = label.statePath(session: store.session), line = String(decoding: data, as: UTF8.self)
-        saving?.cancel()
-        saving = Task {
-            try? await Task.sleep(for: .milliseconds(500))
-            guard !Task.isCancelled else { return }
-            await store.machine.exec().write(home: path, line)
-        }
+        store.saveState(&saving, path: label.statePath(session: store.session), data: data, terminalID: terminalID)
     }
 }
 
@@ -312,12 +291,11 @@ extension Browser {
         }
     }
 
-    /// The machine chip: the field's address again on This Mac's network, or back through the machine, in a new web
-    /// view (a store's network is fixed). Its back and forward list starts again: its entries are the other network's.
+    /// A data store's network cannot change: a new web view, with an empty back and forward list.
     func toggleNetwork() {
         guard let store, store.machine.isRemote else { return }
         viaMac.toggle()
-        Self.keep(viaMac, "\(store.session)/\(label.iid)", store.machine)
+        Self.keep(viaMac, label, store)
         let old = view, keyboard = old.window?.firstResponder === old
         old.navigationDelegate = nil
         old.uiDelegate = nil
@@ -329,13 +307,11 @@ extension Browser {
         view = BrowserView(store: Self.dataStore(viaMac ? .thisMac : store.machine))
         (view.onKeyboard, view.pictured) = (old.onKeyboard, old.pictured)
         wire()
-        // The new page takes the keyboard if the old one or its popup had it.
         closePopup()
         if keyboard {
             view.takeKeyboard()
         }
         (loaded, ready, failure) = (false, false, nil)
-        // "Open this page?" still asks.
         guard asking == nil, let url = URL(string: address) else {
             ready = true
             return

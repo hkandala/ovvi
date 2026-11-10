@@ -1,11 +1,7 @@
 import XCTest
 
-/// A card's terminal keeps its old picture while herdr redraws it at a new grid, a new card fades in once, and both
-/// always show herdr's text in the end.
 /// The pixels of a terminal are the only place an empty card shows, so these tests read its screenshot.
 extension OvviUITests {
-    /// Every way a card comes into view shows its text: launch, another tab and back, another workspace and back, a
-    /// new tab, a split, the overview, the sidebar.
     func testCardsShowTheirTextOnEveryPath() async throws {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         for pane in ["w1:p1", "w1:p2", "w1:p3", "w1:p4", "w2:p1"] {
@@ -39,8 +35,6 @@ extension OvviUITests {
         try await expectText([pane, right], "sidebar shown")
     }
 
-    /// While the sidebar slides, the card's terminal keeps its grid (clipped), then takes the new one once: no
-    /// passing grid in between, and the program redraws once.
     func testCardKeepsItsGridUntilItsSizeSettles() async throws {
         let terminal = element("terminal.w1:p1")
         XCTAssertTrue(terminal.exists(within: connect))
@@ -70,8 +64,6 @@ extension OvviUITests {
         try await expectText(["w1:p1"], "after the resize")
     }
 
-    /// A resize never blanks the text: the old picture stays until herdr's frames at the new grid replace it.
-    /// The sidebar resizes the card, ⌘+ and ⌘- its grid.
     func testResizeNeverBlanksTheText() async throws {
         let terminal = element("terminal.w1:p1")
         XCTAssertTrue(terminal.exists(within: connect))
@@ -96,16 +88,11 @@ extension OvviUITests {
             let inks = shots.map(Self.ink)
             XCTAssertGreaterThan(inks.min() ?? 0, 0.01, "\(step): ink of \(inks.count) screenshots: \(inks)")
             XCTAssertNotEqual(terminal.stringValue, grid, "\(step): the grid changed")
-            // Drawing is back on: not stuck on the old picture.
             try await expectText(["w1:p1"], step)
         }
     }
 
-    /// Split, zoom, close and the sidebar animate the card that stays, and its text never blanks on the way (CI has
-    /// Reduce Motion on, so this forces motion). A split, a zoom or a close moves the card by Core Animation, one
-    /// slide (`-recordMotion YES` counts them on the card); the sidebar sizes its host through the sizes in between
-    /// (counted on the host; a card made again or one that jumps takes one or two).
-    /// Under Reduce Motion the card jumps.
+    /// CI has Reduce Motion on, so this forces motion.
     func testLayoutMotionAnimatesWithoutBlanking() async throws {
         relaunch(one, ["-recordMotion", "YES"])
         // Split Left swaps, and herdr focuses the swapped pane's tab: the next test's launch would show w2.
@@ -120,7 +107,6 @@ extension OvviUITests {
         try await fill(pane)
         try await expectText([pane], "filled")
         let steps: [(String, () async throws -> Void)] = [
-            // The app shows a stand-in card at once (sliding in from the left), then herdr's pane in its place.
             ("split left", { self.paneMenu(pane, "Split Left") }),
             ("zoom", {
                 self.hoverHeader(pane)
@@ -133,7 +119,6 @@ extension OvviUITests {
             }),
             ("sidebar hidden", { self.element("titlebar.sidebar").click() }),
             ("sidebar shown", { self.element("titlebar.sidebar").click() }),
-            // Its text leaves the band as the card's bottom rises: no ink check.
             ("split down", { self.paneMenu(pane, "Split Down") }),
         ]
         var sampled = 0
@@ -162,15 +147,12 @@ extension OvviUITests {
         XCTAssertGreaterThan(sampled, 0, "no motion sampled while it ran")
     }
 
-    /// A visited card keeps its stream and its surface out of view: back after 6 other tabs,
-    /// it shows at once, never loading, with what its program printed meanwhile.
     func testAVisitedCardComesBackAtOnce() async throws {
         let terminal = element("terminal.w1:p1")
         XCTAssertTrue(terminal.exists(within: connect))
         try await fill("w1:p1")
         try await expectText(["w1:p1"], "filled")
         let filled = Self.ink(terminal.screenshot().image), id = try await terminalID("w1:p1")
-        // A third of the screen's lines, printed while out of view.
         let lines = max((Int(terminal.stringValue.split(separator: " ").first ?? "") ?? 0) / 3, 3)
         try await showNewTabs(6)
         let streams = try await streams(one)
@@ -189,12 +171,10 @@ extension OvviUITests {
             }
         }
         XCTAssertFalse(loading, "loading after the key")
-        // Never empty, and the new screen from the first screenshot on, not the old picture.
         XCTAssertGreaterThan(inks.min() ?? 0, filled * 0.15, "\(filled) before, then \(inks)")
         XCTAssertLessThan(inks.max() ?? 1, filled * 0.6, "\(filled) before, then \(inks)")
     }
 
-    /// Creates `count` tabs in w1 and shows each, so the cards shown before are out of view.
     private func showNewTabs(_ count: Int) async throws {
         for index in 0 ..< count {
             let (tab, pane) = try await createTab(in: "w1")
@@ -205,8 +185,6 @@ extension OvviUITests {
         }
     }
 
-    /// A card past the kept set lets go of its stream and its surface (4 kept here, 25 by default),
-    /// and comes back under its last picture: never empty, then herdr's text.
     func testAnEvictedCardComesBackWithItsPicture() async throws {
         relaunch(one, ["-spareTerminals", "4"])
         let terminal = element("terminal.w1:p1")
@@ -214,8 +192,6 @@ extension OvviUITests {
         try await fill("w1:p1")
         try await expectText(["w1:p1"], "filled")
         let id = try await terminalID("w1:p1")
-        // Five more tabs, each shown: t1's three cards (in any order) and the next four's are out of view, so all of
-        // t1's go past the 4 kept.
         try await showNewTabs(5)
         try await expect("w1:p1's stream to end") { try await !streams(one).contains { $0.contains(id) } }
         let streams = try await streams(one)
@@ -224,7 +200,6 @@ extension OvviUITests {
         let start = Date.now, card = element("pane.w1:p1")
         XCTAssertTrue(terminal.has(\.isHittable, true, within: 3))
         var shots: [NSImage] = []
-        // For the record: when the card stopped loading (herdr's frames drawn), between screenshots.
         var times: [String] = []
         while Date.now < start + 1.5 {
             shots.append(terminal.screenshot().image)
@@ -236,14 +211,11 @@ extension OvviUITests {
         XCTAssertGreaterThan(inks.min() ?? 0, 0.01, "ink of \(inks.count) screenshots: \(inks)")
         try await expectText(["w1:p1"], "back")
         try await expect("w1:p1's stream again") { try await self.streams(one).contains { $0.contains(id) } }
-        // The new surface draws, not the old picture held for good: a cleared screen has a prompt's ink only.
         try await send("clear\r", to: "w1:p1")
         try await expect("the cleared screen drawn") { Self.ink(terminal.screenshot().image) < (inks.min() ?? 0) / 3 }
     }
 
-    /// The screen, not the element, which moves: a band across the window through the middle of the terminal. Its text
-    /// stays in the band while the card moves (no other card has text that low). The largest window: a tooltip or a
-    /// hover card is a window too.
+    /// The largest window: a tooltip or a hover card is a window too.
     private func band(through terminal: XCUIElement) -> CGRect {
         let frame = terminal.frame, window = app.windows.allElementsBoundByIndex.map(\.frame)
             .max { $0.width * $0.height < $1.width * $1.height } ?? .zero
@@ -251,9 +223,7 @@ extension OvviUITests {
                       height: frame.height * 0.2)
     }
 
-    /// Halfway through its motion each edge of the card lies between where it was and where it ends: "slides 3 mid x
-    /// y w h at ms end x y w h" (`MovingCard.recordMid`), its end where XCUITest has it. A sample a busy main thread
-    /// took after the motion (0.13 s) tests nothing: false then.
+    /// A sample a busy main thread took after the motion (0.13 s) tests nothing: false then.
     @discardableResult
     private static func expectBetween(_ card: XCUIElement, from old: CGRect, _ step: String) -> Bool {
         let numbers = card.label.split(separator: " ").compactMap { Double($0) }.map { CGFloat($0) }
@@ -273,27 +243,24 @@ extension OvviUITests {
         return numbers[5] < 130
     }
 
-    /// `-recordMotion`'s label on a card: the motions Core Animation made of it ("slides 3").
     private static func slides(_ card: XCUIElement) -> Int {
         let words = card.label.split(separator: " ")
         return words.firstIndex(of: "slides").flatMap { Int(words[min($0 + 1, words.count - 1)]) } ?? 0
     }
 
-    /// `-recordMotion`'s label: the sizes the host took, and the ms its latest motion's sizes spanned.
     private static func motion(_ host: XCUIElement) -> (sizes: Int, ms: Int) {
         let words = host.label.split(separator: " ").compactMap { Int($0) }
         return (words.first ?? 0, words.dropFirst().first ?? 0)
     }
 
-    /// The card drew at its size ("loading" until then): one that still attaches resizes the pane after a fill's
-    /// lines, and bash redraws its prompt over the last one (CI: 59, then the prompt).
+    /// One that still attaches resizes the pane after a fill's lines, and bash redraws its prompt over the last one
+    /// (CI: 59, then the prompt).
     func drawn(_ pane: String, within timeout: TimeInterval = 5) -> Bool {
         let card = element("pane.\(pane)")
         return until(timeout) { card.exists && card.stringValue != "loading" }
     }
 
-    /// Under Reduce Motion (CI's Mac) the card jumps to its new size in one step; then the app launches again with
-    /// motion forced on.
+    /// Under Reduce Motion (CI's Mac) the card jumps to its new size in one step.
     private func expectJump(_ tab: String, _ pane: String) async throws {
         let host = element("host.\(pane)")
         XCTAssertTrue(host.exists(within: 3))
@@ -309,7 +276,6 @@ extension OvviUITests {
         element("tab.\(tab)").click()
     }
 
-    /// The part of a screen shot inside a rectangle in screen points.
     private static func crop(_ image: NSImage, _ rect: CGRect) -> NSImage {
         guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return image }
         // The screen shot's size is in pixels, not points.
@@ -319,14 +285,12 @@ extension OvviUITests {
         return cgImage.cropping(to: pixels).map { NSImage(cgImage: $0, size: rect.size) } ?? image
     }
 
-    /// Lines of text in the pane, so an empty card is plain to see.
     func fill(_ pane: String) async throws {
         try await waitForPrompt(pane)
         try await send("clear; for i in $(seq 1 60); do echo ovvi-reveal-$i-ovvi-reveal; done\r", to: pane)
         try await waitFor(pane) { $0.contains("ovvi-reveal-60-ovvi-reveal") }
     }
 
-    /// Each card is done loading and its terminal shows text: some of its pixels differ from its background.
     func expectText(_ panes: [String], _ step: String) async throws {
         keepScreenshot(step)
         for pane in panes {
@@ -345,7 +309,6 @@ extension OvviUITests {
         }
     }
 
-    /// The share of pixels whose brightness is far from the image's median: about 0 for an empty card.
     private static func ink(_ image: NSImage) -> Double {
         let brightness = brightness(image)
         guard !brightness.isEmpty else { return 0 }
@@ -353,7 +316,6 @@ extension OvviUITests {
         return Double(brightness.count { abs($0 - median) > 60 }) / Double(brightness.count)
     }
 
-    /// Each pixel's brightness, 0–255; none when the image does not draw.
     static func brightness(_ image: NSImage) -> [Int] {
         let pixels = pixels(image)
         return stride(from: 0, to: pixels.count, by: 4).map {
@@ -361,7 +323,6 @@ extension OvviUITests {
         }
     }
 
-    /// The image's pixels, RGBA row by row; none when the image does not draw.
     static func pixels(_ image: NSImage) -> [UInt8] {
         guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return [] }
         let width = cgImage.width, height = cgImage.height

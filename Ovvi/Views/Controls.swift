@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// One line that fades out over its last 16 pt when it does not fit, instead of an ellipsis.
 struct FadeText: View {
     let text: Text
 
@@ -19,7 +18,6 @@ struct IconButton: View {
     let help: String
     var key: KeyboardShortcut?
     var size: CGFloat = 28
-    /// A muted accent glyph on a faint accent circle (a zoomed card's Restore), as in Rex.
     var accent = false
     let action: () -> Void
 
@@ -27,9 +25,7 @@ struct IconButton: View {
         let help = key.map { "\(help) \($0.glyphs)" } ?? help
         Button(action: action) {
             Image(symbol: symbol)
-                // 22 pt buttons (card headers, the find bar): Rex's 11 pt regular glyphs.
                 .font(size < 28 ? .system(size: 11) : .body.weight(.medium))
-                // The surrounding style: the look's chrome, or a card header's buttons.
                 .foregroundStyle(accent ? AnyShapeStyle(.tint.opacity(0.6)) : AnyShapeStyle(.primary))
                 .frame(width: size, height: size)
                 .background {
@@ -41,5 +37,44 @@ struct IconButton: View {
         .buttonStyle(ChromeStyle(radius: size / 4))
         .help(help)
         .accessibilityLabel(help)
+    }
+}
+
+extension NSApplication {
+    /// By AppKit's count from the events' times: SwiftUI's `TapGesture(count: 2)` misses one while the app is busy
+    /// drawing the first click.
+    var isDoubleClick: Bool {
+        currentEvent.map { $0.type == .leftMouseUp && $0.clickCount == 2 } == true
+    }
+}
+
+struct Segments<Value: Hashable>: View {
+    let id: String
+    let options: [(String, Value)]
+    @Binding var selection: Value
+    var symbols: [String: String] = [:]
+    @Environment(\.look) private var look
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(options, id: \.0) { title, value in
+                Button { selection = value } label: {
+                    if let symbol = symbols[title] {
+                        Image(symbol: symbol).font(.system(size: 11)).frame(width: 26, height: 20)
+                            .foregroundStyle(selection == value ? AnyShapeStyle(.primary) :
+                                AnyShapeStyle(look.paneButton))
+                    } else {
+                        Text(title).font(.system(size: 11, weight: .medium)).padding(.horizontal, 8).frame(height: 20)
+                    }
+                }
+                .buttonStyle(ChromeStyle(selected: selection == value, radius: 6))
+                .help(symbols[title] == nil ? "" : title)
+                .accessibilityLabel(title)
+                .accessibilityAddTraits(selection == value ? .isSelected : [])
+                .accessibilityIdentifier("\(id).\(title.lowercased())")
+            }
+        }
+        .padding(2)
+        .background(look.track, in: .rect(cornerRadius: 8))
     }
 }

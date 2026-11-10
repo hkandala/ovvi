@@ -2,9 +2,7 @@ import Foundation
 @testable import HerdrKit
 import Testing
 
-/// A real Codex 0.163 session, cut to the lines the parser reads (`Fixtures/codex-rollout.jsonl`): a command, a turn
-/// with an added and an edited file, a failed command and a read, an interrupted turn, and a last turn written by
-/// hand in the shapes of real rollouts (a compaction, a plan, a subagent with its wait, message and end, an MCP tool).
+/// A real Codex 0.163 session, cut down; the last turn is written by hand in the shapes of real rollouts.
 private func history() throws -> ChatHistory {
     let url = try #require(Bundle.module.url(forResource: "codex-rollout", withExtension: "jsonl",
                                              subdirectory: "Fixtures"))
@@ -37,7 +35,6 @@ private func history() throws -> ChatHistory {
     #expect(failed.target == "false" && failed.result == "exit 1")
     #expect(tools.contains { $0.category == .read && $0.target == "launch.py" })
     #expect(tools.last?.name == "agent_send" && tools.last?.target == "hello")
-    // A subagent started, sent a message and waited for, each a finished step; its end is none.
     let agents = tools.filter { $0.id.hasPrefix("call_") }
     #expect(agents.map(\.name) == ["agent", "wait", "agent_send"])
     #expect(agents.allSatisfy { !$0.failed && $0.result == "" && $0.ended != nil })
@@ -75,7 +72,7 @@ private func history() throws -> ChatHistory {
         + "cat>>$HOME/.cache/ovvi/chat/11111111-2222-4333-8444-555555555555/hooks.jsonl;"
         + "echo>>$HOME/.cache/ovvi/chat/11111111-2222-4333-8444-555555555555/hooks.jsonl;"
         + "find $HOME/.cache/ovvi/chat -mindepth 1 -maxdepth 1 -mtime +30 -exec rm -rf {} +"
-    // Codex 0.163 ran this hook from `-c hooks.state` with no "Hooks need review" picker.
+    // Codex 0.163 runs this hook from `-c hooks.state` with no trust picker.
     #expect(CodexRollout.trust(command) == "sha256:59e8711e0546bcc8001a71abda156fad60107f0500e9785c2402205f09acd187")
 }
 

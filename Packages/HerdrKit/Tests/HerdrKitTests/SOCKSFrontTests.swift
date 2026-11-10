@@ -4,8 +4,7 @@ import Network
 import Synchronization
 import Testing
 
-/// The browser proxy's front, before a stand-in for ssh's `-D` that opens only `localhost:7` and echoes there, and
-/// closes any other request without a reply, as ssh does.
+/// The stand-in closes any request but `localhost:7` without a reply, as ssh does.
 @Test func `front asks for localhost and refuses at once`() async throws {
     let asked = Mutex<[String]>([])
     let ssh = try await standIn { host in asked.withLock { $0.append(host) } }
@@ -34,7 +33,6 @@ import Testing
     #expect(troubles.withLock { $0 }.isEmpty)
 }
 
-/// ssh's `-D` port that nothing answers on (its master gone, or the forward lost): the front asks for a new one, once.
 @Test func `front forwards again when ssh's port is gone`() async throws {
     let ssh = try await standIn()
     defer { ssh.cancel() }
@@ -49,8 +47,6 @@ import Testing
     #expect(calls.withLock { $0 } == [nil, .gone(gone)])
 }
 
-/// ssh's `-D` that takes the request and never answers (a stopped master, a link that hangs): after `patience` the
-/// front asks for a new port (a new master's) and the page gets it, instead of waiting for ever.
 @Test(.timeLimit(.minutes(1))) func `front leaves a -D that hangs`() async throws {
     let hung = try NWListener(using: .tcp, on: .any)
     hung.newConnectionHandler = { $0.start(queue: .global()) }
@@ -69,8 +65,6 @@ import Testing
     #expect(calls.withLock { $0 } == [nil, .stalled(stalled)])
 }
 
-/// A listener that ends by itself (a failure) listens again on the same port, which the cards' store keeps; one
-/// stopped does not.
 @Test func `front listens again on its port`() async throws {
     let ssh = try await standIn()
     defer { ssh.cancel() }
@@ -79,6 +73,7 @@ import Testing
     let port = front.port
     let (open, page) = await connect(front, "devbox.localhost", 7)
     #expect(open == 0)
+    // No public call fails a listener: the inner one ends, as Network.framework ends a listener that fails.
     front.current.withLock { $0.listener?.cancel() }
     var again: UInt8?
     for _ in 0 ..< 50 where again != 0 {
@@ -87,7 +82,6 @@ import Testing
     }
     #expect(again == 0)
     #expect(front.port == port)
-    // The page connected before goes on.
     page.send(content: Data("ping".utf8), completion: .idempotent)
     #expect(await page.read(4) == Data("ping".utf8))
     front.stop()
@@ -95,14 +89,12 @@ import Testing
     #expect(await connect(front, "devbox.localhost", 7, on: port).0 == nil)
 }
 
-/// A machine that cannot be reached (blocked until Connect): a general failure, at once.
 @Test func `front fails at once without a machine`() async throws {
     let front = try await SOCKSFront.start { _ in throw HerdrError.disconnected("Canceled") }
     defer { front.stop() }
     #expect(await connect(front, "devbox.localhost", 7).0 == 1)
 }
 
-/// A stand-in for ssh's `-D`, which tells each host asked of it.
 private func standIn(_ asked: @escaping @Sendable (String) -> Void = { _ in }) async throws -> NWListener {
     let ssh = try NWListener(using: .tcp, on: .any)
     ssh.newConnectionHandler = { connection in
@@ -126,7 +118,6 @@ private func standIn(_ asked: @escaping @Sendable (String) -> Void = { _ in }) a
     return ssh
 }
 
-/// Started, once it listens.
 private func ready(_ listener: NWListener) async throws {
     let ready = AsyncStream<Void> { continuation in
         listener.stateUpdateHandler = {
@@ -139,8 +130,6 @@ private func ready(_ listener: NWListener) async throws {
     for await _ in ready {}
 }
 
-/// A page's CONNECT through the front (on `port`, else its own): its reply code, nil when nothing answers there,
-/// and the connection.
 private func connect(_ front: SOCKSFront, _ host: String, _ port: UInt16,
                      on local: NWEndpoint.Port? = nil) async -> (UInt8?, NWConnection)
 {

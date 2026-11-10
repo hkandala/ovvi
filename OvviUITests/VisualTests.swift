@@ -1,7 +1,5 @@
 import XCTest
 
-/// The scenes to compare with Rex's pictures, one test per look, kept as attachments so they can be taken
-/// again on CI. No pixel checks: each step waits for what the scene shows.
 extension OvviUITests {
     func testScenesGlassDark() async throws {
         try await scenes("glass", "dark")
@@ -19,8 +17,7 @@ extension OvviUITests {
         try await scenes("classic", "light")
     }
 
-    /// The traffic lights sit where Rex's do, centered on the 46 pt title row, also after a zoom (AppKit lays them out
-    /// again then); in full screen the row starts 8 pt in.
+    /// AppKit lays the traffic lights out again after a zoom.
     func testTrafficLightsSitInTheTitleRow() {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         let window = app.windows.firstMatch
@@ -35,16 +32,12 @@ extension OvviUITests {
         }
         XCTAssertTrue(until(2, placed), "\(lights.map(\.frame)) in \(window.frame)")
         // ⌥-click zooms (a click goes full screen), and again back.
-        // Each zoom settles before the next click. CI's window nearly fills the screen, so a zoom may change little.
+        // CI's window nearly fills the screen, so a zoom may change little.
         for _ in 0 ..< 2 {
-            var frame = window.frame
+            let frame = window.frame
             XCUIElement.perform(withKeyModifiers: .option) { lights[2].click() }
             _ = until(1) { window.frame != frame }
-            XCTAssertTrue(until(3) {
-                let now = window.frame
-                defer { frame = now }
-                return now == frame
-            })
+            XCTAssertNotNil(steady(3) { window.frame })
             // On screen: the window opened at the screen's size, not at the 1200 pt default a zoom would give back.
             XCTAssertGreaterThanOrEqual(window.frame.minX, 0, "\(window.frame)")
             XCTAssertTrue(placed(), "\(lights.map(\.frame)) in \(window.frame)")
@@ -56,8 +49,6 @@ extension OvviUITests {
         XCTAssertTrue(until(5) { abs(toggle.frame.minX - window.frame.minX - 8) < 1 })
     }
 
-    /// Workspace and tab switches draw no frame with a traffic light off its place (the user saw them flicker; CI's
-    /// recording showed the zoom button 4 pt off for 1 to 4 frames).
     func testTrafficLightsStayStillWhenWorkspacesSwitch() {
         relaunch(one, ["-recordLights", "YES"])
         let lights = element("window.lights")
@@ -71,12 +62,10 @@ extension OvviUITests {
         XCTAssertTrue(element("pane.w1:p4").has(\.isHittable, true, within: 2))
         element("tab.w1:t1").click()
         XCTAssertTrue(element("pane.w1:p1").has(\.isHittable, true, within: 2))
-        // ponytail: launch itself may draw one such turn (1 of 4 CI runs); the user saw it on switches.
+        // ponytail: launch itself may draw one such turn (1 of 4 CI runs).
         XCTAssertEqual(lights.stringValue, launched, "turns drawn with a light off its place")
     }
 
-    /// Three splits, a zoomed card, one tab, and three tabs with a working and a blocked agent; each with the sidebar
-    /// open and collapsed where Rex has both.
     private func scenes(_ style: String, _ appearance: String) async throws {
         // Rex's window (1180 × 760 pt) in the argument domain, over any frame an earlier run saved.
         relaunch(one, ["-appearance", appearance, "-interfaceStyle", style,
@@ -106,7 +95,7 @@ extension OvviUITests {
         XCTAssertTrue(element("sidebar").vanishes(within: 2))
         shoot("\(look) one tab")
         sidebar.click()
-        // The new tabs show as `newTab` selects w2 again (a capsule added to the bar in view was not hittable).
+        // The new tabs show as `newTab` selects w2 again: a capsule added to the bar in view is not hittable.
         element("workspace.w1").click()
 
         let build = try await newTab("build")
@@ -121,7 +110,6 @@ extension OvviUITests {
         shoot("\(look) three tabs")
     }
 
-    /// With the pointer below the window, so no hover fill or header buttons show that Rex's pictures do not.
     private func shoot(_ name: String) {
         app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1.1)).hover()
         // Hover fills fade out in 0.14 s.

@@ -1,12 +1,9 @@
 import Foundation
 
-/// An agent's history as the chat view draws it (ui/chat-view), as each agent's parser reads its transcript.
 public struct ChatHistory: Equatable, Sendable {
     public private(set) var entries: [ChatEntry] = []
-    /// The model of the last reply and its thinking effort, in the agent's words ("high"), shown read only.
     public var model: String?
     public var effort: String?
-    /// Where each open tool call is, to pair it with its result.
     private var tools: [String: Int] = [:]
 
     public init() {}
@@ -18,7 +15,6 @@ public struct ChatHistory: Equatable, Sendable {
         entries.append(entry)
     }
 
-    /// A tool call's result, also in a later read than its call; dropped when the call is not known.
     public mutating func finish(tool id: String, result: String, failed: Bool, diff: [ChatTool.DiffLine] = [],
                                 output: String = "", calls: [ChatTool] = [], at time: Date?)
     {
@@ -40,7 +36,6 @@ public struct ChatEntry: Equatable, Sendable, Identifiable {
         case thinking
         case tool(ChatTool)
         case todos([ChatTodo])
-        /// "Interrupted", an API error, a compaction.
         case note(String, failed: Bool)
         case turnEnd(seconds: Double)
     }
@@ -83,12 +78,10 @@ extension ChatEntry {
         }
     }
 
-    /// A tool call or thinking: a step of a run (ui/chat-view#tool-calls).
     var isStep: Bool {
         tool != nil || kind == .thinking
     }
 
-    /// Its own row: a reply, a todo list or a note.
     var row: ChatRow? {
         switch kind {
         case let .reply(text): .reply(id: id, text: text)
@@ -105,34 +98,30 @@ public struct ChatTool: Equatable, Sendable {
     }
 
     public struct DiffLine: Equatable, Sendable {
-        /// " ", "+" or "-".
         public let mark: Character
         public let number: Int
         public let text: String
     }
 
     public let id: String
-    /// As the row shows it: `bash`, `edit`, a subagent's type.
     public let name: String
     public let category: Category
-    /// The command, the file, the pattern.
     public let target: String
-    /// "62 lines", "exit 1", "+3 -1"; nil while it runs.
     public var result: String?
     public var failed = false
     public var diff: [DiffLine] = []
-    /// What it was given and what it gave back, whole (`ChatHistory.detail`), for its open row.
     public let input: String
     public var output = ""
-    /// The tools a codemode script called: rows under its own, and a run counts them as its own.
     public var calls: [ChatTool] = []
     public let started: Date?
     public var ended: Date?
 
-    public init(id: String, name: String, category: Category, target: String, input: String = "", started: Date?) {
+    public init(id: String, name: String, category: Category? = nil, target: String, input: String = "",
+                started: Date?)
+    {
         self.id = id
         self.name = name
-        self.category = category
+        self.category = category ?? Self.kinds[name]?.category ?? .other
         self.target = target
         self.input = input
         self.started = started
@@ -146,27 +135,27 @@ public struct ChatTodo: Equatable, Sendable {
 }
 
 public extension ChatHistory {
-    /// "4s", "1m 48s", "2h 5m".
     static func duration(_ seconds: Double) -> String {
         let whole = max(0, Int(seconds.rounded()))
         return whole < 60 ? "\(whole)s" : whole < 3600 ? "\(whole / 60)m \(whole % 60)s"
             : "\(whole / 3600)h \(whole % 3600 / 60)m"
     }
 
-    /// "1 file", "2 files", "2 directories".
     static func count(_ number: Int, _ noun: String) -> String {
         "\(number) \(number == 1 ? noun : noun.hasSuffix("y") ? noun.dropLast() + "ies" : noun + "s")"
     }
 
-    /// A target or a result as its row shows it: the first line, at most 120 characters.
+    /// By name: a parsed object has no order.
+    static func firstText(_ input: [String: Any]) -> String {
+        firstLine(input.sorted { $0.key < $1.key }.first { $0.value is String }?.value)
+    }
+
     static func firstLine(_ value: Any?) -> String {
         let text = (value as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let line = text.prefix { $0 != "\n" }
         return line.count > 120 ? line.prefix(119) + "…" : String(line)
     }
 
-    /// A tool's input or output as its open row shows it: text as it is, an object's text values as `key: value`
-    /// lines, anything else as indented JSON; at most 20 000 characters.
     static func detail(_ value: Any?) -> String {
         func json(_ value: Any) -> String {
             let options: JSONSerialization.WritingOptions = [.prettyPrinted, .sortedKeys, .fragmentsAllowed,
@@ -185,7 +174,6 @@ public extension ChatHistory {
         return text.count > 20000 ? text.prefix(19999) + "…" : text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    /// A path under the session's folder from there, else whole.
     static func short(_ path: String, _ cwd: String?) -> String {
         guard let cwd, path.hasPrefix(cwd + "/") else { return path }
         return String(path.dropFirst(cwd.count + 1))
@@ -197,7 +185,6 @@ public extension ChatHistory {
 }
 
 extension ChatTool.DiffLine {
-    /// A unified diff's lines with their numbers (`@@ -a,b +c,d @@` hunks); headers and "\ No newline" skipped.
     static func unified(_ text: String) -> [Self] {
         var lines: [Self] = [], old = 0, new = 0, inHunk = false
         for line in text.split(separator: "\n", omittingEmptySubsequences: false) {
@@ -222,7 +209,6 @@ extension ChatTool.DiffLine {
 }
 
 extension ChatTool {
-    /// A change as its row says it: "+3 -1", "+2", "-4".
     static func change(_ diff: [DiffLine]) -> String {
         let added = diff.count { $0.mark == "+" }, removed = diff.count { $0.mark == "-" }
         return [added > 0 ? "+\(added)" : nil, removed > 0 ? "-\(removed)" : nil].compactMap(\.self)
@@ -231,7 +217,7 @@ extension ChatTool {
 }
 
 extension ChatTodo {
-    /// A todo list as Claude Code's TodoWrite and opencode's todowrite give it (`content`, `status`).
+    /// Claude Code's TodoWrite and opencode's todowrite give `content` and `status`.
     static func list(_ todos: Any?) -> [ChatTodo] {
         (todos as? [[String: Any]] ?? []).map { todo in
             let status = todo["status"] as? String
@@ -242,14 +228,11 @@ extension ChatTodo {
 }
 
 public extension ChatTool {
-    /// A run's front as pi-content-layout words it (its tools.ts), on one line: the three largest counts (ties in the
-    /// order the tools first ran), the rest as "+N more", and the failures: "Ran 89 commands, talked to 69 agents,
-    /// stopped 26 agents, +3 more, 4 failed". codemode's calls, failures too, count as their own.
     static func summary(_ tools: [ChatTool]) -> String {
         var order: [(verb: String, noun: String)] = [], numbers: [String: Int] = [:]
         let tools = tools.flatMap { [$0] + $0.calls }
         for name in tools.map(\.name) {
-            let wording = wording[name] ?? ("ran \(name)", "time")
+            let wording: (verb: String, noun: String) = kinds[name]?.wording ?? ("ran \(name)", "time")
             if numbers[wording.verb] == nil {
                 order.append(wording)
             }
@@ -265,28 +248,29 @@ public extension ChatTool {
         return text.prefix(1).uppercased() + text.dropFirst()
     }
 
-    /// Verb and noun by tool, as the rows name them, for every agent; no noun: the verb alone, uncounted.
-    private static let wording: [String: (verb: String, noun: String)] = {
+    private static let kinds: [String: (category: Category, wording: (verb: String, noun: String))] = {
         let ran = ("ran", "command"), searched = ("searched", "pattern"), edited = ("edited", "file")
         let read = ("read", "file"), listed = ("listed", "directory"), web = ("searched the web", "time")
         let fetched = ("fetched", "web page"), asked = ("asked", "question"), talked = ("talked to", "agent")
         let checked = ("checked agents", ""), started = ("started", "agent")
         return [
-            "read": read, "notebookread": read, "write": ("wrote", "file"),
-            "edit": edited, "multiedit": edited, "notebookedit": edited, "apply_patch": edited, "patch": edited,
-            "bash": ran, "codemode": ran, "bash_list": ran, "bash_watch": ran,
-            "grep": searched, "find": searched, "glob": searched, "ls": listed, "list": listed,
-            "websearch": web, "web_search": web, "webfetch": fetched, "web_fetch": fetched,
-            "askuserquestion": asked, "question": asked, "agent_start": started, "agent": started, "agent_send": talked,
-            "agent_watch": talked, "agent_read": checked, "agent_list": checked, "agent_stop": ("stopped", "agent"),
-            "wait": ("waited for agents", ""),
+            "read": (.read, read), "notebookread": (.read, read), "write": (.edit, ("wrote", "file")),
+            "edit": (.edit, edited), "multiedit": (.edit, edited), "notebookedit": (.edit, edited),
+            "apply_patch": (.edit, edited), "patch": (.edit, edited),
+            "bash": (.command, ran), "codemode": (.other, ran), "bash_list": (.other, ran), "bash_watch": (.other, ran),
+            "grep": (.search, searched), "find": (.search, searched), "glob": (.search, searched),
+            "ls": (.search, listed), "list": (.search, listed),
+            "websearch": (.search, web), "web_search": (.other, web), "webfetch": (.other, fetched),
+            "web_fetch": (.other, fetched), "askuserquestion": (.other, asked), "question": (.other, asked),
+            "agent_start": (.other, started), "agent": (.other, started), "agent_send": (.other, talked),
+            "agent_watch": (.other, talked), "agent_read": (.other, checked), "agent_list": (.other, checked),
+            "agent_stop": (.other, ("stopped", "agent")), "wait": (.other, ("waited for agents", "")),
         ]
     }()
 }
 
 public extension ChatHistory {
-    /// A model as the agent's picker names it: Claude's ids (`claude-opus-5-5`, `claude-3-5-haiku-20241022`) as
-    /// "Opus 5.5" and "Haiku 3.5"; any other as it is.
+    /// Claude's ids come as `claude-opus-5-5` and `claude-3-5-haiku-20241022`.
     static func modelName(_ model: String) -> String {
         let parts = model.split(separator: "/").last?.split(separator: "-") ?? []
         guard parts.first == "claude", let family = parts.first(where: { ["opus", "sonnet", "haiku"].contains($0) })

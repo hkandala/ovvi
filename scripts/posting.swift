@@ -1,4 +1,4 @@
-// What every script that posts events shares; the e2e helper puts it before each script as it compiles it.
+// The e2e helper prepends this file to each script that posts events.
 import CoreGraphics
 import Foundation
 
@@ -22,5 +22,23 @@ func onlyIntoTheApp(_ points: [CGPoint]) {
                 .map { "\($0[kCGWindowOwnerName as String] ?? "") (pid \($0[kCGWindowOwnerPID as String] ?? 0))" }
             fatalError("\(point) is in \(owner ?? "no window"), not the tests' app's (pid \(app))")
         }
+    }
+}
+
+func post(_ type: CGEventType, _ point: CGPoint) {
+    CGEvent(mouseEventSource: nil, mouseType: type, mouseCursorPosition: point, mouseButton: .left)?
+        .post(tap: .cghidEventTap)
+}
+
+func warp(to point: CGPoint) {
+    CGWarpMouseCursorPosition(point)
+    Thread.sleep(forTimeInterval: 0.3)
+}
+
+func glide(from start: CGPoint, to end: CGPoint) {
+    for step in 1 ... 20 {
+        let part = Double(step) / 20
+        post(.leftMouseDragged, CGPoint(x: start.x + (end.x - start.x) * part, y: start.y + (end.y - start.y) * part))
+        Thread.sleep(forTimeInterval: 0.015)
     }
 }

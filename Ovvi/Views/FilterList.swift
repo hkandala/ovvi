@@ -1,86 +1,55 @@
 import HerdrKit
 import SwiftUI
 
-/// A filter field over rows: type to filter, arrows move, Enter acts (Esc is the panel's). The palette, the
-/// workspace menu, the Open Session panel and the session picker.
 struct FilterList: View {
     struct Item {
         let id: String
         var symbol: String?
-        /// A pane's program tile instead of the symbol, or a program's.
         var pane: HostStore.Pane?
         var program: String?
-        /// A workspace's state icon instead of the symbol (none while idle).
         var state: AgentState?
         let title: String
         var detail = ""
-        /// A shortcut, one keycap per key (⌘, ⇧, T), after the detail.
         var keys: [String] = []
-        /// Where it changes from the row before: a header above the row, or a divider when empty.
         var section: String?
-        /// A dimmed word after the title: a typed palette row's group.
         var note: String?
-        /// A spinner in place of the detail.
         var busy = false
-        /// Opens a sub-page: a › on the right, and the list stays open.
         var opens = false
-        /// A second action, a button on the lit row's right end (Open Session's Stop, Delete and Detach). The list
-        /// stays open.
         var button: (title: String, act: () -> Void)?
         var buttonRole: ButtonRole?
-        /// Where a drop on the row moves the page's dragged pane or tab: a workspace, or a new one (the workspace
-        /// menu).
         var drop: MenuRowDrop.Target?
         let act: () -> Void
     }
 
     let prompt: String
     var fieldSymbol: String?
-    /// The field is `<name>.filter`, a row `<name>.<item id>`.
     let name: String
-    /// The rows for a filter. A function, so each key reads the rows as they are now.
     let items: (String) -> [Item]
-    /// The row lit until something is typed.
     var start = 0
     let maxHeight: CGFloat
-    /// The lit row's id, for a button outside the list that acts on it.
     var lit: Binding<String?>?
-    /// The field's first text (a name page).
     var text = ""
-    /// Enter acts on the field's text instead of a row (a name page).
     var submit: ((String) -> Void)?
-    /// Each new filter, until a newer one (the palette looks for a pasted path).
     var typed: ((String) async -> Void)?
-    /// ⌫ on an empty field, or Esc: back a page. Without it Esc goes on to close the panel.
     var back: (() -> Void)?
     var rowHeight: CGFloat = 26
-    /// The rows drawn by AppKit (`RowTable`): plain rows only, no state icons, spinners, buttons, drops or pinned rows.
+    /// AppKit rows (`RowTable`): no `state`, `busy`, `button`, `drop` or `pinned`; `pane`, `program`, `keys` and `note`
+    /// show only here.
     var table = false
-    /// The last rows sit under the scrolled ones, always in view: the workspace menu's New Space is a drop target
-    /// only in view as a drag starts (macOS 27, `MenuRowDrop`).
+    /// The last rows sit under the scrolled ones, always in view: macOS 27 takes the workspace menu's New Space as a
+    /// drop target only when it is in view as a drag starts.
     var pinned = 0
-    /// The panel's bottom padding, when the list ends the panel: inside the scrolled rows, after the last one, so a cut
-    /// row runs to the panel's edge. Under the field on a name page, which has no rows.
     var inset: CGFloat = 0
-    /// Off for the workspace menu a drag holds open: the drag's keyboard card keeps the keys.
     var autofocus = true
-    /// After a row acted or the field's text was submitted.
     let done: () -> Void
     @State private var filter = ""
-    /// The lit row, by id: rows that move or go (Open Session's Stop and Delete read the list again) must not hand
-    /// the light, and the row's button, to the row that takes its place. None: the start row, or the first once
-    /// something is typed.
+    /// By id: a row that moves or goes must not hand the light, and the row's button, to the row that takes its place.
     @State private var litID: String?
-    /// The rows' own height: the list is as tall as its rows, up to `maxHeight`, then scrolls.
     @State private var rowsHeight: CGFloat = 0
-    /// Where the pointer was when the panel opened, keys or the filter last moved the light, or the list last
-    /// scrolled: only a pointer moved since lights a row, not a row that scrolls under a pointer at rest. Not the last
-    /// hover's place: a busy app runs a row's hover late, with the pointer already on the next row, which then saw no
-    /// move.
+    /// Only a pointer moved since lights a row, not a row that scrolls under a pointer at rest. Not the last hover's
+    /// place: a busy app runs a row's hover late, with the pointer already on the next row.
     @State private var pointer = NSEvent.mouseLocation
-    /// Takes each scroll's pointer before the rows move under it.
     @State private var scrolls: Any?
-    /// The pointer lit the row: no scroll to it, as in a menu.
     @State private var pointed = false
 
     var body: some View {
@@ -90,8 +59,7 @@ struct FilterList: View {
         VStack(alignment: .leading, spacing: 2) {
             FilterField(prompt: prompt, text: $filter, identifier: "\(name).filter", symbol: fieldSymbol,
                         autofocus: autofocus)
-                // Here, not onSubmit: a field's submit action is not refreshed when only the index changes, so ↓
-                // Enter took the first row. Each handler reads the rows and the index as they are now.
+                // Here, not onSubmit: a field's submit action is not refreshed when only the index changes.
                 .onKeyPress(.return) {
                     let items = self.items(filter)
                     if let submit {
@@ -117,7 +85,6 @@ struct FilterList: View {
                     return .handled
                 }
                 .padding(.bottom, 4)
-            // A name page has no rows.
             if submit == nil, table {
                 if items.isEmpty, !filter.isEmpty {
                     EmptyState(symbol: "magnifyingglass", title: "No matches", compact: true)
@@ -134,16 +101,14 @@ struct FilterList: View {
             } else if submit == nil {
                 ScrollViewReader { proxy in
                     ScrollView {
-                        // Lazy: the palette's 100 rows took 230 ms to build and lay out on CI as it opened. By place,
-                        // not by row: a typed key changes what the rows in view show, instead of making them anew with
-                        // their accessibility (100 ms a key at 130 rows with an accessibility client). A row's own
-                        // state (hover, a drop's light) stays with its place; an Int id inside a row would catch
-                        // `scrollTo`.
+                        // Lazy: the palette's 100 rows take 230 ms to build and lay out on CI. By place, not by row: a
+                        // typed key changes what the rows in view show, instead of making them anew with their
+                        // accessibility (100 ms a key at 130 rows with an accessibility client). An Int id inside a row
+                        // would catch `scrollTo`.
                         LazyVStack(alignment: .leading, spacing: 2) {
                             ForEach(Array(items.enumerated().dropLast(pinned)), id: \.offset) { offset, _ in
                                 row(items, offset, index)
                             }
-                            // The pinned rows are no match (the workspace menu's New Space, Add Machine).
                             if items.count == pinned, !filter.isEmpty {
                                 EmptyState(symbol: "magnifyingglass", title: "No matches", compact: true)
                                     .frame(maxWidth: .infinity)
@@ -151,18 +116,15 @@ struct FilterList: View {
                         }
                         .padding(.bottom, inset)
                         // Up to the most it shows: a lazy stack's height is a guess that changes as it measures rows,
-                        // and each change made the list again (45 times for one key at 130 rows, 300 ms).
+                        // and each change makes the list again (45 times for one key at 130 rows, 300 ms).
                         .onGeometryChange(for: CGFloat.self) { min($0.size.height, maxHeight) } action: {
                             rowsHeight = $0
                         }
                     }
                     .scrollIndicators(.never)
                     .frame(height: min(rowsHeight, maxHeight))
-                    // A new lit row, and the lit row once the list has its height: a sub-page's may sit below the fold
-                    // (Font Size).
                     .onChange(of: rowsHeight > 0 ? index : nil) {
                         if !pointed, items.indices.contains(index) {
-                            // The last row to the end, with the gap after it.
                             proxy.scrollTo(index, anchor: index == items.count - 1 ? .top : nil)
                         }
                     }
@@ -190,7 +152,6 @@ struct FilterList: View {
             scrolls = nil
         }
         .task(id: filter) { await typed?(filter) }
-        // A cleared filter lights the start row again.
         .onChange(of: filter) {
             pointed = false
             litID = nil
@@ -199,8 +160,7 @@ struct FilterList: View {
         .onChange(of: items.isEmpty ? nil : items[index].id, initial: true) { lit?.wrappedValue = $1 }
     }
 
-    /// A row, with a header or a divider above it where its section changes. One view: a header beside its row made
-    /// the lazy stack make 5 to 8 times as many rows.
+    /// One view: a header beside its row makes the lazy stack make 5 to 8 times as many rows.
     private func row(_ items: [Item], _ offset: Int, _ index: Int) -> some View {
         let item = items[offset]
         return VStack(alignment: .leading, spacing: 2) {
@@ -220,7 +180,7 @@ struct FilterList: View {
             }
             .buttonStyle(ChromeStyle(selected: offset == index, tint: .accentColor))
             .accessibilityIdentifier("\(name).\(item.id)")
-            .accessibilityValue(item.state?.word ?? item.note ?? "")
+            .accessibilityValue(item.state?.word ?? "")
             .accessibilityAddTraits(offset == index ? .isSelected : [])
             // After the row's accessibility, which would name this button too.
             .overlay(alignment: .trailing) {
@@ -265,20 +225,19 @@ struct FilterList: View {
     }
 }
 
-/// A filter field. Until clicked (or with `autofocus`) it is plain text, so the window has no text field to hand the
-/// keyboard to at launch; keys belong to the panes.
+/// Plain text until clicked (or with `autofocus`), so the window has no text field to hand the keyboard to at launch;
+/// keys belong to the panes.
 struct FilterField: View {
     let prompt: String
     @Binding var text: String
     let identifier: String
     var symbol: String?
     var autofocus = false
-    /// Each new value gives the field the keyboard (a plugin's ⌘F).
     var focus = 0
-    /// Room at the end for a button the caller lays over it.
     var trailing: CGFloat = 0
     @State private var editing = false
     @FocusState private var focused: Bool
+    static let panelKeysTaken = Notification.Name("dev.ovvi.panelKeysTaken")
 
     var body: some View {
         HStack(spacing: 6) {
@@ -288,12 +247,10 @@ struct FilterField: View {
             if editing || autofocus || !text.isEmpty {
                 TextField(prompt, text: $text)
                     .focused($focused)
-                    // A field shown only for its text (a kept page's filter coming back) leaves the keyboard alone.
                     .focusSoon($focused, editing || autofocus)
                     .onChange(of: focused) { editing = focused }
                     .accessibilityIdentifier(identifier)
             } else {
-                // A button, not a field: it can't take the keyboard at launch, and VoiceOver can press it.
                 Button { editing = true } label: {
                     Text(prompt).foregroundStyle(.tertiary).frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -310,10 +267,9 @@ struct FilterField: View {
             // A first responder set during an update is undone.
             DispatchQueue.main.async { focused = true }
         }
-        // A panel's field takes back the keys a web view's page took (`BrowserView.becomeFirstResponder`).
         .task(id: autofocus) {
             guard autofocus else { return }
-            for await _ in NotificationCenter.default.notifications(named: .panelKeysTaken).map({ _ in () }) {
+            for await _ in NotificationCenter.default.notifications(named: Self.panelKeysTaken).map({ _ in () }) {
                 focused = true
             }
         }
@@ -324,9 +280,7 @@ struct RenameField: View {
     let prompt: String
     let initial: String
     let commit: (String) -> Void
-    /// After a commit and on Esc.
     let end: () -> Void
-    /// The field lost the keyboard: `end` unless given.
     var blur: (() -> Void)?
     @State private var draft = ""
     @FocusState private var focused: Bool
@@ -350,9 +304,6 @@ struct RenameField: View {
 }
 
 extension View {
-    /// A text field in a soft capsule; at `.controlSize(.large)` (the palette) roomier, in a larger font, on the
-    /// look's `paletteField`, with the panel's corner radius. `fill` off keeps only its padding
-    /// (New Pane's folder line at rest).
     func fieldCapsule(fill: Bool = true) -> some View {
         modifier(FieldCapsule(fill: fill))
     }
@@ -360,9 +311,9 @@ extension View {
     func focusSoon(_ focused: FocusState<Bool>.Binding, _ asks: Bool = true) -> some View {
         task(id: asks) {
             guard asks else { return }
-            // ponytail: focus asked for as the field appears is dropped (AppKit has not made it a key view yet), and
-            // a single later ask was sometimes dropped too (⌘K, then typing went nowhere); ask every 50 ms until it
-            // holds, for up to 1 s. Upgrade: an AppKit field that takes first responder in viewDidMoveToWindow.
+            // ponytail: focus asked for as the field appears is dropped (AppKit has not made it a key view yet), and a
+            // single later ask is sometimes dropped too; ask every 50 ms until it holds, for up to 1 s.
+            // Upgrade: an AppKit field that takes first responder in viewDidMoveToWindow.
             for _ in 0 ..< 20 where !focused.wrappedValue {
                 try? await Task.sleep(for: .milliseconds(50))
                 focused.wrappedValue = true
@@ -378,8 +329,7 @@ private struct FieldCapsule: ViewModifier {
 
     func body(content: Content) -> some View {
         let large = size == .large
-        // The palette panel's radius: a concentric 4 pt looks square beside the panel's rounder corner.
-        let shape = large ? AnyShape(.rect(cornerRadius: 14)) : AnyShape(.capsule)
+        let shape = large ? AnyShape(.panel) : AnyShape(.capsule)
         content.textFieldStyle(.plain).transformEnvironment(\.font) { font in font = large ? .system(size: 15) : font }
             .padding(.horizontal, large ? 12 : 8).padding(.vertical, large ? 9 : 5)
             .background(fill ? large ? AnyShapeStyle(look.paletteField) : AnyShapeStyle(.primary.opacity(0.07))
@@ -388,7 +338,6 @@ private struct FieldCapsule: ViewModifier {
 }
 
 extension String {
-    /// Whether this label passes a typed filter: trimmed, case and accent blind, empty passes all.
     func matches(_ filter: String) -> Bool {
         let filter = filter.trimmingCharacters(in: .whitespaces)
         return filter.isEmpty || localizedStandardContains(filter)

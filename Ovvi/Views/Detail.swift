@@ -2,24 +2,9 @@ import Foundation
 import HerdrKit
 import SwiftUI
 
-struct Notice {
-    enum Tone {
-        case error, warning, info, progress, success
-    }
-
-    let text: String
-    var tone = Tone.error
-    /// The terminal whose pane Show selects in the window (an agent's notice, agent-control/cli): a pane id can name
-    /// another pane after a move.
-    var show: String?
-    var retry: (@MainActor @Sendable () -> Void)?
-    let id = UUID()
-}
-
 struct NoticeCapsule<Action: View>: View {
     let tone: Notice.Tone
     let text: String
-    /// Instead of the tone's symbol.
     var symbol: String?
     @ViewBuilder var action: Action
     @Environment(\.look) private var look
@@ -45,7 +30,6 @@ struct NoticeCapsule<Action: View>: View {
             Text(text).lineLimit(2)
             action
         }
-        // As the plugin card's toast: round buttons in the round notice.
         .buttonBorderShape(.capsule)
         .padding(.horizontal, 14)
         .frame(minHeight: 36)
@@ -54,7 +38,6 @@ struct NoticeCapsule<Action: View>: View {
     }
 }
 
-/// The page's selected workspace's tabs, or why there is nothing to show.
 struct Detail: View {
     let pages: WindowPages
     let page: Page
@@ -64,7 +47,6 @@ struct Detail: View {
         let machine = store.name
         switch store.state {
         case .connecting:
-            // After 0.3 s, so a fast connect shows nothing; ssh's question replaces it while it is up.
             if pages.question == nil {
                 Loader(symbol: store.machine.icon, text: "Connecting to \(machine)…", id: "detail.connecting",
                        delay: .milliseconds(300))
@@ -72,35 +54,33 @@ struct Detail: View {
         case .failed(.notFound):
             install(store)
         case let .failed(.disconnected(text)):
-            // Retries stopped: only Connect may ask (machines#health-check).
             let title = "Disconnected from \(store.machine.name)"
             EmptyState(symbol: "network.slash", title: title, text: text, id: "detail") {
                 Button("Connect") { Task { await store.connect(in: pages) } }.buttonStyle(.glassProminent)
                     .accessibilityIdentifier("detail.connect")
             }
         case let .failed(.unsupported(text)):
-            // The client asks again every 2 s, so an updated herdr clears it. No button: the running server's version
-            // counts, and only a restart, which ends every program in the session, would change it.
+            // No button: the running server's version counts, and only a restart, which ends every program in the
+            // session, changes it.
             EmptyState(symbol: "arrow.up.circle", title: "herdr is too old", text: text + ".", id: "detail")
+        case .failed where store.starting:
+            Loader(symbol: "power.circle", text: "Starting \(store.session)…", id: "detail.starting")
         case .failed where !store.isRunning:
-            // Why a start failed, if one did.
             let title = "\(store.session) is not running"
-            EmptyState(symbol: "power.circle", title: title, text: store.notice?.text, id: "detail") {
+            EmptyState(symbol: "power.circle", title: title, text: store.startProblem, id: "detail") {
                 Button("Start \(store.session)") { Task { await store.start() } }.buttonStyle(.glassProminent)
                     .accessibilityIdentifier("detail.start")
             }
         case .live, .failed:
-            // Reconnecting (the server runs, the bridge fails) in one branch, so the page keeps its state through
-            // it; the notices stay clickable.
+            // Reconnecting in one branch, so the page keeps its state through it.
             let reconnecting = store.reconnecting
             tabs()
                 .opacity(reconnecting ? 0.5 : 1)
                 .allowsHitTesting(!reconnecting)
                 .overlay {
                     if reconnecting {
-                        // Why, when it says (a remote with no Perl fails every try).
-                        let why = if case let .failed(.failed(why)) = store.state {
-                            why
+                        let why = if case let .failed(error) = store.state {
+                            error.localizedDescription
                         } else {
                             ""
                         }
@@ -121,19 +101,15 @@ struct Detail: View {
                         Text(KeyboardShortcut.newTab.glyphs).foregroundStyle(.secondary)
                     }
                     .buttonStyle(.glassProminent)
-                    .accessibilityIdentifier("new-tab")
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                // As the tab bar's marker: the first tab until a snapshot settles the selection.
                 TabPages(tab: workspace.tabs[page.selectedIndex(in: workspace)], page: page, overview: pages.overview)
                     .id(page.id)
             }
         } else if page.store.state == .live {
-            // Not while it reconnects before its first snapshot.
             EmptySession(page: page)
         } else {
-            // Room for the Reconnecting overlay: on no view it never drew (a machine that failed its first connect).
             Color.clear
         }
     }
@@ -145,7 +121,7 @@ struct Detail: View {
                     if let id = notice.show {
                         Button("Show") {
                             store.notice = nil
-                            if let pane = store.panes.first(where: { $0.terminalID == id }) {
+                            if let pane = store.terminalPane(id) {
                                 page.go(to: pane)
                             }
                         }
@@ -163,12 +139,10 @@ struct Detail: View {
                         .accessibilityIdentifier("notice.close")
                 }
                 .accessibilityIdentifier("detail.notice")
-                // By id: the same text again is a new notice.
                 .onChange(of: notice.id, initial: true) {
                     AccessibilityNotification.Announcement(notice.text).post()
                 }
             }
-            // Another window controls the session (D66). Under a notice; no ✕: only Take Back ends it.
             if page.watched {
                 let text = "Controlled in another window"
                 NoticeCapsule(tone: .info, text: text, symbol: "macwindow.on.rectangle") {
@@ -198,7 +172,6 @@ struct Detail: View {
             }
         case nil:
             let title = "herdr is not installed" + (machine.isRemote ? " on \(machine.name)" : "")
-            // One line about as wide as the command under it (332 and 326 pt), so the two read as a pair.
             let why = "Ovvi runs on herdr, which keeps your sessions running."
             EmptyState(symbol: "shippingbox", title: title, text: why, command: HerdrInstall.command, id: "detail") {
                 Button("Install herdr") { run() }.buttonStyle(.glassProminent)
@@ -208,25 +181,20 @@ struct Detail: View {
     }
 }
 
-/// The selected tab's page over the pages of the tabs shown last, which stay made, hidden: a switch to one of them
-/// shows it as it was, with nothing built again (a chat's rows, its scroll place, a web card in the window). Under the
-/// overview every page stays, hidden. A view of its own per tab: a shared one would carry its cards' places into the
-/// next tab's.
+/// A view of its own per tab: a shared one would carry its cards' places into the next tab's.
 private struct TabPages: View {
     let tab: HostStore.Tab
     let page: Page
     let overview: Bool
-    /// The tabs shown before, the latest last.
     @State private var shown: [String] = []
-    /// ponytail: a fixed count; a kept page costs its cards' updates while hidden. Bound by the cards' cost if a
+    /// ponytail: a constant count; a kept page costs its cards' updates while hidden. Bound by the cards' cost if a
     /// session of heavy tabs needs more.
     static let kept = 8
 
     var body: some View {
         let all = page.store.workspaces.flatMap(\.tabs)
         let recent = (shown.filter { id in id != tab.id && all.contains { $0.id == id } } + [tab.id]).suffix(Self.kept)
-        // In an order no switch, drop or move changes: a moved page would host its cards' views again. Only the shown
-        // page draws and takes input, so the stacking order does not matter.
+        // In an order no switch, drop or move changes: a moved page would host its cards' views again.
         ZStack {
             ForEach(all.filter { recent.contains($0.id) }.sorted { $0.id < $1.id }) { kept in
                 let shows = kept === tab && !overview
@@ -241,13 +209,10 @@ private struct TabPages: View {
 }
 
 extension EnvironmentValues {
-    /// In a kept tab's page out of view (`TabPages`).
     @Entry var pageHidden = false
 }
 
 extension View {
-    /// A text field in a kept page that goes out of view gives up the keyboard: keys typed after the switch must not
-    /// reach it.
     func blursWhenHidden(_ focus: FocusState<Bool>.Binding) -> some View {
         modifier(BlurWhenHidden(focus: focus))
     }

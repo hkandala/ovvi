@@ -1,36 +1,24 @@
 import HerdrKit
 import SwiftUI
 
-/// A workspace: its name, and its branch with ahead and behind on a second line in a repository; its state's icon and,
-/// when it runs agents, a chevron at the end. Unfolded, its agents follow, one line each, inside the row's glass
-/// (selected) or its border (the others) (ui/window#space-rows). A linked worktree sits indented under its
-/// repository's row, on a guide line.
 struct WorkspaceRow: View, Equatable {
-    /// The text's inset in a row; the page header's text lines up.
     static let textInset: CGFloat = 8
-    /// Between two rows.
     static let gap: CGFloat = 10
 
     let workspace: HostStore.Workspace
     let parent: HostStore.Workspace?
     let page: Page
-    /// The rows' frames: the header's and the agent lines' go there, for the pointer.
     let frames: SidebarPage.RowFrames
-    /// A worktree row follows: the guide line starts under this row.
     let guideBelow: Bool
-    /// The first and the last group's workspace: they cannot move up or down.
     let ends: (first: String?, last: String?)
-    /// Its agent panes shown under it, newest change first: none while folded.
     let agents: [HostStore.Pane]
-    /// It runs agents: a chevron.
     let hasAgents: Bool
-    /// Nil while the filter holds it open.
     let fold: (() -> Void)?
     @State private var renaming = false
     @Environment(\.look) private var look
 
-    /// The same row when its parts are: the page's every update (a hover's hold, a selection's scroll) made the rows
-    /// in view again, as `fold` is a new closure each time. What the row reads from the store it observes itself.
+    /// `fold` is a new closure each time: compared, every page update would make the rows in view again. What the row
+    /// reads from the store it observes itself.
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.workspace === rhs.workspace && lhs.parent === rhs.parent && lhs.page === rhs.page
             && lhs.frames === rhs.frames && lhs.guideBelow == rhs.guideBelow && lhs.ends == rhs.ends
@@ -42,8 +30,7 @@ struct WorkspaceRow: View, Equatable {
         let _ = Latency.madeRow() // swiftlint:disable:this redundant_discardable_let
         let selected = workspace.id == page.selectedWorkspaceID
         let state = workspace.state
-        // The icon: not while idle, nor under the rename field.
-        let shown = state == .idle || renaming ? nil : state
+        let shown = renaming ? nil : state?.shown
         let height: CGFloat = workspace.git == nil ? 30 : 44
         let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
         VStack(spacing: 0) {
@@ -55,7 +42,6 @@ struct WorkspaceRow: View, Equatable {
                 .padding([.horizontal, .bottom], 4)
             }
         }
-        // The selected row's glass, over its agents too; the others' border, folded or not, and no glass.
         .background {
             if selected {
                 Pill(shape: shape)
@@ -64,8 +50,6 @@ struct WorkspaceRow: View, Equatable {
             }
         }
         .padding(.leading, parent == nil ? 0 : 14)
-        // In the gap under a repository's row or a worktree's that another worktree follows, where the next row's
-        // top border starts its straight part (14 pt indent and 10 pt corner): the rows' borders carry it on.
         .background(alignment: .topLeading) {
             if guideBelow {
                 GeometryReader { geometry in
@@ -82,19 +66,15 @@ struct WorkspaceRow: View, Equatable {
         let state = workspace.state
         return Button {
             page.select(workspace)
-            // AppKit's double-click, counted from the events' times: SwiftUI's TapGesture(count: 2) missed one
-            // while the app was busy drawing the first click's selection.
-            if let event = NSApp.currentEvent, event.type == .leftMouseUp, event.clickCount == 2 {
+            if NSApp.isDoubleClick {
                 startRenaming()
             }
         } label: {
             label(selected: selected, state: state, git: git)
-                // The state icon's and the chevron's room (`stateIcon`, `chevron`).
                 .padding(.leading, Self.textInset)
                 .padding(.trailing, 8 + (shown == nil ? 0 : 12 + 8) + (hasAgents ? Self.chevron + 6 : 0))
                 .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .leading)
         }
-        // The row's glass is the whole row's (`body`); under the pointer only an unselected one fills.
         .buttonStyle(ChromeStyle(radius: 10, hovered: selected ? false : nil, light: frames.light(workspace.id)))
         .target(workspace.id, in: frames)
         .dragSource(.workspace(workspace.id), page: page)
@@ -106,7 +86,6 @@ struct WorkspaceRow: View, Equatable {
         .overlay(alignment: .topTrailing) { chevron }
         .overlay(alignment: .leading) {
             if renaming {
-                // Enter: herdr's label; the snapshot after it shows it.
                 RenameField(prompt: "Space Name", initial: workspace.label, commit: { label in
                     Task { await page.store.rename(workspace: workspace.id, label: label) }
                 }, end: stopRenaming)
@@ -118,7 +97,6 @@ struct WorkspaceRow: View, Equatable {
                     .accessibilityIdentifier("workspace.\(workspace.id).rename")
             }
         }
-        // Writes only while the session runs: a stopped one keeps its last rows.
         .contextMenu { menu.disabled(page.store.state != .live) }
     }
 
@@ -153,8 +131,6 @@ struct WorkspaceRow: View, Equatable {
 
     private static let chevron: CGFloat = 12
 
-    /// Folds or unfolds the agents, at the end of the name's line; none without agents. Its own button: a click on the
-    /// row selects it.
     @ViewBuilder private var chevron: some View {
         if hasAgents, !renaming {
             Button { fold?() } label: {
@@ -174,8 +150,7 @@ struct WorkspaceRow: View, Equatable {
         }
     }
 
-    /// The state's icon (12 pt, as a tab's) at the end of the name's line; nothing with no agent. Over
-    /// the button, so a test sees it; the row's value has the state word for VoiceOver.
+    /// Over the button, so a test sees it; the row's value has the state word for VoiceOver.
     @ViewBuilder
     private func stateIcon(_ state: AgentState?) -> some View {
         if let state {
@@ -190,12 +165,10 @@ struct WorkspaceRow: View, Equatable {
         let first = ends.first == workspace.id, last = ends.last == workspace.id
         Button("New Tab") { Task { await page.newTab(in: workspace) } }
         Button("Rename Space") { startRenaming() }
-        // A worktree moves with its repository's row.
         Button("Move Up") { store.move(workspace: workspace.id, by: -1) }
             .disabled(parent != nil || first)
         Button("Move Down") { store.move(workspace: workspace.id, by: 1) }
             .disabled(parent != nil || last)
-        // Only where the row shows a branch: the same repository.
         if workspace.git != nil {
             Divider()
             Button("Fetch") { Task { await store.sync(workspace, .fetch) } }
@@ -206,7 +179,6 @@ struct WorkspaceRow: View, Equatable {
         Button("Close Space") { page.close(.workspace(workspace.id)) }
     }
 
-    /// Not while the session is stopped (a double-click too): the rename would fail.
     private func startRenaming() {
         guard page.store.state == .live else { return }
         renaming = true
@@ -219,9 +191,6 @@ struct WorkspaceRow: View, Equatable {
     }
 }
 
-/// An agent in its workspace's unfolded row (ui/window#agent-rows), one line: its program tile, its title (an
-/// untitled session's first prompt, cut at the row's width), then its state box with the working time. A click goes to
-/// its tab and pane; lit while it is the shown tab's keyboard card.
 struct AgentLine: View {
     let pane: HostStore.Pane
     let page: Page
@@ -258,7 +227,6 @@ struct AgentLine: View {
 }
 
 private extension View {
-    /// Its frame in the rows' content, for the pointer, while it is made.
     func target(_ id: String, in frames: SidebarPage.RowFrames) -> some View {
         onGeometryChange(for: CGRect.self) { $0.frame(in: .named("rows")) } action: {
             frames.targets[id] = $0

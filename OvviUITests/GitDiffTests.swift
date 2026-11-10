@@ -1,11 +1,6 @@
 import XCTest
 
-/// The Git diff's keys: ] and [ step through the changes, from the top of the view after a scroll, and ⌘F's
-/// find bar filters the files by path.
 extension OvviUITests {
-    /// In a working tree that changes a.txt's lines 10, 200 and 290 and adds b.md: ] steps to each change, [ back;
-    /// after a scroll to the top, ] goes to the first change there, not past the last one stepped to. ⌘F filters the
-    /// files; Return keeps the filter, and Esc closes the bar and shows them all again.
     func testGitDiffStepsWithBracketsAndFilters() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("git-keys")
@@ -25,7 +20,6 @@ extension OvviUITests {
         // The first card of a run waits for the default plugins to install and build.
         XCTAssertTrue(line("ten").has(\.isHittable, true, within: 30))
 
-        // A click gives the page the keyboard.
         line("ten").click()
         for _ in 0 ..< 3 {
             app.typeKey("]", modifierFlags: [])
@@ -49,7 +43,6 @@ extension OvviUITests {
         keepScreenshot("git diff filter")
         app.typeText("x")
         XCTAssertTrue(line("No matching files").exists(within: 3))
-        // Return gives the keyboard back to the diff with the filter kept; Esc there still closes the bar.
         app.typeKey(.delete, modifierFlags: [])
         app.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(page.buttons["Open b.md"].exists(within: 3))

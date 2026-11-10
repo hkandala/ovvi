@@ -1,18 +1,14 @@
 import HerdrKit
 import SwiftUI
 
-/// A drag over the tab track. A pane over another tab's capsule highlights it and spring-loads it after 0.65 s; a
-/// drop moves the pane into that tab. Its own tab's capsule is not a target (herdr refuses `same_tab`). A tab of
-/// the workspace goes to the place under its drag image (`tab.move`), so its drop lands within half a tab of it.
+/// Its own tab's capsule is not a target: herdr refuses `same_tab`.
 struct TrackDrop: DropDelegate {
     let tabs: [HostStore.Tab]
     let page: Page
-    /// A capsule and its divider.
     let slot: CGFloat
     @Binding var over: Int?
     @Binding var spring: Task<Void, Never>?
     let springLoad: (String) -> Void
-    /// A tab dropped here: its offset in its new place from where the drag image was, and the tab under the pointer.
     let land: (_ tab: String, _ offset: CGFloat, _ under: String) -> Void
 
     func validateDrop(info _: DropInfo) -> Bool {
@@ -41,7 +37,7 @@ struct TrackDrop: DropDelegate {
         } else if case let .tab(id) = page.dragging, let from = tabs.firstIndex(where: { $0.id == id }) {
             let image = (info.location.x - DragSource.grabbed.x) / max(slot, 1)
             let place = min(max(Int(image.rounded()), 0), tabs.count - 1)
-            // herdr's index: before the tab now there.
+            // herdr inserts ahead of the tab at the index.
             let index = place >= from ? place + 1 : place
             if over != index {
                 withAnimation(.slide) { over = index }
@@ -52,7 +48,6 @@ struct TrackDrop: DropDelegate {
 
     func dropExited(info _: DropInfo) {
         spring?.cancel()
-        // A tab slides back; a capsule's highlight fades.
         withAnimation(page.dragging?.paneID == nil ? .slide : .highlight) { over = nil }
     }
 
@@ -67,17 +62,12 @@ struct TrackDrop: DropDelegate {
             Task { await page.drop(id, on: .tab(tabs[over].id)) }
         case let .tab(id):
             guard let from = tabs.firstIndex(where: { $0.id == id }) else { return false }
-            // herdr inserts before the tab now at the index; its own place or the next is no move.
+            // herdr inserts ahead of the tab at the index; its own place or the next is no move.
             if over != from, over != from + 1 {
                 // The new order shows in this same update, as the drag's slide ends: no slide back first.
                 page.store.move(tab: id, to: over)
             }
-            // The drag's dimmed capsule too, before the drag session's end: the mouse is up, so no new drag
-            // starts before that end.
-            page.dragging = nil
-            page.lifted = nil
-            DragSource.dropImage()
-            // The order the bar draws now.
+            DragSource.land(page)
             let order = page.store.workspace(of: id)?.tabs.map(\.id) ?? [id]
             let place = order.firstIndex(of: id) ?? from
             land(id, info.location.x - DragSource.grabbed.x - CGFloat(place) * slot,
@@ -89,15 +79,12 @@ struct TrackDrop: DropDelegate {
     }
 }
 
-/// A workspace menu row (the collapsed sidebar's): a pane or a tab of the page dropped on it goes to a new tab in
-/// that workspace, or on New Workspace to a new workspace, as in the sidebar, highlighted the same; no spring-load
-/// in a menu.
 struct MenuRowDrop: ViewModifier {
     struct Target {
         let page: Page
         let destination: Destination
-        /// The menu is open. It is there, hidden, through the whole drag: macOS 27 finds no drop target added
-        /// after the drag entered the window.
+        /// It is there, hidden, through the whole drag: macOS 27 finds no drop target added after the drag entered the
+        /// window.
         let shown: Bool
     }
 
@@ -105,8 +92,7 @@ struct MenuRowDrop: ViewModifier {
     @State private var over = false
 
     func body(content: Content) -> some View {
-        // Only during a drag: a drop target on the row at other times cost it the pointer's light on CI (one run
-        // in two).
+        // Only during a drag: a drop target on the row at other times costs it the pointer's light (one CI run in two).
         if let target, target.page.dragging != nil {
             content
                 .overlay {
@@ -124,18 +110,10 @@ struct MenuRowDrop: ViewModifier {
     }
 }
 
-/// A drag over a page's workspace rows. A pane over a row highlights it and spring-loads it after 0.65 s; a drop
-/// moves it to a new tab there. A tab over another workspace's row highlights it, and a drop moves the tab there
-/// whole; no spring-load (that workspace's tab row would not take it). A pane or a tab dropped under the last row
-/// goes to a new workspace. A dragged workspace goes to the place under the pointer, its worktrees with it; a
-/// worktree moves only among its repository's worktrees.
 struct RowsDrop: DropDelegate {
     struct State {
-        /// The row a pane or a tab is over.
         var over: String?
-        /// A pane or a tab under the last row.
         var ghost = false
-        /// Where a dragged workspace goes, among its blocks.
         var slot: Int?
         var spring: Task<Void, Never>?
     }
@@ -143,9 +121,7 @@ struct RowsDrop: DropDelegate {
     let page: Page
     let frames: SidebarPage.RowFrames
     @Binding var state: State
-    /// Not while the filter hides rows: a reorder needs them all.
     let reorders: Bool
-    /// A workspace dropped here: its rows, and their offset in their new place from where the drag image was.
     let land: (_ rows: [String], _ offset: CGFloat) -> Void
 
     func validateDrop(info _: DropInfo) -> Bool {
@@ -161,7 +137,6 @@ struct RowsDrop: DropDelegate {
         guard page.dragging != nil else { return nil }
         let pointY = info.location.y + frames.top
         if case let .workspace(id) = page.dragging {
-            // The place under the drag image's middle, where the rows glide in from, as a tab's.
             let imageY = pointY - DragSource.grabbed.y + (frames.rows[id]?.height ?? 0) / 2
             let blocks = blocks(id)
             // The lazy stack makes the rows in view: one not made lies above them, or below.
@@ -177,13 +152,11 @@ struct RowsDrop: DropDelegate {
         if ghost != state.ghost {
             withAnimation(.highlight) { state.ghost = ghost }
         }
-        // A tab's own workspace is not a target.
         let home: HostStore.Workspace? = if case let .tab(id) = page.dragging {
             page.store.workspace(of: id)
         } else {
             nil
         }
-        // The 2 pt gaps count as the row above.
         let row = state.ghost ? nil : page.store.workspaces.first { workspace in
             frames.rows[workspace.id].map { pointY >= $0.minY && pointY < $0.maxY + 2 } ?? false && workspace !== home
         }
@@ -203,7 +176,6 @@ struct RowsDrop: DropDelegate {
     }
 
     func performDrop(info: DropInfo) -> Bool {
-        // From where the drag's slide put the rows, before it ends.
         let shifted = page.dragging.flatMap { dragging in
             if case let .workspace(id) = dragging {
                 (frames.rows[id]?.minY ?? 0) + shift(id)
@@ -230,10 +202,7 @@ struct RowsDrop: DropDelegate {
             if slot != from, slot != from + 1 {
                 page.store.move(workspaces: blocks[from].map(\.id), before: before(slot, blocks))
             }
-            // The dim and the image go now too, as a tab's (`TrackDrop`).
-            page.dragging = nil
-            page.lifted = nil
-            DragSource.dropImage()
+            DragSource.land(page)
             land(blocks[from].map(\.id), info.location.y + frames.top - DragSource.grabbed.y - shifted)
         default:
             return false
@@ -241,7 +210,6 @@ struct RowsDrop: DropDelegate {
         return true
     }
 
-    /// A dragged workspace slides to its place and the blocks it passes slide the other way by its height.
     func shift(_ id: String) -> CGFloat {
         guard case let .workspace(dragged) = page.dragging, let slot = state.slot else { return 0 }
         let blocks = blocks(dragged)
@@ -257,7 +225,6 @@ struct RowsDrop: DropDelegate {
             : place <= index && index < from ? height(blocks[from]) : 0
     }
 
-    /// What a workspace moves among: the row groups, or for a worktree its repository's other worktrees.
     private func blocks(_ id: String) -> [[HostStore.Workspace]] {
         let groups = page.store.groups
         if let group = groups.first(where: { $0.dropFirst().contains { $0.id == id } }) {
@@ -266,7 +233,6 @@ struct RowsDrop: DropDelegate {
         return groups
     }
 
-    /// Rows and their 2 pt gaps.
     private func height(_ block: [HostStore.Workspace]) -> CGFloat {
         block.compactMap { frames.rows[$0.id]?.height }.reduce(0, +) + 2 * CGFloat(block.count)
     }
@@ -277,8 +243,6 @@ struct RowsDrop: DropDelegate {
         return (top + bottom) / 2
     }
 
-    /// The workspace a block dropped at `slot` goes before: the block there, else (last) none for groups, and for
-    /// worktrees the workspace after the last one in herdr's order.
     private func before(_ slot: Int, _ blocks: [[HostStore.Workspace]]) -> String? {
         if blocks.indices.contains(slot) {
             return blocks[slot].first?.id
@@ -292,8 +256,6 @@ struct RowsDrop: DropDelegate {
 }
 
 extension Page {
-    /// A dragged pane dropped: as a move, the page follows it and it keeps the keyboard. A re-place in its own tab
-    /// keeps that tab selected throughout (its pass through a new tab never shows).
     func drop(_ paneID: String, on target: DropTarget) async {
         guard let pane = store.pane(paneID) else { return }
         let terminalID = pane.terminalID
@@ -311,8 +273,6 @@ extension Page {
         }
     }
 
-    /// A dragged tab dropped on another workspace or (nil) a new one: the page follows it there, and its keyboard
-    /// card keeps the keyboard.
     func drop(tab tabID: String, on workspaceID: String?) async {
         let keyboard = keyboardCard(tabID)
         let moved = await store.move(tab: tabID, to: workspaceID)
