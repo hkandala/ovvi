@@ -1573,3 +1573,9 @@ you did, no need of reverting them".
 - **Runs.** CI 42749499750: 10 chosen tests green (Archived search, stuck agent here and over the relay, filters,
   pages, dots, Recent, scroll into view, untitled agent, the session menu).
 - **Pictures**, before and after, dark and light: `~/Downloads/ovvi-research/p57b/r7b/index.html`.
+    Follow-up to item 67: "wait we can actually do land all the cleanup, but merge to main as one commit, so its easier
+    to revert. the comment cleanup is removal of comments right, not addition of comments? we should have few comments
+    that mention only on some assumptions or implicit things which cannot be changed. no mention of old code, or old
+    design etc, no backward compatibility shit, just the current code and clean, lets make sure we do run e2e and we are
+    confident that this will not break anything, get things reviewed etc, and once we have confidence, let's merge it as
+    one commit".
