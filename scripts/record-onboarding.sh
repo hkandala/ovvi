@@ -62,13 +62,11 @@ tap() {
     OVVI_APP_PID=$pid "$W/tools/click" $point
 }
 
-# Films the app's windows into $C/<page>-<look>.mp4 until `wrap`. First, while nothing films, a picture of the window:
-# macOS draws its capture mark over the window's buttons while it films, and the clip takes them from this picture.
+# Films the app's windows into $C/<page>-<look>.mp4 until `wrap`.
 roll() {
     "$W/tools/ax" "$pid" park 2>/dev/null || true
     sleep 0.3
     window | cut -d' ' -f2- >"$C/$1.at"
-    screencapture -x -o -l "$(window | cut -d' ' -f1)" "$C/$1.png"
     rm -f "$C/cue"
     mkfifo "$C/cue"
     "$C/film" "$pid" "$C/$1.mp4" <"$C/cue" >"$C/film.log" 2>&1 &
@@ -127,7 +125,8 @@ layout() {
 # Claude Code at work in its terminal (TUI), then a click on Chat: the same turn, as messages, beside Git's diff.
 agents() {
     local c prompt
-    ln -sf "$REPO/scripts/onboarding/claude.py" "$W/bin/claude"
+    printf '#!/bin/sh\nexec %q %q "$@"\n' "$(command -v python3)" "$REPO/scripts/onboarding/claude.py" >"$W/bin/claude"
+    chmod +x "$W/bin/claude"
     # In place of the scene's Dark mode tab: a new one right after the first, in view in the tab bar.
     h tab close "$(tab_of "$c2")" >/dev/null
     c=$(o "$c1" "$R/shortlink" agent claude --tab --json | json "d['pane']")
@@ -208,23 +207,29 @@ encode() {
     read -r wx wy ww wh <"$C/$1-$2.at"
     length=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$film")
     mkdir -p "$CLIPS"
-    ffmpeg -loglevel error -y -i "$film" -i "$C/$1-$2.png" -filter_complex "[0:v]fps=60,\
+    ffmpeg -loglevel error -y -i "$film" -i "$C/buttons-$2.png" -filter_complex "[0:v]fps=60,\
 crop=$((ww * 2)):$((wh * 2)):$((wx * 2)):$((wy * 2))[w];[1:v]crop=200:88:0:0[b];[w][b]overlay=0:0,\
 scale=1824:912:flags=lanczos,format=yuv420p,split[a][f];[f]trim=end_frame=1,loop=loop=60:size=1,setpts=N/60/TB,fps=60[s];\
 [a][s]xfade=transition=fade:duration=0.5:offset=$(python3 -c "print(round($length - 0.6, 2))"),format=yuv420p[v]" \
-        -map "[v]" -c:v libx265 -tag:v hvc1 -crf "${CRF:-22}" -preset slow -an -movflags +faststart \
+        -map "[v]" -c:v libx265 -tag:v hvc1 -crf "${CRF:-24}" -preset slow -an -movflags +faststart \
         -x265-params log-level=error:colorprim=bt709:transfer=bt709:colormatrix=bt709 "$CLIPS/welcome-$1-$2.mp4"
 }
 
 clips() {
     mkdir -p "$C"
-    swiftc "$REPO/scripts/onboarding/film.swift" -o "$C/film" 2>/dev/null
+    swiftc "$REPO/scripts/onboarding/film.swift" -o "$C/film" 2>&1 | grep -E "error:" && exit 1
     for look in $LOOKS; do
         say "The scene, $look (about 45 s)"
         scene up "$S" "$look" "$SIZE" >/dev/null
         up=1
         # shellcheck disable=SC1091 # made by `up`: S R pid wid port and the agents' panes
         source "$W/scene.env"
+        # macOS draws its capture mark over the window's buttons while it films: the clips take the buttons from a
+        # picture of the window taken now, while nothing films.
+        "$W/tools/ax" "$pid" front
+        "$W/tools/ax" "$pid" park 2>/dev/null || true
+        sleep 2
+        screencapture -x -o -l "$wid" "$C/buttons-$look.png"
         for page in $PAGES; do
             say "Clip: $page, $look"
             "$page" "$look"
@@ -235,27 +240,38 @@ clips() {
 }
 
 encode_all() {
+    local jobs look page
     say "Encoding the clips"
     for look in $LOOKS; do
-        for page in $PAGES; do encode "$page" "$look" & done
-        wait
+        rm -f "$CLIPS"/welcome-*-"$look".mp4
+        jobs=()
+        for page in $PAGES; do
+            encode "$page" "$look" &
+            jobs+=($!)
+        done
+        for job in "${jobs[@]}"; do wait "$job"; done
+        for page in $PAGES; do
+            [ -s "$CLIPS/welcome-$page-$look.mp4" ] || { echo "no clip $page $look" && exit 1; }
+        done
     done
-    du -ch "$CLIPS"/*.mp4 | tail -1
+    echo "  the clips in all: $(du -ch "$CLIPS"/*.mp4 | tail -1 | cut -f1)"
 }
 
 # The welcome in full (the panel only, on a plain backdrop: never the screen), then trimmed to the panel's first frame
 # and checked: the first frame must be the backdrop or the panel, gray at its edges.
 films() {
     local look film first
-    say "Films: building the tests and filming the welcome, dark then light (about 6 min)"
+    say "Films: building the tests and filming the welcome, dark then light (about 8 min)"
+    mkdir -p "$C"
     make e2e DERIVED_DATA="$DERIVED_DATA" ONLY=OvviUITests/OvviUITests/testWelcomeFilm >"$C/films.log" 2>&1 \
         || { tail -20 "$C/films.log"; exit 1; }
     mkdir -p "$OUT"
     for look in dark light; do
         film=/tmp/ovvi-welcome/$(basename "$REPO")-$look.mp4
+        [ -s "$film" ] || { echo "no film $film: is Screen Recording on for this terminal?" && exit 1; }
         first=$(ffmpeg -loglevel error -i "$film" -vf "fps=20,crop=4:4:1022:300,format=gray" -f rawvideo \
             -pix_fmt gray - | python3 -c "import sys; d = sys.stdin.buffer.read()
-print(next(i / 20 for i in range(0, len(d) // 16) if max(abs(b - 128) for b in d[i * 16:i * 16 + 16]) > 12))")
+print(next((i / 20 for i in range(0, len(d) // 16) if max(abs(b - 128) for b in d[i * 16:i * 16 + 16]) > 12), 0))")
         python3 - "$film" <<'EOF' || { echo "the film's first frame is not the backdrop: not used" && exit 1; }
 import subprocess, sys
 edge = subprocess.run(["ffmpeg", "-loglevel", "error", "-i", sys.argv[1], "-frames:v", "1", "-vf",
@@ -279,14 +295,32 @@ publish() {
     return 0
 }
 
+# The tools, and the two permissions the terminal that runs this needs: Screen Recording (the films) and Accessibility
+# (the scene's clicks).
+preflight() {
+    local tool
+    for tool in herdr node npm ffmpeg ffprobe swiftc xcodebuild python3 curl; do
+        command -v "$tool" >/dev/null || { echo "missing: $tool" && exit 1; }
+    done
+    mkdir -p "$C"
+    printf 'import ApplicationServices\nimport ScreenCaptureKit\nguard AXIsProcessTrusted() else { exit(1) }\n%s\n' \
+        'do { _ = try await SCShareableContent.current } catch { exit(2) }' >"$C/allowed.swift"
+    swiftc "$C/allowed.swift" -o "$C/allowed" 2>&1 | grep -E "error:" && exit 1
+    "$C/allowed" || case $? in
+    1) echo "Allow Accessibility for this terminal (System Settings > Privacy & Security), then run it again" && exit 1 ;;
+    *) echo "Allow Screen Recording for this terminal (System Settings > Privacy & Security), then run it again" && exit 1 ;;
+    esac
+}
+
 if [ -d /tmp/ovvi-gui.lock ]; then
     grep -qs '^user' /tmp/ovvi-gui.lock/owner || { echo "the GUI lock is held by $(cat /tmp/ovvi-gui.lock/owner)" \
         && exit 1; }
 else
     mkdir /tmp/ovvi-gui.lock && echo "record-onboarding $(date +%H:%M)" >/tmp/ovvi-gui.lock/owner && lock=1
 fi
-echo "Recording the welcome: about 20 minutes (build 4, clips 7, encoding 3, films 6). Don't touch the mouse or the"
-echo "keyboard meanwhile; Ctrl-C stops it and cleans up."
+preflight
+echo "Recording the welcome: about 25-30 minutes (build 4, clips 8, encoding 4, films 10). Quit Ovvi Dev if it runs."
+echo "Don't touch the mouse or the keyboard meanwhile; Ctrl-C stops it and cleans up."
 case $STEPS in
 clips) clips ;;
 encode) encode_all ;;

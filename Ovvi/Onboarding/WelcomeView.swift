@@ -40,13 +40,13 @@ struct WelcomeView: View {
             case .agents: ("TUI or chat, any time", "Switch seamlessly between an agent's terminal and its chat "
                     + "view. Orange needs you, blue is working, green is done.")
             case .plugins: ("Bring your tools in", "Git, Browser and File Explorer come built in. Write your own in "
-                    + "TypeScript; you and your agents open them with `ovvi`.")
-            case .machines: ("Your other machines, one click away", "Add any machine you can ssh to. Its sessions "
-                    + "open in their own window and keep running while your Mac sleeps.")
+                    + "TypeScript; you and agents open them with `ovvi`.")
+            case .machines: ("Reach your other machines", "Add any machine you can ssh to. Its sessions get their own "
+                    + "window and keep running while your Mac sleeps.")
             case .herdr where herdrFound: ("You're all set", "Your sessions will keep running from here on. Get "
                     + "Started, and open a folder or a session.")
-            case .herdr: ("One more thing: herdr", "herdr keeps your sessions running in the background, so nothing "
-                    + "stops when you close the window, and you can reconnect from anywhere.")
+            case .herdr: ("One more thing: herdr", "It keeps your sessions running in the background, so nothing "
+                    + "stops when you close the window.")
             }
         }
 

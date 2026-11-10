@@ -15,12 +15,12 @@ struct HerdrStep: View {
             if found {
                 Image(systemName: "checkmark.circle.fill").font(.system(size: 52)).foregroundStyle(look.finished)
                     .symbolRenderingMode(.hierarchical).transition(.scale(scale: 0.8).combined(with: .opacity))
-                Text("herdr is installed and running").font(.system(size: 15, weight: .medium))
+                Text("herdr is installed").font(.system(size: 15, weight: .medium))
             } else {
                 HStack(alignment: .top, spacing: 36) {
                     point("play.circle", "Runs in the background")
                     point("macwindow", "Close the window,\nnothing stops")
-                    point("antenna.radiowaves.left.and.right", "Reconnect\nfrom anywhere")
+                    point("antenna.radiowaves.left.and.right", "Reconnect\nfrom another Mac")
                 }
                 .padding(.bottom, 8)
                 switch step {
