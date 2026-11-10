@@ -38,7 +38,7 @@ struct WelcomeView: View {
         ZStack(alignment: .topLeading) {
             if done {
                 VStack(spacing: 0) {
-                    header.padding(.bottom, 10)
+                    header.padding(.bottom, 8)
                     content.frame(maxHeight: .infinity, alignment: .top)
                     footer
                 }
@@ -116,7 +116,7 @@ struct WelcomeView: View {
                         .frame(width: index == page ? 18 : 6, height: 6)
                 }
             }
-            .accessibilityElement().accessibilityIdentifier("welcome.dots")
+            .accessibilityElement().accessibilityAddTraits(.isStaticText).accessibilityIdentifier("welcome.dots")
             .accessibilityValue("\(page + 1) of \(pages.count)")
             HStack {
                 if page > 0 {
@@ -124,7 +124,7 @@ struct WelcomeView: View {
                         .accessibilityIdentifier("welcome.back")
                 }
                 Spacer()
-                Button(last ? "Get Started" : "Next") { last ? close() : go(1) }
+                Button(last ? "Get Started" : "Next") { page == pages.count - 1 ? close() : go(1) }
                     .buttonStyle(.glassProminent).keyboardShortcut(.defaultAction).disabled(blocked)
                     .accessibilityIdentifier("welcome.next")
             }
@@ -137,7 +137,7 @@ struct WelcomeView: View {
     private var keys: some View {
         let done = intro == .done, last = page == pages.count - 1
         return Group {
-            Button("Next") { done ? go(1) : finishIntro() }.keyboardShortcut(.rightArrow, modifiers: [])
+            Button("Next") { intro == .done ? go(1) : finishIntro() }.keyboardShortcut(.rightArrow, modifiers: [])
                 .disabled(done && (last || blocked))
             Button("Start") { finishIntro() }.keyboardShortcut(.defaultAction).disabled(done)
             Button("Close", action: close).keyboardShortcut(.cancelAction).disabled(done && !last)

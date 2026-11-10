@@ -21,14 +21,15 @@ struct WelcomePage {
         WelcomePage(title: "Welcome to Ovvi", words: { _ in
             Text("""
             Your terminals, agents and tools, side by side in one Mac window. They run in sessions that keep going \
-            when you close the window or quit Ovvi, and on another machine even while your Mac sleeps.
+            when you close the window or quit Ovvi, and on another machine even while your Mac sleeps. Come back to \
+            find it all as you left it.
             """)
         }, shots: [WelcomeShot(picture: "overview", focus: CGRect(x: 0, y: 0, width: 1440, height: 900),
                                ring: CGRect(x: 8, y: 76, width: 284, height: 214), label: "Still running")]),
         WelcomePage(title: "Panes and splits", words: { _ in
             Text("""
             A new pane asks what it runs: a terminal, an agent, a browser, File Explorer or Git. \(key("⌘D")) splits \
-            it to the right and \(key("⇧⌘D")) splits it down, and each new pane asks again.
+            it to the right and \(key("⇧⌘D")) splits it down, and each new pane asks again. Drag a divider to resize.
             """)
         }, shots: [
             WelcomeShot(picture: "chooser", focus: CGRect(x: 420, y: 240, width: 640, height: 400),
@@ -40,7 +41,8 @@ struct WelcomePage {
         ]),
         WelcomePage(title: "Tabs", words: { _ in
             Text("""
-            A tab holds a set of panes, and its capsule shows what runs there. \(key("⌘T")) opens a tab, \
+            A tab holds a set of panes. Its capsule in the tab bar shows the programs running there and whether an \
+            agent needs you. \(key("⌘T")) opens a tab, \
             \(key("⌘1"))–\(key("⌘9")) jumps to one, and \(key("⌃⌘O")) shows every tab at once.
             """)
         }, shots: [WelcomeShot(picture: "overview", focus: CGRect(x: 290, y: 0, width: 760, height: 430),
@@ -63,9 +65,9 @@ struct WelcomePage {
                                ring: CGRect(x: 310, y: 680, width: 542, height: 108), label: "Needs you")]),
         WelcomePage(title: "Plugins, built in and your own", words: { _ in
             Text("""
-            Browser, Git and File Explorer come with Ovvi. Your own plugins are small TypeScript packages: start one \
-            with New Plugin…, or ask your agent, which builds, opens and reloads them with the \
-            \(key("ovvi")) command.
+            Browser, Git and File Explorer come with Ovvi and open beside your agents. Your own plugins are small \
+            TypeScript packages: start one with New Plugin…, or ask your agent, which builds, opens and reloads them \
+            with the \(key("ovvi")) command.
             """)
         }, shots: [
             WelcomeShot(picture: "browser", focus: CGRect(x: 760, y: 40, width: 680, height: 420),

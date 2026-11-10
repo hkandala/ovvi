@@ -9,7 +9,7 @@ struct WelcomePicture: View {
     let pictures: WelcomePictures
     /// Reduce Motion: the last shot, still.
     let still: Bool
-    static let size = CGSize(width: 920, height: 410)
+    static let size = CGSize(width: 920, height: 404)
     @State private var step = 0
     @State private var camera: CGRect?
     @State private var ring = CGRect.zero
@@ -73,18 +73,23 @@ struct WelcomePicture: View {
         }
     }
 
-    /// The focus grown to the picture's aspect round its centre.
-    static func fit(_ focus: CGRect) -> CGRect {
+    /// The pictures' window, in points (captured at 2x).
+    static let window = CGSize(width: 1280, height: 800)
+
+    /// The focus grown to the picture's aspect round its centre, never closer than the window's own size (a 2x
+    /// capture stays sharp) and never past the window's edges.
+    static func fit(_ focus: CGRect, grown: CGFloat = 1) -> CGRect {
         let aspect = size.width / size.height
-        let width = max(focus.width, focus.height * aspect)
-        return CGRect(x: focus.midX - width / 2, y: focus.midY - width / aspect / 2, width: width,
-                      height: width / aspect)
+        let width = min(max(focus.width, focus.height * aspect, size.width) * grown, window.width,
+                        window.height * aspect)
+        let height = width / aspect
+        return CGRect(x: min(max(focus.midX - width / 2, 0), window.width - width),
+                      y: min(max(focus.midY - height / 2, 0), window.height - height), width: width, height: height)
     }
 
     /// Where the push-in starts: 12 % wider.
     static func wider(_ focus: CGRect) -> CGRect {
-        let rect = fit(focus)
-        return rect.insetBy(dx: -rect.width * 0.06, dy: -rect.height * 0.06)
+        fit(focus, grown: 1.12)
     }
 }
 

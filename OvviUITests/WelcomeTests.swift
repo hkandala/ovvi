@@ -47,7 +47,7 @@ extension OvviUITests {
 
     /// A key during the intro goes straight to the first page, never past it. The panes page steps through its
     /// pictures by itself and stays on the last (with Reduce Motion, CI's, it shows the last at once).
-    func testTheWelcomeIntroSkipsAndThePanesPageSteps() throws {
+    func testTheWelcomeIntroSkipsAndThePanesPageSteps() {
         relaunch(one, ["-welcomeDone", "NO"])
         XCTAssertTrue(app.windows["welcome"].exists(within: connect))
         XCTAssertFalse(welcomeNext.exists, "the pages before the intro played")
