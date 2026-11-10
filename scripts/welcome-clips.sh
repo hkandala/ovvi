@@ -135,16 +135,15 @@ agents_camera="0:1:.5:.5 0.6:1:.5:.5 1.6:1.3:.45:.55 4.6:1.3:.45:.55 5.6:1.3:.2:
 # From a shell: Git, then the browser on the dev server, typed; then a plugin of the user's own, Deploys.
 plugins() {
     local shell git
-    rm -rf "$W/config/plugins/deploys"
-    rsync -a --exclude dist "$REPO/plugins/template/" "$W/config/plugins/deploys/"
-    cp "$REPO/scripts/welcome-clips/deploys/package.json" "$W/config/plugins/deploys/"
-    cp "$REPO/scripts/welcome-clips/deploys/main."{ts,css} "$W/config/plugins/deploys/src/"
-    python3 -c "import json, pathlib; p = pathlib.Path('$W/config/trust.json'); ids = json.loads(p.read_text()) \
-if p.exists() else []; p.write_text(json.dumps(sorted(set(ids + ['deploys']))))"
     ln -sf "$R/.cache/ovvi/bin/ovvi" "$W/bin/ovvi"
     shell=$(panes w2:t2 | head -1)
-    o "$shell" "$R/api" plugins reload deploys >/dev/null
+    # As an agent makes one: New Plugin… from the template (built and confirmed), then its own page.
+    o "$shell" "$R/api" --timeout 120 plugins new Deploys >/dev/null
+    cp "$REPO/scripts/welcome-clips/deploys/package.json" "$W/config/plugins/deploys/"
+    cp "$REPO/scripts/welcome-clips/deploys/main."{ts,css} "$W/config/plugins/deploys/src/"
+    o "$shell" "$R/api" --timeout 120 plugins reload deploys >/dev/null
     h pane run "$shell" "clear" >/dev/null
+    tap w2
     tap w2:t2
     sleep 1
     roll "plugins-$1"

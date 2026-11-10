@@ -22,9 +22,9 @@ struct WelcomeView: View {
     static let pictureScale: CGFloat = 0.719
     /// Where the logo's panes go, back to front, as fractions of the first clip's frame (measured on its first
     /// frame): the window's sidebar and its two panes.
-    private static let firstPanes = [CGRect(x: 0.0032, y: 0.0639, width: 0.2192, height: 0.9322),
-                                     CGRect(x: 0.2319, y: 0.0639, width: 0.3797, height: 0.9322),
-                                     CGRect(x: 0.6183, y: 0.0639, width: 0.3801, height: 0.9322)]
+    private static let firstPanes = [CGRect(x: 0.0044, y: 0.0625, width: 0.2148, height: 0.932),
+                                     CGRect(x: 0.2319, y: 0.0625, width: 0.3799, height: 0.932),
+                                     CGRect(x: 0.6179, y: 0.0625, width: 0.381, height: 0.932)]
 
     private enum Page: String {
         case running, layout, agents, plugins, machines, herdr
