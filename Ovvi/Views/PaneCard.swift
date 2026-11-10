@@ -21,7 +21,6 @@ struct PaneCard: View {
     @Environment(\.appearsActive) private var active
     @Environment(\.look) private var look
     @Environment(\.pageHidden) private var hidden
-    @Environment(\.pageReconnecting) private var reconnecting
     @Environment(\.chromeLink) private var chromeLink
     private var settings = AppSettings()
 
@@ -103,14 +102,6 @@ struct PaneCard: View {
                     FindBar(find: find, page: page).padding(gap)
                 }
             }
-            // While its page reconnects, the page's overlay is the card's one state: no text of the card's under it
-            // (its terminal, its page, its own state), kept as it is for after.
-            .overlay {
-                if reconnecting {
-                    look.cardSolid(keyboard: lit)
-                }
-            }
-            .accessibilityHidden(reconnecting)
         }
         // The whole card, also with no terminal (a split's stand-in): else the empty content takes no room and the card
         // is a header-high band.

@@ -86,8 +86,10 @@ struct Detail: View {
                         } else {
                             ""
                         }
+                        // On a panel: it reads clearly over the dimmed cards' text.
                         Loader(symbol: store.machine.icon, text: "Reconnecting to \(machine)…", detail: why,
                                id: "detail.reconnecting")
+                            .padding(.horizontal, 28).padding(.vertical, 22).floatingGlass(in: .panel)
                     }
                 }
                 .overlay(alignment: .bottom) { notices(store) }

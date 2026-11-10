@@ -592,8 +592,9 @@ runs and on-demand on the final head.
   "stopped" with no overlay yet; and a card's own state stayed drawn under the overlay. Now the page owns it: while
   it checks, `live` is false; a stream failure is the card's own only after a snapshot came after it (the card
   asks for one at once), so a stream the dead master took shows nothing until the page knows; while it shows
-  Reconnecting it tells its cards (an environment value),
-  each covers its content with its fill and leaves the accessibility tree, and no empty state or loader draws. Once
+  Reconnecting it tells its cards (an environment value, passed
+  into each card's own hosting view), and no card's empty state or loader draws; the overlay sits on a glass panel,
+  so the dimmed cards' text (a terminal's, a card header's) never runs through it. Once
   back, a card whose stream failed meanwhile loads instead of saying "stopped"; a failing stream's later retries still
   keep the panel (no blink, now checked each turn). The test downs Key Host's link (HostName 192.0.2.1), then makes
   its name unresolvable, kills its master, and checks before, during (also a workspace first shown) and after.

@@ -45,6 +45,8 @@ private struct SplitLayout: View {
     @State private var cards = (came: 0, went: 0)
     @Environment(\.pageHidden) private var hidden
     @Environment(\.look) private var look
+    /// Passed on as `look` is: each card is drawn in its own hosting view.
+    @Environment(\.pageReconnecting) private var reconnecting
 
     private var motion: Animation? {
         Animation.reduced ? nil : .easeOut(duration: HostStore.slide)
@@ -65,7 +67,8 @@ private struct SplitLayout: View {
                                look: look,
                                content: PaneCard(id: card.id, page: page, away: away)
                                    .overlay { CardFlash(store: page.store, id: card.id) }
-                                   .environment(\.look, look).environment(\.pageHidden, hidden))
+                                   .environment(\.look, look).environment(\.pageHidden, hidden)
+                                   .environment(\.pageReconnecting, reconnecting))
                         .place(rect)
                         .transaction(value: move) { $0.animation = nil }
                         .opacity(page.lifted == .pane(card.id) ? 0.4 : 1)
