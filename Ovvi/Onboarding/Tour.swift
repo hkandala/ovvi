@@ -1,4 +1,4 @@
-import AppKit
+import ImageIO
 import SwiftUI
 
 /// A callout on a page's picture: the point it names (in the shot's points), where its line ends (in the picture's
@@ -32,11 +32,6 @@ struct Callout {
             case .below: CGSize(width: 0, height: 4)
             }
         }
-
-        /// Where the label comes from as it fades in: a few points back along the line.
-        var lift: CGSize {
-            CGSize(width: -gap.width, height: -gap.height)
-        }
     }
 }
 
@@ -56,7 +51,7 @@ enum Tour {
     /// The shots' size in points (taken at 2x by scripts/welcome-pictures.sh).
     static let shot = CGSize(width: 1440, height: 900)
     /// The whole window, with room around it for the first page's labels.
-    static let whole = CGRect(x: -370, y: -118, width: 2180, height: 1136)
+    static let whole = CGRect(x: -186, y: -22, width: 1812, height: 944)
 
     static let pages = [
         Page(title: "Welcome to Ovvi",
@@ -135,43 +130,31 @@ enum Tour {
                                 + "to begin.")
 }
 
-/// The shots of the panel's appearance, decoded off the main thread while the intro plays: drawn straight from the
-/// asset catalog, a 2880 × 1800 HEIC decoded on the main thread as its page came in, for 240 to 730 ms.
+/// The shown look's shots (Pictures/welcome-<name>-<look>.heic), decoded off the main thread while the intro plays:
+/// a 2880 × 1800 HEIC decoded on the main thread as its page came in took 240 to 730 ms.
 @MainActor @Observable
 final class TourShots {
     private(set) var images: [String: CGImage] = [:]
-
-    static func key(_ name: String, dark: Bool) -> String {
-        "\(name) \(dark ? "dark" : "light")"
-    }
+    /// The look of `images`; nil until the first is decoded.
+    private(set) var dark: Bool?
 
     func load(dark: Bool) async {
-        for name in Set(Tour.pages.compactMap(\.shot)) where images[Self.key(name, dark: dark)] == nil {
-            let image = await Task.detached(priority: .userInitiated) { Self.decode(name, dark: dark) }.value
-            images[Self.key(name, dark: dark)] = image
+        var names: [String] = [], loaded: [String: CGImage] = [:]
+        for name in Tour.pages.compactMap(\.shot) where !names.contains(name) {
+            names.append(name)
+        }
+        for name in names {
+            let url = Bundle.main.url(forResource: "\(name)-\(dark ? "dark" : "light")", withExtension: "heic")
+            let image = await Task.detached(priority: .userInitiated) { Self.decode(url) }.value
+            guard !Task.isCancelled else { return }
+            loaded[name] = image
+            // The other look's set goes with the first of this one's.
+            (images, self.dark) = (loaded, dark)
         }
     }
 
-    private nonisolated static func decode(_ name: String, dark: Bool) -> CGImage? {
-        guard let image = NSImage(named: name), let appearance = NSAppearance(named: dark ? .darkAqua : .aqua) else {
-            return nil
-        }
-        var decoded: CGImage?
-        appearance.performAsCurrentDrawingAppearance {
-            var rect = CGRect(origin: .zero, size: image.size)
-            guard let source = image.cgImage(
-                      forProposedRect: &rect,
-                      context: nil,
-                      hints: [.ctm: AffineTransform(scale: 2)],
-                  ),
-                  let context = CGContext(data: nil, width: source.width, height: source.height, bitsPerComponent: 8,
-                                          bytesPerRow: 0, space: source.colorSpace ?? CGColorSpaceCreateDeviceRGB(),
-                                          bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue
-                                              | CGBitmapInfo.byteOrder32Little.rawValue)
-            else { return }
-            context.draw(source, in: CGRect(x: 0, y: 0, width: source.width, height: source.height))
-            decoded = context.makeImage()
-        }
-        return decoded
+    private nonisolated static func decode(_ url: URL?) -> CGImage? {
+        guard let url, let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+        return CGImageSourceCreateImageAtIndex(source, 0, [kCGImageSourceShouldCacheImmediately: true] as CFDictionary)
     }
 }

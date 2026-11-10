@@ -66,7 +66,7 @@ extension OvviUITests {
         app.typeText("onboarding")
         element("settings.search.general.welcome", in: settingsWindow).click()
         element("settings.general.welcome", in: settingsWindow).click()
-        XCTAssertTrue(welcomeNext.exists(within: 5))
+        XCTAssertTrue(welcomeNext.exists(within: connect))
         XCTAssertEqual(welcomePage.prefix(5), "1 of ")
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(welcomeNext.vanishes(within: 3))
@@ -162,7 +162,7 @@ extension OvviUITests {
             // Next shows once the intro is over; each page's callouts draw in about 2.5 s. The herdr step is last.
             XCTAssertTrue(welcomeNext.exists(within: connect))
             let install = element("welcome.herdr.install")
-            while true {
+            for _ in 0 ..< 12 {
                 try await Task.sleep(for: .seconds(3.5))
                 if install.exists {
                     install.click()

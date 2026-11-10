@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# The welcome tour's pictures (Ovvi/Onboarding/Welcome.xcassets), taken from the shared scene (welcome-scene.sh) in
-# both looks: main (shortlink's Link expiry tab), split (a new pane at its chooser below the chat), agents (Dark
-# mode: Claude Code at work beside Git), plugins (Files: File Explorer beside a plugin of the user's own, CI Runs, made
-# with New Plugin's template) and machines (the machine menu). Hold the GUI lock while it runs (about 3 minutes).
+# The welcome tour's pictures (Ovvi/Onboarding/Pictures), taken from the shared scene (welcome-scene.sh) in both
+# looks: main (shortlink's Link expiry tab), split (a new pane at its chooser below the chat), agents (Dark mode:
+# Claude Code at work beside Git), pi (docs: Pi at work beside its guide), plugins (Files: File Explorer beside a
+# plugin of the user's own, CI Runs, made with New Plugin's template) and machines (the machine menu). Hold the GUI lock while it runs (about 3 minutes).
 # Usage: scripts/welcome-pictures.sh   (Ovvi Dev built at $DERIVED_DATA, default /tmp/ovvi-dd-p57y3)
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -23,7 +23,7 @@ o() {
     shift
     (cd "$H/shortlink" && env -i HOME="$H" PATH="$(dirname "$(command -v node)"):/usr/bin:/bin" \
         XDG_CONFIG_HOME="$W/xdg" HERDR_SESSION="$session" HERDR_BIN_PATH="$HERDR" HERDR_PANE_ID="$pane" \
-        npm_config_cache="$HOME/.npm" npm_config_prefer_offline=true sh "$H/.cache/ovvi/bin/ovvi" "$@")
+        npm_config_cache="$W/npm" sh "$H/.cache/ovvi/bin/ovvi" "$@")
 }
 panes() { h pane list --workspace w1 | python3 -c "import json, sys
 print(*[p['pane_id'] for p in json.load(sys.stdin)['result']['panes'] if p['tab_id'] == '$1'])"; }
@@ -43,6 +43,9 @@ for look in dark light; do
     scene click w1:t2
     sleep 2
     scene shot agents >/dev/null
+    scene click w3
+    sleep 2
+    scene shot pi >/dev/null
     # CI Runs: New Plugin's template with a run list in it, beside README.md in File Explorer.
     files=$(panes w1:t5)
     o "$files" --timeout 180 plugins new "CI Runs" >/dev/null
@@ -76,22 +79,12 @@ PY
     scene down "$session"
 done
 
-catalog=Ovvi/Onboarding/Welcome.xcassets
-for name in main split agents plugins machines; do
-    set=$catalog/welcome-$name.imageset
-    rm -rf "$set" && mkdir -p "$set"
+# Plain HEIC files in the bundle, decoded with ImageIO off the main thread (Tour.swift): welcome-<name>-<look>.heic.
+pictures=Ovvi/Onboarding/Pictures
+rm -rf "$pictures" && mkdir -p "$pictures"
+for name in main split agents pi plugins machines; do
     for look in light dark; do
-        "$out/heic" "$out/$name-$look.png" "$set/$name-$look.heic" 0.9 1800
+        "$out/heic" "$out/$name-$look.png" "$pictures/welcome-$name-$look.heic" 0.9 1800
     done
-    cat >"$set/Contents.json" <<JSON
-{
-  "images" : [
-    { "filename" : "$name-light.heic", "idiom" : "universal", "scale" : "2x" },
-    { "appearances" : [ { "appearance" : "luminosity", "value" : "dark" } ], "filename" : "$name-dark.heic",
-      "idiom" : "universal", "scale" : "2x" }
-  ],
-  "info" : { "author" : "xcode", "version" : 1 }
-}
-JSON
 done
-du -sh "$catalog"
+du -sh "$pictures"

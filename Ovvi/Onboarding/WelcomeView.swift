@@ -31,10 +31,13 @@ struct WelcomeView: View {
         VStack(spacing: 0) {
             ZStack {
                 look.track
-                TourPicture(focus: intro ? Self.closer(framed.focus) : framed.focus, shot: framed.shot ?? "",
-                            callouts: framed.callouts, drawn: drawn == page && shown.shot != nil,
-                            reduceMotion: reduceMotion, shots: shots)
-                    .opacity(shown.shot == nil ? 0 : 1)
+                // As the intro dissolves into it, the first page's window settles from a little closer.
+                TourPicture(focus: intro && !reduceMotion
+                    ? framed.focus.insetBy(dx: framed.focus.width * 0.05, dy: framed.focus.height * 0.05)
+                    : framed.focus, shot: framed.shot ?? "",
+                    callouts: framed.callouts, drawn: drawn == page && shown.shot != nil,
+                    reduceMotion: reduceMotion, shots: shots)
+                    .opacity(shown.shot == nil ? 0 : 1).accessibilityHidden(shown.shot == nil)
                     .id(reduceMotion ? page : 0)
                     .transition(.opacity)
                 if shown.shot == nil {
@@ -43,14 +46,17 @@ struct WelcomeView: View {
             }
             .frame(width: Tour.picture.width, height: Tour.picture.height)
             .overlay(alignment: .bottom) { Rectangle().fill(look.divider).frame(height: 0.5) }
-            VStack(alignment: .leading, spacing: 6) {
-                Text(shown.title).font(.system(size: 22, weight: .semibold))
-                Text(shown.text).font(.system(size: 14)).foregroundStyle(.secondary).lineSpacing(1.5)
-                    .fixedSize(horizontal: false, vertical: true)
+            // A ZStack, so the leaving and the coming words cross-fade in place.
+            ZStack(alignment: .topLeading) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(shown.title).font(.system(size: 22, weight: .semibold))
+                    Text(shown.text).font(.system(size: 14)).foregroundStyle(.secondary).lineSpacing(1.5)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .id(page)
+                .transition(reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 6)))
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .id(page)
-            .transition(reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 6)))
             .padding(.horizontal, 32).padding(.top, 20)
             Spacer(minLength: 0)
             // Not there for keys or tests during the intro: its keys go to the first page.
@@ -64,37 +70,44 @@ struct WelcomeView: View {
                 WelcomeIntro(reduceMotion: reduceMotion) { endIntro() }
                     .frame(maxWidth: .infinity, maxHeight: .infinity).contentShape(.rect)
                     .onTapGesture { endIntro() }
-                    .accessibilityElement().accessibilityIdentifier("welcome.intro")
+                    .accessibilityElement().accessibilityLabel("Ovvi").accessibilityIdentifier("welcome.intro")
                     .transition(.opacity)
             }
         }
         .background(WelcomeBackground())
         .clipShape(WelcomeBackground.shape)
-        // → turns the page as Next does; Esc on the last page closes it as Get Started. During the intro Return, → and
-        // Space go to the first page, and Esc skips the welcome.
+        // Esc closes it from anywhere, as Skip and Get Started do. During the intro Return, → and Space go to the first
+        // page.
         .background {
             Group {
+                Button("Close", action: close).keyboardShortcut(.cancelAction)
                 if intro {
                     Button("Begin") { endIntro() }.keyboardShortcut(.defaultAction)
                     Button("Begin") { endIntro() }.keyboardShortcut(.rightArrow, modifiers: [])
                     Button("Begin") { endIntro() }.keyboardShortcut(.space, modifiers: [])
-                    Button("Skip", action: close).keyboardShortcut(.cancelAction)
                 } else {
                     Button("Next") { go(1) }.keyboardShortcut(.rightArrow, modifiers: []).disabled(last || blocked)
-                    Button("Close", action: close).keyboardShortcut(.cancelAction).disabled(!last || blocked)
                 }
             }
             .opacity(0).accessibilityHidden(true)
         }
         .environment(\.look, look)
         .task(id: colorScheme) { await shots.load(dark: colorScheme == .dark) }
+        // The page's callouts draw once the camera is (nearly) there; a turn meanwhile cancels it.
+        .task(id: intro ? -1 : page) {
+            guard !intro else { return }
+            try? await Task.sleep(for: .seconds(reduceMotion ? 0.25 : 0.62))
+            if !Task.isCancelled {
+                drawn = page
+            }
+        }
     }
 
     private func footer(_ count: Int, last: Bool, blocked: Bool) -> some View {
         HStack(spacing: 10) {
             if !last || blocked {
                 Button("Skip", action: close).buttonStyle(.plain).foregroundStyle(.secondary)
-                    .keyboardShortcut(.cancelAction).accessibilityIdentifier("welcome.skip")
+                    .accessibilityIdentifier("welcome.skip")
             }
             Spacer()
             if page > 0 {
@@ -110,7 +123,7 @@ struct WelcomeView: View {
             HStack(spacing: 6) {
                 ForEach(0 ..< count, id: \.self) { index in
                     Capsule().fill(index == page ? Color.primary : Color.secondary.opacity(0.35))
-                        .frame(width: index == page ? 16 : 6, height: 6)
+                        .frame(width: index == page && !reduceMotion ? 16 : 6, height: 6)
                 }
             }
             .accessibilityElement().accessibilityAddTraits(.isStaticText).accessibilityIdentifier("welcome.dots")
@@ -118,15 +131,9 @@ struct WelcomeView: View {
         }
     }
 
-    /// The first page's frame as the intro dissolves into it: a little closer, so the window settles into place.
-    private static func closer(_ focus: CGRect) -> CGRect {
-        focus.insetBy(dx: focus.width * 0.05, dy: focus.height * 0.05)
-    }
-
     private func endIntro() {
         guard intro else { return }
         withAnimation(reduceMotion ? .easeInOut(duration: 0.4) : .spring(duration: 0.9, bounce: 0)) { intro = false }
-        draw(after: reduceMotion ? 0.3 : 0.6)
     }
 
     private func go(_ step: Int) {
@@ -134,17 +141,5 @@ struct WelcomeView: View {
         guard next != page else { return }
         drawn = nil
         withAnimation(reduceMotion ? .easeInOut(duration: 0.3) : .spring(duration: 0.8, bounce: 0.06)) { page = next }
-        draw(after: reduceMotion ? 0.2 : 0.62)
-    }
-
-    /// Draws the page's callouts once the camera is (nearly) there, unless the page turned again meanwhile.
-    private func draw(after seconds: Double) {
-        let target = page
-        Task {
-            try? await Task.sleep(for: .seconds(seconds))
-            if page == target, !intro {
-                drawn = target
-            }
-        }
     }
 }

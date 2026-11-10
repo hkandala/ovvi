@@ -12,7 +12,6 @@ struct TourPicture: View, Animatable {
     let drawn: Bool
     let reduceMotion: Bool
     let shots: TourShots
-    @Environment(\.colorScheme) private var colorScheme
 
     var animatableData: AnimatablePair<AnimatablePair<CGFloat, CGFloat>, AnimatablePair<CGFloat, CGFloat>> {
         get { .init(.init(focus.midX, focus.midY), .init(focus.width, focus.height)) }
@@ -33,11 +32,8 @@ struct TourPicture: View, Animatable {
         ZStack(alignment: .topLeading) {
             ZStack {
                 ForEach([shot], id: \.self) { shot in
-                    // The asset catalog's own until the decoded one is there (a page reached during the intro).
-                    if let image = shots.images[TourShots.key(shot, dark: colorScheme == .dark)] {
+                    if let image = shots.images[shot] {
                         Image(decorative: image, scale: 2).resizable().transition(.opacity)
-                    } else {
-                        Image(shot).resizable().transition(.opacity)
                     }
                 }
             }
@@ -53,9 +49,10 @@ struct TourPicture: View, Animatable {
         }
         .frame(width: size.width, height: size.height, alignment: .topLeading)
         .clipped()
-        // The set the asset catalog shows follows the panel's appearance (the tests read which).
         .accessibilityElement().accessibilityAddTraits(.isStaticText).accessibilityIdentifier("welcome.picture")
-        .accessibilityValue("\(shot) \(colorScheme == .dark ? "dark" : "light")")
+        .accessibilityLabel(callouts.map(\.label).joined(separator: ", "))
+        // What it draws: the tests read the look.
+        .accessibilityValue(shots.images[shot] == nil ? "loading" : "\(shot) \(shots.dark == true ? "dark" : "light")")
     }
 }
 
@@ -78,12 +75,11 @@ private struct CalloutView: View {
                 .shadow(color: halo, radius: 1.5)
             Circle().fill(ink).frame(width: 7, height: 7)
                 .overlay(Circle().strokeBorder(halo, lineWidth: 1.5).padding(-1.5))
-                .scaleEffect(dot ? 1 : 0.2).opacity(dot ? 1 : 0)
+                .scaleEffect(dot || reduceMotion ? 1 : 0.2).opacity(dot ? 1 : 0)
                 .position(from)
             CalloutLabel(callout: callout)
                 .frame(width: 0, height: 0, alignment: callout.side.alignment)
-                .offset(callout.side.gap)
-                .offset(label || reduceMotion ? .zero : callout.side.lift)
+                .offset(label || reduceMotion ? callout.side.gap : .zero)
                 .opacity(label ? 1 : 0)
                 .position(callout.end)
         }
