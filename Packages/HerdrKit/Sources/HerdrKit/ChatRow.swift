@@ -1,21 +1,20 @@
 import Foundation
 
 public enum ChatRow: Equatable, Sendable, Identifiable {
-    /// The user's message and a reply, with when the agent wrote them in its transcript.
-    case user(id: String, text: String, time: Date?)
+    case user(id: String, text: String)
     /// A run of tool calls, with the thinking between them, between two messages: one line of its counts ("Ran 3
     /// commands, read 2 files"). `steps`: where the run is in the history's entries; the chat reads them for the
     /// counts of the rows it shows, and its rows only while it is open.
     case stack(id: String, steps: Range<Int>)
     /// "Worked 1m 48s" under a finished turn with tool calls.
     case worked(id: String, seconds: Double?)
-    case reply(id: String, text: String, time: Date?)
+    case reply(id: String, text: String)
     case todos(id: String, [ChatTodo])
     case note(id: String, text: String, failed: Bool)
 
     public var id: String {
         switch self {
-        case let .user(id, _, _), let .stack(id, _), let .worked(id, _), let .reply(id, _, _), let .todos(id, _),
+        case let .user(id, _), let .stack(id, _), let .worked(id, _), let .reply(id, _), let .todos(id, _),
              let .note(id, _, _): id
         }
     }
@@ -44,7 +43,7 @@ public extension ChatHistory {
             if let text = entry.user {
                 endTurn(at: index, running: false)
                 turn = index
-                rows.append(.user(id: entry.id, text: text, time: entry.time))
+                rows.append(.user(id: entry.id, text: text))
             } else if entry.isStep {
                 run = (run.isEmpty ? index : run.lowerBound) ..< index + 1
                 continue

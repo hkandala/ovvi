@@ -221,9 +221,8 @@ struct ChatMessages: View, Equatable {
     /// tall card, can show the block's top with room above it; take the budget from the scroll view's height if so.
     private static func lines(_ row: ChatRow) -> Int {
         switch row {
-        // With the stamp's line.
-        case let .user(_, text, _), let .reply(_, text, _):
-            2 + text.utf8.count / 90 + text.utf8.count { $0 == UInt8(ascii: "\n") }
+        case let .user(_, text), let .reply(_, text):
+            1 + text.utf8.count / 90 + text.utf8.count { $0 == UInt8(ascii: "\n") }
         case let .todos(_, todos): todos.count + 1
         default: 2
         }
@@ -280,8 +279,7 @@ struct ChatMessages: View, Equatable {
     /// "Not sent" has no button: the header's switch shows the TUI.
     private func outgoing(_ message: Chat.Outgoing, error: Color) -> some View {
         VStack(alignment: .trailing, spacing: 4) {
-            UserBubble(text: message.text, paneID: chat.paneID, sending: true, time: message.time,
-                       ticks: message.sent && !message.notSent ? 1 : 0)
+            UserBubble(text: message.text, paneID: chat.paneID, sending: true)
             if message.notSent {
                 Text("Not sent").font(.system(size: 11)).foregroundStyle(error)
                     .accessibilityIdentifier("chat.\(chat.paneID).not-sent")

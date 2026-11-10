@@ -91,7 +91,7 @@ extension ChatEntry {
     /// Its own row: a reply, a todo list or a note.
     var row: ChatRow? {
         switch kind {
-        case let .reply(text): .reply(id: id, text: text, time: time)
+        case let .reply(text): .reply(id: id, text: text)
         case let .todos(todos): .todos(id: id, todos)
         case let .note(text, failed): .note(id: id, text: text, failed: failed)
         case .user, .tool, .thinking, .turnEnd: nil

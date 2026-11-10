@@ -10,9 +10,6 @@ extension OvviUITests {
         let pane = try await startChat(agent: 2).pane
         try await say("hello", in: pane)
         XCTAssertTrue(row(pane, "reply", "Echo: **hello**").exists(within: 5))
-        // Each bubble's time from pi's session file; two ticks on the user's, none on the reply.
-        XCTAssertEqual(stamps(pane).count, 2)
-        XCTAssertEqual(stamps(pane, ", Delivered").count, 1)
 
         // An extension dialog: the live terminal until it closes.
         try await say("wait", in: pane)
@@ -27,15 +24,11 @@ extension OvviUITests {
         // Sent while it works, pi takes it after the running tool: no "Not sent" meanwhile.
         try await say("slow", in: pane)
         app.typeText("later\r")
-        // One tick: herdr took it, pi has not yet.
-        XCTAssertTrue(stamps(pane, ", Sent").firstMatch.exists(within: 3))
         XCTAssertFalse(element("chat.\(pane).not-sent").exists(within: 7))
         let stop = element("chat.\(pane).stop")
         XCTAssertTrue(stop.exists)
         stop.click()
         XCTAssertTrue(row(pane, "user", "later").exists(within: 5))
-        XCTAssertTrue(stamps(pane, ", Sent").firstMatch.vanishes(within: 2))
-        XCTAssertEqual(stamps(pane, ", Delivered").count, 4)
         XCTAssertTrue(row(pane, "note", "Interrupted").exists(within: 5))
         XCTAssertTrue(element("chat.\(pane).send").exists(within: 5))
 

@@ -52,7 +52,6 @@ extension OvviUITests {
         try await say("mute", in: pane)
         app.typeText("lost\r")
         XCTAssertTrue(element("chat.\(pane).not-sent").exists(within: 8))
-        XCTAssertEqual(stamps(pane, ", Sent").count, 0)
         XCTAssertEqual(element("chat.\(pane).composer").stringValue, "lost")
         app.typeKey("a", modifierFlags: .command)
         app.typeKey(.delete, modifierFlags: [])
@@ -341,13 +340,6 @@ extension OvviUITests {
     func say(_ text: String, in pane: String) async throws {
         app.typeText(text + "\r")
         XCTAssertTrue(row(pane, "user", text).exists(within: 5))
-    }
-
-    /// The bubbles' times whose value ends with `end` (", Sent", ", Delivered"); all with none (`ENDSWITH ""` matches
-    /// nothing).
-    func stamps(_ pane: String, _ end: String = "") -> XCUIElementQuery {
-        let stamps = app.descendants(matching: .any).matching(identifier: "chat.\(pane).time")
-        return end.isEmpty ? stamps : stamps.matching(NSPredicate(format: "value ENDSWITH %@", end))
     }
 
     func row(_ pane: String, _ kind: String, _ value: String) -> XCUIElement {

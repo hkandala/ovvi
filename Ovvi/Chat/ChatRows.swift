@@ -24,8 +24,7 @@ struct ChatRowView: View, Equatable {
     var body: some View {
         switch row {
         // More room between a turn and the user's messages than between a turn's rows.
-        case let .user(_, text, time):
-            UserBubble(text: text, paneID: paneID, time: time, ticks: 2).padding(.vertical, 8)
+        case let .user(_, text): UserBubble(text: text, paneID: paneID).padding(.vertical, 8)
         case .stack:
             ToolStack(counts: counts, steps: steps, paneID: paneID, toggle: toggle, opened: opened,
                       toggleTool: toggleTool)
@@ -36,10 +35,9 @@ struct ChatRowView: View, Equatable {
                 .accessibilityAddTraits(.isStaticText)
                 .accessibilityValue(text)
                 .accessibilityIdentifier("chat.\(paneID).worked")
-        case let .reply(_, text, time):
+        case let .reply(_, text):
             Markdown(text: text).accessibilityIdentifier("chat.\(paneID).reply")
-                .stamped(time, paneID: paneID)
-                .bubble(look.receivedBubble).replyPlace()
+                .bubble(look.receivedBubble).replyPlace(Bubble.inset)
                 .frame(maxWidth: .infinity, alignment: .leading)
         case let .todos(_, todos): Plan(todos: todos)
         case let .note(_, text, failed):
@@ -75,9 +73,6 @@ struct UserBubble: View {
     let paneID: String
     /// On its way: not in the history yet.
     var sending = false
-    let time: Date?
-    /// One once sent, two once the agent took it (its history has it); none before, or when not sent.
-    let ticks: Int
     @Environment(\.look) private var look
 
     var body: some View {
@@ -85,79 +80,33 @@ struct UserBubble: View {
         Markdown(text: text.replacingOccurrences(of: "\n", with: "  \n"))
             .accessibilityValue(text)
             .accessibilityIdentifier("chat.\(paneID).\(sending ? "sending" : "user")")
-            .stamped(time, ticks: ticks, paneID: paneID)
             .foregroundStyle(Look.onAccent)
             // Its links in its own text color, not the accent it sits on.
             .tint(Look.onAccent)
             .bubble(look.sentBubble)
-            .padding(.trailing, -Composer.inset)
+            .padding(.trailing, -Bubble.inset)
             .padding(.leading, ChatView.gutter)
             .frame(maxWidth: .infinity, alignment: .trailing)
     }
 }
 
-/// A message's time in its bubble's bottom right corner, and the user's ticks after it.
-private struct Stamp: View {
-    let time: Date?
-    let ticks: Int
-    let paneID: String
+extension View {
+    /// A message's bubble, with Messages' padding (ui/chat-view#what-it-looks-like): the caller pulls it out by
+    /// `Bubble.inset`, so its text keeps the messages' edge.
+    func bubble(_ color: Color) -> some View {
+        padding(.horizontal, Bubble.inset).padding(.vertical, 7).background(color, in: .rect(cornerRadius: 18))
+    }
 
-    var body: some View {
-        let text = time.map {
-            Calendar.current.isDateInToday($0) ? $0.formatted(date: .omitted, time: .shortened)
-                : $0.formatted(.dateTime.month(.abbreviated).day().hour().minute())
-        }
-        HStack(spacing: 3) {
-            if let text {
-                Text(text)
-            }
-            // Two checkmarks overlapping, as in WhatsApp: SF Symbols has no double one.
-            if ticks > 0 {
-                HStack(spacing: -5) {
-                    ForEach(0 ..< ticks, id: \.self) { _ in
-                        Image(systemName: "checkmark")
-                    }
-                }
-                .font(.system(size: 8, weight: .bold))
-            }
-        }
-        .font(.system(size: 10).monospacedDigit())
-        .foregroundStyle(.secondary)
-        .accessibilityElement(children: .ignore)
-        .accessibilityAddTraits(.isStaticText)
-        .accessibilityValue([text, ticks == 1 ? "Sent" : ticks > 1 ? "Delivered" : nil].compactMap(\.self)
-            .joined(separator: ", "))
-        .accessibilityIdentifier("chat.\(paneID).time")
+    /// A reply's place and widest width, for a reply bubble and a run of tool calls (whose rows inset their text by
+    /// `Composer.inset`): pulled out by `inset`, so its text keeps the messages' edge.
+    func replyPlace(_ inset: CGFloat = Composer.inset) -> some View {
+        padding(.leading, -inset).padding(.trailing, ChatView.gutter)
     }
 }
 
-extension View {
-    /// A message's bubble, as in Messages (ui/chat-view#what-it-looks-like). Its text sits as far in as the reply
-    /// box's, and its outer side reaches as far out as the box: the caller pulls it out by `Composer.inset`, so its
-    /// text keeps the messages' edge.
-    func bubble(_ color: Color) -> some View {
-        // 16 pt: the first line's letters and the time sit as far from the top and bottom edges as the text from the
-        // sides (19 pt with its bearing).
-        padding(.horizontal, Composer.inset).padding(.vertical, 16).background(color, in: .rect(cornerRadius: 18))
-    }
-
-    /// The message with its `Stamp` under it, at the right; the text keeps the left of a bubble the stamp widens.
-    @ViewBuilder
-    func stamped(_ time: Date?, ticks: Int = 0, paneID: String) -> some View {
-        if time == nil, ticks == 0 {
-            self
-        } else {
-            Grid(alignment: .leading, verticalSpacing: 6) {
-                self
-                Stamp(time: time, ticks: ticks, paneID: paneID).gridCellAnchor(.trailing)
-            }
-        }
-    }
-
-    /// A reply bubble's place and widest width, for a reply and a run of tool calls.
-    func replyPlace() -> some View {
-        padding(.leading, -Composer.inset).padding(.trailing, ChatView.gutter)
-    }
+/// Messages' padding at a bubble's sides (iMessage: 12 pt beside the text, 7 pt above and under it).
+enum Bubble {
+    static let inset: CGFloat = 12
 }
 
 /// A todo list.

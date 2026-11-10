@@ -440,6 +440,11 @@ runs and on-demand on the final head.
 - **Round 2 (item 24):** the time sits 6 pt under a bubble's text (was 2), code blocks included, and "Not sent" stands
   alone: its Show TUI button is gone (the header's switch shows the TUI). The red "cannot read this session" card keeps
   its Show TUI, the only way out of that error in the chat.
+- **Round 7 (item 77):** the times and ticks are gone, with their data (the rows' times, the message's sent flag) and
+  their tests; the transcripts' times stay on the entries, for Worked. Bubbles take Messages' padding, measured on the
+  user's 2x shot: 12 pt beside the text and 7 pt above and under it (was 18 and 16), radius 18 kept (no tail). A
+  message on its way draws as a sent one; "Not sent" stays a small red line under it. The tool line keeps its 18 pt
+  pull-out (its rows' text inset), 6 pt past a reply bubble's edge.
 
 ### Track E
 
@@ -1590,4 +1595,5 @@ you did, no need of reverting them".
     let's also move the date and tick marks outside message similar to this: ... this is screenshot from imessage make
     it similar to this, no need of that pointy bubbles, our regular bubble is fine, just use similar padding like here,
     and move the timestamp and tick marks to below message similar to "Read Wednesday" part in that screenshot"
-    (`.build/fb57/r7-12.09.08.png`; Track I).
+    (`.build/fb57/r7-12.09.08.png`; Track I). Then: "actually you know what, let's drop the timestamp and tick marks
+    thing in messages for now, just bubbles should be enough".
