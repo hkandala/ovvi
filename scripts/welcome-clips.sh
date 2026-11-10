@@ -87,7 +87,7 @@ running_camera="0:1:.5:.5 1:1:.5:.5 2.2:1.3:.4:.45 3:1.3:.4:.45 4.2:1.3:.78:.45 
 
 # One pane grows: a split, a split down, a tab, then another space.
 layout() {
-    local explorer shell tab
+    local explorer shell
     tap w5
     explorer=$(panes w5:t1 | head -1)
     sleep 1
@@ -97,10 +97,9 @@ layout() {
     upto 1.6
     h pane split "$shell" --direction down --no-focus >/dev/null
     upto 2.6
-    tab=$(h tab create --workspace w5 --cwd "$R/notes" --label Ideas --no-focus | json "d['result']['tab']['tab_id']")
-    # The app shows a tab made in the space in view by itself; the click is for when it does not.
-    tap "$tab" || true
-    upto 4.0
+    # The app shows a tab made in the space in view by itself.
+    h tab create --workspace w5 --cwd "$R/notes" --label Ideas --no-focus >/dev/null
+    upto 3.8
     tap w1
     upto 6.6
     wrap
