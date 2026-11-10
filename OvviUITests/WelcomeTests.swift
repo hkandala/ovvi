@@ -45,6 +45,16 @@ extension OvviUITests {
         XCTAssertFalse(welcomeNext.exists(within: 2), "the welcome again after it was done")
     }
 
+    /// Esc during the intro (the logo and the name) skips the welcome, as Skip does (the same close, the same flag).
+    func testEscDuringTheWelcomeIntroSkipsIt() {
+        relaunch(one, ["-welcomeDone", "NO"])
+        let intro = element("welcome.intro")
+        XCTAssertTrue(intro.exists(within: connect))
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(intro.vanishes(within: 3))
+        XCTAssertFalse(welcomeNext.exists(within: 1), "the first page after Esc in the intro")
+    }
+
     /// Settings ▸ General ▸ Show Welcome, found by a search, opens it again; Esc skips it from its first page.
     func testSettingsShowsTheWelcomeAgain() {
         relaunch(one)
@@ -149,18 +159,21 @@ extension OvviUITests {
             } catch {
                 throw XCTSkip("\(error)")
             }
+            // Next shows once the intro is over; each page's callouts draw in about 2.5 s. The herdr step is last.
             XCTAssertTrue(welcomeNext.exists(within: connect))
-            try await Task.sleep(for: .seconds(4))
             let install = element("welcome.herdr.install")
-            while welcomeNext.label != "Get Started" {
+            while true {
+                try await Task.sleep(for: .seconds(3.5))
                 if install.exists {
                     install.click()
                     _ = welcomeNext.has(\.isEnabled, true, within: connect)
+                    try await Task.sleep(for: .seconds(2))
                 }
-                try await Task.sleep(for: .seconds(4))
+                if welcomeNext.label == "Get Started", welcomeNext.isEnabled {
+                    break
+                }
                 welcomeNext.click()
             }
-            try await Task.sleep(for: .seconds(4))
             welcomeNext.click()
             try await Task.sleep(for: .seconds(1))
             try await Self.post("\(one)/record-stop")

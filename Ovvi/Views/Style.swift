@@ -145,6 +145,11 @@ struct Look {
         dark ? Color(hex: 0x3B3B3D) : Color(hex: 0xE5E5EA)
     }
 
+    /// The welcome's callouts on its pictures: the leader lines' ink, and the halo that sets them and labels off.
+    var welcome: (ink: Color, halo: Color) {
+        dark ? (.white.opacity(0.92), .black.opacity(0.5)) : (.black.opacity(0.75), .white.opacity(0.85))
+    }
+
     private func pick<Value>(_ glassDark: Value, _ glassLight: Value, _ classicDark: Value,
                              _ classicLight: Value) -> Value
     {

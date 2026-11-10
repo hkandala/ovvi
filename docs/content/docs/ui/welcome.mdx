@@ -1,20 +1,31 @@
 ---
 title: "Welcome"
-description: "The welcome panel: what Ovvi is, on the first launch"
+description: "The welcome panel: an annotated tour of one Ovvi window, on the first launch"
 ---
 
-A floating panel over Ovvi's windows, 960 × 640 pt (scaled down as a whole to 80% of a smaller screen), centred: no title bar and no window buttons, rounded
-corners, the window's glass (Classic: opaque), a shadow. Drag its background to move it. It shows a few pages, one
-idea each, and the user turns them with Next and Back, → and ←, or Return. Skip (or Esc) closes it from any page;
-Get Started closes it on the last.
+A floating panel over Ovvi's windows, 960 × 640 pt (scaled down as a whole to 80% of a smaller screen), centred
+on the screen: no title bar and no window buttons, rounded corners,
+the window's glass (Classic: opaque), a shadow. Drag its background to move it. A picture of a real Ovvi window
+fills its top; a band below holds the page's title, one sentence, Skip, the page dots, Back and Next. The user
+turns the pages with Next and Back, → and ←, or Return. Skip (or Esc) closes it from any page; Get Started closes
+it on the last.
 
+- **The intro.** The app icon fades and scales in, a soft light sweeps once across it, and the name "Ovvi" fades
+  in under it (about 2 s). Then it dissolves into the first page. A click, Return, → or Space goes to the first
+  page at once; Esc skips the welcome.
+- **The pages.** One window, in six pages: what Ovvi is (the whole window, labelled: spaces, tabs, panes, an
+  agent), panes and splits, tabs and spaces, agents and the chat view, plugins, and remote machines. On each page
+  the picture pans and zooms to the part the words are about, then callouts draw on: a dot on the thing, a thin
+  line, and a label with its keys (⌘D, ⇧⌘D, ⌘T, ⌃⌘T…).
+- **The pictures.** 2x captures of Ovvi in a throwaway session (`scripts/welcome-pictures.sh`), each in light and
+  dark: the panel shows the set of the app's appearance, and switches when it changes.
 - **When.** On the first launch, over the new-window view. Get Started, Skip or Esc mark it done (`welcomeDone`),
   and it never opens by itself again; a quit with it open does not, so the next launch shows it again. Settings ▸
   General ▸ Welcome to Ovvi ▸ Show Welcome opens it again. It hides while Ovvi is not the active app, and the menu
   bar's keys do nothing behind it but Quit, Hide and Settings. A run by hand of a test or Debug build passes
   `-welcomeDone YES`; `defaults delete dev.ovvi.app.debug welcomeDone` shows a first launch again.
-- **herdr.** When This Mac has no herdr, one page installs it: one line on what it is, Install (the same install
-  as the not-installed page, [states](/docs/ui/states)), its progress, and a failure with Retry. Next waits until
-  herdr is found; Skip still closes. With herdr installed the page is not there.
+- **herdr.** When This Mac has no herdr, one more page comes last: one line on what it is, Install (the same
+  install as the not-installed page, [states](/docs/ui/states)), its progress, and a failure with Retry. Get
+  Started waits until herdr is found; Skip still closes. With herdr installed the page is not there.
 - **Nothing changes in the app** while it shows: its pictures are pictures.
-- **Reduce Motion:** pages cross-fade, nothing moves.
+- **Reduce Motion:** pages cross-fade with no pan or zoom, the callouts show at once, and the intro is a plain fade.

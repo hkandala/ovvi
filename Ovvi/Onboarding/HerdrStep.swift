@@ -8,13 +8,14 @@ struct HerdrStep: View {
 
     var body: some View {
         let machine = Machine.thisMac
+        // The words are the page's (Tour.herdr); this is its picture: the install and its state.
         VStack(spacing: 14) {
-            Image(systemName: found ? "checkmark.circle" : "shippingbox").font(.system(size: 36, weight: .light))
+            Image(systemName: found ? "checkmark.circle" : "shippingbox").font(.system(size: 44, weight: .light))
                 .foregroundStyle(.secondary).symbolRenderingMode(.hierarchical)
-            Text(found ? "herdr is installed" : "Install herdr").font(.system(size: 22, weight: .semibold))
-            Text("herdr keeps your terminals and agents running in sessions, so they go on after Ovvi quits.")
-                .font(.system(size: 13)).foregroundStyle(.secondary).multilineTextAlignment(.center)
-                .frame(maxWidth: 420)
+                .contentTransition(.symbolEffect(.replace))
+            if found {
+                Text("herdr is installed").font(.system(size: 15, weight: .medium))
+            }
             switch HerdrInstall.shared.steps[machine.id] {
             case let .running(line):
                 HStack(spacing: 8) {
@@ -28,13 +29,15 @@ struct HerdrStep: View {
                     .textSelection(.enabled).accessibilityIdentifier("welcome.herdr.failure")
                 Button("Retry", action: install).buttonStyle(.glass).accessibilityIdentifier("welcome.herdr.install")
             case nil where !found:
-                Button("Install", action: install).buttonStyle(.glass).accessibilityIdentifier("welcome.herdr.install")
+                Button("Install herdr", action: install).buttonStyle(.glass).controlSize(.large)
+                    .accessibilityIdentifier("welcome.herdr.install")
                 Text(HerdrInstall.command).font(.system(size: 11, design: .monospaced)).foregroundStyle(.tertiary)
                     .textSelection(.enabled)
             case nil:
                 EmptyView()
             }
         }
+        .padding(.horizontal, 48)
         // Found however it came: this install, the window's own, one outside Ovvi, or a login shell slower than the
         // lookup's 3 s at launch. A missing herdr is asked about at most every 30 s (`Exec.herdr`).
         .task {
