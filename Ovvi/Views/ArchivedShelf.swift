@@ -36,6 +36,7 @@ struct ArchivedShelf: View {
         let shown = agent.isEmpty ? Chooser.agents.map(\.command) : [agent]
         let rows = open ? rows(shown) : []
         let next = list.next(of: shown).filter { !failed.contains($0) }
+        let searching = !search.trimmingCharacters(in: .whitespaces).isEmpty
         VStack(spacing: 4) {
             header(open: open, key: key)
             if open {
@@ -47,38 +48,43 @@ struct ArchivedShelf: View {
                             focusSearch += 1
                         }
                     }
-                    .onExitCommand { search = "" }
+                    .onExitCommand {
+                        toggle(key)
+                        inView.focusKeyboardCard()
+                    }
                     .overlay(alignment: .trailing) { menu.padding(.trailing, 8) }
                     .padding(.horizontal, 4)
                 Group {
                     if loading {
-                        Loader(text: "Reading sessions…", delay: .milliseconds(300)).padding(12)
-                            .frame(maxWidth: .infinity)
+                        Loader(text: "Reading sessions…", delay: .milliseconds(300))
                     } else {
-                        // Lazy, for the pages; as tall as its rows, up to five.
+                        // Lazy, for the pages.
                         ScrollView {
                             LazyVStack(spacing: 4) {
                                 ForEach(rows) { row($0) }
-                                if !next.isEmpty {
-                                    // The list's end: anew after each page, so it reads on while it stays in view
-                                    // (a short searched list, a page with nothing to show).
-                                    Color.clear.frame(height: 1).id(list.agents.values.map(\.looked).reduce(0, +))
-                                        .onAppear { Task { await readNext(next) } }
-                                }
-                                if rows.isEmpty || !failed.isDisjoint(with: shown) || !reading.isDisjoint(with: shown)
-                                    || problem(shown) != nil
-                                {
-                                    status(shown, more: !next.isEmpty).frame(maxWidth: .infinity)
+                                if rows.isEmpty {
+                                    // On the list's middle; the end's reads go on under it.
+                                    status(shown, next: next, rows: false).frame(maxWidth: .infinity)
+                                        .frame(height: Self.height)
+                                        .overlay(alignment: .bottom) { end(next, searching: searching) }
+                                } else {
+                                    end(next, searching: searching)
+                                    if !failed.isDisjoint(with: shown) || !reading.isDisjoint(with: shown)
+                                        || problem(shown) != nil || searching && !next.isEmpty && !bounded(shown)
+                                    {
+                                        status(shown, next: next, rows: true).frame(maxWidth: .infinity)
+                                    }
                                 }
                             }
                             .padding(.horizontal, 4)
                         }
                         .scrollIndicators(.never)
-                        .frame(maxHeight: 5 * 48 + 4 * 4) // five 48 pt rows, 4 pt apart
-                        .fixedSize(horizontal: false, vertical: true)
                         .fadesScrolledEdges()
                     }
                 }
+                .frame(maxWidth: .infinity)
+                // One height whatever it shows: the header and the search field hold still.
+                .frame(height: Self.height)
                 .padding(.bottom, 4)
             }
         }
@@ -87,6 +93,16 @@ struct ArchivedShelf: View {
             if open {
                 RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(.primary.opacity(0.14))
             }
+        }
+        .onChange(of: open) {
+            if !open {
+                search = ""
+            }
+        }
+        .task(id: open && searching ? "\(agent) \(search)" : "") {
+            guard open, searching else { return }
+            try? await Task.sleep(for: .milliseconds(300))
+            await searchOlder(shown)
         }
         .task(id: [open ? 1 : 0, attempt]) {
             // Also while folded, for the next open's first frame.
@@ -98,13 +114,29 @@ struct ArchivedShelf: View {
         }
     }
 
+    /// The list's: five 48 pt rows, 4 pt apart.
+    static let height: CGFloat = 5 * 48 + 4 * 4
+
+    /// The list's end: anew after each page, so it reads on while it stays in view (a page with nothing to show). A
+    /// search reads on by itself (`searchOlder`).
+    @ViewBuilder private func end(_ next: [String], searching: Bool) -> some View {
+        if !next.isEmpty, !searching {
+            Color.clear.frame(height: 1).id(list.agents.values.map(\.looked).reduce(0, +))
+                .onAppear { Task { await readNext(next) } }
+        }
+    }
+
+    /// Opens or folds it (a fold empties the search); opened, the search field takes the keyboard.
+    private func toggle(_ key: String) {
+        withAnimation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.2)) {
+            opened = opened.togglingLine(key)
+        }
+        opening = opened.hasLine(key)
+    }
+
     private func header(open: Bool, key: String) -> some View {
         Button {
-            withAnimation(reduceMotion && !Animation.forceMotion ? nil : .easeOut(duration: 0.2)) {
-                opened = opened.togglingLine(key)
-            }
-            search = ""
-            opening = opened.hasLine(key)
+            toggle(key)
         } label: {
             HStack(spacing: 6) {
                 Text(Self.label)
@@ -164,7 +196,7 @@ struct ArchivedShelf: View {
         }.first
     }
 
-    @ViewBuilder private func status(_ shown: [String], more: Bool) -> some View {
+    @ViewBuilder private func status(_ shown: [String], next: [String], rows: Bool) -> some View {
         let machine = page.store.machine.name
         if !failed.isDisjoint(with: shown) {
             let names = shown.filter(failed.contains).map(Chooser.name).formatted(.list(type: .and))
@@ -178,10 +210,15 @@ struct ArchivedShelf: View {
             }
         } else if let problem = problem(shown) {
             EmptyState(symbol: "exclamationmark.triangle", title: problem, compact: true)
-        } else if more || !reading.isDisjoint(with: shown) {
-            Loader(text: "Reading sessions…", delay: .milliseconds(300)).padding(12)
         } else if !search.trimmingCharacters(in: .whitespaces).isEmpty {
-            EmptyState(symbol: "magnifyingglass", title: "No matching sessions.", compact: true)
+            if !reading.isDisjoint(with: shown) || !next.isEmpty && !bounded(shown) {
+                Loader(text: "Searching older sessions…", delay: .milliseconds(300)).padding(12)
+            } else if !rows {
+                EmptyState(symbol: "magnifyingglass", title: next.isEmpty ? "No sessions found."
+                    : "No matches in the last \(list.sessions(of: shown).count) sessions.", compact: true)
+            }
+        } else if !next.isEmpty || !reading.isDisjoint(with: shown) {
+            Loader(text: "Reading sessions…", delay: .milliseconds(300)).padding(12)
         } else {
             EmptyState(symbol: "archivebox", title: agent.isEmpty ? "No closed sessions on \(machine)."
                 : "No \(Chooser.name(agent)) sessions.", compact: true)
@@ -207,6 +244,29 @@ struct ArchivedShelf: View {
 }
 
 private extension ArchivedShelf {
+    /// A search's own reading: the agents' older pages, one after another, until every store was read or the list
+    /// holds 1000 sessions; cancelled by a new query, another agent or a fold. Older pages land under the rows.
+    /// ponytail: polls every 0.2 s while another read runs; a read's own end could signal it if this ever shows.
+    func searchOlder(_ shown: [String]) async {
+        while !Task.isCancelled, !bounded(shown) {
+            let next = list.next(of: shown).filter { !failed.contains($0) }
+            // An agent still on its first page has no next one yet: wait for it too.
+            if loading || !reading.isDisjoint(with: shown) {
+                try? await Task.sleep(for: .milliseconds(200))
+            } else if next.isEmpty {
+                return
+            } else {
+                // Its own task: a new query's cancel would cut the read short, and mark the agents failed.
+                await Task { await readNext(next) }.value
+            }
+        }
+    }
+
+    /// A search reads no further back than this many sessions on a machine: a large store answers in a bounded time.
+    func bounded(_ shown: [String]) -> Bool {
+        list.sessions(of: shown).count >= 1000
+    }
+
     /// Every agent's first page, shown together once all came, or 2 s after the first one did: a slow agent is read
     /// on (`reading`) and comes in when it does, a failed one is marked (`failed`).
     func readFirst() async {

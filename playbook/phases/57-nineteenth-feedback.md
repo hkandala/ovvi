@@ -1538,8 +1538,36 @@ you did, no need of reverting them".
 73. "in archive sessoins, when i search for something not available, instead of showing no sessions found, it
     continuously shows reading sessions loader, we should show no sessions found, if no matches to the search, and
     also on esc on archives sessions search should collapse it and focus the current pane" (Track B).
+    Then: "i don't like the search older sessions button, why can't we do it automatically, i saw agent automation when
+    testing".
 74. "let's also slightly increase space between session header and the first workspace in the sidebar, not too much
     increase, slight increase should be good" (Track B).
 75. "in archive sessions, can we keep fixed height? i see the height of the archive sessions keep changing, when
     loader is there, when error message is there or when sessions are shown, let's fix it to one height, and loader and
     error messages should be vertically aligned" (Track B).
+
+### Track B, round 7 (items 72–75)
+
+- **72.** Sort Spaces' glyph is 11 pt semibold, 26×21 px, as tall as the `+`'s (21×21; before 30×25), and the two
+  28 pt buttons touch: glyphs 33 px apart (before 47 px, frames 8 pt apart). Both on the title's middle (y 116–136).
+- **73, cause.** With a search, the list's end stayed in view and read page after page, and the status showed the
+  loader whenever pages were left, even between reads: a search with no match read the whole store under "Reading
+  sessions…", long on a big remote store.
+- **73, fix.** A search reads the older pages by itself, 0.3 s after the last key, one after another, until every
+  store was read or the list holds 1000 sessions; a new query, another agent or a fold stops it (a read in flight
+  runs on in its own task: a cancel would mark the agent failed). "Searching older sessions…" while it reads, then
+  "No sessions found." or "No matches in the last ‹count› sessions.". No button (the user's follow-up). Paging, not
+  a grep on the machine: on 50 transcripts of 10 MB `grep -rliF` took 8.9 s, a reader page 0.19 s (grep reads whole
+  files, the reader the first lines and the last 256 KB). Esc folds the shelf, which empties the search, and gives
+  the keyboard to the pane in view.
+- **74.** The first row 4 pt further down: its top 33 px under the title's baseline (before 25 px).
+- **75.** The open shelf's list is one height, 256 pt (five rows), whatever it shows; the loader, empty states and
+  failures sit in its middle. The shelf's top stays at y 1416 (window px) under the loader, rows, the searching
+  line and no match; before it sat at y 1848 under the loader.
+- **Tests.** testArchivedSearchSaysWhenNothingMatchesAndEscReturnsToThePane (new); the stuck-agent and remote tests
+  check the header holds still from the loader through rows to the failure; testRecent… checks the sort button's
+  size, place and middle; testTheSelectedRowScrollsIntoView follows the 7 pt.
+- **Review.** Five rounds: Esc broke the filter test (fixed), the search kept on a fold, a stale task id (another
+  agent), the loader's identity switching, a loop that ended while an agent was still on its first page, and the
+  cancel that marked agents failed; all fixed.
+- **Pictures**, before and after, dark and light: `~/Downloads/ovvi-research/p57b/r7b/index.html`.

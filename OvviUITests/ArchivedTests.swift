@@ -34,16 +34,7 @@ extension OvviUITests {
     /// sessions, the oldest) once its end scrolls into view.
     func testArchivedReadsTheNextPageAtItsEnd() async throws {
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
-        let (_, shell) = try await newTab("archived-pages")
-        try await waitForPrompt(shell)
-        let dir = "\(Self.archivedHome)/.pi/agent/sessions/--p--"
-        let line = #"{"type":"session","version":3,"cwd":"/tmp"}"#
-        let prompt = #"{"type":"message","message":{"role":"user","content":[{"type":"text","text":"Page '$i'"}]}}"#
-        let write = "f=\(dir)/page-$i.jsonl; printf '%s\\n' '\(line)' '\(prompt)' >$f; "
-            + "touch -t $(date -v-${i}H +%Y%m%d%H%M.%S) $f"
-        try await send("rm -rf \(Self.archivedHome) && mkdir -p \(dir) && for i in $(seq 1 55); do \(write); done && "
-            + "clear && echo ready-$((6*7))\r", to: shell)
-        try await waitFor(shell) { $0.contains("ready-42") }
+        try await writePages()
         let shelf = openArchived()
         let first = element("agents.archived.pi.page-1.jsonl"), last = element("agents.archived.pi.page-55.jsonl")
         XCTAssertTrue(first.exists(within: 5))
@@ -56,6 +47,46 @@ extension OvviUITests {
             inside.scroll(byDeltaX: 0, deltaY: -2000)
             return last.exists
         }, "the 55th session never came")
+    }
+
+    /// A search reads the older pages by itself, then says nothing matched, never the endless loader. Esc folds the
+    /// shelf and gives the keyboard to the pane.
+    func testArchivedSearchSaysWhenNothingMatchesAndEscReturnsToThePane() async throws {
+        XCTAssertTrue(element("workspace.w1").exists(within: connect))
+        let (tab, shell) = try await writePages()
+        element("tab.\(tab)").click()
+        XCTAssertTrue(hasKeyboard(element("terminal.\(shell)")))
+        openArchived()
+        XCTAssertTrue(element("agents.archived.pi.page-1.jsonl").exists(within: 5))
+        let search = element("agents.archived.search"), window = app.windows.firstMatch
+        let shelf = element("agents.shelf.Archived Sessions"), top = shelf.frame.minY
+        search.typeText("no such session")
+        XCTAssertTrue(window.staticTexts["No sessions found."].exists(within: 10))
+        XCTAssertEqual(shelf.frame.minY, top, "no match moved the header")
+        keepScreenshot("archived search, no match")
+        search.typeKey("a", modifierFlags: .command)
+        search.typeText("Page 55")
+        // The 55th session, the oldest, on the second page.
+        XCTAssertTrue(element("agents.archived.pi.page-55.jsonl").exists(within: 10))
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(element("agents.shelf.Archived Sessions").has(\.stringValue, "collapsed", within: 2))
+        XCTAssertTrue(hasKeyboard(element("terminal.\(shell)")))
+    }
+
+    /// 55 pi sessions, an hour apart, "Page 1" the newest; the tab and shell that wrote them.
+    @discardableResult
+    func writePages() async throws -> (tab: String, shell: String) {
+        let (tab, shell) = try await newTab("archived-pages")
+        try await waitForPrompt(shell)
+        let dir = "\(Self.archivedHome)/.pi/agent/sessions/--p--"
+        let line = #"{"type":"session","version":3,"cwd":"/tmp"}"#
+        let prompt = #"{"type":"message","message":{"role":"user","content":[{"type":"text","text":"Page '$i'"}]}}"#
+        let write = "f=\(dir)/page-$i.jsonl; printf '%s\\n' '\(line)' '\(prompt)' >$f; "
+            + "touch -t $(date -v-${i}H +%Y%m%d%H%M.%S) $f"
+        try await send("rm -rf \(Self.archivedHome) && mkdir -p \(dir) && for i in $(seq 1 55); do \(write); done && "
+            + "clear && echo ready-$((6*7))\r", to: shell)
+        try await waitFor(shell) { $0.contains("ready-42") }
+        return (tab, shell)
     }
 
     /// An agent that does not answer holds the others back 2 s at most: their rows show, then its own line with Retry
@@ -80,15 +111,19 @@ extension OvviUITests {
         try await waitFor(shell) { $0.contains("ready-42") }
     }
 
+    /// The loader, the rows and the failure in one height: the shelf's header holds still.
     func showsTheOthersPastAStuckAgent(on machine: String) {
-        openArchived()
-        let row = element("agents.archived.pi.stuck.jsonl"), window = app.windows.firstMatch
+        // Taken under the loader, while Claude Code and pi read.
+        let shelf = openArchived(), top = shelf.frame.minY, window = app.windows.firstMatch
+        let row = element("agents.archived.pi.stuck.jsonl")
         let failure = window.staticTexts["Could not read Claude Code sessions on \(machine)."]
         XCTAssertTrue(row.exists(within: 15))
+        XCTAssertEqual(shelf.frame.minY, top, "the rows moved the header")
         XCTAssertFalse(failure.exists, "the rows waited for Claude Code's 10 s")
         XCTAssertTrue(failure.exists(within: 15))
         XCTAssertTrue(window.buttons["Retry"].exists)
         XCTAssertTrue(row.exists)
+        XCTAssertEqual(shelf.frame.minY, top, "the failure moved the header")
         keepScreenshot("archived stuck agent")
     }
 
@@ -127,7 +162,8 @@ extension OvviUITests {
         search.typeText("trip")
         XCTAssertTrue(claude.vanishes(within: 2))
         XCTAssertTrue(piRow.exists)
-        app.typeKey(.escape, modifierFlags: [])
+        search.typeKey("a", modifierFlags: .command)
+        search.typeKey(.delete, modifierFlags: [])
         XCTAssertTrue(claude.exists(within: 2))
         let menu = element("agents.archived.filter")
         menu.click()

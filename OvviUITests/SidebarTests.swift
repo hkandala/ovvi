@@ -343,10 +343,10 @@ extension OvviUITests {
         let end = element("agent.\(panes[23])").frame
         XCTAssertGreaterThan(end.maxY, filter.frame.minY - 60, "\(end), filter \(filter.frame)")
         XCTAssertFalse(inView(first))
-        // ⌃⌘3 (after alpha and beta): up to long0, with the 18 pt fade's room above it (the list starts 3 pt under the
+        // ⌃⌘3 (after alpha and beta): up to long0, with the 18 pt fade's room above it (the list starts 7 pt under the
         // header).
         app.typeKey("3", modifierFlags: [.command, .control])
-        XCTAssertTrue(until(2) { long0.isSelected && long0.frame.minY >= header.frame.maxY + 17 }, "\(long0.frame)")
+        XCTAssertTrue(until(2) { long0.isSelected && long0.frame.minY >= header.frame.maxY + 21 }, "\(long0.frame)")
         app.typeKey("1", modifierFlags: [.command, .control])
         XCTAssertTrue(until(2) { first.isSelected && inView(first) }, "\(first.frame)")
     }

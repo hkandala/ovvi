@@ -38,7 +38,8 @@ struct SidebarPage: View {
             }
         }
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
+            // The two buttons' frames touch.
+            HStack(spacing: 0) {
                 Text(store.title).truncationMode(.middle)
                     .font(.system(size: 13, weight: .bold)).foregroundStyle(.primary).lineLimit(1)
                     .accessibilityIdentifier("sidebar.header")
@@ -46,7 +47,7 @@ struct SidebarPage: View {
                     .frame(height: 28)
                     // A right-click on it reaches the row's menu.
                     .allowsHitTesting(false)
-                Spacer()
+                Spacer(minLength: gap)
                 sortMenu
                 IconButton(symbol: "plus", help: "New Space") { Task { await page.newWorkspace() } }
                     .disabled(store.state != .live)
@@ -65,8 +66,8 @@ struct SidebarPage: View {
             .padding(.leading, Sidebar.rowInsets.leading + WorkspaceRow.textInset)
             // The `+` ends where the rows do.
             .padding(.trailing, Sidebar.rowInsets.trailing)
-            // Rex's first row sits 31.5 pt below the header's baseline.
-            .padding(.bottom, 3)
+            // The first row's top 16.5 pt below the header's baseline.
+            .padding(.bottom, 7)
             // Behind the row: on the row, a menu takes the row's frame for the name when it is the row's only element.
             .background { Color.clear.contentShape(.rect).contextMenu { sessionMenu } }
             ScrollView {
@@ -305,7 +306,9 @@ private extension SidebarPage {
             .pickerStyle(.inline)
             .labelsHidden()
         } label: {
-            Image(systemName: "arrow.up.arrow.down").fontWeight(.medium).frame(width: 28, height: 28)
+            // As tall as the `+`'s glyph, which is shorter at the same size.
+            Image(systemName: "arrow.up.arrow.down").font(.system(size: 11, weight: .semibold))
+                .frame(width: 28, height: 28)
         }
         .menuStyle(.button)
         .menuIndicator(.hidden)

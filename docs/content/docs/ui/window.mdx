@@ -284,9 +284,10 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   Session panel and the palette keep the real names. Its text starts where
   everything under it starts: 18 pt in from the window's edge, on the
   space rows' names and branch lines, the agents' icons and the shelf's label. It
-  sits 3 pt above the first
-  row, and, at the trailing
-  end, **Sort Spaces** (`arrow.up.arrow.down`) and a `+` that makes a new space in that session, in `$HOME`. The
+  sits 7 pt above the first
+  row (its baseline 16.5 pt above the row's top), and, at the trailing
+  end, **Sort Spaces** (`arrow.up.arrow.down`, 11 pt semibold, so its glyph is as tall as the `+`'s, 10.5 pt) and a
+  `+` that makes a new space in that session, in `$HOME`: two 28 pt buttons whose frames touch. The
   snapshot after it selects the new space.
 - **Sort Spaces.** A menu with a check on the current order, one for the app, kept across relaunches: **Manual**
   (the default), herdr's order, which a drag or Move Up and Move Down change; or **Recent**, the space whose agent
@@ -424,12 +425,17 @@ nothing is read.
   the fold is kept per machine across relaunches; a fold clears the search. It has no count (it is not known without
   reading every store).
 - **Search.** Open, a search field ("Search", `magnifyingglass`) sits under the header, 4 pt in from the border; a
-  click that opens the shelf puts the caret in it. It keeps the sessions whose title or folder matches; Esc clears
-  it. At its trailing end a menu button (`line.3.horizontal.decrease.circle`, filled while it shows one agent, "Show
+  click that opens the shelf puts the caret in it. It keeps the sessions whose title or folder matches, among those
+  read. A search reads the older pages by itself, 0.3 s after the last key, one after another, until every store was
+  read or the list holds 1000 sessions; a new query, another agent or a fold stops it. Older matches land under the
+  rows, with "Searching older sessions…" under them while it reads. Paging, not a grep on the machine, which would
+  read whole transcripts. Esc folds the shelf, which empties the search, and gives the keyboard to the pane in view.
+  At its trailing end a menu button (`line.3.horizontal.decrease.circle`, filled while it shows one agent, "Show
   Agent") opens a menu: **All Agents**, then the four agents. The choice is kept across relaunches. The footer's
   filter does not reach it.
-- **List.** Under the search field, at most 5 rows tall (256 pt); it scrolls inside, with an 18 pt fade at an edge
-  that has more rows; the spaces above get the rest.
+- **List.** Under the search field, one height whatever it shows, five rows' (256 pt): the loader, an empty state
+  or a failure sits in its middle, rows scroll inside, with an 18 pt fade at an edge that has more rows, and the
+  header and the search field never move. The spaces above get the rest, and scroll.
 - **Rows.** 48 pt, two lines, 3 pt apart: the agent's tile, the session's title, its folder on line 2 (`~` for
   the home folder), and its age at the end of line 1 ("5h", "2d", "1w"; 11 pt, secondary). Newest first, over the
   four agents. The tile is 8 pt into the border, on the space names' edge. Left out: the sessions a pane of any
@@ -449,7 +455,8 @@ nothing is read.
   archived ones, and sessions with no prompt.
 - **States** ([States](/docs/ui/states)). While the first list or a next page takes over 0.3 s: the loader, "Reading
   sessions…". With no row, the compact empty state: "No closed sessions on ‹machine›." or "No ‹Agent› sessions."
-  (`archivebox`), or "No matching sessions." (`magnifyingglass`). A machine that did not answer in 10 s: "Could not
+  (`archivebox`), or for a search "No sessions found." (`magnifyingglass`), "No matches in the last ‹count›
+  sessions." once the search stopped at 1000. A machine that did not answer in 10 s: "Could not
   read ‹machine›'s sessions." (`exclamationmark.triangle`) with **Retry**, or "Could not read ‹Agent› sessions on
   ‹machine›." under the rows of the others when only some did not. A store the machine cannot read shows its own
   line ("OpenCode needs sqlite3 on ‹machine›.").

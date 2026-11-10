@@ -65,6 +65,11 @@ extension OvviUITests {
         let alphaRow = element("workspace.w1"), betaRow = element("workspace.w2"), sort = element("sidebar.sort")
         try await waitForValue("agent.\(beta)", containing: "Working")
         XCTAssertEqual(sort.value as? String, "Manual")
+        // The `+`'s size, right before it, on its middle.
+        let plus = element("sidebar.new-workspace").frame
+        XCTAssertEqual(sort.frame.size, plus.size)
+        XCTAssertEqual(sort.frame.maxX, plus.minX, accuracy: 0.5)
+        XCTAssertEqual(sort.frame.midY, plus.midY, accuracy: 0.5)
         addTeardownBlock { @MainActor in
             if sort.value as? String == "Recent" {
                 sort.click()
