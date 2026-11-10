@@ -44,8 +44,10 @@ guard let display = content.displays.first(where: { $0.frame.intersects(largest?
 // The app's windows made from now on (the panel, from its first frame, with no poll's delay) on the backdrop; none of
 // the windows already there, nor another app's.
 guard let app = content.applications.first(where: { $0.processID == pid }) else { fail("no app with pid \(pid)") }
-let filter = SCContentFilter(display: display, including: [app],
-                             exceptingWindows: content.windows.filter { $0.owningApplication?.processID == pid })
+/// Only its normal windows: a closing menu's window in the list stopped the stream once it closed.
+let filter = SCContentFilter(display: display, including: [app], exceptingWindows: content.windows.filter {
+    $0.owningApplication?.processID == pid && $0.windowLayer == 0
+})
 let scale = CGFloat(filter.pointPixelScale)
 /// Kept for the run: the configuration does not retain it.
 let backdrop = CGColor(gray: 0.5, alpha: 1)
@@ -56,7 +58,14 @@ config.minimumFrameInterval = CMTime(value: 1, timescale: 60)
 config.captureResolution = .best
 config.showsCursor = false
 config.backgroundColor = backdrop
-let stream = SCStream(filter: filter, configuration: config, delegate: nil)
+final class Stopped: NSObject, SCStreamDelegate {
+    func stream(_: SCStream, didStopWithError error: any Error) {
+        FileHandle.standardError.write(Data("the stream stopped: \(error)\n".utf8))
+    }
+}
+
+let stopped = Stopped()
+let stream = SCStream(filter: filter, configuration: config, delegate: stopped)
 let recording = SCRecordingOutputConfiguration()
 recording.outputURL = film
 recording.outputFileType = .mp4
