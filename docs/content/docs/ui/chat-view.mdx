@@ -431,9 +431,9 @@ A run is one quiet line with no card: its summary and a chevron.
   | The user's | `#0088FF` | `#0091FF` | `#0040DD` |
   | The agent's | `#E5E5EA` | `#3B3B3D` | as light or dark |
 
-  A bubble has radius 18 and Messages' padding: 12 pt at its sides and 7 pt
+  A bubble has radius 15 and Messages' padding: 12 pt at its sides and 7 pt
   above and under its text (iMessage's single line: a 30 pt bubble, its text
-  12.5 pt from the sides). Its text stays on the messages' 32 pt edge, so
+  12.5 pt from the sides, corners about 15 pt). Its text stays on the messages' 32 pt edge, so
   the bubble reaches 12 pt past it. 48 pt stay free on the bubble's other
   side. Both are Markdown, drawn the same way. The
   user's keeps its own line breaks, and its links are white. The summary
@@ -515,9 +515,11 @@ A run is one quiet line with no card: its summary and a chevron.
   terminal keeps its own row under the messages. Simpler choice: a wheel
   over the reply box does not scroll the messages under it.
 - **Markdown.** `swift-markdown` (cmark-gfm) parses it. 14 pt text with
-  4 pt line spacing. Headings are 22, 18 and 16 pt (bold for the first two
-  levels), with 22 or 16 pt above them and 8 pt under them. 12 pt between
-  other blocks, 6 pt between list items.
+  1 pt line spacing, in Messages' rhythm: its lines sit 1.23 times their
+  size apart, a blank line separates paragraphs, and list items follow as
+  lines. Headings are 22, 18 and 16 pt (bold for the first two levels), with
+  26 or 18 pt above them and 8 pt under them. 18 pt (a line) between other
+  blocks, 1 pt between list items.
   - List items hang behind their number, bullet (•, ◦, ▪ by depth) or task
     box (`square`, `checkmark.square.fill`), and a list item's later blocks
     line up under its text. Lists and quotes nest.

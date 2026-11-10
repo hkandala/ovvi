@@ -463,6 +463,12 @@ runs and on-demand on the final head.
   user's 2x shot: 12 pt beside the text and 7 pt above and under it (was 18 and 16), radius 18 kept (no tail). A
   message on its way draws as a sent one; "Not sent" stays a small red line under it. The tool line keeps its 18 pt
   pull-out (its rows' text inset), 6 pt past a reply bubble's edge.
+- **Round 7 (item 80):** the padding already matched iMessage (text 20 px from a bubble's top, 24-26 px from its sides
+  at 2x); the rhythm inside did not. iMessage sets 13 pt text 16 pt apart (1.23x), a blank line between paragraphs and
+  list items as plain lines; ours had 14 pt text 21 pt apart, 12 pt between blocks and 6 pt between items, so
+  paragraphs ran together. Now: 1 pt line spacing (18 pt lines), 18 pt (a line) between blocks, 1 pt between items,
+  26 or 18 pt above headings, corner radius 15 (iMessage's corners fit about 15 pt; ours at 18 fit 17.5). Kept: 14 pt
+  text, the column's width (iMessage wraps at 432 pt), and the turn's rows between bubbles.
 
 ### Track E
 

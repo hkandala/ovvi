@@ -10,7 +10,9 @@ struct Markdown: View {
     var body: some View {
         Blocks(container: Document(parsing: text))
             .font(.system(size: 14))
-            .lineSpacing(4)
+            // Messages' rhythm: lines 1.26 times the size apart, a blank line's height between blocks, list items as
+            // lines.
+            .lineSpacing(1)
             .textSelection(.enabled)
             .fixedSize(horizontal: false, vertical: true)
             .readableText(text)
@@ -32,11 +34,11 @@ private struct Blocks: View {
 
     private static func space(_ above: any Markup, _ block: any Markup) -> CGFloat {
         if let heading = block as? Heading {
-            heading.level < 3 ? 22 : 16
+            heading.level < 3 ? 26 : 18
         } else if above is Heading {
             8
         } else {
-            block.parent is ListItem ? 6 : 12
+            block.parent is ListItem ? 1 : 18
         }
     }
 }
@@ -83,7 +85,7 @@ private struct ListBlock: View {
 
     var body: some View {
         let items = Array(list.listItems)
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 1) {
             ForEach(items.indices, id: \.self) { index in
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     marker(items[index], index).foregroundStyle(.secondary).frame(minWidth: 12, alignment: .trailing)
