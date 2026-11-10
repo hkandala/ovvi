@@ -1796,3 +1796,17 @@ you did, no need of reverting them".
     shortlink website you are using is done very bad, can we make that website better and make it look clean and
     doesn't look like ai slop? also wait for things to be ready in each state, we shouldn't show loading stuff in our
     recordings, and make sure splits are clean without jagged animations, repeat until we get a good oen".
+83. "when reconnecting, i see overlapping messages, fix it" (`.build/fb57/r7-12.39.54.png`: "The terminal stopped"
+    with its ssh error and Retry drawn over "Reconnecting to vps…" and the same error; Track F).
+84. "i am pretty much done with this split shit man, look at the video, now the split at the end it jumps like a spring
+    effect. its very evident, every time i ask you to fix split issues, one thing gets fixed and other new issue comes
+    up, wth, is the code messy right now in the way we handle splits? we would need to clean that shit if that's the
+    case, idk why its so hard make a simple smooth split, fix this shit properly" (`.build/fb57/r7-split-1.23.54.mov`;
+    Track Z, new).
+    Onboarding, same message: "the shadow overlay at the bottom should be much more dark especially in light mode, i
+    see overlapping thing coz the gradient is not strong enough - herdr logo looks bad, add a rounded square border to
+    it, make it small - change the image or icon we are using for checkmark at the end when all done, that green cehck
+    doesn't sit well with our app design - when app is opened for first time, no window should be opened, only
+    onboarding pane should be opened and once it reached you'r are all done state then window should open or on skip -
+    that split issue is very evident in the onboarding video as well, once the split fixes are done we should re
+    record everything once again" (item 78, Track Y4).
