@@ -119,11 +119,13 @@ In Glass the two are close: the keyboard card is only a little brighter.
   of its layer goes from the old place to the new one. The main thread draws
   none of the slide's frames (only the fades of a closed card and of a zoom's
   other cards run there), so herdr's answer, a new terminal or a web page that
-  loads meanwhile drops none of them. During the motion a card keeps the
-  larger of its two sizes, clipped by its moving frame (rounded, 10 pt), with
-  its edge drawn by its layer; the light Glass shadow shows again as it lands.
-  It lays out at its new size once the motion ends. Its terminal resizes 150 ms after
-  that, as for any change of the card's size
+  loads meanwhile drops none of them. A page's card draws its surface (fill,
+  rim, edge, the light Glass shadow) as layers of its own, which the render
+  server draws at each frame's size: the same before, during and after the
+  motion. While a card's size changes, only its content is cut by its moving
+  frame (rounded, 10 pt): it keeps the larger of its two sizes and lays out at
+  its new size once the motion ends. Its terminal resizes 150 ms after that, as
+  for any change of the card's size
   ([Size](/docs/talking-to-herdr#size)). A window resize and the sidebar size
   the cards at every step, with no animation of their own.
 - The main thread stays free around the slide
