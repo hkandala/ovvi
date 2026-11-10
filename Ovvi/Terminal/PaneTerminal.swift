@@ -5,7 +5,18 @@ import Observation
 
 @MainActor @Observable
 final class PaneTerminal {
-    private(set) var state = State.idle
+    private(set) var state = State.idle {
+        // A failure is the connection's until the page answers after it: the page reads at once to tell.
+        didSet {
+            if state.isFailed, !oldValue.isFailed {
+                own = false
+                Task { await view.store()?.client?.refresh() }
+            }
+        }
+    }
+
+    /// Its failure came while the page answers (a snapshot after it): the pane's own, which its card says.
+    private(set) var own = false
     var hasKeyboard = false
     /// Off from a new surface's start and from each grid change until the grid settles, so that herdr's first frame
     /// (the last screen reflowed at the new size) never shows.
@@ -90,6 +101,7 @@ final class PaneTerminal {
             lost = true
             return retried = nil
         }
+        own = true
         if retried.map({ .now - $0 >= .seconds(5) }) ?? true {
             // Back from Reconnecting: its card loads, not "stopped". A failing stream's later tries keep the panel
             // (`end`).

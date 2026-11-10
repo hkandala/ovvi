@@ -75,7 +75,7 @@ struct TerminalCard: View {
                         .accessibilityIdentifier("pane.\(terminal.paneID).take-back")
                         .padding(gap)
                 // While the page reconnects, its overlay says why.
-                case let .failed(text) where terminal.live:
+                case let .failed(text) where terminal.live && terminal.own:
                     EmptyState(symbol: "terminal", title: "The terminal stopped", text: text, compact: true) {
                         Button("Retry", action: terminal.retry).buttonStyle(.glassProminent)
                             .accessibilityIdentifier("pane.\(terminal.paneID).retry")
