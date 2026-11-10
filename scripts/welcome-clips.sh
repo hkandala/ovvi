@@ -65,7 +65,9 @@ wrap() {
 upto() { sleep "$(python3 -c "import time; print(max(0, $T0 + $1 - time.time()))")"; }
 
 # Each page: what it shows first, then the film of what changes, and the camera's keys (time:zoom:x:y as fractions
-# of the film; scripts/welcome-clips/camera.py), which push in on what the page's words name.
+# of the film; scripts/welcome-clips/camera.py), which push in on what the page's words name: the panes (at 1.3 they
+# fill the frame, the sidebar out of it), the tab bar, the sidebar, the machine menu. 1.39 is the closest it gets and
+# stays sharp (the film's 2x over the picture's 1824 pixels).
 
 # The work runs on: the dev server's log takes requests and the tests run again, agents work in the sidebar.
 running() {
@@ -83,7 +85,7 @@ running() {
     upto 6.4
     wrap
 }
-running_camera="0:1:.5:.5 1:1:.5:.5 2.2:1.3:.4:.45 3:1.3:.4:.45 4.2:1.3:.78:.45 5.4:1.3:.78:.45 6.3:1:.5:.5"
+running_camera="0:1:.5:.5 1:1:.5:.5 2.2:1.3:.61:.55 5.4:1.3:.61:.55 6.3:1:.5:.5"
 
 # One pane grows: a split, a split down, a tab, then another space.
 layout() {
@@ -104,8 +106,8 @@ layout() {
     upto 6.6
     wrap
 }
-layout_camera="0:1:.5:.5 0.4:1:.5:.5 1.2:1.22:.62:.55 2.4:1.22:.62:.55 3.1:1.35:.55:.12 3.7:1.35:.55:.12 \
-4.4:1.3:.22:.38 5.6:1.3:.22:.38 6.5:1:.5:.5"
+layout_camera="0:1:.5:.5 0.4:1:.5:.5 1.2:1.25:.6:.56 2.4:1.25:.6:.56 3.1:1.35:.6:.37 3.7:1.35:.6:.37 \
+4.4:1.3:.385:.45 5.6:1.3:.385:.45 6.5:1:.5:.5"
 
 # Claude Code's turn in Chat as it happens: its words and tools come in, the Git card beside it has the diff.
 agents() {
@@ -130,7 +132,7 @@ agents() {
     upto 6.6
     wrap
 }
-agents_camera="0:1:.5:.5 0.6:1:.5:.5 1.6:1.3:.45:.55 4.6:1.3:.45:.55 5.6:1.3:.2:.45 6.5:1:.5:.5"
+agents_camera="0:1:.5:.5 0.6:1:.5:.5 1.6:1.3:.61:.55 4.6:1.3:.61:.55 5.6:1.3:.385:.45 6.5:1:.5:.5"
 
 # From a shell: Git, then the browser on the dev server, typed; then a plugin of the user's own, Deploys.
 plugins() {
@@ -167,8 +169,7 @@ and p.get('label', '').startswith('ovvi:git')][0]")
     upto 6.6
     wrap
 }
-plugins_camera="0:1:.5:.5 0.9:1:.5:.5 1.8:1.22:.72:.45 2.8:1.22:.72:.45 3.6:1.22:.45:.72 4.6:1.22:.45:.72 \
-5.5:1.22:.78:.72 6.6:1.22:.78:.72 7.3:1:.5:.5"
+plugins_camera="0:1:.5:.5 0.9:1:.5:.5 1.8:1.3:.62:.45 3.6:1.3:.6:.6 5.5:1.3:.62:.62 6.6:1.3:.62:.62 7.3:1:.5:.5"
 
 # The machine menu: This Mac and the machines added.
 machines() {
@@ -183,7 +184,7 @@ machines() {
     upto 6
     wrap
 }
-machines_camera="0:1:.5:.5 1:1:.5:.5 2:1.35:.25:.32 4.8:1.35:.25:.32 5.8:1:.5:.5"
+machines_camera="0:1:.5:.5 1:1:.5:.5 2:1.35:.37:.37 4.8:1.35:.37:.37 5.8:1:.5:.5"
 
 # The film's crop, in window points: the whole window inside its rounded corners, 2:1.
 CROP="6 6 1268 634"

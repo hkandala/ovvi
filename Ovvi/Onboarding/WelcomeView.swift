@@ -74,14 +74,16 @@ struct WelcomeView: View {
         let playing = shown && current != .herdr ? clip(current, dark: dark) : nil
         VStack(spacing: 0) {
             picture(current, look: look, dark: dark).opacity(shown ? 1 : 0)
-            // In a ZStack: the old and the new words cross-fade in one place, not one above the other.
+            // In one place, and never both at once: the old words go before the new ones come.
             ZStack {
                 VStack(spacing: 6) {
                     Text(current.words.title).font(.system(size: 24, weight: .semibold))
                     Text(current.words.text).font(.system(size: 15)).foregroundStyle(.secondary)
                         .multilineTextAlignment(.center).lineSpacing(2).frame(maxWidth: 760)
                 }
-                .id(page).transition(.opacity)
+                .id(page)
+                .transition(.asymmetric(insertion: .opacity.animation(.easeOut(duration: 0.3).delay(0.15)),
+                                        removal: .opacity.animation(.easeIn(duration: 0.15))))
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .opacity(shown ? 1 : 0)
