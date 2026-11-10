@@ -14,6 +14,8 @@ final class HostStore {
     let session: String
     var machine: Machine
     private(set) var state = State.connecting
+    /// A read failed and `failed` is finding out why: still `.live` until it knows.
+    private(set) var checking = false
     private(set) var sessions: [Session] = []
     private(set) var workspaces: [Workspace] = []
     private(set) var panes: [Pane] = []
@@ -174,8 +176,11 @@ final class HostStore {
         // Not while Connect runs, nor one that waits for its start: Connect's own read follows.
         let connects = connects
         guard !connecting else { return }
-        // First, to tell "not running" from other failures without a flash of the other text.
+        // First, to tell "not running" from other failures without a flash of the other text. Meanwhile the cards
+        // show no failure of their own (`PaneTerminal.live`).
+        checking = true
         await loadSessions()
+        checking = false
         guard connects == self.connects else { return }
         state = .failed(error)
         // Not a read that failed while the start still runs.

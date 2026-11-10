@@ -34,6 +34,8 @@ final class PaneTerminal {
     @ObservationIgnored private(set) var observing = false
     @ObservationIgnored private var shown = false
     @ObservationIgnored private var retried: ContinuousClock.Instant?
+    /// Failed while its page did not answer: the stream fails with its connection, not by itself.
+    @ObservationIgnored private var lost = false
     /// Counts streams, so a stream that is ending cannot change the state of the next one.
     @ObservationIgnored private(set) var generation = 0
     @ObservationIgnored var watches: () -> Bool = { false }
@@ -84,34 +86,19 @@ final class PaneTerminal {
             return open()
         }
         guard state.isFailed else { return }
-        guard live else { return retried = nil }
+        guard live else {
+            lost = true
+            return retried = nil
+        }
         if retried.map({ .now - $0 >= .seconds(5) }) ?? true {
-            // The first try since it failed, or since the page came back from Reconnecting: its card loads, not
-            // "stopped". Later tries keep the panel (`end`).
-            state = retried == nil ? .idle : state
+            // Back from Reconnecting: its card loads, not "stopped". A failing stream's later tries keep the panel
+            // (`end`).
+            if lost {
+                (state, lost) = (.idle, false)
+            }
             retried = .now
             open()
         }
-    }
-
-    func pause() {
-        guard shown else { return }
-        shown = false
-        pending = []
-        paste = nil
-        end()
-    }
-
-    func hide() {
-        pause()
-        view.free()
-        // For the next surface: libghostty keeps what it receives meanwhile.
-        session.receive(Self.modes)
-    }
-
-    func close() {
-        hide()
-        tasks.forEach { $0.cancel() }
     }
 
     func takeBack() {
@@ -313,15 +300,28 @@ final class PaneTerminal {
 }
 
 extension PaneTerminal {
-    /// Its page's session answers: a stream that failed then is the pane's own.
-    var live: Bool {
-        view.store()?.state == .live
+    func pause() {
+        guard shown else { return }
+        shown = false
+        pending = []
+        paste = nil
+        end()
     }
 
-    func scroll(lines: Int, column: Int, row: Int, modifiers: Int) {
-        if state == .live {
-            stream?.scroll(lines: lines, column: column, row: row, modifiers: modifiers)
+    func hide() {
+        pause()
+        // Its next stream is a fresh one: its card loads then, not "stopped".
+        if state.isFailed {
+            state = .idle
         }
+        view.free()
+        // For the next surface: libghostty keeps what it receives meanwhile.
+        session.receive(Self.modes)
+    }
+
+    func close() {
+        hide()
+        tasks.forEach { $0.cancel() }
     }
 
     func resize(columns: Int, rows: Int) {
@@ -341,6 +341,11 @@ extension PaneTerminal {
         open()
     }
 
+    /// Its page's session answers (and is not checking a failed read): a stream that fails then is the pane's own.
+    var live: Bool {
+        view.store().map { $0.state == .live && !$0.checking } ?? false
+    }
+
     func mouse(_ action: TerminalStream.MouseAction, _ button: TerminalStream.MouseButton,
                column: Int, row: Int, modifiers: Int)
     {
@@ -351,6 +356,12 @@ extension PaneTerminal {
             takeBack()
         } else if state == .live {
             stream?.mouse(action, button, column: column, row: row, modifiers: modifiers)
+        }
+    }
+
+    func scroll(lines: Int, column: Int, row: Int, modifiers: Int) {
+        if state == .live {
+            stream?.scroll(lines: lines, column: column, row: row, modifiers: modifiers)
         }
     }
 

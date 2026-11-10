@@ -35,9 +35,9 @@ stops them instead (SIGSTOP, as a process that hangs), /<session>/web-resume let
 only lists them.
 POST /<session>/forget-windows removes the Debug build's saved windows ($TMPDIR/dev.ovvi.app.debug.savedState): a test
 that restores windows starts from none, not from an earlier test's.
-POST /<session>/ssh-unresolve with an SSH target as the body points its ~/.ssh/config HostName at `<target>.invalid`,
-on CI only, so a new connection fails as with no network ("Could not resolve hostname"); /<session>/ssh-resolve puts
-127.0.0.1 back.
+POST /<session>/ssh-hostname with an SSH target and a host name as the body sets that HostName in its ~/.ssh/config
+block, on CI only: `<target>.invalid` fails a new connection at once (no network), 192.0.2.1 after its 10 s
+ConnectTimeout (a link that is down), 127.0.0.1 is CI's sshd again.
 POST /<session>/ssh-forget with an SSH target as the body removes its host key from ~/.ssh/known_hosts, on CI only, so
 ssh asks for it again.
 POST /<session>/swipe with "x y step steps [pause [vertical [option]]]" as the body posts a two-finger trackpad swipe there (scripts/swipe.swift).
@@ -88,8 +88,7 @@ for name in ("swipe", "pinch", "drag", "file-drag"):
         joined.write(open("scripts/posting.swift").read() + open(f"scripts/{name}.swift").read())
 WEB = {"web-kill": signal.SIGKILL, "web-stop": signal.SIGSTOP, "web-resume": signal.SIGCONT, "web-pids": None}
 CI_ONLY = {"ssh-stop": "it stops a live ControlMaster", "ssh-unforward": "it changes a live ControlMaster",
-           "ssh-forget": "it writes ~/.ssh/known_hosts", "ssh-unresolve": "it writes ~/.ssh/config",
-           "ssh-resolve": "it writes ~/.ssh/config"}
+           "ssh-forget": "it writes ~/.ssh/known_hosts", "ssh-hostname": "it writes ~/.ssh/config"}
 builds = {name: subprocess.Popen(["swiftc", f"{tools}/{name}.swift" if name != "usage" else "scripts/usage.swift",
                                   "-o", f"{tools}/{name}"], stderr=open(f"{tools}/{name}.log", "wb"))
           for name in ("swipe", "pinch", "drag", "file-drag", "usage")}
@@ -154,7 +153,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
             status, reply = 403, f"refusing session '{session}'".encode()
         elif action in ("control", "takeover") and not re.fullmatch(rb"\w[\w-]*", body):
             status, reply = 400, b"the body must be a terminal id"
-        elif action.startswith("ssh-") and action != "ssh-connections" and not re.fullmatch(rb"\w[\w-]*", body):
+        elif action == "ssh-hostname" and not re.fullmatch(rb"\w[\w-]* [\w.-]+", body):
+            status, reply = 400, b"the body must be an SSH target and a host name"
+        elif action.startswith("ssh-") and action not in ("ssh-connections", "ssh-hostname") \
+                and not re.fullmatch(rb"\w[\w-]*", body):
             status, reply = 400, b"the body must be an SSH target"
         elif action == "pinch" and not re.fullmatch(rb"-?[\d.]+( -?[\d.]+){3}", body):
             status, reply = 400, b"the body must be x y step steps"
@@ -255,15 +257,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif action == "forget-windows":
             shutil.rmtree(os.path.join(tempfile.gettempdir(), "dev.ovvi.app.debug.savedState"), ignore_errors=True)
             status, reply = 200, b""
-        elif action in ("ssh-unresolve", "ssh-resolve"):
-            config, target = os.path.expanduser("~/.ssh/config"), body.decode()
-            known, unknown = f"Host {target}\n  HostName 127.0.0.1\n", f"Host {target}\n  HostName {target}.invalid\n"
+        elif action == "ssh-hostname":
+            config, (target, name) = os.path.expanduser("~/.ssh/config"), body.decode().split()
             text = open(config).read()
-            new = text.replace(*(known, unknown) if action == "ssh-unresolve" else (unknown, known))
+            new = re.sub(rf"(?m)^(Host {re.escape(target)}\n  HostName ).*$", lambda m: m.group(1) + name, text)
             with open(config, "w") as file:
                 file.write(new)
-            status, reply = (200, b"") if new != text or (known if action == "ssh-resolve" else unknown) in text \
-                else (500, f"no Host {target} block".encode())
+            status, reply = (200, b"") if f"Host {target}\n  HostName {name}\n" in new else (500, b"no such Host block")
         elif action == "ssh-forget":
             run = subprocess.run(["ssh-keygen", "-R", body.decode()], capture_output=True)
             status, reply = (200, b"") if run.returncode == 0 else (500, run.stderr)

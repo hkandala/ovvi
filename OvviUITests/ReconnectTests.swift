@@ -2,34 +2,41 @@ import XCTest
 
 /// A remote page while its machine reconnects (ui/states): the page says so once, over its cards.
 extension OvviUITests {
-    /// Key Host unreachable (its name does not resolve, as with no network) after its master went: Reconnecting with
-    /// ssh's reason, and no card that says its terminal stopped, also on a workspace first shown meanwhile (its cards
-    /// try to stream and fail). Back once the name resolves, with no stopped card between. In both looks.
+    /// Key Host's master gone and Key Host unreachable. While the app finds out why (a link that is down: ssh waits out
+    /// its 10 s ConnectTimeout), and then while it shows Reconnecting with ssh's reason, no card says its terminal
+    /// stopped and no card shows anything under the page's state, also on a workspace first shown meanwhile (its cards
+    /// try to stream and fail). Back once Key Host answers, with no stopped card between. In both looks.
     func testAReconnectingPageShowsItsStateOnce() async throws {
         try await skipWithoutSSH()
-        addTeardownBlock { [one] in _ = try? await Self.post("\(one)/ssh-resolve", Data("ovvi-key".utf8)) }
+        addTeardownBlock { [one] in _ = try? await Self.post("\(one)/ssh-hostname", Data("ovvi-key 127.0.0.1".utf8)) }
+        let stopped = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'pane.' AND identifier "
+                + "ENDSWITH '.retry'")).firstMatch
+        let reconnecting = element("detail.reconnecting")
         for appearance in ["dark", "light"] {
             relaunch(one, Self.onKeyHost + ["-appearance", appearance])
             XCTAssertTrue(drawn("w1:p2", within: connect), element("pane.w1:p2").stringValue)
-            _ = try await Self.post("\(one)/ssh-unresolve", Data("ovvi-key".utf8))
+            // The link down only once: the light pass goes straight to a name that does not resolve.
+            try await hostname(appearance == "dark" ? "192.0.2.1" : "ovvi-key.invalid")
             _ = try await Self.post("\(one)/ssh-drop", Data("ovvi-key".utf8))
-            let reconnecting = element("detail.reconnecting")
+            XCTAssertFalse(until(6) { stopped.exists }, "a card says its terminal stopped before Reconnecting")
             XCTAssertTrue(reconnecting.exists(within: connect))
-            XCTAssertTrue(until(connect) { (element("detail.reconnecting.detail").value as? String ?? "")
-                    .contains("Could not resolve hostname")
-            })
-            let stopped = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'pane.' AND identifier "
-                    + "ENDSWITH '.retry'")).firstMatch
-            XCTAssertFalse(until(4) { stopped.exists }, "a card says its terminal stopped")
+            XCTAssertFalse(element("detail.reconnecting.detail").stringValue.isEmpty)
+            XCTAssertTrue(element("terminal.w1:p2").vanishes(within: 3), "a card shows under Reconnecting")
+            try await hostname("ovvi-key.invalid")
             element("workspace.w2").click()
-            XCTAssertFalse(until(8) { stopped.exists }, "a card first shown says its terminal stopped")
+            XCTAssertFalse(until(6) { stopped.exists }, "a card first shown says its terminal stopped")
             keepScreenshot("reconnecting \(appearance)")
             element("workspace.w1").click()
-            _ = try await Self.post("\(one)/ssh-resolve", Data("ovvi-key".utf8))
-            XCTAssertTrue(reconnecting.vanishes(within: connect))
-            XCTAssertFalse(until(6) { stopped.exists }, "a card says its terminal stopped once back")
+            try await hostname("127.0.0.1")
+            XCTAssertTrue(reconnecting.vanishes(within: 45))
+            XCTAssertFalse(until(4) { stopped.exists }, "a card says its terminal stopped once back")
             XCTAssertTrue(drawn("w1:p2", within: connect), element("pane.w1:p2").stringValue)
             keepScreenshot("back \(appearance)")
         }
+    }
+
+    /// Key Host's HostName in CI's ~/.ssh/config.
+    private func hostname(_ name: String) async throws {
+        _ = try await Self.post("\(one)/ssh-hostname", Data("ovvi-key \(name)".utf8))
     }
 }

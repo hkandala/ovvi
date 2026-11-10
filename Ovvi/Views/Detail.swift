@@ -75,6 +75,7 @@ struct Detail: View {
             // Reconnecting in one branch, so the page keeps its state through it.
             let reconnecting = store.reconnecting
             tabs()
+                // Before the overlay: the page's own Loader still draws.
                 .environment(\.pageReconnecting, reconnecting)
                 .opacity(reconnecting ? 0.5 : 1)
                 .allowsHitTesting(!reconnecting)
@@ -211,7 +212,7 @@ private struct TabPages: View {
 
 extension EnvironmentValues {
     @Entry var pageHidden = false
-    /// The page shows Reconnecting over its cards: theirs says it once, so no card shows a state of its own.
+    /// The page shows Reconnecting over its cards: it says it once, so no card or empty page shows a state of its own.
     @Entry var pageReconnecting = false
 }
 

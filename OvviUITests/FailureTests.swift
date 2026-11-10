@@ -140,6 +140,8 @@ extension OvviUITests {
         for label in 0 ..< 6 {
             try await relabel(pane, "stopped \(label)")
             try await Task.sleep(for: .milliseconds(250))
+            // A retry keeps its panel: no blink to the card's fill.
+            XCTAssertTrue(retry.exists, "turn \(label)")
         }
         let opened = try await opens()
         XCTAssertLessThanOrEqual(opened, 2)

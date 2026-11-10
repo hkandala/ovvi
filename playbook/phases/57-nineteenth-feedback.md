@@ -585,6 +585,17 @@ runs and on-demand on the final head.
   WebKit already holds (a Reload of the same page) on a master that stays stopped waits WebKit's 60 s; a link that
   hangs ends it sooner (`-O exit`, or ServerAlive in 15 s). Runs: green 42546671665 and 42547529376 (2 tests each,
   the stopped master among them).
+- **Item 83, overlapping Reconnecting (round 7).** Two owners drew a card's state: the page's Reconnecting overlay
+  and each card's own ("The terminal stopped", read from its stream and its page's store). The user's build already
+  had the card's `live` check and still drew both (the shot is from 12:39 PM, after it). Two ways in: a failed read
+  keeps the store `.live` while it finds out why (up to ssh's 10 s ConnectTimeout with the link down), so cards said
+  "stopped" with no overlay yet; and a card's own state stayed drawn under the overlay. Now the page owns it: while
+  it checks, `live` is false (no card failure); while it shows Reconnecting it tells its cards (an environment value),
+  each covers its content with its fill and leaves the accessibility tree, and no empty state or loader draws. Once
+  back, a card whose stream failed meanwhile loads instead of saying "stopped"; a failing stream's later retries still
+  keep the panel (no blink, now checked each turn). The test downs Key Host's link (HostName 192.0.2.1), then makes
+  its name unresolvable, kills its master, and checks before, during (also a workspace first shown) and after.
+  Red on the old code: 42908657892 ("stopped once back"). Pictures: `~/Downloads/ovvi-research/p57f/r7/`.
 - **For the user.** With a devvm-aai browser card open, sleep the Mac for a while, wake it, and reload: the page loads
   without closing the window.
 
