@@ -45,6 +45,22 @@ extension OvviUITests {
         XCTAssertFalse(welcomeNext.exists(within: 2), "the welcome again after it was done")
     }
 
+    /// A key during the intro goes straight to the first page, never past it. The panes page steps through its
+    /// pictures by itself and stays on the last (with Reduce Motion, CI's, it shows the last at once).
+    func testTheWelcomeIntroSkipsAndThePanesPageSteps() throws {
+        relaunch(one, ["-welcomeDone", "NO"])
+        XCTAssertTrue(app.windows["welcome"].exists(within: connect))
+        XCTAssertFalse(welcomeNext.exists, "the pages before the intro played")
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(welcomeNext.exists(within: 1.5), "the intro went on after a key")
+        XCTAssertTrue(welcomePage.hasPrefix("1 of "), welcomePage)
+        app.typeKey(.rightArrow, modifierFlags: [])
+        let picture = element("welcome.picture")
+        XCTAssertTrue(picture.has(\.label, "⇧⌘D", within: 9), picture.label)
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(welcomeNext.vanishes(within: 3))
+    }
+
     /// Settings ▸ General ▸ Show Welcome, found by a search, opens it again; Esc skips it from its first page.
     func testSettingsShowsTheWelcomeAgain() {
         relaunch(one)
@@ -150,15 +166,18 @@ extension OvviUITests {
                 throw XCTSkip("\(error)")
             }
             XCTAssertTrue(welcomeNext.exists(within: connect))
-            try await Task.sleep(for: .seconds(4))
-            let install = element("welcome.herdr.install")
+            let install = element("welcome.herdr.install"), picture = element("welcome.picture")
             while welcomeNext.label != "Get Started" {
-                if install.exists {
-                    install.click()
-                    _ = welcomeNext.has(\.isEnabled, true, within: connect)
-                }
-                try await Task.sleep(for: .seconds(4))
+                // The panes and plugins pages step through three pictures, 2.8 s apart; the page settles first.
+                try await Task.sleep(for: .seconds(0.8))
+                let steps = picture.exists && ["New pane", "Browser"].contains(picture.label)
+                try await Task.sleep(for: .seconds(steps ? 7.7 : 3.7))
                 welcomeNext.click()
+            }
+            if install.exists {
+                try await Task.sleep(for: .seconds(2))
+                install.click()
+                _ = welcomeNext.has(\.isEnabled, true, within: connect)
             }
             try await Task.sleep(for: .seconds(4))
             welcomeNext.click()

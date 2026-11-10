@@ -8,13 +8,25 @@ corners, the window's glass (Classic: opaque), a shadow. Drag its background to 
 idea each, and the user turns them with Next and Back, → and ←, or Return. Skip (or Esc) closes it from any page;
 Get Started closes it on the last.
 
+- **The intro** (about 2.5 s). The app's icon settles from 92 % and a soft blur to sharp, and the name "Ovvi" rises
+  under it as its letters close up. Then the icon glides up into the panel's top left corner, where it stays as a
+  small mark, and the first page fades in. A key or a click goes straight to the first page; Esc skips.
+- **Pages.** Seven, one topic each: Welcome to Ovvi (sessions keep running), Panes and splits, Tabs, Spaces, Agents
+  as a terminal or a chat, Plugins built in and your own, Any machine you can ssh to. Each has a picture on top, its
+  title and two or three sentences below (keys as keycaps), and dots. The picture is a 2x capture of Ovvi's window,
+  framed on the part the words talk about with a slow push-in (never past the capture's own size, so it stays sharp),
+  one ring and a small label. The panes and plugins pages step through three pictures by themselves. Pages
+  cross-fade with a slight slide.
+- **Pictures** are HEIC files in the app, a dark and a light set; the panel shows the set of the app's appearance
+  and switches with it. `scripts/welcome-scene.sh` makes them again.
+
 - **When.** On the first launch, over the new-window view. Get Started, Skip or Esc mark it done (`welcomeDone`),
   and it never opens by itself again; a quit with it open does not, so the next launch shows it again. Settings ▸
   General ▸ Welcome to Ovvi ▸ Show Welcome opens it again. It hides while Ovvi is not the active app, and the menu
   bar's keys do nothing behind it but Quit, Hide and Settings. A run by hand of a test or Debug build passes
   `-welcomeDone YES`; `defaults delete dev.ovvi.app.debug welcomeDone` shows a first launch again.
-- **herdr.** When This Mac has no herdr, one page installs it: one line on what it is, Install (the same install
-  as the not-installed page, [states](/docs/ui/states)), its progress, and a failure with Retry. Next waits until
-  herdr is found; Skip still closes. With herdr installed the page is not there.
+- **herdr.** When This Mac has no herdr, one last page ("One more thing") installs it: one line on what it is,
+  Install (the same install as the not-installed page, [states](/docs/ui/states)), its progress, and a failure with
+  Retry. Get Started waits until herdr is found; Skip still closes. With herdr installed the page is not there.
 - **Nothing changes in the app** while it shows: its pictures are pictures.
-- **Reduce Motion:** pages cross-fade, nothing moves.
+- **Reduce Motion:** the intro and the pages fade; a picture shows its last frame, still, with no steps.
