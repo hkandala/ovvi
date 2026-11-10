@@ -1615,3 +1615,6 @@ you did, no need of reverting them".
     And: "also explore in different variations to have some beautiful animations of our logo and show the app name and
     logo first and then fade in to onobarding flow something like that? basically it should look highly polished and
     well crafted onboarding flow with unique but minimal and modern animations".
+    And: "we should increase teh onboarding sheet should be bigger so its visisble well, take very high quality
+    screenshots, zoom within screenshots when explaining in the flow, screenshots should take both in dark mode and
+    light mode, and onboaridng uses relevant screenshots based on which mode it opens in".
