@@ -171,9 +171,18 @@ final class WelcomePictures {
         images = images.filter { names.contains($0.key) }
     }
 
+    /// Drawn into a plain bitmap here: Core Animation took a HEIC's image as it came on the main thread, at its
+    /// first frame (a 216 ms and a 500 ms hitch as a page came in).
     private nonisolated static func decode(_ name: String) -> CGImage? {
         guard let url = Bundle.main.url(forResource: "welcome-\(name)", withExtension: "heic"),
-              let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
-        return CGImageSourceCreateImageAtIndex(source, 0, [kCGImageSourceShouldCacheImmediately: true] as CFDictionary)
+              let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let image = CGImageSourceCreateImageAtIndex(source, 0, nil),
+              let space = image.colorSpace,
+              let context = CGContext(data: nil, width: image.width, height: image.height, bitsPerComponent: 8,
+                                      bytesPerRow: 0, space: space, bitmapInfo: CGImageAlphaInfo.premultipliedFirst
+                                          .rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
+        else { return nil }
+        context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        return context.makeImage()
     }
 }
