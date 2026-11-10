@@ -9,28 +9,24 @@ struct HerdrStep: View {
 
     var body: some View {
         let machine = Machine.thisMac
-        let step = HerdrInstall.shared.steps[machine.id]
-        // The page's title and sentence say what it is (WelcomeView); this is the picture's place.
-        VStack(spacing: 18) {
+        // The page's title and line say why (WelcomeView); this is the picture's place: herdr's logo and its install.
+        VStack(spacing: 20) {
             if found {
-                Image(systemName: "checkmark.circle.fill").font(.system(size: 52)).foregroundStyle(look.finished)
-                    .symbolRenderingMode(.hierarchical).transition(.scale(scale: 0.8).combined(with: .opacity))
+                Image(systemName: "checkmark.circle.fill").font(.system(size: 76)).foregroundStyle(look.finished)
+                    .transition(.scale(scale: 0.8).combined(with: .opacity))
                 Text("herdr is installed").font(.system(size: 15, weight: .medium))
             } else {
-                HStack(alignment: .top, spacing: 36) {
-                    point("play.circle", "Runs in the background")
-                    point("macwindow", "Close the window,\nnothing stops")
-                    point("antenna.radiowaves.left.and.right", "Reconnect\nfrom another Mac")
-                }
-                .padding(.bottom, 8)
-                switch step {
+                // herdr's own logo (github.com/herdrdev/herdr, assets/logo.svg; Apache-2.0, Acknowledgements).
+                Image("HerdrLogo").resizable().scaledToFit().frame(width: 112, height: 112).foregroundStyle(.primary)
+                    .accessibilityLabel("herdr")
+                switch HerdrInstall.shared.steps[machine.id] {
                 case let .running(line):
                     HStack(spacing: 8) {
                         ProgressView().controlSize(.small)
-                        Text(line.isEmpty ? "Installing herdr…" : line).font(.system(size: 12))
+                        Text(line.isEmpty ? "Installing herdr…" : line).font(.system(size: 13))
                             .foregroundStyle(.secondary).lineLimit(1).accessibilityIdentifier("welcome.herdr.progress")
                     }
-                    .frame(height: 30)
+                    .frame(height: 32)
                 case let .failed(text):
                     Text("herdr did not install").font(.system(size: 13, weight: .medium))
                     Text(text).font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary).lineLimit(4)
@@ -54,15 +50,6 @@ struct HerdrStep: View {
                 try? await Task.sleep(for: .seconds(1))
             }
         }
-    }
-
-    private func point(_ symbol: String, _ text: String) -> some View {
-        VStack(spacing: 8) {
-            Image(systemName: symbol).font(.system(size: 22, weight: .light)).foregroundStyle(.secondary)
-                .frame(height: 26)
-            Text(text).font(.system(size: 12)).foregroundStyle(.secondary).multilineTextAlignment(.center)
-        }
-        .frame(width: 140)
     }
 
     private func install() {

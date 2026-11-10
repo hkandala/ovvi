@@ -8,7 +8,7 @@
 # Takes the GUI lock (or runs under the user's own hold); Ctrl-C stops it and cleans up what it started.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-REPO=$PWD WORLD=onboarding S=workbench SIZE=1280x640
+REPO=$PWD WORLD=onboarding S=workbench SIZE=1200x800
 W=/tmp/$WORLD C=/tmp/$WORLD-clips CLIPS=$REPO/Ovvi/Onboarding/Clips OUT=$HOME/Downloads/ovvi-research/onboarding-v4
 export DERIVED_DATA=${DERIVED_DATA:-/tmp/ovvi-dd-$WORLD}
 export OVVI_APP=$DERIVED_DATA/Build/Products/Release/Ovvi.app
@@ -199,8 +199,8 @@ machines() {
     wrap
 }
 
-# The whole window at the film's 2x, its buttons from the picture taken before it filmed, at 1824 x 912 pixels (2x of
-# the picture's 912 x 456 points), 60 fps; its last half second fades back to its first frame, so the loop has no
+# The whole window at the film's 2x, its buttons from the picture taken before it filmed, at 1920 x 1280 pixels (2x of
+# the welcome panel's 960 x 640 points, which the clip fills), 60 fps; its last half second fades back to its first frame, so the loop has no
 # seam. HEVC Main 4:2:0, bt709, at a quality where no artifact shows at 100%.
 encode() {
     local film="$C/$1-$2.mp4" length wx wy ww wh
@@ -209,7 +209,7 @@ encode() {
     mkdir -p "$CLIPS"
     ffmpeg -loglevel error -y -i "$film" -i "$C/buttons-$2.png" -filter_complex "[0:v]fps=60,\
 crop=$((ww * 2)):$((wh * 2)):$((wx * 2)):$((wy * 2))[w];[1:v]crop=200:88:0:0[b];[w][b]overlay=0:0,\
-scale=1824:912:flags=lanczos,format=yuv420p,split[a][f];[f]trim=end_frame=1,loop=loop=60:size=1,setpts=N/60/TB,fps=60[s];\
+scale=1920:1280:flags=lanczos,format=yuv420p,split[a][f];[f]trim=end_frame=1,loop=loop=60:size=1,setpts=N/60/TB,fps=60[s];\
 [a][s]xfade=transition=fade:duration=0.5:offset=$(python3 -c "print(round($length - 0.6, 2))"),format=yuv420p[v]" \
         -map "[v]" -c:v libx265 -tag:v hvc1 -crf "${CRF:-24}" -preset slow -an -movflags +faststart \
         -x265-params log-level=error:colorprim=bt709:transfer=bt709:colormatrix=bt709 "$CLIPS/welcome-$1-$2.mp4"

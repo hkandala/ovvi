@@ -15,12 +15,11 @@ struct WelcomeView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
 
-    /// The picture's frame in the panel (`Welcome.size`); its corners are the filmed window's own, at the clips' scale.
-    static let picture = CGRect(x: 24, y: 24, width: 912, height: 456)
-    private static let frame = RoundedRectangle(cornerRadius: 12, style: .continuous)
-    /// The clips show the app's whole 1280 x 640 pt window at this scale (scripts/record-onboarding.sh: 1824 x 912
+    /// The clips fill the panel (`Welcome.size`).
+    static let picture = CGRect(origin: .zero, size: Welcome.size)
+    /// The clips show the app's whole 1200 x 800 pt window at this scale (scripts/record-onboarding.sh: 1920 x 1280
     /// pixels).
-    static let pictureScale: CGFloat = 0.7125
+    static let pictureScale: CGFloat = 0.8
     /// Where the logo's panes go, back to front, as fractions of the first clip's frame (measured on its first
     /// frame): the window's sidebar and its two panes.
     private static let firstPanes = [CGRect(x: 0.0044, y: 0.0625, width: 0.2148, height: 0.932),
@@ -30,19 +29,19 @@ struct WelcomeView: View {
     private enum Page: String {
         case running, layout, agents, plugins, machines, herdr
 
-        /// The picked words; the others the user may choose from are in the report (onboarding-v4.html).
+        /// The words the user picked (phase 57, item 78).
         func words(herdrFound: Bool) -> (title: String, text: String) {
             switch self {
-            case .running: ("Pick up where you left off", "Terminals, agents and tools run in sessions that keep "
-                    + "going when you close the window or quit Ovvi.")
-            case .layout: ("Split. Tab. Switch.", "⌘D splits a pane, ⌘T opens a tab, and each project gets its own "
-                    + "space in the sidebar.")
-            case .agents: ("TUI or chat, any time", "Switch seamlessly between an agent's terminal and its chat "
-                    + "view. Orange needs you, blue is working, green is done.")
-            case .plugins: ("Bring your tools in", "Git, Browser and File Explorer come built in. Write your own in "
-                    + "TypeScript; you and agents open them with `ovvi`.")
-            case .machines: ("Reach your other machines", "Add any machine you can ssh to. Its sessions get their own "
-                    + "window and keep running while your Mac sleeps.")
+            case .running: ("Your work keeps running", "Terminals, agents and tools live in sessions. Close the window "
+                    + "or quit Ovvi, and they keep going.")
+            case .layout: ("Panes, tabs and spaces", "Split a pane with ⌘D, open a tab with ⌘T, and keep each project "
+                    + "in its own space.")
+            case .agents: ("Work with agents your way", "Watch an agent in its terminal, then switch to the chat when "
+                    + "it suits you: the same agent, mid-task.")
+            case .plugins: ("Everything you need, right there", "Open Git, a browser or your files beside any pane. "
+                    + "Need something else? Make a plugin in TypeScript.")
+            case .machines: ("Remote, without the hassle", "Any machine you can ssh to: the same panes and agents, "
+                    + "still running while your Mac sleeps.")
             case .herdr where herdrFound: ("You're all set", "Your sessions will keep running from here on. Get "
                     + "Started, and open a folder or a session.")
             case .herdr: ("One more thing: herdr", "It keeps your sessions running in the background, so nothing "
@@ -78,28 +77,38 @@ struct WelcomeView: View {
         let blocked = current == .herdr && !herdrFound
         let words = current.words(herdrFound: herdrFound)
         let playing = shown && current != .herdr ? clip(current, dark: dark) : nil
-        VStack(spacing: 0) {
-            picture(current, look: look, dark: dark).opacity(shown ? 1 : 0)
-            // In one place, and never both at once: the old words go before the new ones come.
-            ZStack {
-                VStack(spacing: 6) {
-                    Text(words.title).font(.system(size: 24, weight: .semibold))
-                    Text(LocalizedStringKey(words.text)).font(.system(size: 15)).foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center).lineSpacing(2).frame(maxWidth: 760)
+        // The clip fills the panel; the words and buttons sit over its foot, on a shade that keeps them legible.
+        ZStack(alignment: .bottom) {
+            picture(current, dark: dark).opacity(shown ? 1 : 0)
+            LinearGradient(stops: [.init(color: Look.shade(dark).opacity(0), location: 0),
+                                   .init(color: Look.shade(dark).opacity(0.62), location: 0.4),
+                                   .init(color: Look.shade(dark).opacity(0.86), location: 1)],
+                           startPoint: .top, endPoint: .bottom)
+                .frame(height: 270).allowsHitTesting(false).opacity(shown ? 1 : 0)
+            VStack(spacing: 22) {
+                // In one place, and never both at once: the old words go before the new ones come.
+                ZStack {
+                    VStack(spacing: 6) {
+                        Text(words.title).font(.system(size: 26, weight: .semibold))
+                        Text(LocalizedStringKey(words.text)).font(.system(size: 15))
+                            .foregroundStyle(.primary.opacity(0.82))
+                            .multilineTextAlignment(.center).lineSpacing(2).frame(maxWidth: 680)
+                    }
+                    .id(page * 2 + (herdrFound ? 1 : 0))
+                    .transition(.asymmetric(insertion: .opacity.animation(.easeOut(duration: 0.3).delay(0.15)),
+                                            removal: .opacity.animation(.easeIn(duration: 0.15))))
                 }
-                .id(page * 2 + (herdrFound ? 1 : 0))
-                .transition(.asymmetric(insertion: .opacity.animation(.easeOut(duration: 0.3).delay(0.15)),
-                                        removal: .opacity.animation(.easeIn(duration: 0.15))))
+                footer(last: last, blocked: blocked)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.horizontal, 28).padding(.bottom, 24)
             .opacity(shown ? 1 : 0)
-            footer(last: last, blocked: blocked).opacity(shown ? 1 : 0)
         }
-        .padding(Self.picture.minX)
+        .frame(width: Welcome.size.width, height: Welcome.size.height)
         .background(WelcomeBackground())
+        .clipShape(WelcomeBackground.shape)
         .overlay {
             if let intro {
-                WelcomeIntro(step: intro, center: CGPoint(x: Welcome.size.width / 2, y: Welcome.size.height / 2 - 24),
+                WelcomeIntro(step: intro, center: CGPoint(x: Welcome.size.width / 2, y: Welcome.size.height / 2 - 30),
                              panes: Self.firstPanes.map(\.inPicture))
                     .transition(.opacity)
             }
@@ -127,11 +136,10 @@ struct WelcomeView: View {
         .task { await playIntro() }
     }
 
-    private func picture(_ page: Page, look: Look, dark: Bool) -> some View {
-        let edge = look.edge(keyboard: false)
-        return ZStack {
+    private func picture(_ page: Page, dark: Bool) -> some View {
+        ZStack {
             if page == .herdr {
-                HerdrStep(found: $herdrFound).frame(maxWidth: .infinity, maxHeight: .infinity)
+                HerdrStep(found: $herdrFound).padding(.bottom, 170)
             } else {
                 // The test reads which look's clip shows (welcome.picture's value ends in dark or light).
                 let player = reels.player(clip(page, dark: dark))
@@ -141,22 +149,18 @@ struct WelcomeView: View {
                     .accessibilityValue(player == nil ? "missing" : "\(page.rawValue) \(dark ? "dark" : "light")")
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .id(page)
-        .transition(still ? .opacity : .asymmetric(insertion: .opacity.combined(with: .scale(scale: 0.97)),
-                                                   removal: .opacity.combined(with: .scale(scale: 1.02))))
-        .frame(width: Self.picture.width, height: Self.picture.height)
-        .background(look.cardSolid())
-        .clipShape(Self.frame)
-        // A card's own edge: the rim inside, the stroke just outside.
-        .overlay(Self.frame.strokeBorder(look.rim.all, lineWidth: 1))
-        .overlay(Self.frame.inset(by: -edge.width / 2).stroke(edge.color, lineWidth: edge.width))
+        // Over the whole panel: it comes in from a touch larger, never showing an edge.
+        .transition(still ? .opacity : .asymmetric(insertion: .opacity.combined(with: .scale(scale: 1.03)),
+                                                   removal: .opacity))
     }
 
     private func footer(last: Bool, blocked: Bool) -> some View {
         HStack(spacing: 8) {
             // The herdr step, last, waits for herdr: Skip still closes.
             if !last || blocked {
-                Button("Skip", action: finish).buttonStyle(.plain).foregroundStyle(.secondary)
+                Button("Skip", action: finish).buttonStyle(.plain).foregroundStyle(.primary.opacity(0.75))
                     .keyboardShortcut(.cancelAction).accessibilityIdentifier("welcome.skip")
             }
             Spacer()
@@ -172,7 +176,7 @@ struct WelcomeView: View {
         .overlay {
             HStack(spacing: 6) {
                 ForEach(pages.indices, id: \.self) { index in
-                    Capsule().fill(index == page ? Color.primary : Color.secondary.opacity(0.35))
+                    Capsule().fill(Color.primary.opacity(index == page ? 0.9 : 0.35))
                         .frame(width: index == page ? 16 : 6, height: 6)
                 }
             }

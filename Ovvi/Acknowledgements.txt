@@ -3140,8 +3140,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ========================================================================
 
-aider (the aider icon), jj (the jj icon) and Material Design Icons (the source.branch and text.wrap symbols), Apache-2.0
+aider (the aider icon), jj (the jj icon), herdr (its logo, on the welcome's herdr step: assets/logo.svg) and Material
+Design Icons (the source.branch and text.wrap symbols), Apache-2.0
 https://github.com/Aider-AI/aider
+https://github.com/herdrdev/herdr
 https://github.com/jj-vcs/jj
 https://github.com/Templarian/MaterialDesign
 

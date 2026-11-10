@@ -22,6 +22,10 @@ struct Look: Equatable {
     /// The logo's three panes, back to front, each top to bottom (resources/branding, measured), in every look.
     static let mark = [(Color(hex: 0x666769), Color(hex: 0x48484C)), (Color(hex: 0xADAEB2), Color(hex: 0x898B8F)),
                        (Color(hex: 0xF6F4F3), Color(hex: 0xE4E2DF))]
+    /// Under the welcome's words over its clips: the look's text reads on it over any picture.
+    static func shade(_ dark: Bool) -> Color {
+        dark ? .black : .white
+    }
 
     var backdrop: Color {
         dark ? .black.opacity(0.6) : .clear
