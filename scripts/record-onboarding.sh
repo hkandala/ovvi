@@ -171,14 +171,21 @@ agents() {
     # ⌃L: Claude Code draws its screen again, without the launch's lines above it.
     h pane send-keys "$c" ctrl+l >/dev/null
     sleep 1
+    # A first turn, off camera: it pushes Claude Code's header (this Mac's model and route) out of view.
+    h pane send-text "$c" "Read server.js and lib/links.js and tell me in a few short bullets what each one does." \
+        >/dev/null
+    h pane send-keys "$c" Enter >/dev/null
+    sleep 5
+    for _ in $(seq 90); do [ "$(h pane get "$c" | json "d['result']['pane'].get('agent_status')")" = idle ] && break
+        sleep 1; done
     h pane send-text "$c" "In public/app.js, show under each link's URL when it was created, like \"Created 3 days ago\". \
 Keep the change small, then run npm test." >/dev/null
     h pane send-keys "$c" Enter >/dev/null
-    # Rolls once it is at work: its first step shows. Chat shows once off camera first, so its history is drawn when
-    # the click shows it.
-    h pane wait-output "$c" --match "⎿" --timeout 90000 >/dev/null
-    # A few steps in, so the chat has a turn to show.
-    sleep 6
+    # Rolls once it is at work a few steps in, so the chat has a turn to show, and once the header is out of view.
+    # Chat shows once off camera first, so its history is drawn when the click shows it.
+    sleep 8
+    for _ in $(seq 60); do h pane read "$c" --source visible | grep -q "Claude Code v" || break; sleep 1; done
+    h pane read "$c" --source visible | grep -q "Claude Code v" && { echo "Claude Code's header stays in view" && exit 1; }
     o "$c" "$R/shortlink" view "$c" chat >/dev/null
     sleep 1.5
     o "$c" "$R/shortlink" view "$c" tui >/dev/null
