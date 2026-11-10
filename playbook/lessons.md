@@ -72,6 +72,9 @@ Problems that came back across phases, and the rule that stops each. How we work
 - **A pane's row that wraps at a space drops it.** herdr's `pane.read` keeps no trailing spaces, so a typed line
   read across a wrap lost its space (`claude--resume`) and missed its match on CI's narrow cards only. Wait with
   `waitFor(_:toShow:)`, which compares without whitespace.
+- **Profilers launch by bundle id.** `xctrace --launch` with an app name started the user's installed Ovvi.app with
+  test arguments (phase 57). Launch the test build by its full path, and delete the 12-26 GB traces it leaves in
+  `$TMPDIR` after each run: they filled the disk twice.
 
 ## CI and git
 
