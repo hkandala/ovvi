@@ -23,7 +23,6 @@ struct HerdrStep: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            // Under the words, past the icon.
             Group {
                 switch HerdrInstall.shared.steps[machine.id] {
                 case let .running(line):

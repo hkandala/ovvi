@@ -10,7 +10,6 @@ enum WelcomePage {
 struct WelcomePageView: View {
     let page: WelcomePage
     let forward: Bool
-    /// Reduce Motion: they fade in where they stand.
     let still: Bool
     @Binding var herdrFound: Bool
 
@@ -63,7 +62,7 @@ struct WelcomePageView: View {
             }
         case .machines:
             HStack(alignment: .center, spacing: 56) {
-                item(1, [Shot("menu", shown: 162)],
+                item(1, [Shot("menu", shown: 152)],
                      "**Any machine you can ssh to**, from the machine menu. Your SSH config works as it is.",
                      width: 330)
                 item(2, [Shot("machines", shown: 460)],
@@ -74,11 +73,9 @@ struct WelcomePageView: View {
         }
     }
 
-    /// Close-ups (more than one: a stack stepping down to the right), the line under them and the keys it names.
     private func item(_ order: Int, _ shots: [Shot], _ words: String, width: CGFloat? = nil,
                       keys: [String] = []) -> some View
     {
-        // VoiceOver reads the words for the picture.
         let label = words.replacing("**", with: "").replacing("`", with: "")
         return VStack(spacing: 12) {
             ZStack(alignment: .topLeading) {
@@ -161,7 +158,6 @@ struct Cutout: View {
     }
 }
 
-/// A key as the menus write it, on a cap of glass.
 private struct Keycap: View {
     let text: String
 

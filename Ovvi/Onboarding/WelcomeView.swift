@@ -16,10 +16,8 @@ struct WelcomeView: View {
     private var settings = AppSettings()
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
-    /// The panel's margins; the mark's corner sits in them.
     private static let inset = (side: 36.0, top: 24.0, bottom: 28.0)
 
-    /// Reduce Motion: cross-fades only.
     private var still: Bool {
         Animation.reduced
     }
@@ -78,7 +76,6 @@ struct WelcomeView: View {
                     .opacity(intro && named ? 1 : 0)
                 OvviMark(size: 22).position(corner).opacity(intro ? 0 : 1)
             } else {
-                // One mark for the intro and the corner: it moves and shrinks into the header.
                 OvviMark(size: 112, placed: placed)
                     .shadow(color: look.floatShadow, radius: intro ? 18 : 4, y: intro ? 8 : 1)
                     .scaleEffect(intro ? 1 : 22 / 112)

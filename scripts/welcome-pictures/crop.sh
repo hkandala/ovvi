@@ -16,7 +16,7 @@ browser expiry 750 200 300 210
 git darkmode 752 255 300 210
 files files 750 140 300 210
 plugin plugin 750 48 420 300
-menu menu 112 42 162 236
+menu menu 116 42 152 236
 machines machines 236 152 460 150
 "
 rm -rf "$assets"
