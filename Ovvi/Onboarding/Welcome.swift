@@ -49,15 +49,20 @@ enum Welcome {
         panel.collectionBehavior = [.fullScreenAuxiliary, .moveToActiveSpace]
         panel.isMovableByWindowBackground = true
         panel.isReleasedWhenClosed = false
-        // Drawn at its full size and scaled down as a whole on a small screen: at most 80% of the screen.
-        let visible = NSScreen.main?.visibleFrame.size ?? size
+        // Drawn at its full size and scaled down as a whole on a small screen: at most 80% of the screen; in its
+        // middle (scripts/record-window.swift films that rect).
+        let visible = NSScreen.main?.visibleFrame ?? CGRect(origin: .zero, size: size)
         let scale = min(1, 0.8 * visible.width / size.width, 0.8 * visible.height / size.height)
         let host = NSHostingView(rootView: WelcomeView(herdrMissing: herdrMissing) { close() }
             .frame(width: size.width, height: size.height).scaleEffect(scale)
             .frame(width: size.width * scale, height: size.height * scale))
         panel.contentView = host
-        panel.setContentSize(host.fittingSize)
-        panel.center()
+        let fitted = host.fittingSize
+        panel.setFrame(
+            CGRect(x: (visible.midX - fitted.width / 2).rounded(), y: (visible.midY - fitted.height / 2).rounded(),
+                   width: fitted.width, height: fitted.height),
+            display: false,
+        )
         panel.makeKeyAndOrderFront(nil)
         // The shadow follows the drawn corners, once they are drawn.
         DispatchQueue.main.async { panel.invalidateShadow() }
