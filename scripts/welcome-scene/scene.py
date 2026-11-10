@@ -208,26 +208,22 @@ INDEX = '''
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>shortlink</title>
+  <title>Links · shortlink</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <header>
-    <a class="brand" href="/"><span class="mark">↗</span> shortlink</a>
+    <a class="brand" href="/">shortlink</a>
     <nav><a href="/" class="here">Links</a><a href="/">Analytics</a><a href="/">Settings</a></nav>
   </header>
   <main>
-    <h1>Make it short.</h1>
-    <p class="lead">Paste a long address and share the short one. Links expire after 30 days unless you keep them.</p>
+    <div class="title"><h1>Links</h1><span id="total"></span></div>
     <form id="shorten">
-      <input name="url" type="url" placeholder="https://example.com/a/very/long/address" required>
-      <select name="days"><option value="30">30 days</option><option value="7">7 days</option><option value="0">Keep</option></select>
+      <input name="url" type="url" placeholder="Paste a long URL" aria-label="Long URL" required>
+      <select name="days" aria-label="Expires"><option value="30">30 days</option><option value="7">7 days</option><option value="0">Never</option></select>
       <button>Shorten</button>
     </form>
-    <section>
-      <div class="head"><h2>Recent links</h2><span id="total"></span></div>
-      <ul id="links"></ul>
-    </section>
+    <ul id="links"></ul>
   </main>
   <script type="module" src="/app.js"></script>
 </body>
@@ -236,14 +232,15 @@ INDEX = '''
 
 STYLE = '''
 :root {
-  --bg: #f6f7f9;
-  --card: #ffffff;
-  --text: #16181d;
-  --muted: #6b7280;
-  --line: #e6e8ec;
-  --accent: #4f46e5;
-  --soft: #eef0ff;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  --bg: #fbfbfa;
+  --surface: #ffffff;
+  --text: #1f2328;
+  --muted: #656d76;
+  --line: #e4e4e2;
+  --accent: #1f6feb;
+  --warn: #9a6700;
+  font: 15px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; }
@@ -251,70 +248,69 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 a { color: inherit; text-decoration: none; }
 
 header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 18px 32px; border-bottom: 1px solid var(--line); background: var(--card);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px;
+  padding: 14px 24px; border-bottom: 1px solid var(--line);
 }
-.brand { font-weight: 650; font-size: 17px; letter-spacing: -0.01em; }
-.mark {
-  display: inline-grid; place-items: center; width: 26px; height: 26px; margin-right: 6px;
-  border-radius: 8px; background: var(--accent); color: white; font-size: 15px;
-}
-nav { display: flex; gap: 22px; font-size: 14px; color: var(--muted); }
-nav .here { color: var(--text); font-weight: 550; }
+.brand { font-weight: 600; letter-spacing: -0.01em; }
+nav { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 14px; color: var(--muted); }
+nav .here { color: var(--text); }
 
-main { max-width: 760px; margin: 0 auto; padding: 44px 32px; }
-h1 { margin: 0; font-size: 34px; letter-spacing: -0.03em; }
-.lead { margin: 8px 0 24px; color: var(--muted); font-size: 15px; line-height: 1.5; }
+main { max-width: 720px; margin: 0 auto; padding: 28px 24px 48px; }
+.title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.015em; }
+#total { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
 
-form {
-  display: flex; gap: 8px; padding: 8px; border: 1px solid var(--line); border-radius: 14px;
-  background: var(--card); box-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px rgb(0 0 0 / 0.04);
-}
-input, select { border: 0; font: inherit; font-size: 15px; background: transparent; color: inherit; }
-input { flex: 1; padding: 10px 12px; outline: none; }
-select { padding: 0 8px; color: var(--muted); }
-button {
-  border: 0; border-radius: 10px; padding: 10px 18px; font: inherit; font-weight: 600;
-  background: var(--accent); color: white; cursor: pointer;
-}
+form { display: flex; gap: 8px; margin-bottom: 20px; }
+input, select, button { font: inherit; font-size: 14px; border-radius: 7px; }
+input, select { border: 1px solid var(--line); background: var(--surface); color: var(--text); padding: 8px 10px; }
+input { flex: 1; min-width: 0; }
+select { color: var(--muted); }
+button { border: 0; padding: 8px 14px; background: var(--text); color: var(--surface); font-weight: 500; cursor: pointer; }
 
-section { margin-top: 36px; }
-.head { display: flex; align-items: baseline; justify-content: space-between; }
-h2 { margin: 0 0 12px; font-size: 15px; }
-#total { color: var(--muted); font-size: 13px; }
-ul { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
-li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 16px; align-items: center; padding: 14px 18px; }
-li + li { border-top: 1px solid var(--line); }
-.code { font-weight: 600; font-size: 14px; color: var(--accent); }
-.url { margin-top: 3px; font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.clicks { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.left {
-  padding: 3px 9px; border-radius: 99px; font-size: 12px; font-weight: 550;
-  background: var(--soft); color: var(--accent); white-space: nowrap;
+ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+li {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto 96px; gap: 4px 20px; align-items: center;
+  padding: 12px 2px; border-bottom: 1px solid var(--line);
 }
-.left.soon { background: #fff4e5; color: #b45309; }
-.left.kept { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+.code { font-weight: 500; color: var(--accent); }
+.url { margin-top: 2px; font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.clicks { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.left { font-size: 13px; color: var(--muted); text-align: right; white-space: nowrap; }
+.left.soon { color: var(--warn); }
+.left.kept { color: var(--muted); }
+
+/* A narrow window: the form stacks, each link puts its numbers under its address. */
+@media (max-width: 560px) {
+  header { padding: 12px 16px; }
+  main { padding: 20px 16px 40px; }
+  form { flex-wrap: wrap; }
+  input { flex-basis: 100%; }
+  select { flex: 1; }
+  li { grid-template-columns: auto 1fr; }
+  li > div { grid-column: 1 / -1; }
+  .clicks, .left { text-align: left; }
+}
 '''
 
 DARK = '''
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0f1115;
-    --card: #171a21;
-    --text: #e8eaef;
-    --muted: #9097a3;
-    --line: #262a33;
-    --accent: #8b85ff;
-    --soft: #23224a;
+    --bg: #16171a;
+    --surface: #1d1f23;
+    --text: #e6e6e3;
+    --muted: #9a9ea6;
+    --line: #2b2d32;
+    --accent: #6ea8fe;
+    --warn: #d4a72c;
+    color-scheme: dark;
   }
-  .left.soon { background: #3a2a12; color: #f4b65f; }
 }
 
 :root[data-theme="dark"] { color-scheme: dark; }
 :root[data-theme="light"] { color-scheme: light; }
 
 .theme {
-  border: 1px solid var(--line); border-radius: 8px; padding: 5px 9px;
+  border: 1px solid var(--line); border-radius: 7px; padding: 3px 8px;
   background: transparent; color: var(--muted); font-size: 13px;
 }
 '''
@@ -325,14 +321,14 @@ const list = document.querySelector("#links");
 const DAY = 24 * 60 * 60 * 1000;
 
 function left(link) {
-  if (link.expiresAt === null) return `<span class="left kept">Kept</span>`;
+  if (link.expiresAt === null) return `<span class="left kept">Never expires</span>`;
   const days = Math.ceil((link.expiresAt - Date.now()) / DAY);
   return `<span class="left${days <= 7 ? " soon" : ""}">${days} days left</span>`;
 }
 
 async function load() {
   const links = await (await fetch("/api/links")).json();
-  document.querySelector("#total").textContent = `${links.reduce((n, l) => n + l.clicks, 0).toLocaleString()} clicks`;
+  document.querySelector("#total").textContent = `${links.length} links · ${links.reduce((n, l) => n + l.clicks, 0).toLocaleString()} clicks`;
   list.innerHTML = links.map((link) => `
     <li>
       <div><div class="code">sl.ink/${link.code}</div><div class="url">${link.url}</div></div>
@@ -736,7 +732,7 @@ shortlink turns a long address into a short one you can share anywhere. This gui
 
 1. Open **shortlink** and paste an address into the box.
 2. Pick how long it lives: **30 days**, **7 days** or **Keep**.
-3. Click **Shorten**. The new link shows at the top of **Recent links**, ready to copy.
+3. Click **Shorten**. The new link shows at the top of **Links**, ready to copy.
 
 > **Tip:** links that expire within a week show their time left in orange.
 
