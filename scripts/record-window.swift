@@ -17,6 +17,7 @@ let out = URL(filePath: arguments[2])
 let level = Int(CGWindowLevelForKey(.floatingWindow))
 let margin = 32.0
 let film = out.deletingPathExtension().appendingPathExtension("full.mp4")
+try FileManager.default.createDirectory(at: out.deletingLastPathComponent(), withIntermediateDirectories: true)
 
 func fail(_ text: String) -> Never {
     FileHandle.standardError.write(Data("\(text)\n".utf8))
