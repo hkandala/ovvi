@@ -162,8 +162,8 @@ extension OvviUITests {
             let moved = try await swipe(direction, steps)
             XCTAssertEqual(moved, CGFloat(direction * upward * steps * 2), accuracy: 6, "\(direction) × \(steps)")
         }
-        // A run and its open rows take a reply bubble's left edge and widest width: 18 pt left of the replies' text,
-        // and 48 pt short of the messages' right edge, where the user's text ends.
+        // A run and its open rows reach as far out as the reply box, 18 pt left of the replies' text, and stop 48 pt
+        // short of the messages' right edge, where the user's text ends.
         let stacks = app.descendants(matching: .any).matching(identifier: "chat.\(pane).stack")
         let stack = stacks.element(boundBy: stacks.count - 1), user = row(pane, "user", "Question 25")
         stack.click()

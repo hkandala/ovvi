@@ -48,7 +48,7 @@ struct ToolStack: View {
             }
         }
         .font(.system(size: 12))
-        // On a reply bubble's place and width: its text on the replies' edge, its hover fill as far out as a bubble.
+        // A reply's width: its text on the replies' edge, its hover fill as far out as the reply box (18 pt).
         .replyPlace()
     }
 }
