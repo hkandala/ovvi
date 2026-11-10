@@ -1618,3 +1618,8 @@ you did, no need of reverting them".
     And: "we should increase teh onboarding sheet should be bigger so its visisble well, take very high quality
     screenshots, zoom within screenshots when explaining in the flow, screenshots should take both in dark mode and
     light mode, and onboaridng uses relevant screenshots based on which mode it opens in".
+    And: "also in that throwaway session, show many spaces with different agents running, like claude, codex, pi etc,
+    and show many tabs, with different plugins, some screenshots should show combination of agent + browser or file
+    explorer or git plugins, idk i am just giving random ideas, take different screenshots covering real time use case,
+    also for chat view, avoid the permission prompt one, i see we are always taking one with permission prompt, show a
+    real looking agent chat, with multiple tool calls etc".
