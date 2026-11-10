@@ -1611,3 +1611,4 @@ you did, no need of reverting them".
     thing within onboarding flow we should set up and install herdr if its not isntalled, if herdr is installed on the
     user device we don't need to show that part in onboarding. so yeah on first launch we show, and once done or
     skipped we mark it and won't show it again, and can be accessed only from the settings".
+    And: "the onboarding panel should use some floating panel kinda thing and not the ones with traffic light buttons".
