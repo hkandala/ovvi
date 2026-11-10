@@ -8,7 +8,8 @@ corners, the window's glass (Classic: opaque), a shadow. Drag its background to 
 idea each, and the user turns them with Next and Back, → and ←, or Return. Skip (or Esc) closes it from any page;
 Get Started closes it on the last.
 
-- **When.** On the first launch, over the new-window view. Get Started, Skip or Esc mark it done (`welcomeDone`),
+- **When.** On the first launch, alone: no window opens until it closes, and then the first one does. Get Started,
+  Skip or Esc mark it done (`welcomeDone`),
   and it never opens by itself again; a quit with it open does not, so the next launch shows it again. Settings ▸
   General ▸ Welcome to Ovvi ▸ Show Welcome opens it again. It hides while Ovvi is not the active app, and the menu
   bar's keys do nothing behind it but Quit, Hide and Settings. A run by hand of a test or Debug build passes
@@ -24,11 +25,14 @@ Get Started closes it on the last.
 - **The intro.** The logo's three panes come in back to front with the name under them. Then they slide apart and
   resize into the window in the first page's picture, its sidebar and two panes, as the name fades out, and the
   picture fades in over them. A key or a click goes straight to the first page. About 2 s.
-- **Five pages,** each a short silent clip of the app, with a title and one sentence: sessions keep running; panes,
-  tabs and spaces (one clip that grows); an agent in its terminal, then switched to Chat; plugins; machines. The herdr
-  step comes last, when This Mac needs it: why herdr, Install with its progress, then "You're all set".
-- **The clips** show the app's whole window, its title row and buttons, as it is: no zoom. 912 x 456 pt with the
-  window's own corners, in the app's appearance (dark or light, switched while the panel shows). A page's clip starts
-  from its beginning when the page shows and loops while it stays; pages turn only on Next, Back or the keys. Pages
-  cross-fade with a slight scale. Reduce Motion: each clip's frame where its change shows, still.
+- **Five pages,** each a short silent clip of the app over the whole panel: sessions keep running; panes, tabs and
+  spaces (a split, a tab, another space); an agent in its terminal, then switched to Chat; plugins; machines. The
+  title, its line and the buttons sit at the panel's foot, over a blur and a shade that fade in from the clip
+  (black in dark, white in light), so the clip's own text never reads through them.
+- **The clips** show the app's whole window, its title row and buttons, as it is: no zoom, 3:2 like the panel, in
+  the app's appearance (dark or light, switched while the panel shows). A page's clip starts from its beginning when
+  the page shows and loops while it stays; pages turn only on Next, Back or the keys. Pages cross-fade, the new clip
+  from a touch larger. Reduce Motion: each clip's frame where its change shows, still.
+- **The herdr step** (last, only without herdr): herdr's logo on a small tile, Install herdr and its command, its
+  progress, then Ovvi's icon and "You're all set"; the line under it says why herdr.
 - `scripts/record-onboarding.sh` records the clips and the welcome's films again, in one go, on a quiet Mac.
