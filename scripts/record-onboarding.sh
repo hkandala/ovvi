@@ -312,7 +312,10 @@ preflight() {
     esac
 }
 
-if [ -d /tmp/ovvi-gui.lock ]; then
+# The user's own hold (owner "user…"), or one the caller took for this run (LOCKED=1), else this run takes it.
+if [ -n "${LOCKED:-}" ]; then
+    :
+elif [ -d /tmp/ovvi-gui.lock ]; then
     grep -qs '^user' /tmp/ovvi-gui.lock/owner || { echo "the GUI lock is held by $(cat /tmp/ovvi-gui.lock/owner)" \
         && exit 1; }
 else
