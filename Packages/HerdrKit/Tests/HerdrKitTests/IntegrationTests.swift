@@ -302,8 +302,8 @@ func `a started server shares the CLI's paths`() async throws {
 func `changes a layout in a throwaway herdr session`() async throws {
     try await withSession(localExec) { client in
         let _: Created = try await client.call("workspace.create", ["cwd": "/tmp", "focus": false])
-        let second = try #require(try await client.split("w1:p1", .right))
-        let third = try #require(try await client.split(second.id, .right))
+        let second = try #require(try await client.split("w1:p1", .right, cwd: nil))
+        let third = try #require(try await client.split(second.id, .right, cwd: nil))
         #expect(third.tabID == "w1:t1")
         let tree = try #require(try await client.snapshot().trees["w1:t1"])
         // herdr halved p2: 50 / 25 / 25; the root goes to 1/3, its second child stays at 1/2.
@@ -337,7 +337,7 @@ func `changes a layout in a throwaway herdr session`() async throws {
 func `moves beside a pane, swaps by id, and throws herdr's refusals`() async throws {
     try await withSession(localExec) { client in
         let _: Created = try await client.call("workspace.create", ["cwd": "/tmp", "focus": false])
-        let second = try #require(try await client.split("w1:p1", .right))
+        let second = try #require(try await client.split("w1:p1", .right, cwd: nil))
         let other = try #require(try await client.move(pane: second.id, to: .newTab(workspaceID: "w1")))
         let back = try await client.move(pane: other.id, to: .tab("w1:t1", beside: "w1:p1", split: .down, ratio: 0.3))
         #expect(back?.tabID == "w1:t1")

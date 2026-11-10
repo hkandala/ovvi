@@ -3,6 +3,18 @@ import HerdrKit
 
 /// herdr adds a tab last, so the app moves it (`tab.move`).
 extension Ahead {
+    /// A labeled pane on its way into a split: herdr's split runs no command, so it comes as a new tab and moves. It
+    /// hides by its label outside the split's tab until, after the move, a snapshot has it in the split.
+    struct Moving {
+        let tabID: String
+        let label: String
+        var landed = false
+
+        func hidden(_ panes: [HerdrKit.Pane]) -> [String] {
+            panes.filter { $0.label == label && $0.tabID != tabID }.map(\.id)
+        }
+    }
+
     struct Beside {
         let id = UUID(), workspaceID: String, after: String
         var known: Set<String>
@@ -95,22 +107,48 @@ extension HostStore {
     func newPane(_ client: any Multiplexer, in workspaceID: String, cwd: String, label: PaneLabel?,
                  _ place: PanePlace) async throws -> HerdrKit.Pane
     {
-        guard case let .tab(after) = place else {
-            return try await makePane(client, in: workspaceID, cwd: cwd, label: label, place)
-        }
-        let placing = placeBeside(after, in: workspaceID)
-        do {
-            let pane = try await makePane(client, in: workspaceID, cwd: cwd, label: label, place)
-            await moveBeside(placing, pane.tabID, after: after, in: workspaceID, client)
-            return pane
-        } catch {
-            dropBeside(placing)
-            throw error
+        switch place {
+        case let .tab(after):
+            let placing = placeBeside(after, in: workspaceID)
+            do {
+                let pane = try await newTab(client, in: workspaceID, cwd: cwd, label: label)
+                await moveBeside(placing, pane.tabID, after: after, in: workspaceID, client)
+                return pane
+            } catch {
+                dropBeside(placing)
+                throw error
+            }
+        case let .split(tabID, target, direction):
+            guard let label else {
+                guard let pane = try await client.split(target, direction, cwd: cwd) else {
+                    throw HerdrError.failed("herdr named no pane")
+                }
+                return pane
+            }
+            ahead.moving.append(Ahead.Moving(tabID: tabID, label: label.text))
+            do {
+                let pane = try await newTab(client, in: workspaceID, cwd: cwd, label: label)
+                do {
+                    let moved = try await client.move(pane: pane.id, to: .tab(tabID, beside: target, split: direction))
+                    for index in ahead.moving.indices where ahead.moving[index].label == label.text {
+                        ahead.moving[index].landed = true
+                    }
+                    return moved ?? pane
+                } catch {
+                    try? await client.close(pane: pane.id)
+                    throw error
+                }
+            } catch {
+                // Shown as herdr has it: a pane that did not close stays reachable.
+                ahead.moving.removeAll { $0.label == label.text }
+                redraw()
+                throw error
+            }
         }
     }
 
-    private func makePane(_ client: any Multiplexer, in workspaceID: String, cwd: String, label: PaneLabel?,
-                          _ place: PanePlace) async throws -> HerdrKit.Pane
+    private func newTab(_ client: any Multiplexer, in workspaceID: String, cwd: String, label: PaneLabel?)
+        async throws -> HerdrKit.Pane
     {
         var pane: HerdrKit.Pane?
         if let label {
@@ -123,17 +161,7 @@ extension HostStore {
         } else {
             pane = try await client.newTab(workspace: workspaceID, cwd: cwd)
         }
-        guard var pane else { throw HerdrError.failed("herdr named no pane") }
-        if case let .split(tabID, target, direction) = place {
-            // ponytail: herdr makes no split with a command, so the new tab shows for a snapshot until its pane
-            // moves beside the card; hide it as Replace Pane does if that flash shows.
-            do {
-                pane = try await client.move(pane: pane.id, to: .tab(tabID, beside: target, split: direction)) ?? pane
-            } catch {
-                try? await client.close(pane: pane.id)
-                throw error
-            }
-        }
+        guard let pane else { throw HerdrError.failed("herdr named no pane") }
         return pane
     }
 }

@@ -49,6 +49,38 @@ extension OvviUITests {
         try await run("cd /tmp && rm -rf \(folder)", in: first, "clean", 0)
     }
 
+    /// `ovvi open git .` puts the Git card beside the shell with no tab of its own on the way: herdr makes a labeled
+    /// pane only as a new tab, which the app hides until its move.
+    func testOpenBesideShowsNoTemporaryTab() async throws {
+        relaunch(one, Self.agentHold)
+        let (tab, first) = try await newTab("beside")
+        try await closeNew("tab", besides: tabIDs())
+        element("tab.\(tab)").click()
+        XCTAssertTrue(element("terminal.\(first)").exists(within: 3))
+        try await waitForPrompt(first)
+        _ = try await cardsFolder(in: first)
+        let tabs = app.descendants(matching: .any).matching(NSPredicate(format: "identifier MATCHES 'tab\\.[^.]+'"))
+        let count = tabs.count
+        // Sampled until the card shows and 0.5 s more: a late snapshot of the temporary tab lands after the answer.
+        for round in 0 ..< 3 {
+            try await send("clear; \(Self.ovviCommand) open git . --new; echo git\(round)-$((6*7))-$?\r", to: first)
+            var most = count, drawn: Date?
+            let end = Date.now + 15
+            while drawn.map({ Date.now.timeIntervalSince($0) < 0.5 }) ?? (Date.now < end) {
+                most = max(most, tabs.count)
+                if drawn == nil, try await read(first).contains("git\(round)-42-0"),
+                   try await element("pane.\(answered(first))").exists
+                {
+                    drawn = .now
+                }
+            }
+            XCTAssertNotNil(drawn, "round \(round): no card")
+            XCTAssertEqual(most, count, "round \(round): a tab showed on the way")
+        }
+        let panes = try await snapshot()["panes"] as? [[String: Any]] ?? []
+        XCTAssertEqual(panes.count { $0["tab_id"] as? String == tab }, 4)
+    }
+
     func testRevealCardShownAndReplace() async throws {
         relaunch(one, Self.agentHold)
         let (tab, first) = try await newTab("reveal")

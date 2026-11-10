@@ -19,6 +19,7 @@ struct Ahead {
     var order: NewOrder?
     var rows: NewOrder?
     var beside: [Beside] = []
+    var moving: [Moving] = []
 
     struct NewTab {
         let id: String, workspaceID: String
@@ -71,13 +72,14 @@ struct Ahead {
         replaced = replacing.filter { !ids.contains($0.key) }
         keepCards(ids)
         replacing = replacing.filter { ids.contains($0.key) }
-        let hidden = closing.union(replacing.flatMap { $1.hidden(snapshot.panes, old: $0) })
+        let hidden = hidden(snapshot.panes)
         tabs.removeAll { standIn in !snapshot.workspaces.contains { $0.id == standIn.workspaceID } }
         for id in tabs.map(\.id) {
             // Read again: `made` adds to the others' known tabs.
             guard let standIn = tabs.first(where: { $0.id == id }), let tab = snapshot.tabs.first(where: { tab in
                 standIn.made.map { $0 == tab.id }
-                    ?? (tab.workspaceID == standIn.workspaceID && !standIn.known.contains(tab.id))
+                    ?? (tab.workspaceID == standIn.workspaceID && !standIn.known.contains(tab.id)
+                        && snapshot.panes.contains { $0.tabID == tab.id && !hidden.contains($0.id) })
             }) else { continue }
             made(id, tab.id)
         }
@@ -118,6 +120,15 @@ struct Ahead {
             trees[standIn.id] = .leaf(paneID: standIn.id)
         }
         return Shown(workspaces: workspaces, tabs: tabs, panes: panes, trees: trees)
+    }
+
+    /// Closing and replaced panes, and labeled ones on their way into a split, which go once a snapshot has them
+    /// landed. A ⌘T's stand-in never takes a tab with only hidden panes.
+    private mutating func hidden(_ panes: [HerdrKit.Pane]) -> Set<String> {
+        let hidden = closing.union(replacing.flatMap { $1.hidden(panes, old: $0) })
+            .union(moving.flatMap { $0.hidden(panes) })
+        moving.removeAll { new in new.landed && panes.contains { $0.label == new.label && $0.tabID == new.tabID } }
+        return hidden
     }
 
     /// A pane closed as herdr makes it is in no snapshot read ahead of the split.

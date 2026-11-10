@@ -28,7 +28,8 @@ public protocol Multiplexer: Sendable {
     func scroll(_ paneID: String, offsetFromBottom offset: Int) async throws
 
     /// None of the actions moves the multiplexer's focus, except `swap` (herdr 0.9.5).
-    func split(_ paneID: String, _ direction: SplitNode.Direction) async throws -> Pane?
+    /// `cwd`: where its shell starts; nil, the split pane's folder.
+    func split(_ paneID: String, _ direction: SplitNode.Direction, cwd: String?) async throws -> Pane?
     /// Moves herdr's focus to that tab (herdr 0.9.5 has no way around it).
     func swap(_ paneID: String, _ heading: Heading) async throws
     /// herdr refuses panes of two tabs, and moves its focus as the other `swap` does.
@@ -95,9 +96,12 @@ extension HerdrClient: Multiplexer {
         let _: Created = try await call("pane.scroll", ["pane_id": paneID, "offset_from_bottom": offset])
     }
 
-    public nonisolated func split(_ paneID: String, _ direction: SplitNode.Direction) async throws -> Pane? {
-        try await (call("pane.split", ["target_pane_id": paneID, "direction": direction.rawValue,
-                                       "focus": false]) as Created).pane
+    public nonisolated func split(_ paneID: String, _ direction: SplitNode.Direction, cwd: String?) async throws
+        -> Pane?
+    {
+        var params: [String: any Sendable] = ["target_pane_id": paneID, "direction": direction.rawValue, "focus": false]
+        params["cwd"] = cwd
+        return try await (call("pane.split", params) as Created).pane
     }
 
     public nonisolated func swap(_ paneID: String, _ heading: Heading) async throws {

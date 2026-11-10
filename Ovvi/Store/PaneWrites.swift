@@ -32,7 +32,7 @@ extension HostStore {
             // herdr's error as the notice when it closes as herdr makes it); split the closed card's own target if
             // that window (under a second) ever matters.
             guard !Ahead.isStandIn(paneID), !ahead.closing.contains(standIn),
-                  let new = try await client.split(paneID, direction) else { return }
+                  let new = try await client.split(paneID, direction, cwd: nil) else { return }
             // Hidden while the split settles: a snapshot read ahead of the split has no such pane, and one read ahead
             // of the close has it.
             if ahead.closing.contains(standIn) {

@@ -37,7 +37,7 @@ extension AgentCall {
             let spot = split.map { PanePlace.split(tab: card.tabID, pane: card.id, $0) } ?? .tab(after: card.tabID)
             return try await store.newPane(client, in: workspace.id, cwd: cwd, label: label, spot)
         }
-        // A snapshot between the new tab and the move has it in a temporary tab.
+        // Until a snapshot has it in its place (a labeled split's pane comes as a new tab, hidden meanwhile).
         try await settle { store.pane(made.id)?.tabID == made.tabID }
         if case .tab(float: true) = place {
             let call = AgentCall(store: store, pane: pane, cwd: cwd, id: id, args: [])

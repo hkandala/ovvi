@@ -63,7 +63,7 @@ extension HostStore {
                     }
                 }
             } else {
-                new = try await client.split(paneID, .right)
+                new = try await client.split(paneID, .right, cwd: nil)
             }
             guard let new else {
                 throw HerdrError.failed("herdr named no pane")

@@ -83,7 +83,10 @@ Browser and plugin panes are created the same way.
    then `pane.swap`, as for drops.
 
 - Other devices can see the temporary tab for one snapshot. The device that
-  creates the pane hides it by its label until it is in place.
+  creates the pane hides it by its label until it is in place: until a
+  snapshot after the move has it in the split. A ⌘T's new tab never takes the temporary tab's place. A pane with no
+  label (Resume beside, `ovvi agent` beside) needs none of this: `pane.split`
+  makes it in place, in its folder (`cwd`).
 - `pane.created` already carries the label, so other devices draw the card at
   once.
 
