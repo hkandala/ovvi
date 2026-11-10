@@ -62,23 +62,27 @@ extension OvviUITests {
         let tabs = app.descendants(matching: .any).matching(NSPredicate(format: "identifier MATCHES 'tab\\.[^.]+'"))
         let count = tabs.count
         // Sampled until the card shows and 0.5 s more: a late snapshot of the temporary tab lands after the answer.
+        // Each card closes after its round, so the shell keeps its width.
         for round in 0 ..< 3 {
             try await send("clear; \(Self.ovviCommand) open git . --new; echo git\(round)-$((6*7))-$?\r", to: first)
-            var most = count, drawn: Date?
+            var most = count, drawn: Date?, card: String?
             let end = Date.now + 15
             while drawn.map({ Date.now.timeIntervalSince($0) < 0.5 }) ?? (Date.now < end) {
                 most = max(most, tabs.count)
-                if drawn == nil, try await read(first).contains("git\(round)-42-0"),
-                   try await element("pane.\(answered(first))").exists
-                {
+                let text = try await read(first, "recent_unwrapped")
+                if card == nil, text.contains("git\(round)-42-0") {
+                    card = text.matches(of: /\npane: (\S+)/).last.map { String($0.1) }
+                }
+                if drawn == nil, let card, element("pane.\(card)").exists {
                     drawn = .now
                 }
             }
-            XCTAssertNotNil(drawn, "round \(round): no card")
+            XCTAssertNotNil(drawn, "round \(round): no card \(card ?? "named")")
             XCTAssertEqual(most, count, "round \(round): a tab showed on the way")
+            if let card {
+                _ = try await Self.call(one, "pane.close", ["pane_id": card])
+            }
         }
-        let panes = try await snapshot()["panes"] as? [[String: Any]] ?? []
-        XCTAssertEqual(panes.count { $0["tab_id"] as? String == tab }, 4)
     }
 
     func testRevealCardShownAndReplace() async throws {
