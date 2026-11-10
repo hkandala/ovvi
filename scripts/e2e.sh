@@ -27,6 +27,8 @@ for s in "$one" "$two" "$three" "$five" "$seven"; do
 done
 herdr session stop "$three" >/dev/null
 
+# The welcome opens on a first launch only; tests run without it (theirs pass -welcomeDone NO).
+defaults write dev.ovvi.app.debug welcomeDone -bool YES
 rm -rf /tmp/ovvi-e2e-no-config
 
 # The sandboxed test runner cannot reach herdr's sockets.

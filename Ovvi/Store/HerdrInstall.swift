@@ -18,7 +18,7 @@ final class HerdrInstall {
         UserDefaults.standard.string(forKey: "herdrInstall") ?? "curl -fsSL https://herdr.dev/install.sh | sh"
     }
 
-    func install(on machine: Machine, session: String) async {
+    func install(on machine: Machine, session: String? = nil) async {
         if case .running = steps[machine.id] {
             return
         }
@@ -49,7 +49,7 @@ final class HerdrInstall {
         }
         steps[machine.id] = .running("Connecting…")
         let stores = HostStore.all.filter { $0.machine.id == machine.id }
-        if !machine.isRemote {
+        if !machine.isRemote, let session {
             do {
                 try await HostStore.start(session, on: machine)
             } catch {

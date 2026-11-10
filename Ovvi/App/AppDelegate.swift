@@ -27,6 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             if !NSApp.windows.contains(where: \.canBecomeMain) {
                 WindowPages.openWindow?(id: WindowPages.mainScene)
             }
+            Welcome.showOnFirstLaunch()
         }
     }
 
