@@ -1597,3 +1597,12 @@ you did, no need of reverting them".
     and move the timestamp and tick marks to below message similar to "Read Wednesday" part in that screenshot"
     (`.build/fb57/r7-12.09.08.png`; Track I). Then: "actually you know what, let's drop the timestamp and tick marks
     thing in messages for now, just bubbles should be enough".
+78. "can we also invoke another agent to work on onboarding flow, from the previous report: onboarding-plan.html, i
+    like the first one the picture book version itself, however, screenshots should be better and should be of better
+    quality, content can be improved etc. so let's invoke this agent, and ask it to work on the onboarding flow
+    following the picture book version and implement it, however it should implement five variations of it, it should
+    invoke another 5 agents that work on different variations, different screenshot styles, different content,
+    different flow as well, we would need to cover these topics panes, tabs, spaces etc but it can be structured in a
+    better way may be, so try out and implement five variations and dont' merge them to main, but give me one final
+    html report with full video recordings of each implemented onboarding flow. i will decide which version to merge
+    and any changes needed etc" (Track Y; branches only, nothing on main).
