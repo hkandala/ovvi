@@ -364,7 +364,7 @@ runs and on-demand on the final head.
   background and title row, and at launch (every restored window, or the first new one) Ovvi's icon (96 pt) in the
   middle until a window of the launch has its content; the content then fades in over 0.2 s. Later windows and ⌘N
   show the background alone. A window reader that comes during a full-screen change now hears its did notifications
-  too. Runs: 42714517118 green (window, restore,
+  too. Runs: 42714517118, 42726405079 green (window, restore,
   traffic-light and look tests).
 - **For the user (round 7).** Quit with two windows open and launch: both come back with their sessions; close every
   window, quit, launch: one new-window view. A session you stopped (a reboot) is still skipped, so a window of only
