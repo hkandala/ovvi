@@ -1490,3 +1490,29 @@ you did, no need of reverting them".
 - **Runs.** CI 42726632924: 10 chosen tests green (both sidebar agent tests, row and tab drags, swipes, the session
   menu, the dots).
 - **Pictures**, dark and light: `~/Downloads/ovvi-research/p57b/r7/index.html` (Sort Spaces).
+
+### Track T, round 7 (item 66)
+
+- **Audit.** The one large, always-on Liquid Glass was a full-window `glassEffect` in the dark Glass window's
+  background, under a black shade, over the behind-window blur (`NSVisualEffectView`, `hudWindow`, always active).
+  The rest is small or short-lived and stays: the selected tab and space row, buttons, keycaps, the chat's reply box,
+  question card and scroll buttons, and the panels (palette, popovers, hover card, notices, find bar).
+- **Measured.** GPU time per process from `ioreg` (IOAccelerator `accumulatedGPUTime`), WindowServer and Ovvi, one
+  Release Ovvi whose background switched live between variants in turns, so the rest of the screen's noise fell on
+  each alike. With a terminal scrolling in the focused window: 598 → 468 ms of WindowServer GPU per second (three runs:
+  −148, −125, −130); idle 53 → 34; unfocused about equal (the glass goes inactive there). Ovvi's own GPU time hardly
+  moves (13–16 ms/s scrolling): the glass costs in WindowServer. The selected pills as glass or as a material: no
+  measurable difference.
+- **Fix.** No glass layer and no shade: the dark tint is one plain color, `#1d1d1d` at 0.845, the same linear map of
+  the blurred desktop as the old chain without its glass. Over a dark desktop and over a white window with black text
+  under Ovvi, every sampled pixel is within 1–2 levels of before (0.2 % of pixels differ by more than 1.5 %), and the
+  white window still shows only as a soft light. An inactive window now looks exactly like the active one (before, it
+  darkened by 2 levels). `glassShade` is gone.
+- **WebKit (Track W).** The glass took about 13 % of the GPU's time while a terminal scrolled, in WindowServer. That
+  adds to GPU contention under load, but it is not a likely cause of WebKit's GPU process stopping to answer.
+- **Review.** No blockers; three wording fixes (the docs' ratio, a history comment, a test's doc comment), done.
+- **Runs.** CI 42728932856: the six look tests and the Glass dark scenes, 7 executed, green.
+- **Pictures**, before and after, Glass and Classic, dark and light, focused and unfocused, with the GPU tables:
+  `~/Downloads/ovvi-research/p57t/r7/index.html`.
+- **For the user.** Dark Glass over a colorful wallpaper (not measured: Liquid Glass lifted saturation a little, the
+  plain tint does not), and the window's top edge (the glass layer drew a 1 px rim there, now gone).

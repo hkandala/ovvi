@@ -81,10 +81,9 @@ extension OvviUITests {
         }
     }
 
-    /// A dark Glass window looks the same when another window has the keyboard. macOS draws a glass tint grey and
-    /// faint in an inactive window, so the background's glass has none. The untinted glass itself still darkens by a
-    /// step or two. Read on a workspace row that is not selected: the background with a
-    /// short label, no capsule.
+    /// A dark Glass window looks the same when another window has the keyboard: its blur stays active and its tints
+    /// are plain colors (macOS draws Liquid Glass grey and faint in an inactive window). Read on a workspace row that
+    /// is not selected: the background with a short label, no capsule.
     func testGlassLooksTheSameInAnInactiveWindow() {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         pick("Interface Style", "Glass")

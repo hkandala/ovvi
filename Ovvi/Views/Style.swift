@@ -34,10 +34,9 @@ struct Look {
         dark ? .black.opacity(0.6) : .clear
     }
 
-    /// Glass: the tint over the behind-window blur, so it depends less on the desktop (light: Rex's Modern 0.7). Dark
-    /// keeps the brightness a full-window Liquid Glass layer under a black shade gave, within a level, for about a
-    /// fifth less WindowServer GPU time while a card redraws; a bright window behind still shows only as a soft light.
-    /// Classic: the whole window.
+    /// Glass: the tint over the behind-window blur, so it depends less on the desktop (light: Rex's Modern 0.7). Dark:
+    /// dense enough that a bright window behind shows only as a soft light. A plain tint, not Liquid Glass, which
+    /// costs WindowServer about a quarter more GPU time over the whole window. Classic: the whole window.
     var window: Color {
         pick(Color(white: 0x1D / 255).opacity(0.845), .white.opacity(0.7),
              Color(white: 0x1E / 255), Color(white: 0xF6 / 255))
