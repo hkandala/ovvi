@@ -1579,3 +1579,10 @@ you did, no need of reverting them".
     design etc, no backward compatibility shit, just the current code and clean, lets make sure we do run e2e and we are
     confident that this will not break anything, get things reviewed etc, and once we have confidence, let's merge it as
     one commit".
+76. "so we also have this report: file:///Users/hkandala/Downloads/ovvi-research/state-machines.html, let's address the
+    8 bugs identified in it if they are still relevant, and also any minor fixes that have good impact but minimal
+    changes, let's do fix all of them. provide this to cleanup agent itself, so it can work on it with its subagents,
+    along with cleanups, all previous cleanup things still apply, don't take that report as ground truth, analyse and
+    only if certain bug is valid and needs a fix we should do it. once all these are done, we make sure everything do,
+    do one last check if codebase is all clean, then make sure all ci runs pass with no flaky tests and merge
+    everything in one commit" (Track O).
