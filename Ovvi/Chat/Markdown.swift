@@ -6,7 +6,7 @@ private typealias Text = SwiftUI::Text
 
 struct Markdown: View {
     /// Messages' measure: its 13 pt text wraps at 405 pt, about 70 characters.
-    nonisolated static let measure: CGFloat = 440
+    static let measure: CGFloat = 440
     let text: String
 
     var body: some View {
@@ -47,22 +47,6 @@ private struct Blocks: View {
     }
 }
 
-/// Text wraps at `Markdown.measure` at most, and a short line keeps its own width (a frame's `maxWidth` would widen
-/// it). Code blocks and tables take the whole width.
-private struct Measure: Layout {
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) -> CGSize {
-        subviews.first?.sizeThatFits(capped(proposal)) ?? .zero
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
-        subviews.first?.place(at: bounds.origin, proposal: capped(proposal))
-    }
-
-    private func capped(_ proposal: ProposedViewSize) -> ProposedViewSize {
-        ProposedViewSize(width: min(proposal.width ?? .infinity, Markdown.measure), height: proposal.height)
-    }
-}
-
 private struct Block: View {
     let markup: any Markup
 
@@ -71,9 +55,11 @@ private struct Block: View {
         case let heading as Heading:
             let size: CGFloat = [22, 18, 16][min(max(heading.level, 1), 3) - 1]
             let weight: Font.Weight = heading.level < 3 ? .bold : .semibold
-            Measure { Text(Inline.text(heading, size: size)).font(.system(size: size, weight: weight)) }
+            Capped(width: Markdown.measure) {
+                Text(Inline.text(heading, size: size)).font(.system(size: size, weight: weight))
+            }
         case let paragraph as Paragraph:
-            Measure { Text(Inline.text(paragraph, size: 14)) }
+            Capped(width: Markdown.measure) { Text(Inline.text(paragraph, size: 14)) }
         case let code as CodeBlock:
             ScrollView(.horizontal) {
                 // A code block's last newline is no line of its own.

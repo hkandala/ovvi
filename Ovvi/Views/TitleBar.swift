@@ -175,7 +175,7 @@ private struct WorkspaceButton: View {
 }
 
 /// Offers its view at most `width` and takes the view's own size: a `frame(maxWidth:)` takes the whole offer.
-private struct Capped: Layout {
+struct Capped: Layout {
     let width: CGFloat
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) -> CGSize {
