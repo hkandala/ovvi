@@ -131,9 +131,9 @@ extension OvviUITests {
         for look in ["dark", "light"] {
             app.launchEnvironment["OVVI_E2E_HERDR"] = try env("OVVI_HERDR")
             app.launchEnvironment["SHELL"] = "\(Self.fixtures)/no-herdr/login-shell"
-            app.launchEnvironment["PATH"] = "/usr/bin:/bin"
-            relaunch(one, ["-welcomeDone", "NO", "-appearance", look, "-herdrInstall",
-                           "\(Self.fixtures)/no-herdr/install", "-forceMotion", "YES", "-welcomeAfter", "20"])
+            // The step shows herdr.dev's command; its `curl` is a fixture that gives the fake installer.
+            app.launchEnvironment["PATH"] = "\(Self.fixtures)/films:/usr/bin:/bin"
+            relaunch(one, ["-welcomeDone", "NO", "-appearance", look, "-forceMotion", "YES", "-welcomeAfter", "20"])
             // The panel's glass blurs what is behind it on screen: the app's own window, filling the screen.
             let main = app.windows.containing(.any, identifier: "titlebar.machine").firstMatch
             XCTAssertTrue(main.exists(within: connect))
