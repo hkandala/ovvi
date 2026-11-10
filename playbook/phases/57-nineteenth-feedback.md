@@ -1791,3 +1791,7 @@ you did, no need of reverting them".
     that make the video and text seem immersive. you can take over my gui lock and finish this entire onboarding flow".
     Follow-up to item 80: "for the chat i see we changed max width of both user and assistant messages, can we revert
     that, padding is fine, but the messages width is too small now" (Track I).
+    And: "in the onboarding recordings, don't show custom claude code tui please, use real one, and also i see that
+    shortlink website you are using is done very bad, can we make that website better and make it look clean and
+    doesn't look like ai slop? also wait for things to be ready in each state, we shouldn't show loading stuff in our
+    recordings, and make sure splits are clean without jagged animations, repeat until we get a good oen".
