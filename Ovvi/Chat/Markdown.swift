@@ -10,7 +10,7 @@ struct Markdown: View {
     let text: String
 
     var body: some View {
-        Blocks(container: Document(parsing: text))
+        Capped(width: Self.measure) { Blocks(container: Document(parsing: text)) }
             .font(.system(size: 14))
             // Messages' rhythm: 13 pt text on 16 pt lines (1.23), a blank line between blocks, list items as lines. 14
             // pt's own line is 17 pt.
@@ -55,11 +55,9 @@ private struct Block: View {
         case let heading as Heading:
             let size: CGFloat = [22, 18, 16][min(max(heading.level, 1), 3) - 1]
             let weight: Font.Weight = heading.level < 3 ? .bold : .semibold
-            Capped(width: Markdown.measure) {
-                Text(Inline.text(heading, size: size)).font(.system(size: size, weight: weight))
-            }
+            Text(Inline.text(heading, size: size)).font(.system(size: size, weight: weight))
         case let paragraph as Paragraph:
-            Capped(width: Markdown.measure) { Text(Inline.text(paragraph, size: 14)) }
+            Text(Inline.text(paragraph, size: 14))
         case let code as CodeBlock:
             ScrollView(.horizontal) {
                 // A code block's last newline is no line of its own.

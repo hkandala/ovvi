@@ -469,7 +469,8 @@ runs and on-demand on the final head.
   paragraphs ran together. Now: 17.2 pt lines (1.23x, iMessage's 13-on-16), 17 pt (a line) between blocks, list items
   as lines, 26 or 17 pt above headings, corner radius 15 (iMessage's corners fit about 15 pt; ours at 18 fit 17.5).
   Kept: 14 pt text and the turn's rows between bubbles. Text wraps at 440 pt at most (iMessage's 405 pt at 13 pt, about 70
-  characters; ours ran 95), in both bubbles; code blocks and tables keep the column's width.
+  characters; ours ran 95), in both bubbles; a code block scrolls sideways in that width and a table wraps in its cells (the orchestrator's pick
+  over code at full width, which left gray beside the prose).
 
 ### Track E
 

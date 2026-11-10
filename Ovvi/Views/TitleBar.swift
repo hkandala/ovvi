@@ -174,17 +174,21 @@ private struct WorkspaceButton: View {
     }
 }
 
-/// Offers its view at most `width` and takes the view's own size: a `frame(maxWidth:)` takes the whole offer.
+/// Offers its view at most `width` and takes the view's own size: a `frame(maxWidth:)` takes the whole offer. It places
+/// the view with the offer it measured with: its own height would stretch a chat table's flexible cells.
 struct Capped: Layout {
     let width: CGFloat
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) -> CGSize {
-        let offer = ProposedViewSize(width: min(proposal.width ?? width, width), height: proposal.height)
-        return subviews.first?.sizeThatFits(offer) ?? .zero
+        subviews.first?.sizeThatFits(offer(proposal)) ?? .zero
     }
 
-    func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
-        subviews.first?.place(at: bounds.origin, proposal: ProposedViewSize(bounds.size))
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
+        subviews.first?.place(at: bounds.origin, proposal: offer(proposal))
+    }
+
+    private func offer(_ proposal: ProposedViewSize) -> ProposedViewSize {
+        ProposedViewSize(width: min(proposal.width ?? width, width), height: proposal.height)
     }
 }
 
