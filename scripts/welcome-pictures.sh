@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The welcome tour's pictures (Ovvi/Onboarding/Welcome.xcassets), taken from the shared scene (welcome-scene.sh) in
-# both looks: main (shortlink's Link expiry tab), split (a new pane at its chooser below the browser), agents (Dark
+# both looks: main (shortlink's Link expiry tab), split (a new pane at its chooser below the chat), agents (Dark
 # mode: Claude Code at work beside Git), plugins (Files: File Explorer beside a plugin of the user's own, CI Runs, made
 # with New Plugin's template) and machines (the machine menu). Hold the GUI lock while it runs (about 3 minutes).
 # Usage: scripts/welcome-pictures.sh   (Ovvi Dev built at $DERIVED_DATA, default /tmp/ovvi-dd-p57y3)
@@ -34,10 +34,9 @@ for look in dark light; do
     source "$W/scene.env"
     trap 'scene down "$session"' EXIT
     scene shot main >/dev/null
-    # A new pane below the browser asks what it runs; then it goes again.
+    # A new pane below the chat (the card with the keyboard shows its buttons) asks what it runs; then it goes again.
     browser=$(panes w1:t1 | tr ' ' '\n' | grep -vx "$c1")
-    scene click "pane.$browser.title"
-    scene click "pane.$browser.split-down"
+    scene click "pane.$c1.split-down"
     sleep 2
     scene shot split >/dev/null
     for p in $(panes w1:t1); do [ "$p" = "$c1" ] || [ "$p" = "$browser" ] || h pane close "$p" >/dev/null; done
