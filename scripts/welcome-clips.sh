@@ -14,6 +14,8 @@ PAGES="running layout agents plugins machines"
 unset "${!HERDR_@}"
 HERDR=$(command -v herdr)
 scene() { scripts/welcome-scene.sh "$1" $WORLD "${@:2}"; }
+# A click refuses when another app's window is in front at its point (the Mac is in use): once more, in front again.
+tap() { scene click "$@" || { sleep 0.5 && scene click "$@"; }; }
 # herdr and ovvi in the scene's session, as welcome-scene.sh has them.
 h() { env -i HOME="$R" PATH=/usr/bin:/bin XDG_CONFIG_HOME="$W/xdg" "$HERDR" --session "$S" "$@"; }
 o() {
@@ -52,7 +54,7 @@ upto() { sleep "$(python3 -c "import time; print(max(0, $T0 + $1 - time.time()))
 # The work runs on: the dev server's log takes requests and the tests run again, agents work in the sidebar.
 running() {
     local tests
-    scene click w1:t3
+    tap w1:t3
     tests=$(panes w1:t3 | tail -1)
     sleep 1
     roll "running-$1"
@@ -70,7 +72,7 @@ running_camera="0:1:.5:.5 1:1:.5:.5 2.2:1.3:.4:.45 3:1.3:.4:.45 4.2:1.3:.78:.45 
 # One pane grows: a split, a split down, a tab, then another space.
 layout() {
     local explorer shell tab
-    scene click w5
+    tap w5
     explorer=$(panes w5:t1 | head -1)
     sleep 1
     roll "layout-$1"
@@ -80,9 +82,9 @@ layout() {
     h pane split "$shell" --direction down --no-focus >/dev/null
     upto 2.6
     tab=$(h tab create --workspace w5 --cwd "$R/notes" --label Ideas --no-focus | json "d['result']['tab']['tab_id']")
-    scene click "tab.$tab"
+    tap "tab.$tab"
     upto 4.0
-    scene click w1
+    tap w1
     upto 6.6
     wrap
 }
@@ -102,7 +104,7 @@ agents() {
     h tab close "$old" >/dev/null
     h pane rename "$c" "Dark mode" >/dev/null
     h pane wait-output "$c" --match stand-in --timeout 30000 >/dev/null
-    scene click "tab.$(h pane list | json "[p['tab_id'] for p in d['result']['panes'] if p['pane_id'] == '$c'][0]")"
+    tap "tab.$(h pane list | json "[p['tab_id'] for p in d['result']['panes'] if p['pane_id'] == '$c'][0]")"
     prompt=$(json "list(d['claude'])[1]" <"$W/turns.json")
     sleep 1
     roll "agents-$1"
@@ -127,7 +129,7 @@ if p.exists() else []; p.write_text(json.dumps(sorted(set(ids + ['deploys']))))"
     shell=$(panes w2:t2 | head -1)
     o "$shell" "$R/api" plugins reload deploys >/dev/null
     h pane run "$shell" "clear" >/dev/null
-    scene click w2:t2
+    tap w2:t2
     sleep 1
     roll "plugins-$1"
     upto 0.4
@@ -150,13 +152,13 @@ plugins_camera="0:1:.5:.5 0.9:1:.5:.5 1.8:1.22:.72:.45 2.8:1.22:.72:.45 3.6:1.22
 
 # The machine menu: This Mac and the machines added.
 machines() {
-    scene click w1:t1
+    tap w1:t1
     sleep 1
     roll "machines-$1"
     upto 0.8
-    scene click titlebar.machine
+    tap titlebar.machine
     upto 4.8
-    scene click titlebar.machine
+    tap titlebar.machine
     upto 6
     wrap
 }
