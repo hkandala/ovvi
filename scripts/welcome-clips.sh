@@ -121,7 +121,7 @@ agents() {
     h tab close "$old" >/dev/null
     h pane rename "$c" "Dark mode" >/dev/null
     h pane wait-output "$c" --match stand-in --timeout 30000 >/dev/null
-    tap "$(h pane list | json "[p['tab_id'] for p in d['result']['panes'] if p['pane_id'] == '$c'][0]")"
+    tap "$(h pane list | json "[p['tab_id'] for p in d['result']['panes'] if p['pane_id'] == '$c'][0]")" || true
     prompt=$(json "list(d['claude'])[1]" <"$W/turns.json")
     sleep 1
     roll "agents-$1"
