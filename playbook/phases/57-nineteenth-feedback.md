@@ -1524,7 +1524,7 @@ you did, no need of reverting them".
   after on the right, 8 times slower; a 30 fps capture, all this busy Mac's capture gave) and
   `split-dark-frames.png`, `split-light-frames.png` (frames of the same, before on top).
 - **For the user.** ⌘D and ⇧⌘D, on a terminal and on File Explorer, while an agent works: the slide should not
-  stutter. During the 0.13 s a light Glass card shows no shadow, which comes back as it lands. If a slide still
+  stutter. (Since item 79 the light Glass shadow stays through the slide.) If a slide still
   stutters in Glass but not in Classic, it is the GPU's blur work, a look decision.
 
 ### Track B, round 7 (item 70)
@@ -1666,6 +1666,32 @@ you did, no need of reverting them".
     commands, if this detection is coming from herdr itself, don't workaround things, we can leave it, if we are doing
     the detection from our code, then let's improve it, figure out how herdr detects agent sessions we can do something
     similar" (Track G).
+
+### Track J, item 79
+
+- **Cause.** Round 7's slide, not Track T's dark background. While a card moved, `CardMotion` clipped the whole card
+  (10 pt, continuous) and drew its edge as the layer's border. That made CardSurface's rims (plusLighter), its edge
+  drawn outside the shape and the light Glass shadow one masked group, which rendered them differently until landing,
+  where the SwiftUI surface came back: on every moving card. A window-only capture of ⌘D (light Glass) had the
+  cards' still left and top edges in an in-between look for about 145 ms, then a jump of 9–11 levels at landing;
+  the top rim read 253 before and 250 during.
+- **Fix.** `CardChrome` draws a page card's surface as Core Animation layers (fill, keyboard fill, the plusLighter
+  rim group with its top line and glow, the outside edge, the light shadow cut out under the card), behind the card's
+  hosting view, animated with it: the render server draws it at each frame's size, never clipped, at rest and in
+  motion alike, so nothing swaps at landing. Only the content is clipped, and only while the size changes. The
+  page's PaneCard keeps its element and menus on a clear shape; the floating window and Overview keep CardSurface.
+- **Match.** A probe app beside SwiftUI's CardSurface: sides and edges equal to the pixel, dark and light; the light
+  top rim's band within 7/255, one light corner pixel by 22 (dark within 4). Every page card uses the chrome, so
+  this shows only between a page card and the same card floated or in Overview.
+- **Review.** One blocker: the chrome's space was flipped twice, so its surface grew from the card's bottom while a
+  height changed (⇧⌘D, zoom, a close in a column); fixed, and the motion test now checks the surface's place mid-slide
+  against the card's. Shoulds (placing it on resizes, dead branches, docs) and nits fixed.
+- **Runs.** Red, the doubled flip with the new check: "split down: the surface's top edge -168 vs 77" (42877175587).
+  Green: 14 chosen tests (42877182092); the head: see below.
+- **Not fixed.** The lit card's 1 pt border is still drawn in its content: on a close that grows a lit card, its far
+  side is clipped until it lands.
+- **For the user.** ⌘D and ⇧⌘D in Glass, dark and light, and a zoom: the edges, rims and the light shadow should look
+  the same before, during and after the slide. Not checked by a recording of the final build: the GUI was the user's.
 
 ### Track T, item 81
 
