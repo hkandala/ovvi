@@ -183,12 +183,13 @@ struct ChatMessages: View, Equatable {
         return first
     }
 
-    /// ponytail: long code lines (they do not wrap) and blank lines count too many, so a block of long logs, or a very
-    /// tall card, can show the block's top with room above it; take the budget from the scroll view's height if so.
+    /// About 70 characters a line (`Markdown.measure`). ponytail: long code lines (they do not wrap) and blank lines
+    /// count too many, so a block of long logs, or a very tall card, can show the block's top with room above it; take
+    /// the budget from the scroll view's height if so.
     private static func lines(_ row: ChatRow) -> Int {
         switch row {
         case let .user(_, text), let .reply(_, text):
-            1 + text.utf8.count / 90 + text.utf8.count { $0 == UInt8(ascii: "\n") }
+            1 + text.utf8.count / 70 + text.utf8.count { $0 == UInt8(ascii: "\n") }
         case let .todos(_, todos): todos.count + 1
         default: 2
         }

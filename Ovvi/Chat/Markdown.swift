@@ -5,14 +5,16 @@ import SwiftUI
 private typealias Text = SwiftUI::Text
 
 struct Markdown: View {
+    /// Messages' measure: its 13 pt text wraps at 405 pt, about 70 characters.
+    nonisolated static let measure: CGFloat = 440
     let text: String
 
     var body: some View {
         Blocks(container: Document(parsing: text))
             .font(.system(size: 14))
-            // Messages' rhythm: lines 1.26 times the size apart, a blank line's height between blocks, list items as
-            // lines.
-            .lineSpacing(1)
+            // Messages' rhythm: 13 pt text on 16 pt lines (1.23), a blank line between blocks, list items as lines. 14
+            // pt's own line is 17 pt.
+            .lineSpacing(14 * 16 / 13 - 17)
             .textSelection(.enabled)
             .fixedSize(horizontal: false, vertical: true)
             .readableText(text)
@@ -34,12 +36,30 @@ private struct Blocks: View {
 
     private static func space(_ above: any Markup, _ block: any Markup) -> CGFloat {
         if let heading = block as? Heading {
-            heading.level < 3 ? 26 : 18
+            heading.level < 3 ? 26 : 17
         } else if above is Heading {
             8
+        } else if block.parent is ListItem {
+            block is ListItemContainer ? 0 : 6
         } else {
-            block.parent is ListItem ? 1 : 18
+            17
         }
+    }
+}
+
+/// Text wraps at `Markdown.measure` at most, and a short line keeps its own width (a frame's `maxWidth` would widen
+/// it). Code blocks and tables take the whole width.
+private struct Measure: Layout {
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) -> CGSize {
+        subviews.first?.sizeThatFits(capped(proposal)) ?? .zero
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
+        subviews.first?.place(at: bounds.origin, proposal: capped(proposal))
+    }
+
+    private func capped(_ proposal: ProposedViewSize) -> ProposedViewSize {
+        ProposedViewSize(width: min(proposal.width ?? .infinity, Markdown.measure), height: proposal.height)
     }
 }
 
@@ -51,9 +71,9 @@ private struct Block: View {
         case let heading as Heading:
             let size: CGFloat = [22, 18, 16][min(max(heading.level, 1), 3) - 1]
             let weight: Font.Weight = heading.level < 3 ? .bold : .semibold
-            Text(Inline.text(heading, size: size)).font(.system(size: size, weight: weight))
+            Measure { Text(Inline.text(heading, size: size)).font(.system(size: size, weight: weight)) }
         case let paragraph as Paragraph:
-            Text(Inline.text(paragraph, size: 14))
+            Measure { Text(Inline.text(paragraph, size: 14)) }
         case let code as CodeBlock:
             ScrollView(.horizontal) {
                 // A code block's last newline is no line of its own.
@@ -85,7 +105,7 @@ private struct ListBlock: View {
 
     var body: some View {
         let items = Array(list.listItems)
-        VStack(alignment: .leading, spacing: 1) {
+        VStack(alignment: .leading, spacing: 0) {
             ForEach(items.indices, id: \.self) { index in
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     marker(items[index], index).foregroundStyle(.secondary).frame(minWidth: 12, alignment: .trailing)

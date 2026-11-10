@@ -515,11 +515,14 @@ A run is one quiet line with no card: its summary and a chevron.
   terminal keeps its own row under the messages. Simpler choice: a wheel
   over the reply box does not scroll the messages under it.
 - **Markdown.** `swift-markdown` (cmark-gfm) parses it. 14 pt text with
-  1 pt line spacing, in Messages' rhythm: its lines sit 1.23 times their
-  size apart, a blank line separates paragraphs, and list items follow as
-  lines. Headings are 22, 18 and 16 pt (bold for the first two levels), with
-  26 or 18 pt above them and 8 pt under them. 18 pt (a line) between other
-  blocks, 1 pt between list items.
+  lines 17.2 pt apart, Messages' rhythm (its 13 pt text on 16 pt lines,
+  1.23): a blank line separates paragraphs, and list items follow as lines.
+  Paragraphs and headings wrap at 440 pt at most, Messages' measure (its
+  text wraps at 405 pt at 13 pt, about 70 characters), in the user's bubbles
+  too. Code blocks and tables take the whole width. Headings are 22, 18 and 16 pt (bold for the first two levels), with
+  26 or 17 pt above them and 8 pt under them. 17 pt (a line) between other
+  blocks; no gap between list items or before a nested list, 6 pt before an
+  item's later paragraph, code block, quote or table.
   - List items hang behind their number, bullet (•, ◦, ▪ by depth) or task
     box (`square`, `checkmark.square.fill`), and a list item's later blocks
     line up under its text. Lists and quotes nest.

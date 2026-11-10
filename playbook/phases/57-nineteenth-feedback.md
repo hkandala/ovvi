@@ -466,9 +466,10 @@ runs and on-demand on the final head.
 - **Round 7 (item 80):** the padding already matched iMessage (text 20 px from a bubble's top, 24-26 px from its sides
   at 2x); the rhythm inside did not. iMessage sets 13 pt text 16 pt apart (1.23x), a blank line between paragraphs and
   list items as plain lines; ours had 14 pt text 21 pt apart, 12 pt between blocks and 6 pt between items, so
-  paragraphs ran together. Now: 1 pt line spacing (18 pt lines), 18 pt (a line) between blocks, 1 pt between items,
-  26 or 18 pt above headings, corner radius 15 (iMessage's corners fit about 15 pt; ours at 18 fit 17.5). Kept: 14 pt
-  text, the column's width (iMessage wraps at 432 pt), and the turn's rows between bubbles.
+  paragraphs ran together. Now: 17.2 pt lines (1.23x, iMessage's 13-on-16), 17 pt (a line) between blocks, list items
+  as lines, 26 or 17 pt above headings, corner radius 15 (iMessage's corners fit about 15 pt; ours at 18 fit 17.5). Kept: 14 pt
+  text and the turn's rows between bubbles. Text wraps at 440 pt at most (iMessage's 405 pt at 13 pt, about 70
+  characters; ours ran 95), in both bubbles; code blocks and tables keep the column's width.
 
 ### Track E
 
