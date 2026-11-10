@@ -1654,3 +1654,18 @@ you did, no need of reverting them".
     commands, if this detection is coming from herdr itself, don't workaround things, we can leave it, if we are doing
     the detection from our code, then let's improve it, figure out how herdr detects agent sessions we can do something
     similar" (Track G).
+
+### Track T, item 81
+
+- **Found.** The app already opens in Dark when the setting was never chosen: `appearance` defaults to Dark
+  (`AppSettings`), as it has since the setting was added, and D44, Settings and Theme and accessibility say so. Nothing
+  else reads the key with another fallback or writes it at launch; the tiles, the View menu and the palette write it
+  only on a pick. No test assumes Auto. No code change.
+- **Why the user saw Auto.** The installed app's defaults (`dev.ovvi.app`) hold `appearance = auto`, from a pick in
+  that app (the UI tests run the Debug build, `dev.ovvi.app.debug`, which holds Dark). A pick is kept, so it stays
+  Auto until the user picks Dark (or, with the app quit, `defaults delete dev.ovvi.app appearance`).
+- **Launch.** No light flash: on CI's Mac, which is in Light, the recording of a dark launch goes from the desktop
+  straight to the dark window (gray 17 → 40–47, no light frame at about 17 fps). Not covered: a launch that restores
+  windows (the tests ignore saved state).
+- **Onboarding** is not on main yet: its first window must open after the app's appearance is set (Track Y).
+- **Pictures.** Launch frames and recordings: `~/Downloads/ovvi-research/p57t/r7b/index.html`.
