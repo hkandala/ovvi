@@ -1606,3 +1606,8 @@ you did, no need of reverting them".
     better way may be, so try out and implement five variations and dont' merge them to main, but give me one final
     html report with full video recordings of each implemented onboarding flow. i will decide which version to merge
     and any changes needed etc" (Track Y; branches only, nothing on main).
+    Follow-up to item 78: "also in settins somwhere there should be option to open onboarding flow, so user can open
+    anytime again, and also for me to test, on first install and opne onboarding flow should be shown, also one more
+    thing within onboarding flow we should set up and install herdr if its not isntalled, if herdr is installed on the
+    user device we don't need to show that part in onboarding. so yeah on first launch we show, and once done or
+    skipped we mark it and won't show it again, and can be accessed only from the settings".
