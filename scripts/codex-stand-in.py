@@ -5,8 +5,8 @@ Started by the chooser with Ovvi's flags (`-c hooks.SessionStart=… -c hooks.st
 hash as Codex does (else it shows Codex's "Hooks need review" picker and runs no hook), runs the hook at the first
 prompt, writes a rollout in Codex's format, reports its state to herdr and draws Codex's input box above its status
 row. Prompts: "wait" shows an approval until 1 is typed, "model" opens a picker (herdr still says idle) until Esc,
-"slow" works until Esc, "new" starts a new session (as `/new` and a prompt do), anything else gets one command and
-the reply "Echo: <prompt>".
+"slow" works until Esc, "new" starts a new session (as `/new` and a prompt do), a prompt of OVVI_STAND_IN_SCENE's
+turns plays that turn (scripts/welcome-scene/turns.py), anything else gets one command and the reply "Echo: <prompt>".
 """
 import hashlib
 import json
@@ -31,16 +31,32 @@ trusts = trusted == "sha256:" + hashlib.sha256(json.dumps(identity, sort_keys=Tr
                                                .encode()).hexdigest()
 token = re.search(r"/\.cache/ovvi/chat/([0-9a-f-]{36})/", hook).group(1)
 rollouts = []
+scene = json.load(open(os.environ["OVVI_STAND_IN_SCENE"]))["codex"] if os.environ.get("OVVI_STAND_IN_SCENE") else {}
 
 
-def write(kind, **payload):
-    line = {"timestamp": time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime()), "type": kind, "payload": payload}
+def write(kind, at=None, **payload):
+    line = {"timestamp": time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime(at)), "type": kind, "payload": payload}
     with open(rollouts[-1], "a") as file:
         file.write(json.dumps(line) + "\n")
 
 
-def item(kind, **fields):
-    write("event_msg", type="item_completed", item={"type": kind, "id": str(uuid.uuid4()), **fields})
+def item(kind, at=None, **fields):
+    write("event_msg", at=at, type="item_completed", item={"type": kind, "id": str(uuid.uuid4()), **fields})
+
+
+def play(text, turn):
+    """A scripted turn of the welcome pictures, dated as if it took `secs`: ends idle, or works on."""
+    at, turn_id = time.time() - turn["secs"], str(uuid.uuid4())
+    write("event_msg", at=at, type="task_started", turn_id=turn_id)
+    write("turn_context", at=at, turn_id=turn_id, cwd=os.getcwd(), model=turn["model"], effort="high")
+    item("UserMessage", at=at, content=[{"type": "text", "text": text}])
+    stand_in.report("working")
+    for step in turn["steps"]:
+        at += step.get("secs", 2)
+        item(step["type"], at=at, **{key: value for key, value in step.items() if key not in ("type", "secs")})
+    if not turn.get("working"):
+        write("event_msg", at=at, type="task_complete", turn_id=turn_id, duration_ms=turn["secs"] * 1000)
+        stand_in.report("idle")
 
 
 def box():
@@ -57,6 +73,8 @@ def prompt(text, started):
             subprocess.run([os.environ.get("SHELL", "/bin/sh"), "-lc", hook], capture_output=True, input=json.dumps(
                 {"session_id": thread, "transcript_path": path, "cwd": os.getcwd(), "hook_event_name": "SessionStart",
                  "model": "stand-in", "source": "startup"}), text=True)
+    if text in scene:
+        return play(text, scene[text])
     turn = str(uuid.uuid4())
     write("event_msg", type="task_started", turn_id=turn)
     write("turn_context", turn_id=turn, cwd=os.getcwd(), model="codex-stand-in", effort="high")

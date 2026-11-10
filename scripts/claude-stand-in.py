@@ -6,8 +6,9 @@ writes a transcript in Claude Code's format, reports its state to herdr and answ
 shows a dialog until 1 is typed, "ask" asks a question through the PermissionRequest hook, "slow" works until Esc,
 "mute" drops the next prompt, "long" gets a command with 200 lines of output, "big" writes 330 KB of lines the chat
 skips (as a real session's API records), "steps" gets a reply, a command, a reply, two commands and a reply, "many"
-writes 150 more turns (a long session; "many 25" that many, "many 10 30" 10 with 30 more paragraphs each), anything
-else gets one command and the reply "Echo: <prompt>". Ctrl-C clears the line, and on an empty one asks for another;
+writes 150 more turns (a long session; "many 25" that many, "many 10 30" 10 with 30 more paragraphs each), a prompt of
+OVVI_STAND_IN_SCENE's turns plays that turn (scripts/welcome-scene/turns.py), anything else gets one command and the
+reply "Echo: <prompt>". Ctrl-C clears the line, and on an empty one asks for another;
 "/exit" quits, after OVVI_STAND_IN_EXIT_HOOKS seconds when set (as Claude Code runs its SessionEnd hooks). Started
 without flags it reports its session to herdr (as herdr's Claude Code integration does) and keeps its transcript, which
 `--resume <session>` goes on with.
@@ -36,6 +37,7 @@ failed = os.environ.get("OVVI_STAND_IN_FAIL_RESUME")
 if failed and resumed and "--settings" in args and not os.path.exists(failed):
     open(failed, "w").close()
     sys.exit("error: unknown option")
+scene = json.load(open(os.environ["OVVI_STAND_IN_SCENE"]))["claude"] if os.environ.get("OVVI_STAND_IN_SCENE") else {}
 
 
 def hook(event, payload):
@@ -46,9 +48,9 @@ def hook(event, payload):
     return ""
 
 
-def write(kind, **fields):
+def write(kind, at=None, **fields):
     line = {"type": kind, "uuid": str(uuid.uuid4()), "cwd": os.getcwd(),
-            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime()), **fields}
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime(at)), **fields}
     with open(transcript, "a") as file:
         file.write(json.dumps(line) + "\n")
 
@@ -68,7 +70,32 @@ def reply(text, started):
     say(text)
 
 
+def play(text, turn):
+    """A scripted turn of the welcome pictures, dated as if it took `secs`: ends idle, or works on in its last tool."""
+    at = time.time() - turn["secs"]
+    write("user", at=at, message={"content": text})
+    stand_in.report("working")
+    for step in turn["steps"]:
+        started, at = at, at + step.get("secs", 2)
+        if "text" in step:
+            write("assistant", at=at, effort="high", message={"model": turn["model"], "content": [
+                {"type": "text", "text": step["text"]}]})
+            continue
+        tool_id = "toolu_" + uuid.uuid4().hex[:24]
+        write("assistant", at=started, effort="high", message={"model": turn["model"], "content": [
+            {"type": "tool_use", "id": tool_id, "name": step["tool"], "input": step["input"]}]})
+        if "output" in step:
+            write("user", at=at, toolUseResult=step.get("result"), message={"content": [
+                {"type": "tool_result", "tool_use_id": tool_id, "content": step["output"]}]})
+    if turn.get("working"):
+        return
+    write("system", at=at, subtype="turn_duration", durationMs=turn["secs"] * 1000)
+    stand_in.report("idle")
+
+
 def prompt(text, started):
+    if text in scene:
+        return play(text, scene[text])
     write("user", message={"content": text})
     stand_in.report("working")
     if text == "wait":
