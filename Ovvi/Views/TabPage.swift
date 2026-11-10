@@ -68,6 +68,7 @@ private struct SplitLayout: View {
                                    .environment(\.look, look).environment(\.pageHidden, hidden))
                         .place(rect)
                         .transaction(value: move) { $0.animation = nil }
+                        .opacity(page.lifted == .pane(card.id) ? 0.4 : 1)
                         .animation(motion) { $0.opacity(away ? 0 : 1) }
                         .zIndex(away ? 0 : 1)
                         .allowsHitTesting(!away)

@@ -132,7 +132,8 @@ struct PaneCard: View {
                 .contextMenu { PaneItems(page: page, pane: pane) }
         }
         .overlay { ActiveBorder(id: id, shown: lit && shown.count > 1 && page.zoomedPaneID == nil) }
-        .opacity(page.lifted == .pane(id) ? 0.4 : 1)
+        // Under `CardMotion` the whole card dims, its surface too.
+        .opacity(page.lifted == .pane(id) && chromeLink == nil ? 0.4 : 1)
         .overlay(alignment: .topLeading) {
             if let zone, page.dragging != nil {
                 let half = CGSize(width: size.width / 2, height: size.height / 2)
