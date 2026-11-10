@@ -11,6 +11,7 @@ struct TourPicture: View, Animatable {
     /// Draws the callouts; set once the camera has moved (they draw one by one, or all at once with Reduce Motion).
     let drawn: Bool
     let reduceMotion: Bool
+    let shots: TourShots
     @Environment(\.colorScheme) private var colorScheme
 
     var animatableData: AnimatablePair<AnimatablePair<CGFloat, CGFloat>, AnimatablePair<CGFloat, CGFloat>> {
@@ -32,7 +33,12 @@ struct TourPicture: View, Animatable {
         ZStack(alignment: .topLeading) {
             ZStack {
                 ForEach([shot], id: \.self) { shot in
-                    Image(shot).resizable().interpolation(.high).transition(.opacity)
+                    // The asset catalog's own until the decoded one is there (a page reached during the intro).
+                    if let image = shots.images[TourShots.key(shot, dark: colorScheme == .dark)] {
+                        Image(decorative: image, scale: 2).resizable().transition(.opacity)
+                    } else {
+                        Image(shot).resizable().transition(.opacity)
+                    }
                 }
             }
             .frame(width: Tour.shot.width, height: Tour.shot.height)

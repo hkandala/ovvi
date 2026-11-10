@@ -10,6 +10,7 @@ struct WelcomeView: View {
     /// The page whose callouts show: set once the camera has reached it.
     @State private var drawn: Int?
     @State private var herdrFound = false
+    @State private var shots = TourShots()
     private var settings = AppSettings()
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
@@ -32,7 +33,7 @@ struct WelcomeView: View {
                 look.track
                 TourPicture(focus: intro ? Self.closer(framed.focus) : framed.focus, shot: framed.shot ?? "",
                             callouts: framed.callouts, drawn: drawn == page && shown.shot != nil,
-                            reduceMotion: reduceMotion)
+                            reduceMotion: reduceMotion, shots: shots)
                     .opacity(shown.shot == nil ? 0 : 1)
                     .id(reduceMotion ? page : 0)
                     .transition(.opacity)
@@ -86,6 +87,7 @@ struct WelcomeView: View {
             .opacity(0).accessibilityHidden(true)
         }
         .environment(\.look, look)
+        .task(id: colorScheme) { await shots.load(dark: colorScheme == .dark) }
     }
 
     private func footer(_ count: Int, last: Bool, blocked: Bool) -> some View {

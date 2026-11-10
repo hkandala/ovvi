@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// A callout on a page's picture: the point it names (in the shot's points), where its line ends (in the picture's
@@ -133,4 +134,45 @@ enum Tour {
     static let herdr = Page(title: "One more thing: herdr",
                             text: "Ovvi keeps your terminals and agents in herdr's sessions on This Mac. Install it "
                                 + "to begin.")
+}
+
+/// The shots of the panel's appearance, decoded off the main thread while the intro plays: drawn straight from the
+/// asset catalog, a 2880 × 1800 HEIC decoded on the main thread as its page came in, for 240 to 730 ms.
+@MainActor @Observable
+final class TourShots {
+    private(set) var images: [String: CGImage] = [:]
+
+    static func key(_ name: String, dark: Bool) -> String {
+        "\(name) \(dark ? "dark" : "light")"
+    }
+
+    func load(dark: Bool) async {
+        for name in Set(Tour.pages.compactMap(\.shot)) where images[Self.key(name, dark: dark)] == nil {
+            let image = await Task.detached(priority: .userInitiated) { Self.decode(name, dark: dark) }.value
+            images[Self.key(name, dark: dark)] = image
+        }
+    }
+
+    private nonisolated static func decode(_ name: String, dark: Bool) -> CGImage? {
+        guard let image = NSImage(named: name), let appearance = NSAppearance(named: dark ? .darkAqua : .aqua) else {
+            return nil
+        }
+        var decoded: CGImage?
+        appearance.performAsCurrentDrawingAppearance {
+            var rect = CGRect(origin: .zero, size: image.size)
+            guard let source = image.cgImage(
+                      forProposedRect: &rect,
+                      context: nil,
+                      hints: [.ctm: AffineTransform(scale: 2)],
+                  ),
+                  let context = CGContext(data: nil, width: source.width, height: source.height, bitsPerComponent: 8,
+                                          bytesPerRow: 0, space: source.colorSpace ?? CGColorSpaceCreateDeviceRGB(),
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue
+                                              | CGBitmapInfo.byteOrder32Little.rawValue)
+            else { return }
+            context.draw(source, in: CGRect(x: 0, y: 0, width: source.width, height: source.height))
+            decoded = context.makeImage()
+        }
+        return decoded
+    }
 }
