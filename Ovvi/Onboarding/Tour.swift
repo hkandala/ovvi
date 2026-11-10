@@ -190,31 +190,29 @@ enum Tour {
                                 + "to begin.")
 }
 
-/// The shown look's shots (Pictures/welcome-<name>-<look>.heic), decoded off the main thread while the intro plays:
-/// a 2880 × 1800 HEIC decoded on the main thread as its page came in took 240 to 730 ms.
+/// The shown look's shots (Pictures/welcome-<name>-<look>.heic), decoded off the main thread with ImageIO, each when
+/// its page comes next: a 2880 × 1800 HEIC decoded on the main thread took 240 to 730 ms, and decoding them all at once
+/// stalled the intro for 0.2 s every few frames.
 @MainActor @Observable
 final class TourShots {
     private(set) var images: [String: CGImage] = [:]
     /// The look of `images`; nil until the first is decoded.
     private(set) var dark: Bool?
 
-    func load(dark: Bool) async {
-        var names: [String] = [], loaded: [String: CGImage] = [:]
-        for name in Tour.pages.compactMap(\.shot) where !names.contains(name) {
-            names.append(name)
-        }
-        for name in names {
+    /// Decodes the shots this look lacks; another look's set stays in view until the first of this one's is in.
+    func load(_ names: [String], dark: Bool) async {
+        for name in names where self.dark != dark || images[name] == nil {
             let url = Bundle.main.url(forResource: "\(name)-\(dark ? "dark" : "light")", withExtension: "heic")
-            let image = await Task.detached(priority: .userInitiated) { Self.decode(url) }.value
-            guard !Task.isCancelled else { return }
-            loaded[name] = image
-            // The first look fills in page by page; another keeps the old set in view until all of its own are in.
-            if self.dark == nil || self.dark == dark {
-                withAnimation(.easeOut(duration: 0.2)) { images = loaded }
-                self.dark = dark
+            let image = await Task.detached(priority: .utility) { Self.decode(url) }.value
+            guard !Task.isCancelled, let image else { return }
+            withAnimation(.easeOut(duration: 0.2)) {
+                if self.dark == dark {
+                    images[name] = image
+                } else {
+                    (images, self.dark) = ([name: image], dark)
+                }
             }
         }
-        withAnimation(.easeOut(duration: 0.2)) { (images, self.dark) = (loaded, dark) }
     }
 
     private nonisolated static func decode(_ url: URL?) -> CGImage? {

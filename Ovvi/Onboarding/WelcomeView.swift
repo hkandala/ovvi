@@ -92,14 +92,18 @@ struct WelcomeView: View {
             .opacity(0).accessibilityHidden(true)
         }
         .environment(\.look, look)
-        .task(id: colorScheme) { await shots.load(dark: colorScheme == .dark) }
-        // The page's callouts draw once the camera is (nearly) there; a turn meanwhile cancels it.
+        .task(id: colorScheme) { await shots.load([framed.shot].compactMap(\.self), dark: colorScheme == .dark) }
+        // The page's callouts draw once the camera is (nearly) there, and once they have, the next page's shot
+        // decodes; a turn meanwhile cancels it.
         .task(id: intro ? -1 : page) {
             guard !intro else { return }
+            let dark = colorScheme == .dark
+            await shots.load([framed.shot].compactMap(\.self), dark: dark)
             try? await Task.sleep(for: .seconds(reduceMotion ? 0.25 : 0.62))
-            if !Task.isCancelled {
-                drawn = page
-            }
+            guard !Task.isCancelled else { return }
+            drawn = page
+            try? await Task.sleep(for: .seconds(1.6))
+            await shots.load([pages[min(page + 1, pages.count - 1)].shot].compactMap(\.self), dark: dark)
         }
     }
 
