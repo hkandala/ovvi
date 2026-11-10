@@ -165,6 +165,7 @@ plugins_camera="0:1:.5:.5 0.9:1:.5:.5 1.8:1.22:.72:.45 2.8:1.22:.72:.45 3.6:1.22
 
 # The machine menu: This Mac and the machines added.
 machines() {
+    tap w1
     tap w1:t1
     sleep 1
     roll "machines-$1"
