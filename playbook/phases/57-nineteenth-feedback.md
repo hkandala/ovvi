@@ -1528,3 +1528,9 @@ you did, no need of reverting them".
   `~/Downloads/ovvi-research/p57t/r7/index.html`.
 - **For the user.** Dark Glass over a colorful wallpaper (not measured: Liquid Glass lifted saturation a little, the
   plain tint does not), and the window's top edge (the glass layer drew a 1 px rim there, now gone).
+71. "let's remove git projects section below the empty session one which we added, let's show the current open
+    folder, new space and the logo and text, let's just remove git projects part" (Track A).
+72. "sorting button is too big, it should be closer to + button and of similar size, align it well" (Track B).
+73. "in archive sessoins, when i search for something not available, instead of showing no sessions found, it
+    continuously shows reading sessions loader, we should show no sessions found, if no matches to the search, and
+    also on esc on archives sessions search should collapse it and focus the current pane" (Track B).
