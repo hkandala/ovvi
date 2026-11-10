@@ -24,20 +24,20 @@ struct WelcomePage {
             when you close the window or quit Ovvi, and on another machine even while your Mac sleeps. Come back to \
             find it all as you left it.
             """)
-        }, shots: [WelcomeShot(picture: "overview", focus: CGRect(x: 0, y: 0, width: 1440, height: 900),
-                               ring: CGRect(x: 8, y: 76, width: 284, height: 214), label: "Still running")]),
+        }, shots: [WelcomeShot(picture: "overview", focus: CGRect(x: 60, y: 0, width: 1150, height: 505),
+                               ring: CGRect(x: 8, y: 82, width: 283, height: 420), label: "Still running")]),
         WelcomePage(title: "Panes and splits", words: { _ in
             Text("""
             A new pane asks what it runs: a terminal, an agent, a browser, File Explorer or Git. \(key("⌘D")) splits \
             it to the right and \(key("⇧⌘D")) splits it down, and each new pane asks again. Drag a divider to resize.
             """)
         }, shots: [
-            WelcomeShot(picture: "chooser", focus: CGRect(x: 420, y: 240, width: 640, height: 400),
-                        ring: CGRect(x: 580, y: 300, width: 320, height: 240), label: "New pane"),
-            WelcomeShot(picture: "split", focus: CGRect(x: 300, y: 40, width: 1140, height: 860),
-                        ring: CGRect(x: 868, y: 45, width: 562, height: 826), label: "⌘D"),
-            WelcomeShot(picture: "splitdown", focus: CGRect(x: 300, y: 40, width: 1140, height: 860),
-                        ring: CGRect(x: 868, y: 460, width: 562, height: 410), label: "⇧⌘D"),
+            WelcomeShot(picture: "splitdown", focus: CGRect(x: 560, y: 330, width: 720, height: 470),
+                        ring: CGRect(x: 874, y: 515, width: 314, height: 192), label: "New pane"),
+            WelcomeShot(picture: "server", focus: CGRect(x: 300, y: 40, width: 980, height: 760),
+                        ring: CGRect(x: 789, y: 45, width: 484, height: 748), label: "⌘D"),
+            WelcomeShot(picture: "splitdown", focus: CGRect(x: 300, y: 40, width: 980, height: 760),
+                        ring: CGRect(x: 790, y: 422, width: 484, height: 371), label: "⇧⌘D"),
         ]),
         WelcomePage(title: "Tabs", words: { _ in
             Text("""
@@ -45,15 +45,15 @@ struct WelcomePage {
             agent needs you. \(key("⌘T")) opens a tab, \
             \(key("⌘1"))–\(key("⌘9")) jumps to one, and \(key("⌃⌘O")) shows every tab at once.
             """)
-        }, shots: [WelcomeShot(picture: "overview", focus: CGRect(x: 290, y: 0, width: 760, height: 430),
-                               ring: CGRect(x: 298, y: 4, width: 890, height: 40), label: "4 tabs")]),
+        }, shots: [WelcomeShot(picture: "overview", focus: CGRect(x: 280, y: 0, width: 1000, height: 440),
+                               ring: CGRect(x: 299, y: 6, width: 866, height: 34), label: "⌘T")]),
         WelcomePage(title: "Spaces", words: { _ in
             Text("""
             A space is one project: its folder, its Git branch and its own tabs. The sidebar lists your spaces and \
             the agents at work in each. \(key("⌃⌘T")) makes a space and \(key("⌃⌘1"))–\(key("⌃⌘9")) jumps to one.
             """)
-        }, shots: [WelcomeShot(picture: "overview", focus: CGRect(x: 0, y: 30, width: 620, height: 350),
-                               ring: CGRect(x: 8, y: 76, width: 284, height: 214), label: "3 spaces")]),
+        }, shots: [WelcomeShot(picture: "docs", focus: CGRect(x: 0, y: 40, width: 920, height: 404),
+                               ring: CGRect(x: 8, y: 82, width: 283, height: 420), label: "5 spaces")]),
         WelcomePage(title: "Agents, as a terminal or a chat", words: { look in
             Text("""
             Start Claude Code, Codex, Pi or OpenCode in a new pane. Switch it to Chat to answer it as messages, or \
@@ -61,8 +61,8 @@ struct WelcomePage {
             needs you, \(Text("blue").foregroundStyle(look.working)) works, \
             \(Text("green").foregroundStyle(look.finished)) is done.
             """)
-        }, shots: [WelcomeShot(picture: "overview", focus: CGRect(x: 300, y: 500, width: 600, height: 340),
-                               ring: CGRect(x: 310, y: 680, width: 542, height: 108), label: "Needs you")]),
+        }, shots: [WelcomeShot(picture: "chat", focus: CGRect(x: 300, y: 60, width: 1000, height: 560),
+                               ring: CGRect(x: 691, y: 84, width: 85, height: 28), label: "Chat or terminal")]),
         WelcomePage(title: "Plugins, built in and your own", words: { _ in
             Text("""
             Browser, Git and File Explorer come with Ovvi and open beside your agents. Your own plugins are small \
@@ -70,20 +70,20 @@ struct WelcomePage {
             with the \(key("ovvi")) command.
             """)
         }, shots: [
-            WelcomeShot(picture: "browser", focus: CGRect(x: 760, y: 40, width: 680, height: 420),
-                        ring: CGRect(x: 868, y: 45, width: 562, height: 400), label: "Browser"),
-            WelcomeShot(picture: "files", focus: CGRect(x: 300, y: 40, width: 1140, height: 860),
-                        ring: CGRect(x: 300, y: 45, width: 562, height: 826), label: "File Explorer"),
-            WelcomeShot(picture: "plugin", focus: CGRect(x: 760, y: 40, width: 680, height: 420),
-                        ring: CGRect(x: 876, y: 120, width: 546, height: 280), label: "Your own plugin"),
+            WelcomeShot(picture: "overview", focus: CGRect(x: 360, y: 30, width: 920, height: 404),
+                        ring: CGRect(x: 789, y: 45, width: 484, height: 748), label: "Browser"),
+            WelcomeShot(picture: "chat", focus: CGRect(x: 360, y: 120, width: 920, height: 404),
+                        ring: CGRect(x: 789, y: 45, width: 484, height: 748), label: "Git"),
+            WelcomeShot(picture: "docs", focus: CGRect(x: 360, y: 60, width: 920, height: 404),
+                        ring: CGRect(x: 789, y: 45, width: 484, height: 748), label: "File Explorer"),
         ]),
         WelcomePage(title: "Any machine you can ssh to", words: { _ in
             Text("""
             Add a machine, and its sessions open in a window of their own, with the same panes, agents and plugins. \
             Your SSH config and keys work as they are, and work there keeps running while your Mac sleeps.
             """)
-        }, shots: [WelcomeShot(picture: "machines", focus: CGRect(x: 420, y: 280, width: 600, height: 400),
-                               ring: CGRect(x: 506, y: 446, width: 426, height: 146), label: "Your machines")]),
+        }, shots: [WelcomeShot(picture: "machines", focus: CGRect(x: 0, y: 0, width: 920, height: 404),
+                               ring: CGRect(x: 120, y: 38, width: 146, height: 204), label: "Your machines")]),
     ]
 
     /// A key as a keycap in the words: thin spaces pad its cap (`KeycapText`).

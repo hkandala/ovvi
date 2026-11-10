@@ -129,8 +129,8 @@ private struct Ring: View, Animatable {
                           width: rect.width * scale, height: rect.height * scale)
             .insetBy(dx: -3, dy: -3).intersection(CGRect(origin: .zero, size: size).insetBy(dx: 3, dy: 3))
         let shape = RoundedRectangle(cornerRadius: 9, style: .continuous)
-        // On the ring's top edge, as a tab; inside it at the picture's top.
-        let top = part.minY >= 12 ? part.minY - 10 : part.minY + 6
+        // On the ring's top edge, as a tab; on its bottom edge when the ring starts at the picture's top.
+        let top = part.minY >= 12 ? part.minY - 10 : part.maxY - 10
         ZStack(alignment: .topLeading) {
             ZStack {
                 shape.stroke(Color.accentColor.opacity(0.22), lineWidth: 6)
