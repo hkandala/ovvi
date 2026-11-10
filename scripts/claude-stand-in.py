@@ -7,7 +7,7 @@ shows a dialog until 1 is typed, "ask" asks a question through the PermissionReq
 "mute" drops the next prompt, "long" gets a command with 200 lines of output, "big" writes 330 KB of lines the chat
 skips (as a real session's API records), "steps" gets a reply, a command, a reply, two commands and a reply, "many"
 writes 150 more turns (a long session; "many 25" that many, "many 10 30" 10 with 30 more paragraphs each), a prompt of
-OVVI_STAND_IN_SCENE's turns plays that turn (scripts/welcome-scene/turns.py), anything else gets one command and the
+OVVI_STAND_IN_SCENE's turns plays that turn (scripts/welcome-scene/scene.py), anything else gets one command and the
 reply "Echo: <prompt>". Ctrl-C clears the line, and on an empty one asks for another;
 "/exit" quits, after OVVI_STAND_IN_EXIT_HOOKS seconds when set (as Claude Code runs its SessionEnd hooks). Started
 without flags it reports its session to herdr (as herdr's Claude Code integration does) and keeps its transcript, which
