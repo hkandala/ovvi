@@ -356,6 +356,14 @@ runs and on-demand on the final head.
   the line 355 px at y 381–393, the two buttons 246 px wide, 28 px tall at y 410–437; before, only a 29 px dashed
   square, a 154 px title and a 133 px button. Runs: 42706306015, 42708486361 (found the no-window launch),
   42710210104 and 42711244306 green.
+- **Round 7 (69), cause.** Until its restore or the new-window view decided (a launch reads herdr first, about 0.7 s
+  here), a window's content was empty: no glass background and AppKit's plain title bar, then Ovvi's look. Measured
+  in a local XCUITest recording (17.3 frames a second, 58 ms each): before, the window's middle went from the
+  desktop's 22 to a plain gray 30 for 12 frames (about 690 ms), then to the glass 23; after, 22 straight to 23, the
+  glass and title row from the window's first frame. **Fix:** that empty phase is `WindowStart`: the window's
+  background and title row, and on the launch's first window Ovvi's icon (96 pt) in the middle; the content then
+  fades in over 0.2 s. Later windows and ⌘N show the background alone. Runs: 42714517118 green (window, restore,
+  traffic-light and look tests).
 - **For the user (round 7).** Quit with two windows open and launch: both come back with their sessions; close every
   window, quit, launch: one new-window view. A session you stopped (a reboot) is still skipped, so a window of only
   stopped sessions shows the view. An empty session: New Space, Open Folder…, and your Git projects under ~/code.
