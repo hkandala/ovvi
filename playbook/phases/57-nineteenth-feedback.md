@@ -1739,3 +1739,14 @@ you did, no need of reverting them".
 - **For the user.** `git checkout onboarding-v<n> && make run`, then `defaults delete dev.ovvi.app.debug
   welcomeDone` for a first launch, or Settings ▸ General ▸ Show Welcome. Whichever you pick: re-take its pictures and
   film on a quiet Mac (the films were taken under heavy load and stutter in places; the app measured smooth).
+    Follow-up to item 78, v4 chosen: "i actually like v4 of all, let's improve that a bit - i like video clips than
+    photos, but it does unnecessary zoom ins, which are not good, keep the video as is, no zoom ins needed - we should
+    see traffic light buttons for the window we show i don't see that - each page shouldn't automatically move to next
+    page, only on click it should move, and then videos should keep repeating if the user is on same page - for the
+    agents view show first tui and clicking on chat switches to chat view and text should say more like seamlessly
+    switch between tui or chat view when needed - give me different variations of text for each page that i can choose
+    from - install herdr page can be better with some detail on why herdr, and once done, it should say you are all
+    ready to go something like that - overall text below the videos needs improvements, so give me different variations
+    of it , make sure all video recordings are of extremely high quality. let's scrap other version, work deep on this
+    v4 with my inputs, and give me final html report with text variations and final video. once i approve the text and
+    changes, then we can merge it".
