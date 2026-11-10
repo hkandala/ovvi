@@ -1570,4 +1570,6 @@ you did, no need of reverting them".
 - **Review.** Five rounds: Esc broke the filter test (fixed), the search kept on a fold, a stale task id (another
   agent), the loader's identity switching, a loop that ended while an agent was still on its first page, and the
   cancel that marked agents failed; all fixed.
+- **Runs.** CI 42749499750: 10 chosen tests green (Archived search, stuck agent here and over the relay, filters,
+  pages, dots, Recent, scroll into view, untitled agent, the session menu).
 - **Pictures**, before and after, dark and light: `~/Downloads/ovvi-research/p57b/r7b/index.html`.
