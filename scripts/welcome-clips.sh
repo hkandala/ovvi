@@ -109,18 +109,20 @@ layout_camera="0:1:.5:.5 0.4:1:.5:.5 1.2:1.22:.62:.55 2.4:1.22:.62:.55 3.1:1.35:
 
 # Claude Code's turn in Chat as it happens: its words and tools come in, the Git card beside it has the diff.
 agents() {
-    local c old prompt
+    local c prompt
     ln -sf "$REPO/scripts/welcome-clips/claude.py" "$W/bin/claude"
-    old=$(h pane list | json "[p['tab_id'] for p in d['result']['panes'] if p['pane_id'] == '$c2'][0]")
-    # A new tab right after the first, in view in the tab bar, in place of the scene's Dark mode tab.
+    # In place of the scene's Dark mode tab: a new one right after the first, in view in the tab bar.
+    h tab close "$(h pane list | json "[p['tab_id'] for p in d['result']['panes'] if p['pane_id'] == '$c2'][0]")" \
+        >/dev/null
     c=$(o "$c1" "$R/shortlink" agent claude --tab --json | json "d['pane']")
-    o "$c" "$R/shortlink" open git . uncommitted --beside "$c" >/dev/null
-    h tab close "$old" >/dev/null
     h pane rename "$c" "Dark mode" >/dev/null
     h pane wait-output "$c" --match stand-in --timeout 30000 >/dev/null
     tap "$(h pane list | json "[p['tab_id'] for p in d['result']['panes'] if p['pane_id'] == '$c'][0]")"
-    prompt=$(json "list(d['claude'])[1]" <"$W/turns.json")
     sleep 1
+    o "$c" "$R/shortlink" open git . uncommitted --beside "$c" >/dev/null
+    # Its card turns to Chat once the agent's hooks report in.
+    sleep 3
+    prompt=$(json "list(d['claude'])[1]" <"$W/turns.json")
     roll "agents-$1"
     upto 0.3
     h pane send-text "$c" "$prompt" >/dev/null
