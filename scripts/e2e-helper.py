@@ -48,6 +48,11 @@ scripts/stress.py; its summary comes back. With an empty body it removes the ses
 beside its shells.
 POST /<session>/sample with a number of seconds as the body gives back `sample`'s profile of the app over that time.
 POST /<session>/heap gives back `heap`'s summary of the app's malloc heap, the largest classes first.
+POST /<session>/record with an .mp4 path as the body films the tests' app's windows in a rect around its floating panel,
+the welcome (scripts/record-window.swift: only the app's windows, 2x, 60 fps), and replies once it records;
+/<session>/record-stop ends the file. Local only: it needs the screen recording permission.
+POST /<session>/welcome with forget as the body removes the Debug build's welcome flag (a first launch); done marks it
+done again, as scripts/e2e.sh does.
 POST /<session>/pause stops the session's server (SIGSTOP), so the app's writes wait for herdr's answer;
 /<session>/resume lets it go on (SIGCONT), as the helper's exit does for every session.
 POST /<session>/ssh-connections gives back how many connections the CI sshd (scripts/ci-sshd.sh) has seen, or
@@ -86,9 +91,11 @@ for name in ("swipe", "pinch", "drag", "file-drag"):
 WEB = {"web-kill": signal.SIGKILL, "web-stop": signal.SIGSTOP, "web-resume": signal.SIGCONT, "web-pids": None}
 CI_ONLY = {"ssh-stop": "it stops a live ControlMaster", "ssh-unforward": "it changes a live ControlMaster",
            "ssh-forget": "it writes ~/.ssh/known_hosts"}
-builds = {name: subprocess.Popen(["swiftc", f"{tools}/{name}.swift" if name != "usage" else "scripts/usage.swift",
-                                  "-o", f"{tools}/{name}"], stderr=open(f"{tools}/{name}.log", "wb"))
-          for name in ("swipe", "pinch", "drag", "file-drag", "usage")}
+builds = {name: subprocess.Popen(["swiftc", f"{tools}/{name}.swift" if name not in ("usage", "record-window")
+                                  else f"scripts/{name}.swift", "-o", f"{tools}/{name}"],
+                                 stderr=open(f"{tools}/{name}.log", "wb"))
+          for name in ("swipe", "pinch", "drag", "file-drag", "usage", "record-window")}
+recordings = {}  # each session's film, from /record until /record-stop
 
 
 def cpu_seconds(pids):
@@ -212,6 +219,37 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 status, reply = 200, b""
             else:
                 status, reply = 500, run.communicate(timeout=10)[1]
+        elif action == "welcome" and body not in (b"forget", b"done"):
+            status, reply = 400, b"the body must be forget or done"
+        elif action == "welcome":
+            # The tests' Debug defaults only, never the user's Ovvi: forget is a first launch, done is scripts/e2e.sh's.
+            argv = ["delete", "dev.ovvi.app.debug", "welcomeDone"] if body == b"forget" else \
+                ["write", "dev.ovvi.app.debug", "welcomeDone", "-bool", "YES"]
+            subprocess.run(["defaults", *argv], capture_output=True)
+            status, reply = 200, b""
+        elif action == "record" and os.environ.get("CI") == "true":
+            status, reply = 403, b"local only: it needs the screen recording permission"
+        elif action == "record":
+            builds["record-window"].wait()
+            if session in recordings:  # an earlier film never stopped
+                old = recordings.pop(session)
+                old.kill()
+                old.wait()
+            run = subprocess.Popen([f"{tools}/record-window", app_pid(), body.decode()], stdin=subprocess.PIPE,
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if run.stdout.readline():  # "recording WxH"
+                recordings[session] = run
+                status, reply = 200, b""
+            else:
+                status, reply = 500, run.communicate(timeout=10)[1]
+        elif action == "record-stop":
+            run = recordings.pop(session, None)
+            try:
+                _, error = run.communicate(b"", timeout=110) if run else (b"", b"no recording")  # the crop's encode
+                status, reply = (200, b"") if run and run.returncode == 0 else (500, error)
+            except subprocess.TimeoutExpired:
+                run.kill()
+                status, reply = 500, b"the recording did not end in 110 s"
         elif action == "release":
             run = held.pop(session)
             _, error = run.communicate(b"\n", timeout=30)
@@ -354,6 +392,9 @@ env = {**os.environ, "TEST_RUNNER_OVVI_HELPER": f"http://127.0.0.1:{server.serve
        "TEST_RUNNER_OVVI_HERDR": shutil.which("herdr") or "",
        **{f"TEST_RUNNER_OVVI_SESSION{n if n > 1 else ''}": name for n, name in enumerate(sessions, 1)}}
 status = subprocess.run(command, env=env).returncode
+# A film a test never stopped would go on filming the display.
+for run in recordings.values():
+    run.kill()
 # A run cut short between a pause and its resume leaves no stopped server, which the cleanup's stop would wait on.
 for name in sessions:
     signal_server(name, "resume")

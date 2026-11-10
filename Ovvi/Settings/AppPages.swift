@@ -37,6 +37,10 @@ struct GeneralPage: View {
                     Button("Show Shortcuts") { CommandList.runInMainWindow("Keyboard Shortcuts") }
                 }
                 .settingsRow("general.shortcuts")
+                LabeledContent("Welcome to Ovvi") {
+                    Button("Show Welcome") { Welcome.show() }.accessibilityIdentifier("settings.general.welcome")
+                }
+                .settingsRow("general.welcome")
             }
         }
     }

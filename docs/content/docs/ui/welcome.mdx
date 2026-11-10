@@ -1,0 +1,20 @@
+---
+title: "Welcome"
+description: "The welcome panel: what Ovvi is, on the first launch"
+---
+
+A floating panel over Ovvi's windows, 960 × 640 pt (scaled down as a whole to 80% of a smaller screen), centred: no title bar and no window buttons, rounded
+corners, the window's glass (Classic: opaque), a shadow. Drag its background to move it. It shows a few pages, one
+idea each, and the user turns them with Next and Back, → and ←, or Return. Skip (or Esc) closes it from any page;
+Get Started closes it on the last.
+
+- **When.** On the first launch, over the new-window view. Get Started, Skip or Esc mark it done (`welcomeDone`),
+  and it never opens by itself again; a quit with it open does not, so the next launch shows it again. Settings ▸
+  General ▸ Welcome to Ovvi ▸ Show Welcome opens it again. It hides while Ovvi is not the active app, and the menu
+  bar's keys do nothing behind it but Quit, Hide and Settings. A run by hand of a test or Debug build passes
+  `-welcomeDone YES`; `defaults delete dev.ovvi.app.debug welcomeDone` shows a first launch again.
+- **herdr.** When This Mac has no herdr, one page installs it: one line on what it is, Install (the same install
+  as the not-installed page, [states](/docs/ui/states)), its progress, and a failure with Retry. Next waits until
+  herdr is found; Skip still closes. With herdr installed the page is not there.
+- **Nothing changes in the app** while it shows: its pictures are pictures.
+- **Reduce Motion:** pages cross-fade, nothing moves.
