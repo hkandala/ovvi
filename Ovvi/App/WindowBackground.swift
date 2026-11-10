@@ -6,13 +6,7 @@ struct WindowBackground: View {
 
     var body: some View {
         if look.style == .glass {
-            Frosted().overlay(look.backdrop.blendMode(BlendMode.overlay))
-                .overlay {
-                    if let shade = look.glassShade {
-                        Color.clear.glassEffect(.regular, in: .rect).overlay(shade)
-                    }
-                }
-                .overlay(look.window)
+            Frosted().overlay(look.backdrop.blendMode(BlendMode.overlay)).overlay(look.window)
         } else {
             look.window
         }

@@ -13,13 +13,17 @@ Interface Style, Settings ▸ Appearance and the palette.
     the desktop shows through softly. The selected tab and space row are
     Liquid Glass capsules.
   - A bright window behind a dark Glass window shows only as a soft, even
-    light, as in Rex: no text or edges of it come through. The system glass
-    in the dark background gives the wide blur that hides them. Light Glass
-    needs no glass layer, because its white tint already hides a dark window
-    behind it. Text stays at 4.5:1 or more in both cases.
-  - An inactive window looks the same as the active one. The glass carries
-    no tint of its own: macOS draws a glass tint grey and faint in an
-    inactive window. A plain black shade over the glass darkens it instead.
+    light, as in Rex: no text or edges of it come through. The blur and a
+    dark tint hide them. Light Glass's white tint hides a dark window behind
+    it. Text stays at 4.5:1 or more in both cases.
+  - An inactive window looks the same as the active one: the blur stays
+    active, and the tints are plain colors.
+  - Liquid Glass goes only on small or short-lived parts: the selected tab
+    and space row, buttons, keycaps, the chat's reply box, and the panels
+    below. It costs the GPU more than the classic blur, more the larger it
+    is, and macOS turns it grey in an inactive window. A Liquid Glass layer
+    over the whole window took about a fifth more of WindowServer's GPU time
+    while a terminal scrolled.
   - Classic: an opaque window with no blur. The selected tab and row are
     plain raised pills.
 - In both styles the sidebar sits flat on the window background, and pane
@@ -36,7 +40,7 @@ and appearance, with values measured from Rex and tuned by eye. In short:
 
 | Token | Glass | Classic |
 |---|---|---|
-| Window background | behind-window blur (`hudWindow`) + a tint. Dark: black 0.6 blended `overlay` darkens the blur, then the system glass (no tint) blurs it again under black 0.5, then `#1e1e1e` at 0.5 on top. Light: white at 0.7 | opaque `#1e1e1e` dark, `#f6f6f6` light |
+| Window background | behind-window blur (`hudWindow`) + a tint. Dark: black 0.6 blended `overlay` darkens the blur, then `#1d1d1d` at 0.845 on top. Light: white at 0.7 | opaque `#1e1e1e` dark, `#f6f6f6` light |
 | Card fill | white 0.03 dark, 0.6 light, a step brighter than the window; the keyboard card only a little brighter (white 0.02 more in dark, 0.25 in light, so it ends at 0.7) | white 0.018 dark (`#222` on `#1e1e1e`), 0.6 light; a step apart on the keyboard card (black 0.1 more in dark, 0.8 in light) |
 | Card edges | Rex's rim, `plusLighter`: a 0.7 pt inner rim (white 0.06 dark, 0.04 light) and over it along the top a 1 pt line (white 0.09 dark, 0.3 light) that fades out round the corners over 14 pt, with a glow under it (8 pt, about half); then a 1 pt outer stroke (black 0.5 dark, 0.1 light, the same on every card); in light a shadow (black 0.1, blur 5, 2 pt down) | a hairline outer stroke, so each card stands apart from the window: light black 0.14 at 0.7 pt (black 0.18 at 0.8 pt on the keyboard card); dark white 0.1 at 0.7 pt (white 0.16 at 0.8 pt on the keyboard card); no shadow and no rim |
 | Selected tab and row | Liquid Glass capsule | a flat pill in dark (white 0.07, with a 1 pt edge at white 0.12); white with a fine stroke and a shadow in light |

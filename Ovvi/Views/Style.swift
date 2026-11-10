@@ -34,19 +34,13 @@ struct Look {
         dark ? .black.opacity(0.6) : .clear
     }
 
-    /// Glass: the tint over the behind-window blur (light: Rex's Modern 0.7, so it depends less on the desktop).
+    /// Glass: the tint over the behind-window blur, so it depends less on the desktop (light: Rex's Modern 0.7). Dark
+    /// keeps the brightness a full-window Liquid Glass layer under a black shade gave, within a level, for about a
+    /// fifth less WindowServer GPU time while a card redraws; a bright window behind still shows only as a soft light.
     /// Classic: the whole window.
     var window: Color {
-        pick(Color(white: 0x1E / 255).opacity(0.5), .white.opacity(0.7),
+        pick(Color(white: 0x1D / 255).opacity(0.845), .white.opacity(0.7),
              Color(white: 0x1E / 255), Color(white: 0xF6 / 255))
-    }
-
-    /// Glass dark: the system glass between the blur and `window`, as Rex's Modern window, under this shade. Its wide
-    /// blur smooths the text and edges of a bright window behind, which the `overlay` darkening sharpens. The shade
-    /// keeps the darkness the glass's own `#1e1e1e` 0.5 tint gave, which macOS drops in an inactive window. Light needs
-    /// none: its white tint already hides a dark window behind.
-    var glassShade: Color? {
-        style == .glass && dark ? .black.opacity(0.5) : nil
     }
 
     /// The palette's field on its glass panel (#141414 dark, white light), in both styles: a flat color, as a
