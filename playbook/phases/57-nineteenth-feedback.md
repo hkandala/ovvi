@@ -1860,3 +1860,15 @@ you did, no need of reverting them".
 - **Review.** One blocker (the hand-over could end a split before its write returned, so a stand-in closed at once
   could come back); fixed: only after the write. Shoulds fixed: sub-point re-arms from float32 ratios, the 1e-3
   tolerance (now 1e-5), the test hook's display link on a card that leaves, a third-card step and a fit-at-start check.
+- **Runs.** Red on main: CI 42909338423 (the first version of the test: "split left: the left edge jumped 647 → 662 at
+  230 ms", "the content laid out again"); locally, every look: 48 cards laid out again at landing and two cards that
+  slid twice (browser ⇧⌘D to 557 pt, then 511 pt). Green locally on the fix in all four looks. An app-only film of main
+  (Classic dark, ⌘D on File Explorer): the edge lands at 2012 px, the next frame is at 2096 px (42 pt back), then a
+  second 0.13 s slide; on the fix it lands once and stays. The display rate (`testSplitsKeepTheDisplayRate`, local,
+  main → fix, medians): hitches, worst gaps and the main thread's CPU moved within the run-to-run noise (CPU 211–331 →
+  210–329 ms), so dropping the hold and fitting at the start cost nothing measurable. Chosen CI set on the head: see
+  below. Films and sheets: `~/Downloads/ovvi-research/p57z/`.
+- **Not fixed.** A narrow chat card still wraps its messages 150 ms after its width changes, so after a split lands.
+- **For the user.** ⌘D and ⇧⌘D on File Explorer, a terminal and a browser, Glass and Classic, dark and light: every card
+  slides once and stops; nothing moves or re-lays out after it lands. The split card's header buttons and path field
+  sit at their final place from the first frame while its edge slides in to meet them.
