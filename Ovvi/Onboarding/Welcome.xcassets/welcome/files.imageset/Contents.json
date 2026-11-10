@@ -1,0 +1,8 @@
+{
+  "images": [
+    { "filename": "files-light.heic", "idiom": "universal", "scale": "2x" },
+    { "appearances": [{ "appearance": "luminosity", "value": "dark" }], "filename": "files-dark.heic",
+      "idiom": "universal", "scale": "2x" }
+  ],
+  "info": { "author": "xcode", "version": 1 }
+}

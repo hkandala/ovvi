@@ -145,6 +145,11 @@ struct Look {
         dark ? Color(hex: 0x3B3B3D) : Color(hex: 0xE5E5EA)
     }
 
+    /// The soft shadow under the welcome's floating pictures and the mark.
+    var floatShadow: Color {
+        .black.opacity(dark ? 0.5 : 0.18)
+    }
+
     private func pick<Value>(_ glassDark: Value, _ glassLight: Value, _ classicDark: Value,
                              _ classicLight: Value) -> Value
     {

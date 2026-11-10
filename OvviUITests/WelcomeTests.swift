@@ -12,13 +12,18 @@ extension OvviUITests {
         element("welcome.dots").stringValue
     }
 
-    /// A first launch shows it; → and ← turn the pages, Return is Next, a menu key does nothing behind it, Get
-    /// Started closes it, and the next launch shows none. With herdr found there is no herdr step.
+    /// A first launch shows it, its intro first; → and ← turn the pages, Return is Next, a menu key does nothing behind
+    /// it, Get Started closes it, and the next launch shows none. With herdr found there is no herdr step.
     func testTheWelcomeTurnsItsPagesAndClosesForGood() async throws {
         try await Self.post("\(one)/welcome", Data("forget".utf8))
         addTeardownBlock { [one] in _ = try? await Self.post("\(one)/welcome", Data("done".utf8)) }
         relaunch(one)
         XCTAssertTrue(welcomeNext.exists(within: connect), "no welcome on a first launch")
+        // The intro first (the mark and the name); → during it only ends it, on the first page.
+        let intro = element("welcome.intro")
+        XCTAssertTrue(intro.exists, "no intro")
+        app.typeKey(.rightArrow, modifierFlags: [])
+        XCTAssertTrue(intro.vanishes(within: 1.5), "→ left the intro on")
         let count = try XCTUnwrap(welcomePage.split(separator: " ").last.flatMap { Int($0) }, welcomePage)
         XCTAssertEqual(welcomePage, "1 of \(count)")
         let tabs = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'tab.'")).count
@@ -150,18 +155,20 @@ extension OvviUITests {
                 throw XCTSkip("\(error)")
             }
             XCTAssertTrue(welcomeNext.exists(within: connect))
-            try await Task.sleep(for: .seconds(4))
+            // The intro, then each page for 4.5 s (its pictures rise and zoom in); the herdr step is the last.
+            try await Task.sleep(for: .seconds(2.5))
             let install = element("welcome.herdr.install")
-            while welcomeNext.label != "Get Started" {
+            var last = false
+            while !last {
+                try await Task.sleep(for: .seconds(4.5))
                 if install.exists {
                     install.click()
                     _ = welcomeNext.has(\.isEnabled, true, within: connect)
+                    try await Task.sleep(for: .seconds(2))
                 }
-                try await Task.sleep(for: .seconds(4))
+                last = welcomeNext.label == "Get Started"
                 welcomeNext.click()
             }
-            try await Task.sleep(for: .seconds(4))
-            welcomeNext.click()
             try await Task.sleep(for: .seconds(1))
             try await Self.post("\(one)/record-stop")
         }

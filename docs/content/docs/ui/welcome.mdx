@@ -8,13 +8,20 @@ corners, the window's glass (Classic: opaque), a shadow. Drag its background to 
 idea each, and the user turns them with Next and Back, → and ←, or Return. Skip (or Esc) closes it from any page;
 Get Started closes it on the last.
 
+- **The intro.** Ovvi's mark builds itself: its three panes slide into the stack one by one (charcoal, gray,
+  pearl), "Ovvi" fades in under it, and the mark moves up into the panel's corner as the first page comes in. A
+  click or a key there goes to the first page at once.
+- **Pages.** Four pages of close-ups: pictures of single parts of the app (light or dark, as the app shows), cut
+  out and floating on the panel, each with one line under it and the keys it names. They rise one after another,
+  and each then zooms in on the detail its line names. Welcome to Ovvi (sessions keep running); Panes, tabs and
+  spaces; Agents and plugins; Your machines.
 - **When.** On the first launch, over the new-window view. Get Started, Skip or Esc mark it done (`welcomeDone`),
   and it never opens by itself again; a quit with it open does not, so the next launch shows it again. Settings ▸
   General ▸ Welcome to Ovvi ▸ Show Welcome opens it again. It hides while Ovvi is not the active app, and the menu
   bar's keys do nothing behind it but Quit, Hide and Settings. A run by hand of a test or Debug build passes
   `-welcomeDone YES`; `defaults delete dev.ovvi.app.debug welcomeDone` shows a first launch again.
-- **herdr.** When This Mac has no herdr, one page installs it: one line on what it is, Install (the same install
-  as the not-installed page, [states](/docs/ui/states)), its progress, and a failure with Retry. Next waits until
-  herdr is found; Skip still closes. With herdr installed the page is not there.
+- **herdr.** When This Mac has no herdr, a last page (One more thing) installs it: one line on what it is, Install
+  (the same install as the not-installed page, [states](/docs/ui/states)), its progress, and a failure with Retry.
+  Get Started waits until herdr is found; Skip still closes. With herdr installed the page is not there.
 - **Nothing changes in the app** while it shows: its pictures are pictures.
 - **Reduce Motion:** pages cross-fade, nothing moves.
