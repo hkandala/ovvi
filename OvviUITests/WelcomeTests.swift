@@ -150,17 +150,19 @@ extension OvviUITests {
                 throw XCTSkip("\(error)")
             }
             XCTAssertTrue(welcomeNext.exists(within: connect))
-            try await Task.sleep(for: .seconds(4))
+            try await Task.sleep(for: .seconds(0.5))
             let install = element("welcome.herdr.install")
-            while welcomeNext.label != "Get Started" {
+            // Each page for a while; the herdr step (the last page) installs first.
+            while true {
                 if install.exists {
+                    try await Task.sleep(for: .seconds(2))
                     install.click()
                     _ = welcomeNext.has(\.isEnabled, true, within: connect)
                 }
-                try await Task.sleep(for: .seconds(4))
+                try await Task.sleep(for: .seconds(4.5))
+                guard welcomeNext.label != "Get Started" else { break }
                 welcomeNext.click()
             }
-            try await Task.sleep(for: .seconds(4))
             welcomeNext.click()
             try await Task.sleep(for: .seconds(1))
             try await Self.post("\(one)/record-stop")

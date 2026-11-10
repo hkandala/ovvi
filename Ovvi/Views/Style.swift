@@ -19,6 +19,14 @@ struct Look {
     /// The system's own colors follow Increase Contrast by themselves.
     var contrast = false
     static let onAccent = Color.white
+    /// The logo's three panes, back to front, each top to bottom (resources/branding, measured on the original).
+    static let mark = [[0x4E5052, 0x3A3B3E], [0x96969B, 0x7B7D81], [0xF4F2F0, 0xE4E2DF]]
+        .map { $0.map { Color(hex: $0) } }
+
+    /// The welcome's drawn window, opaque: the window as its Glass screenshots show it (Classic: its own).
+    var shotWindow: Color {
+        Color(white: Double(pick(0x2A, 0xE7, 0x1E, 0xF6)) / 255)
+    }
 
     var backdrop: Color {
         dark ? .black.opacity(0.6) : .clear

@@ -9,12 +9,10 @@ struct HerdrStep: View {
     var body: some View {
         let machine = Machine.thisMac
         VStack(spacing: 14) {
-            Image(systemName: found ? "checkmark.circle" : "shippingbox").font(.system(size: 36, weight: .light))
+            Image(systemName: found ? "checkmark.circle" : "shippingbox").font(.system(size: 44, weight: .light))
                 .foregroundStyle(.secondary).symbolRenderingMode(.hierarchical)
-            Text(found ? "herdr is installed" : "Install herdr").font(.system(size: 22, weight: .semibold))
-            Text("herdr keeps your terminals and agents running in sessions, so they go on after Ovvi quits.")
-                .font(.system(size: 13)).foregroundStyle(.secondary).multilineTextAlignment(.center)
-                .frame(maxWidth: 420)
+                .contentTransition(.symbolEffect(.replace))
+            Text(found ? "herdr is installed" : "Install herdr").font(.system(size: 17, weight: .semibold))
             switch HerdrInstall.shared.steps[machine.id] {
             case let .running(line):
                 HStack(spacing: 8) {
