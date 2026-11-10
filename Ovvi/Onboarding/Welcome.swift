@@ -11,8 +11,11 @@ enum Welcome {
     static let size = CGSize(width: 960, height: 640)
     private static var panel: NSPanel?
 
+    /// The first launch shows only the panel: the first window opens when it closes.
+    static let firstLaunch = !UserDefaults.standard.bool(forKey: doneKey)
+
     static func showOnFirstLaunch() {
-        guard !UserDefaults.standard.bool(forKey: doneKey) else { return }
+        guard firstLaunch else { return }
         // `-welcomeAfter <seconds>`: a test's film starts recording first.
         Task {
             try? await Task.sleep(for: .seconds(UserDefaults.standard.double(forKey: "welcomeAfter")))
@@ -73,6 +76,9 @@ enum Welcome {
         UserDefaults.standard.set(true, forKey: doneKey)
         panel?.orderOut(nil)
         panel = nil
+        if !NSApp.windows.contains(where: { $0.canBecomeMain && $0.isVisible }) {
+            WindowPages.openWindow?(id: WindowPages.mainScene)
+        }
     }
 
     /// A borderless panel becomes key only when it says so: its buttons' keys (→ ← Return Esc) need it.

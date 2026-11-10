@@ -24,7 +24,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         // A quit with no window open saves none, so macOS opens none. SwiftUI's own first window may not be on
         // screen this early.
         DispatchQueue.main.async {
-            if !NSApp.windows.contains(where: \.canBecomeMain) {
+            if !NSApp.windows.contains(where: \.canBecomeMain), !Welcome.firstLaunch {
                 WindowPages.openWindow?(id: WindowPages.mainScene)
             }
             Welcome.showOnFirstLaunch()

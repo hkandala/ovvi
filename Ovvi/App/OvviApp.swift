@@ -30,6 +30,8 @@ struct OvviApp: App {
             WindowPlacement(.center, size: context.defaultDisplay.visibleRect.size)
         }
         .windowIdealSize(.maximum)
+        // The first launch shows the welcome alone; its end opens the first window.
+        .defaultLaunchBehavior(Welcome.firstLaunch ? .suppressed : .automatic)
         // The title-bar tabs would grow the window when the sidebar hides.
         .windowResizability(.contentMinSize)
         .commands { AppCommands() }

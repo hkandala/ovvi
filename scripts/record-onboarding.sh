@@ -129,8 +129,6 @@ layout() {
 # folder is trusted and its first launch's notes are seen once, off camera.
 real_claude() {
     local p
-    [ -n "${ANTHROPIC_API_KEY:-}${ANTHROPIC_BASE_URL:-}" ] || { echo "no ANTHROPIC_* in the environment for Claude Code" \
-        && exit 1; }
     (
         umask 077
         printf '#!/bin/sh\nexport ANTHROPIC_API_KEY=%q ANTHROPIC_BASE_URL=%q ANTHROPIC_CUSTOM_HEADERS=%q\nexec %q "$@"\n' \
@@ -179,6 +177,8 @@ Keep the change small, then run npm test." >/dev/null
     # Rolls once it is at work: its first step shows. Chat shows once off camera first, so its history is drawn when
     # the click shows it.
     h pane wait-output "$c" --match "⎿" --timeout 90000 >/dev/null
+    # A few steps in, so the chat has a turn to show.
+    sleep 6
     o "$c" "$R/shortlink" view "$c" chat >/dev/null
     sleep 1.5
     o "$c" "$R/shortlink" view "$c" tui >/dev/null
@@ -210,22 +210,18 @@ plugins() {
     sleep 4
     for warm in $(panes w2:t2 | grep -vx "$shell"); do h pane close "$warm" >/dev/null; done
     sleep 1
-    h pane run "$shell" "clear" >/dev/null
+    # What ovvi answers is no part of the picture: the shell drops it.
+    h pane run "$shell" 'ovvi() { command ovvi "$@" >/dev/null; }; clear' >/dev/null
     sleep 1
     roll "plugins-$1"
     upto 0.4
     h pane send-text "$shell" "ovvi open git ." >/dev/null
     upto 0.9
     h pane send-keys "$shell" Enter >/dev/null
-    # What ovvi answers is no part of the picture: ⌃L, as one clears a shell.
-    upto 1.6
-    h pane send-keys "$shell" ctrl+l >/dev/null
     upto 2.2
     h pane send-text "$shell" "ovvi open browser localhost:$port --down" >/dev/null
     upto 2.7
     h pane send-keys "$shell" Enter >/dev/null
-    upto 3.4
-    h pane send-keys "$shell" ctrl+l >/dev/null
     upto 3.9
     git=$(h pane list | json "[p['pane_id'] for p in d['result']['panes'] if p['tab_id'] == 'w2:t2' \
 and p.get('label', '').startswith('ovvi:git')][0]")
@@ -351,6 +347,9 @@ preflight() {
     for tool in herdr node npm ffmpeg ffprobe swiftc xcodebuild python3 curl claude; do
         command -v "$tool" >/dev/null || { echo "missing: $tool" && exit 1; }
     done
+    # Claude Code signs in only with what this environment gives (an agent session's ANTHROPIC_*), never ~/.claude.
+    [ -n "${ANTHROPIC_API_KEY:-}${ANTHROPIC_BASE_URL:-}" ] || { echo "no ANTHROPIC_* in the environment for Claude Code" \
+        && exit 1; }
     mkdir -p "$C"
     printf 'import ApplicationServices\nimport ScreenCaptureKit\nguard AXIsProcessTrusted() else { exit(1) }\n%s\n' \
         'do { _ = try await SCShareableContent.current } catch { exit(2) }' >"$C/allowed.swift"

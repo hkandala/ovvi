@@ -13,12 +13,17 @@ struct HerdrStep: View {
         // The page's title and line say why (WelcomeView); this is the picture's place: herdr's logo and its install.
         VStack(spacing: 20) {
             if found {
-                Image(systemName: "checkmark.circle.fill").font(.system(size: 76)).foregroundStyle(look.finished)
-                    .transition(.scale(scale: 0.8).combined(with: .opacity))
-                Text("herdr is installed").font(.system(size: 15, weight: .medium))
+                // Ovvi's own mark: all set.
+                Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 88, height: 88)
+                    .accessibilityHidden(true).transition(.scale(scale: 0.9).combined(with: .opacity))
+                Text("herdr is installed").font(.system(size: 15, weight: .medium)).foregroundStyle(.secondary)
             } else {
-                // herdr's own logo (github.com/herdrdev/herdr, assets/logo.svg; Apache-2.0, Acknowledgements).
-                Image("HerdrLogo").resizable().scaledToFit().frame(width: 112, height: 112).foregroundStyle(.primary)
+                // herdr's own logo (github.com/herdrdev/herdr, assets/logo.svg; Apache-2.0, Acknowledgements) on a
+                // small tile, as an app's icon.
+                Image("HerdrLogo").resizable().scaledToFit().frame(width: 44, height: 44).foregroundStyle(.primary)
+                    .frame(width: 72, height: 72)
+                    .background(look.cardSolid(), in: RoundedRectangle(cornerRadius: 17, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 17, style: .continuous).strokeBorder(look.divider))
                     .accessibilityLabel("herdr")
                 switch HerdrInstall.shared.steps[machine.id] {
                 case let .running(line):
@@ -35,10 +40,10 @@ struct HerdrStep: View {
                     Button("Retry", action: install).buttonStyle(.glass).controlSize(.large)
                         .accessibilityIdentifier("welcome.herdr.install")
                 case nil where started:
-                    // The install has ended; herdr shows as found within a second.
+                    // The install has ended; the lookup finds herdr within a second.
                     HStack(spacing: 8) {
                         ProgressView().controlSize(.small)
-                        Text("Starting herdr…").font(.system(size: 13)).foregroundStyle(.secondary)
+                        Text("Checking herdr…").font(.system(size: 13)).foregroundStyle(.secondary)
                     }
                     .frame(height: 32)
                 case nil:

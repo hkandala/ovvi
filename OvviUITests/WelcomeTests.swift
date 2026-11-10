@@ -19,6 +19,7 @@ extension OvviUITests {
         addTeardownBlock { [one] in _ = try? await Self.post("\(one)/welcome", Data("done".utf8)) }
         relaunch(one)
         XCTAssertTrue(welcomeNext.exists(within: connect), "no welcome on a first launch")
+        XCTAssertFalse(element("titlebar.machine").exists, "a window behind the welcome on a first launch")
         let count = try XCTUnwrap(welcomePage.split(separator: " ").last.flatMap { Int($0) }, welcomePage)
         XCTAssertEqual(welcomePage, "1 of \(count)")
         let tabs = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'tab.'")).count
@@ -41,6 +42,7 @@ extension OvviUITests {
         XCTAssertEqual(welcomeNext.label, "Get Started")
         welcomeNext.click()
         XCTAssertTrue(welcomeNext.vanishes(within: 3))
+        XCTAssertTrue(element("titlebar.machine").exists(within: connect), "no window after Get Started")
 
         relaunch(one)
         XCTAssertTrue(element("titlebar.machine").exists(within: connect))
@@ -104,6 +106,7 @@ extension OvviUITests {
         XCTAssertFalse(welcomeNext.isEnabled)
         element("welcome.skip").click()
         XCTAssertTrue(welcomeNext.vanishes(within: 3))
+        XCTAssertTrue(element("titlebar.machine").exists(within: connect), "no window after Skip")
     }
 
     /// A Mac with no herdr on its login shell's PATH (HerdrInstallTests' seam), the welcome not done yet.
@@ -137,8 +140,10 @@ extension OvviUITests {
             // The step shows herdr.dev's command; its `curl` is a fixture that gives the fake installer.
             app.launchEnvironment["PATH"] = "\(Self.fixtures)/films:/usr/bin:/bin"
             relaunch(one, ["-welcomeDone", "NO", "-appearance", look, "-forceMotion", "YES", "-welcomeAfter", "20"])
-            // The panel's glass blurs what is behind it on screen: the app's own window, filling the screen.
+            // The panel's glass blurs what is behind it on screen: the app's own window, filling the screen. A first
+            // launch opens none until the welcome ends: the film opens one (⌘N) before the panel shows.
             let main = app.windows.containing(.any, identifier: "titlebar.machine").firstMatch
+            app.typeKey("n", modifierFlags: .command)
             XCTAssertTrue(main.exists(within: connect))
             if let screen = NSScreen.main?.visibleFrame, main.frame.width < screen.width - 1 {
                 app.menuBars.menuBarItems["Window"].click()

@@ -80,11 +80,20 @@ struct WelcomeView: View {
         // The clip fills the panel; the words and buttons sit over its foot, on a shade that keeps them legible.
         ZStack(alignment: .bottom) {
             picture(current, dark: dark).opacity(shown ? 1 : 0)
-            LinearGradient(stops: [.init(color: Look.shade(dark).opacity(0), location: 0),
-                                   .init(color: Look.shade(dark).opacity(0.62), location: 0.4),
-                                   .init(color: Look.shade(dark).opacity(0.86), location: 1)],
-                           startPoint: .top, endPoint: .bottom)
-                .frame(height: 270).allowsHitTesting(false).opacity(shown ? 1 : 0)
+            // A blur and a shade that both fade in from the clip: the picture's own text never reads through the words.
+            let fade = LinearGradient(stops: [.init(color: Look.shade(dark).opacity(0), location: 0),
+                                              .init(color: Look.shade(dark), location: 0.35)], startPoint: .top,
+                                      endPoint: .bottom)
+            if current != .herdr {
+                ZStack {
+                    Rectangle().fill(.regularMaterial).mask(fade)
+                    LinearGradient(stops: [.init(color: Look.shade(dark).opacity(0), location: 0),
+                                           .init(color: Look.shade(dark).opacity(0.88), location: 0.32),
+                                           .init(color: Look.shade(dark).opacity(0.97), location: 1)],
+                                   startPoint: .top, endPoint: .bottom)
+                }
+                .frame(height: 290).allowsHitTesting(false).opacity(shown ? 1 : 0).transition(.opacity)
+            }
             VStack(spacing: 22) {
                 // In one place, and never both at once: the old words go before the new ones come.
                 ZStack {
