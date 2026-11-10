@@ -12,7 +12,7 @@ REPO=$PWD WORLD=onboarding S=workbench SIZE=1200x800
 W=/tmp/$WORLD C=/tmp/$WORLD-clips CLIPS=$REPO/Ovvi/Onboarding/Clips OUT=$HOME/Downloads/ovvi-research/onboarding-v4
 export DERIVED_DATA=${DERIVED_DATA:-/tmp/ovvi-dd-$WORLD}
 export OVVI_APP=$DERIVED_DATA/Build/Products/Release/Ovvi.app
-STEPS=${1:-all} LOOKS=${2:-both} PAGES="running layout agents plugins machines"
+STEPS=${1:-all} LOOKS=${2:-both} PAGES=${PAGES:-running layout agents plugins machines}
 [ "$LOOKS" = both ] && LOOKS="dark light"
 unset "${!HERDR_@}"
 HERDR=$(command -v herdr) CLAUDE=$(command -v claude || true)
@@ -102,28 +102,25 @@ running() {
     wrap
 }
 
-# One pane grows: a split, a split down, a tab, then another space.
+# One pane grows: a split (the card's own Split Right), a tab, then another space.
 layout() {
-    local explorer shell
+    local explorer
     tap w5
     explorer=$(panes w5:t1 | head -1)
     sleep 1
     roll "layout-$1"
-    # The card's own Split Right and Split Down buttons, as a click makes them: each new pane asks what it runs.
+    # The card's own Split Right, as a click makes it: the new pane asks what it runs.
     upto 0.6
     tap "pane.$explorer.split-right"
-    upto 1.8
-    shell=$(panes w5:t1 | grep -vx "$explorer" | head -1)
-    tap "pane.$shell.split-down"
-    upto 3
+    upto 2.2
     # The app shows a tab made in the space in view by itself.
     h tab create --workspace w5 --cwd "$R/notes" --label Ideas --no-focus >/dev/null
     # The first click may only take the keys from the new pane's chooser: a second one is harmless.
-    upto 4.4
+    upto 3.6
     tap w1
     sleep 0.3
     tap w1
-    upto 6.8
+    upto 6.4
     wrap
 }
 
