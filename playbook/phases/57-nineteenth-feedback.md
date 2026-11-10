@@ -372,7 +372,7 @@ runs and on-demand on the final head.
   505 × 56 px at y 1229–1284.
 - **For the user (round 7).** Quit with two windows open and launch: both come back with their sessions; close every
   window, quit, launch: one new-window view. A session you stopped (a reboot) is still skipped, so a window of only
-  stopped sessions shows the view. An empty session: New Space, Open Folder…, and your Git projects under ~/code.
+  stopped sessions shows the view. An empty session: New Space and Open Folder….
 
 ### Track B
 
