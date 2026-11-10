@@ -1708,3 +1708,34 @@ you did, no need of reverting them".
 - **For the user.** `~/Downloads/ovvi-research/p57o/r7/for-the-user.md` (about 50 one-line items found and not
   fixed); report `~/Downloads/ovvi-research/p57o/r7/report.md`. By hand: move a pane and a browser card to another
   tab; drop a remote link while a card streams; Start a stopped session.
+
+### Track Y (item 78 and its follow-ups; branches only)
+
+- **Report:** `~/Downloads/ovvi-research/onboarding-variants.html` (films and stills beside it in
+  `onboarding-variants/v1..v5/`). Five built flows on `onboarding-v1`…`onboarding-v5` (heads 1838a89c, 408a4ad7,
+  eb4b5661, 61124c14, edd890cb), all on `onboarding-base` (616b8856, on abaa0c97): v1 Crisp picture book (7 pages),
+  v2 Close-ups (4), v3 Annotated (6), v4 Living pictures (5, looping clips), v5 Building up (5). Recommended v5 with
+  its page 4 split in two; runner-up v3. Nothing on main.
+- **Base (shared by all five).** A borderless floating NSPanel (no title bar or traffic lights), 960 × 640 pt in the
+  middle of the screen, scaled down only on a small screen; shown on the first launch, marked done by Get Started,
+  Skip or Esc (`welcomeDone`); again only from Settings ▸ General ▸ Welcome to Ovvi (searchable); a herdr step only
+  without herdr, reusing `HerdrInstall` (its `session` became optional), known before the panel opens so pages never
+  shift; the menu bar's ⌘ keys do nothing behind it. It opens after the herdr lookup, so after the scene has set the
+  app's appearance (Track T's note).
+- **Pictures.** One shared scene, `scripts/welcome-scene.sh`: a private herdr world (`XDG_CONFIG_HOME`), five spaces,
+  the four agents' stand-ins playing scripted turns with tool calls (no permission prompt), agent + Browser / Git /
+  File Explorer, a custom plugin, made-up machines, home shown as `~`. Every variant shot both looks from it at 2x.
+- **Films.** The e2e helper's `record`/`record-stop` with `scripts/record-window.swift`: ScreenCaptureKit films only
+  the panel's rect, drawing only windows the app makes after the start. Found on the way: a borderless panel's
+  title is not always in SCWindow (find it by level); top-level `await` on the SCK calls took the handler forms (no
+  wait); `config.backgroundColor` is not retained (crash); a menu window in the exclusion list stops the stream once
+  it closes; XCUITest's accessibility snapshots hold the app ~0.2 s each, which shows as bursts in a film.
+- **Found (lessons).** xctrace leaves its raw `instruments*.ktrace` in `$TMPDIR`, 12–26 GB each, and never removes
+  it: 13 runs filled the disk twice (deleted). `xctrace --launch` by path started the user's installed `Ovvi.app`
+  (same executable name) with test arguments; found and killed. A film helper that outlived its test kept filming
+  (macOS's capture mark showed in later screenshots); the helper and recorder now end it. Eight agents polling the
+  GUI lock at different rates starved the slower pollers for up to 2 h.
+- **Runs.** CI chosen tests, green: v1 42830999466, v2 42856662812, v3 42862586613, v4 42875850824, v5 42825360245.
+- **For the user.** `git checkout onboarding-v<n> && make run`, then `defaults delete dev.ovvi.app.debug
+  welcomeDone` for a first launch, or Settings ▸ General ▸ Show Welcome. Whichever you pick: re-take its pictures and
+  film on a quiet Mac (the films were taken under heavy load and stutter in places; the app measured smooth).
