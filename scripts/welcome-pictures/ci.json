@@ -1,0 +1,7 @@
+[
+  {"name": "Tests", "branch": "link-expiry", "commit": "working tree", "state": "running", "when": "now"},
+  {"name": "Tests", "branch": "main", "commit": "4e1a9c2 Show each link's clicks", "state": "passed", "when": "2 h ago"},
+  {"name": "Deploy preview", "branch": "main", "commit": "4e1a9c2", "state": "passed", "when": "2 h ago"},
+  {"name": "Lint", "branch": "rate-limit", "commit": "9b07d3e Limit by API key", "state": "failed", "when": "5 h ago"},
+  {"name": "Tests", "branch": "main", "commit": "c3f8e10 Add custom slugs", "state": "passed", "when": "yesterday"}
+]
