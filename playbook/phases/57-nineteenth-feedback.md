@@ -1586,3 +1586,8 @@ you did, no need of reverting them".
     only if certain bug is valid and needs a fix we should do it. once all these are done, we make sure everything do,
     do one last check if codebase is all clean, then make sure all ci runs pass with no flaky tests and merge
     everything in one commit" (Track O).
+77. "i just noticed chat ui when agent was testing and it looks yuck, why there is so much padding on message bubbles?
+    let's also move the date and tick marks outside message similar to this: ... this is screenshot from imessage make
+    it similar to this, no need of that pointy bubbles, our regular bubble is fine, just use similar padding like here,
+    and move the timestamp and tick marks to below message similar to "Read Wednesday" part in that screenshot"
+    (`.build/fb57/r7-12.09.08.png`; Track I).
