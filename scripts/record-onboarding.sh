@@ -72,7 +72,8 @@ roll() {
     "$C/film" "$pid" "$C/$1.mp4" <"$C/cue" >"$C/film.log" 2>&1 &
     REC=$!
     exec 3>"$C/cue"
-    until grep -q recording "$C/film.log"; do sleep 0.05; done
+    for _ in $(seq 400); do grep -q recording "$C/film.log" && break; sleep 0.05; done
+    grep -q recording "$C/film.log" || { echo "the film did not start: $(cat "$C/film.log")" && exit 1; }
     T0=$(python3 -c "import time; print(time.time())")
 }
 wrap() {
@@ -171,6 +172,7 @@ agents() {
     # ⌃L: Claude Code draws its screen again, without the launch's lines above it.
     h pane send-keys "$c" ctrl+l >/dev/null
     sleep 1
+    echo "  Claude Code is up; a first turn, off camera"
     # A first turn, off camera: it pushes Claude Code's header (this Mac's model and route) out of view.
     h pane send-text "$c" "Read server.js and lib/links.js and tell me in a few short bullets what each one does." \
         >/dev/null
@@ -181,6 +183,7 @@ agents() {
     h pane send-text "$c" "In public/app.js, show under each link's URL when it was created, like \"Created 3 days ago\". \
 Keep the change small, then run npm test." >/dev/null
     h pane send-keys "$c" Enter >/dev/null
+    echo "  the turn on camera"
     # Rolls once it is at work a few steps in, so the chat has a turn to show, and once the header is out of view.
     # Chat shows once off camera first, so its history is drawn when the click shows it.
     sleep 8
