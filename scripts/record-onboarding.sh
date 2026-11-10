@@ -15,7 +15,7 @@ export OVVI_APP=$DERIVED_DATA/Build/Products/Release/Ovvi.app
 STEPS=${1:-all} LOOKS=${2:-both} PAGES="running layout agents plugins machines"
 [ "$LOOKS" = both ] && LOOKS="dark light"
 unset "${!HERDR_@}"
-HERDR=$(command -v herdr)
+HERDR=$(command -v herdr) CLAUDE=$(command -v claude || true)
 started=$SECONDS lock= REC= up=
 say() { printf '\n[%s +%dm%02ds] %s\n' "$(date +%H:%M:%S)" $(((SECONDS - started) / 60)) $(((SECONDS - started) % 60)) "$*"; }
 
@@ -109,43 +109,78 @@ layout() {
     explorer=$(panes w5:t1 | head -1)
     sleep 1
     roll "layout-$1"
+    # The card's own Split Right and Split Down buttons, as a click makes them: each new pane asks what it runs.
     upto 0.6
-    shell=$(h pane split "$explorer" --direction right --no-focus | json "d['result']['pane']['pane_id']")
-    upto 1.6
-    h pane split "$shell" --direction down --no-focus >/dev/null
-    upto 2.6
+    tap "pane.$explorer.split-right"
+    upto 1.8
+    shell=$(panes w5:t1 | grep -vx "$explorer" | head -1)
+    tap "pane.$shell.split-down"
+    upto 3
     # The app shows a tab made in the space in view by itself.
     h tab create --workspace w5 --cwd "$R/notes" --label Ideas --no-focus >/dev/null
-    upto 3.8
+    upto 4.4
     tap w1
-    upto 6
+    upto 6.8
     wrap
+}
+
+# The real Claude Code for the agents' clip, in the scene's home (its own ~/.claude there, never the user's), signed in
+# only with what this environment gives (the ANTHROPIC_* variables of an agent's session); asks nothing on camera: the
+# folder is trusted and its first launch's notes are seen once, off camera.
+real_claude() {
+    local p
+    [ -n "${ANTHROPIC_API_KEY:-}${ANTHROPIC_BASE_URL:-}" ] || { echo "no ANTHROPIC_* in the environment for Claude Code" \
+        && exit 1; }
+    (
+        umask 077
+        printf '#!/bin/sh\nexport ANTHROPIC_API_KEY=%q ANTHROPIC_BASE_URL=%q ANTHROPIC_CUSTOM_HEADERS=%q\nexec %q "$@"\n' \
+            "${ANTHROPIC_API_KEY:-}" "${ANTHROPIC_BASE_URL:-}" "${ANTHROPIC_CUSTOM_HEADERS:-}" "$CLAUDE" >"$W/bin/claude"
+    )
+    chmod 700 "$W/bin/claude"
+    python3 - "$R" "$1" <<'PY'
+import json, os, sys
+home, look = sys.argv[1:]
+os.makedirs(f"{home}/.claude", exist_ok=True)
+json.dump({"hasCompletedOnboarding": True, "theme": look,
+           "projects": {f"{home}/shortlink": {"hasTrustDialogAccepted": True, "hasCompletedProjectOnboarding": True}}},
+          open(f"{home}/.claude.json", "w"))
+PY
+    p=$(h tab create --workspace w4 --cwd "$R/shortlink" --no-focus | json "d['result']['root_pane']['pane_id']")
+    h pane run "$p" "claude" >/dev/null
+    h pane wait-output "$p" --match "Claude Code v" --timeout 90000 >/dev/null
+    sleep 3
+    h pane send-text "$p" "/exit" >/dev/null
+    h pane send-keys "$p" Enter >/dev/null
+    sleep 2
+    h tab close "$(tab_of "$p")" >/dev/null
 }
 
 # Claude Code at work in its terminal (TUI), then a click on Chat: the same turn, as messages, beside Git's diff.
 agents() {
-    local c prompt
-    printf '#!/bin/sh\nexec %q %q "$@"\n' "$(command -v python3)" "$REPO/scripts/onboarding/claude.py" >"$W/bin/claude"
-    chmod +x "$W/bin/claude"
+    local c
+    real_claude "$1"
     # In place of the scene's Dark mode tab: a new one right after the first, in view in the tab bar.
     h tab close "$(tab_of "$c2")" >/dev/null
     c=$(o "$c1" "$R/shortlink" agent claude --tab --json | json "d['pane']")
-    h pane rename "$c" "Dark mode" >/dev/null
-    h pane wait-output "$c" --match "Welcome to Claude Code" --timeout 30000 >/dev/null
+    h pane rename "$c" "Created dates" >/dev/null
+    h pane wait-output "$c" --match "Claude Code v" --timeout 90000 >/dev/null
     tap "$(tab_of "$c")"
     sleep 1
     o "$c" "$R/shortlink" open git . uncommitted --beside "$c" >/dev/null
-    sleep 2
     o "$c" "$R/shortlink" view "$c" tui >/dev/null
-    sleep 1.5
-    prompt=$(json "list(d['claude'])[1]" <"$W/turns.json")
-    roll "agents-$1"
-    upto 0.3
-    h pane send-text "$c" "$prompt" >/dev/null
+    sleep 2
+    # ⌃L: Claude Code draws its screen again, without the launch's lines above it.
+    h pane send-keys "$c" ctrl+l >/dev/null
+    sleep 1
+    h pane send-text "$c" "In public/app.js, show under each link's URL when it was created, like \"Created 3 days ago\". \
+Keep the change small, then run npm test." >/dev/null
     h pane send-keys "$c" Enter >/dev/null
-    upto 3
+    # Rolls once it is at work: its first step shows.
+    h pane wait-output "$c" --match "⎿" --timeout 90000 >/dev/null
+    roll "agents-$1"
+    upto 3.5
     tap "pane.$c.view.chat" || o "$c" "$R/shortlink" view "$c" chat >/dev/null
-    upto 7
+    upto 9.5
     wrap
 }
 
@@ -299,7 +334,7 @@ publish() {
 # (the scene's clicks).
 preflight() {
     local tool
-    for tool in herdr node npm ffmpeg ffprobe swiftc xcodebuild python3 curl; do
+    for tool in herdr node npm ffmpeg ffprobe swiftc xcodebuild python3 curl claude; do
         command -v "$tool" >/dev/null || { echo "missing: $tool" && exit 1; }
     done
     mkdir -p "$C"
