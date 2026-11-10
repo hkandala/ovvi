@@ -1467,8 +1467,20 @@ you did, no need of reverting them".
   against its old and new places: red on the first version (a vertical motion the wrong way: "split down: the
   top edge at -193", run 42721181130), green after (42721187078). A wide chosen set (dividers, drops, context menus,
   zoom, keys, float, kept cards, web drags; 42719328846) passed.
+- **Runs, the realistic session after the change** (Instruments' hitches of the app's frames, the same 1180 × 760
+  window, before and after in turns, 6 splits each: ⌘D and ⇧⌘D on the terminal, then on File Explorer). Hitches
+  in each split's first 0.35 s: 54 → 44, the worst 33–63 ms → 42–63 ms. Nearly every one is marked "expensive
+  GPU work": this Mac's GPU ran at 60–70 % with Ovvi idle (other agents' apps), and a moving card is composited
+  again over Glass's blurs at each frame. The ones also marked "expensive app update" (the main thread's commits)
+  went 19 → 9, most of those left at the split's first frame, where its own turn builds the new card. So the main
+  thread no longer reaches the slide, and what is left here is the render server's GPU time.
+- **Pictures.** `~/Downloads/ovvi-research/p57j/r7/`: `split-dark-before-after-8x.mp4` and
+  `split-light-before-after-8x.mp4` (⌘D on the terminal beside a browser and File Explorer, before on the left,
+  after on the right, 8 times slower; a 30 fps capture, all this busy Mac's capture gave) and
+  `split-dark-frames.png`, `split-light-frames.png` (frames of the same, before on top).
 - **For the user.** ⌘D and ⇧⌘D, on a terminal and on File Explorer, while an agent works: the slide should not
-  stutter. During the 0.13 s a light Glass card shows no shadow, which comes back as it lands.
+  stutter. During the 0.13 s a light Glass card shows no shadow, which comes back as it lands. If a slide still
+  stutters in Glass but not in Classic, it is the GPU's blur work, a look decision.
 
 ### Track B, round 7 (item 70)
 
