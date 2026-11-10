@@ -166,8 +166,9 @@ agents() {
     h pane wait-output "$c" --match "Claude Code v" --timeout 90000 >/dev/null
     tap "$(tab_of "$c")"
     sleep 1
-    o "$c" "$R/shortlink" open git . uncommitted --beside "$c" >/dev/null
-    o "$c" "$R/shortlink" view "$c" tui >/dev/null
+    o "$c" "$R/shortlink" open git . uncommitted --beside "$c" --new >/dev/null
+    # Its card takes the view once Claude Code's hooks have reported it, a few seconds after it draws.
+    for _ in $(seq 60); do o "$c" "$R/shortlink" view "$c" tui >/dev/null 2>&1 && break; sleep 1; done
     sleep 2
     # ⌃L: Claude Code draws its screen again, without the launch's lines above it.
     h pane send-keys "$c" ctrl+l >/dev/null
