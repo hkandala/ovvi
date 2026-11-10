@@ -1469,3 +1469,24 @@ you did, no need of reverting them".
   zoom, keys, float, kept cards, web drags; 42719328846) passed.
 - **For the user.** ⌘D and ⇧⌘D, on a terminal and on File Explorer, while an agent works: the slide should not
   stutter. During the 0.13 s a light Glass card shows no shadow, which comes back as it lands.
+
+### Track B, round 7 (item 70)
+
+- **Sort Spaces.** A menu beside the header's `+` (28 pt, 8 pt before it), a check on the current order, one app
+  setting kept in the sidebar's defaults (`spaceOrder`): **Manual** (default, herdr's order) or **Recent**: the
+  space whose agent changed state last first, by herdr's `state_change_seq`, which is one counter for the session
+  (checked: three agents' reports gave 1, 2, 3, 4 across spaces). Not the app's `since`: a look at a finish (Done →
+  Idle) changes that and must not move a space. "Recent", not "Activity": the shortest word for what moves a space up.
+- **Recent's rules.** Under the pointer the order holds still and settles 1 s after it leaves (as the agents did).
+  No reorder in Recent: a dropped row stays and Move Up and Move Down are off, as while the filter hides rows; no
+  switch back to Manual by drag (the user's follow-up). ⌃⌘[ ], ⌃⌘1–9, the overview and the palette keep herdr's
+  order.
+- **Agents in a space.** Fixed: by tab, then by place in the tab's layout (left and top first), never by state.
+- **Tests.** testAWorkspaceUnfoldsToItsAgentsByTabAndPlace (old code: newest change first) and
+  testRecentPutsTheSpaceWhoseAgentChangedLastFirst (a finish moves its space up, held under the pointer, a look moves
+  nothing, a drag of a third space to the top leaves herdr's order, Move Up and Down off, Manual again).
+- **Review.** Two test blockers (a drag and a Move Up check that could not fail), two should (docs that said "the
+  sidebar's order" for herdr's), nits, fixed.
+- **Runs.** CI 42726632924: 10 chosen tests green (both sidebar agent tests, row and tab drags, swipes, the session
+  menu, the dots).
+- **Pictures**, dark and light: `~/Downloads/ovvi-research/p57b/r7/index.html` (Sort Spaces).
