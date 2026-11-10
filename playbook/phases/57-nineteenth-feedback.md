@@ -1072,7 +1072,8 @@ you did, no need of reverting them".
   the pane hides by its label outside the split's tab until a snapshot after the move has it in place (`Ahead.Moving`,
   as Replace Pane hides), and a ⌘T's stand-in never claims a tab with only hidden panes. A pane with no label (Resume
   beside, `ovvi agent` beside) is split in place with `pane.split`'s `cwd`: no temporary tab. **Runs:** the new test
-  was red on the old code locally (round 0 saw 3 tabs for 2) and green with the fix.
+  was red on the old code locally (round 0 saw 3 tabs for 2) and green with the fix; chosen tests on CI: run 42915437211
+  (4 green, the new test lost its card id to the narrow shell's wrap; fixed), then run 42918005407 green.
 
 ### Track T (item 50)
 
