@@ -1776,3 +1776,16 @@ you did, no need of reverting them".
     of it , make sure all video recordings are of extremely high quality. let's scrap other version, work deep on this
     v4 with my inputs, and give me final html report with text variations and final video. once i approve the text and
     changes, then we can merge it".
+    v4 text picks and changes: running Plain ("Your work keeps running" / "Terminals, agents and tools live in sessions.
+    Close the window or quit Ovvi, and they keep going."); layout Plain ("Panes, tabs and spaces" / "Split a pane with
+    ⌘D, open a tab with ⌘T, and keep each project in its own space."); agents Warm ("Work with agents your way" /
+    "Watch an agent in its terminal, then switch to the chat when it suits you: the same agent, mid-task."); plugins
+    Warm ("Everything you need, right there" / "Open Git, a browser or your files beside any pane. Need something else?
+    Make a plugin in TypeScript."); machines Punchy ("Remote, without the hassle" / "Any machine you can ssh to: the
+    same panes and agents, still running while your Mac sleeps."); herdr Plain ("One more thing: herdr" / "It keeps your
+    sessions running in the background, so nothing stops when you close the window."); done Plain ("You're all set" /
+    "Your sessions will keep running from here on. Get Started, and open a folder or a session."). "for the herdr,
+    those three icons and message are not good, let's drop them and show herdr logo, with install button, we have
+    reason anyway as text below. can we make the onboarding pane bit more cool, pane should fully be covered with
+    video, and the text and the button should be at bottom on a overlay with a gradient shadow something like that,
+    that make the video and text seem immersive. you can take over my gui lock and finish this entire onboarding flow".
