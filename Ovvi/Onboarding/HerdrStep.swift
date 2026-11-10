@@ -6,6 +6,7 @@ import SwiftUI
 struct HerdrStep: View {
     @Binding var found: Bool
     @Environment(\.look) private var look
+    @State private var started = false
 
     var body: some View {
         let machine = Machine.thisMac
@@ -33,6 +34,13 @@ struct HerdrStep: View {
                         .textSelection(.enabled).accessibilityIdentifier("welcome.herdr.failure")
                     Button("Retry", action: install).buttonStyle(.glass).controlSize(.large)
                         .accessibilityIdentifier("welcome.herdr.install")
+                case nil where started:
+                    // The install has ended; herdr shows as found within a second.
+                    HStack(spacing: 8) {
+                        ProgressView().controlSize(.small)
+                        Text("Starting herdr…").font(.system(size: 13)).foregroundStyle(.secondary)
+                    }
+                    .frame(height: 32)
                 case nil:
                     Button("Install herdr", action: install).buttonStyle(.glassProminent).controlSize(.large)
                         .accessibilityIdentifier("welcome.herdr.install")
@@ -53,6 +61,7 @@ struct HerdrStep: View {
     }
 
     private func install() {
+        started = true
         Task { await HerdrInstall.shared.install(on: .thisMac) }
     }
 

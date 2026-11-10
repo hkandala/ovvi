@@ -1,3 +1,4 @@
 #!/bin/sh
 # For the welcome's films only: herdr.dev's install command on screen, the fake installer run.
-cat "$(dirname "$0")/../no-herdr/install"
+# Its last line names the home as ~, as herdr.dev's does: no folder of this Mac's user in a film.
+sed 's#installed herdr to $HOME/#installed herdr to ~/#' "$(dirname "$0")/../no-herdr/install"
