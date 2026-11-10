@@ -32,7 +32,7 @@ for look in dark light; do
     scene up "$session" "$look"
     H=/Users/Shared/welcome-scene/$world
     source "$W/scene.env"
-    trap 'scene down "$session"' EXIT
+    trap 'cp "$W"/shots/*.png "$out/" 2>/dev/null; scene down "$session"' EXIT
     scene shot main >/dev/null
     # A new pane below the chat (the card with the keyboard shows its buttons) asks what it runs; then it goes again.
     browser=$(panes w1:t1 | tr ' ' '\n' | grep -vx "$c1")
@@ -63,10 +63,11 @@ json.dump(manifest, open(sys.argv[1], "w"), indent=2)
 PY
     o "$files" --timeout 120 plugins reload ci-runs >/dev/null
     o "$files" open ci-runs ./ci.json --beside "$files" >/dev/null
+    scene click w1
     scene click w1:t5
     sleep 2
     # The notice of a card an agent opened ("… opened CI Runs"): not in the picture.
-    scene click notice.close
+    scene click notice.close || true
     sleep 1.5
     scene shot plugins >/dev/null
     scene click w1:t1

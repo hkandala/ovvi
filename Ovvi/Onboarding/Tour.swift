@@ -59,12 +59,12 @@ enum Tour {
                  + "you close the window or quit Ovvi.",
              shot: "welcome-main",
              callouts: [
-                 Callout(label: "Spaces", point: CGPoint(x: 150, y: 300), end: CGPoint(x: 140, y: 184), side: .left),
-                 Callout(label: "Tabs", point: CGPoint(x: 601, y: 30), end: CGPoint(x: 427, y: 36), side: .above),
-                 Callout(label: "Panes", point: CGPoint(x: 1150, y: 470), end: CGPoint(x: 830, y: 259),
+                 Callout(label: "Tabs", point: CGPoint(x: 379, y: 30), end: CGPoint(x: 214, y: 46), side: .left),
+                 Callout(label: "Spaces", point: CGPoint(x: 14, y: 320), end: CGPoint(x: 90, y: 181), side: .left),
+                 Callout(label: "An agent", point: CGPoint(x: 445, y: 700), end: CGPoint(x: 90, y: 382),
+                         side: .left),
+                 Callout(label: "Panes", point: CGPoint(x: 1150, y: 470), end: CGPoint(x: 870, y: 261),
                          side: .right),
-                 Callout(label: "An agent", point: CGPoint(x: 580, y: 760), end: CGPoint(x: 418, y: 462),
-                         side: .below),
              ]),
         Page(title: "Panes and splits",
              text: "Every card is a pane. Split one, and the new pane asks what it runs: a terminal, an agent, a "
@@ -73,7 +73,7 @@ enum Tour {
              callouts: [
                  Callout(label: "Split Right", keys: ["⌘D"], point: CGPoint(x: 866, y: 330),
                          end: CGPoint(x: 308, y: 80), side: .left),
-                 Callout(label: "It asks what it runs", keys: ["↩ Terminal"], point: CGPoint(x: 1020, y: 613),
+                 Callout(label: "It asks what it runs", point: CGPoint(x: 1020, y: 613),
                          end: CGPoint(x: 548, y: 295), side: .above),
                  Callout(label: "Split Down", keys: ["⇧⌘D"], point: CGPoint(x: 1320, y: 467),
                          end: CGPoint(x: 848, y: 262), side: .below),
@@ -99,7 +99,7 @@ enum Tour {
              callouts: [
                  Callout(label: "Chat or TUI: the same agent", point: CGPoint(x: 814, y: 98),
                          end: CGPoint(x: 574, y: 124), side: .below),
-                 Callout(label: "Each tool call, one row", point: CGPoint(x: 520, y: 330),
+                 Callout(label: "Its tool calls, in one line", point: CGPoint(x: 520, y: 330),
                          end: CGPoint(x: 430, y: 290), side: .right),
              ]),
         Page(title: "Plugins, built in and your own",
