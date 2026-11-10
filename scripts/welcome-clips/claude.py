@@ -3,15 +3,17 @@
 whose scene turns (scripts/welcome-scene) play live instead of all at once, so a clip films the chat as it grows: each
 step comes after OVVI_CLIP_PACE times its scripted seconds."""
 import os
+import sys
 
 base = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "claude-stand-in.py")
+sys.path.insert(0, os.path.dirname(base))
 LIVE = '''
 def play(text, turn):
     """A scene turn, step by step as it happens; ends idle, or works on in its last tool."""
     pace = float(os.environ.get("OVVI_CLIP_PACE", "0.1"))
     started = time.time()
     write("user", message={"content": text})
-    report("working")
+    stand_in.report("working")
     for step in turn["steps"]:
         if "text" in step:
             time.sleep(pace * step.get("secs", 2))
@@ -28,7 +30,7 @@ def play(text, turn):
     if turn.get("working"):
         return
     write("system", subtype="turn_duration", durationMs=int((time.time() - started) * 1000))
-    report("idle")
+    stand_in.report("idle")
 
 
 def prompt('''
