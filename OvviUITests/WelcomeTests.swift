@@ -149,8 +149,9 @@ extension OvviUITests {
             } catch {
                 throw XCTSkip("\(error)")
             }
+            // No query while the panel opens and its intro plays: each accessibility snapshot holds the app ~0.2 s.
+            try await Task.sleep(for: .seconds(24))
             XCTAssertTrue(welcomeNext.exists(within: connect))
-            try await Task.sleep(for: .seconds(0.5))
             let install = element("welcome.herdr.install")
             // Each page for a while; the herdr step (the last page) installs first.
             while true {
