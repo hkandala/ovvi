@@ -1067,6 +1067,12 @@ you did, no need of reverting them".
   Follow-ups: chosen tests on 962c41cc (run 42575992688), 7 of 8 green; testPickingAnAgentStartsItBehindTheLoader red
   with herdr reporting the stand-in: chat's `settle` (2459900a) waits up to 10 s for launch pids a shell-function
   stand-in never has (Track G's). All 8 green locally.
+- **Cause (stray tab).** `ovvi open git .` beside a pane: herdr's split runs no command, so the labeled pane came as a
+  new tab and moved into the split; a snapshot in between drew the temporary tab ("Git api") for about 0.2 s. **Fix:**
+  the pane hides by its label outside the split's tab until a snapshot after the move has it in place (`Ahead.Moving`,
+  as Replace Pane hides), and a ⌘T's stand-in never claims a tab with only hidden panes. A pane with no label (Resume
+  beside, `ovvi agent` beside) is split in place with `pane.split`'s `cwd`: no temporary tab. **Runs:** the new test
+  was red on the old code locally (round 0 saw 3 tabs for 2) and green with the fix.
 
 ### Track T (item 50)
 
