@@ -15,11 +15,12 @@ struct WelcomeView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
 
-    /// The picture's frame in the panel (`Welcome.size`).
+    /// The picture's frame in the panel (`Welcome.size`); its corners are the filmed window's own, at the clips' scale.
     static let picture = CGRect(x: 24, y: 24, width: 912, height: 456)
-    /// The clips show the app's whole window at this scale (scripts/welcome-clips.sh films 2:1 regions to 1824 x
-    /// 912 pixels).
-    static let pictureScale: CGFloat = 0.719
+    private static let frame = RoundedRectangle(cornerRadius: 12, style: .continuous)
+    /// The clips show the app's whole 1280 x 640 pt window at this scale (scripts/record-onboarding.sh: 1824 x 912
+    /// pixels).
+    static let pictureScale: CGFloat = 0.7125
     /// Where the logo's panes go, back to front, as fractions of the first clip's frame (measured on its first
     /// frame): the window's sidebar and its two panes.
     private static let firstPanes = [CGRect(x: 0.0044, y: 0.0625, width: 0.2148, height: 0.932),
@@ -29,23 +30,27 @@ struct WelcomeView: View {
     private enum Page: String {
         case running, layout, agents, plugins, machines, herdr
 
-        var words: (title: String, text: String) {
+        /// The picked words; the others the user may choose from are in the report (onboarding-v4.html).
+        func words(herdrFound: Bool) -> (title: String, text: String) {
             switch self {
-            case .running: ("Keep your work running", "Terminals, agents and tools run in sessions that keep going "
-                    + "when you close the window or quit Ovvi.")
-            case .layout: ("Split panes, add tabs, switch spaces",
-                           "Press ⌘D to split, ⌘T for a tab, and give each project its own space.")
-            case .agents: ("Answer agents in chat", "Claude Code, Codex, Pi or OpenCode: one agent, terminal or chat. "
-                    + "Orange needs you, blue works, green is done.")
-            case .plugins: ("Open tools beside you", "Git, Browser and File Explorer come built in. Write your own in "
-                    + "TypeScript; you and agents open them with `ovvi`.")
-            case .machines: ("Reach any machine", "Add any machine you can ssh to. Its sessions open in their own "
-                    + "window and run on while your Mac sleeps.")
-            case .herdr: ("Install herdr, then begin", "herdr runs your sessions. Ovvi installs it for you.")
+            case .running: ("Pick up where you left off", "Terminals, agents and tools run in sessions that keep "
+                    + "going when you close the window or quit Ovvi.")
+            case .layout: ("Split. Tab. Switch.", "⌘D splits a pane, ⌘T opens a tab, and each project gets its own "
+                    + "space in the sidebar.")
+            case .agents: ("TUI or chat, any time", "Switch seamlessly between an agent's terminal and its chat "
+                    + "view. Orange needs you, blue is working, green is done.")
+            case .plugins: ("Bring your tools in", "Git, Browser and File Explorer come built in. Write your own in "
+                    + "TypeScript; you and your agents open them with `ovvi`.")
+            case .machines: ("Your other machines, one click away", "Add any machine you can ssh to. Its sessions "
+                    + "open in their own window and keep running while your Mac sleeps.")
+            case .herdr where herdrFound: ("You're all set", "Your sessions will keep running from here on. Get "
+                    + "Started, and open a folder or a session.")
+            case .herdr: ("One more thing: herdr", "herdr keeps your sessions running in the background, so nothing "
+                    + "stops when you close the window, and you can reconnect from anywhere.")
             }
         }
 
-        /// Reduce Motion: the clip's frame where its change shows (scripts/welcome-clips.sh), still.
+        /// Reduce Motion: the clip's frame where its change shows (scripts/record-onboarding.sh), still.
         var still: Double {
             switch self {
             case .running: 4.5
@@ -71,17 +76,18 @@ struct WelcomeView: View {
         let look = Look(style: settings.style, dark: dark, contrast: colorSchemeContrast == .increased)
         let current = pages[page], last = page == pages.count - 1, shown = intro == nil
         let blocked = current == .herdr && !herdrFound
+        let words = current.words(herdrFound: herdrFound)
         let playing = shown && current != .herdr ? clip(current, dark: dark) : nil
         VStack(spacing: 0) {
             picture(current, look: look, dark: dark).opacity(shown ? 1 : 0)
             // In one place, and never both at once: the old words go before the new ones come.
             ZStack {
                 VStack(spacing: 6) {
-                    Text(current.words.title).font(.system(size: 24, weight: .semibold))
-                    Text(LocalizedStringKey(current.words.text)).font(.system(size: 15)).foregroundStyle(.secondary)
+                    Text(words.title).font(.system(size: 24, weight: .semibold))
+                    Text(LocalizedStringKey(words.text)).font(.system(size: 15)).foregroundStyle(.secondary)
                         .multilineTextAlignment(.center).lineSpacing(2).frame(maxWidth: 760)
                 }
-                .id(page)
+                .id(page * 2 + (herdrFound ? 1 : 0))
                 .transition(.asymmetric(insertion: .opacity.animation(.easeOut(duration: 0.3).delay(0.15)),
                                         removal: .opacity.animation(.easeIn(duration: 0.15))))
             }
@@ -131,7 +137,7 @@ struct WelcomeView: View {
                 let player = reels.player(clip(page, dark: dark))
                 WelcomeClip(player: player)
                     .accessibilityElement().accessibilityAddTraits(.isStaticText)
-                    .accessibilityIdentifier("welcome.picture").accessibilityLabel(page.words.title)
+                    .accessibilityIdentifier("welcome.picture").accessibilityLabel(page.words(herdrFound: false).title)
                     .accessibilityValue(player == nil ? "missing" : "\(page.rawValue) \(dark ? "dark" : "light")")
             }
         }
@@ -140,10 +146,10 @@ struct WelcomeView: View {
                                                    removal: .opacity.combined(with: .scale(scale: 1.02))))
         .frame(width: Self.picture.width, height: Self.picture.height)
         .background(look.cardSolid())
-        .clipShape(CardSurface.shape)
+        .clipShape(Self.frame)
         // A card's own edge: the rim inside, the stroke just outside.
-        .overlay(CardSurface.shape.strokeBorder(look.rim.all, lineWidth: 1))
-        .overlay(CardSurface.shape.inset(by: -edge.width / 2).stroke(edge.color, lineWidth: edge.width))
+        .overlay(Self.frame.strokeBorder(look.rim.all, lineWidth: 1))
+        .overlay(Self.frame.inset(by: -edge.width / 2).stroke(edge.color, lineWidth: edge.width))
     }
 
     private func footer(last: Bool, blocked: Bool) -> some View {

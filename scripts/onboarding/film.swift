@@ -1,5 +1,5 @@
 // Films the display of an app's largest window until stdin closes: only that app's windows (ScreenCaptureKit), never
-// another app's, the desktop or the pointer; H.264 at the display's scale, 60 fps. welcome-clips.sh crops it.
+// another app's, the desktop or the pointer; H.264 at the display's scale, 60 fps. record-onboarding.sh crops it.
 // Usage: film <pid> <out.mp4>
 import AVFoundation
 import ScreenCaptureKit

@@ -159,7 +159,7 @@ for port in random.sample(range(5173, 5300), 127):
         -notifyFromAgents NO -terminalFont "" -cursorStyle block -cursorBlink NO
     local pid=
     for _ in $(seq 100); do
-        for candidate in $(pgrep -f "Ovvi Dev.app/Contents/MacOS/Ovvi -session $S " || true); do
+        for candidate in $(pgrep -f "/Contents/MacOS/Ovvi -session $S " || true); do
             ps -p "$candidate" -o command= | grep -qF -- "$W/config" && pid=$candidate
         done
         [ -n "$pid" ] && break
