@@ -17,6 +17,8 @@ final class CardChrome: NSView {
         layer = root
         wantsLayer = true
         root.sublayers = [drop, fill, lit, rim, edge]
+        (drop.shadowOpacity, drop.shadowRadius) = (1, Look.dropRadius)
+        drop.shadowOffset = CGSize(width: 0, height: Look.dropDown)
         for part in [fill, lit, rim, rimAll, rimTop, edge] {
             part.cornerCurve = .continuous
             part.cornerRadius = CardSurface.radius
@@ -55,7 +57,7 @@ final class CardChrome: NSView {
         let color = { (color: Color) in NSColor(color).cgColor }
         let rimColors = look.rim, edgeLook = look.edge(keyboard: keyboard)
         fill.backgroundColor = color(look.cardFill)
-        lit.backgroundColor = keyboard ? color(look.keyboardFill) : nil
+        lit.backgroundColor = color(look.keyboardFill)
         rimAll.borderColor = color(rimColors.all)
         rimTop.borderColor = color(rimColors.top)
         glow.colors = [color(rimColors.top.opacity(0.45)), CGColor(gray: 0, alpha: 0)]
@@ -67,14 +69,7 @@ final class CardChrome: NSView {
         lit.isHidden = !keyboard
         rim.isHidden = look.style == .classic
         drop.isHidden = look.cardDrop == nil
-        if let shade = look.cardDrop {
-            drop.shadowColor = color(shade)
-            drop.shadowOpacity = 1
-            drop.shadowRadius = Look.dropRadius
-            drop.shadowOffset = CGSize(width: 0, height: Look.dropDown)
-        } else {
-            drop.shadowOpacity = 0
-        }
+        drop.shadowColor = look.cardDrop.map(color)
         CATransaction.commit()
         // The edge's width may have changed.
         place(size)
