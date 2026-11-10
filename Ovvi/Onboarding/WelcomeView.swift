@@ -50,7 +50,8 @@ struct WelcomeView: View {
             switch self {
             case .running: 4.5
             case .layout: 5
-            case .agents, .plugins: 5.5
+            case .agents: 4.2
+            case .plugins: 5.5
             case .machines: 3.5
             case .herdr: 0
             }
