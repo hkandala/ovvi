@@ -110,8 +110,10 @@ struct WelcomeView: View {
         .simultaneousGesture(TapGesture().onEnded { endIntro() }, isEnabled: !shown)
         .environment(\.look, look)
         .onChange(of: playing, initial: true) { reels.show(playing, at: still ? current.still : nil) }
-        // Every page's clip loads now: its first frame is ready before its page shows.
+        // The other pages' clips load once the intro has played (the page in view loads its own at once): their
+        // first frames are ready before their pages show, and the intro's frames have the main thread.
         .task(id: dark) {
+            try? await Task.sleep(for: .seconds(2.5))
             for page in pages where page != .herdr {
                 _ = reels.player(clip(page, dark: dark))
             }
