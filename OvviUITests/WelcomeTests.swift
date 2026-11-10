@@ -52,7 +52,7 @@ extension OvviUITests {
         XCTAssertTrue(app.windows["welcome"].exists(within: connect))
         XCTAssertFalse(welcomeNext.exists, "the pages before the intro played")
         app.typeKey(.return, modifierFlags: [])
-        XCTAssertTrue(welcomeNext.exists(within: 1.5), "the intro went on after a key")
+        XCTAssertTrue(welcomeNext.exists(within: 0.5), "the intro went on after a key")
         XCTAssertTrue(welcomePage.hasPrefix("1 of "), welcomePage)
         app.typeKey(.rightArrow, modifierFlags: [])
         let picture = element("welcome.picture")

@@ -10,10 +10,22 @@ struct WelcomePicture: View {
     /// Reduce Motion: the last shot, still.
     let still: Bool
     static let size = CGSize(width: 920, height: 404)
-    @State private var step = 0
-    @State private var camera: CGRect?
-    @State private var ring = CGRect.zero
+    @State private var step: Int
+    @State private var camera: CGRect
+    @State private var ring: CGRect
     @State private var ringShown = false
+
+    /// From a little wider than the first shot's part; with Reduce Motion on the last shot's.
+    init(shots: [WelcomeShot], pictures: WelcomePictures, still: Bool) {
+        self.shots = shots
+        self.pictures = pictures
+        self.still = still
+        let first = still ? shots.count - 1 : 0
+        _step = State(initialValue: first)
+        _camera = State(initialValue: still ? Self.fit(shots[first].focus) : Self.wider(shots[first].focus))
+        _ring = State(initialValue: shots[first].ring)
+    }
+
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.look) private var look
 
@@ -25,16 +37,16 @@ struct WelcomePicture: View {
                 if let (image, _) = pictures.image(shots[index].picture, dark: dark) {
                     Image(decorative: image, scale: 2).resizable().interpolation(.high)
                         .frame(width: CGFloat(image.width) / 2, height: CGFloat(image.height) / 2)
-                        .opacity(index <= step ? 1 : 0)
+                        .opacity(index <= step ? 1 : 0).transition(.opacity)
                 }
             }
         }
-        .modifier(Camera(rect: camera ?? Self.wider(shots[0].focus), size: size))
+        .modifier(Camera(rect: camera, size: size))
         .frame(width: size.width, height: size.height, alignment: .topLeading)
         .clipShape(shape)
         .overlay {
-            Ring(camera: camera ?? Self.wider(shots[0].focus), rect: ring, size: size, label: shots[step].label,
-                 shown: ringShown)
+            Ring(camera: camera, rect: ring, size: size, label: shots[step].label,
+                 shown: ringShown, grows: !still)
         }
         .background(look.cardFill, in: shape)
         .overlay(shape.strokeBorder(look.divider.opacity(0.6), lineWidth: 0.5))
@@ -48,15 +60,10 @@ struct WelcomePicture: View {
 
     /// The push-in, the ring, then each next shot every 2.8 s.
     private func play() async {
-        let last = shots.count - 1
         if still {
-            step = last
-            camera = Self.fit(shots[last].focus)
-            ring = shots[last].ring
             withAnimation(.easeOut(duration: 0.4).delay(0.2)) { ringShown = true }
             return
         }
-        ring = shots[0].ring
         withAnimation(.spring(duration: 1.8, bounce: 0)) { camera = Self.fit(shots[0].focus) }
         withAnimation(.spring(duration: 0.6, bounce: 0.2).delay(0.6)) { ringShown = true }
         for next in shots.indices.dropFirst() {
@@ -117,6 +124,8 @@ private struct Ring: View, Animatable {
     let size: CGSize
     let label: String
     let shown: Bool
+    /// Reduce Motion: it only fades in.
+    let grows: Bool
 
     var animatableData: AnimatablePair<CGRect.AnimatableData, CGRect.AnimatableData> {
         get { AnimatablePair(camera.animatableData, rect.animatableData) }
@@ -136,7 +145,7 @@ private struct Ring: View, Animatable {
                 shape.stroke(Color.accentColor.opacity(0.22), lineWidth: 6)
                 shape.stroke(Color.accentColor, lineWidth: 2)
             }
-            .frame(width: part.width, height: part.height).scaleEffect(shown ? 1 : 1.06)
+            .frame(width: part.width, height: part.height).scaleEffect(shown || !grows ? 1 : 1.06)
             .offset(x: part.minX, y: part.minY)
             Text(label).font(.system(size: 11, weight: .semibold)).foregroundStyle(Look.onAccent)
                 .padding(.horizontal, 8).padding(.vertical, 3).background(Color.accentColor, in: .capsule)
@@ -149,7 +158,7 @@ private struct Ring: View, Animatable {
     }
 }
 
-/// The pictures, decoded off the main thread before they show: a 2880 × 1800 HEIC took a frame or two to decode.
+/// The pictures, decoded off the main thread before they show: a 2560 × 1600 HEIC took a frame or two to decode.
 /// Only the pages in view and next are kept.
 @MainActor @Observable
 final class WelcomePictures {
@@ -164,9 +173,12 @@ final class WelcomePictures {
     /// Decodes the missing ones, then lets go of the others.
     func keep(_ names: Set<String>) async {
         for name in names.sorted() where images[name] == nil {
-            images[name] = await Task.detached(priority: .userInitiated) { Self.decode(name) }.value
+            guard !Task.isCancelled else { return }
+            let image = await Task.detached(priority: .userInitiated) { Self.decode(name) }.value
+            // A late one fades in (Back to a page, the appearance just changed).
+            withAnimation(.easeOut(duration: 0.3)) { images[name] = image }
         }
-        // A newer page's call may run: only the latest lets go.
+        // A newer page's call runs: only the latest lets go.
         guard !Task.isCancelled else { return }
         images = images.filter { names.contains($0.key) }
     }

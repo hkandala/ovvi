@@ -24,7 +24,7 @@ struct WelcomePage {
             when you close the window or quit Ovvi, and on another machine even while your Mac sleeps. Come back to \
             find it all as you left it.
             """)
-        }, shots: [WelcomeShot(picture: "overview", focus: CGRect(x: 60, y: 0, width: 1150, height: 505),
+        }, shots: [WelcomeShot(picture: "overview", focus: CGRect(x: 0, y: 0, width: 1150, height: 505),
                                ring: CGRect(x: 8, y: 82, width: 283, height: 420), label: "Still running")]),
         WelcomePage(title: "Panes and splits", words: { _ in
             Text("""
@@ -34,9 +34,9 @@ struct WelcomePage {
         }, shots: [
             WelcomeShot(picture: "splitdown", focus: CGRect(x: 560, y: 330, width: 720, height: 470),
                         ring: CGRect(x: 874, y: 515, width: 314, height: 192), label: "New pane"),
-            WelcomeShot(picture: "server", focus: CGRect(x: 300, y: 40, width: 980, height: 760),
+            WelcomeShot(picture: "server", focus: CGRect(x: 360, y: 40, width: 920, height: 404),
                         ring: CGRect(x: 789, y: 45, width: 484, height: 748), label: "⌘D"),
-            WelcomeShot(picture: "splitdown", focus: CGRect(x: 300, y: 40, width: 980, height: 760),
+            WelcomeShot(picture: "splitdown", focus: CGRect(x: 360, y: 396, width: 920, height: 404),
                         ring: CGRect(x: 790, y: 422, width: 484, height: 371), label: "⇧⌘D"),
         ]),
         WelcomePage(title: "Tabs", words: { _ in
@@ -52,22 +52,22 @@ struct WelcomePage {
             A space is one project: its folder, its Git branch and its own tabs. The sidebar lists your spaces and \
             the agents at work in each. \(key("⌃⌘T")) makes a space and \(key("⌃⌘1"))–\(key("⌃⌘9")) jumps to one.
             """)
-        }, shots: [WelcomeShot(picture: "docs", focus: CGRect(x: 0, y: 40, width: 920, height: 404),
+        }, shots: [WelcomeShot(picture: "docs", focus: CGRect(x: 0, y: 76, width: 300, height: 430),
                                ring: CGRect(x: 8, y: 82, width: 283, height: 420), label: "5 spaces")]),
         WelcomePage(title: "Agents, as a terminal or a chat", words: { look in
             Text("""
             Start Claude Code, Codex, Pi or OpenCode in a new pane. Switch it to Chat to answer it as messages, or \
-            back to its terminal: it is the same running agent. \(Text("Orange").foregroundStyle(look.needsYou)) \
+            back to its terminal (TUI): it is the same running agent. \(Text("Orange").foregroundStyle(look.needsYou)) \
             needs you, \(Text("blue").foregroundStyle(look.working)) works, \
             \(Text("green").foregroundStyle(look.finished)) is done.
             """)
-        }, shots: [WelcomeShot(picture: "chat", focus: CGRect(x: 300, y: 60, width: 1000, height: 560),
-                               ring: CGRect(x: 691, y: 84, width: 85, height: 28), label: "Chat or terminal")]),
+        }, shots: [WelcomeShot(picture: "chat", focus: CGRect(x: 300, y: 40, width: 920, height: 404),
+                               ring: CGRect(x: 691, y: 84, width: 85, height: 28), label: "Chat or TUI")]),
         WelcomePage(title: "Plugins, built in and your own", words: { _ in
             Text("""
             Browser, Git and File Explorer come with Ovvi and open beside your agents. Your own plugins are small \
-            TypeScript packages: start one with New Plugin…, or ask your agent, which builds, opens and reloads them \
-            with the \(key("ovvi")) command.
+            TypeScript packages: start one with New Plugin… in Settings, or ask your agent, which builds, opens and \
+            reloads them with the \(Text("ovvi").font(.system(size: 13, design: .monospaced))) command.
             """)
         }, shots: [
             WelcomeShot(picture: "overview", focus: CGRect(x: 360, y: 30, width: 920, height: 404),

@@ -60,20 +60,23 @@ struct WelcomeView: View {
     }
 
     /// The app's icon and its name: in the middle while the intro plays, then the icon alone as the corner's mark.
+    /// Reduce Motion: they only fade, and the mark fades in at the corner.
     private var logo: some View {
-        let done = intro == .done, settled = intro != .start
-        let size = done ? Self.markSize : Self.iconSize
-        let center = done ? CGPoint(x: Self.pad + Self.markSize / 2, y: Self.pad + 12)
-            : CGPoint(x: Welcome.size.width / 2, y: Welcome.size.height / 2 - 30)
+        let done = intro == .done, settled = intro != .start || reduceMotion
+        let middle = CGPoint(x: Welcome.size.width / 2, y: Welcome.size.height / 2 - 30)
+        let corner = CGPoint(x: Self.pad + Self.markSize / 2, y: Self.pad + 12)
         return ZStack {
-            Image(nsImage: NSApp.applicationIconImage).resizable().interpolation(.high)
-                .frame(width: size, height: size)
-                .scaleEffect(settled ? 1 : 0.92).blur(radius: settled ? 0 : 12).opacity(settled ? 1 : 0)
-                .position(center)
-                .accessibilityHidden(true)
+            if reduceMotion {
+                icon(Self.iconSize).position(middle).opacity(intro == .settled ? 1 : 0)
+                icon(Self.markSize).position(corner).opacity(done ? 1 : 0)
+            } else {
+                icon(done ? Self.markSize : Self.iconSize)
+                    .scaleEffect(settled ? 1 : 0.92).blur(radius: settled ? 0 : 12).opacity(settled ? 1 : 0)
+                    .position(done ? corner : middle)
+            }
             Text("Ovvi").font(.system(size: 34, weight: .semibold))
                 .modifier(Tracking(value: settled ? 0.4 : 9))
-                .opacity(settled && !done ? 1 : 0).offset(y: settled ? 0 : 8)
+                .opacity(intro == .settled ? 1 : 0).offset(y: settled ? 0 : 8)
                 .position(x: Welcome.size.width / 2, y: Welcome.size.height / 2 + 66)
                 .accessibilityHidden(true)
         }
@@ -81,12 +84,18 @@ struct WelcomeView: View {
         .allowsHitTesting(false)
     }
 
+    private func icon(_ size: CGFloat) -> some View {
+        Image(nsImage: NSApp.applicationIconImage).resizable().interpolation(.high).frame(width: size, height: size)
+            .accessibilityHidden(true)
+    }
+
+    /// Skip on every page but the last, and on the herdr step until herdr is found (a failed install).
     private var header: some View {
         HStack {
             Spacer()
-            if page < pages.count - 1 {
+            if page < pages.count - 1 || blocked {
                 Button("Skip", action: close).buttonStyle(.plain).foregroundStyle(.secondary)
-                    .keyboardShortcut(.cancelAction).accessibilityIdentifier("welcome.skip")
+                    .accessibilityIdentifier("welcome.skip")
             }
         }
         .frame(height: 24)
@@ -103,7 +112,8 @@ struct WelcomeView: View {
         .id(page)
         .transition(reduceMotion ? .opacity : .asymmetric(
             insertion: .opacity.combined(with: .offset(x: 18 * CGFloat(direction))),
-            removal: .opacity.combined(with: .offset(x: -18 * CGFloat(direction))),
+            // A removal reads the page's last render, the step before: the old page only fades.
+            removal: .opacity,
         ))
     }
 
@@ -132,7 +142,7 @@ struct WelcomeView: View {
         .controlSize(.large)
     }
 
-    /// → turns the page as Next does; Esc on the last page closes it as Get Started, during the intro as Skip.
+    /// → turns the page as Next does; Esc closes it from any page and the intro, as Skip (Get Started on the last).
     /// During the intro → and Return go to the first page.
     private var keys: some View {
         let done = intro == .done, last = page == pages.count - 1
@@ -140,7 +150,7 @@ struct WelcomeView: View {
             Button("Next") { intro == .done ? go(1) : finishIntro() }.keyboardShortcut(.rightArrow, modifiers: [])
                 .disabled(done && (last || blocked))
             Button("Start") { finishIntro() }.keyboardShortcut(.defaultAction).disabled(done)
-            Button("Close", action: close).keyboardShortcut(.cancelAction).disabled(done && !last)
+            Button("Close", action: close).keyboardShortcut(.cancelAction)
         }
         .opacity(0).accessibilityHidden(true)
     }
@@ -179,7 +189,7 @@ struct WelcomeView: View {
     /// The pictures of the page in view and the next, in this appearance.
     private func names(around page: Int) -> Set<String> {
         let look = colorScheme == .dark ? "-dark" : "-light"
-        return Set([page, page + 1].filter { $0 < pages.count }
+        return Set([page - 1, page, page + 1].filter { pages.indices.contains($0) }
             .flatMap { pages[$0]?.shots.map { $0.picture + look } ?? [] })
     }
 }

@@ -33,8 +33,6 @@ struct HerdrStep: View {
                 case nil where !found:
                     Button("Install herdr", action: install).buttonStyle(.glassProminent).controlSize(.large)
                         .accessibilityIdentifier("welcome.herdr.install")
-                    Text(HerdrInstall.command).font(.system(size: 11, design: .monospaced))
-                        .foregroundStyle(.tertiary).textSelection(.enabled)
                 case nil:
                     EmptyView()
                 }
@@ -74,7 +72,7 @@ struct HerdrStep: View {
         found ? "Your sessions have a home on This Mac. Get Started, and open a folder or a session."
             : """
             Ovvi keeps your terminals and agents in herdr sessions, so they go on after Ovvi quits. This Mac \
-            doesn't have herdr yet: Install sets it up with herdr's own installer.
+            doesn't have herdr yet: Install herdr sets it up with herdr's own installer.
             """
     }
 
