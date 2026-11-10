@@ -5,12 +5,10 @@ import SwiftUI
 private typealias Text = SwiftUI::Text
 
 struct Markdown: View {
-    /// Messages' measure: its 13 pt text wraps at 405 pt, about 70 characters.
-    static let measure: CGFloat = 440
     let text: String
 
     var body: some View {
-        Capped(width: Self.measure) { Blocks(container: Document(parsing: text)) }
+        Blocks(container: Document(parsing: text))
             .font(.system(size: 14))
             // Messages' rhythm: 13 pt text on 16 pt lines (1.23), a blank line between blocks, list items as lines. 14
             // pt's own line is 17 pt.

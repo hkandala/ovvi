@@ -468,9 +468,10 @@ runs and on-demand on the final head.
   list items as plain lines; ours had 14 pt text 21 pt apart, 12 pt between blocks and 6 pt between items, so
   paragraphs ran together. Now: 17.2 pt lines (1.23x, iMessage's 13-on-16), 17 pt (a line) between blocks, list items
   as lines, 26 or 17 pt above headings, corner radius 15 (iMessage's corners fit about 15 pt; ours at 18 fit 17.5).
-  Kept: 14 pt text and the turn's rows between bubbles. Text wraps at 440 pt at most (iMessage's 405 pt at 13 pt, about 70
-  characters; ours ran 95), in both bubbles; a code block scrolls sideways in that width and a table wraps in its cells (the orchestrator's pick
-  over code at full width, which left gray beside the prose).
+  Kept: 14 pt text, the column's width and the turn's rows between bubbles. A 440 pt cap (iMessage's measure) went in
+  and came out again: the user found the messages too narrow. The shared `Capped` layout keeps its fix from then: it
+  places its view with the offer it measured with, as its own height stretched a table's flexible cells. Pictures: ~/Downloads/ovvi-research/p57i/
+  r7b (rhythm), r7c (the cap), r7d (the full width back, with a code block and a table).
 
 ### Track E
 
