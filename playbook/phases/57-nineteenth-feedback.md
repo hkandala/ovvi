@@ -1612,3 +1612,6 @@ you did, no need of reverting them".
     user device we don't need to show that part in onboarding. so yeah on first launch we show, and once done or
     skipped we mark it and won't show it again, and can be accessed only from the settings".
     And: "the onboarding panel should use some floating panel kinda thing and not the ones with traffic light buttons".
+    And: "also explore in different variations to have some beautiful animations of our logo and show the app name and
+    logo first and then fade in to onobarding flow something like that? basically it should look highly polished and
+    well crafted onboarding flow with unique but minimal and modern animations".
