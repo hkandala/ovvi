@@ -132,8 +132,11 @@ struct Cutout: View {
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
         let edge = look.edge(keyboard: false)
-        let size = NSImage(named: "welcome/\(shot.name)")?.size ?? CGSize(width: 1, height: 1)
-        let (zoom, anchor) = Self.zoom(to: shot.focus, in: size)
+        let (zoom, anchor) = shot.focus.map { Self.zoom(
+            to: $0,
+            in: NSImage(named: "welcome/\(shot.name)")?.size ?? .zero,
+        ) }
+            ?? (1, .center)
         Image("welcome/\(shot.name)").resizable().interpolation(.high).scaledToFit()
             .scaleEffect(near ? zoom : 1, anchor: anchor)
             .frame(width: shot.shown).clipShape(shape)
@@ -151,8 +154,8 @@ struct Cutout: View {
 
     /// The scale and anchor that fill the frame with `focus`: after a scale `s` about anchor `a`, the frame shows the
     /// picture from `a × (size − size / s)`, `size / s` long.
-    static func zoom(to focus: CGRect?, in size: CGSize) -> (CGFloat, UnitPoint) {
-        guard let focus, focus.width < size.width else { return (1, .center) }
+    static func zoom(to focus: CGRect, in size: CGSize) -> (CGFloat, UnitPoint) {
+        guard focus.width < size.width else { return (1, .center) }
         let zoom = size.width / focus.width, height = size.height / zoom
         return (zoom, UnitPoint(x: focus.minX / (size.width - focus.width), y: focus.minY / (size.height - height)))
     }
