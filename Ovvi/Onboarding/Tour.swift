@@ -104,7 +104,7 @@ enum Tour {
                  ),
                  Callout(
                      label: "Its Git branch",
-                     point: CGPoint(x: 28, y: 115),
+                     point: CGPoint(x: 60, y: 115),
                      end: CGPoint(x: 340, y: 128),
                      side: .right,
                  ),
@@ -159,8 +159,8 @@ enum Tour {
                  ),
                  Callout(
                      label: "Your own plugin, in TypeScript",
-                     point: CGPoint(x: 906, y: 351),
-                     end: CGPoint(x: 560, y: 330),
+                     point: CGPoint(x: 947, y: 64),
+                     end: CGPoint(x: 580, y: 15),
                      side: .right,
                  ),
              ]),
@@ -208,9 +208,13 @@ final class TourShots {
             let image = await Task.detached(priority: .userInitiated) { Self.decode(url) }.value
             guard !Task.isCancelled else { return }
             loaded[name] = image
-            // The other look's set goes with the first of this one's.
-            (images, self.dark) = (loaded, dark)
+            // The first look fills in page by page; another keeps the old set in view until all of its own are in.
+            if self.dark == nil || self.dark == dark {
+                withAnimation(.easeOut(duration: 0.2)) { images = loaded }
+                self.dark = dark
+            }
         }
+        withAnimation(.easeOut(duration: 0.2)) { (images, self.dark) = (loaded, dark) }
     }
 
     private nonisolated static func decode(_ url: URL?) -> CGImage? {

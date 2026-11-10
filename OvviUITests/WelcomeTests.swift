@@ -80,7 +80,7 @@ extension OvviUITests {
         addTeardownBlock { @MainActor [self] in pick("Appearance", "Dark") }
         for look in ["Light", "Dark"] {
             pick("Appearance", look)
-            XCTAssertTrue(until(3) { picture.stringValue.hasSuffix(" \(look.lowercased())") }, picture.stringValue)
+            XCTAssertTrue(until(10) { picture.stringValue.hasSuffix(" \(look.lowercased())") }, picture.stringValue)
         }
         // Esc on the last page closes it too, as Get Started does.
         for _ in 0 ..< 12 where welcomeNext.label == "Next" {
