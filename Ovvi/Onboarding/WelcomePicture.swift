@@ -50,11 +50,15 @@ struct WelcomePicture: View {
         }
         .background(look.cardFill, in: shape)
         .overlay(shape.strokeBorder(look.divider.opacity(0.6), lineWidth: 0.5))
-        // The ring's label, and the picture and look it shows (the tests).
-        .accessibilityElement().accessibilityAddTraits(.isStaticText).accessibilityIdentifier("welcome.picture")
-        .accessibilityLabel(shots[step].label)
-        .accessibilityValue(pictures.image(shots[step].picture, dark: dark)
-            .map { "\(shots[step].picture) \($0.look)" } ?? "")
+        // An element of the picture's own frame: the whole capture laid out under the camera reached over the
+        // footer, and XCUITest's clicks on Next missed it.
+        .accessibilityHidden(true)
+        .overlay {
+            Color.clear.accessibilityElement().accessibilityAddTraits(.isStaticText)
+                .accessibilityIdentifier("welcome.picture").accessibilityLabel(shots[step].label)
+                .accessibilityValue(pictures.image(shots[step].picture, dark: dark)
+                    .map { "\(shots[step].picture) \($0.look)" } ?? "")
+        }
         .task { await play() }
     }
 

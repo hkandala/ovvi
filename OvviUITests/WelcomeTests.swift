@@ -72,7 +72,8 @@ extension OvviUITests {
         app.typeText("onboarding")
         element("settings.search.general.welcome", in: settingsWindow).click()
         element("settings.general.welcome", in: settingsWindow).click()
-        XCTAssertTrue(welcomeNext.exists(within: 5))
+        // The intro plays first.
+        XCTAssertTrue(welcomeNext.exists(within: connect))
         XCTAssertEqual(welcomePage.prefix(5), "1 of ")
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(welcomeNext.vanishes(within: 3))
