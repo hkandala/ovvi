@@ -82,7 +82,8 @@ layout() {
     h pane split "$shell" --direction down --no-focus >/dev/null
     upto 2.6
     tab=$(h tab create --workspace w5 --cwd "$R/notes" --label Ideas --no-focus | json "d['result']['tab']['tab_id']")
-    tap "tab.$tab"
+    # The app shows a tab made in the space in view by itself; the click is for when it does not.
+    tap "tab.$tab" 2>/dev/null || true
     upto 4.0
     tap w1
     upto 6.6
