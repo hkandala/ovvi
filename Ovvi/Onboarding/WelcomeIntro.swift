@@ -17,9 +17,8 @@ struct WelcomeIntro: View {
         VStack(spacing: 14) {
             icon
                 .overlay {
-                    // A white light (onAccent's white) on the tile in both looks.
                     LinearGradient(stops: [.init(color: .clear, location: 0.38),
-                                           .init(color: Look.onAccent.opacity(0.55), location: 0.5),
+                                           .init(color: Look.sheen.opacity(0.55), location: 0.5),
                                            .init(color: .clear, location: 0.62)],
                                    startPoint: .topLeading, endPoint: .bottomTrailing)
                         .frame(width: 264, height: 264)

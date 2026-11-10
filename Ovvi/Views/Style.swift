@@ -150,6 +150,9 @@ struct Look {
         dark ? (.white.opacity(0.92), .black.opacity(0.5)) : (.black.opacity(0.75), .white.opacity(0.85))
     }
 
+    /// The light that sweeps once over the logo in the welcome's intro, in both looks.
+    static let sheen = Color.white
+
     private func pick<Value>(_ glassDark: Value, _ glassLight: Value, _ classicDark: Value,
                              _ classicLight: Value) -> Value
     {
