@@ -14,8 +14,24 @@ PAGES="running layout agents plugins machines"
 unset "${!HERDR_@}"
 HERDR=$(command -v herdr)
 scene() { scripts/welcome-scene.sh "$1" $WORLD "${@:2}"; }
-# A click refuses when another app's window is in front at its point (the Mac is in use): once more, in front again.
-tap() { scene click "$@" || { sleep 0.5 && scene click "$@"; }; }
+# Clicks an element (a space w2, a tab w1:t3, else an accessibility id) where it shows in the window: a kept page's
+# copy of it can sit outside the window, where the scene's `click` refuses.
+tap() {
+    local id=$1 point
+    [[ $id =~ ^w[0-9A-Z]+$ ]] && id=workspace.$id
+    [[ $id =~ ^w[0-9A-Z]+:t[0-9A-Z]+$ ]] && id=tab.$id
+    for _ in $(seq 20); do
+        point=$("$W/tools/ax" "$pid" find "$id" | awk -v frame="$(window)" 'BEGIN { split(frame, w, " ") }
+            { x = $2 + $4 / 2; y = $3 + $5 / 2
+              if (x > w[2] && x < w[2] + w[4] && y > w[3] && y < w[3] + w[5]) { print int(x), int(y); exit } }')
+        [ -n "$point" ] && break
+        sleep 0.25
+    done
+    [ -n "$point" ] || { echo "no $id in the window" >&2 && return 1; }
+    "$W/tools/ax" "$pid" front
+    # shellcheck disable=SC2086 # x y
+    OVVI_APP_PID=$pid "$W/tools/click" $point
+}
 # herdr and ovvi in the scene's session, as welcome-scene.sh has them.
 h() { env -i HOME="$R" PATH=/usr/bin:/bin XDG_CONFIG_HOME="$W/xdg" "$HERDR" --session "$S" "$@"; }
 o() {
@@ -83,7 +99,7 @@ layout() {
     upto 2.6
     tab=$(h tab create --workspace w5 --cwd "$R/notes" --label Ideas --no-focus | json "d['result']['tab']['tab_id']")
     # The app shows a tab made in the space in view by itself; the click is for when it does not.
-    tap "tab.$tab" 2>/dev/null || true
+    tap "$tab" || true
     upto 4.0
     tap w1
     upto 6.6
@@ -105,7 +121,7 @@ agents() {
     h tab close "$old" >/dev/null
     h pane rename "$c" "Dark mode" >/dev/null
     h pane wait-output "$c" --match stand-in --timeout 30000 >/dev/null
-    tap "tab.$(h pane list | json "[p['tab_id'] for p in d['result']['panes'] if p['pane_id'] == '$c'][0]")"
+    tap "$(h pane list | json "[p['tab_id'] for p in d['result']['panes'] if p['pane_id'] == '$c'][0]")"
     prompt=$(json "list(d['claude'])[1]" <"$W/turns.json")
     sleep 1
     roll "agents-$1"
