@@ -145,6 +145,7 @@ extension OvviUITests {
             // The step shows herdr.dev's command; its `curl` is a fixture that gives the fake installer.
             app.launchEnvironment["PATH"] = "\(Self.fixtures)/films:/usr/bin:/bin"
             relaunch(one, ["-welcomeDone", "NO", "-appearance", look, "-forceMotion", "YES", "-welcomeAfter", "20"])
+            let launched = ContinuousClock.now
             // The panel's glass blurs what is behind it on screen: the app's own window, filling the screen.
             let main = app.windows.containing(.any, identifier: "titlebar.machine").firstMatch
             XCTAssertTrue(main.exists(within: connect))
@@ -159,16 +160,9 @@ extension OvviUITests {
             } catch {
                 throw XCTSkip("\(error)")
             }
-            // As few accessibility queries as can be while it plays: each is a snapshot of the whole app, and a poll
-            // every 0.1 s through the intro stalled its frames for 0.2 s at a time.
-            let intro = element("welcome.intro")
-            for _ in 0 ..< 120 {
-                if intro.exists {
-                    break
-                }
-                try await Task.sleep(for: .seconds(0.3))
-            }
-            try await Task.sleep(for: .seconds(5))
+            // No accessibility query while the panel opens and its intro plays: each is a snapshot of the whole app,
+            // and the one that found the intro froze it for 2 s. The panel shows 20 s after the launch.
+            try await Task.sleep(until: launched + .seconds(30), clock: .continuous)
             for _ in 1 ..< 6 {
                 welcomeNext.click()
                 try await Task.sleep(for: .seconds(3.5))
