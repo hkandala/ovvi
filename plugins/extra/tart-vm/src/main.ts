@@ -10,7 +10,7 @@ const cli = `${PLUGIN_DIR}/bin/ovvi-tart`
 interface VM { Name: string; State: string; Running: boolean; Memory: number; CPU: number; os: string }
 interface Info { os: string; CPU: number; Memory: number }
 
-/** New VMs are copies of it, so it stays clean: it is never started or stopped here. */
+/** Cirrus Labs' base image, the first choice to copy: it stays clean, so it is never started or stopped here. */
 const BASE = "golden-gate"
 const valid = /^[A-Za-z0-9][A-Za-z0-9._-]*$/
 
@@ -114,6 +114,7 @@ export default async function main(ovvi: Ovvi) {
     lock.onmessage = ({ data }) => {
       const owner = JSON.parse(data) as string | null
       r.viewOnly = owner !== null
+      ovvi.controls.set("tart", { enabled: owner === null })
       ovvi.controls.set("in-use", { value: owner ? `In use · ${owner}` : "In use", hidden: owner === null })
     }
     let refused = false
@@ -158,21 +159,26 @@ export default async function main(ovvi: Ovvi) {
   }
 
   function create(vms: VM[], hostMemory: number) {
-    const base = vms.find((v) => v.Name === BASE) ?? vms[0]
     const up = vms.filter((v) => v.Running)
+    // A copy of a VM that is off; the base image first.
+    const off = vms.filter((v) => !v.Running).sort((a, b) => Number(b.Name === BASE) - Number(a.Name === BASE))
     let n = 1
     while (vms.some((v) => v.Name === `vm-${n}`)) n++
     const back: Button = ["Cancel", () => void home()]
-    const cost = `A new VM is a copy of ${base.Name}: it takes ${gb(base.Memory)} of memory and ${base.CPU} cores while it runs.`
+    if (!off.length) return draw("No VM to copy", "A new VM is a copy of a VM that is off: stop one first.", [back])
+    const base = off[0]
+    const cost = `A copy of ${base.Name} takes ${gb(base.Memory)} of memory and ${base.CPU} cores while it runs.`
     // macOS runs two VMs at most, and each holds its memory: a second one is worth a question.
     if (up.length > 1) return draw("Two VMs run already", `${cost} macOS runs two at most: stop one first.`, [back])
     const name = el("input", { name: "name", value: `vm-${n}`, placeholder: "Name", required: true, pattern: valid.source })
+    const from = el("select", { name: "from", title: "A copy of" })
+    for (const v of off) from.append(el("option", { value: v.Name, textContent: `a copy of ${v.Name}` }))
     const form = el("form")
-    form.append(name)
+    form.append(name, from)
     form.onsubmit = (e) => {
       e.preventDefault()
       if (vms.some((v) => v.Name === name.value)) return void ovvi.toast(`A VM named ${name.value} exists already.`)
-      void make(name.value, base.Name)
+      void make(name.value, from.value)
     }
     draw(
       "New VM",

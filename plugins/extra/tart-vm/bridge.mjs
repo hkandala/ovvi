@@ -2,6 +2,7 @@
 // cannot open a TCP socket; the card's manifest lets its page reach this one origin (`connect`).
 import { execFile } from "node:child_process"
 import net from "node:net"
+import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
 import { WebSocketServer } from "ws"
 
@@ -16,7 +17,7 @@ const ours = ({ req }) =>
 
 /** The VM's owner while a tool holds its "in use" lock (README, In use), "" with no owner named, else null. */
 const inUse = (vm) =>
-  run(new URL("bin/ovvi-tart", import.meta.url).pathname, ["in-use", vm]).then((r) => r.stdout.trim(), () => null)
+  run(fileURLToPath(new URL("bin/ovvi-tart", import.meta.url)), ["in-use", vm]).then((r) => r.stdout.trim(), () => null)
 
 new WebSocketServer({ host: "127.0.0.1", port, verifyClient: ours }).on("connection", async (ws, req) => {
   // With no listener, a bad frame would end the bridge, and every open screen with it.

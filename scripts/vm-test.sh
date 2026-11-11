@@ -20,7 +20,7 @@ cd "$(dirname "$0")/.."
 dd=$1
 shift
 vm=ovvi-test runs=/tmp/ovvi-vm
-for tool in tart herdr; do
+for tool in tart herdr jq; do
     command -v $tool >/dev/null || { echo "$tool is missing (playbook/ci.md, The VM)" >&2; exit 1; }
 done
 tart list --source local --quiet | grep -qx "$vm" || { echo "no VM $vm: tart clone golden-gate $vm" >&2; exit 1; }

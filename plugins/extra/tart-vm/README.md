@@ -6,7 +6,8 @@ with its keyboard and pointer, scaled to the card.
 - **New pane ▸ Tart VM** (or ⌘K "Open Tart VM Here") shows the list of VMs, every time the card opens: each with
   its state, macOS version (once the card has seen it), cores and memory. **Open** shows a VM's screen in the card
   (a VM that is off starts first, with no window); **Stop** shuts a running VM down, after a question. The base,
-  `golden-gate`, is never started or stopped: **New VM…** makes a copy of it, with a name, and says what it costs
+  `golden-gate` (Cirrus Labs' image), is never started or stopped here: **New VM…** makes a copy of it (or of another
+  VM that is off), with a name, and says what it costs
   (its memory and cores; with a VM running, it asks for a second one; macOS runs two at most).
 - A VM's page shows its screen and nothing else. The title is the VM's name; the header shows **‹** (back to the
   list), its state, macOS version, cores and memory, and **Open in Tart**. Back, or closing the card, only ends the
@@ -41,7 +42,7 @@ lockf -k ~/.config/ovvi-tart/locks/<vm>.lock <command>         # or flock(2) on 
 An extra plugin of Ovvi's repository: not in the app, installed from its folder, where it builds and loads.
 
 ```sh
-cd ~/code/ovvi/plugins/extra/tart-vm && npm install && npm run build
+cd ~/code/ovvi/plugins/extra/tart-vm && npm ci && npm run build
 ovvi plugins install ~/code/ovvi/plugins/extra/tart-vm   # from a pane in Ovvi, or paste the path in Settings ▸ Plugins
 ln -sfn ~/code/ovvi/plugins/extra/tart-vm/bin/ovvi-tart ~/.local/bin/ovvi-tart   # optional, for scripts
 ```
@@ -79,6 +80,4 @@ Tart VM card ── ovvi.run ──> bin/ovvi-tart list | new | view | window | 
 - ⌘ keys that Ovvi uses (⌘T, ⌘W, ⌘K…) go to Ovvi, not to the VM. No clipboard sharing.
 - Logs: `~/.config/ovvi-tart/<vm>.log` (tart run) and `~/Library/Logs/ovvi-tart-bridge.log`. Stop the bridge with
   `launchctl bootout gui/$(id -u)/dev.ovvi.tart-bridge`.
-- Work under the VM lock without the owner file (a script's `lockf … tart exec`) leaves the card's input on: the
-  pointer over it (noVNC sends every move) or a click then breaks that work.
 - A card on a remote machine says Tart VMs run on This Mac only.
