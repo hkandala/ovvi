@@ -142,15 +142,12 @@ extension OvviUITests {
             relaunch(one, ["-welcomeDone", "NO", "-appearance", look, "-forceMotion", "YES", "-welcomeAfter", "20"])
             // The panel's glass blurs what is behind it on screen: the app's own window, filling the screen. A first
             // launch opens none until the welcome ends: the film opens one (File ▸ New Window) before the panel shows.
-            let main = app.windows.containing(.any, identifier: "titlebar.machine").firstMatch
+            // Without herdr it is the new-window view, whose one row installs herdr.
             XCTAssertTrue(app.menuBars.menuBarItems["File"].exists(within: connect))
             app.menuBars.menuBarItems["File"].click()
             app.menuBars.menuItems["New Window"].click()
-            XCTAssertTrue(main.exists(within: connect))
-            if let screen = NSScreen.main?.visibleFrame, main.frame.width < screen.width - 1 {
-                app.menuBars.menuBarItems["Window"].click()
-                app.menuBars.menuItems["Zoom"].click()
-            }
+            // A new window fills the screen by itself.
+            XCTAssertTrue(until(connect) { app.windows.count > 0 }, "no window")
             do {
                 let checkout = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
                 try await Self.post("\(one)/record",
