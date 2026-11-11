@@ -84,7 +84,8 @@ extension OvviUITests {
 
         step("Welcome: Esc on its last page closes it too, as Get Started does")
         show.click()
-        XCTAssertTrue(welcomeNext.exists(within: 5))
+        // Opened a second time, it took 5 s to draw in the VM.
+        XCTAssertTrue(welcomeNext.exists(within: connect))
         // It plays its intro again, and a key during the intro only ends it.
         XCTAssertTrue(element("welcome.intro").vanishes(within: 5), "the intro stays")
         for _ in 0 ..< 12 where welcomeNext.label == "Next" {
