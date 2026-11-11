@@ -80,10 +80,10 @@ which never asks: it refuses a working or waiting agent with `busy`
 2. The app makes the launch line first (for Pi and OpenCode with its run on
    the machine). If that fails, the notice "‹agent› could not start with
    chat" shows, and the agent keeps running.
-3. The card shows the chooser's loader. The app sends the Stop keys if the
-   agent works or waits, then ⌃C to clear the prompt, then types the quit
-   command (`/exit` for Claude Code and OpenCode, `/quit` for Codex and Pi)
-   while the agent still runs.
+3. The card, or the floating window of a floated pane, shows the chooser's
+   loader. The app sends the Stop keys if the agent works or waits, then ⌃C
+   to clear the prompt, then types the quit command (`/exit` for Claude Code
+   and OpenCode, `/quit` for Codex and Pi) while the agent still runs.
 4. When the shell is in front again and herdr no longer reports the agent,
    within 30 s, the app types the launch line. Otherwise the notice
    "‹agent› did not quit" shows.
@@ -93,7 +93,8 @@ which never asks: it refuses a working or waiting agent with `busy`
 5. The loader waits for the agent as for a new one
    ([New pane](/docs/ui/new-pane#agent)). There is no bare-command fallback:
    a plain command would start a new session.
-6. The card opens on the chat, because the user asked for it.
+6. The card (or the floating window) opens on the chat, because the user
+   asked for it.
 
 When a step fails, a notice says why for 10 s, with **Retry**, which runs
 Relaunch with Chat again with the same agent and session (also when the

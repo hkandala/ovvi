@@ -140,7 +140,7 @@ struct FloatingWindow: View {
                 .accessibilityIdentifier("\(id).place")
             }
             Spacer(minLength: 0)
-            if let pane {
+            if let pane, pane.plugin == nil {
                 AgentControl(pane: pane, chat: chat, page: page)
             }
             IconButton(symbol: pinned ? "pin.fill" : "pin", help: "Stay on Top", accent: pinned) {
