@@ -8,9 +8,9 @@ the card, with its keyboard and pointer, scaled to the card.
   VM or New VM…, the card shows the list it has at once and updates it from Tart; each card has its own, in memory.
   **Open** shows a VM's screen in the card (a VM that is off starts first, with no window); **Stop** shuts a running
   VM down; **Delete**, on a stopped VM only (not a suspended one), deletes it with its disk. Stop and Delete ask
-  first, with a red button. The base, `golden-gate` (Cirrus Labs' image), is never started, stopped or deleted here: **New VM…**
-  makes a copy of it (or of another VM that is off), with a name, and says what it costs (its memory and cores; with
-  a VM running, it asks for a second one; macOS runs two at most).
+  first, with a red button. The base, `golden-gate` (Cirrus Labs' image), is never started, stopped or deleted
+  here: **New VM…** makes a copy of it (or of another VM that is off), with a name, and says what it costs (its
+  memory and cores; with a VM running, it asks for a second one; macOS runs two at most).
 - A VM's page shows its screen and nothing else. The title is the VM's name; the header shows **‹** (back to the
   list), its state, macOS version, cores and memory, and **Open in Tart**. Back, or closing the card, only ends the
   screen's connection: the VM runs on until **Stop**.
