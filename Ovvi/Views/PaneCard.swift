@@ -164,18 +164,19 @@ struct PaneCard: View {
         .clearsDrop(page) { zone = nil }
         .onHover { hovering = $0 }
         .task(id: follow) {
-            guard follow, !lit else { return }
+            // A lit card waits too while a text field has the keys: a rename in another card holds them, and its end
+            // gives them to that card.
+            guard follow, !lit || NSApp.keyWindow?.firstResponder is NSText else { return }
             while await (try? Task.sleep(for: .milliseconds(150))) != nil {
                 // Not once the page is on another tab (a palette pick): hover lasts until the mouse moves.
-                guard let pane = store.pane(id), pane.tabID == page.selectedTab?.id,
-                      page.keyboardCard(pane.tabID) !== pane else { return }
+                guard let pane = store.pane(id), pane.tabID == page.selectedTab?.id else { return }
                 // No button down, no open menu (hover stays on while one tracks), no text field typing.
-                if NSEvent.pressedMouseButtons == 0, RunLoop.main.currentMode != .eventTracking,
-                   !(NSApp.keyWindow?.firstResponder is NSText)
-                {
+                guard NSEvent.pressedMouseButtons == 0, RunLoop.main.currentMode != .eventTracking,
+                      !(NSApp.keyWindow?.firstResponder is NSText) else { continue }
+                if page.keyboardCard(pane.tabID) !== pane {
                     page.go(to: pane)
-                    return
                 }
+                return
             }
         }
         .accessibilityHidden(away)
