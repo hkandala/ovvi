@@ -2295,3 +2295,6 @@ ones".
     locally, so i can start fresh and see how it looks as well" · "any cleanups are skipped coz of backward compat, its
     okay do them if needed"
 96. Then "do one last ci run, and make sure everything is green, don't let individual agents wait on ci".
+97. Reconnecting look (Track F2): "when reconnecting to remote machine, we now show a big grey rectangle saying
+    reconnecting, i think we did that coz, earlier there was some text overlap, but that grey rectngel looks ugly, can
+    we improve that and make it fit to our ui better?"
