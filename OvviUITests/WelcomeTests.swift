@@ -141,9 +141,11 @@ extension OvviUITests {
             app.launchEnvironment["PATH"] = "\(Self.fixtures)/films:/usr/bin:/bin"
             relaunch(one, ["-welcomeDone", "NO", "-appearance", look, "-forceMotion", "YES", "-welcomeAfter", "20"])
             // The panel's glass blurs what is behind it on screen: the app's own window, filling the screen. A first
-            // launch opens none until the welcome ends: the film opens one (⌘N) before the panel shows.
+            // launch opens none until the welcome ends: the film opens one (File ▸ New Window) before the panel shows.
             let main = app.windows.containing(.any, identifier: "titlebar.machine").firstMatch
-            app.typeKey("n", modifierFlags: .command)
+            XCTAssertTrue(app.menuBars.menuBarItems["File"].exists(within: connect))
+            app.menuBars.menuBarItems["File"].click()
+            app.menuBars.menuItems["New Window"].click()
             XCTAssertTrue(main.exists(within: connect))
             if let screen = NSScreen.main?.visibleFrame, main.frame.width < screen.width - 1 {
                 app.menuBars.menuBarItems["Window"].click()
