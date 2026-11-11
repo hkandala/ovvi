@@ -52,8 +52,10 @@ extension OvviUITests {
     }
 
     func testFindScrollsHerdrsViewportToTheMatch() async throws {
+        step("200 lines in a shell")
         let pane = try await twoHundredLines("find")
 
+        step("Find: counts, steps through the matches, scrolls herdr to one")
         app.typeKey("f", modifierFlags: .command)
         let field = element("find.field"), count = element("find.count")
         XCTAssertTrue(hasKeyboard(field))
@@ -81,6 +83,7 @@ extension OvviUITests {
         try await expectHighlight("line 42", in: pane)
         keepScreenshot("find bar")
 
+        step("Find: Escape and the close button close it, herdr back at the bottom")
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(field.vanishes(within: 2))
         try await expect("herdr back at the bottom") { try await scrollOffset(pane) == 0 }
@@ -89,11 +92,8 @@ extension OvviUITests {
         XCTAssertTrue(hasKeyboard(field))
         element("find.close").click()
         XCTAssertTrue(field.vanishes(within: 2))
-    }
 
-    func testFindCountsTheBlankRowsUnderTheText() async throws {
-        let pane = try await twoHundredLines("blank")
-        let field = element("find.field"), count = element("find.count")
+        step("Find: the blank rows under the text count; a tab switch closes it")
         // The screen cleared (its text goes to the scrollback) and two more matches under it: the blank rows under the
         // prompt count too, and the selected match is the lower one.
         try await send("printf '\\033[2J\\033[H'\r", to: pane)
@@ -117,6 +117,7 @@ extension OvviUITests {
         app.launchEnvironment["OVVI_E2E_HERDR"] = try env("OVVI_HERDR")
         relaunch()
         let pane = try await twoHundredLines("late")
+        try? FileManager.default.removeItem(atPath: Self.lateAnswer)
         app.typeKey("f", modifierFlags: .command)
         let field = element("find.field")
         XCTAssertTrue(hasKeyboard(field))
@@ -125,11 +126,16 @@ extension OvviUITests {
         XCTAssertEqual(element("find.count").stringValue, "0 of 0")
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(field.vanishes(within: 2))
-        // The read answers 3 s after ⌘F.
-        try await Task.sleep(for: .seconds(4))
+        // The read answers 3 s after ⌘F: the fixture marks the answer, and a scroll it set off would land well within
+        // a second of it.
+        try await expect("herdr's late answer", times: 60) { FileManager.default.fileExists(atPath: Self.lateAnswer) }
+        try await Task.sleep(for: .seconds(1))
         let offset = try await scrollOffset(pane)
         XCTAssertEqual(offset, 0)
     }
+
+    /// Written by the late-herdr fixture when its late read answers.
+    private static let lateAnswer = "/tmp/ovvi-e2e-late-answer"
 
     private func twoHundredLines(_ label: String) async throws -> String {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))

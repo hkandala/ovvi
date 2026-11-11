@@ -1,10 +1,10 @@
 #!/bin/sh
 # The real herdr ($OVVI_E2E_HERDR), whose `session list` answers 2 s late, as over a slow link; the find bar's read of
-# a pane's recent text answers 3 s late (keys come sorted).
+# a pane's recent text answers 3 s late (keys come sorted) and marks the answer in /tmp/ovvi-e2e-late-answer.
 case "$*" in *"session list"*) sleep 2 ;; esac
 case "$*" in *remote-api-bridge*)
     IFS= read -r line
-    case "$line" in *'"source":"recent"'*) sleep 3 ;; esac
+    case "$line" in *'"source":"recent"'*) sleep 3; touch /tmp/ovvi-e2e-late-answer ;; esac
     { printf '%s\n' "$line"; cat; } | "$OVVI_E2E_HERDR" "$@"
     exit
 esac
