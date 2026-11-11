@@ -377,7 +377,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             else:
                 argv += ["remote-api-bridge"]
             try:
-                run = subprocess.run(argv, input=body, capture_output=True, timeout=10)
+                # A bound for a failure only: a stress session's busy panes on CI's 3 cores starved a pgrep past 10 s.
+                run = subprocess.run(argv, input=body, capture_output=True, timeout=60)
                 # pgrep exits 1 when it finds none.
                 ok = run.returncode == 0 or action == "children" and run.returncode == 1
                 status, reply = (200, run.stdout) if ok else (500, run.stderr)
