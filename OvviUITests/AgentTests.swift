@@ -96,9 +96,10 @@ extension OvviUITests {
         row.click()
         XCTAssertTrue(element("tab.\(created.tab)").has(\.isSelected, true, within: 2))
         XCTAssertTrue(hasKeyboard("terminal.\(pane)"))
-        XCTAssertFalse(until(1) { row.value as? String != "Done" })
+        // The look follows the click or the deactivation in the next render (AgentsWatch): no herdr call or timer.
+        XCTAssertFalse(until(0.5) { row.value as? String != "Done" })
         XCUIApplication(bundleIdentifier: "com.apple.finder").activate()
-        XCTAssertFalse(until(1) { row.value as? String != "Done" })
+        XCTAssertFalse(until(0.5) { row.value as? String != "Done" })
         app.activate()
         let place = row.frame
         element("agent.\(other)").click()
