@@ -29,7 +29,8 @@ extension OvviUITests {
         hoverHeader(first)
         element("pane.\(first).close").click()
         XCTAssertTrue(element("pane.\(first)").vanishes(within: 3))
-        XCTAssertFalse(confirm.exists(within: 1))
+        // The ask comes ahead of the close: had it asked, the pane would still be there.
+        XCTAssertFalse(confirm.exists)
     }
 
     func testClosingTheKeyboardCardHandsKeysToItsNeighbor() async throws {
@@ -71,7 +72,7 @@ extension OvviUITests {
         row.hover()
         element("tab.\(tab).close").click()
         XCTAssertTrue(row.vanishes(within: 3))
-        XCTAssertFalse(confirm.exists(within: 1))
+        XCTAssertFalse(confirm.exists)
         let tabs = try await tabIDs()
         XCTAssertFalse(tabs.contains(tab))
     }
@@ -179,11 +180,18 @@ extension OvviUITests {
     }
 
     func testPaletteFiltersAndJumps() {
+        step("Palette: keys typed right after ⌘K from a terminal reach the filter")
         XCTAssertTrue(element("tab.w1:t2").exists(within: connect))
-        let filter = openPalette()
+        XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
+        element("terminal.w1:p1").click()
+        app.typeKey("k", modifierFlags: .command)
         app.typeText("seco")
+        let filter = element("palette.filter")
         XCTAssertTrue(element("palette.tab.w1:t1").vanishes(within: 2))
         XCTAssertTrue(element("palette.tab.w1:t2").exists)
+        XCTAssertTrue(hasKeyboard(filter), "the keyboard is on \(keyboardOwner())")
+
+        step("Palette: Return jumps to the tab, then to a space")
         keepScreenshot("palette")
         app.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(filter.vanishes(within: 2))
@@ -196,18 +204,10 @@ extension OvviUITests {
         app.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(element("page.w2:t1").exists(within: 2))
 
+        step("Palette: Escape closes it")
         openPalette()
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(filter.vanishes(within: 2))
-    }
-
-    func testPaletteTakesKeysTypedRightAfterCommandK() {
-        XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
-        element("terminal.w1:p1").click()
-        app.typeKey("k", modifierFlags: .command)
-        app.typeText("seco")
-        XCTAssertTrue(element("palette.tab.w1:t1").vanishes(within: 2))
-        XCTAssertTrue(element("palette.tab.w1:t2").exists)
     }
 
     func testPaletteEnterTakesTheMovedRowAndKeysFollow() async throws {
