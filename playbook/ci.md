@@ -91,10 +91,15 @@ How CI runs, how to run part of it, and how to keep it green and fast.
 - Fail an async helper with a thrown error, never `XCTFail`, and keep tearDown sync: a failure that waits
   for the main actor in teardown hangs until the 120 s allowance and loses its recording. In tearDown, move
   the pointer off the chrome and restore state before the tabs it lives in close.
-- A launch costs about 2.5 s: relaunch only when the launch is what the test checks.
+- A launch costs about 2.5 s, and the quit before it about 1 s more: the app is killed at once, but XCTest checks for
+  its exit once a second. Relaunch only when the launch is what the test checks. A test that launches before it uses
+  the app gets no launch from setUp: `OvviUITests/OwnLaunch.swift` lists them, and `make test` checks the list
+  (`scripts/check-launches.py`).
+- A test may walk several flows that share their setup. Start each part with `step("…")`: the part is an activity in
+  the result, and its name comes before each failure's message.
 - An element query takes 0.1–0.2 s and a click about 1 s: check the outcome through one herdr call or one
   accessibility value, not a walk over many elements.
-- Keep a test under about 30 s: one long test sets its shard's time.
+- Keep a test under about a minute: one long test sets its shard's time.
 - Make a failure say what it saw (put the pane's text or both values in the message).
 
 ## Refresh the test times
@@ -113,8 +118,8 @@ Round the means to whole seconds: `scripts/shard.py` reads integers.
 
 - `-parallel-testing-enabled`: it runs copies of the app on one Mac, and UI tests cannot share one mouse
   and one bundle id.
-- Merging tests to share a launch: setUp is about 2.5 s of each test, so it saves little and costs
-  isolation.
+- A faster quit between tests: XCUITest ends the app with a kill, and its 1 s is its own exit check (a once-a-second
+  wait); a kill by the e2e helper left XCUITest's app state "running", so the next launch waited longer.
 - Caching Swift packages: libghostty's 190 MB xcframework restored in 2 s, but build and setup stayed
   65–105 s per job.
 - More shards: the 5 macOS runners are the plan's limit, so a sixth shard waits for one of them. Nested VMs on a
@@ -147,8 +152,11 @@ another login session, with its own pointer, keyboard and screen.
   products, `scripts/` and the Mac's herdr. In the guest, `scripts/e2e.sh xcodebuild test-without-building`
   runs the `.xctestrun`, and the xcresult lands in the share, then in `$DERIVED_DATA/vm.xcresult`.
 - **Permissions.** None to grant: `automationmodetool` says the image needs no authentication for Automation
-  Mode, and the first UI test ran green with no prompt. A `screencapture` through `tart exec` asks once in the
-  guest; allow it in the VM's pane.
+  Mode. Two asks of macOS would sit over the tests and take their clicks: whether a program that captures the screen
+  may go on (a `screencapture` through `tart exec` or ssh, a UserNotificationCenter alert, again after a month) and
+  whether the tests' app may send notifications (a banner over the window's top right). Before each run,
+  `scripts/vm-alerts.py` answers both in the guest (the screen: approved; notifications: off) and the script closes
+  an alert still open.
 - **Cost.** 4 cores and 8 GB (about 4.6 GB resident while tests run). A boot takes about 40 s to a working
   `tart exec`. On a running VM, a run of two short tests takes about 30 s (11 s of tests). The first run on a new
   clone adds about 30 s of setup. Idle, the VM takes about a quarter of a core.
