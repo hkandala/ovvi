@@ -101,8 +101,9 @@ extension OvviUITests {
         let repo = "mkdir repo && cd repo && git init -q && for i in $(seq 40); do seq 300 >f$i.txt; done && "
             + "git add -A && git -c user.name=e2e -c user.email=e2e@ovvi.dev commit -qm one && "
             + "for i in $(seq 40); do seq 0 3 600 >f$i.txt; done"
-        // A shell of its own: typed into a fixture pane, the build and the rm in teardown would reach the next test.
-        let (scratch, shell) = try await createTab(in: "w2", label: "switch")
+        // A shell of its own, typed into, not a fixture pane the next test reads. In w1: one more tab in w2's bar
+        // would push a capsule out of view on CI's narrow screen.
+        let (scratch, shell) = try await createTab(in: "w1", label: "switch")
         closeAfter("tab", scratch)
         try await waitForPrompt(shell)
         sendAfter("rm -rf \(folder)\r", to: shell)
