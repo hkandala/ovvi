@@ -169,6 +169,20 @@ runs and on-demand on the final head.
   its sidebar rows and progress come from them. Its own launches (`Launch`) only mark chats Ovvi typed. Nothing to
   change in Ovvi; a fix belongs in herdr (a subcommand list per agent, or no agent until a manifest rule matches).
 
+### Track G findings, round 7 (item 87)
+
+- **Cause.** The floating window's title row drew its own copy of the card's agent control, with only the Chat | TUI
+  switch, so an agent with no chat showed nothing there.
+- **Fix.** One `AgentControl` (the switch, else Relaunch with Chat) in both the card's agent row and the float's title
+  row, gated the same way (no plugin pane). The float already shows the chooser's loader and the chat, so the
+  relaunch's loader and its chat land in the float.
+- **Not fixed.** A failed relaunch's notice shows on the main window's tab page, as every notice of the session (the
+  design's Notice); a float shows no notices. Moving notices into floats is a design change for every notice.
+- **Runs.** Red on the old code with the new test: CI 42949337434, and locally dark and light (no button in the float).
+  Green locally dark and light. Pictures: `~/Downloads/ovvi-research/p57g/r7/`.
+- **For the user.** Float an agent started by hand (`claude` in a terminal): Relaunch with Chat sits left of the pin;
+  click it, the float shows "Starting…" and then the chat with Chat | TUI.
+
 ### Track G findings, round 5 (item 44)
 
 - **Spiked on plain installs** (npm into `/tmp`, an isolated `ZDOTDIR` shell with each agent's store in `/tmp`, in
