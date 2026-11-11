@@ -300,7 +300,7 @@ pictures() {
 # Claude Code ends its work by opening Git and the deploys plugin beside it, and the browser in a new tab: the film
 # runs through its turn, and `reply` keeps the cards opening and Claude Code's whole reply.
 plugins() {
-    local c opened=0 first= last= count base
+    local c opened=0 first= count base
     real_claude "$1"
     # As an agent makes one: New Plugin… from the template (built and confirmed), then its own page.
     o "$c1" "$R/shortlink" --timeout 120 plugins new Deploys >/dev/null
@@ -339,9 +339,9 @@ npm test." >/dev/null
     while [ $SECONDS -lt $until ]; do
         count=$(h pane list | json "len(d['result']['panes'])")
         if [ "$count" -gt $((base + opened)) ]; then
-            opened=$((count - base)) last=$(now)
+            opened=$((count - base))
             if [ -z "$first" ]; then
-                first=$last
+                first=$(now)
                 h pane read "$c" --source visible | tr -d ' \n' | grep -q onlyflips \
                     && { echo "the prompt is in view" && exit 1; }
             fi
@@ -352,7 +352,6 @@ npm test." >/dev/null
         sleep 0.2
     done
     [ "$opened" -ge 3 ] || { echo "Claude Code opened $opened cards" && exit 1; }
-    last=$(now)
     headerless "$c"
     # As the user asked: Git's home and Deploys beside Claude Code, the browser in a tab of its own, Claude Code's tab
     # still in view.
@@ -369,15 +368,16 @@ focused = [p for p in panes if p.get("focused")]
 if len(here) != 2 or not git or not deploys or len(browser) != 1 or (focused and focused[0]["tab_id"] != tab):
     sys.exit(f"not the cards asked for: {here}, browser tabs {len(browser)}")
 PY
-    upto "$(python3 -c "print($last + 8)")"
+    # The film runs on past the reply, which `reply` finds.
+    sleep 8
     wrap
     reply "$C/plugins-$1.mp4" "$(python3 -c "print(max(0, $first - 4))")"
 }
 
 # Film $1 from $2 s, a few seconds before the first card: the cards as they open (the Git card from the moment its
-# page has drawn, no blank card), until a second after the browser's tab shows, then a fade to Claude Code's whole
-# reply, held 4 s (its words stream in slowly). The reply is the window's last change: the turn's end shows in herdr a
-# few seconds late.
+# page has drawn, no blank card), until a second after the browser's tab shows, then a cut to Claude Code's whole
+# reply, held 4 s before the loop's fade (its words stream in slowly). The reply is the window's last change: the
+# turn's end shows in herdr a few seconds late.
 reply() {
     local film=$1 start=$2 tab settled b0 b1 cut
     tab=$(ffmpeg -ss "$start" -i "$film" -vf "crop=440:70:1060:10,select='gt(scene,0.01)',showinfo" -f null - 2>&1 |
@@ -394,10 +394,9 @@ print(flat[0], flat[-1] + 1 / 60) if flat else print(0, 0)")
     cut="[0:v]setpts=PTS-STARTPTS,fps=60[a]"
     [ "$b0" = 0 ] || cut="[0:v]setpts=PTS-STARTPTS,fps=60,split[x][y];[x]trim=end=$b0[x0];\
 [y]trim=start=$b1,setpts=PTS-STARTPTS[y0];[x0][y0]concat=n=2:v=1,fps=60[a]"
-    ffmpeg -loglevel error -y -ss "$start" -t "$(python3 -c "print($tab + 1.5)")" -i "$film" \
+    ffmpeg -loglevel error -y -ss "$start" -t "$(python3 -c "print($tab + 1)")" -i "$film" \
         -ss "$(python3 -c "print($start + $settled + 0.3)")" -i "$film" -filter_complex "$cut;\
-[1:v]trim=end_frame=1,loop=loop=309:size=1,setpts=N/60/TB,fps=60[b];\
-[a][b]xfade=transition=fade:duration=0.5:offset=$(python3 -c "print(round($tab + 1 - ($b1 - $b0), 3))")" \
+[1:v]trim=end_frame=1,loop=loop=275:size=1,setpts=N/60/TB,fps=60[b];[a][b]concat=n=2:v=1" \
         -c:v libx264 -crf 8 -preset slow -pix_fmt yuv420p "${film%.mp4}-reply.mp4" || exit 1
     mv "${film%.mp4}-reply.mp4" "$film"
 }
