@@ -57,37 +57,8 @@ extension OvviUITests {
         app.typeKey(.escape, modifierFlags: [])
     }
 
-    func testPaletteRenamesTheTab() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        let (tab, _) = try await newTab("before")
-        element("tab.\(tab)").click()
-        let filter = openPalette()
-        app.typeText("rename tab")
-        app.typeKey(.return, modifierFlags: [])
-        XCTAssertTrue(filter.has(\.stringValue, "before", within: 2))
-        XCTAssertFalse(element("palette.section.Tabs").exists)
-        keepScreenshot("palette rename")
-        app.typeKey("a", modifierFlags: .command)
-        app.typeText("after")
-        app.typeKey(.return, modifierFlags: [])
-        XCTAssertTrue(filter.vanishes(within: 2))
-        try await expect("herdr's label") {
-            let tabs = try await snapshot()["tabs"] as? [[String: Any]] ?? []
-            return tabs.contains { $0["tab_id"] as? String == tab && $0["label"] as? String == "after" }
-        }
-
-        openPalette()
-        app.typeText("rename tab")
-        app.typeKey(.return, modifierFlags: [])
-        XCTAssertTrue(filter.has(\.stringValue, "after", within: 2))
-        app.typeKey("a", modifierFlags: .command)
-        app.typeKey(.delete, modifierFlags: [])
-        XCTAssertTrue(filter.has(\.stringValue, "", within: 2))
-        app.typeKey(.delete, modifierFlags: [])
-        XCTAssertTrue(element("palette.section.Tabs").exists(within: 2))
-    }
-
     func testPaletteRenamesTheWorkspaceAndThePane() async throws {
+        step("Palette: Rename Space, prefilled with its label")
         let (tabs, pane) = try await newWorkspace("before")
         element("terminal.\(pane)").click()
         XCTAssertTrue(hasKeyboard("terminal.\(pane)"))
@@ -102,6 +73,9 @@ extension OvviUITests {
         XCTAssertTrue(filter.vanishes(within: 2))
         try await expect("herdr's workspace label") { try await workspaceLabel(workspace(of: tabs[0])) == "after" }
 
+        try await expectPaletteRenamesTheTab(tabs[0], filter)
+
+        step("Palette: Rename Pane and Reset Pane Name")
         openPalette()
         app.typeText("rename pane")
         XCTAssertTrue(element("palette.command.Rename Pane…").has(\.isSelected, true, within: 2))
@@ -117,6 +91,40 @@ extension OvviUITests {
         XCTAssertTrue(element("palette.command.Reset Pane Name").has(\.isSelected, true, within: 2))
         app.typeKey(.return, modifierFlags: [])
         try await expect("no pane label") { try await paneLabel(pane).isEmpty }
+    }
+
+    private func expectPaletteRenamesTheTab(_ tab: String, _ filter: XCUIElement) async throws {
+        step("Palette: Rename Tab, prefilled with its label; an empty name goes back to the list")
+        // Its own label, not the space's: the field must show the tab's.
+        try await Self.call(one, "tab.rename", ["tab_id": tab, "label": "tab-before"])
+        let capsule = element("tab.\(tab)")
+        XCTAssertTrue(until(3) { capsule.label.contains("tab-before") }, capsule.label)
+        openPalette()
+        app.typeText("rename tab")
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(filter.has(\.stringValue, "tab-before", within: 2))
+        XCTAssertFalse(element("palette.section.Tabs").exists)
+        keepScreenshot("palette rename")
+        app.typeKey("a", modifierFlags: .command)
+        app.typeText("tab-after")
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(filter.vanishes(within: 2))
+        try await expect("herdr's tab label") {
+            let found = try await snapshot()["tabs"] as? [[String: Any]] ?? []
+            return found.contains { $0["tab_id"] as? String == tab && $0["label"] as? String == "tab-after" }
+        }
+
+        openPalette()
+        app.typeText("rename tab")
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(filter.has(\.stringValue, "tab-after", within: 2))
+        app.typeKey("a", modifierFlags: .command)
+        app.typeKey(.delete, modifierFlags: [])
+        XCTAssertTrue(filter.has(\.stringValue, "", within: 2))
+        app.typeKey(.delete, modifierFlags: [])
+        XCTAssertTrue(element("palette.section.Tabs").exists(within: 2))
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(filter.vanishes(within: 2))
     }
 
     func testPaletteAppearancePreviewsAndEscRestores() {

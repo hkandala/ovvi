@@ -43,16 +43,4 @@ extension OvviUITests {
         XCTAssertTrue(element("pane.\(pane).loader").vanishes(within: 5))
         XCTAssertFalse(element("pane.\(pane).view.chat").exists(within: 1))
     }
-
-    func testAnOpenCodeChatOnARemoteMachine() async throws {
-        try await skipWithoutSSH()
-        let pane = try await startChat(Self.onKeyHost, agent: 3).pane
-        try await say("hello", in: pane)
-        XCTAssertTrue(row(pane, "reply", "Echo: **hello**").exists(within: 5))
-        try await say("allow", in: pane)
-        let allow = element("chat.\(pane).option.Allow once")
-        XCTAssertTrue(allow.exists(within: 5))
-        allow.click()
-        XCTAssertTrue(row(pane, "reply", "Allowed.").exists(within: 5))
-    }
 }

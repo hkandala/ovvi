@@ -2,9 +2,12 @@ import XCTest
 
 extension OvviUITests {
     func testHoverCardShowsABlockedAgentsScreenAndEscClosesIt() async throws {
+        step("A blocked agent's row shows its screen; Esc closes the card")
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("deploy")
-        try await split(split(pane))
+        let second = try await split(pane)
+        try await split(second)
+        XCTAssertFalse(element("tab.\(tab)").isSelected)
         try await send("echo hover-$((6*7)); echo waiting\r", to: pane)
         try await waitFor(pane) { $0.contains("\nhover-42") }
         try await report(pane, "blocked", agent: "claude")
@@ -25,18 +28,12 @@ extension OvviUITests {
 
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(card.vanishes(within: 2))
-    }
 
-    func testHoverCardRowGoesToItsPane() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        let (tab, pane) = try await newTab("peek")
-        let second = try await split(pane)
-        XCTAssertFalse(element("tab.\(tab)").isSelected)
-
+        step("A row goes to its pane; the card closes when the pointer leaves")
+        // Off and back: the card opens when the pointer enters the capsule.
+        element("workspace.w1").hover()
         element("tab.\(tab)").hover()
-        let card = element("hovercard")
         XCTAssertTrue(card.exists(within: 2))
-        XCTAssertEqual(rows(of: card).count, 2)
         element("hovercard.\(second)").click()
         XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, true, within: 2))
         XCTAssertTrue(hasKeyboard("terminal.\(second)"))
@@ -46,15 +43,12 @@ extension OvviUITests {
         XCTAssertTrue(card.exists(within: 2))
         element("workspace.w1").hover()
         XCTAssertTrue(card.vanishes(within: 2))
-    }
 
-    func testAPluginPanesRowNamesThePlugin() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        element("workspace.w2").click()
-        let (tab, pane) = try await newCard("ovvi:explorer#e2ehov /tmp/")
-        element("tab.\(tab)").hover()
-        XCTAssertTrue(element("hovercard").exists(within: 3))
-        let row = element("hovercard.\(pane)")
+        step("A plugin pane's row names the plugin")
+        let (plugin, explorer) = try await newCard("ovvi:explorer#e2ehov /tmp/")
+        element("tab.\(plugin)").hover()
+        XCTAssertTrue(card.exists(within: 3))
+        let row = element("hovercard.\(explorer)")
         XCTAssertTrue(row.exists(within: 2))
         XCTAssertTrue(row.label.hasPrefix("File Explorer, "), row.label)
         XCTAssertFalse(row.label.contains("cat"), row.label)

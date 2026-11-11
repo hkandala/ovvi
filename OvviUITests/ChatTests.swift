@@ -240,6 +240,7 @@ extension OvviUITests {
     }
 
     func testAChatOnARemoteMachine() async throws {
+        step("A Claude Code chat on a remote machine")
         try await skipWithoutSSH()
         let pane = try await startChat(Self.onKeyHost).pane
         try await say("hello", in: pane)
@@ -249,6 +250,27 @@ extension OvviUITests {
         XCTAssertTrue(pear.exists(within: 5))
         pear.click()
         XCTAssertTrue(row(pane, "reply", "You chose Pear.").exists(within: 5))
+
+        step("A pi chat on a remote machine")
+        let piChat = try await startChat(agent: 2).pane
+        try await say("hello", in: piChat)
+        XCTAssertTrue(row(piChat, "reply", "Echo: **hello**").exists(within: 5))
+        try await say("wait", in: piChat)
+        let drawer = element("chat.\(piChat).drawer")
+        XCTAssertTrue(drawer.exists(within: 5))
+        app.typeText("1")
+        XCTAssertTrue(drawer.vanishes(within: 5))
+        XCTAssertTrue(row(piChat, "reply", "Allowed.").exists(within: 5))
+
+        step("An OpenCode chat on a remote machine")
+        let openCode = try await startChat(agent: 3).pane
+        try await say("hello", in: openCode)
+        XCTAssertTrue(row(openCode, "reply", "Echo: **hello**").exists(within: 5))
+        try await say("allow", in: openCode)
+        let allow = element("chat.\(openCode).option.Allow once")
+        XCTAssertTrue(allow.exists(within: 5))
+        allow.click()
+        XCTAssertTrue(row(openCode, "reply", "Allowed.").exists(within: 5))
     }
 
     /// The stand-in quits 12 s after `/exit`, as Claude Code with slow SessionEnd hooks: the wait for it is longer than

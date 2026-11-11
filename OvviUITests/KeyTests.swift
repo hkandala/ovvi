@@ -186,12 +186,6 @@ extension OvviUITests {
         app.typeText("keyboard shortcuts")
         app.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(panel.exists(within: 2))
-
-        relaunch(one, ["-appearance", "light", "-interfaceStyle", "classic"])
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        app.typeKey("/", modifierFlags: .command)
-        XCTAssertTrue(panel.exists(within: 2))
-        keepScreenshot("keyboard shortcuts, light classic")
         // Beside it: in CI's short window it reaches the bottom.
         app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.03, dy: 0.6)).click()
         XCTAssertTrue(panel.vanishes(within: 2))

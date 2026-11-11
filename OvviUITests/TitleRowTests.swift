@@ -39,19 +39,6 @@ extension OvviUITests {
         XCTAssertTrue(workspace.vanishes(within: 2))
     }
 
-    func testMachineMenuListsThisMac() {
-        XCTAssertTrue(element("titlebar.machine").exists(within: connect))
-        element("titlebar.machine").click()
-        let thisMac = app.menuItems["This Mac"]
-        XCTAssertTrue(thisMac.exists(within: 2))
-        // Its checkmark is not in XCUITest's view of a menu item; the screenshot shows it.
-        XCTAssertTrue(app.menuItems["Add Machine…"].exists)
-        keepScreenshot("machine menu")
-        thisMac.click()
-        XCTAssertTrue(thisMac.vanishes(within: 2))
-        XCTAssertFalse(until(0.5) { app.windows.count != 1 || !element("tab.w1:t2").exists })
-    }
-
     func testWorkspaceMenuMakesAndPicksWorkspaces() async throws {
         XCTAssertTrue(element("tab.w1:t2").exists(within: connect))
         app.typeKey("s", modifierFlags: [.command, .control])

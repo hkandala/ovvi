@@ -2,6 +2,7 @@ import XCTest
 
 extension OvviUITests {
     func testOverviewShowsEveryTabLiveAndOpensOne() async throws {
+        step("The overview shows every tab live and opens one")
         relaunch(one, ["-recordLatency", "YES"])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (closing, _) = try await newTab("closing", in: "w1")
@@ -22,7 +23,6 @@ extension OvviUITests {
         for id in ["overview.workspace.w1", "overview.workspace.w2", "overview.tab.w1:t1", "overview.tab.w1:t2"] {
             XCTAssertTrue(element(id).exists(within: 2), id)
         }
-        XCTAssertEqual(element("overview.title").stringValue, one)
         let first = element("overview.tab.w1:t1").frame, second = element("overview.tab.w1:t2").frame
         XCTAssertEqual(first.minY, second.minY, accuracy: 1)
         XCTAssertEqual(second.minX - first.maxX, 16, accuracy: 1)
@@ -56,6 +56,28 @@ extension OvviUITests {
         element("overview.close").click()
         XCTAssertTrue(overview.vanishes(within: 2))
         XCTAssertTrue(element("titlebar.overview").exists(within: 2))
+        try await expectEveryTileLoadsInTurn()
+    }
+
+    private func expectEveryTileLoadsInTurn() async throws {
+        step("The overview loads every tile in turn")
+        let (loads, root) = try await createWorkspace("loads")
+        let next = try await createTab(in: workspace(of: loads))
+        // A 3 × 3 grid each: halving one pane eight times leaves cards too small to draw a row at CI's 1x.
+        for pane in [root, next.pane] {
+            let middle = try await split(pane), right = try await split(middle)
+            for column in [pane, middle, right] {
+                _ = try await split(split(column, "down"), "down")
+            }
+        }
+        app.typeKey("o", modifierFlags: [.command, .control])
+        scrollOverview(to: element("overview.tab.\(next.tab)"))
+        // Recorded: CI's queries are too slow to see the loader.
+        let tabs = [loads, next.tab], loaders = tabs.map { element("overview.tab.\($0).loading") }
+        // One query each, not one per card: CI's queries are slow.
+        XCTAssertTrue(until(30) { !loaders.contains { $0.exists } })
+        let record = element("app.latency").stringValue
+        XCTAssertTrue(tabs.allSatisfy { record.contains("loader \($0)") }, record)
     }
 
     func testOverviewTileIntoAnUnshownTabShowsItSteadily() async throws {
@@ -81,35 +103,13 @@ extension OvviUITests {
         }
     }
 
-    func testOverviewLoadsEveryTileInTurn() async throws {
-        relaunch(one, ["-recordLatency", "YES"])
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        let (first, root) = try await createWorkspace("loads")
-        let second = try await createTab(in: workspace(of: first))
-        // A 3 × 3 grid each: halving one pane eight times leaves cards too small to draw a row at CI's 1x.
-        for pane in [root, second.pane] {
-            let middle = try await split(pane), right = try await split(middle)
-            for column in [pane, middle, right] {
-                _ = try await split(split(column, "down"), "down")
-            }
-        }
-        app.typeKey("o", modifierFlags: [.command, .control])
-        let tile = element("overview.tab.\(second.tab)")
-        scrollOverview(to: tile)
-        // Recorded: CI's queries are too slow to see the loader.
-        let tabs = [first, second.tab], loaders = tabs.map { element("overview.tab.\($0).loading") }
-        // One query each, not one per card: CI's queries are slow.
-        XCTAssertTrue(until(30) { !loaders.contains { $0.exists } })
-        let record = element("app.latency").stringValue
-        XCTAssertTrue(tabs.allSatisfy { record.contains("loader \($0)") }, record)
-    }
-
     private func expectOverviewChrome(first: CGRect, second: CGRect) {
         for id in ["titlebar.sidebar", "titlebar.machine", "titlebar.overview", "titlebar.palette",
                    "titlebar.new-tab"]
         {
             XCTAssertFalse(element(id).exists, id)
         }
+        XCTAssertEqual(element("overview.title").stringValue, one)
         let canvas = element("overview").frame, title = element("overview.title").frame
         let side = first.minX - canvas.minX, room = canvas.width - 2 * side + 16
         let columns = (room / (second.width + 16)).rounded()

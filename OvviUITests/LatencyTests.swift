@@ -47,6 +47,7 @@ extension OvviUITests {
     }
 
     func testNewTabSplitAndClosesShowAtOnce() async throws {
+        step("A new tab, a split and closes show at once")
         try launchRecordingLatency()
         let before = try await tabIDs()
         closeNew("tab", besides: before)
@@ -80,20 +81,19 @@ extension OvviUITests {
         }
         try await expect("herdr closed the tab") { try await !tabIDs().contains(made) }
         XCTAssertFalse(element("tab.\(made)").exists)
+        try await expectQuickNewTabsAndAnEarlyClose(besides: before)
     }
 
-    func testQuickNewTabsAndAnEarlyClose() async throws {
-        try launchRecordingLatency()
-        let before = try await tabIDs()
-        closeNew("tab", besides: before)
+    private func expectQuickNewTabsAndAnEarlyClose(besides before: [String]) async throws {
+        step("Quick new tabs, and a close right after a new tab")
         app.typeKey("t", modifierFlags: .command)
         app.typeKey("t", modifierFlags: .command)
-        let two = try await poll("two new tabs") { () async throws -> [String]? in
+        let quick = try await poll("two new tabs") { () async throws -> [String]? in
             let new = try await tabIDs().filter { !before.contains($0) }
             return new.count == 2 ? new : nil
         }
-        XCTAssertTrue(element("tab.\(two[1])").has(\.isSelected, true, within: 3))
-        XCTAssertTrue(element("tab.\(two[0])").exists)
+        XCTAssertTrue(element("tab.\(quick[1])").has(\.isSelected, true, within: 3))
+        XCTAssertTrue(element("tab.\(quick[0])").exists)
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'tab.new.'")).count, 0)
 
         let now = try await tabIDs()
@@ -103,14 +103,15 @@ extension OvviUITests {
         try await Task.sleep(for: .seconds(1))
         try await expect("the early-closed tab made and closed") {
             let tabs = try await tabIDs()
-            return tabs.count == now.count && tabs.contains(two[1])
+            return tabs.count == now.count && tabs.contains(quick[1])
         }
-        XCTAssertTrue(element("tab.\(two[1])").has(\.isSelected, true, within: 3))
+        XCTAssertTrue(element("tab.\(quick[1])").has(\.isSelected, true, within: 3))
         XCTAssertFalse(app.sheets.firstMatch.exists)
     }
 
     /// A trackpad's events at a known speed (`scripts/swipe.swift`): XCUITest's scroll is one flick.
     func testSessionSwipeFollowsTheFingersAndSlidesOnFromTheirSpeed() async throws {
+        step("A session swipe follows the fingers and slides on from their speed")
         try launchRecordingLatency(["-forceMotion", "YES"])
         openPage(two)
         showPage(one)
@@ -167,34 +168,26 @@ extension OvviUITests {
         let (slow, slowPath, slowShown) = try XCTUnwrap(swipes().last, "no swipe moved")
         XCTAssertGreaterThan(slowShown, 0, slow)
         XCTAssertEqual(slowPath.last?[1] ?? -1, 0, accuracy: 0.5, slow)
+        try await expectAFlickLandsInStep(center, forward)
     }
 
-    func testQuickSessionFlickLandsOnTheNextPageInStep() async throws {
-        try launchRecordingLatency(["-forceMotion", "YES"])
-        openPage(two)
-        showPage(one)
-        XCTAssertTrue(until(3) { header == one })
+    /// From page one at rest, the way the swipe went forward.
+    private func expectAFlickLandsInStep(_ center: String, _ forward: Double) async throws {
+        step("A quick flick lands on the next page in step")
+        let width = element("sidebar").frame.width, name = element("sidebar.header")
         // At rest: the pages arrive 0.2 s after the click (read mid-slide, 1 pt short, on CI).
-        let sidebar = element("sidebar"), name = element("sidebar.header")
-        let place = try XCTUnwrap(steady(3) { name.frame.minX })
-        let center = "\(sidebar.frame.midX) \(sidebar.frame.midY)"
-        // The other way if natural scrolling is off.
-        for sign in [-1.0, 1.0] {
-            try await Self.post("\(one)/swipe", Data("\(center) \(20 * sign) 3".utf8))
-            try await Task.sleep(for: .seconds(1.5))
-            if header == two {
-                break
-            }
-        }
+        let rest = try XCTUnwrap(steady(3) { name.frame.minX })
+        try await Self.post("\(one)/swipe", Data("\(center) \(20 * forward) 3".utf8))
+        try await Task.sleep(for: .seconds(1.5))
         XCTAssertEqual(header, two)
-        XCTAssertEqual(name.frame.minX, place, accuracy: 1)
-        let (swipe, path, _) = try XCTUnwrap(swipes().last, "no swipe moved")
-        XCTAssertEqual(path.last?[1] ?? 0, sidebar.frame.width - 8, accuracy: 2, "\(swipe)")
-        let settled = path.first { abs($0[1] - sidebar.frame.width + 8) <= 2 }?[0] ?? 1000
-        XCTAssertLessThan(settled, 400, "\(swipe)")
-        XCTAssertLessThan(beforeShow(path) - settled, 120, "\(swipe)")
-        let steps = path.map { $0[0] }.filter { $0 <= settled }
-        XCTAssertLessThan(zip(steps, steps.dropFirst()).map { $1 - $0 }.max() ?? 1000, 100, "\(swipe)")
+        XCTAssertEqual(name.frame.minX, rest, accuracy: 1)
+        let (flick, flickPath, _) = try XCTUnwrap(swipes().last, "no swipe moved")
+        XCTAssertEqual(flickPath.last?[1] ?? 0, width - 8, accuracy: 2, "\(flick)")
+        let landed = flickPath.first { abs($0[1] - width + 8) <= 2 }?[0] ?? 1000
+        XCTAssertLessThan(landed, 400, "\(flick)")
+        XCTAssertLessThan(beforeShow(flickPath) - landed, 120, "\(flick)")
+        let flickSteps = flickPath.map { $0[0] }.filter { $0 <= landed }
+        XCTAssertLessThan(zip(flickSteps, flickSteps.dropFirst()).map { $1 - $0 }.max() ?? 1000, 100, "\(flick)")
     }
 
     func testSessionSwipeIntoManyTabsDrawsThemWithTheSidebar() async throws {

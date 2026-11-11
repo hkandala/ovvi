@@ -27,14 +27,23 @@ extension OvviUITests {
     }
 
     func testSplitRightTwiceGivesThirds() async throws {
+        step("The split button adds a pane right of its card")
         let (tab, pane) = try await newTab("thirds")
         element("tab.\(tab)").click()
         XCTAssertTrue(element("page.\(tab)").has(\.isHittable, true, within: 3))
-        for count in [2, 3] {
-            hoverHeader(pane)
-            element("pane.\(pane).split-right").click()
-            try await expect("\(count) panes in herdr") { try await order(tab).count == count }
-        }
+        let cards = element("page.\(tab)").descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier MATCHES %@", #"pane\.[^.]+"#))
+        hoverHeader(pane)
+        element("pane.\(pane).split-right").click()
+        try await expect("2 panes in herdr") { try await order(tab).count == 2 }
+        XCTAssertTrue(cards.element(boundBy: 1).exists(within: 2))
+        XCTAssertLessThan(cards.element(boundBy: 0).frame.maxX, cards.element(boundBy: 1).frame.minX)
+        keepScreenshot("split")
+
+        step("A second split of the same card gives thirds")
+        hoverHeader(pane)
+        element("pane.\(pane).split-right").click()
+        try await expect("3 panes in herdr") { try await order(tab).count == 3 }
         let panes = try await order(tab)
         try await expectWidths(tab, Dictionary(uniqueKeysWithValues: panes.map { ($0, 1.0 / 3) }))
         for pane in panes {
@@ -125,6 +134,7 @@ extension OvviUITests {
     }
 
     func testQuickSplitsSplitTheNewestAndItKeepsTheKeyboard() async throws {
+        step("Quick splits split the newest pane, and it keeps the keyboard")
         relaunch(one, ["-recordMotion", "YES", "-forceMotion", "YES"])
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
         let (tab, first) = try await newTab("quick-splits")
@@ -161,6 +171,39 @@ extension OvviUITests {
             XCTAssertTrue(hasKeyboard("terminal.\(next)"), "after closing \(closed)")
         }
         XCTAssertTrue(cards.has(\.stringValue, counts(came: 3, went: 2), within: 2), "came went: \(cards.stringValue)")
+        try await expectQuickCloses()
+    }
+
+    private func expectQuickCloses() async throws {
+        step("Closes right after quick splits, and the active border")
+        let (burst, alone) = try await newTab("quick-close")
+        element("tab.\(burst)").click()
+        element("terminal.\(alone)").click()
+        XCTAssertTrue(hasKeyboard("terminal.\(alone)"))
+        XCTAssertTrue(element("pane.\(alone)").exists)
+        XCTAssertFalse(element("pane.\(alone).border").exists)
+        let burstCards = element("cards.\(burst)")
+        XCTAssertTrue(burstCards.exists(within: 2))
+        let start = burstCards.stringValue.split(separator: " ").compactMap { Int($0) }
+        XCTAssertEqual(start.count, 2, burstCards.stringValue)
+        for key in ["d", "d", "d", "w", "w", "w", "d"] {
+            app.typeKey(key, modifierFlags: .command)
+        }
+        let focused = NSPredicate(format: "hasKeyboardFocus == true")
+        let left = try await poll("a new last pane with the keyboard") { () async throws -> [String]? in
+            let panes = try await order(burst), last = element("terminal.\(panes.last ?? "")")
+            return panes.count > 1 && last.exists && focused.evaluate(with: last) ? panes : nil
+        }
+        XCTAssertEqual(left.count, 2, "herdr's tree: \(left)")
+        XCTAssertEqual(left.first, alone)
+        let total = "\(start[0] + 4) \(start[1] + 3)"
+        XCTAssertTrue(burstCards.has(\.stringValue, total, within: 2), "came went: \(burstCards.stringValue)")
+        XCTAssertTrue(element("pane.\(left[1]).border").exists)
+        element("terminal.\(alone)").click()
+        XCTAssertTrue(element("pane.\(alone).border").exists(within: 1))
+        XCTAssertFalse(element("pane.\(left[1]).border").exists)
+        app.typeKey(.return, modifierFlags: [.command, .shift])
+        XCTAssertTrue(element("pane.\(alone).border").vanishes(within: 2))
     }
 
     func testSelectPaneKeysPickTheLastUsedElseTheTopNeighbor() async throws {

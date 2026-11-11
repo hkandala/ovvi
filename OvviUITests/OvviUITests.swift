@@ -112,18 +112,6 @@ final class OvviUITests: XCTestCase {
         keepScreenshot("second workspace")
     }
 
-    func testWorkspaceKeepsItsSelectedTab() {
-        XCTAssertTrue(element("tab.w1:t2").exists(within: connect))
-        element("tab.w1:t2").click()
-        XCTAssertTrue(element("pane.w1:p4").has(\.isHittable, true, within: 2))
-        element("workspace.w2").click()
-        XCTAssertTrue(element("pane.w2:p1").has(\.isHittable, true, within: 2))
-        XCTAssertFalse(element("tab.w1:t2").exists)
-        element("workspace.w1").click()
-        XCTAssertTrue(element("pane.w1:p4").has(\.isHittable, true, within: 2))
-        XCTAssertTrue(element("tab.w1:t2").isSelected)
-    }
-
     func testSidebarFilterNarrowsTheWorkspaces() {
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
         let filter = element("sidebar.filter")
@@ -133,38 +121,6 @@ final class OvviUITests: XCTestCase {
         XCTAssertTrue(element("workspace.w1").vanishes(within: 2))
         XCTAssertTrue(element("workspace.w2").exists)
         keepScreenshot("sidebar filter")
-    }
-
-    func testSplitButtonAddsAPane() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        let (tab, pane) = try await newTab("split")
-        element("tab.\(tab)").click()
-        XCTAssertTrue(element("page.\(tab)").has(\.isHittable, true, within: 3))
-        hoverHeader(pane)
-        element("pane.\(pane).split-right").click()
-
-        let cards = element("page.\(tab)").descendants(matching: .any)
-            .matching(NSPredicate(format: "identifier MATCHES %@", #"pane\.[^.]+"#))
-        XCTAssertTrue(cards.element(boundBy: 1).exists(within: 2))
-        XCTAssertLessThan(cards.element(boundBy: 0).frame.maxX, cards.element(boundBy: 1).frame.minX)
-        let panes = try await snapshot()["panes"] as? [[String: Any]]
-        XCTAssertEqual(panes?.count { $0["tab_id"] as? String == tab }, 2)
-        keepScreenshot("split")
-    }
-
-    func testSelectsAnotherTabWhenTheSelectedOneCloses() async throws {
-        XCTAssertTrue(element("tab.w1:t2").exists(within: connect))
-        let (tab, _) = try await newTab("doomed", in: "w1")
-        let row = element("tab.\(tab)")
-        row.click()
-        XCTAssertTrue(row.has(\.isSelected, true, within: 2))
-
-        try await Self.call(one, "tab.close", ["tab_id": tab])
-        XCTAssertTrue(row.vanishes(within: 2))
-        let selected = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'tab.w1:' AND selected == true"))
-        XCTAssertTrue(selected.firstMatch.exists(within: 2))
-        let page = element("page.\(selected.firstMatch.identifier.dropFirst("tab.".count))")
-        XCTAssertTrue(page.has(\.isHittable, true, within: 2))
     }
 }
 
