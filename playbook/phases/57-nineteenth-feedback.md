@@ -1884,3 +1884,5 @@ you did, no need of reverting them".
     keep pinned ones to the top all the time in the manual sorted position, and a line separator and then rest of
     agents, no need to say anywhere like pinned etc. and the pinned section should be unaffected from the sorting"
     (Track B).
+87. "i don't see relaunch with chat button in flaoting pnae, i see chat tui toggle button though when its enabled, we
+    should make sure to show relaunch with chat even in floating pane" (Track G).
