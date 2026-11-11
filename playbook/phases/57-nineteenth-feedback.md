@@ -2427,3 +2427,16 @@ ones".
 - **Found on the way.** herdr sends no event for `pane.rename`: a label written by a process shows in the app only at
   its next read (another event, or the 30 s check), 4–10 s in these runs.
 - **For the user.** Reinstall, open the app, wait 3 s, open a browser card: it draws as fast as later ones.
+
+### Final CI: Markdown mode after a link
+
+- **Cause.** The app took a page's calls out of order. Its WebKit message handler was Swift's `async` form, which
+  WebKit starts as one task per call off the main actor; the tasks reached the main actor reordered (21–33 of 3000 in a
+  probe on an idle Mac). A link to a kept Markdown page sends that page's stored mode (Rich Text, from its last visit),
+  then the card's mode (Source); swapped, Rich Text won (run 43050240152).
+- **Fix.** The handler's `replyHandler` form, with its task made on the main actor: 0 of 3000 reordered. The Markdown
+  pages read the card's look from its state and the settings, not from a variable all pages wrote (a hidden page wrote
+  its own stale look there on a settings change).
+- **Found on the way.** An error thrown in a page's handler of an app event reached no log (the app calls the page with
+  no answer); the runtime now logs it. A failed UI test keeps the plugin pages' console as an attachment.
+- **The title row** saying notes.md while the page showed other.md was herdr's rename arriving 0.5 s later, not a bug.
