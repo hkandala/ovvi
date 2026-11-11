@@ -98,7 +98,7 @@ no title and no key hint. While the chooser shows, the card's header says
   hides on a card narrower than 300 pt.
 - **Agent** has a 9 pt chevron after its name: `chevron.right` when closed,
   `chevron.down` when open, with its symbol in the accent. Open, it shows its
-  four agents under it, indented 28 pt, each with its program tile
+  agents under it, 28 pt in, each with its program tile
   ([Program icons](/docs/ui/program-icons)) and its command in monospaced
   text as the description:
 
@@ -261,8 +261,8 @@ another the same way, loader included, with `ovvi agent <name>`
 
 ## Agents that are not installed
 
-All four agents always show. An agent that the machine does not have is
-dimmed and takes no pick.
+An agent that the machine does not have still shows, dimmed, and takes no
+pick.
 
 - **The check.** Each window checks its machine one time, when the window
   opens. One command runs on the machine through the window's connection:
@@ -343,13 +343,8 @@ the palette. They have no shortcut.
   reads "Starting ‹agent›" or "Opening ‹kind›".
 - Identifiers sit on the leaf elements, after the card's `pane.‹id›`:
   `pane.‹id›.chooser.terminal`, `.agent`, `.browser`, `.explorer`, `.git`
-  (a plugin row's is its id),
-  `.claude`, `.codex`,
-  `.pi`, `.opencode`, and `pane.‹id›.loader` for the loader.
+  (a plugin row's is its id), `.claude`, `.codex`, `.pi`, `.opencode`, and
+  `pane.‹id›.loader` for the loader.
 - The folder line: `pane.‹id›.chooser.folder` is the folder, a button named
   "Opens in" with the whole path as its value. `.folder.field` is the field,
   `.folder.error` the error and `.folder.choose` the folder icon.
-
-## Later
-
-- Flags per agent, set by the user (for example a permission mode).

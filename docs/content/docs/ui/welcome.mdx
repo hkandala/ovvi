@@ -3,7 +3,7 @@ title: "Welcome"
 description: "The welcome panel: what Ovvi is, on the first launch"
 ---
 
-A floating panel over Ovvi's windows, 960 × 640 pt (scaled down as a whole to 80% of a smaller screen), centred: no title bar and no window buttons, rounded
+A floating panel over Ovvi's windows, 960 × 640 pt (scaled down as a whole to 80% of a smaller screen), centered: no title bar and no window buttons, rounded
 corners, the window's glass (Classic: opaque), a shadow. Drag its background to move it. It shows a few pages, one
 idea each, and the user turns them with Next and Back, → and ←, or Return. Skip (or Esc) closes it from any page;
 Get Started closes it on the last.
@@ -12,8 +12,9 @@ Get Started closes it on the last.
   Skip or Esc mark it done (`welcomeDone`),
   and it never opens by itself again; a quit with it open does not, so the next launch shows it again. Settings ▸
   General ▸ Welcome to Ovvi ▸ Show Welcome opens it again. It hides while Ovvi is not the active app, and the menu
-  bar's keys do nothing behind it but Quit, Hide and Settings. A run by hand of a test or Debug build passes
-  `-welcomeDone YES`; `defaults delete dev.ovvi.app.debug welcomeDone` shows a first launch again.
+  bar's keys do nothing behind it but Quit, Hide, Settings and Copy. `scripts/e2e.sh` marks it done for the UI
+  tests, and a test that needs it passes `-welcomeDone NO`. `defaults delete dev.ovvi.app.debug welcomeDone` shows a
+  first launch again in a Debug build.
 - **herdr.** When This Mac has no herdr, one page installs it: one line on what it is, Install (the same install
   as the not-installed page, [states](/docs/ui/states)), its progress, and a failure with Retry. Next waits until
   herdr is found; Skip still closes. With herdr installed the page is not there.
@@ -37,6 +38,6 @@ Get Started closes it on the last.
   keys. Pages cross-fade, the new clip from a touch larger. Reduce Motion: each clip's frame where its change shows,
   still.
 - **The herdr step** (last, only without herdr): herdr's own logo, as it is, on a small tile with a hairline border,
-  Install herdr and its command, its progress, then a green check on the same tile and "You're all set"; the line
-  under it says why herdr.
+  Install herdr and its command, its progress, then a green check on the same tile, "herdr is installed" and the
+  title "You're all set". The line under the title says why herdr.
 - `scripts/record-onboarding.sh` records the clips and the welcome's films again, in one go, on a quiet Mac.

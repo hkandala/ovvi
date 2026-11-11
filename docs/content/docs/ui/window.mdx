@@ -30,12 +30,13 @@ description: "Windows, the title row, tab bar, sidebar pages with spaces and the
 ## New window
 
 The view of a window with no page yet (`SessionPicker`), on the window
-background, its column centered in the room under the title row:
+background, its column centered 23 pt above the window's middle:
 - Ovvi's app icon (80 × 80 pt), then "Ovvi" (22 pt semibold) 8 pt under it,
   then 24 pt lower one glass list (the Open Session panel's look, 440 pt wide,
   its list at most 420 pt tall, then it scrolls).
 - The list's field is "Find a session", with the keyboard. Typing filters the
-  sessions (a machine's other rows stay only when its name matches), and the
+  sessions (a machine's other rows stay only when its name matches; its New
+  Session “‹typed name›” row always stays), and the
   machines with a matching session come first, so Return opens the first
   match; the arrows or the pointer move the light, a click opens a row, Esc
   closes the window.
@@ -66,11 +67,6 @@ background, its column centered in the room under the title row:
 - A window that macOS restores before its pick shows the view again. A run
   with `-session` (or a test's `-defaultSession`) lists only `ovvi-*`
   sessions, and its fix rows open that session, not `default`.
-- Control is per session (D66). When two windows show the same session, the
-  window where the user last typed or clicked in a terminal controls that
-  session's panes. The other window watches: its cards dim a little and a
-  [control capsule](#control-capsule) offers **Take Back**. Two windows on
-  different sessions each control their own session.
 
 ## Title row
 
@@ -79,10 +75,8 @@ open, the traffic lights, the sidebar toggle and the machine button sit in a
 leading area as wide as the sidebar, so the first tab starts where the cards
 start, also during a resize. From left to right:
 1. The traffic lights, centered on the row at 23, 46 and 69 pt from the
-   left, where Rex has them. The window has no toolbar: `TrafficLights`
-   moves the three standard buttons onto the 46 pt row with plain frame
-   changes, again after every AppKit layout; full screen has none. (An empty
-   toolbar's accessibility frame would cover the title row on a Mac with a notch.) The row's
+   left, where Rex has them ([Tab bar and Liquid
+   Glass](/docs/platform#tab-bar-and-liquid-glass)); full screen has none. The row's
    items start 91 pt in, so the sidebar toggle sits where Rex has it.
 2. The sidebar toggle, always shown outside the overview (⌃⌘S). It has no highlight when the
    sidebar is open. The icon changes instead: an outline window with a sidebar
@@ -134,7 +128,7 @@ Shown only while the sidebar is collapsed, after the machine button.
   machine's name for `default`): the title in the
   title row's chrome color, a thin vertical line in the divider color, the
   space in the selected title color, a step brighter, all semibold. Then
-  a chevron. At most 260 pt wide: the session name stops at 110 pt (with an
+  a chevron. At most 260 pt wide: the page title stops at 110 pt (with an
   ellipsis), and a space name that does not fit fades out at its end over
   16 pt.
 - The menu starts with a filter field ("Filter or create…"). Then one group
@@ -185,14 +179,16 @@ One capsule per herdr tab of the selected space (D42).
   slide, no fade. A new tab or a closed tab changes the bar at once too: no
   pill grows, shrinks or glides. A sideways swipe never changes the tab
   ([Swiping](/docs/ui/swiping)). Glass draws the marker as a Liquid Glass
-  capsule, Classic as a plain raised pill with a hairline edge.
+  capsule, Classic as a plain pill with a hairline edge (raised, with a shadow,
+  in light).
 - **Close.** When the selected tab closes, the window selects the tab used
   before it (the latest one still open), else the tab on its left, else the
   new first tab.
 - **Hover.** The hovered tab gets the hover fill over 0.14 s, the same shape
   as the selection; the whole 34 pt slot takes the clicks.
 - **Content.** The program icons (11 pt in from the track's edge), the title
-  (10 pt after them; the selected tab's in white 0.9 or black 0.9, the others
+  (10 pt after them; the selected tab's in white 0.9 or black 0.9, 1 with
+  Increase Contrast, the others
   in the title row's chrome color), and one status slot. A tab with
   several panes shows its panes' icons overlapping: up to 5, 4 pt apart, the
   keyboard card's icon in front. A tab with one pane shows one icon
@@ -203,8 +199,8 @@ One capsule per herdr tab of the selected space (D42).
   title is the keyboard card's program and its folder's name, for example
   "zsh ~" or "pi ovvi" (D65). An agent's tab shows the agent's name and its
   pane's name in secondary text ("Claude Code Fix login"), a browser's
-  "Browser" and its page, and a plugin's name and title ("File Explorer ovvi"). Until the program is known (a new tab's first
-  second), the title is "New Tab", never the number.
+  "Browser" and its page, and a plugin's name and title ("File Explorer ovvi"). Until the program is known (a new
+  pane's first second or so), the title is "New Tab"; a tab whose program cannot be read shows herdr's label.
 - **Plain-text titles.** Where a title is plain text, with no dimmed part, a
   ` | ` separates its two parts: "zsh | ovvi", "Claude Code | Fix login",
   "Browser | Hacker News". That is in ⌘K, the Window menu, Move Pane to Tab,
@@ -241,8 +237,9 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
 - **Open sessions, not all sessions.** A window starts with the page the user
   picks in the [new-window view](#new-window) (or the pages it restores). It
   never loads other sessions by itself. The user adds pages with
-  [Open Session](#open-session), as many as they like. Only open pages have a
-  `HostStore`, snapshot reads and an event stream.
+  [Open Session](#open-session), as many as they like. Only open pages, and a
+  session with a [floating pane](#floating-pane), have a `HostStore`, snapshot
+  reads and an event stream.
 - **Session menu.** A right-click on the page header or on the sidebar's empty area under the rows shows the
   session's menu: New Space, Open Session…, Show Archived Sessions (Hide while it is open; not there while Settings
   hides it), Show Only Pinned Spaces (Show All Spaces while it is on; disabled with nothing pinned,
@@ -250,8 +247,8 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   items do; Show Archived Sessions opens the shelf, Hide folds it.
 - **Detach Session.** The session menu and the context menu of its page dot
   have Detach Session (also in the File menu). It removes the page from this
-  window. Its store disconnects, so its event stream and its terminal streams
-  end. The herdr session keeps running and stays in the Open Session list.
+  window. When no other window shows the session, its store disconnects, so
+  its event stream and its terminal streams end. The herdr session keeps running and stays in the Open Session list.
   Detach Session is disabled on the last page. The UI says "session", never
   "page": Window ▸ Previous Session and Next Session show the page before or
   after.
@@ -260,11 +257,10 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   windows when quitting an application" setting does not apply to it (a
   user's own `defaults write` still wins). A window that macOS restores opens
   the pages it had again,
-  each with its selected space and tabs. A session that no longer runs is
+  each with its selected space and tabs. A session that is not running is
   skipped, and a space or tab that is gone falls back to herdr's focus. A
   window never comes back in full screen: one that macOS restores in full
-  screen leaves it. A window with nothing to restore shows the
-  [new-window view](#new-window).
+  screen leaves it.
   Only the installed app (`make install`, `make dmg`) has its bundle id, so no
   other build's windows take the place of the user's
   ([Data](/docs/data#where-things-live)). A restored window of a
@@ -291,8 +287,8 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   end, **Sort Spaces** (`arrow.up.arrow.down`, 11 pt semibold, so its glyph is as tall as the `+`'s, 10.5 pt) and a
   `+` that makes a new space in that session, in `$HOME`: two 28 pt buttons whose frames touch. The
   snapshot after it selects the new space.
-- **Sort Spaces.** A menu with a check on the current order of the unpinned spaces, the session's own (every
-  window that shows the session, kept in the sidebar's defaults as a line "‹machine› ‹session› sorted ‹order›"): a
+- **Sort Spaces.** A menu with a check on the current order of the unpinned spaces. The order is the session's,
+  in every window that shows it, kept in the sidebar's defaults ([Data](/docs/data#every-piece-of-data)). A
   session follows Settings ▸ Agents ▸ **Sort spaces** (Manual by default) until its own menu picks.
   **Manual** is herdr's order, which a drag or Move Up and Move Down change; **Recent** puts the space whose agent
   changed state last first (a start, a finish, a need: herdr's `state_change_seq`, one counter for the session; a
@@ -307,8 +303,7 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   view), keep a space at the top: the pinned ones in herdr's order whatever the sort, then a 1 pt line (primary at
   14 %) in the middle of a 20 pt gap, shown only while unpinned spaces follow, then the rest. Nothing says
   "pinned". A worktree goes with its repository (no Pin Space on its row). Pins are the session's, as herdr's order
-  is, kept in the sidebar's defaults (`pinnedSpaces`, a line per pin: "‹machine› ‹session› pinned ‹space›"); a
-  space herdr no longer has drops its pin.
+  is, kept in the sidebar's defaults; a space herdr does not have drops its pin.
 - **The pin region.** While a space is dragged, a row-sized region "Pin Space" takes the line's place (on top with
   nothing pinned), as the New Space ghost row does for a pane: a dashed 1 pt outline (primary at 14 %, radius 10)
   with secondary text, lit as a drop indicator (accent fill at 0.2, 2 pt accent stroke) while the pointer is over
@@ -318,7 +313,7 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   while the filter hides rows or only the pinned spaces show.
 - **Show Only Pinned Spaces**, in the session menu and the palette (Show All Spaces while it is on), hides the
   unpinned spaces but the one a window shows, so the user never loses their place; with no line or pin region. It
-  is the session's, kept as a line "‹machine› ‹session› only pinned", disabled with nothing pinned, and ends when
+  is the session's, kept in the sidebar's defaults, disabled with nothing pinned, and ends when
   the last pinned space is unpinned. A hidden space is as if it were not in the session: its agents show no state,
   count toward no Dock badge, are not in the Dock menu, and send no notification, neither from herdr's states nor
   from `ovvi notify` ([Notifications](/docs/status#notifications)). Show All Spaces brings their states back with no
@@ -354,8 +349,8 @@ The sidebar never shows tabs, and its bottom never shows agent activity.
 
 ## Space rows
 
-One row per herdr space of the session, in herdr's order, like herdr's
-Spaces panel.
+One row per herdr space of the session, in the sidebar's order (pinned
+spaces first, then [Sort Spaces](#sidebar)' order), like herdr's Spaces panel.
 - **Line 1.** The name (13 pt), 8 pt into the row, so the names, the branch
   lines and the page header's text start on one edge. So does the drag ghost
   "New Space". Nothing comes before the
@@ -407,8 +402,8 @@ Spaces panel.
     its panes, with what runs and the tab and pane count. On a repository
     with worktrees it also closes their spaces, and the dialog says so.
     The worktrees stay on disk.
-- **Rename.** Rename Space, or a double-click on the name, puts a text
-  field in its place: Enter saves, Esc cancels. An empty or unchanged name
+- **Rename.** Rename Space, or a double-click on the row's name or git line,
+  puts a text field in place of the name: Enter saves, Esc cancels. An empty or unchanged name
   sends nothing.
 - VoiceOver reads the branch with the ahead and behind counts, and "worktree
   of ‹repository›" for a worktree row.
@@ -486,8 +481,9 @@ nothing is read.
   sessions…". With no row, the compact empty state: "No closed sessions on ‹machine›." or "No ‹Agent› sessions."
   (`archivebox`), or for a search "No sessions found." (`magnifyingglass`), "No matches in the last ‹count›
   sessions." once the search stopped at 1000. A machine that did not answer in 10 s: "Could not
-  read ‹machine›'s sessions." (`exclamationmark.triangle`) with **Retry**, or "Could not read ‹Agent› sessions on
-  ‹machine›." under the rows of the others when only some did not. A store the machine cannot read shows its own
+  read ‹machine›'s sessions." (`exclamationmark.triangle`) with **Retry**, or, when only some agents did not, "Could
+  not read ‹Agents› sessions on ‹machine›." (the failed agents, as "Codex and Pi") with **Retry** under the rows of
+  the others. A store the machine cannot read shows its own
   line ("OpenCode needs sqlite3 on ‹machine›.").
 - **Resume.** A click, or the hover **Resume** (`arrow.uturn.backward`, before the age),
   starts the agent with that session (the flags of [Relaunch with
@@ -503,8 +499,8 @@ nothing is read.
 ## Open Session
 
 The one place to create or open a session, as a page of this window (D68).
-The footer's Open Session button, the
-space menu's and the machine menu's "Open Session…" and File ▸ Open Session… (⌥⌘T) open it.
+The footer's Open Session button, the session menu's, the space menu's and
+the machine menu's "Open Session…" and File ▸ Open Session… (⌥⌘T) open it.
 - A glass panel like the command palette, 420 pt wide, near the top of the
   window, with no title and no buttons: Enter acts, Esc or a click outside
   closes it. One panel shows at a time: opening it closes the command palette
@@ -532,7 +528,8 @@ space menu's and the machine menu's "Open Session…" and File ▸ Open Session�
   Enter or a click acts on a row.
   - A new name, a running session and a stopped session take one path. The
     app starts the server if it is not running (a launchd job on This Mac,
-    D47); a server the app started gets its first space in `$HOME`. Then
+    D47); a server the app started with no space gets its first space in
+    `$HOME`. Then
     the session's page opens last in the window's pages and shows, and its
     store connects.
   - An open session: its page shows.
@@ -602,7 +599,7 @@ tab at once.
   hidden tabs do: their programs hear of it then, and a switch to the tab shows
   no reflow.
 - A pane the app creates shows the [New pane](/docs/ui/new-pane) chooser
-  first: Terminal, Agent, Browser, File Explorer or Git.
+  first, unless Settings ▸ General ▸ New panes open names one kind.
 - Inside a page, pane cards follow herdr's split tree, with an 8 pt gap
   between them. The gap is the divider: drag it to resize (a grip shows on
   hover and while dragged), double-click it to reset it to 0.5, and ⌥⌘=
@@ -618,10 +615,9 @@ How it works: [Layout and sizing](/docs/layout).
 
 ## Pane card
 
-- **Card.** Radius 10. Its terminal fades in over 0.06 s once herdr's frames
-  stop for 0.1 s, or 0.4 s after the first frame (at once with Reduce Motion).
-  At each new grid it keeps its old picture until herdr's frames settle, then
-  shows the new one at once ([States](/docs/ui/states)).
+- **Card.** Radius 10. Its terminal fades in once herdr's frames settle, and
+  at each new grid it keeps its old picture until they settle again
+  ([States](/docs/ui/states)).
 - **Header.** A terminal card's header is one row, 36 pt tall. 11 pt in from the leading edge: the program glyph
   (16 pt, secondary), 3 pt before herdr's pane label if set, else the
   program's name and the folder in secondary text, for example "vim ~/code" or
@@ -658,7 +654,7 @@ How it works: [Layout and sizing](/docs/layout).
     agent started by hand gets its second row when herdr reports it, and the
     terminal gets 32 pt shorter then.
 - **Terminal.** 10 pt in from the card's sides and 8 pt above its bottom; its
-  text starts 12 pt in, as in Rex.
+  text starts there (libghostty adds no padding).
 - **Active border.** When the tab shows two or more cards, the keyboard card
   has a 1 pt border inside its rounded edge, in the label color at 30 % in
   dark and 22 % in light. A tab with one card, a zoomed card, a floating
@@ -678,11 +674,10 @@ How it works: [Layout and sizing](/docs/layout).
     tab of the session but the pane's own, grouped by space: each
     space's name as a section header, in herdr's order: the sidebar's in Manual), Rename
     Pane…, Reset Pane Name.
-  - Redraw Terminal (⌥⌘R, not on a browser or plugin pane), Replace Pane (⇧⌘R), Open Terminal Here, Start Agent
-    Here ▸, Open Browser
-    Here, Open File Explorer Here, Open Git Here
-    ([New pane](/docs/ui/new-pane#commands-that-change-a-panes-kind)),
-    Close Pane (⌘W).
+  - On a plugin card: Reload Plugin (⌥⌘R), Show Web Inspector and Show Log.
+  - Redraw Terminal (⌥⌘R, not on a browser or plugin pane), Replace Pane (⇧⌘R), Open Terminal Here (on an agent,
+    browser or plugin pane), Start Agent Here ▸, Open Browser Here, Open File Explorer Here, Open Git Here (each but
+    the pane's own kind, [New pane](/docs/ui/new-pane#commands-that-change-a-panes-kind)), Close Pane (⌘W).
 - The same items are in View ▸ Pane in the menu bar, for the keyboard card
   (the zoomed card of the selected tab, when there is one). Redraw Terminal, Replace Pane, Open
   Terminal Here, Start Agent Here ▸, the Open … Here items and Close Pane are
@@ -811,9 +806,10 @@ terminal.
     reads the link libghostty reports there the same way. On a remote
     machine a ⌥-click on any path is taken, and the open checks the path
     there. The card's accessibility title is the link under the pointer.
-- A `mailto:` or an app's link in a page or a chat reply opens its app.
+- A `mailto:` or an app's link in a page opens its app. In a chat reply only a
+  `mailto:` does; other schemes open nothing.
 - **A file that is gone.** A click, ⌘-click, ⌥-click or menu item on a file
-  or folder that is no longer there (a terminal link, a Markdown link, a Git
+  or folder that is gone (a terminal link, a Markdown link, a Git
   diff's file, a row of File Explorer's tree, ⌘K's Open File, `ovvi open`
   typed in a shell) opens nothing and shows a [notice](#notice) in the
   warning tone: "File not found: ‹path›", with the home folder as `~`.
@@ -879,7 +875,7 @@ agents at once.
   ⌥⌘[ ] and the palette step to the window's previous or next session, which
   the overview then shows; a sideways swipe alone goes nowhere. From the top:
   the session's title as the sidebar's
-  page header has it (13 pt semibold; This Mac's name for `default`), then
+  page header has it (13 pt semibold; the machine's name for `default`), then
   the session's spaces in herdr's order, pinned ones first, less the hidden ones (the sidebar's in Manual), 32 pt apart: each
   space's name (13 pt semibold, secondary), then its tabs as tiles in a
   grid, 2 to 4 a row (as many 340 pt tiles as fit), 16 pt apart. Wide
@@ -964,9 +960,9 @@ clients see it there.
   shows the same agent control as its card after the place: Chat | TUI, or
   Relaunch with Chat, whose loader and chat show in the floating window. Then
   on the right the title
-  row's 28 pt buttons: **Stay on Top** (a pin), **Close** (closes
+  row's 28 pt buttons: **Stay on Top** (a pin), **Close Pane** (closes
   the pane, and asks first as any close does, in the floating window, also
-  for a Close from the card in the tab) and, rightmost, **Detach**
+  for a Close from the card in the tab) and, rightmost, **Detach Pane**
   (`pip.exit`: the window closes and the card shows its terminal in its tab
   again; nothing stops). The red traffic light detaches too. Below the title
   row, the glass card holds only the terminal, with no header, 8 pt in from
@@ -997,8 +993,8 @@ clients see it there.
 - **Keys and ⌘K.** In the floating window the menu bar and the palette offer
   only what applies to it: Detach Pane (⌘W, as the red light: a window's
   close puts the pane back, nothing stops), Redraw Terminal (⌥⌘R), Replace Pane (⇧⌘R), Open Terminal
-  Here, Start Agent Here, Open Browser Here, Open File Explorer Here, Open
-  Git Here, Close Pane (⇧⌘W), Stay on Top, Find, Find Next and Find Previous, the
+  Here (on an agent or plugin pane), Start Agent Here, Open Browser Here, Open
+  File Explorer Here, Open Git Here (each but the pane's own kind), Close Pane (⇧⌘W), Stay on Top, Find, Find Next and Find Previous, the
   font size items, Copy and Paste, on a browser pane Reload Page (⌘R), Open
   Location (⌘L) and Show Web Inspector (⌥⌘I), and on a File or Markdown pane
   Save (⌘S) and on a Markdown pane Lock Editing (⌘E). The palette lists no tabs, spaces or sessions.
@@ -1024,13 +1020,8 @@ clients see it there.
   the same.
 - **From a pane, on any machine:** `ovvi float <pane>`
   ([CLI](/docs/agent-control/cli#float-and-unfloat)), run in a pane of a
-  session the app follows, floats the pane it names the same way, over the
-  window where the user last typed or clicked in a card of that session.
-  The window comes to the front without activating Ovvi, and the keyboard
-  stays in the window that had it. A pane that floats already comes to the
-  front. `--on-top` turns on Stay on Top, and `ovvi unfloat` detaches it.
-  The app marks the panes it shows, so pi-herd asks it only for a click in
-  one of them; herdr's own popups do not show in Ovvi.
+  session the app follows, floats the pane it names the same way, and
+  `ovvi unfloat` detaches it.
 
 ## Notice
 
@@ -1059,7 +1050,11 @@ A short message after a failed action or a refused move, or from an agent.
 
 ## Control capsule
 
-A window that watches a session another window controls (D66).
+Control is per session (D66). When two windows show the same session, the
+window where the user last typed or clicked in a terminal controls that
+session's panes, and the other window watches
+([Control between windows](/docs/talking-to-herdr#control-between-windows)).
+Two windows on different sessions each control their own session.
 - Its cards of that session draw their content at 0.85 of its opacity, and a
   capsule at the bottom center of the tab's page, 30 pt above its bottom, says
   "Controlled in another window", with **Take Back**. It is a
@@ -1114,7 +1109,7 @@ A window that watches a session another window controls (D66).
 - **Sub-pages.** ⌫ on an empty field or Esc goes back one page; Esc on the
   first page closes the palette.
   - Rename Tab ›, Rename Space ›, Rename Pane ›: the field holds the
-    current name; Enter saves.
+    current name (for a pane its label, empty when it has none); Enter saves.
   - Move Pane to Tab ›: New Tab, New Space, then the session's other tabs
     under their spaces' names. A move into a tab lands right of its last
     card.
@@ -1147,7 +1142,7 @@ A window that watches a session another window controls (D66).
   as a dropped file is ([Drag and drop](/docs/ui/drag-and-drop#files-and-images)),
   and the copy's path is typed.
 - **Settings as commands.** Each on/off setting in the menu bar is one command
-  whose title says what it does now: "Turn On Focus Follows Mouse" or "Turn
+  whose title says what it does: "Turn On Focus Follows Mouse" or "Turn
   Off Focus Follows Mouse".
 
 The palette and the menu bar come from one command list, so each title and
