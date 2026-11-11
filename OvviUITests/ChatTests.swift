@@ -125,6 +125,35 @@ extension OvviUITests {
         XCTAssertTrue(element("chat.\(pane).composer").exists(within: 3))
     }
 
+    /// Turns that end while the card shows the TUI are in the chat's first frame when Chat is picked again, at the
+    /// bottom: not the old rows, then a jump. A chat made again (floated) shows too.
+    func testAChatShownAgainOpensOnTheTurnsItMissed() async throws {
+        let pane = try await startChat().pane
+        try await say("hello", in: pane)
+        XCTAssertTrue(row(pane, "reply", "Echo: **hello**").exists(within: 5))
+        element("pane.\(pane).view.tui").click()
+        XCTAssertTrue(hasKeyboard("terminal.\(pane)"))
+        // 150 turns: enough lines that reading them takes a while.
+        app.typeText("many\r")
+        try await waitFor(pane) { $0.contains("Last.") }
+        element("pane.\(pane).view.chat").click()
+        // Each look is one snapshot: the first that holds the chat must hold the last reply, in view.
+        var seen: [XCUIElementSnapshot] = []
+        XCTAssertTrue(until(5) {
+            seen = (try? nodes(of: mainWindows.firstMatch)) ?? []
+            return seen.contains { $0.identifier == "chat.\(pane)" }
+        })
+        let chat = seen.first { $0.identifier == "chat.\(pane)" }?.frame ?? .zero
+        let last = seen.first { $0.identifier == "chat.\(pane).reply" && $0.value as? String == "Last." }?.frame
+        XCTAssertNotNil(last, "the chat showed the rows from before the turns")
+        XCTAssertTrue(
+            last.map { chat.contains(CGPoint(x: $0.midX, y: $0.midY)) } == true,
+            "\(String(describing: last)) \(chat)",
+        )
+        let window = float(pane)
+        XCTAssertTrue(element("chat.\(pane).composer", in: window).exists(within: 5))
+    }
+
     func testAChatTakesTheKeyboardOnAnyClickAndItsBoxGrows() async throws {
         let (tab, pane) = try await startChat()
         try await say("hello", in: pane)

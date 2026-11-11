@@ -26,6 +26,10 @@ final class Chat {
     @ObservationIgnored private var seen = 0
 
     var showsChat = false
+    /// The history holds what the agent wrote while nothing followed it. A card shows the chat only then: old rows
+    /// would show first and then jump to the new ones.
+    var current = true
+    @ObservationIgnored private var catchingUp: Task<Void, Never>?
     var recorded: Phase?
     var question: ChatQuestion?
     var problem: String?
@@ -69,6 +73,22 @@ final class Chat {
         phase == .waiting && question == nil
     }
 
+    /// Follows the agent until the history is current, 2 s at most (then the old rows show), while the card still shows
+    /// the TUI. The chat view's own follow overlaps it by a second.
+    func catchUp() {
+        guard catchingUp == nil else { return }
+        catchingUp = Task {
+            let held = Task { await viewed() }
+            for _ in 0 ..< 40 where !current {
+                try? await Task.sleep(for: .milliseconds(50))
+            }
+            current = true
+            try? await Task.sleep(for: .seconds(1))
+            held.cancel()
+            catchingUp = nil
+        }
+    }
+
     func viewed() async {
         viewers += 1
         if viewers == 1, let store {
@@ -84,6 +104,7 @@ final class Chat {
                 // Reset once the adapter returns, so that none of its tasks writes after.
                 if viewers == 0 {
                     recorded = nil
+                    current = history.entries.isEmpty
                 }
             }
         }

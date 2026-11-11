@@ -201,6 +201,13 @@ and no backslash.
   - The chat keeps a mark (inode and offset) per file in memory, so a card
     shown again goes on from there. Another inode, or a shorter file, starts
     the file again.
+  - **Shown again only when current.** When Chat is picked, or a chat card
+    is made again, while nothing followed the agent, the card keeps its TUI
+    (and the keyboard) and the chat follows the agent from its marks until
+    the backlog is in (OpenCode: until its history loads), 2 s at most. Then
+    the chat shows, whole and at the bottom, in its first frame, not the old
+    rows and then a jump. After 2 s the chat shows what it has, and the rest
+    comes as it is read.
   - `Exec.watch` prints a rewritten file (Claude Code's session record) whole
     on each change, checked every 0.3 s.
   - OpenCode's are `curl` runs on the pane's machine against
@@ -209,7 +216,7 @@ and no backslash.
     the history again whole (Simpler choice: a long session is megabytes).
 - A new session line (`/clear`, `/new`, a fork, a resume) starts the history
   again.
-- The adapter follows only while a card shows the chat. Off screen, the
+- The adapter follows only while a card shows the chat, or catches it up. Off screen, the
   header's state is herdr's. A dropped stream is followed again after 2 s,
   from the marks.
 - A message shows when it is on disk, 0.1–2 s after the TUI draws it. There
@@ -480,7 +487,8 @@ A run is one quiet line with no card: its summary and a chevron.
   or shows its TUI, or a new chat starts. A switch to another tab or
   space and back keeps them and the scroll place (its page is kept),
   and while its page is kept the chat goes on following its transcript.
-  When the card is made again, it shows the newest block at the bottom.
+  When the card is made again, it shows the newest block at the bottom,
+  once its history is current.
 - **The place on the top row.** Scrolled up, the app knows the row at the
   top of the view and how far the view's top is into it. When the rows
   above that row change height (a new width) or come (Show Earlier), the
@@ -576,7 +584,8 @@ A run is one quiet line with no card: its summary and a chevron.
   on the chat. An agent flips it with
   `ovvi view` ([CLI](/docs/agent-control/cli#agent-chat-and-view)). The
   choice is kept in memory per pane, for every window of the session. The card keeps
-  the keyboard across a switch: the reply box or the terminal.
+  the keyboard across a switch: the reply box or the terminal. The terminal
+  keeps it while the chat catches up after a time away.
 - A floated chat pane shows its chat in its floating window, with Chat | TUI
   in the window's title row
   ([Floating pane](/docs/ui/window#floating-pane)).

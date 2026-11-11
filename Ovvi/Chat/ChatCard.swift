@@ -20,6 +20,11 @@ extension HostStore {
 
 extension Page {
     func shownChat(_ pane: HostStore.Pane) -> Chat? {
+        pickedChat(pane).flatMap { $0.current ? $0 : nil }
+    }
+
+    /// Chat is picked: the card shows it once its history is current (`Chat.catchUp`).
+    func pickedChat(_ pane: HostStore.Pane) -> Chat? {
         guard store.chooser(pane.id) == nil, !floats(pane), let chat = store.chat(pane),
               chat.showsChat else { return nil }
         return chat

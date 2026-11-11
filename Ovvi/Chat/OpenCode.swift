@@ -128,6 +128,7 @@ struct OpenCode: ChatAdapter {
         }
         guard var session = await history(chat, url, id, exec) else { return }
         chat.history = session.history
+        chat.current = true
         await waits.load(url, folder, exec, chat)
         while let line = await lines.next() {
             guard line.hasPrefix("data: ") else { continue }

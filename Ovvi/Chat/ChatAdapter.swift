@@ -133,6 +133,7 @@ extension Chat {
                         opened(again: again, parser: parser)
                     } else {
                         showBacklog()
+                        current = true
                     }
                     continue
                 }

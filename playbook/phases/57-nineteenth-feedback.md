@@ -486,6 +486,12 @@ runs and on-demand on the final head.
   and came out again: the user found the messages too narrow. The shared `Capped` layout keeps its fix from then: it
   places its view with the offer it measured with, as its own height stretched a table's flexible cells. Pictures: ~/Downloads/ovvi-research/p57i/
   r7b (rhythm), r7c (the cap), r7d (the full width back, with a code block and a table).
+- **Round 7 bug (stale chat on show):** Chat picked after a turn ended in the TUI showed the old rows for about 0.43 s,
+  then the new ones and a scroll jump. Cause: the adapter follows only while a view shows the chat; a view shown again
+  drew the old history while the follow read the new lines from the marks off screen. Fix: a chat that nothing followed
+  is not current; when Chat is picked (or the view is made again: floated, detached, another session), the card keeps
+  its TUI while the chat catches up (2 s at most), then shows it current, at the bottom. A follow per hidden chat was
+  the other way: a process each.
 
 ### Track E
 
