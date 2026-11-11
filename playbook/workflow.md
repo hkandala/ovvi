@@ -97,13 +97,14 @@ OWNER=<your agent name> make vm-e2e DERIVED_DATA=/tmp/ovvi-dd-NN<track> ONLY=…
   takes it for the test run only, and waits while another run holds it. The kernel frees it when the run ends,
   also when it is killed, so it never goes stale. One VM only: never start a second one for tests.
 - Anything else you do in the VM that clicks, types or opens apps takes the lock too:
-  `lockf -k /tmp/ovvi-vm.lock tart exec ovvi-test …`. A click in the VM's pane during a run breaks that run.
+  `lockf -k /tmp/ovvi-vm.lock tart exec ovvi-test …`. The pointer over the VM's card, or a click in it, during a run breaks that run.
 - The VM stays running between runs (a boot costs about 40 s, and start and stop cycles can hit macOS's VM limit).
   The orchestrator stops it when a project ends: `tart stop ovvi-test`.
 - Run the tests you add or change in the VM, a few at a time (two short ones take about 30 s once the VM runs). Larger sets
   go to a [chosen-tests CI run](ci.md#running-part-of-it): dispatch it, give the run id in your report, and go
   on. The orchestrator watches it and sends back failures. The whole suite runs in the VM only when the orchestrator
-  asks for it: `make vm-e2e FULL=1` holds the lock for over an hour. Never run the same tests again without a code change.
+  asks for it: `make vm-e2e FULL=1` holds the lock for over an hour. Never run the same tests again without a code
+  change.
 - Agents read a run from its xcresult (attachments and recordings) and take the VM's screen with
   `tart exec ovvi-test screencapture -x '/Volumes/My Shared Files/runs/…'`. The VM's pane (New pane ▸ Tart VM, the
   Tart VM plugin) is for the user: agents open no panes in the user's sessions. Inside the VM, `osascript` and

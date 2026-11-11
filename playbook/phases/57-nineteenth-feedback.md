@@ -2017,14 +2017,17 @@ metadata info in the header … instead show a button which opens the vm in orig
 webkit directly instead of using browser plugin … if not we should provide that support".
 
 - **Fix.** The plugin's own card draws the VM's screen (noVNC in its page): no Browser card, no address, no reload.
-  Row 1 is "Tart VM ‹vm›" (the page's title), row 2 "Running · macOS 27.2 · 4 cores · 8 GB" and **Open in Screen
-  Sharing**. The bridge only joins the card's WebSocket to the guest's VNC (Origin `ovvi-plugin://tart-vm`).
-- **Ovvi's part.** A manifest field `connect` lists local `http`/`ws` origins (127.0.0.1, localhost, [::1], a port);
+  Row 1 is "Tart VM ‹vm›" (the page's title), row 2 "Running · macOS 27.2 · 4 cores · 8 GB" and **Open in Tart**.
+  The bridge only joins the card's WebSocket to the guest's VNC (Origin `ovvi-plugin://tart-vm`).
+- **Ovvi's part.** A manifest field `connect` lists local `http`/`ws` origins (127.0.0.1 and a port: CSP takes no
+  IPv6 host);
   they join the page's `connect-src`, and the confirmation names them. Spike: a custom-scheme page is a secure context
   (noVNC's Apple authentication needs WebCrypto), and its WebSocket's Origin is `ovvi-plugin://<id>`.
-- **Decisions.** Tart's window shows only a VM that `tart run` itself started with graphics (a `VZVirtualMachineView`
-  in that process; no display API): showing it there means a restart, which loses the guest's state and any test run.
-  So the button opens the same running VM in Screen Sharing.app, as `tart run --vnc` does. A card loaded again shows
-  its VM but never boots one by itself. `make vm-e2e FULL=1` runs the whole suite in the VM.
+- **Decisions.** Only the process that runs a VM can draw it (a `VZVirtualMachineView` in `tart run`; Tart has no
+  display API). So VMs start `--suspendable`, and **Open in Tart** runs `tart suspend` and then `tart run` with a
+  window: the same VM, with its state, in Tart's window after about 8 s (spiked on a clone: a file in `/tmp` and a
+  `--dir` share survived). Closing Tart's window suspends the VM; the card's Start and Connect, or the next
+  `make vm-e2e`, resumes it headless. The button refuses while a test run holds the VM lock. A card loaded again
+  shows its VM but never boots one by itself. `make vm-e2e FULL=1` runs the whole suite in the VM.
 - **Runs.** `testAPluginPageReachesOnlyTheLocalOriginsItDeclares` and `testAPluginCardAsksAndItsPageSetsItsSettings`
   green in the VM.

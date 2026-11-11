@@ -187,9 +187,9 @@ public struct PluginManifest: Decodable, Sendable, Equatable {
             throw bad("chooser", "needs opens with folders or git, or no opens")
         }
         // This Mac only, and an origin only: shown content gets no road out, and the CSP needs no escaping.
-        let local = /(http|ws):\/\/(127\.0\.0\.1|localhost|\[::1\]):[0-9]{1,5}/
+        let local = /(http|ws):\/\/127\.0\.0\.1:[0-9]{1,5}/
         if let origin = connect.first(where: { (try? local.wholeMatch(in: $0)) == nil }) {
-            throw bad("connect", "has \(origin): only http or ws on 127.0.0.1, localhost or [::1], with a port")
+            throw bad("connect", "has \(origin): only http or ws on 127.0.0.1, with a port")
         }
         try checkControls(bad)
         try Self.check(settings: settings, bad)

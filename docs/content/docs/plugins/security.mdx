@@ -148,7 +148,9 @@ The rules below keep that content from taking over the card and its bridge
   folders. Only the source you install from protects you.
 - **A plugin's own mistakes.** A plugin that builds HTML from a file's text
   or passes a file's words to `run` can be used by that file. The CSP and the
-  navigation lock limit the first. Nothing in the app limits the second.
+  navigation lock limit the first. Nothing in the app limits the second. A
+  link's `ping` in shown content can still reach the plugin's own `connect`
+  servers, so such a server takes commands only over its WebSocket.
 - **A machine.** A machine writes labels. So any process on a machine (a
   script, an agent) can open a card of any plugin that you confirmed on that machine.
   That gives it what the plugin does there, as the user it runs as. It cannot
