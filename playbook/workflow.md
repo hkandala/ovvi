@@ -146,6 +146,13 @@ drives the GUI at a time ([more slots in VMs](ci.md#more-gui-slots-not-set-up)):
   report the result.
 - **Stop** agents when their work is done, together in one `agent_stop`. Read a stuck one with
   `agent_read` (with `screen: true`).
+- **New work: start or resume.** Resume an agent only when it is recent and has used little of its
+  context: it has the files read already, so that is cheaper. Start a fresh agent for anything else, small
+  jobs included: a long context costs more to resume and works worse. This rule applies when the work is
+  handed out; never stop an agent that is already working to replace it.
+- **The user waiting to test.** When the user asks to test something, push it to main as soon as its
+  review and `make lint build test` pass; run its CI in a background command after the push and fix any
+  red by its cause.
 - An agent asks the orchestrator only when the design and these rules do not answer it. The orchestrator
   decides open points itself and does not ask the user.
 
