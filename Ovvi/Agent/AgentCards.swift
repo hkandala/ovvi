@@ -264,7 +264,7 @@ extension HostStore {
     private static var flashes = 0
 
     func notice(_ text: String, show pane: Pane) {
-        show(Notice(text: text, tone: .info, show: pane.terminalID), for: Self.held ?? .seconds(4))
+        show(Notice(text: text, tone: .info, show: pane.terminalID), for: Self.held)
     }
 
     func flash(_ pane: String) {

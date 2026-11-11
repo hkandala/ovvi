@@ -92,7 +92,7 @@ extension HostStore {
                   pane.agent == nil || pane.agent == agent.command, adapter(pane) == nil else { return }
             enableChat(pane, agent, session: session)
         }
-        show(Notice(text: text, retry: retry), for: .seconds(10))
+        show(Notice(text: text, retry: retry))
     }
 
     func relaunchEnded(_ ended: Started, _ agent: Chooser.Agent, _ chooser: Chooser, _ session: String) {

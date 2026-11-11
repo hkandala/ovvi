@@ -107,6 +107,7 @@ struct Detail: View {
                         .accessibilityIdentifier("notice.close")
                 }
                 .accessibilityIdentifier("detail.notice")
+                .onHover { store.noticeHovered = $0 }
                 .onChange(of: notice.id, initial: true) {
                     AccessibilityNotification.Announcement(notice.text).post()
                 }

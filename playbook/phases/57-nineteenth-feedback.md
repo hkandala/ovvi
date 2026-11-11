@@ -2298,3 +2298,19 @@ ones".
 97. Reconnecting look (Track F2): "when reconnecting to remote machine, we now show a big grey rectangle saying
     reconnecting, i think we did that coz, earlier there was some text overlap, but that grey rectngel looks ugly, can
     we improve that and make it fit to our ui better?"
+
+### Track N2 (item 94)
+
+- **Cause.** Move Pane to Tab ▸ New Tab sent only `pane.move` to a new tab, which herdr adds last; the agent's
+  notice with **Show** went after 4 s like any notice, Retry's after 10 s.
+- **Fix.** New Tab places the tab as the opens from a card do: right after the pane's tab, shown there from its first
+  frame (`placeBeside`, then `tab.move`). The card's menu, View ▸ Pane and the palette share the one command. A notice
+  with an action (Show, Retry) stays 6 s, and stays while the pointer is over it; it goes when the pointer leaves if
+  its time is up.
+- **Decisions.** ⌘T, `+` and a drop on `+` or the bar's end stay last, as in Safari (the design). New Tab is disabled
+  for a pane alone in its tab: herdr would close the tab and make it again in the same place. Retry's notice went
+  from 10 s to the same 6 s: one value for notices with an action, and the pointer holds any of them.
+- **Runs.** None: the new checks (in `testContextMenuSplitsLeftRenamesAndMovesToNewTab`, and
+  `testAnAgentsNoticeStaysUnderThePointer`) wait for the final CI round.
+- **For the user.** Right-click a pane in a split ▸ Move Pane to Tab ▸ New Tab: the tab lands right after its tab.
+  Hover an "‹agent› opened …" notice: it stays until the pointer leaves.

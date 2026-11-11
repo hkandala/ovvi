@@ -139,6 +139,25 @@ extension OvviUITests {
         try await run("cd /tmp && rm -rf \(folder)", in: first, "clean", 0)
     }
 
+    /// Without the test's hold: 6 s, and longer under the pointer.
+    func testAnAgentsNoticeStaysUnderThePointer() async throws {
+        let (tab, first) = try await newTab("held")
+        let (other, beside) = try await createTab(in: "w2")
+        closeAfter("tab", other)
+        XCTAssertTrue(element("tab.\(other)").exists(within: 5))
+        element("tab.\(other)").click()
+        XCTAssertTrue(element("terminal.\(beside)").exists(within: 3))
+        try await waitForPrompt(beside)
+        try await expectOpen("w2")
+        try await run("clear; \(Self.ovviCommand) reveal \(first)", in: beside, "notice", 0, "shown: false")
+        let notice = element("detail.notice")
+        XCTAssertTrue(notice.exists(within: 3))
+        notice.hover()
+        XCTAssertFalse(notice.vanishes(within: 8))
+        element("tab.\(tab)").hover()
+        XCTAssertTrue(notice.vanishes(within: 2))
+    }
+
     /// An agent's notices and flashes last 30 s: a query on CI can take seconds.
     static let agentHold = ["-agentHoldSeconds", "30"]
 

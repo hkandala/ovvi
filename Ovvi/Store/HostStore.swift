@@ -24,6 +24,8 @@ final class HostStore {
     private(set) var waiting = 0
     private(set) var focusedWorkspaceID: String?
     var notice: Notice?
+    /// Set by the notice's own hover: a notice under the pointer stays.
+    @ObservationIgnored var noticeHovered = false
     /// The not-running page's reason, until the session answers or the next Start.
     var startProblem: String?
     var starting = false
