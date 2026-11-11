@@ -18,7 +18,9 @@ Problems that came back, and the rule that stops each. How we work is in
   element takes every hit test; a plain `Text` has an empty label (read its value); lazy stacks build only
   visible rows; a container's frame is the union of its children, and `.offset` or an overflowing child moves
   a frame away from what is drawn (place with padding); `.accessibilityElement(children: .ignore)` needs
-  `.isStaticText` for its value to reach XCUITest. After a change to a shared surface (ids, keys, menu order,
+  `.isStaticText` for its value to reach XCUITest; SwiftUI's `.opacity` on an AppKit host moves its frame (fade the
+  host's `alphaValue`); a `Menu` with `.menuStyle(.button)` has an empty label (find it by id); XCUITest sees no
+  focus inside a web view (check that the old card lost the keys). After a change to a shared surface (ids, keys, menu order,
   the chrome), grep the UI tests for it and run the ones that use it.
 - **A query can wait out the accessibility timeout (6 s).** One that reaches a web view as its page starts (a
   popup) waited 6.1 s on CI, and the app drew nothing meanwhile: wait for a new web view's element for over 6 s.
@@ -42,8 +44,10 @@ Problems that came back, and the rule that stops each. How we work is in
   after `willBeginAt` or once the test saw the hold's effect (the helper's `press` and `release`).
 - **Know XCUITest's input gaps on macOS.** Drags need `click(forDuration:thenDragTo:)`; scroll is a wheel
   with no phases; a ⌘ key whose menu item is disabled is never delivered. Real trackpad gestures go
-  through the e2e helper as HID events. It cannot read a menu checkmark (`isSelected` is false), hear an
-  announcement or drive the Dock menu: check those by hand (`AXMenuItemMarkChar`, a screenshot).
+  through the e2e helper as HID events. It cannot read a menu checkmark (`isSelected` is false) or a tooltip (build `.help` and
+  `.accessibilityLabel` from one string and read the label), hear an announcement, type through an input method
+  (`typeText` skips marked text) or drive the Dock menu: check those by hand (`AXMenuItemMarkChar`, a screenshot).
+  An ad-hoc build shows no Dock badge or banners: tests read the `app.badge` value.
 - **Debug builds are `Ovvi Dev.app`, `dev.ovvi.app.debug`, never the user's `Ovvi.app`, `dev.ovvi.app`.**
   Anything keyed by the bundle id (defaults, saved windows, the URL scheme, notifications, Launch Services, an
   `XCUIApplication(bundleIdentifier:)`) once reached the user's own Ovvi; keep new keys on the bundle id. The
@@ -71,9 +75,18 @@ Problems that came back, and the rule that stops each. How we work is in
   backdrop's too) draws their behind-window glass over nothing: dark 33 and light 241, where the screen shows 26 over
   black and 249 over white. Only an excluding filter (the display minus every other window) draws it as the screen
   does. So the welcome's clips film with an excluding filter cut to the window's rect, rebuilt every 0.25 s, and any
-  other window over that rect deletes the film and fails the take. Tag the clips sRGB: AVFoundation plays sRGB values
+  other window over that rect deletes the film and fails the take. `screencapture -l <window>` also draws Glass over nothing:
+  capture a screen region (`-R`) to see the real look. Tag the clips sRGB: AVFoundation plays sRGB values
   tagged bt709 lighter (33 as 36). A recording backdrop covers only the recorded window plus a small margin and goes
   away with the film: a full-screen one left up between takes locked the user out.
+- **CI's screenshots and recordings show no web content.** Browser, plugin, Markdown and diff cards look blank there;
+  their accessibility values are right. Check web cards through accessibility; check a page's pixels in the VM.
+- **A test server never uses Python's `http.server`.** Its `getfqdn()` makes macOS show the Local Network prompt over
+  the window. Bind `socketserver.ThreadingTCPServer(("127.0.0.1", port), Handler)`.
+- **A test never starts a real agent on the Mac.** A pane's shell finds the real `claude`, which writes `~/.claude`:
+  a test that types an agent's name skips that part where the agent is installed and leaves it to CI's stand-in.
+- **A plugin label written by hand needs an iid of exactly 6 `[a-z0-9]` characters,** or the pane stays a terminal
+  with no error ([Labels](../docs/content/docs/plugins/labels.mdx)).
 - **Never assert wall-clock time.** In unit tests compare against a ten times larger input or count the
   work.
 - **A pane's row that wraps at a space drops it.** herdr's `pane.read` keeps no trailing spaces, so a typed line
@@ -112,6 +125,10 @@ Problems that came back, and the rule that stops each. How we work is in
   `report-agent`: a stand-in agent runs under that name.
 - **herdr ids repeat:** tab ids (`w1:t1`) across sessions, session names across machines. Key state by
   (machine, session, id).
+- **Once a pane has an agent session, herdr takes no more state reports for it.** A stand-in that must look busy
+  reports `working` before it reports its session.
+- **Scripts that run on a machine meet dash** (`/bin/sh` on Debian and Ubuntu), where a background job's stdin is
+  `/dev/null`. Test a remote shell script under dash too.
 - **Validate outside input before it reaches argv or a shell:** `ovvi://` URLs, herdr metadata, dropped
   file names. Reject names that start with `-`.
 - **Machine-wide resources have a budget too:** ptys (`kern.tty.ptmx_max`), herdr sessions. Make a stress
@@ -187,6 +204,14 @@ Problems that came back, and the rule that stops each. How we work is in
 - **Take a hit frame outside any offset that moves a view for a while** (a slide, a landing). `onGeometryChange` inside an
   `.offset` saw the offset set but not always its return to 0, and the sidebar lit the row 50 pt under the pointer:
   measure in the view's own space and place it by a frame taken outside the offset.
+- **A view that leaves its window gets no `resignFirstResponder`:** a hidden tab's page keeps its focus flag. Clear
+  it in `viewDidMoveToWindow`.
+- **On macOS 27, a SwiftUI drop target made after a drag entered the window never gets the drop.** Make every target
+  before the drag starts, hidden.
+- **Return never presses a `confirmationDialog`'s destructive button.** A dialog that Return confirms is an `.alert`
+  with a `.defaultAction` and a `.cancel` button. `role: .destructive` draws nothing on `.glass` buttons: tint them.
+- **WebKit draws an overlay scroll bar under its children's `z-index` layers** unless the scroll view is a stacking
+  context (`isolation: isolate`).
 - **Hover state is unreliable.** A view removed under the pointer gets no hover end, and a busy app runs
   hover late. Decide from the pointer's location when it matters.
 - **WebKit cannot end its own helper processes here** (xpc: "Operation not permitted"): a GPU or page process it gave

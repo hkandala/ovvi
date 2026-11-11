@@ -101,6 +101,8 @@ How CI runs, how to run part of it, and how to keep it green and fast.
   accessibility value, not a walk over many elements.
 - Keep a test under about a minute: one long test sets its shard's time.
 - Make a failure say what it saw (put the pane's text or both values in the message).
+- To test what shows before herdr answers, freeze the session's server: the e2e helper's `POST <session>/pause`
+  and `/resume` (SIGSTOP, SIGCONT). Always resume in tearDown.
 
 ## Refresh the test times
 

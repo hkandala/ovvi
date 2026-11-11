@@ -224,8 +224,8 @@ No plan review. Every review is read only, in a clean copy of the commit it revi
 A project gets one final reviewer after every track merged and the docs pass landed. It reads the whole
 change at once: bugs between tracks, duplicated code, consistency, comments that say why (not what or
 when), and docs that match the code. One fixer, or the owning track agents, apply it. A security or
-accessibility auditor joins only when the project touches those. For a cleanup of the whole repository
-([phase 32](phases/32-final-review.md)), use one agent per code area instead. Anything big (a redesign, a
+accessibility auditor joins only when the project touches those. For a cleanup of the whole repository,
+use one agent per code area instead. Anything big (a redesign, a
 removal that changes behavior) goes on a list for the user with the reason, the cost and a recommendation.
 
 ## Phase file template
@@ -282,13 +282,16 @@ concurrency). The rest:
   installed package do it? Only then the minimum. No protocol with one conformer except `Exec` and
   `Multiplexer` (D49). No factories, managers, coordinators or service layers; no scaffolding for later. A
   deliberate shortcut gets a `// ponytail:` comment with its ceiling and upgrade path. A type gets its own
-  file when more than one file uses it or it passes about 200 lines.
+  file when more than one file uses it or it passes about 200 lines. No backward-compatibility or migration
+  code: there are no users yet. The repo uses only the current names; a one-off step on the user's Mac runs
+  from a script outside the repo.
 - **Swift.** No `@unchecked Sendable` or `nonisolated(unsafe)` without a one-line reason. UI state is
   `@Observable` classes on the main actor; no Combine or `ObservableObject`. `async`/`await`, `AsyncStream`,
   structured tasks; cancel what you start. Errors: `throws` with a small enum per module, shown in the UI as
   text; never crash on bad input from herdr; no `try!` or force unwraps outside tests. Decoding: hand-written lenient `Decodable` models with only the fields the app uses.
-  Names follow the design's words (machine, session, page, window, workspace, tab, pane, card; the design's
-  space is `Workspace` in code, herdr's API word). Comments say why, not what or when; no commented-out code.
+  Names follow the design's words (machine, session, page, window, space, tab, pane, card; a space is
+  `Workspace` in code, herdr's API word, and the UI always says "space"). Comments only for assumptions and
+  implicit facts, never about old code or history; no commented-out code.
 - **Design bar.** Every new or changed surface (window, panel, dialog, sheet, popover, About, a menu we
   draw) looks modern and native to macOS 26: Liquid Glass through the app's shared glass style where it
   fits, generous padding, the app's fonts and sizes. No stock-looking AppKit panels, no dumps of text. A new
@@ -310,4 +313,5 @@ concurrency). The rest:
   mocks of herdr where the real one is cheap; one `Exec` fake for pacing tests is fine.
 - **Docs.** Plain English, following `/Users/hkandala/code/pi-hkandala/skills/simple-english/SKILL.md`:
   short sentences, active voice, every term defined at first use. Docs describe the app as it is now: no
-  dates, no history.
+  dates, no history, no company names. A change to the `ovvi` command updates the `ovvi` skill in the same
+  commit, in its topic file under `skills/ovvi/`; the skill stays brief and leaves herdr to herdr's skill.
