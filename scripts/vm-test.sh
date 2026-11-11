@@ -61,9 +61,9 @@ tart exec "$vm" zsh -c "[[ \$(readlink /Applications/Xcode.app) == '$guest/xcode
 cp -cR "$dd/Build/Products" scripts "$run/"
 mkdir "$run/bin"
 cp -c "$(command -v herdr)" "$run/bin/"
-# A system alert (UserNotificationCenter's) takes the tests' clicks: close an open one, and keep macOS from asking
-# whether a program that captures the screen may go on (scripts/vm-alerts.py). replayd reads its approvals at start.
-tart exec "$vm" zsh -c "cd '$guest/runs/$$' && [[ -n \$(python3 scripts/vm-alerts.py) ]] && kill \$(pgrep -x replayd)
+# A system alert takes the tests' clicks: close an open one (UserNotificationCenter's), and answer the asks that would
+# come (scripts/vm-alerts.py).
+tart exec "$vm" zsh -c "cd '$guest/runs/$$' && python3 scripts/vm-alerts.py >&2
     kill \$(pgrep -x UserNotificationCenter) 2>/dev/null && echo 'closed a system alert in $vm' >&2; true"
 rm -rf "$dd/vm.xcresult"
 # The newest: an Xcode or SDK update leaves the old one beside it.
