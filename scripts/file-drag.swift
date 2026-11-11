@@ -1,6 +1,6 @@
 // A file's icon in a window of its own, dragged from x y to tx ty (screen points, top left): a drag from Finder
-// sometimes starts nothing on CI. Exits 0 when a drop took the file, 1 when the drop is refused, 2 when no drag begins
-// within 5 s or ends within 10 s. A path `text:<text>` drags that text instead.
+// sometimes starts nothing on CI. Exits 0 when a drop took the file, 1 when the drop is refused, 2 when its window
+// never shows, or no drag begins within 5 s or ends within 10 s. A path `text:<text>` drags that text instead.
 // Usage: file-drag <path> <x> <y> <tx> <ty>
 import AppKit
 

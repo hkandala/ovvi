@@ -197,9 +197,10 @@ extension OvviUITests {
         try await send("\r", to: pane)
         try await waitFor(pane) { $0.contains("\novvi-e2e-dropped") }
 
-        // After the drop: the drag's own window never showed once, right after this menu closed (CI).
+        // After the drop: once on CI, the drag's window never showed right after this menu closed (a guess at why).
         // Its folder panel would show this Mac's folders.
         terminal.click()
+        XCTAssertTrue(hasKeyboard(terminal))
         app.menuBars.menuBarItems["File"].click()
         let goTo = app.menuBars.menuItems["Go to Directory…"]
         XCTAssertTrue(goTo.exists(within: 2))
