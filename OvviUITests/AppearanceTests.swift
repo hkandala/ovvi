@@ -1,30 +1,6 @@
 import XCTest
 
 extension OvviUITests {
-    func testMenuSwitchesTheLook() {
-        XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
-        // Settings persist across runs in the app's own defaults: start from the defaults, and go back to them even
-        // when a step fails.
-        pick("Interface Style", "Glass")
-        addTeardownBlock { @MainActor [self] in
-            pick("Interface Style", "Glass")
-            pick("Appearance", "Dark")
-        }
-        let steps = [("Appearance", "Dark", "glass dark"), ("Appearance", "Light", "glass light"),
-                     ("Interface Style", "Classic", "classic light"), ("Appearance", "Dark", "classic dark")]
-        for (menu, item, look) in steps {
-            pick(menu, item)
-            expectLook(look)
-            keepScreenshot(look)
-        }
-        let (system, other) = UserDefaults.standard.string(forKey: "AppleInterfaceStyle") == "Dark"
-            ? ("dark", "light") : ("light", "dark")
-        pick("Appearance", other.capitalized)
-        expectLook("classic \(other)")
-        pick("Appearance", "Auto")
-        expectLook("classic \(system)")
-    }
-
     /// Launch arguments land in UserDefaults' argument domain, which the settings read. They also pin the look: the
     /// menu then writes the persistent domain, which the argument domain hides.
     func testLaunchesInEachLook() async throws {
@@ -35,8 +11,10 @@ extension OvviUITests {
         }
     }
 
-    /// Read from pixels, the one place the look shows.
+    /// Read from pixels, the one place the look shows. The rim is read on the card without the keyboard: the keyboard
+    /// card's active border lies over its rim. Asserted in dark; light's rim and the card both end near white.
     func testCardsLookAlikeWithAndWithoutTheKeyboard() {
+        step("Glass: the keyboard card and the other card")
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         element("terminal.w1:p1").click()
         XCTAssertTrue(hasKeyboard("terminal.w1:p1"))
@@ -47,6 +25,7 @@ extension OvviUITests {
         pick("Interface Style", "Glass")
         addTeardownBlock { @MainActor [self] in pick("Appearance", "Dark") }
         for appearance in ["Dark", "Light"] {
+            step("Glass \(appearance.lowercased()): the cards look alike")
             pick("Appearance", appearance)
             // The fills follow the look within a frame or two.
             Thread.sleep(forTimeInterval: 0.3)
@@ -54,21 +33,9 @@ extension OvviUITests {
             keepScreenshot("glass \(appearance.lowercased()): \(lit) / \(unlit)")
             // 0: a screenshot that did not draw.
             XCTAssertTrue(unlit > 0 && (0 ... 6).contains(lit - unlit), "\(appearance): \(lit) / \(unlit)")
-        }
-    }
 
-    /// Read on the card without the keyboard: the keyboard card's active border lies over its rim. Asserted in dark;
-    /// light's rim and the card both end near white.
-    func testGlassCardsHaveABrighterTopRim() {
-        XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
-        element("terminal.w1:p1").click()
-        XCTAssertTrue(hasKeyboard("terminal.w1:p1"))
-        pick("Interface Style", "Glass")
-        addTeardownBlock { @MainActor [self] in pick("Appearance", "Dark") }
-        for appearance in ["Dark", "Light"] {
-            pick("Appearance", appearance)
-            Thread.sleep(forTimeInterval: 0.3)
-            let rim = rim(element("pane.w1:p2"))
+            step("Glass \(appearance.lowercased()): the other card's top rim is brighter than its side")
+            let rim = rim(other)
             keepScreenshot("glass \(appearance.lowercased()) rim over the fill (top, side): \(rim)")
             // Rex's dark rim: the top line about 40 steps over the fill at 1x, the sides about 10.
             XCTAssertTrue(appearance == "Light" || rim.top - rim.side >= 12 && rim.top >= 25, "\(rim)")
@@ -93,6 +60,7 @@ extension OvviUITests {
 
     /// herdr drops mouse events for a program without mouse mode, so a drag over a plain shell selects locally.
     func testSelectedTextIsReadable() async throws {
+        step("A shell with full blocks and text")
         let terminal = element("terminal.w1:p1")
         XCTAssertTrue(terminal.exists(within: connect))
         try await waitForPrompt("w1:p1")
@@ -104,11 +72,13 @@ extension OvviUITests {
             to: "w1:p1",
         )
         try await waitFor("w1:p1") { $0.contains("\novvi-42") }
+        // Settings persist across runs in the app's own defaults: go back to the defaults even when a step fails.
         addTeardownBlock { @MainActor [self] in
             pick("Interface Style", "Glass")
             pick("Appearance", "Dark")
         }
         for (style, appearance) in [("Glass", "Dark"), ("Glass", "Light"), ("Classic", "Light"), ("Classic", "Dark")] {
+            step("View menu: \(style) \(appearance), its selected text readable")
             pick("Interface Style", style)
             pick("Appearance", appearance)
             let look = "\(style) \(appearance)".lowercased()
@@ -131,6 +101,14 @@ extension OvviUITests {
             }
             keepScreenshot("\(look) selection: text \(last.text), selection over the card \(last.selection)")
         }
+
+        step("View menu: the other appearance, then Auto follows the system")
+        let (system, other) = UserDefaults.standard.string(forKey: "AppleInterfaceStyle") == "Dark"
+            ? ("dark", "light") : ("light", "dark")
+        pick("Appearance", other.capitalized)
+        expectLook("classic \(other)")
+        pick("Appearance", "Auto")
+        expectLook("classic \(system)")
     }
 
     /// The 85th percentile of contrast: full blocks fill 30 % of the selected rows.
