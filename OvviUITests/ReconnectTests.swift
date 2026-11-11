@@ -9,11 +9,11 @@ extension OvviUITests {
     func testAReconnectingPageShowsItsStateOnce() async throws {
         try await skipWithoutSSH()
         addTeardownBlock { [one] in _ = try? await Self.post("\(one)/ssh-hostname", Data("ovvi-key 127.0.0.1".utf8)) }
-        let stopped = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'pane.' AND identifier "
-                + "ENDSWITH '.retry'")).firstMatch
-        let reconnecting = element("detail.reconnecting")
         for appearance in ["dark", "light"] {
             relaunch(one, Self.onKeyHost + ["-appearance", appearance])
+            let stopped = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'pane.' AND identifier "
+                    + "ENDSWITH '.retry'")).firstMatch
+            let reconnecting = element("detail.reconnecting")
             XCTAssertTrue(drawn("w1:p2", within: connect), element("pane.w1:p2").stringValue)
             // The link down only once: the light pass goes straight to a name that does not resolve.
             try await hostname(appearance == "dark" ? "192.0.2.1" : "ovvi-key.invalid")

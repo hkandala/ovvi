@@ -114,9 +114,13 @@ extension OvviUITests {
         XCTAssertTrue(header.has(\.stringValue, one, within: 3))
         let rows = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'workspace.'"))
         let width = Double(sidebar.frame.width)
+        // The app drops a wheel that comes within 0.3 s of the one before (SwipeRouter.turn).
+        var last = Date.distantPast
         let page = { (sign: Double) in
+            Thread.sleep(until: last + 0.35)
             sidebar.hover()
             sidebar.scroll(byDeltaX: sign * width, deltaY: 0)
+            last = .now
         }
         for (index, session) in [two, five, two, one].enumerated() {
             page(index < 2 ? Self.forward : -Self.forward)
@@ -267,7 +271,8 @@ extension OvviUITests {
             let width = sidebar.frame.width, left = card.frame.minX
             let from = handle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
             from.click(forDuration: 0.2, thenDragTo: from.withOffset(CGVector(dx: offset, dy: 0)))
-            let moved = sidebar.frame.width - width
+            // At rest: a read during the drag's last frame would be stale.
+            let moved = (steady(2) { sidebar.frame.width } ?? sidebar.frame.width) - width
             XCTAssertTrue(until(1) { abs(card.frame.minX - left - moved) <= 2 }, "the card did not move by \(moved)")
             XCTAssertTrue(until(1) { abs(tab.frame.minX - card.frame.minX) <= 1 }, "\(tab.frame) \(card.frame)")
         }

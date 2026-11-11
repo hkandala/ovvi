@@ -29,7 +29,8 @@ extension OvviUITests {
         hoverHeader(first)
         element("pane.\(first).close").click()
         XCTAssertTrue(element("pane.\(first)").vanishes(within: 3))
-        // The ask comes ahead of the close: had it asked, the pane would still be there.
+        // The card hides at once, but herdr closes the pane only once no program runs in it, after any ask.
+        try await expect("herdr closed \(first)") { try await !Self.ids("pane", in: one).contains(first) }
         XCTAssertFalse(confirm.exists)
     }
 
@@ -72,9 +73,9 @@ extension OvviUITests {
         row.hover()
         element("tab.\(tab).close").click()
         XCTAssertTrue(row.vanishes(within: 3))
+        // herdr closes the tab only once no program runs in it, after any ask.
+        try await expect("herdr closed \(tab)") { try await !tabIDs().contains(tab) }
         XCTAssertFalse(confirm.exists)
-        let tabs = try await tabIDs()
-        XCTAssertFalse(tabs.contains(tab))
     }
 
     func testCommandTOpensInTheKeyboardCardsDirectoryAndCommandWClosesIt() async throws {

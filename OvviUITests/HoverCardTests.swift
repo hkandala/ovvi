@@ -34,6 +34,7 @@ extension OvviUITests {
         element("workspace.w1").hover()
         element("tab.\(tab)").hover()
         XCTAssertTrue(card.exists(within: 2))
+        XCTAssertFalse(element("tab.\(tab)").isSelected)
         element("hovercard.\(second)").click()
         XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, true, within: 2))
         XCTAssertTrue(hasKeyboard("terminal.\(second)"))

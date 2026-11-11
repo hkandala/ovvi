@@ -47,7 +47,8 @@ extension OvviUITests {
 
     func testACodexChatOnARemoteMachine() async throws {
         try await skipWithoutSSH()
-        let pane = try await startChat(Self.onKeyHost, agent: 1).pane
+        relaunch(one, Self.onKeyHost)
+        let pane = try await startChat(agent: 1).pane
         try await say("hello", in: pane)
         XCTAssertTrue(row(pane, "reply", "Echo: **hello**").exists(within: 5))
         try await say("model", in: pane)

@@ -19,14 +19,28 @@ import pathlib
 import plistlib
 import signal
 import subprocess
+import time
 
 home = pathlib.Path.home() / "Library/Group Containers"
 
 
 def restart(daemon):
-    """Stops it; launchd starts it again when it is next needed."""
-    for pid in subprocess.run(["pgrep", "-x", daemon], capture_output=True, text=True).stdout.split():
+    """Stops it and waits until it is gone (it may write its file as it ends); launchd starts it again when it is next
+    needed."""
+    pids = subprocess.run(["pgrep", "-x", daemon], capture_output=True, text=True).stdout.split()
+    for pid in pids:
         os.kill(int(pid), signal.SIGTERM)
+    for _ in range(20):
+        if not any(subprocess.run(["kill", "-0", pid], capture_output=True).returncode == 0 for pid in pids):
+            return
+        time.sleep(0.1)
+
+
+def usernoted():
+    """usernoted's settings are a preferences domain, which cfprefsd caches: read and write them through it."""
+    if not settings.exists():
+        return {"apps": []}
+    return plistlib.loads(subprocess.run(["defaults", "export", str(settings), "-"], capture_output=True).stdout)
 
 
 approvals = home / "group.com.apple.replayd/ScreenCaptureApprovals.plist"
@@ -51,7 +65,7 @@ if changed:
     print("screen capture approved:", ", ".join(sorted(changed)))
 
 settings = home / "group.com.apple.usernoted/Library/Preferences/group.com.apple.usernoted.plist"
-notes = plistlib.loads(settings.read_bytes())
+notes = usernoted()
 allow = 1 << 25  # Allow Notifications
 # The tests' app, asked once in this VM and answered Don't Allow (auth is the options it asks for: alert, badge), and
 # "App Running in Background", which the open-at-login test brings.
@@ -62,13 +76,14 @@ changed = [name for name, new in off.items()
            if (name not in apps and new) or apps.get(name, {}).get("flags", 0) & allow]
 if changed:
     restart("usernoted")
-    notes = plistlib.loads(settings.read_bytes())
+    notes = usernoted()
     for name in changed:
         app = next((app for app in notes["apps"] if app["bundle-id"] == name), None)
         if app is None:
             notes["apps"].append({"bundle-id": name, **off[name]})
         else:
             app["flags"] &= ~allow
-    settings.write_bytes(plistlib.dumps(notes, fmt=plistlib.FMT_BINARY))
+    subprocess.run(["defaults", "import", str(settings), "-"], input=plistlib.dumps(notes), check=True)
     restart("usernoted")
-    print("notifications off:", ", ".join(changed))
+    stuck = [app["bundle-id"] for app in usernoted()["apps"] if app["bundle-id"] in off and app["flags"] & allow]
+    print("notifications off:", ", ".join(changed), *(["(did not stick: " + ", ".join(stuck) + ")"] if stuck else []))

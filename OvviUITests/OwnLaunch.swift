@@ -4,6 +4,8 @@ extension OvviUITests {
     static let ownLaunch: Set<String> = [
         "testACardNeverShowsTheOverviewsSmallSnapshot",
         "testACardWhoseFolderWentComesBackWithItsPlaceholder",
+        "testAChatOnARemoteMachine",
+        "testACodexChatOnARemoteMachine",
         "testADroppedBrowserKeepsItsPictureAndComesBack",
         "testAFailedInstallOnARemoteMachineSaysWhy",
         "testAFailedStartKeepsThePanelOpenWithRetry",
@@ -14,6 +16,7 @@ extension OvviUITests {
         "testAFixedTerminalTakesTheKeysTypedBeforeItsPane",
         "testALaunchWithNothingToRestoreConnectsToNothing",
         "testAPasswordHostAsksAndNeverRetriesByItself",
+        "testAReconnectingPageShowsItsStateOnce",
         "testARemoteBrowserCardLoadsItsMachinesLocalhost",
         "testARemoteMachinesPanesAreMarkedAndFloatThere",
         "testARemoteNewPanesFolderLineTakesATypedFolder",

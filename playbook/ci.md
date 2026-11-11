@@ -149,14 +149,15 @@ another login session, with its own pointer, keyboard and screen.
   `scripts/vm-test.sh`. The script boots the VM or keeps the running one (`plugins/extra/tart-vm/bin/ovvi-tart
   start`) with two shares: the Mac's Xcode, read only (the guest's `/Applications/Xcode.app` is a link to it, and
   `xcodebuild -runFirstLaunch` runs once), and `/tmp/ovvi-vm/runs`, where each run gets an APFS copy of the build
-  products, `scripts/` and the Mac's herdr. In the guest, `scripts/e2e.sh xcodebuild test-without-building`
+  products, `scripts/`, the tests' fixtures and the Mac's herdr. The tests find their fixtures and scripts by the
+  checkout's path (`#filePath`), so in the guest that path links to the run's copies. In the guest, `scripts/e2e.sh xcodebuild test-without-building`
   runs the `.xctestrun`, and the xcresult lands in the share, then in `$DERIVED_DATA/vm.xcresult`.
 - **Permissions.** None to grant: `automationmodetool` says the image needs no authentication for Automation
   Mode. Two asks of macOS would sit over the tests and take their clicks: whether a program that captures the screen
   may go on (a `screencapture` through `tart exec` or ssh, a UserNotificationCenter alert, again after a month) and
   whether the tests' app may send notifications (a banner over the window's top right). Before each run,
-  `scripts/vm-alerts.py` answers both in the guest (the screen: approved; notifications: off) and the script closes
-  an alert still open.
+  `scripts/vm-alerts.py` answers both in the guest (the screen: approved; notifications: off, and off for "App Running
+  in Background" too, an alert that the open-at-login test brings) and the script closes an alert still open.
 - **Cost.** 4 cores and 8 GB (about 4.6 GB resident while tests run). A boot takes about 40 s to a working
   `tart exec`. On a running VM, a run of two short tests takes about 30 s (11 s of tests). The first run on a new
   clone adds about 30 s of setup. Idle, the VM takes about a quarter of a core.
@@ -165,7 +166,8 @@ another login session, with its own pointer, keyboard and screen.
   `yes | sudo diskutil repairDisk disk1`, `sudo diskutil eraseVolume free free disk1s3` (the recovery container,
   which sits after the main one), `sudo diskutil apfs resizeContainer disk1s2 0`. Tart's disk is a sparse file: the
   Mac's disk holds only what the guest wrote (37 GB). Each run removes what it left in the guest (its processes and
-  xcodebuild's folder), also after a kill, and stops under 8 GB free.
+  xcodebuild's folder), also after a kill, but the checkout-path links, which the next run points again; and it stops
+  under 8 GB free.
 - **Its screen.** 1024 × 768 points at 2x, not CI's 1x 1024 × 674. The user watches it in an Ovvi pane: New pane ▸
   Tart VM (the plugin's README installs it). The VM runs `--suspendable`: the card's **Open in Tart** suspends it and
   resumes it in Tart's window (about 8 s, refused while a run holds the lock); closing that window suspends it, and the

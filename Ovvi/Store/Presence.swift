@@ -50,26 +50,27 @@ extension HostStore {
         guard !changes.isEmpty || !opens.isEmpty else { return }
         // The panes first: a tool reads `ovvi-shown` at each click, and the workspaces' marks, one call each (an ssh
         // trip on a remote machine), can be many. At quit all at once: one by one, ten took the whole 1 s (a herdr run
-        // is about 0.1 s on a busy Mac), and the wait cut the rest.
+        // is about 0.1 s on a busy Mac), and the wait cut the rest. An earlier batch stops at the quit after its
+        // current mark, so the quit's marks land after it and soon.
         let quitting = Self.quitting
         marking = Task { [marking] in
             await marking?.value
-            if quitting {
-                await withTaskGroup { group in
-                    for (workspace, open) in opens {
-                        group.addTask { try? await client.mark(workspace: workspace, open: open) }
-                    }
-                    for (pane, shown) in changes {
-                        group.addTask { try? await client.mark(pane, shown: shown) }
-                    }
+            guard quitting else {
+                for (pane, shown) in changes where !Self.quitting {
+                    try? await client.mark(pane, shown: shown)
+                }
+                for (workspace, open) in opens where !Self.quitting {
+                    try? await client.mark(workspace: workspace, open: open)
                 }
                 return
             }
-            for (pane, shown) in changes {
-                try? await client.mark(pane, shown: shown)
-            }
-            for (workspace, open) in opens {
-                try? await client.mark(workspace: workspace, open: open)
+            await withTaskGroup { group in
+                for (workspace, open) in opens {
+                    group.addTask { try? await client.mark(workspace: workspace, open: open) }
+                }
+                for (pane, shown) in changes {
+                    group.addTask { try? await client.mark(pane, shown: shown) }
+                }
             }
         }
     }
