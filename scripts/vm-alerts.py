@@ -71,12 +71,13 @@ allow = 1 << 25  # Allow Notifications
 # "App Running in Background", which the open-at-login test brings.
 off = {"dev.ovvi.app.debug": {"auth": 5, "flags": 0x1080200E, "content_visibility": 0, "grouping": 0},
        "com.apple.BTMNotificationAgent": {}}
-apps = {app["bundle-id"]: app for app in notes["apps"]}
+apps = {app["bundle-id"]: app for app in notes.setdefault("apps", [])}
 changed = [name for name, new in off.items()
            if (name not in apps and new) or apps.get(name, {}).get("flags", 0) & allow]
 if changed:
     restart("usernoted")
     notes = usernoted()
+    notes.setdefault("apps", [])
     for name in changed:
         app = next((app for app in notes["apps"] if app["bundle-id"] == name), None)
         if app is None:
@@ -85,5 +86,6 @@ if changed:
             app["flags"] &= ~allow
     subprocess.run(["defaults", "import", str(settings), "-"], input=plistlib.dumps(notes), check=True)
     restart("usernoted")
-    stuck = [app["bundle-id"] for app in usernoted()["apps"] if app["bundle-id"] in off and app["flags"] & allow]
+    stuck = [app["bundle-id"] for app in usernoted().get("apps", [])
+             if app["bundle-id"] in off and app["flags"] & allow]
     print("notifications off:", ", ".join(changed), *(["(did not stick: " + ", ".join(stuck) + ")"] if stuck else []))
