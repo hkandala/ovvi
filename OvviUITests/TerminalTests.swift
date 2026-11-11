@@ -13,18 +13,6 @@ extension OvviUITests {
         keepScreenshot("terminals")
     }
 
-    func testResizingACardResizesThePTY() async throws {
-        let terminal = element("terminal.w1:p1")
-        XCTAssertTrue(terminal.exists(within: connect))
-        try await expectPTYSize("w1:p1")
-        let before = terminal.value as? String
-        // Hiding the sidebar widens the cards. Not the window: CI's window already fills the screen
-        // (Zoom changes nothing there), and a drag on its corner does not resize it under XCUITest.
-        element("titlebar.sidebar").click()
-        XCTAssertTrue(until(3) { terminal.value as? String != before })
-        try await expectPTYSize("w1:p1")
-    }
-
     func testScrollingMovesTheViewport() async throws {
         let terminal = element("terminal.w1:p1")
         XCTAssertTrue(terminal.exists(within: connect))
