@@ -218,6 +218,9 @@ Problems that came back, and the rule that stops each. How we work is in
 - **WebKit cannot end its own helper processes here** (xpc: "Operation not permitted"): a GPU or page process it gave
   up on lives on, and its pages stayed blank with no delegate call. Force a hang with SIGSTOP, not only a
   `kill -9`, and check the log for "Could not signal".
+- **WebKit logs each slow helper start** at fault level, which the log keeps for hours: `log show --last 8h
+  --predicate 'process == "Ovvi" AND eventMessage CONTAINS "seconds to launch"'`. The first web card waits for its GPU
+  and page processes, then the network one; a later card only for a page process.
 - **A web page takes the keyboard by itself.** WebKit makes its web view first responder when the page focuses an
   element (`PageClientImpl::makeFirstResponder`), and `NSWindow.makeFirstResponder` never asks `acceptsFirstResponder`:
   refuse in `becomeFirstResponder`, and give the keys back, since the old responder has resigned by then.

@@ -82,6 +82,21 @@ extension OvviUITests {
         XCTAssertTrue(pageText("ovvi-hang").exists(within: 15))
     }
 
+    /// WebKit starts the GPU and network processes that all web cards share with the first card, the network one only
+    /// once that card's page process runs: 26 s on a busy Mac after an install. The app starts them soon after launch,
+    /// with no card open, and one page process at most.
+    func testWebKitStartsAheadOfTheFirstWebCard() async throws {
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        XCTAssertEqual(app.webViews.count, 0, "a web card is open")
+        var pages = 0
+        try await poll("the app's network process", times: 300) { () async throws -> Bool? in
+            pages = try await max(pages, web("web-pids", "").count)
+            return try await web("web-pids", "Networking").isEmpty ? nil : true
+        }
+        XCTAssertLessThanOrEqual(pages, 1, "page processes")
+        XCTAssertEqual(app.webViews.count, 0, "a web card is open")
+    }
+
     /// WebKit gives up on a GPU process that stops answering (a starved Mac) but cannot end it, so every page keeps its
     /// drawing connection to it and stays blank, Reload too. Needs a GPU process (not CI's).
     func testWebCardsDrawAgainAfterTheGPUProcessHangs() async throws {
@@ -168,8 +183,8 @@ extension OvviUITests {
         }
     }
 
-    private func web(_ action: String) async throws -> Set<String> {
-        let pids = try await Self.post("\(one)/\(action)", Data("GPU".utf8))
+    private func web(_ action: String, _ kind: String = "GPU") async throws -> Set<String> {
+        let pids = try await Self.post("\(one)/\(action)", Data(kind.utf8))
         return Set(String(decoding: pids, as: UTF8.self).split(separator: "\n").map(String.init))
     }
 

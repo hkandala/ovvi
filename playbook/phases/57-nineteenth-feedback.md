@@ -2401,3 +2401,29 @@ ones".
   Directory check (`testAFileDroppedOnARemoteCardPastesItsCopysPath`) needs CI's sshd: final CI round.
 - **For the user.** ⌘ and ⌥ over a long URL that wraps; `/compact` and dates show no underline; ⌘-click a missing path
   on a remote machine; ⌘- and ⌥-click in a floating terminal.
+
+### Track W3 (item 98)
+
+- **Cause, measured.** The first web card makes WebKit start three helper processes: a GPU and a network process, which
+  all cards share, and the card's page process. WebKit starts the network process only once the page process runs. The
+  user's log of the launch after the install (03:09, right after a restart, a busy Mac): GPU 12.6 s and page 12.5 s,
+  then network 13.3 s more, so the page could load only 26 s after the card was made, and WebKit called it
+  unresponsive until 03:10:00. Its next nine cards started only a page process, in 33–73 ms each. While the network
+  process started, the whole Mac stalled: the system log fell from about 2,500 lines a second to 330–830, and the
+  security agents (Defender, Santa, EndpointSecurity) checked each new WebKit process and its sandbox cache.
+- **Not the cause, measured.** Ovvi's main thread: in `sample` runs on this Mac (load 70–85) a first card cost it about
+  50 ms (`WKWebView` init), and it stayed 97 % idle also with the network process held stopped 10 s and an
+  accessibility client walking the app's tree. A new code signature alone (the same app re-signed, its data kept)
+  started the three in 0.1–0.3 s. The GPU watchdog acts only when WebKit has dropped a GPU process that still runs:
+  the user's logs show one end in 8 hours (00:55, after WebKit gave up on it), none at a first start.
+- **Fix.** 3 s after launch, when no web card shows yet, the app opens one hidden empty page in This Mac's browser
+  store and lets it go once its page process answers. WebKit starts its processes then, one set as for one card; the
+  GPU (4.2 MB) and network (5.3 MB) processes stay for the cards, and the page process ends. The first card then starts
+  only its page process (103 ms here).
+- **Decisions.** No prewarm of page processes for cards (WebKit makes one per card; many at once is what spikes a busy
+  Mac). No load check before the prewarm: it is the same work the first card would do, only earlier.
+- **Runs.** `testWebKitStartsAheadOfTheFirstWebCard`, on this Mac under the GUI lock: red on the old code (no network
+  process of the app without a card, 105 s), green with the fix (6 s).
+- **Found on the way.** herdr sends no event for `pane.rename`: a label written by a process shows in the app only at
+  its next read (another event, or the 30 s check), 4–10 s in these runs.
+- **For the user.** Reinstall, open the app, wait 3 s, open a browser card: it draws as fast as later ones.
