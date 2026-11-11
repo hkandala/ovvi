@@ -63,7 +63,7 @@ struct SidebarPage: View {
                     .frame(height: 28)
                     .allowsHitTesting(false)
                 Spacer(minLength: gap)
-                sortMenu
+                SortMenu(page: page)
                 IconButton(symbol: "plus", help: "New Space", key: .newWorkspace) { Task { await page.newWorkspace() } }
                     .disabled(store.state != .live)
                     .accessibilityIdentifier("sidebar.new-workspace")
@@ -343,7 +343,23 @@ private extension SidebarPage {
         Button("Detach Session") { pages.close(page) }.disabled(!pages.canDetach)
     }
 
-    var sortMenu: some View {
+    var motion: Animation? {
+        Animation.reduced ? nil : .easeOut(duration: 0.2)
+    }
+}
+
+/// Its own view: made again with the sidebar's body (an agent's state, a row's time), the open menu closed under the
+/// pointer.
+private struct SortMenu: View {
+    let page: Page
+    private var settings = AppSettings()
+
+    init(page: Page) {
+        self.page = page
+    }
+
+    var body: some View {
+        let spaceOrder = page.store.order ?? settings.spaceOrder
         Menu {
             Picker(
                 "Sort Spaces",
@@ -367,9 +383,5 @@ private extension SidebarPage {
         .accessibilityLabel("Sort Spaces")
         .accessibilityValue(spaceOrder == .manual ? "Manual" : "Recent")
         .accessibilityIdentifier("sidebar.sort")
-    }
-
-    var motion: Animation? {
-        Animation.reduced ? nil : .easeOut(duration: 0.2)
     }
 }
