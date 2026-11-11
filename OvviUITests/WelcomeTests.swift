@@ -12,9 +12,11 @@ extension OvviUITests {
         element("welcome.dots").stringValue
     }
 
-    /// A first launch shows it; → and ← turn the pages, Return is Next, a menu key does nothing behind it, Get
-    /// Started closes it, and the next launch shows none. With herdr found there is no herdr step.
+    /// A first launch shows it; its pictures follow the appearance; → and ← turn the pages, Return is Next, a menu key
+    /// does nothing behind it, Get Started closes it, and the next launch shows none. With herdr found there is no
+    /// herdr step.
     func testTheWelcomeTurnsItsPagesAndClosesForGood() async throws {
+        step("Welcome: a first launch shows only the welcome, and ⌘T does nothing behind it")
         try await Self.post("\(one)/welcome", Data("forget".utf8))
         addTeardownBlock { [one] in _ = try? await Self.post("\(one)/welcome", Data("done".utf8)) }
         relaunch(one)
@@ -28,6 +30,17 @@ extension OvviUITests {
             app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'tab.'")).count
                 != tabs
         }, "⌘T made a tab behind the welcome")
+
+        step("Welcome: the pictures follow the appearance")
+        let picture = element("welcome.picture")
+        XCTAssertTrue(picture.exists(within: 3))
+        addTeardownBlock { @MainActor [self] in pick("Appearance", "Dark") }
+        for look in ["Light", "Dark"] {
+            pick("Appearance", look)
+            XCTAssertTrue(until(3) { picture.stringValue.hasSuffix(" \(look.lowercased())") }, picture.stringValue)
+        }
+
+        step("Welcome: → ← and Return turn the pages, Get Started closes it")
         // A key during the intro only ends it: the walk starts once it is gone.
         XCTAssertTrue(element("welcome.intro").vanishes(within: 5), "the intro stays")
         app.typeKey(.rightArrow, modifierFlags: [])
@@ -44,43 +57,40 @@ extension OvviUITests {
         XCTAssertTrue(welcomeNext.vanishes(within: 3))
         XCTAssertTrue(element("titlebar.machine").exists(within: connect), "no window after Get Started")
 
+        step("Welcome: the next launch shows none")
         relaunch(one)
         XCTAssertTrue(element("titlebar.machine").exists(within: connect))
-        XCTAssertFalse(welcomeNext.exists(within: 2), "the welcome again after it was done")
+        // The window opens only when no welcome shows on this launch (Welcome.firstLaunch).
+        XCTAssertFalse(welcomeNext.exists, "the welcome again after it was done")
+        showTheWelcomeFromSettings()
     }
 
-    /// Settings ▸ General ▸ Show Welcome, found by a search, opens it again; Esc skips it from its first page.
-    func testSettingsShowsTheWelcomeAgain() {
-        relaunch(one)
-        XCTAssertTrue(element("titlebar.machine").exists(within: connect))
+    /// Settings ▸ General ▸ Show Welcome, found by a search, opens it again; Esc closes it from its first page and from
+    /// its last.
+    private func showTheWelcomeFromSettings() {
+        step("Welcome: Settings shows it again, and Esc on its first page closes it")
         app.typeKey(",", modifierFlags: .command)
         let search = settingsWindow.searchFields.firstMatch
         XCTAssertTrue(search.exists(within: 3))
         search.click()
         app.typeText("onboarding")
         element("settings.search.general.welcome", in: settingsWindow).click()
-        element("settings.general.welcome", in: settingsWindow).click()
+        let show = element("settings.general.welcome", in: settingsWindow)
+        show.click()
         XCTAssertTrue(welcomeNext.exists(within: 5))
         XCTAssertEqual(welcomePage.prefix(5), "1 of ")
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(welcomeNext.vanishes(within: 3))
-    }
 
-    /// The pictures are the set of the app's appearance, and switch with it while the panel shows.
-    func testTheWelcomePicturesFollowTheAppearance() {
-        relaunch(one, ["-welcomeDone", "NO"])
-        let picture = element("welcome.picture")
-        XCTAssertTrue(picture.exists(within: connect))
-        addTeardownBlock { @MainActor [self] in pick("Appearance", "Dark") }
-        for look in ["Light", "Dark"] {
-            pick("Appearance", look)
-            XCTAssertTrue(until(3) { picture.stringValue.hasSuffix(" \(look.lowercased())") }, picture.stringValue)
-        }
-        // Esc on the last page closes it too, as Get Started does.
+        step("Welcome: Esc on its last page closes it too, as Get Started does")
+        show.click()
+        XCTAssertTrue(welcomeNext.exists(within: 5))
+        // It plays its intro again, and a key during the intro only ends it.
+        XCTAssertTrue(element("welcome.intro").vanishes(within: 5), "the intro stays")
         for _ in 0 ..< 12 where welcomeNext.label == "Next" {
             let page = welcomePage
             app.typeKey(.rightArrow, modifierFlags: [])
-            _ = until(1) { welcomePage != page }
+            XCTAssertTrue(until(3) { welcomePage != page }, "→ stayed on \(page)")
         }
         XCTAssertEqual(welcomeNext.label, "Get Started")
         app.typeKey(.escape, modifierFlags: [])
