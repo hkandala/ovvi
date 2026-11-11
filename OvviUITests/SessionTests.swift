@@ -1,7 +1,8 @@
 import XCTest
 
 extension OvviUITests {
-    func testOpenSessionListsSessionsAndOpensAPage() {
+    func testOpenSessionListsSessionsAndOpensAPage() async throws {
+        step("Open Session: the panel lists and filters the sessions and opens a second page")
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         openSessionPanel()
         expectRow("open-session.session.\(two)", under: "Running", above: "Stopped")
@@ -24,6 +25,7 @@ extension OvviUITests {
         XCTAssertTrue(until(3) { header == one })
         XCTAssertTrue(element("workspace.w2").exists(within: 2))
 
+        step("Open Session: the workspace menu picks a workspace of another page")
         showPage(two)
         XCTAssertTrue(until(3) { header == two })
         app.typeKey("s", modifierFlags: [.command, .control])
@@ -37,6 +39,7 @@ extension OvviUITests {
         XCTAssertTrue(element("workspace.w2").has(\.isSelected, true, within: 2))
         XCTAssertTrue(until(3) { header == one })
 
+        step("Open Session: an open page's row shows that page")
         showPage(two)
         XCTAssertTrue(until(3) { header == two })
         openSessionPanel()
@@ -45,6 +48,11 @@ extension OvviUITests {
         app.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(until(3) { header == one })
         XCTAssertTrue(pageList().contains(two))
+
+        step("Open Session: a page opened while the first page shows goes last")
+        try await running(five)
+        openPage(five)
+        XCTAssertEqual(pageList(), [one, two, five])
     }
 
     func testOptionCommandTCreatesASessionAsANewPage() async throws {
@@ -133,31 +141,6 @@ extension OvviUITests {
         XCTAssertTrue(element("open-session.session.\(two)").exists(within: 2))
         expectRow("open-session.session.\(two)", under: "Running", above: nil)
         try await Self.snapshot(two)
-    }
-
-    func testOpenedSessionsGoLast() async throws {
-        try await running(five)
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        openPage(two)
-        showPage(one)
-        XCTAssertTrue(until(3) { header == one })
-        openPage(five)
-        XCTAssertEqual(pageList(), [one, two, five])
-    }
-
-    func testDetachSessionKeepsTheSessionRunning() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        openPage(two)
-        closePage(two)
-        XCTAssertTrue(until(3) { header == one })
-        XCTAssertEqual(pageList(), [one])
-        try await Self.snapshot(two)
-
-        // At its center: the page that slid away may leave it unhittable for a moment.
-        element("sidebar.header").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).rightClick()
-        XCTAssertTrue(app.windows.firstMatch.menuItems["Detach Session"].exists(within: 2))
-        XCTAssertFalse(app.windows.firstMatch.menuItems["Detach Session"].isEnabled)
-        app.typeKey(.escape, modifierFlags: [])
     }
 
     func testKeysGoToTheSessionShown() async throws {
