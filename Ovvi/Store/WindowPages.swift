@@ -359,3 +359,9 @@ extension WindowPages {
         early()
     }
 }
+
+extension NSWindow {
+    var panelOpen: Bool {
+        WindowPages.windows.first { $0.window === self }?.panelOpen == true
+    }
+}

@@ -178,12 +178,6 @@ class BrowserView: WKWebView {
     }
 }
 
-extension NSWindow {
-    var panelOpen: Bool {
-        WindowPages.windows.first { $0.window === self }?.panelOpen == true
-    }
-}
-
 extension WKWebView {
     /// No public API shows it; cmux ships this.
     var inspector: NSObject? {

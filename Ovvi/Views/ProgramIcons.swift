@@ -1,6 +1,19 @@
 import HerdrKit
 import SwiftUI
 
+let programIcons: [ProgramIcon] = {
+    guard let url = Bundle.main.url(forResource: "catalog", withExtension: "json") else {
+        assertionFailure("no catalog.json in the app")
+        return []
+    }
+    do {
+        return try JSONDecoder().decode([ProgramIcon].self, from: Data(contentsOf: url))
+    } catch {
+        assertionFailure("program icon catalog: \(error)")
+        return []
+    }
+}()
+
 struct ProgramTile: View {
     let icon: String
     var letter: String?
