@@ -2162,7 +2162,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ========================================================================
 
-pdf.js (the Preview plugin's PDF viewer), Apache-2.0
+pdf.js (the Preview plugin's PDF viewer), with Project Fluent's @fluent/bundle, @fluent/dom and cached-iterable
+built into its viewer, Apache-2.0
 https://mozilla.github.io/pdf.js
 
 Apache License

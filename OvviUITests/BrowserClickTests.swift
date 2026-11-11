@@ -122,9 +122,9 @@ extension OvviUITests {
 
     /// Sites that sniff for Safari see this system's Safari version.
     func testABrowserSaysItIsThisSystemsSafari() async throws {
-        let (tab, shell) = try await newTab("agent")
+        let (tab, shell) = try await newTab("user agent")
         try await waitForPrompt(shell)
-        let file = "/tmp/ovvi-e2e-agent-\(UUID().uuidString).html"
+        let file = "/tmp/ovvi-e2e-uag-\(UUID().uuidString).html"
         try await send("""
         printf '<p id=s>ovvi-waiting</p><script>s.textContent=navigator.userAgent.split(") ").pop()</script>' \
         >\(file) && clear\r

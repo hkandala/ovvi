@@ -16,7 +16,7 @@ struct AppSettings: DynamicProperty {
     @AppStorage("optionKey") var optionKey = OptionKey.characters
     @AppStorage("copyOnSelect") var copyOnSelect = false
     @AppStorage("agentView") var agentView = AgentView.terminal
-    @AppStorage("showClosedSessions") var showClosed = true
+    @AppStorage("showArchivedSessions") var showArchived = true
     @AppStorage("spaceOrder") var spaceOrder = SpaceOrder.manual
 
     var terminal: [String] {

@@ -277,7 +277,7 @@ struct AgentsPage: View {
                     Text("Each session uses this until you pick an order in its sidebar's Sort Spaces menu.")
                 }
                 .identifiedSettingsRow("agents.sort")
-                Toggle(isOn: settings.$showClosed) {
+                Toggle(isOn: settings.$showArchived) {
                     Text("Show closed sessions")
                     Text("Archived Sessions lists the Claude Code, Codex, Pi and OpenCode sessions no pane runs.")
                 }

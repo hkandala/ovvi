@@ -1,7 +1,8 @@
 # My Plugin
 
 A starting point for an Ovvi plugin: a package whose `ovvi` key in `package.json` is its manifest, built from `src/`
-into `dist/` by its own `build` script.
+into `dist/` by its own `build` script. The template is MIT: your plugin can use any license (`license` in
+`package.json`).
 
 In Ovvi, Settings ▸ Plugins ▸ New Plugin… does steps 1 and 2 for you.
 

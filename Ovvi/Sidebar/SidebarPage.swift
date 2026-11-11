@@ -328,7 +328,7 @@ private extension SidebarPage {
         Button("New Space") { Task { await page.newWorkspace() } }
             .disabled(page.store.state != .live)
         Button("Open Session…", action: openSession)
-        if settings.showClosed {
+        if settings.showArchived {
             Button(opened.hasLine(page.archivedKey) ? "Hide Archived Sessions" : "Show Archived Sessions") {
                 withAnimation(motion) {
                     opened = opened.togglingLine(page.archivedKey)

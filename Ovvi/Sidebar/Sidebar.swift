@@ -62,7 +62,7 @@ struct Sidebar: View {
                 let slides = old.last != new.last && !pages.overview && !Animation.reduced
                 slide(to: index, with: slides ? .session() : nil)
             }
-            if settings.showClosed, let page = pages.current {
+            if settings.showArchived, let page = pages.current {
                 ArchivedShelf(pages: pages, page: page)
                     .padding(.leading, Sidebar.rowInsets.leading).padding(.trailing, Sidebar.rowInsets.trailing)
                     .padding(.top, 2)
