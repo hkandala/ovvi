@@ -36,6 +36,7 @@ extension OvviUITests {
     }
 
     func testAPasswordHostAsksAndNeverRetriesByItself() async throws {
+        step("Open Session in This Mac's window lists its sessions")
         try await skipWithoutSSH()
         // Not one an earlier test left: it would need no password. Its host key is new again.
         try await Self.post("\(one)/ssh-drop", Data("ovvi-pw".utf8))
@@ -44,6 +45,12 @@ extension OvviUITests {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         let identifier = app.windows.firstMatch.identifier
         let first = app.windows[identifier]
+        openSessionPanel()
+        XCTAssertTrue(element("open-session.session.\(two)").exists(within: connect))
+        XCTAssertTrue(element("open-session.section.Running").exists)
+        app.typeKey(.escape, modifierFlags: [])
+
+        step("A password host asks for its host key and password")
         addHost("Password Host", "ovvi-pw")
         let text = element("ask.text")
         XCTAssertTrue(text.exists(within: connect))
@@ -62,24 +69,9 @@ extension OvviUITests {
         let missing = app.staticTexts["herdr is not installed on Password Host"]
         XCTAssertTrue(missing.exists(within: connect))
 
-        let before = try await connections()
-        let dropped = try await Self.post("\(one)/ssh-drop", Data("ovvi-pw".utf8))
-        XCTAssertFalse(dropped.isEmpty)
-        XCTAssertTrue(element("detail.connect").exists(within: connect))
-        XCTAssertFalse(element("ask.text").exists)
-        // ssh's own error, without the server's login banner (CI's sshd has one).
-        let failure = element("detail.text").value as? String ?? ""
-        XCTAssertTrue(failure.contains("Permission denied"), failure)
-        XCTAssertFalse(failure.contains("Authorized users only"), failure)
-        let after = try await connections()
-        XCTAssertLessThanOrEqual(after, before + 1)
-        for _ in 0 ..< 30 {
-            try await Task.sleep(for: .milliseconds(200))
-            let now = try await connections()
-            XCTAssertEqual(now, after, "a retry connected by itself")
-        }
-        keepScreenshot("disconnected")
+        try await expectNoRetryAfterADrop()
 
+        step("Connect asks for the password again")
         element("detail.connect").click()
         XCTAssertTrue(element("detail.connect").vanishes(within: 1))
         XCTAssertTrue(element("ask.answer").exists(within: connect))
@@ -89,6 +81,16 @@ extension OvviUITests {
         XCTAssertTrue(element("detail.connecting").exists(within: 2))
         XCTAssertFalse(element("detail.connect").exists)
         XCTAssertTrue(missing.exists(within: connect))
+
+        step("Open Session in the remote window lists only its machine's sessions")
+        XCTAssertNotEqual(app.windows.firstMatch.identifier, identifier)
+        let menu = element("titlebar.machine", in: app.windows.firstMatch)
+        menu.click()
+        menu.menuItems["Open Session…"].click()
+        XCTAssertTrue(element("open-session.open.\(one)").exists(within: 3))
+        XCTAssertFalse(until(2) { element("open-session.session.\(two)").exists })
+        keepScreenshot("password host open session")
+        app.typeKey(.escape, modifierFlags: [])
     }
 
     func testARemotePageComesBackAfterItsConnectionDies() async throws {
@@ -193,7 +195,19 @@ extension OvviUITests {
     }
 
     func testAddMachineOpensSettingsAtItsForm() {
+        step("The machine menu lists This Mac; picking it opens no window")
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
+        element("titlebar.machine").click()
+        let thisMac = app.menuItems["This Mac"]
+        XCTAssertTrue(thisMac.exists(within: 2))
+        // Its checkmark is not in XCUITest's view of a menu item; the screenshot shows it.
+        XCTAssertTrue(app.menuItems["Add Machine…"].exists)
+        keepScreenshot("machine menu")
+        thisMac.click()
+        XCTAssertTrue(thisMac.vanishes(within: 2))
+        XCTAssertFalse(until(0.5) { app.windows.count != 1 || !element("tab.w1:t2").exists })
+
+        step("Add Machine opens Settings at its form; the icon search picks an icon")
         element("titlebar.machine").click()
         app.menuItems["Add Machine…"].click()
         let settings = settingsWindow
@@ -271,30 +285,25 @@ extension OvviUITests {
         app.typeKey(.escape, modifierFlags: [])
     }
 
-    func testOpenSessionListsOnlyItsWindowsMachine() async throws {
-        try await skipWithoutSSH()
-        try await Self.post("\(one)/ssh-drop", Data("ovvi-pw".utf8))
-        try await Self.post("\(one)/ssh-forget", Data("ovvi-pw".utf8))
-        relaunch(one, ["-machines", "[]"])
-        XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
-        let first = app.windows.firstMatch.identifier
-        openSessionPanel()
-        XCTAssertTrue(element("open-session.session.\(two)").exists(within: connect))
-        XCTAssertTrue(element("open-session.section.Running").exists)
-        app.typeKey(.escape, modifierFlags: [])
-        addHost("Password Host", "ovvi-pw")
-        XCTAssertTrue(element("ask.text").exists(within: connect))
-        element("ask.ok").click()
-        typePassword()
-        XCTAssertTrue(app.staticTexts["herdr is not installed on Password Host"].exists(within: connect))
-        XCTAssertNotEqual(app.windows.firstMatch.identifier, first)
-        let menu = element("titlebar.machine", in: app.windows.firstMatch)
-        menu.click()
-        menu.menuItems["Open Session…"].click()
-        XCTAssertTrue(element("open-session.open.\(one)").exists(within: 3))
-        XCTAssertFalse(until(2) { element("open-session.session.\(two)").exists })
-        keepScreenshot("password host open session")
-        app.typeKey(.escape, modifierFlags: [])
+    private func expectNoRetryAfterADrop() async throws {
+        step("A dropped password host never connects again by itself")
+        let before = try await connections()
+        let dropped = try await Self.post("\(one)/ssh-drop", Data("ovvi-pw".utf8))
+        XCTAssertFalse(dropped.isEmpty)
+        XCTAssertTrue(element("detail.connect").exists(within: connect))
+        XCTAssertFalse(element("ask.text").exists)
+        // ssh's own error, without the server's login banner (CI's sshd has one).
+        let failure = element("detail.text").value as? String ?? ""
+        XCTAssertTrue(failure.contains("Permission denied"), failure)
+        XCTAssertFalse(failure.contains("Authorized users only"), failure)
+        let after = try await connections()
+        XCTAssertLessThanOrEqual(after, before + 1)
+        for _ in 0 ..< 30 {
+            try await Task.sleep(for: .milliseconds(200))
+            let now = try await connections()
+            XCTAssertEqual(now, after, "a retry connected by itself")
+        }
+        keepScreenshot("disconnected")
     }
 
     private func editHost() -> XCUIElement {

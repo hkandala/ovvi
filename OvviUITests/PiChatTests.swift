@@ -64,17 +64,4 @@ extension OvviUITests {
         chat.click()
         XCTAssertTrue(row(pane, "reply", "All tools.").exists(within: 5))
     }
-
-    func testPiChatOnARemoteMachine() async throws {
-        try await skipWithoutSSH()
-        let pane = try await startChat(Self.onKeyHost, agent: 2).pane
-        try await say("hello", in: pane)
-        XCTAssertTrue(row(pane, "reply", "Echo: **hello**").exists(within: 5))
-        try await say("wait", in: pane)
-        let drawer = element("chat.\(pane).drawer")
-        XCTAssertTrue(drawer.exists(within: 5))
-        app.typeText("1")
-        XCTAssertTrue(drawer.vanishes(within: 5))
-        XCTAssertTrue(row(pane, "reply", "Allowed.").exists(within: 5))
-    }
 }

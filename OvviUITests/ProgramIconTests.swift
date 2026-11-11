@@ -2,10 +2,12 @@ import XCTest
 
 extension OvviUITests {
     func testTabsShowTheirProgramsIcons() async throws {
+        step("A tab shows the icons of its programs")
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (first, vim) = try await createWorkspace("icons")
         let workspace = workspace(of: first)
-        let sleep = try await split(vim), nano = try await split(sleep)
+        // cat has no logo: its letter takes the logo's box. Below nano: four across would be narrow on CI.
+        let sleep = try await split(vim), nano = try await split(sleep), cat = try await split(nano, "down")
         var tabs: [(tab: String, pane: String)] = []
         for label in ["pager", "logs", "agent"] {
             try await tabs.append(createTab(in: workspace, label: label))
@@ -13,7 +15,7 @@ extension OvviUITests {
         // Not top: it is setuid root, and herdr then sees no foreground process. macOS's nano is pico.
         let commands = [(vim, "vim", ["vim"]), (sleep, "sleep 600", ["sleep"]), (nano, "nano", ["nano", "pico"]),
                         (tabs[0].pane, "less /etc/hosts", ["less"]), (tabs[1].pane, "tail -f /dev/null", ["tail"]),
-                        (tabs[2].pane, "sleep 601", ["sleep"])]
+                        (tabs[2].pane, "sleep 601", ["sleep"]), (cat, "cat", ["cat"])]
         for (pane, command, _) in commands {
             try await send("\(command)\r", to: pane)
         }
@@ -25,9 +27,15 @@ extension OvviUITests {
         element("workspace.\(workspace)").click()
         element("titlebar.sidebar").click()
         // New panes: up to 4 s until only a program, not the shell's startup, runs.
-        try await expectIcons(first, within: 6) { Set($0) == ["vim", "sleep", "nano"] }
+        try await expectIcons(first, within: 6) { Set($0) == ["vim", "sleep", "nano", "placeholder"] }
         XCTAssertTrue(element("pane.\(vim)").label.hasPrefix("vim "))
         XCTAssertTrue(element("pane.\(sleep)").label.hasPrefix("sleep "))
+        step("A program with no logo: its letter takes the logo's box")
+        XCTAssertTrue(element("pane.\(cat).title").exists(within: 2))
+        keepScreenshot("logo and letter")
+        let starts = [vim, cat].map { element("pane.\($0).title").frame.minX - element("pane.\($0)").frame.minX }
+        XCTAssertEqual(starts[0], starts[1], "a letter's title starts where a logo's does")
+        step("Each other tab shows its program's icon; vim's goes when it quits")
         // Keys, not clicks: the fourth tab is past the row's end on CI's window.
         for (index, (tab, icon)) in zip(tabs.map(\.tab), ["pager", "logs", "claude"]).enumerated() {
             app.typeKey("\(index + 2)", modifierFlags: .command)
@@ -41,7 +49,7 @@ extension OvviUITests {
         XCTAssertTrue(hasKeyboard("terminal.\(vim)"))
         app.typeText(":q")
         app.typeKey(.return, modifierFlags: [])
-        try await expectIcons(first, within: 2) { $0 == ["terminal", "sleep", "nano"] }
+        try await expectIcons(first, within: 2) { $0 == ["terminal", "sleep", "nano", "placeholder"] }
     }
 
     func testANewTabShowsNoIconOfItsShellsStartup() async throws {
@@ -60,23 +68,6 @@ extension OvviUITests {
         XCTAssertTrue(running.contains("sleep"), "the startup ended before the card showed: \(running)")
         XCTAssertFalse(until(2) { (capsule.value as? String)?.contains("sleep") == true }, "the startup's icon")
         try await expectIcons(tab) { $0 == ["terminal"] }
-    }
-
-    func testLetterIconsTakeTheLogosBox() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        let (tab, vim) = try await createWorkspace("letters")
-        let cat = try await split(vim)
-        try await send("vim\r", to: vim)
-        try await send("cat\r", to: cat)
-        for (pane, name) in [(vim, "vim"), (cat, "cat")] {
-            try await expect("\(name) to run") { try await foreground(pane).contains(name) }
-        }
-        element("workspace.\(workspace(of: tab))").click()
-        try await expectIcons(tab, within: 6) { Set($0) == ["vim", "placeholder"] }
-        XCTAssertTrue(element("pane.\(cat).title").exists(within: 2))
-        keepScreenshot("logo and letter")
-        let starts = [vim, cat].map { element("pane.\($0).title").frame.minX - element("pane.\($0)").frame.minX }
-        XCTAssertEqual(starts[0], starts[1])
     }
 
     private func expectIcons(_ tab: String, within seconds: Int = 3, _ check: ([String]) -> Bool) async throws {
