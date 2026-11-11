@@ -131,8 +131,6 @@ extension OvviUITests {
         keepScreenshot("control shift keys")
     }
 
-    // MARK: Helpers
-
     private func viewportRows(_ pane: String) async throws -> Int {
         try await field((self.pane(pane)["scroll"] as? [String: Any])?["viewport_rows"], "\(pane)'s rows")
     }

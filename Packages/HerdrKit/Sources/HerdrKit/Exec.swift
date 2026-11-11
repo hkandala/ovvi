@@ -205,7 +205,7 @@ public final class ProcessExec: Exec {
 
     /// herdr's path in a login shell: on its PATH, else where herdr's installer puts it (`$HOME/.local/bin`), which a
     /// shell's PATH may not have (macOS's zsh has not).
-    public static let herdrLookup = #"command -v herdr || command -v "$HOME/.local/bin/herdr""#
+    static let herdrLookup = #"command -v herdr || command -v "$HOME/.local/bin/herdr""#
 
     /// The rest of the app's environment (`__CFBundleIdentifier`, `XPC_*`, `DYLD_*`) must not reach a pane.
     static func isUserKey(_ key: String) -> Bool {

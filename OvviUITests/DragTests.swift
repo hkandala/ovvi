@@ -275,8 +275,6 @@ extension OvviUITests {
         }
     }
 
-    // MARK: - Helpers
-
     func place(of terminal: String) async throws -> (pane: String, tab: String)? {
         let panes = try await snapshot()["panes"] as? [[String: Any]] ?? []
         return panes.first { $0["terminal_id"] as? String == terminal }.flatMap { pane in

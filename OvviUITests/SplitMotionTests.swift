@@ -25,7 +25,6 @@ extension OvviUITests {
             let splits = try await splitAndClose(tab, scenario)
             XCTAssertEqual(splits.count, 4, "\(scenario): \(splits)")
             records.append("\(scenario): \(splits.joined(separator: ", "))")
-            print(records.last ?? "")
         }
         keep(records.joined(separator: "\n"), as: "splits")
     }

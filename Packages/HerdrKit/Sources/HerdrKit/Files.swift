@@ -20,7 +20,7 @@ enum FileError: Error, Equatable, Sendable {
 public enum Files {
     public static let viewLimit = 16 << 20
     /// A save queues the whole file on the machine's one relay.
-    public static let remoteEditLimit = 4 << 20
+    static let remoteEditLimit = 4 << 20
 
     /// `git check-ignore` asks only about the folder's own names, so a listing never walks the whole repository.
     public static func list(_ folder: String, git: Bool, exec: any Exec) async throws -> [FileEntry] {

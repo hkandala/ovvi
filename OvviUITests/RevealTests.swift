@@ -209,7 +209,7 @@ extension OvviUITests {
             let loading = card.stringValue.contains("loading")
             times.append("\(Int(Date.now.timeIntervalSince(start) * 1000))\(loading ? "L" : "")")
         }
-        print("evicted card, ms after the key (L: loading): \(times)")
+        keep("\(times)", as: "evicted card, ms after the key (L: loading)")
         let inks = shots.map(Self.ink)
         XCTAssertGreaterThan(inks.min() ?? 0, 0.01, "ink of \(inks.count) screenshots: \(inks)")
         try await expectText(["w1:p1"], "back")
