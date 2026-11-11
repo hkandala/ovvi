@@ -29,7 +29,6 @@ struct WelcomeView: View {
     private enum Page: String {
         case running, layout, agents, plugins, machines, herdr
 
-        /// The words the user picked (phase 57, item 78).
         func words(herdrFound: Bool) -> (title: String, text: String) {
             switch self {
             case .running: ("Your work keeps running", "Terminals, agents and tools live in sessions. Close the window "
