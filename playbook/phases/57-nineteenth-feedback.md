@@ -1877,3 +1877,10 @@ you did, no need of reverting them".
 - **For the user.** ⌘D and ⇧⌘D on File Explorer, a terminal and a browser, Glass and Classic, dark and light: every card
   slides once and stops; nothing moves or re-lays out after it lands. The split card's header buttons and path field
   sit at their final place from the first frame while its edge slides in to meet them.
+85. "can we make the sorting of spaces window specific, right now changing in one window changes in other windows as
+    well, we can have in settings somewhere to keep the default workspaces sorting" (Track B).
+86. "let's introduce pinning of workspaces, let's keep it simple, one can pin the workspace either from cmd+k or by right
+    clicking on workspace, no need to show any pined icon, and unpin also from those two places, and in sidebar, we just
+    keep pinned ones to the top all the time in the manual sorted position, and a line separator and then rest of
+    agents, no need to say anywhere like pinned etc. and the pinned section should be unaffected from the sorting"
+    (Track B).
