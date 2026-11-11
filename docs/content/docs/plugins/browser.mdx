@@ -37,14 +37,10 @@ static let browser = PluginManifest(
   or `commands` in the manifest: they are the browser's own.
   Its version is 1.0.0.
 - **Its id is taken first**, so no package can use the id `browser`.
-- **Opens.** An `http` or `https` address from `ovvi.open` with no `plugin`
-  opens in a `default` plugin whose `urls` match it, else in the browser
-  ([What a plugin opens](/docs/plugins/manifest#what-a-plugin-opens)).
-- **Memory.** Browser cards count with plugin cards: the 25 most recently
-  shown web cards stay
-  ([What stays in memory](/docs/ui/browser#what-stays-in-memory)). A
-  dropped browser card keeps its address and its back and forward list, and
-  loads them when it shows again.
+- **Opens.** A plugin whose `urls` match a web address takes it before the
+  browser ([What a plugin opens](/docs/plugins/manifest#what-a-plugin-opens)).
+- **Memory.** Browser cards and plugin cards share one limit
+  ([Memory](/docs/plugins#memory)).
 
 Terminal and Agent are not in the registry. They are herdr's own panes, with
 no label, and the chooser lists them first.

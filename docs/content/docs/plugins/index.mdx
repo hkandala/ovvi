@@ -145,12 +145,12 @@ never changes the label, so the card comes back when the plugin does.
 
 ## Not built
 
-- Network from a plugin page. A plugin can use `curl` on the machine through
-  `run`.
+- The parts of the API in
+  [Not in version 3](/docs/plugins/api#not-in-version-3), such as network
+  from the page beyond its manifest's local `connect` servers. A plugin can
+  use `curl` on the machine through `run`.
 - Plugins from a project folder (`<repo>/.ovvi/plugins/`), also on a remote
   machine.
-- A plugin setting with a value per machine. A setting is one value for all
-  machines.
 - Plugin settings from an agent: the `ovvi` command neither reads nor
   changes them. An agent on This Mac can edit `settings.json`, which applies
   at Reload Plugins.
@@ -163,7 +163,7 @@ never changes the label, so the card comes back when the plugin does.
 
 ## Choices
 
-The decisions are D89 to D94 and D96 to D103 on the
+The decisions are D89 to D94, D96 to D100, D102, D103, D107 and D108 on the
 [Decisions](/docs/decisions#pane-kinds) page. Research:
 [`plugins.md`](https://github.com/hkandala/ovvi/blob/main/resources/research/plugins/plugins.md),
 [`plugin-systems.md`](https://github.com/hkandala/ovvi/blob/main/resources/research/plugins/plugin-systems.md).

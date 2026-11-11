@@ -9,7 +9,7 @@ PDF, audio and video (Preview), and Markdown (Rich Text or Source, with a read l
 repository: its changes with Stage, Unstage and Commit, Fetch, Pull and
 Push, the history of every branch, and the diff of any change or commit.
 One card moves between these places, with Back and Forward as in a browser.
-Each is a herdr pane that runs a placeholder, as a browser pane is
+Each is a herdr pane that runs a placeholder, as a browser pane does
 ([Browser](/docs/ui/browser)), and the app draws the card.
 
 Both are plugin packages, `explorer` and `git`, that the app installs in
@@ -79,8 +79,7 @@ changed that value in the card's header: the card keeps its own choice.
   Explorer's follows its page: `folder` (the tree), `doc.text` (File),
   `photo` (Preview) or `doc.richtext` (Markdown). Git's is
   `source.branch`, the app's own symbol: Material Design Icons'
-  `source-branch`, the shape of pi-footer's branch. The sidebar's branch
-  uses it too.
+  `source-branch`. The sidebar's branch uses it too.
 
 ## Ways in
 
@@ -103,8 +102,8 @@ a click opens in the card itself, as its next place ([Back and
 Forward](#back-and-forward)), or in a new tab when the card cannot show it;
 ⌘-click in a new tab and ⌥-click to the side, both in the background; a right
 click shows the app's menu of **Open** (**Open as Root** on a folder), **Open
-in New Tab** and **Open to the Side**, and on a tree row other than `..`,
-**Rename**. In the tree, a double-click or ⌘O is
+in New Tab** and **Open to the Side**, then **Rename** on a tree row other
+than `..`, and **Copy Link** on a Markdown link. In the tree, a double-click or ⌘O is
 the click.
 - **A new tab** opens right after the card's tab, on the same machine, also
   from a floating window. Unless it opens in the background, the app selects
@@ -217,14 +216,9 @@ the click.
 - **Overview tile.** The tile shows the card's last picture
   ([Overview](/docs/ui/window#overview)). A tile watches no file. The card
   catches up on what changed when it shows again.
-- **Kept and dropped.** The window's `PaneViewRegistry` keeps each card by
-  terminal id, so a card scrolled away or moved keeps its page, its edits,
-  its scroll and its Back and Forward. Out of view, the 25 most recently
-  shown web cards stay (plugins and browsers together). An older one is
-  dropped, keeps its last picture, and is made again from its label and its
-  state file when it shows
-  ([What stays in memory](/docs/ui/browser#what-stays-in-memory)). A
-  card with unsaved edits and a floated card are never dropped.
+- **Kept and dropped.** A card scrolled away or moved keeps its page, its
+  edits, its scroll and its Back and Forward, up to the limit in
+  [What stays in memory](/docs/ui/browser#what-stays-in-memory).
 - A plugin card takes the keyboard as a browser card does. Its page cannot
   take the keyboard by itself, also on a refresh or when its tab shows again
   ([What each part does](/docs/plugins/api#what-each-part-does)).
@@ -247,9 +241,9 @@ The caret has the text's color: white in dark, black in light.
   Only the changed middle of the text is replaced, so the caret and the
   scroll stay. A dirty file keeps the user's text and shows the toast.
 - **The toast** is one line on a glass capsule at the top of the card, 6 pt
-  under the header, with two small round buttons. The text and the buttons
+  under the header, with one or two small round buttons. The text and the buttons
   are 8 pt apart. The buttons sit 7 pt inside the capsule's top, bottom and
-  right edge, so their curves follow its curve. The second button is the default. It slides in over 0.15 s. A
+  right edge, so their curves follow its curve. The last button is the default. It slides in over 0.15 s. A
   button's action ends it. A button that deletes or discards work is red:
   the main button with the toast's `destructive` option in the plugin API.
 
@@ -260,12 +254,13 @@ The caret has the text's color: white in dark, black in light.
   | the save failed | "‹name› was not saved: ‹reason›" | Cancel, **Try Again** |
   | Back, Forward, an open in the card or a close with unsaved edits | "‹name› has unsaved edits." | Discard (red), **Keep Editing** |
   | a Git write failed | git's message, on one line | Copy, **OK** |
+  | a rename, or the status bar's Fetch, Pull or Push, failed | the reason | **OK** |
   | Git's Revert or Revert All | the question (see Writes) | Cancel, **Revert** (red) |
 
   Keep Mine takes the disk's new hash, so the next ⌘S writes over that
   version without a question. Reload drops the edits.
 - **Read only.** A file over 4 MiB on a remote machine opens read only.
-- **Not text, too large.** A file that is not UTF-8, or one over 16 MB,
+- **Not text, too large.** A file that is not UTF-8, or one over 16 MiB,
   shows the info view: the system's icon for its type, its name, its kind
   and its size.
 - Preview reloads its file on a change too. The tree, the Git home and an
@@ -351,7 +346,7 @@ selection in the accent at 24 %. A 4 pt gap sits under the header.
   while the setting "Dim files that Git ignores" is on.
   Modified is the needs-you color, added, untracked and renamed the finished
   color, and deleted the error color. A root inside a repository, but not its
-  root, shows no letters.
+  root, shows no letters and dims nothing.
 - **An empty folder** shows a folder icon and "This folder is empty" in the middle of the card.
 - **The find bar** floats at the tree's top right, as the terminal's ⌘F bar
   and the editor's do: a capsule with the field ("Filter"), the number of
@@ -363,7 +358,7 @@ selection in the accent at 24 %. A 4 pt gap sits under the header.
 - **The filter** matches file names, case blind, and shows the matches with
   their folders open, at most 5,000. The first letter loads every path under
   the root: in a repository the files git does not ignore (`git ls-files`),
-  else every file, up to 8 MB of names. When none match, the middle of the
+  else every file, up to 8 MiB of names. When none match, the middle of the
   card shows a magnifying glass and "No matching files". A tree that draws
   anew starts with no filter. A kept one keeps its find bar and filter, and
   when it shows again the field does not take the keyboard.
@@ -474,7 +469,7 @@ An editable text view (CodeMirror 6).
   page's width, and the page number follows the scroll.
 - **Audio and video** in WebKit's player.
 - **Any other file**, and one that WebKit or pdf.js cannot decode, shows the
-  info view. So does a file over the 16 MB cap.
+  info view. So does a file over the 16 MiB cap.
 
 ### Markdown
 
@@ -714,7 +709,7 @@ The changes of one source in one scroll (`@pierre/diffs`).
   file header sticks below it, and the file list's line starts below it.
 - **Working Tree** (`uncommitted` in the label) is the staged, unstaged and
   untracked changes against `HEAD` (against the empty tree before the first
-  commit), up to 16 MB of patch. It is a live view: while the card shows,
+  commit), up to 16 MiB of patch. It is a live view: while the card shows,
   each change under the root (an agent's edits) asks for the patch again.
   Only the files whose text changed draw again: every other file keeps its
   box, and the scroll stays where it was. With no changes it shows
@@ -867,10 +862,8 @@ the machine. The limits:
   `package.json` with the `ovvi` key, a lockfile, its own `node_modules`,
   `src/` and the built `dist/`
   ([File Explorer and Git in the same layout](/docs/plugins/building#file-explorer-and-git-in-the-same-layout)).
-- **One web view per card.** Each card is a `WKWebView` of its own, and
-  WebKit gives each one its own WebContent process. A shared process pool
-  does not help: `WKProcessPool` is deprecated and does nothing. A card's
-  process uses about 28 to 45 MB (`footprint`).
+- **One web view per card.** Each card is a `WKWebView` of its own, with
+  its own WebContent process ([Memory](/docs/plugins#memory)).
 - **One page, many places.** The card loads its plugin's page once. A move
   is `card.go`: the page draws the new place itself, in a hidden root over
   the old one, and swaps them once it drew, so the old frame stays until
@@ -880,16 +873,15 @@ the machine. The limits:
   entry, so it opens at once. A place ends its handlers, watches and views when the card
   leaves it. The card keeps the keyboard if it had it.
 - **CSS.** The entry imports every place's CSS, because a bundler links no
-  CSS of a dynamic chunk. File Explorer scopes it by the place
-  (`data-place`), Git by each place's container (`#home`, `#diff`).
+  CSS of a dynamic chunk. File Explorer scopes the tree's rules by the place
+  (`data-place`), Git each place's by its container (`#home`, `#diff`).
 - **Files stay checked.** `files.read` gives the file's hash, and
   `files.write` with `over` writes only when the file on disk still has it.
   `files.info` gives the hash too, so File and Preview check it before a full
   read. Saves, hashes, watches and git run in HerdrKit's `Files` and `Git` on
   the card's machine ([The plugin API](/docs/plugins/api)).
-- **SF Symbols in a page.** The Git home and the diff's list ask the app for
-  the symbols they draw (`ovvi.symbol`), and use each PNG as a mask in the
-  text's color.
+- **SF Symbols in a page.** The pages ask the app for the symbols they draw
+  (`ovvi.symbol`), and use each PNG as a mask in the text's color.
 - **The place rule** is in `places.json`, which the page and the app both
   read: the app picks the tab's icon, the page's accessibility identifier
   (`files`, `file`, `preview` or `markdown.<pane>.page`; Git's is

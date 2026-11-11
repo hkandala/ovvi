@@ -47,4 +47,4 @@ ovvi --timeout 600 plugins install npm:@acme/ovvi-csv     # or git:<url>, or a f
   Cancel, the answer is `declined`.
 - The answer comes after the install and the build, so pass a long `--timeout`. Exit 4 means that the wait
   ended and the install goes on. `ovvi plugins` shows the plugin when it is ready.
-- The user removes and updates plugins in Ovvi's Plugins panel. A source already installed is `bad_argument`.
+- The user removes and updates plugins in Settings ▸ Plugins. A source already installed is `bad_argument`.

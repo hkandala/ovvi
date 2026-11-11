@@ -138,7 +138,7 @@ The rules below keep that content from taking over the card and its bridge
   `--ignore-scripts` and no peer dependencies
   ([Install](/docs/plugins/packages#install)). The package's own `build`
   script runs only after you confirm the plugin.
-- **Limits:** a file read 16 MB, a `run`'s stdout 4 MiB, a card's state
+- **Limits:** a file read 16 MiB, a `run`'s stdout 4 MiB, a card's state
   file (its state and controls) 256 KiB, a label argument 1024 characters.
 
 ## What the app cannot protect
@@ -152,7 +152,7 @@ The rules below keep that content from taking over the card and its bridge
   link's `ping` in shown content can still reach the plugin's own `connect`
   servers, so such a server takes commands only over its WebSocket.
 - **A machine.** A machine writes labels. So any process on a machine (a
-  script, an agent) can open a card of any plugin that you confirmed on that machine.
+  script, an agent) can open a card on that machine of any plugin that you confirmed.
   That gives it what the plugin does there, as the user it runs as. It cannot
   open a card on another machine. `ovvi open` writes the same label, so it
   gives nothing more ([Agent control](/docs/agent-control#security)).

@@ -10,25 +10,16 @@ page only fills them in. There is no separate manifest file.
 
 ## An example
 
-The template's `package.json`
-([Build a plugin](/docs/plugins/building#start-from-the-template)) with a
-CSV table's manifest:
+A CSV table's `package.json`. The scripts and the dependencies are the
+template's ([Build a plugin](/docs/plugins/building#start-from-the-template)),
+left out here:
 
 ```json
 {
   "name": "csv-table",
   "version": "0.1.0",
-  "private": true,
   "description": "A CSV or TSV file as a table you can sort.",
   "keywords": ["csv", "table"],
-  "scripts": {
-    "build": "esbuild src/main.ts --bundle --splitting --format=esm --minify --sourcemap --target=safari18 --log-level=warning --outdir=dist",
-    "dev": "npm run build -- --watch",
-    "check": "tsc -p ."
-  },
-  "devDependencies": { "esbuild": "0.28.2", "typescript": "7.0.2" },
-  "peerDependencies": { "@ovvi/plugin-api": "*" },
-  "peerDependenciesMeta": { "@ovvi/plugin-api": { "optional": true } },
   "ovvi": {
     "id": "csv-table",
     "name": "CSV Table",
@@ -281,5 +272,5 @@ Every setting has these fields:
 
 ## Choices
 
-The decisions are D96, D99, D103 and D108 on the
+The decisions are D96, D99, D103, D107 and D108 on the
 [Decisions](/docs/decisions#pane-kinds) page.

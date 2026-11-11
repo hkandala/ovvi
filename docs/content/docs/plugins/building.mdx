@@ -21,7 +21,7 @@ The template is a plugin package with everything a build needs. It is
   from the name (lower case, letters and digits joined by `-`: "CSV Table"
   is `csv-table`), and puts the name and the id in `package.json`. Then it
   installs the dependencies, runs the build, and confirms the plugin for you,
-  because you made it. Its row in the panel shows its folder.
+  because you made it. Its row on the Plugins page shows its folder.
 - **From an agent:** `ovvi plugins new <name>` does the same
   ([An agent makes a plugin](#an-agent-makes-a-plugin)).
 - **By hand, or by an agent:** copy the template folder to
@@ -219,7 +219,7 @@ What the code shows:
 1. The plugin is in `~/.config/ovvi/plugins/csv-table/` and built. A new
    folder needs **Reload Plugins** (Reload All on Settings ▸ Plugins, or ⌘K) before the app
    reads it. New Plugin… and an install read it by themselves.
-2. Double-click a `.csv` file in a File Explorer's tree. CSV Table is now its
+2. Double-click a `.csv` file in a File Explorer's tree. CSV Table is its
    default plugin, so the card opens in a new tab. On any other card that
    shows a CSV file, Open With lists CSV Table.
 3. A plugin that you did not make in the app asks to install in its first
@@ -266,8 +266,8 @@ for every plugin with an open card.
   browser card ([Web Inspector](/docs/ui/browser#web-inspector)). It has no
   key: the browser's ⌥⌘I holds it. The source map shows your `.ts` files,
   with breakpoints. Safari's Develop menu reaches every card too.
-- **The log.** **Show Log** (the card's menu, its error card, the panel's
-  row) opens `~/Library/Logs/Ovvi/plugins/<id>.log`. `tail -f` on it shows
+- **The log.** **Show Log** (the card's menu, its error card, the plugin's
+  page in Settings) opens `~/Library/Logs/Ovvi/plugins/<id>.log`. `tail -f` on it shows
   every build, `console` line and uncaught error
   ([Errors and logs](/docs/plugins/errors)).
 - **Types.** esbuild removes types and does not check them. Run `npm run
@@ -278,7 +278,7 @@ for every plugin with an open card.
 
 An agent in a pane on This Mac makes a plugin with the `ovvi` command
 ([CLI](/docs/agent-control/cli#plugins)):
-1. `ovvi --timeout 120 plugins new "CSV Table"` does what New Plugin…
+1. `ovvi --timeout 300 plugins new "CSV Table"` does what New Plugin…
    does: it copies the template to `~/.config/ovvi/plugins/csv-table/`,
    installs and builds it, and confirms it. It answers the plugin's `id`, its
    `folder` and its `log`.
@@ -321,57 +321,12 @@ the same `build`, `dev` and `check` scripts, a lockfile, their own
 - File Explorer's `places.json` lists the extensions of each place. The page
   and the app both read it: the app for the tab's icon, the page's
   accessibility identifier, and which places take ⌘S and ⌘F.
-- `make web` in the repository installs, checks and builds the two and the
-  template, as a user would. Then it copies their source into the app.
 
-Git's manifest:
-
-```json
-"ovvi": {
-  "id": "git",
-  "name": "Git",
-  "api": 3,
-  "entry": "dist/main.js",
-  "icon": "source.branch",
-  "opens": { "git": true },
-  "chooser": "Git",
-  "history": true,
-  "handles": ["find"],
-  "settings": [
-    { "id": "diff-layout", "type": "choice", "title": "Diff layout", "default": "unified",
-      "options": [{ "value": "unified", "title": "Unified" }, { "value": "split", "title": "Side by Side" }] },
-    { "id": "wrap", "type": "toggle", "title": "Wrap long lines", "default": false },
-    { "id": "file-list", "type": "toggle", "title": "Show the file list when a diff opens", "default": false },
-    { "id": "commits", "type": "number", "title": "Commits in the history", "default": 500, "min": 100,
-      "max": 5000, "step": 100 }
-  ],
-  "header": [
-    { "type": "menu", "id": "git.branch", "symbol": "source.branch", "title": "—", "label": "Branch",
-      "enabled": false, "hidden": true },
-    { "type": "button", "id": "diff.home", "symbol": "house", "title": "Git Home", "hidden": true },
-    { "type": "button", "id": "git.working", "symbol": "plus.forwardslash.minus", "title": "Working Tree",
-      "style": "bordered", "hidden": true },
-    { "type": "spacer" },
-    { "type": "button", "id": "git.fetch", "symbol": "arrow.clockwise", "title": "Fetch", "style": "bordered",
-      "hidden": true },
-    { "type": "button", "id": "git.pull", "symbol": "arrow.down", "title": "Pull", "style": "bordered",
-      "hidden": true },
-    { "type": "button", "id": "git.push", "symbol": "arrow.up", "title": "Push", "style": "bordered",
-      "hidden": true },
-    { "type": "segmented", "id": "diff.layout", "value": "unified", "hidden": true,
-      "options": [{ "value": "unified", "title": "Unified" }, { "value": "split", "title": "Side by Side" }] },
-    { "type": "toggle", "id": "diff.wrap", "symbol": "text.wrap", "title": "Word Wrap", "value": false,
-      "hidden": true },
-    { "type": "button", "id": "diff.file-list", "symbol": "sidebar.left", "title": "Hide File List", "hidden": true },
-    { "type": "button", "id": "diff.previous", "symbol": "chevron.up", "title": "Previous Change", "gap": 0,
-      "hidden": true },
-    { "type": "button", "id": "diff.next", "symbol": "chevron.down", "title": "Next Change", "gap": 0,
-      "hidden": true }
-  ]
-}
-```
-
-The shape of its `src/main.ts`:
+Git's manifest is the `ovvi` key of
+[`plugins/builtin/git/package.json`](https://github.com/hkandala/ovvi/blob/main/plugins/builtin/git/package.json):
+its settings, `history`, `handles`, and header controls that start
+`hidden`. The shape of its `src/main.ts`, which shows each place its own
+controls:
 
 ```ts
 import type { Ovvi } from "@ovvi/plugin-api"
