@@ -43,15 +43,14 @@ never calls herdr's focus methods. A design gets decision numbers on the
 - **Reorder the machines** in the machine menu.
 - **herdr inside the app** (herdr-core), so the user never installs herdr or
   needs to know about it: no mention of herdr anywhere in the app's UI.
-- **Releases and updates:** CI builds the `.dmg` and `.app` on a version tag
-  and uploads them to GitHub, and the app checks for updates and tells the
+- **Releases and updates:** CI builds a notarized Developer ID `.dmg` and
+  `.app` on a version tag and uploads them to GitHub (signed ad hoc now:
+  [Platform](/docs/platform)), and the app checks for updates and tells the
   user.
 - **Anonymous telemetry:** daily users, error reports and other usage
-  numbers (PostHog or a similar service).
+  numbers, sent to a hosted analytics service.
 - **Richer agent notifications** than the needs-you and finished banners
   ([Status](/docs/status)).
-- **A notarized Developer ID download** outside the App Store (signed ad hoc
-  now: [Platform](/docs/platform)).
 - **Local Network privacy** (macOS 15 and later). An `ssh` that the app starts
   counts as the app, so a target on the local network fails with "No route to
   host" today. The plan: the app declares `NSLocalNetworkUsageDescription`,

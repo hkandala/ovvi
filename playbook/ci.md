@@ -35,10 +35,9 @@ How CI runs, how to run part of it, and how to keep it green and fast.
 - **Time.** A full run takes 21–25 minutes and about 94 runner-minutes: 3–4 minutes of the build job, then about a
   minute of setup and upload per test job and a fifth of about 4700 s of UI tests, 271 of them (the slowest shard ends
   2–5 minutes after the fastest: runners differ in speed, and one shard of times from before a change can run 5 minutes
-  over the others). The build job makes a lone run no shorter than a build in each job, but it saves four builds, about 12 runner-minutes a run. Two full runs dispatched together take about twice as long
-  as one, since the second waits for runners, and any other run (a chosen-tests run) takes one of the 5. A test job
-  stops at 30 minutes (`timeout-minutes`): at 25, a shard of 1171 s on a slow runner crossed the limit
-  after every test passed, as one of 873 s had at 20. Each test stops at 120 s, so the limit costs a green run
+  over the others). The build job does not shorten a lone run, but it saves four builds, about 12 runner-minutes a
+  run. Two full runs dispatched together take about twice as long as one, since the second waits for runners, and any other run (a chosen-tests run) takes one of the 5. A test job
+  stops at 30 minutes (`timeout-minutes`): a slow runner's shard can take 20 minutes after every test passed. Each test stops at 120 s, so the limit costs a green run
   nothing. Refresh the test times when tests are added, or the shards stop balancing.
 
 ## Running part of it

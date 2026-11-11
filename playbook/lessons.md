@@ -156,7 +156,7 @@ Problems that came back, and the rule that stops each. How we work is in
   windows. Anything built per tab costs at 300 tabs: build lists when a menu opens, no `@State` writes per
   frame, test hooks read once into a `static let`.
 - **Never hide and fade to mask a flicker.** Keep the old frame shown until the new one has drawn.
-- **View identity cuts both ways.** A view shared by all workspaces carries stale scroll and lazy state; an
+- **View identity cuts both ways.** A view shared by all spaces carries stale scroll and lazy state; an
   `.id` per page makes a fresh view that flickers at offset 0.
 - **WebKit scrolls on its own thread: a scroll listener runs a frame or more behind.** A clip or a cover set from one
   showed rows under a sticky header in a fast scroll. Tie what must follow a scroll to CSS (`position:

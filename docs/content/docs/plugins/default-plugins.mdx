@@ -263,8 +263,9 @@ The caret has the text's color: white in dark, black in light.
 - **Not text, too large.** A file that is not UTF-8, or one over 16 MiB,
   shows the info view: the system's icon for its type, its name, its kind
   and its size.
-- Preview reloads its file on a change too. The tree, the Git home and an
-  Working Tree diff follow their folder.
+- Preview reloads its file on a change too. The tree, the Git home and a
+  Working Tree diff follow their folder, never a timer: `git diff` can
+  rewrite `.git/index`.
 
 ## Open With
 
@@ -511,7 +512,8 @@ An editable text view (CodeMirror 6).
     the line's end) starts a new line.
   - **Headings** are semibold, with no line under them: only a `---` rule
     draws a line. h1 to h3 are 1.6, 1.3 and 1.1 times the body, h4 to h6 the
-    body size, with a 1.25 line height. The space above a heading is 0.6 of
+    body size (GitHub's larger sizes were tried; the user kept these), with a
+    1.25 line height. The space above a heading is 0.6 of
     its own size and the space below 0.2, so h1 has the most and h4 to h6 the
     least. A heading on the first line has no space above. Rich Text, locked
     or not, and Source's page look the same.

@@ -129,11 +129,11 @@ runs and on-demand on the final head.
 
 - **No new timeout.** The quit wait (`HostStore.quit`, 10 s from its ⌃C) is unchanged since phase 40; no commit since
   October touches the quit path, `program`/`isShell` or the per-call `herdr remote-api-bridge`.
-- **herdr is right.** Spiked with a real Meta `claude` (2.1.312, isolated `CLAUDE_CONFIG_DIR`, herdr's session hook)
+- **herdr is right.** Spiked with a real managed `claude` (2.1.312, isolated `CLAUDE_CONFIG_DIR`, herdr's session hook)
   and `codex` (isolated `CODEX_HOME`) in `ovvi-dev-p57g`: after the quit the shell is in front and `pane.get` has no
   agent, also with a reported session.
 - **Cause: the 10 s ran out.** It held a fixed 2 s wait, each herdr call (one process each: about 1 s apiece at a load
-  of 300, 0.1 s at a calm one) and the agent's own exit. Meta's Claude Code is now a launcher with the native binary
+  of 300, 0.1 s at a calm one) and the agent's own exit. A managed Claude Code is a launcher with the native binary
   as its child; on `/exit` the launcher's preset plugins run their SessionEnd hooks (`meta-trajectory` has an 8 s
   timeout) and the launcher ends after its child. The dev app with a trace saw the shell 9.4 s into the 10 for a
   two-line session at load 300 (4.3 s before the quit command went in, then 5 s for the exit): a real session ran
@@ -190,7 +190,7 @@ runs and on-demand on the final head.
   `pane.process_info` then lists `name: node, argv0: pi` and no argv (`node -e 'process.title="pi"'` and `ps -o args`
   show the same). Ovvi found a chat only by the marker in the argv, so the card stayed a TUI with Relaunch with Chat.
   Claude Code before its native build did the same. npm's Claude Code 2.1.319 is now native (`claude.exe`, argv kept),
-  Codex's npm wrapper has a native child with the argv, OpenCode is native with the argv. Meta's launchers keep the
+  Codex's npm wrapper has a native child with the argv, OpenCode is native with the argv. Managed launchers keep the
   flags in a parent process, which hid it here. herdr's own pi integration works around it too (it reads the parent's
   args). Track P's report (CH-1) came to the same cause.
 - **Fix:** the store keeps the launch Ovvi typed, by terminal (`Launch`), bound to the agent's processes the first
@@ -232,7 +232,7 @@ runs and on-demand on the final head.
 
 ### Track H findings
 
-- **Who writes `kq_dispatch`.** Meta's launcher binaries, not herdr (clean), libghostty or the agents' own code:
+- **Who writes `kq_dispatch`.** The managed launcher binaries, not herdr (clean), libghostty or the agents' own code:
   `/usr/local/bin/pi_cli/pi`, `codex_cli/codex`, `claude_code/claude` (and `launcher_sensitive`, `fast_mux`, `meta`,
   `x2pagentd`, about 80 binaries) link xplat's `libevent-1.4.14b-stable` with a patched `kqueue.c` that warns
   `%s: skipping fd=%lu errno=%lu` when kqueue reports EBADF (9) for an fd that was closed while watched (after sleep).
@@ -1249,8 +1249,7 @@ you did, no need of reverting them".
 - Findings: the closest rivals are Tern (Stencil: blocks, daemon-owned sessions, remote over QUIC, Luau plugins,
   closed beta) and Rex (Superlogical: durable sessions, real login on remotes, terminals only so far, free). Claude
   desktop now has SSH sessions with chat, diff, terminal and browser panes. Cursor's remote agent stops on sleep,
-  and Zed's agent stops when the client disconnects; both are proof for the persistence angle. Conductor says on its
-  home page that it is joining Meta.
+  and Zed's agent stops when the client disconnects; both are proof for the persistence angle.
 - Gaps the story must not hide: no iPhone app yet (say “any Mac”), plugins install per Mac, agents can't drive a
   browser page yet, no team sharing, and herdr (plus Perl for the relay) must be on each machine.
 - Pictures: reused Track Q's captures from `ovvi-dev-p57q` (`landing/assets/`) and a crop of Track R's New Pane

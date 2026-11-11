@@ -8,7 +8,7 @@ the card, with its keyboard and pointer, scaled to the card.
   VM or New VM…, the card shows the list it has at once and updates it from Tart; each card has its own, in memory.
   **Open** shows a VM's screen in the card (a VM that is off starts first, with no window); **Stop** shuts a running
   VM down; **Delete**, on a stopped VM only (not a suspended one), deletes it with its disk. Stop and Delete ask
-  first, with a red button. The base, `golden-gate` (Cirrus Labs' image), is never started, stopped or deleted
+  first, with a red button. The base, `golden-gate` (Tart's stock macOS image), is never started, stopped or deleted
   here: **New VM…** makes a copy of it (or of another VM that is off), with a name, and says what it costs (its
   memory and cores; with a VM running, it asks for a second one; macOS runs two at most).
 - A VM's page shows its screen and nothing else. The title is the VM's name; the header shows **‹** (back to the
@@ -65,7 +65,7 @@ Tart VM card ── ovvi.run ──> bin/ovvi-tart list | new | view | window | 
 
 - A Virtualization VM is drawn only by the process that runs it: Tart's window is a `VZVirtualMachineView` inside
   the `tart run` process, and Tart has no display API (its control socket only reaches the guest agent). So the card
-  shows the guest's Screen Sharing (VNC, Apple's authentication, user and password `admin` on Cirrus Labs' images),
+  shows the guest's Screen Sharing (VNC, Apple's authentication, user and password `admin` on Tart's stock images),
   and **Open in Tart** hands the VM to a new `tart run` through a suspend and a resume. That needs VMs started with
   `--suspendable` (no audio and entropy devices, Mac input devices only); `ovvi-tart` starts them so.
 - A web page cannot open a TCP socket, so the bridge joins the card's WebSocket to the guest. The manifest's

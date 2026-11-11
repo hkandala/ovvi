@@ -184,8 +184,7 @@ make (the Mac's own GPU or display, a measure the user asked for on this Mac). N
 
 A feature runs the same loop.
 
-1. Pull. Read `AGENTS.md`, this file, [lessons.md](lessons.md), the phase file, the Findings of earlier
-   phases it touches, the design pages it names, and the ponytail skill (path under Code).
+1. Pull. Read `AGENTS.md`, this file, [lessons.md](lessons.md), the phase file and its Findings, the design pages it names, and the ponytail skill (path under Code).
 2. Spike herdr (and any API) for five minutes in a throwaway session: the exact calls the code will send,
    their results and side effects ([lessons.md](lessons.md#herdr)).
 3. Build the parts that cannot change first (menus, keys, herdr calls), then the look. A new window or

@@ -48,7 +48,7 @@ Pass `DERIVED_DATA=/tmp/ovvi-dd-<name>` when several checkouts build at once.
 
 ## Use it
 
-Install herdr, open Ovvi, and it shows This Mac's `default` session (starting it if needed). Open more
+Install herdr and open Ovvi. In its first window, pick a session of This Mac or start a new one. Open more
 sessions with Open Session (⌥⌘T), add a remote machine from the machine button, and press ⌘/ for the
 keyboard shortcuts ([all of them](https://ovvi.dev/docs/ui/theme-and-accessibility#keyboard-shortcuts)).
 
