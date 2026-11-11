@@ -109,6 +109,7 @@ extension OvviUITests {
     }
 
     func testNewWindowListsTheSessionsToPickFrom() throws {
+        step("New window: the picker lists the running and stopped sessions, with no sidebar")
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         let identifier = app.windows.firstMatch.identifier
         app.typeKey("n", modifierFlags: .command)
@@ -124,10 +125,18 @@ extension OvviUITests {
         XCTAssertFalse(element("sidebar", in: window).exists)
         XCTAssertFalse(element("titlebar.machine", in: window).exists)
         keepScreenshot("new window", of: window)
+
+        step("New window: a pick opens the session in it, and it fills the screen")
         two.click()
         XCTAssertTrue(element("workspace.w1", in: window).exists(within: connect))
         XCTAssertEqual(element("sidebar.header", in: window).stringValue, self.two)
         XCTAssertTrue(element("terminal.w1:p1", in: app.windows[identifier]).exists)
+        let screen = try XCTUnwrap(NSScreen.screens.first).visibleFrame, frame = try XCTUnwrap(window).frame
+        XCTAssertEqual(frame.width, screen.width, accuracy: 2, "\(frame) in \(screen)")
+        // A window as tall as the screen comes out a few points taller, its bottom under the Dock's top edge: 677 and
+        // 679 in 674 on CI, the second window only (the first comes out at 674), from one run to the next.
+        XCTAssertTrue((screen.height - 2 ... screen.height + 8).contains(frame.height), "\(frame) in \(screen)")
+        XCTAssertEqual(frame.minX, screen.minX, accuracy: 2, "\(frame) in \(screen)")
     }
 
     func testNewWindowRowsResolveWhileAnotherConnectAsks() async throws {
@@ -145,17 +154,6 @@ extension OvviUITests {
         let waiting = element("picker.e2e-pw.+reading")
         XCTAssertTrue(waiting.exists)
         XCTAssertTrue(waiting.vanishes(within: 20))
-    }
-
-    func testNewWindowFillsTheScreen() throws {
-        let (_, window) = try newWindow()
-        let screen = try XCTUnwrap(NSScreen.screens.first).visibleFrame
-        XCTAssertEqual(window.frame.width, screen.width, accuracy: 2, "\(window.frame) in \(screen)")
-        // A window as tall as the screen comes out a few points taller, its bottom under the Dock's top edge: 677 and
-        // 679 in 674 on CI, the second window only (the first comes out at 674), from one run to the next.
-        XCTAssertTrue((screen.height - 2 ... screen.height + 8).contains(window.frame.height),
-                      "\(window.frame) in \(screen)")
-        XCTAssertEqual(window.frame.minX, screen.minX, accuracy: 2, "\(window.frame) in \(screen)")
     }
 
     func testNewWindowMakesATypedSession() async throws {
