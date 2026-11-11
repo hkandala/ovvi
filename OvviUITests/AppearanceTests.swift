@@ -77,11 +77,13 @@ extension OvviUITests {
             pick("Interface Style", "Glass")
             pick("Appearance", "Dark")
         }
-        for (style, appearance) in [("Glass", "Dark"), ("Glass", "Light"), ("Classic", "Light"), ("Classic", "Dark")] {
-            step("View menu: \(style) \(appearance), its selected text readable")
-            pick("Interface Style", style)
-            pick("Appearance", appearance)
-            let look = "\(style) \(appearance)".lowercased()
+        // One pick a step: each switches the look on its own.
+        pick("Interface Style", "Glass")
+        let steps = [("Appearance", "Dark", "glass dark"), ("Appearance", "Light", "glass light"),
+                     ("Interface Style", "Classic", "classic light"), ("Appearance", "Dark", "classic dark")]
+        for (menu, item, look) in steps {
+            step("View menu: \(item) makes it \(look), its selected text readable")
+            pick(menu, item)
             expectLook(look)
             terminal.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.01))
                 .click(
