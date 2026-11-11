@@ -12,10 +12,10 @@ How CI runs, how to run part of it, and how to keep it green and fast.
   root: in another folder `vercel pull --yes` creates and links a new project.
 - **Machines.** `runs-on: xcode-27`: a VM with a 1x display (a 1024 × 674 pt screen), the US keyboard layout
   and Reduce Motion on; 3 cores and 7 GB, and one runner can be half as fast as the next. The account has 5 macOS
-  runners: GitHub's limit for every plan below Enterprise, shared by all of the account's runs. herdr is downloaded and checked by its SHA-256
-  (`HERDR_VERSION` in `ci.yml`). At 1x, cell sizes round: `stty size` can be one column narrower than the
-  card's grid, and a 1 pt font step can leave the column count the same, so grid tests allow one column. A
-  second ⌃⌘F during the full-screen animation is lost.
+  runners: GitHub's limit for every plan below Enterprise, shared by all of the account's runs. herdr is downloaded
+  and checked by its SHA-256 (`HERDR_VERSION` in `ci.yml`). At 1x, cell sizes round: `stty size` can be one column
+  narrower than the card's grid, and a 1 pt font step can leave the column count the same, so grid tests allow one
+  column. A second ⌃⌘F during the full-screen animation is lost.
 - **Checks** (a push or a pull request): one job, `checks`, runs `make lint`, `make build`,
   `make build-tests` (the UI tests compile), and `make test` (HerdrKit, the acknowledgements,
   the Settings rows (`scripts/check-settings.py`) and the cli.mdx script checks). It takes about 3 minutes.
@@ -32,12 +32,14 @@ How CI runs, how to run part of it, and how to keep it green and fast.
   and after a change to what they measure.
 - **Results.** Each test job uploads `e2e-xcresult-<shard>`: the xcresult with screen recordings, also of
   green runs.
-- **Time.** A full run takes about 20 minutes: 3–4 minutes of build, about 1 minute of setup and upload per test job,
-  and a fifth of about 5000 s of UI tests (the slowest shard runs 2–5 minutes past the mean: runners differ in speed).
-  Two full runs dispatched together take twice as long, since the second waits for runners, and every other run (a
-  chosen-tests run) takes one of the 5. A test job stops at 30 minutes (`timeout-minutes`): at 25, a shard of 1171 s on a slow runner
-  (phase 56) crossed the limit after every test passed, as one of 873 s had at 20. Each test stops at 120 s, so the
-  limit costs a green run nothing. Refresh the test times when tests are added, or the shards stop balancing.
+- **Time.** A full run takes 21–25 minutes: 3–4 minutes of the build job, then about a minute of setup and upload
+  per test job and a fifth of about 5000 s of UI tests (the slowest shard ends 2–5 minutes after the fastest: runners
+  differ in speed). The build job makes a lone run no shorter (each job used to build for itself in the same time),
+  but it saves four builds, about 15 runner-minutes a run. Two full runs dispatched together take about twice as long
+  as one, since the second waits for runners, and any other run (a chosen-tests run) takes one of the 5. A test job
+  stops at 30 minutes (`timeout-minutes`): at 25, a shard of 1171 s on a slow runner (phase 56) crossed the limit
+  after every test passed, as one of 873 s had at 20. Each test stops at 120 s, so the limit costs a green run
+  nothing. Refresh the test times when tests are added, or the shards stop balancing.
 
 ## Running part of it
 
