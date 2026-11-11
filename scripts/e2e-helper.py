@@ -404,6 +404,12 @@ threading.Thread(target=server.serve_forever, daemon=True).start()
 env = {**os.environ, "TEST_RUNNER_OVVI_HELPER": f"http://127.0.0.1:{server.server_address[1]}",
        "TEST_RUNNER_OVVI_HERDR": shutil.which("herdr") or "",
        **{f"TEST_RUNNER_OVVI_SESSION{n if n > 1 else ''}": name for n, name in enumerate(sessions, 1)}}
+# The tools' builds take the cores for a minute on CI: done before the first test, as a prebuilt run has no app build
+# beside them.
+start = time.monotonic()
+for build in builds.values():
+    build.wait()
+print(f"e2e-helper: tools built in {time.monotonic() - start:.1f} s", file=sys.stderr)
 status = subprocess.run(command, env=env).returncode
 # A film a test never stopped would go on filming the display.
 for run in recordings.values():
