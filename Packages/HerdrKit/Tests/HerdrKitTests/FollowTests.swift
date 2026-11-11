@@ -81,7 +81,7 @@ private func lineByLine(_ path: String, from mark: FileMark,
 
 /// Through awk a `head` left behind would hang on the FIFO. Without awk, this Mac's reader drains the pipe ahead of
 /// the kill.
-@Test(.timeLimit(.minutes(1))) func `a dropped follow stops its backlog`() async throws {
+@Test(.timeLimit(.minutes(2))) func `a dropped follow stops its backlog`() async throws {
     let file = FileManager.default.temporaryDirectory.appending(path: "ovvi-drop-\(UUID().uuidString).jsonl")
     defer { try? FileManager.default.removeItem(at: file) }
     let line = String(repeating: "x", count: 999)
@@ -95,7 +95,7 @@ private func lineByLine(_ path: String, from mark: FileMark,
             closed = true
             // A slow reader, as a relay over SSH: it reads on once the kill landed (no process has the file in its
             // argv), with the pipes full. A set wait runs out on a starved Mac ahead of the kill.
-            let end = ContinuousClock.now + .seconds(20)
+            let end = ContinuousClock.now + failureBound
             while try await !localExec.output(["pgrep", "-f", file.lastPathComponent]).isEmpty {
                 try #require(ContinuousClock.now < end, "the follow's processes outlived the kill")
                 try await Task.sleep(for: .milliseconds(50))
@@ -122,7 +122,7 @@ func `a dropped follow leaves no process`(awk: Bool) async throws {
             }
         }
         // A left process lives forever; the wait covers a starved Mac, where a retry's `sleep` takes seconds to start.
-        let end = ContinuousClock.now + .seconds(45)
+        let end = ContinuousClock.now + failureBound
         while case let pids = try await localExec.output(["pgrep", "-f", file.lastPathComponent]), !pids.isEmpty {
             guard ContinuousClock.now < end else {
                 _ = try? await localExec.output(["kill"] + pids.split(separator: "\n").map(String.init))

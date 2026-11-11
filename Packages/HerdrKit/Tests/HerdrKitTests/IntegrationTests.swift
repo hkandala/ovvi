@@ -167,8 +167,9 @@ private func talk(_ client: HerdrClient, _ exec: SubscribeCounter) async throws 
 
 @Test func `terminate stops the readers when a grandchild keeps the pipes open`() async throws {
     let exec = localExec
-    let channel = try await exec.run(["sh", "-c", "sleep 120 & echo hi"])
-    #expect(await channel.lines.first { _ in true } == "hi")
+    let channel = try await exec.run(["sh", "-c", "sleep 120 & echo $!"])
+    let sleep = try #require(await channel.lines.first { _ in true }.flatMap { pid_t($0) })
+    defer { kill(sleep, SIGKILL) }
     channel.terminate()
     // stderr is still open in `sleep`; without stopping its reader, this waits 120 s.
     _ = try await withTimeout(failureBound, onTimeout: {}, { await channel.exit() })

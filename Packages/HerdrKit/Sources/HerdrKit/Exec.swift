@@ -108,6 +108,7 @@ public final class ProcessExec: Exec {
     private let lookup: Mutex<Lookup>
     /// The login shell's bound: it runs the user's rc files. Tests on a starved Mac pass a longer one.
     private let shellLimit: Duration
+    static let shellLimit = Duration.seconds(3)
     private struct Lookup {
         var path: String?
         var asked: ContinuousClock.Instant
@@ -133,7 +134,7 @@ public final class ProcessExec: Exec {
     }
 
     init(_ environment: [String: String], herdr: String?, asked: ContinuousClock.Instant,
-         shellLimit: Duration = .seconds(3))
+         shellLimit: Duration = shellLimit)
     {
         self.environment = environment
         self.shellLimit = shellLimit
@@ -177,8 +178,8 @@ public final class ProcessExec: Exec {
 
     /// A GUI app does not get the shell's environment, so ask the login shell, in one run, for its
     /// variables and for herdr.
-    static func loginShell(_ env: [String: String],
-                           within limit: Duration = .seconds(3)) async -> (vars: [String: String], herdr: String?)
+    static func loginShell(_ env: [String: String], within limit: Duration = shellLimit) async
+        -> (vars: [String: String], herdr: String?)
     {
         let marker = "ovvi-env-\(UUID().uuidString)"
         guard let channel = try? spawn(

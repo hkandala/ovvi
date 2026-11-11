@@ -75,17 +75,15 @@ import Testing
     #expect(open == 0)
     // No public call fails a listener: the inner one ends, as Network.framework ends a listener that fails.
     front.current.withLock { $0.listener?.cancel() }
-    var again: UInt8?
-    for _ in 0 ..< 50 where again != 0 {
-        try await Task.sleep(for: .milliseconds(100))
-        again = await connect(front, "devbox.localhost", 7, on: port).0
-    }
-    #expect(again == 0)
+    #expect(await eventually { await connect(front, "devbox.localhost", 7, on: port).0 == 0 })
     #expect(front.port == port)
     page.send(content: Data("ping".utf8), completion: .idempotent)
     #expect(await page.read(4) == Data("ping".utf8))
     front.stop()
     #expect(await eventually { await connect(front, "devbox.localhost", 7, on: port).0 == nil })
+    // And it stays closed: a stopped front never listens again.
+    try await Task.sleep(for: .milliseconds(300))
+    #expect(await connect(front, "devbox.localhost", 7, on: port).0 == nil)
 }
 
 @Test func `front fails at once without a machine`() async throws {

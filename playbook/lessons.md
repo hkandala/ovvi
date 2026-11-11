@@ -102,9 +102,10 @@ Problems that came back, and the rule that stops each. How we work is in
 - **Check exit codes; never pipe a check through `grep`.**
 - **The 400-line file limit is a shared budget.** Several tracks add to the same big files: split a file that
   is close to the limit before adding to it, and check it after each rebase.
-- **A starved Mac fails HerdrKit's timed tests.** With many agents building, starting a process can take 20 s or
-  more, and the integration tests' time limits run out (no race: longer limits only move the break). When
-  `uptime` shows a load in the hundreds, run `make test` again once before you chase a HerdrKit timeout.
+- **A starved Mac stalls HerdrKit's tests for seconds.** With many agents building, starting a process took 20 s
+  or more. A wait that only bounds a failure uses `failureBound` (60 s), never a few seconds, and a speed check
+  compares against a reference timed in turns with it. A HerdrKit timeout is a bug in the test: fix it.
+  (`taskpolicy -c background` is no stand-in: it slowed the suite 30–200 times, and every bound ran out.)
 - **Automated rewrites change meaning.** Formatter rules and scripted replaces have flipped logic or matched
   nothing. Read the diff; make every scripted edit fail loudly when it matches nothing.
 - **No pattern kills on the user's Mac.** macOS `pkill -f "x" -P 1` read `-P` and `1` as more patterns and sent
