@@ -2225,3 +2225,7 @@ ones".
   places.
 - **For the user.** Watch the five clips in both looks in the report. Claude Code's footer reads "manual mode on": the
   hook approves every tool, and the mode label stays.
+
+92. A local page in a browser card can't load files from other folders (Track W2): the landing page's clips in a
+    sibling folder were blocked, because the card grants read access only to the opened file's folder. The user: "yeah
+    let's fix that in ovvi browser card".
