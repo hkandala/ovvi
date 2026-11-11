@@ -78,8 +78,9 @@ extension OvviUITests {
         }
         // Esc on the last page closes it too, as Get Started does.
         for _ in 0 ..< 12 where welcomeNext.label == "Next" {
+            let page = welcomePage
             app.typeKey(.rightArrow, modifierFlags: [])
-            _ = until(1) { welcomeNext.label == "Get Started" }
+            _ = until(1) { welcomePage != page }
         }
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(welcomeNext.vanishes(within: 3))
@@ -118,11 +119,14 @@ extension OvviUITests {
         XCTAssertTrue(welcomeNext.exists(within: connect))
     }
 
-    /// Next until the herdr step's button shows: its button.
+    /// Next until the herdr step's button shows: its button. herdr is missing before the panel opens, so the step is
+    /// there from the first page on and a page that shows needs no wait for it.
     func walkToTheHerdrStep() throws -> XCUIElement {
         let install = element("welcome.herdr.install")
-        while !install.exists(within: 1), welcomeNext.label == "Next" {
+        while !install.exists, welcomeNext.label == "Next" {
+            let page = welcomePage
             welcomeNext.click()
+            XCTAssertTrue(until(3) { welcomePage != page }, "Next stayed on \(page)")
         }
         XCTAssertTrue(install.exists, "no herdr step")
         return install
