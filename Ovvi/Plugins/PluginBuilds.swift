@@ -231,4 +231,8 @@ extension String {
     var firstLine: String {
         split(separator: "\n", omittingEmptySubsequences: true).first.map(String.init) ?? self
     }
+
+    var slug: String {
+        lowercased().split { !($0.isASCII && ($0.isLetter || $0.isNumber)) }.joined(separator: "-")
+    }
 }

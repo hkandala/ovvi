@@ -133,8 +133,8 @@ extension Browser {
     // MARK: Remote localhost
 
     static func alias(_ name: String) -> String {
-        let words = name.lowercased().split { !($0.isASCII && ($0.isLetter || $0.isNumber)) }
-        return words.isEmpty ? "machine" : words.joined(separator: "-")
+        let slug = name.slug
+        return slug.isEmpty ? "machine" : slug
     }
 
     /// WebKit never proxies a loopback name, so a remote machine's `localhost` loads as `<machine>.localhost`, which

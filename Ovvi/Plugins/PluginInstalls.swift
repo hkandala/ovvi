@@ -109,7 +109,7 @@ final class PluginInstalls {
     /// Trusted: the user, or their agent on This Mac, made it.
     func create(named typed: String) async throws -> URL {
         let name = typed.trimmingCharacters(in: .whitespaces).shown
-        let id = name.lowercased().split { !($0.isASCII && ($0.isLetter || $0.isNumber)) }.joined(separator: "-")
+        let id = name.slug
         guard let template = Registry.folder?.appending(path: "template") else { throw refuse("Ovvi has no template") }
         guard !id.isEmpty else { throw refuse("Use letters or digits in a plugin’s name") }
         let folder = Registry.plugins.appending(path: id)
