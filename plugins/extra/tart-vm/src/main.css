@@ -10,7 +10,7 @@ main { position: absolute; inset: 0; display: flex; flex-direction: column; alig
 main[hidden] { display: none; }
 h2 { margin: 0; font-size: 15px; font-weight: 600; }
 p { margin: 0 0 10px; max-width: 420px; color: var(--dim); line-height: 1.4; }
-/* Buttons sit 8 px apart, as in the app (the toast, dialogs). */
+/* Buttons sit 8 px apart, as in the app's toast and prompts. */
 main > div, li > div + div, form { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 form { margin-bottom: 10px; }
 ul { width: min(520px, 100%); margin: 6px 0 14px; padding: 0; list-style: none; text-align: left; }
