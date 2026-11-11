@@ -7,10 +7,10 @@
 #   scripts/welcome-scene.sh down <world> <session>  # quits that app; deletes the session, the world and its home
 #
 # Hold the GUI lock (playbook/workflow.md) from `up` to `down`: the app runs and takes clicks meanwhile. Copy the shots
-# out before `down`. Example: `up p57y1 work light`, `shot p57y1 chat`, `click p57y1 w1:t2`, `shot p57y1 git`,
-# `click p57y1 titlebar.machine`, `shot p57y1 machines`, `down p57y1 work`. `click` brings the app in front first and
+# out before `down`. Example: `up demo work light`, `shot demo chat`, `click demo w1:t2`, `shot demo git`,
+# `click demo titlebar.machine`, `shot demo machines`, `down demo work`. `click` brings the app in front first and
 # clicks only into its window; source /tmp/<world>/scene.env for the agents' panes (c1 c2 cx pi), e.g.
-# `click p57y1 "pane.$c1.zoom"` to show the chat alone.
+# `click demo "pane.$c1.zoom"` to show the chat alone.
 #
 # The world /tmp/<world>/ holds its own herdr (XDG_CONFIG_HOME), a clean zsh (ZDOTDIR), Ovvi's config folder and
 # archived home, and bin/ with the repository's stand-ins as claude, codex and pi, which play scripted turns, and a
