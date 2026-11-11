@@ -225,6 +225,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 status, reply = 200, b""
             else:
                 status, reply = 500, run.communicate(timeout=10)[1]
+        elif action == "kill-app":
+            # The kill XCUITest's terminate sends too (no quit), but it then checks for the exit once a second.
+            pid = app_pid()
+            if pid:
+                with contextlib.suppress(ProcessLookupError):
+                    os.kill(int(pid), signal.SIGKILL)
+            status, reply = 200, pid.encode()
         elif action == "welcome" and body not in (b"forget", b"done"):
             status, reply = 400, b"the body must be forget or done"
         elif action == "welcome":
