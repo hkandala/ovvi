@@ -38,7 +38,6 @@ extension OvviUITests {
         "testNewTabSplitAndClosesShowAtOnce",
         "testNewWindowRowsResolveWhileAnotherConnectAsks",
         "testNewWindowShowsKnownSessionsAtOnce",
-        "testOpenBesideShowsNoTemporaryTab",
         "testOpenPutsCardsWithoutMovingTheView",
         "testOpenSessionListsOnlyItsWindowsMachine",
         "testOverviewLoadsEveryTileInTurn",

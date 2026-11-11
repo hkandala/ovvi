@@ -56,11 +56,12 @@ final class OvviUITests: XCTestCase {
             try await Self.call(one, "workspace.create", ["label": "beta", "cwd": "/tmp", "focus": false])
             try await Self.call(two, "workspace.create", ["label": "gamma", "cwd": "/tmp", "focus": false])
         }
-        // "-[OvviUITests testName]"
-        if Self.ownLaunch.contains(String(name.split(separator: " ").last?.dropLast() ?? "")) {
-            endApp()
-        } else {
+        // The earlier test's app goes, so nothing sees what such a test sets up before its launch. The name is
+        // "-[OvviUITests testName]".
+        if !Self.ownLaunch.contains(String(name.split(separator: " ").last?.dropLast() ?? "")) {
             relaunch()
+        } else if app.state != .notRunning {
+            app.terminate()
         }
     }
 
@@ -242,16 +243,7 @@ extension OvviUITests {
         app.launchArguments = start + config + pinned + args
         // The default plugins install from npm's cache (`make web` fills it), never the network.
         app.launchEnvironment["npm_config_offline"] = "true"
-        endApp()
         app.launch()
-    }
-
-    /// launch() ends the running app with a kill, then waits for its exit with XCTest's own wait: about 1 s when the
-    /// app is gone after 0.2 s. The helper sends the same kill, and the wait is ours.
-    func endApp() {
-        if app.state != .notRunning, Self.postNow("\(one)/kill-app") {
-            _ = until(5) { app.state == .notRunning }
-        }
     }
 
     static let fixtures = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "Fixtures").path
