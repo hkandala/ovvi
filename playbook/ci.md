@@ -11,15 +11,19 @@ How CI runs, how to run part of it, and how to keep it green and fast.
   `ovvi` when `docs/` changes; Vercel's own git deploys are off. Run the `vercel` CLI only from the repo
   root: in another folder `vercel pull --yes` creates and links a new project.
 - **Machines.** `runs-on: xcode-27`: a VM with a 1x display (a 1024 × 674 pt screen), the US keyboard layout
-  and Reduce Motion on. The account has 5 macOS runners. herdr is downloaded and checked by its SHA-256
+  and Reduce Motion on; 3 cores and 7 GB, and one runner can be half as fast as the next. The account has 5 macOS
+  runners: GitHub's limit for every plan below Enterprise, shared by all of the account's runs. herdr is downloaded and checked by its SHA-256
   (`HERDR_VERSION` in `ci.yml`). At 1x, cell sizes round: `stty size` can be one column narrower than the
   card's grid, and a 1 pt font step can leave the column count the same, so grid tests allow one column. A
   second ⌃⌘F during the full-screen animation is lost.
 - **Checks** (a push or a pull request): one job, `checks`, runs `make lint`, `make build`,
   `make build-tests` (the UI tests compile), and `make test` (HerdrKit, the acknowledgements,
   the Settings rows (`scripts/check-settings.py`) and the cli.mdx script checks). It takes about 3 minutes.
-- **Full run** (a dispatch): five jobs (`test (0)` to `test (4)`), each a shard of the UI tests. Every job
-  starts CI's sshd on localhost for the remote-host tests (`scripts/ci-sshd.sh`).
+- **Full run** (a dispatch): a `build` job (`make build-tests`, its products uploaded as a tar), then five jobs
+  (`test (0)` to `test (4)`), each a shard of the UI tests, which run that build (`make e2e PREBUILT=1`:
+  `test-without-building`) and reach their first test about 30 s after they start. A chosen-tests run builds in its one
+  job. Every test job starts CI's sshd on localhost for the remote-host tests (`scripts/ci-sshd.sh`). The image has
+  xcbeautify and node.
 - **Shards by time.** `make e2e SHARD=i/5` runs the tests that `scripts/shard.py` gives shard i: the slowest
   test first, each to the shard with the least time so far, from `scripts/test-times.tsv` (a test not
   listed counts 15 s).
@@ -28,8 +32,10 @@ How CI runs, how to run part of it, and how to keep it green and fast.
   and after a change to what they measure.
 - **Results.** Each test job uploads `e2e-xcresult-<shard>`: the xcresult with screen recordings, also of
   green runs.
-- **Time.** A full run takes 20–28 minutes: 3–6 minutes of setup, build and upload per job plus a fifth of about
-  4600 s of UI tests. A test job stops at 30 minutes (`timeout-minutes`): at 25, a shard of 1171 s on a slow runner
+- **Time.** A full run takes about 20 minutes: 3–4 minutes of build, about 1 minute of setup and upload per test job,
+  and a fifth of about 5000 s of UI tests (the slowest shard runs 2–5 minutes past the mean: runners differ in speed).
+  Two full runs dispatched together take twice as long, since the second waits for runners, and every other run (a
+  chosen-tests run) takes one of the 5. A test job stops at 30 minutes (`timeout-minutes`): at 25, a shard of 1171 s on a slow runner
   (phase 56) crossed the limit after every test passed, as one of 873 s had at 20. Each test stops at 120 s, so the
   limit costs a green run nothing. Refresh the test times when tests are added, or the shards stop balancing.
 
@@ -109,6 +115,11 @@ Round the means to whole seconds: `scripts/shard.py` reads integers.
   isolation.
 - Caching Swift packages: libghostty's 190 MB xcframework restored in 2 s, but build and setup stayed
   65–105 s per job.
+- More shards: the 5 macOS runners are the plan's limit, so a sixth shard waits for one of them. Nested VMs on a
+  runner: GitHub's Apple Silicon runners are VMs that cannot start another.
+- Build flags (`COMPILER_INDEX_STORE_ENABLE=NO`, skipped package validation, a blocked
+  `developerservices2.apple.com`): no gain that showed above the runners' own spread (the same build took 105 s on one
+  runner and 146 s on another).
 
 ## The VM
 
