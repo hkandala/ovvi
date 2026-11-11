@@ -1,5 +1,6 @@
 {
   "name": "my-plugin",
+  "license": "MIT",
   "version": "0.1.0",
   "private": true,
   "description": "A text file with its line count.",

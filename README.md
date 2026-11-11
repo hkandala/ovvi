@@ -57,6 +57,13 @@ keyboard shortcuts ([all of them](https://ovvi.dev/docs/ui/theme-and-accessibili
 herdr inside the app, releases with an updater, an iPhone and iPad app, image paste, floating status pills, a changes
 panel: [Future work](docs/content/docs/future-work/index.mdx).
 
+## License
+
+Copyright © 2026 Harish Kandala. Ovvi is free software under the GNU Affero General Public License v3.0 only
+(`AGPL-3.0-only`): see [LICENSE](LICENSE). The plugin API's types (`web/ovvi`) and the plugin template
+(`plugins/builtin/template`) are MIT, so plugins you write can use any license. The third-party licenses are in
+[`Ovvi/Acknowledgements.txt`](Ovvi/Acknowledgements.txt).
+
 ## Links
 
 - Design docs: [`docs/content/docs/`](docs/content/docs/), published at

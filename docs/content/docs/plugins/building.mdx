@@ -14,7 +14,9 @@ pnpm or bun on your login `PATH`. It ships no bundler.
 
 The template is a plugin package with everything a build needs. It is
 `plugins/builtin/template` in the repository, and the app carries it in
-`Ovvi.app/Contents/Resources/web/template/`.
+`Ovvi.app/Contents/Resources/web/template/`. The template and the API's
+types (`@ovvi/plugin-api`) are MIT, so plugins you write can use any license:
+change `license` in `package.json`.
 
 - **From the app:** **New Plugin…** on Settings ▸ Plugins asks for a name. It
   copies the template to `~/.config/ovvi/plugins/<id>/`, with the id made
