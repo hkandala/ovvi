@@ -17,7 +17,7 @@ extension OvviUITests {
 
         let page = element("markdown.\(card).page")
         XCTAssertTrue(page.staticTexts.matching(NSPredicate(format: "value == 'Second'")).firstMatch.exists(within: 10))
-        XCTAssertTrue(element("pane.\(card).mode.rich text").isSelected)
+        XCTAssertTrue(element("pane.\(card).mode.rich text").has(\.isSelected, true, within: 3))
         XCTAssertFalse(element("pane.\(card).lock").isSelected)
         XCTAssertEqual(element("pane.\(card).lock").label, "Edit")
         XCTAssertTrue(page.staticTexts.matching(NSPredicate(format: "value == 'B'")).firstMatch.exists)

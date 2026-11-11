@@ -4,6 +4,7 @@ import { ensureSyntaxTree, syntaxTree, syntaxTreeAvailable } from "@codemirror/l
 import { closeSearchPanel } from "@codemirror/search"
 import { Compartment, EditorState, Prec } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
+import type { Ovvi } from "@ovvi/plugin-api"
 import { code, type Editor, editor, selected } from "./editor"
 import { containers, editing, live, referenceField, ticked } from "./live"
 import { choose, fileURL, how, htmlPage, menu, open, own, type Place, type Reveal, symbols } from "./place"
@@ -12,7 +13,15 @@ import { sideBySide } from "./split"
 type Mode = "rich" | "source"
 type Look = { mode: Mode; locked: boolean; preview: boolean }
 const mode = (value: unknown): Mode | undefined => (value === "rich" || value === "source" ? value : undefined)
-let cardLook: Look | undefined
+/** The card's look, which every page of it shows: the user's choices (the card's state), else the settings. */
+function chosen(ovvi: Ovvi): Look {
+  const kept = own(ovvi)
+  return {
+    mode: mode(kept.mode) ?? mode(ovvi.settings.get("markdown")) ?? "rich",
+    locked: kept.locked ?? ovvi.settings.get<boolean>("markdown-lock") !== false,
+    preview: kept.preview ?? false,
+  }
+}
 
 /** As GitHub makes a heading's anchor. */
 const slug = (text: string) => text.trim().toLowerCase().replace(/[^\p{L}\p{N}\s_-]/gu, "").replace(/\s/g, "-")
@@ -82,12 +91,7 @@ export async function show(place: Place): Promise<Reveal> {
   outline.hidden = true
   outline.toggleAttribute("data-closed", true)
   root.append(outline, pane)
-  const kept = own(ovvi)
-  const first: Look = cardLook ?? {
-    mode: mode(kept.mode) ?? mode(ovvi.settings.get("markdown")) ?? "rich",
-    locked: kept.locked ?? ovvi.settings.get<boolean>("markdown-lock") !== false,
-    preview: kept.preview ?? false,
-  }
+  const first = chosen(ovvi)
   /** The editor starts as Rich Text, locked. */
   let now: Look = { mode: "rich", locked: true, preview: false }
   let outlined = false
@@ -115,7 +119,7 @@ export async function show(place: Place): Promise<Reveal> {
       split?.destroy()
       split = next.mode === "source" ? sideBySide(view, pane, page, next.preview, folded) : undefined
     }
-    now = cardLook = next
+    now = next
     presented = true
     outlined = nowOutlined && titled
     outline.hidden = false
@@ -129,7 +133,7 @@ export async function show(place: Place): Promise<Reveal> {
   }
 
   function folded(preview: boolean) {
-    now = cardLook = { ...now, preview }
+    now = { ...now, preview }
     choose(ovvi, { preview })
   }
 
@@ -302,7 +306,7 @@ export async function show(place: Place): Promise<Reveal> {
   })
   titles(view, all(view.state))
   present(view, first, false)
-  ovvi.on("place", () => cardLook && present(view, cardLook, outlined))
+  ovvi.on("place", () => present(view, chosen(ovvi), outlined))
   // After the editor's own handler: a locked page takes the keyboard.
   const take = () => place.shown && focus(view)
   addEventListener("focus", take)

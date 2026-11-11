@@ -98,11 +98,18 @@ private final class Relay: NSObject, WKScriptMessageHandlerWithReply, WKNavigati
         self.card = card
     }
 
-    func userContentController(_: WKUserContentController,
-                               didReceive message: WKScriptMessage) async -> (Any?, String?)
+    /// Not the `async` form: WebKit starts each of its calls as a task off the main actor, and those reached the main
+    /// actor out of order (a page's two `controls.set` of one control, the older one last). A task made here keeps
+    /// the page's order.
+    func userContentController(_: WKUserContentController, didReceive message: WKScriptMessage,
+                               replyHandler: @escaping @MainActor @Sendable (Any?, String?) -> Void)
     {
-        guard let bridge = card?.bridge else { return (nil, "Closed") }
-        return await bridge.call(message.body as? [String: Any] ?? [:])
+        guard let bridge = card?.bridge else { return replyHandler(nil, "Closed") }
+        let body = message.body as? [String: Any] ?? [:]
+        Task {
+            let (reply, error) = await bridge.call(body)
+            replyHandler(reply, error)
+        }
     }
 
     /// The card's own page only: a Markdown file's HTML (a `<meta>` refresh, a form) would take the view, and the

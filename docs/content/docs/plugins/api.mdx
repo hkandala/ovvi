@@ -22,6 +22,8 @@ export default async function main(ovvi: Ovvi) {
 - An error thrown from `main` stops the card: "‹name› stopped", the message
   and its first stack line, with **Reload**
   ([Errors and logs](/docs/plugins/errors)).
+- The app starts a page's calls in the order the page made them: of two
+  `controls.set` calls to one control, the second one wins.
 - Every call works only on the card's own machine. On that machine a page
   can use the whole API
   ([What a plugin can do](/docs/plugins/security#what-a-plugin-can-do)).

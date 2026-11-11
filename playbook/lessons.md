@@ -227,6 +227,9 @@ Problems that came back, and the rule that stops each. How we work is in
 - **Every key has three possible owners: the menu, SwiftUI and libghostty.** libghostty takes every key it
   gets and `NSMenu` swallows a disabled item's key. Log the menu action and `keyDown` in the first run
   before guessing.
+- **A Swift `async` WebKit delegate method takes its calls out of order.** WebKit starts each call as a task off the
+  main actor, so a page's messages reached the main actor reordered (21 to 33 in 3000, on an idle Mac): a page's
+  older `controls.set` won on CI. Take the `replyHandler` form and make the task on the main actor.
 - **Don't block Swift's cooperative pool** (`Process.waitUntilExit` in async code): await the exit through
   `terminationHandler`.
 
