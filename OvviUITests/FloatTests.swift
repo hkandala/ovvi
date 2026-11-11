@@ -2,41 +2,47 @@ import XCTest
 
 extension OvviUITests {
     func testFloatingAPaneOpensItsWindowAndDetachPutsItBack() async throws {
+        step("Float: the window opens large and centered, with the main window's title row")
         let (tab, first) = try await newTab("float")
         let second = try await split(first)
         element("tab.\(tab)").click()
         XCTAssertTrue(element("terminal.\(second)").exists(within: 3))
+        let main = app.windows.containing(.any, identifier: "tab.\(tab)").firstMatch.frame
         let window = float(second)
+        largeWithTheTitleRow(window, second, over: main)
+
+        step("Float: the pane shows in the window and stays in herdr's tab")
         XCTAssertTrue(element("terminal.\(second)", in: window).exists(within: 3))
         XCTAssertTrue(element("pane.\(second).show").exists(within: 3))
         try await expect("both panes in herdr's tab") { try await order(tab) == [first, second] }
         XCTAssertTrue(element("float.\(second).place").has(\.stringValue, "\(one) › beta › float", within: 3))
 
+        step("Main window: the card's Show Window and Bring Back Here, keys stay in the main window")
         element("tab.\(tab)").click()
+        let (show, back) = placeholder(second)
+        keepScreen("floating window over the main window")
         XCTAssertTrue(hasKeyboard("terminal.\(first)"))
         app.typeKey("]", modifierFlags: .command)
         XCTAssertTrue(hasKeyboard("terminal.\(first)"))
         XCTAssertTrue(window.exists)
 
-        element("pane.\(second).show").click()
+        step("Show Window: the keys go to the floating window")
+        show.click()
+        XCTAssertTrue(hasKeyboard("terminal.\(second)"))
         XCTAssertTrue(hasKeyboard("terminal.\(second)", in: window))
         app.typeText("echo float-$((6*7))")
         app.typeKey(.return, modifierFlags: [])
         try await waitFor(second) { $0.contains("\nfloat-42") }
 
+        step("Bring Back Here: the window closes, the pane is back with the keys")
         element("tab.\(tab)").click()
-        element("pane.\(second).back").click()
+        back.click()
         XCTAssertTrue(window.vanishes(within: 3))
-        XCTAssertTrue(element("pane.\(second).show").vanishes(within: 3))
+        XCTAssertTrue(show.vanishes(within: 3))
         XCTAssertTrue(hasKeyboard("terminal.\(second)"))
     }
 
-    func testFloatingWindowOpensLargeWithTheMainWindowsTitleRow() async throws {
-        let (tab, first) = try await newTab("float-frame")
-        let second = try await split(first)
-        element("tab.\(tab)").click()
-        let main = app.windows.containing(.any, identifier: "tab.\(tab)").firstMatch.frame
-        let window = float(second)
+    private func largeWithTheTitleRow(_ window: XCUIElement, _ second: String, over main: CGRect) {
         let frame = window.frame, frames = "\(frame) over \(main)"
         XCTAssertEqual(frame.width, max(720, main.width * 0.6), accuracy: 2, frames)
         XCTAssertEqual(frame.height, max(460, main.height * 0.75), accuracy: 2, frames)
@@ -61,8 +67,9 @@ extension OvviUITests {
         XCTAssertTrue(info.stringValue.hasSuffix("tmp"), info.debugDescription)
         let place = element("float.\(second).place", in: window).frame
         XCTAssertEqual(place.minX - info.frame.maxX, 2 * 8 + 1, accuracy: 1, "\(place) after \(info.frame)")
+    }
 
-        element("tab.\(tab)").click()
+    private func placeholder(_ second: String) -> (show: XCUIElement, back: XCUIElement) {
         let show = element("pane.\(second).show"), back = element("pane.\(second).back")
         let card = element("pane.\(second)").frame
         XCTAssertTrue(show.exists(within: 3))
@@ -74,10 +81,7 @@ extension OvviUITests {
         XCTAssertEqual(show.frame.midY, back.frame.midY, accuracy: 1, both)
         XCTAssertEqual(back.frame.minX - show.frame.maxX, 8, accuracy: 1, both)
         XCTAssertLessThan(show.frame.width, card.width / 2, both)
-        keepScreen("floating window over the main window")
-        show.click()
-        // Not through `window`: XCUITest drops that element once the window comes forward (on CI).
-        XCTAssertTrue(hasKeyboard("terminal.\(second)"))
+        return (show, back)
     }
 
     func testFloatingWindowsHaveTheirOwnCommandsAndComeBackAfterRelaunch() async throws {
