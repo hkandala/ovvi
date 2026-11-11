@@ -63,7 +63,7 @@ struct SidebarPage: View {
                     .frame(height: 28)
                     .allowsHitTesting(false)
                 Spacer(minLength: gap)
-                SortMenu(page: page)
+                SortMenu(page: page, order: spaceOrder)
                 IconButton(symbol: "plus", help: "New Space", key: .newWorkspace) { Task { await page.newWorkspace() } }
                     .disabled(store.state != .live)
                     .accessibilityIdentifier("sidebar.new-workspace")
@@ -348,22 +348,16 @@ private extension SidebarPage {
     }
 }
 
-/// Its own view: made again with the sidebar's body (an agent's state, a row's time), the open menu closed under the
-/// pointer.
+/// Its own view: inside the sidebar's body, each change there (an agent's state) made the menu again and closed it.
 private struct SortMenu: View {
     let page: Page
-    private var settings = AppSettings()
-
-    init(page: Page) {
-        self.page = page
-    }
+    let order: SpaceOrder
 
     var body: some View {
-        let spaceOrder = page.store.order ?? settings.spaceOrder
         Menu {
             Picker(
                 "Sort Spaces",
-                selection: Binding { spaceOrder } set: { order in afterMenu { page.store.order = order } },
+                selection: Binding { order } set: { order in afterMenu { page.store.order = order } },
             ) {
                 Text("Manual").tag(SpaceOrder.manual)
                 Text("Recent").tag(SpaceOrder.recent)
@@ -381,7 +375,7 @@ private struct SortMenu: View {
         .fixedSize()
         .help("Sort Spaces")
         .accessibilityLabel("Sort Spaces")
-        .accessibilityValue(spaceOrder == .manual ? "Manual" : "Recent")
+        .accessibilityValue(order == .manual ? "Manual" : "Recent")
         .accessibilityIdentifier("sidebar.sort")
     }
 }

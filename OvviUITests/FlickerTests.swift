@@ -2,12 +2,14 @@ import XCTest
 
 extension OvviUITests {
     func testATabComesIntoViewWithoutAFlicker() async throws {
+        executionTimeAllowance = 300
         relaunch(one, ["-recordFrames", "YES", "-forceMotion", "YES"])
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         _ = try await newTab("third", in: "w1")
         for pane in ["w1:p1", "w1:p2", "w1:p3", "w1:p4", "w2:p1"] {
             try await fill(pane)
         }
+        try await fill("w1:p1", in: two)
         openPage(two)
         // Only the shown session's page is in the window: two's card draws now, or its first picture comes in a record.
         try await expectText(["w1:p1"], "warm-up")

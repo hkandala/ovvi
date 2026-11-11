@@ -262,10 +262,10 @@ extension OvviUITests {
         return cgImage.cropping(to: pixels).map { NSImage(cgImage: $0, size: rect.size) } ?? image
     }
 
-    func fill(_ pane: String) async throws {
-        try await waitForPrompt(pane)
-        try await send("clear; for i in $(seq 1 60); do echo ovvi-reveal-$i-ovvi-reveal; done\r", to: pane)
-        try await waitFor(pane) { $0.contains("ovvi-reveal-60-ovvi-reveal") }
+    func fill(_ pane: String, in session: String? = nil) async throws {
+        try await waitForPrompt(pane, in: session)
+        try await send("clear; for i in $(seq 1 60); do echo ovvi-reveal-$i-ovvi-reveal; done\r", to: pane, in: session)
+        try await waitFor(pane, in: session) { $0.contains("ovvi-reveal-60-ovvi-reveal") }
     }
 
     func expectText(_ panes: [String], _ step: String) async throws {

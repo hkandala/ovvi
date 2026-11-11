@@ -80,7 +80,7 @@ extension OvviUITests {
         addTeardownBlock { @MainActor in self.pick("Pane", "Focus Follows Mouse") }
         hoverHeader(second)
         XCTAssertTrue(hasKeyboard("terminal.\(second)"))
-        // The other card is the keyboard's card until the rename takes the keys.
+        // Still the keyboard's card while the rename in the other card has the keys.
         paneMenu(first, "Rename Pane…")
         XCTAssertTrue(hasKeyboard("pane.\(first).rename"))
         hoverHeader(second)
