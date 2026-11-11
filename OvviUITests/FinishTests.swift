@@ -263,7 +263,7 @@ extension OvviUITests {
 
     func testFoldersDroppedOnTheDockOpenWorkspaces() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        let ovvi = Bundle.main.bundleURL.deletingLastPathComponent().appending(path: "Ovvi Dev.app").path
+        let ovvi = Self.devApp
         let warm = try await dropFolder(ovvi)
         let opened = try await workspace(in: warm)
         XCTAssertTrue(element("workspace.\(opened)").has(\.isSelected, true, within: 3))

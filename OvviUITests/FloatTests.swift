@@ -314,7 +314,7 @@ extension OvviUITests {
     }
 
     func openFloatURL(_ query: String, path: String = "") async throws {
-        let ovvi = Bundle.main.bundleURL.deletingLastPathComponent().appending(path: "Ovvi Dev.app").path
+        let ovvi = Self.devApp
         _ = try await Self.post("\(one)/open-url", Data("\(ovvi)\novvi://float\(path)?\(query)".utf8))
     }
 

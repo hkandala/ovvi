@@ -48,24 +48,6 @@ extension OvviUITests {
         XCTAssertTrue(element("detail.installing").exists(within: 3))
     }
 
-    func addHost(_ name: String, _ target: String) {
-        // At rest first: right after a launch the title row lays out again, and a click on an earlier frame opens no
-        // menu (on CI).
-        let button = element("titlebar.machine")
-        XCTAssertNotNil(steady(5) { button.isHittable ? button.frame : nil }, "\(button.frame)")
-        button.click()
-        app.menuItems["Add Machine…"].click()
-        let settings = settingsWindow
-        let field = element("settings.machine.name", in: settings)
-        XCTAssertTrue(field.exists(within: 5))
-        field.click()
-        app.typeText(name)
-        element("settings.machine.target", in: settings).click()
-        app.typeText(target)
-        element("settings.machine.save", in: settings).click()
-        XCTAssertTrue(settings.vanishes(within: 3))
-    }
-
     func typePassword(_ password: String = "ovvi-e2e-pw") {
         let answer = element("ask.answer")
         XCTAssertTrue(answer.exists(within: connect))

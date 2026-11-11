@@ -287,7 +287,7 @@ extension OvviUITests {
         try await waitFor(pane) { $0.contains("ready-42") }
         try await send("clear && git -C \(repo) rev-parse HEAD\r", to: pane)
         return try await poll("HEAD's hash") {
-            try await read(pane, in: nil).split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
+            try await read(pane).split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
                 .first { $0.count == 40 && $0.allSatisfy(\.isHexDigit) }
         }
     }

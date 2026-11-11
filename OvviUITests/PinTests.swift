@@ -34,7 +34,7 @@ extension OvviUITests {
         XCTAssertFalse(line.exists)
         third.rightClick()
         app.menuItems["Pin Space"].click()
-        try await expectTops([third, alpha, beta], "the pinned space on top")
+        try await expectOrder([third, alpha, beta], "the pinned space on top")
         XCTAssertTrue(line.exists)
         XCTAssertEqual(line.frame.midY, (third.frame.maxY + alpha.frame.minY) / 2, accuracy: 1)
 
@@ -42,7 +42,7 @@ extension OvviUITests {
         openPalette().typeText("pin space")
         XCTAssertTrue(element("palette.command.Pin Space").has(\.isSelected, true, within: 2))
         app.typeKey(.return, modifierFlags: [])
-        try await expectTops([beta, third, alpha], "pinned ones in herdr's order")
+        try await expectOrder([beta, third, alpha], "pinned ones in herdr's order")
 
         // Recent: alpha's agent changes last, and stays under the pinned ones.
         let pane = try await newTab("pin-agent", in: "w1").pane
@@ -63,7 +63,7 @@ extension OvviUITests {
         openPalette().typeText("unpin space")
         XCTAssertTrue(element("palette.command.Unpin Space").has(\.isSelected, true, within: 2))
         app.typeKey(.return, modifierFlags: [])
-        try await expectTops([alpha, third, beta], "beta under the pinned ones")
+        try await expectOrder([alpha, third, beta], "beta under the pinned ones")
         XCTAssertTrue(line.exists(within: 2))
         keepScreenshot("pinned spaces")
         for row in [alpha, third] {
@@ -87,7 +87,7 @@ extension OvviUITests {
         XCTAssertTrue(region.has(\.stringValue, "lit", within: 2), "no lit pin region on the first drag")
         keepScreenshot("pin region lit")
         try await release()
-        try await expectTops([third, alpha, beta], "dropped on the pin region, pinned")
+        try await expectOrder([third, alpha, beta], "dropped on the pin region, pinned")
         XCTAssertTrue(element("sidebar.pinned-line").exists(within: 2))
         XCTAssertFalse(region.exists)
 
@@ -99,11 +99,11 @@ extension OvviUITests {
         XCTAssertTrue(region.has(\.stringValue, "lit", within: 2), "no lit pin region on the next drag")
         XCTAssertGreaterThan(region.frame.minY, third.frame.maxY, "the region not under the pinned one")
         try await release()
-        try await expectTops([third, beta, alpha], "pinned last of the pinned ones")
+        try await expectOrder([third, beta, alpha], "pinned last of the pinned ones")
 
         during(beta.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
                to: third.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.1)))
-        try await expectTops([beta, third, alpha], "placed among the pinned ones")
+        try await expectOrder([beta, third, alpha], "placed among the pinned ones")
         try await expect("herdr's order") {
             let ids = try await workspaceIDs()
             return ids.firstIndex(of: "w2") ?? 0 < ids.firstIndex(of: gamma) ?? 0
@@ -111,7 +111,7 @@ extension OvviUITests {
         // Under the region (which takes the line's place and pushes alpha down while beta is dragged).
         during(beta.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
                to: alpha.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1)).withOffset(CGVector(dx: 0, dy: 40)))
-        try await expectTops([third, alpha, beta], "dropped under the region, unpinned")
+        try await expectOrder([third, alpha, beta], "dropped under the region, unpinned")
         XCTAssertLessThan(element("sidebar.pinned-line").frame.midY, alpha.frame.minY)
     }
 
@@ -137,11 +137,11 @@ extension OvviUITests {
         XCTAssertTrue(element("sidebar.pin-region").has(\.stringValue, "lit", within: 2))
         try await release()
         let unpinned = { [beta, fourth].sorted { $0.frame.minY < $1.frame.minY } }
-        try await expectTops([alpha, third, unpinned()[0]], "pinned onto the region, in herdr's order")
+        try await expectOrder([alpha, third, unpinned()[0]], "pinned onto the region, in herdr's order")
 
         during(third.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
                to: alpha.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.1)))
-        try await expectTops([third, alpha], "the pinned ones reordered in Recent")
+        try await expectOrder([third, alpha], "the pinned ones reordered in Recent")
         try await expect("herdr's order") {
             let ids = try await workspaceIDs()
             return ids.firstIndex(of: gamma) ?? 0 < ids.firstIndex(of: "w1") ?? 0
@@ -282,20 +282,20 @@ extension OvviUITests {
         try await press(third, at: alpha.frame.minY + 15)
         XCTAssertTrue(element("sidebar.pin-region").has(\.stringValue, "lit", within: 2))
         try await release()
-        try await expectTops([third, alpha, beta], "dropped on the pin region")
+        try await expectOrder([third, alpha, beta], "dropped on the pin region")
         lightsEach("a drop on the pin region")
         beta.rightClick()
         app.menuItems["Pin Space"].click()
-        try await expectTops([beta, third, alpha], "pinned from the menu")
+        try await expectOrder([beta, third, alpha], "pinned from the menu")
         lightsEach("a pin from the menu")
         // Onto third's last agent line: past the middle of its block, the header and its agents.
         during(beta.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2)),
                to: rows[rows.count - 1].1.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
-        try await expectTops([third, beta, alpha], "reordered among the pinned ones")
+        try await expectOrder([third, beta, alpha], "reordered among the pinned ones")
         lightsEach("a drag among the pinned ones")
         beta.rightClick()
         app.menuItems["Move Up"].click()
-        try await expectTops([beta, third, alpha], "moved up")
+        try await expectOrder([beta, third, alpha], "moved up")
         lightsEach("Move Up")
         beta.rightClick()
         app.menuItems["Unpin Space"].click()
@@ -349,13 +349,5 @@ extension OvviUITests {
     private func press(_ row: XCUIElement, at pointY: CGFloat) async throws {
         let from = row.frame
         try await Self.post("\(one)/press", Data("\(from.midX) \(from.midY) \(from.midX) \(pointY)".utf8))
-    }
-
-    private func expectTops(_ rows: [XCUIElement], _ what: String) async throws {
-        try await expect(what) {
-            guard rows.allSatisfy(\.exists) else { return false }
-            let tops = rows.map(\.frame.minY)
-            return tops == tops.sorted() && Set(tops).count == tops.count
-        }
     }
 }

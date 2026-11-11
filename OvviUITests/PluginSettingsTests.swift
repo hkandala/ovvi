@@ -119,7 +119,7 @@ extension OvviUITests {
         keepScreenshot("plugins page light", of: settings)
     }
 
-    func shoutCard(_ config: String, shell: String, extra: String = "true") async throws
+    func shoutCard(_ config: String, shell: String, extra: String) async throws
         -> (tab: String, pane: String)
     {
         let folder = "\(config)/plugins/ovvi-e2e-shout"

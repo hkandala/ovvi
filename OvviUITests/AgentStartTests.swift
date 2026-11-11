@@ -84,7 +84,6 @@ extension OvviUITests {
         try await run("\(ovvi) view \(agent) tui", in: asking, "tui", 0, "view: tui")
         XCTAssertTrue(composer.vanishes(within: 5))
         XCTAssertTrue(element("pane.\(agent).view.tui").has(\.isSelected, true, within: 2))
-        // Wrapped at the pane's width (about 45 columns on CI).
         try await run("\(ovvi) view \(asking) chat", in: asking, "plain", 1, "ovvi: pane \(asking) runs no agent")
         try await run("\(ovvi) view \(agent) both", in: asking, "both", 2, "ovvi: both is not chat or tui")
     }

@@ -30,7 +30,7 @@ extension OvviUITests {
             return seen.isEmpty ? nil : seen
         })
 
-        let other = try await split(pane, in: tab)
+        let other = try await splitByButton(pane, in: tab)
         keepsTop(top, of: chat, pane, narrow: true)
         _ = try await Self.call(one, "pane.close", ["pane_id": other])
         keepsTop(top, of: chat, pane, narrow: false)
@@ -39,7 +39,7 @@ extension OvviUITests {
         XCTAssertTrue(until(3) { abs(composer.frame.minY - last.frame.maxY - gap) < 2 },
                       "\(gap) \(composer.frame.minY - last.frame.maxY)")
         XCTAssertTrue(bottom.vanishes(within: 2))
-        let beside = try await split(pane, in: tab)
+        let beside = try await splitByButton(pane, in: tab)
         XCTAssertTrue(until(3) { chat.frame.width < 600 && last.exists && last.isHittable }, "\(chat.frame)")
         _ = try await Self.call(one, "pane.close", ["pane_id": beside])
         XCTAssertTrue(until(3) { chat.frame.width > 600 && last.exists && last.isHittable }, "\(chat.frame)")
@@ -154,7 +154,7 @@ extension OvviUITests {
         XCTAssertFalse(last.exists && last.isHittable)
     }
 
-    private func split(_ pane: String, in tab: String) async throws -> String {
+    private func splitByButton(_ pane: String, in tab: String) async throws -> String {
         hoverHeader(pane)
         element("pane.\(pane).split-right").click()
         return try await poll("a pane beside the chat") { try await order(tab).first { $0 != pane } }

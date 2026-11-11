@@ -182,9 +182,7 @@ extension OvviUITests {
         XCTAssertTrue(element("pane.\(shell)").exists(within: 3))
         XCTAssertFalse(element("pane.\(shell).chooser.terminal").exists)
 
-        try await Self.call(one, "pane.report_agent", [
-            "pane_id": shell, "source": "ovvi-e2e", "agent": "claude", "state": "idle",
-        ])
+        try await report(shell, "idle", agent: "claude")
         XCTAssertTrue(until(3) { element("pane.\(shell)").label.hasPrefix("claude") })
         XCTAssertTrue(hasKeyboard("terminal.\(shell)"))
         commands(here: true)

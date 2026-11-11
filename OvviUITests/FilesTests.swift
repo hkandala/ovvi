@@ -181,8 +181,8 @@ extension OvviUITests {
         XCTAssertTrue(element("file.\(side).page").exists(within: 10))
         XCTAssertTrue(hasKeyboard(row("one.txt", in: tree)))
 
-        // Five in a row: an open's tab is made last, then moved beside its card, and the strip once showed the page
-        // of the tab at its old place from the fifth on.
+        // Five in a row: an open's tab is made last, then moved beside its card; a wrong page shows only from the
+        // fifth on.
         for name in names {
             step("⌘-click opens \(name) in a new tab beside, with its own page")
             XCTAssertTrue(row(name, in: tree).exists(within: 10), name)

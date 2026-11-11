@@ -1,4 +1,3 @@
-import AppKit
 import XCTest
 
 extension OvviUITests {
@@ -94,8 +93,6 @@ extension OvviUITests {
         keepScreenshot("window 1 on session one", of: first)
         keepScreenshot("window 2 on session two", of: second)
     }
-
-    // MARK: Helpers
 
     func newWindow() throws -> (XCUIElement, XCUIElement) {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))

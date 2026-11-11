@@ -328,4 +328,22 @@ extension OvviUITests {
     private func connections() async throws -> Int {
         try await field(Int(String(decoding: Self.post("\(one)/ssh-connections"), as: UTF8.self)), "sshd connections")
     }
+
+    private func addHost(_ name: String, _ target: String) {
+        // At rest first: right after a launch the title row lays out again, and a click on an earlier frame opens no
+        // menu (on CI).
+        let button = element("titlebar.machine")
+        XCTAssertNotNil(steady(5) { button.isHittable ? button.frame : nil }, "\(button.frame)")
+        button.click()
+        app.menuItems["Add Machine…"].click()
+        let settings = settingsWindow
+        let field = element("settings.machine.name", in: settings)
+        XCTAssertTrue(field.exists(within: 5))
+        field.click()
+        app.typeText(name)
+        element("settings.machine.target", in: settings).click()
+        app.typeText(target)
+        element("settings.machine.save", in: settings).click()
+        XCTAssertTrue(settings.vanishes(within: 3))
+    }
 }

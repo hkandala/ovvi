@@ -214,6 +214,7 @@ extension OvviUITests {
     }
 
     static let fixtures = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "Fixtures").path
+    static let devApp = Bundle.main.bundleURL.deletingLastPathComponent().appending(path: "Ovvi Dev.app").path
 
     /// CI puts both folders on its login shell's PATH.
     static let agents = "\(fixtures)/agents"

@@ -104,7 +104,7 @@ extension OvviUITests {
         var sampled = 0
         for (step, act) in steps {
             XCTAssertTrue(host.exists(within: 3), step)
-            let sizes = Self.motion(host).sizes, slides = Self.slides(card.label)
+            let sizes = Self.sizes(host), slides = Self.slides(card.label)
             let band = band(through: terminal), before = Self.ink(Self.crop(XCUIScreen.main.screenshot().image, band))
             try await act()
             var inks: [Double] = []
@@ -117,7 +117,7 @@ extension OvviUITests {
             }
             if step.hasPrefix("sidebar") {
                 XCTAssertGreaterThanOrEqual(
-                    Self.motion(host).sizes - sizes,
+                    Self.sizes(host) - sizes,
                     4,
                     "\(step): sizes \(sizes) to \(host.label)",
                 )
@@ -226,9 +226,8 @@ extension OvviUITests {
                       height: frame.height * 0.2)
     }
 
-    private static func motion(_ host: XCUIElement) -> (sizes: Int, ms: Int) {
-        let words = host.label.split(separator: " ").compactMap { Int($0) }
-        return (words.first ?? 0, words.dropFirst().first ?? 0)
+    private static func sizes(_ host: XCUIElement) -> Int {
+        host.label.split(separator: " ").first.flatMap { Int($0) } ?? 0
     }
 
     /// One that still attaches resizes the pane after a fill's lines, and bash redraws its prompt over the last one
@@ -242,9 +241,9 @@ extension OvviUITests {
     private func expectJump(_ tab: String, _ pane: String) async throws {
         let host = element("host.\(pane)")
         XCTAssertTrue(host.exists(within: 3))
-        let sizes = Self.motion(host).sizes
+        let sizes = Self.sizes(host)
         let other = try await split(pane)
-        XCTAssertTrue(until(3) { Self.motion(host).sizes == sizes + 1 }, "Reduce Motion")
+        XCTAssertTrue(until(3) { Self.sizes(host) == sizes + 1 }, "Reduce Motion")
         _ = try await Self.call(one, "pane.close", ["pane_id": other])
         XCTAssertTrue(element("pane.\(other)").vanishes(within: 3))
         relaunch(one, ["-recordMotion", "YES", "-forceMotion", "YES"])

@@ -209,11 +209,19 @@ extension OvviUITests {
         }
     }
 
-    private func expectOrder(_ rows: [XCUIElement], _ what: String) async throws {
+    func expectOrder(_ rows: [XCUIElement], _ what: String) async throws {
         try await expect(what) {
             guard rows.allSatisfy(\.exists) else { return false }
             let tops = rows.map(\.frame.minY)
             return tops == tops.sorted() && Set(tops).count == tops.count
         }
+    }
+
+    private func filter(_ text: String, keeps rows: [XCUIElement], _ kept: [Bool]) {
+        element("sidebar.filter").click()
+        element("sidebar.filter").typeText(text)
+        XCTAssertTrue(until(2) { rows.map(\.exists) == kept }, text)
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(until(2) { rows.allSatisfy(\.exists) }, text)
     }
 }

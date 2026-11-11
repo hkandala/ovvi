@@ -122,14 +122,6 @@ extension OvviUITests {
         keepScreenshot("idle, no state")
     }
 
-    func filter(_ text: String, keeps rows: [XCUIElement], _ kept: [Bool]) {
-        element("sidebar.filter").click()
-        element("sidebar.filter").typeText(text)
-        XCTAssertTrue(until(2) { rows.map(\.exists) == kept }, text)
-        app.typeKey(.escape, modifierFlags: [])
-        XCTAssertTrue(until(2) { rows.allSatisfy(\.exists) }, text)
-    }
-
     /// With an increasing `seq`: herdr drops a report with a lower one.
     func report(_ pane: String, _ state: String, agent: String = "codex", session: String? = nil) async throws {
         try await Self.call(session ?? one, "pane.report_agent", [

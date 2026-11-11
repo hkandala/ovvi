@@ -97,7 +97,6 @@ extension OvviUITests {
             while Date.now < end {
                 values.append(card.stringValue)
             }
-            print("tile, \(round): \(values) host \(element("host.\(pane)").label)")
             let drawn = values.drop { round == "unshown" && $0.contains("loading") }
             XCTAssertFalse(drawn.isEmpty || drawn.contains { $0.contains("loading") }, "\(round): \(values)")
         }
@@ -186,7 +185,7 @@ extension OvviUITests {
             let count = try await helpers(measure("overview", seconds: 1))
             return count <= helpers(page) + 1 ? count : nil
         }
-        let open = try await measure("overview")
+        _ = try await measure("overview")
         // Either way: the sign follows the natural scrolling setting.
         let last = element("overview.tab.\(tabs[5])")
         for delta in [-3000.0, 3000, -3000] where !(last.exists && last.isHittable) {
@@ -211,7 +210,6 @@ extension OvviUITests {
             return count == helpers(page) ? count : nil
         }
         _ = try await measure("after the overview")
-        print("overview cost: page\n\(page)\nopen\n\(open)\nscrolled\n\(scrolled)")
     }
 
     func testOverviewOfManyTabsStaysBounded() async throws {
@@ -259,13 +257,13 @@ extension OvviUITests {
         try await say("hello", in: chat)
         XCTAssertTrue(row(chat, "reply", "Echo: **hello**").exists(within: 5))
         let browser = try await split(chat)
-        try await waitForPrompt(browser, in: one)
+        try await waitForPrompt(browser)
         let folder = "/tmp/ovvi-e2e-browser", keys = "<script>onkeydown = e => document.title = \\x27key \\x27 + e.key"
             + "</script>"
         try await send("mkdir -p \(folder) && printf '<title>Light</title>\(keys)' >\(folder)/light.html && printf "
             + "'<title>Dark</title><body style=\"background:black\">\(keys)' >\(folder)/dark.html && clear\r",
             to: browser)
-        try await waitFor(browser, in: one) { !$0.contains("printf") }
+        try await waitFor(browser) { !$0.contains("printf") }
         let iid = String(format: "e2e%03x", Int.random(in: 0 ..< 4096)), title = element("pane.\(browser).title")
         try await Self.call(one, "pane.rename", ["pane_id": browser,
                                                  "label": "ovvi:browser#\(iid) file://\(folder)/light.html"])
