@@ -82,10 +82,10 @@ struct WelcomeView: View {
             picture(current, dark: dark).opacity(shown ? 1 : 0)
             // Dark at the edge, fading out above the title; a soft glow keeps the words legible.
             if current != .herdr {
-                LinearGradient(stops: [(0, 0), (0.35, 0.55), (1, 1)].map {
-                    .init(color: Look.shade(dark).opacity($0.1), location: $0.0)
-                },
-                startPoint: .top, endPoint: .bottom)
+                LinearGradient(stops: [.init(color: Look.shade(dark).opacity(0), location: 0),
+                                       .init(color: Look.shade(dark).opacity(0.55), location: 0.35),
+                                       .init(color: Look.shade(dark), location: 1)],
+                               startPoint: .top, endPoint: .bottom)
                     .frame(height: 180).allowsHitTesting(false).opacity(shown ? 1 : 0).transition(.opacity)
             }
             VStack(spacing: 22) {

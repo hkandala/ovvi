@@ -327,7 +327,7 @@ films() {
     mkdir -p "$C"
     # The test bundle's own record of a failure films the whole screen: it goes at once.
     make e2e DERIVED_DATA="$DERIVED_DATA" ONLY=OvviUITests/OvviUITests/testWelcomeFilm >"$C/films.log" 2>&1 \
-        || { rm -rf "$DERIVED_DATA/e2e.xcresult"; grep -E "::error" "$C/films.log"; exit 1; }
+        || { rm -rf "$DERIVED_DATA/e2e.xcresult"; grep -E "::error" "$C/films.log" || tail -20 "$C/films.log"; exit 1; }
     rm -rf "$DERIVED_DATA/e2e.xcresult"
     mkdir -p "$OUT"
     for look in dark light; do

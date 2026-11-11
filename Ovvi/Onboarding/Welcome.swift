@@ -76,7 +76,8 @@ enum Welcome {
         UserDefaults.standard.set(true, forKey: doneKey)
         panel?.orderOut(nil)
         panel = nil
-        if !NSApp.windows.contains(where: { $0.canBecomeMain && $0.isVisible }) {
+        // Only the first launch has no window of its own; from Settings, a minimized window stays as it is.
+        if firstLaunch, !NSApp.windows.contains(where: { $0.canBecomeMain && $0.isVisible }) {
             WindowPages.openWindow?(id: WindowPages.mainScene)
         }
     }
@@ -98,7 +99,7 @@ enum Welcome {
 
 /// The panel's background: the window's own glass (Classic: opaque), its corners and a hairline rim.
 struct WelcomeBackground: View {
-    /// A titled window's corner, as NSWindow reports it: the same as Ovvi's own windows.
+    /// A titled window's corner on macOS 26, as NSWindow reports it: the same as Ovvi's own windows.
     static let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
     @Environment(\.look) private var look
 
