@@ -488,7 +488,7 @@ gets the same card.
   rules in [When a page loads by itself](#when-a-page-loads-by-itself).
 - Plugin pages get the `ovvi` object, under the rules in
   [Security and trust](/docs/plugins/security).
-- A `file://` page can read every file the user can read, as in Safari: a
+- A `file://` page can show any file that the user can read, as in Safari: a
   page's image, video or script can come from another folder
   (`../clips/intro.mp4`), and a link to a page in another folder opens in the
   card. The page's own rules stay WebKit's: a file page is an origin of its
@@ -546,11 +546,11 @@ gets the same card.
   refusals come at once, and nothing is installed there. Rejected: a forward
   per port (ports clash between machines and with the Mac, and the origin
   changes); a server helper of our own.
-- **A file page reads the whole disk, its scripts stay in their origin.** A
-  page and its media often sit in sibling folders, and Safari loads them.
-  WebKit already reads the whole disk for a file page opened from a link or
-  the history. Rejected: only the page's folder (a sibling's media is
-  blocked); file access for scripts (`allowFileAccessFromFileURLs`), which
+- **A file page can show the whole disk, its scripts stay in their origin.**
+  A page and its media often sit in sibling folders, and Safari loads them.
+  WebKit already gives read access to the whole disk to a file page opened
+  from a link or the history. Rejected: only the page's folder (a sibling's
+  media is blocked); file access for scripts (`allowFileAccessFromFileURLs`), which
   lets any downloaded page read the user's files.
 - **The typed address in the label, the current one in the state file.**
   Coming back to a browser card, on any device or after a restart, shows the

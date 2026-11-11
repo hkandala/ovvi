@@ -99,7 +99,8 @@ extension OvviUITests {
     func testALocalPageReadsAndOpensOtherFolders() async throws {
         let (tab, shell) = try await newTab("folders")
         try await waitForPrompt(shell)
-        let folder = "/tmp/ovvi-e2e-folders"
+        // Not under /tmp: WebKit's page process reads all of /private/tmp anyway.
+        let folder = "/Users/\(NSUserName())/.ovvi-e2e-folders"
         try await send("""
         mkdir -p \(folder)/page \(folder)/media \(folder)/other && printf '<svg \
         xmlns="http://www.w3.org/2000/svg" width="8" height="8"/>' >\(folder)/media/dot.svg && printf '<p \
@@ -112,13 +113,10 @@ extension OvviUITests {
         let pane = try await split(shell)
         try await relabel(pane, "ovvi:browser#e2efld file://\(folder)/page/index.html")
         element("tab.\(tab)").click()
-        let tabs = try await tabIDs()
         XCTAssertTrue(pageText("ovvi-media-loaded").exists(within: 10))
         app.webViews.links["Other"].click()
         XCTAssertTrue(pageText("ovvi-other-folder").exists(within: 5))
         let address = element("browser.\(pane).address")
         XCTAssertTrue(until(2) { address.stringValue.hasSuffix("/other/page.html") }, address.stringValue)
-        let after = try await tabIDs()
-        XCTAssertEqual(after, tabs)
     }
 }

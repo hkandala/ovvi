@@ -2267,3 +2267,14 @@ ones".
   the proof pair 42993147651 and 42993159009 runs after the push, unread.
 - **For the user.** In the VM, the welcome opened a second time from Settings showed a spinning cursor for about 5 s
   before it drew (CI: under 5 s). It may be worth a look on a slow Mac.
+
+### Track W2
+
+- **Cause.** The browser card loaded a `file://` page with read access to its own folder only, so media in a sibling
+  folder under the home folder failed (WebKit's page process reads `/private/tmp` anyway, so a test there passes on
+  the old code).
+- **Fix.** Read access to `/`, as WebKit already gives a file page opened from a link or the history. WebKit's file
+  origin rules stay: scripts still cannot fetch other files. Plugin pages (`ovvi-plugin:`) have no file access path.
+- **Runs.** None: the new test (`testALocalPageReadsAndOpensOtherFolders`, in the home folder) waits for the final CI
+  round. The reviewer's headless WKWebView probe showed a sibling image and an mp4 under `~` blocked on the old access
+  and loaded on the new.
