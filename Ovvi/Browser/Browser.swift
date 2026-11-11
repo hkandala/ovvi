@@ -208,7 +208,8 @@ final class Browser: NSObject {
     private func load(_ url: URL) {
         (failure, asking) = (nil, nil)
         if url.isFileURL {
-            view.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
+            // As Safari does: a page's media can sit in another folder. Scripts still cannot fetch other files.
+            view.loadFileURL(url, allowingReadAccessTo: URL(filePath: "/"))
         } else {
             proxied { self.view.load(URLRequest(url: Self.web(url, self.alias))) }
         }

@@ -93,3 +93,32 @@ extension OvviUITests {
         }
     }
 }
+
+extension OvviUITests {
+    /// A local page shows media from a sibling folder and its link to another folder opens in the same card.
+    func testALocalPageReadsAndOpensOtherFolders() async throws {
+        let (tab, shell) = try await newTab("folders")
+        try await waitForPrompt(shell)
+        let folder = "/tmp/ovvi-e2e-folders"
+        try await send("""
+        mkdir -p \(folder)/page \(folder)/media \(folder)/other && printf '<svg \
+        xmlns="http://www.w3.org/2000/svg" width="8" height="8"/>' >\(folder)/media/dot.svg && printf '<p \
+        id="s">ovvi-waiting</p><img src="../media/dot.svg" onload="s.textContent=\\x27ovvi-media-loaded\\x27" \
+        onerror="s.textContent=\\x27ovvi-media-blocked\\x27"><a href="../other/page.html">Other</a>' \
+        >\(folder)/page/index.html && printf '<p>ovvi-other-folder</p>' >\(folder)/other/page.html && clear\r
+        """, to: shell)
+        sendAfter("rm -rf \(folder)\r", to: shell)
+        try await waitFor(shell) { !$0.contains("printf") }
+        let pane = try await split(shell)
+        try await relabel(pane, "ovvi:browser#e2efld file://\(folder)/page/index.html")
+        element("tab.\(tab)").click()
+        let tabs = try await tabIDs()
+        XCTAssertTrue(pageText("ovvi-media-loaded").exists(within: 10))
+        app.webViews.links["Other"].click()
+        XCTAssertTrue(pageText("ovvi-other-folder").exists(within: 5))
+        let address = element("browser.\(pane).address")
+        XCTAssertTrue(until(2) { address.stringValue.hasSuffix("/other/page.html") }, address.stringValue)
+        let after = try await tabIDs()
+        XCTAssertEqual(after, tabs)
+    }
+}
