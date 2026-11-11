@@ -281,7 +281,8 @@ concurrency). The rest:
   installed package do it? Only then the minimum. No protocol with one conformer except `Exec` and
   `Multiplexer` (D49). No factories, managers, coordinators or service layers; no scaffolding for later. A
   deliberate shortcut gets a `// ponytail:` comment with its ceiling and upgrade path. A type gets its own
-  file when more than one file uses it or it passes about 200 lines. No backward-compatibility or migration
+  file when more than one file uses it or it passes about 200 lines; a family of small related types (a model
+  and its parts, an error enum) may share one file. No backward-compatibility or migration
   code: there are no users yet. The repo uses only the current names; a one-off step on the user's Mac runs
   from a script outside the repo.
 - **Swift.** No `@unchecked Sendable` or `nonisolated(unsafe)` without a one-line reason. UI state is
