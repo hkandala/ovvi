@@ -168,11 +168,19 @@ struct CommandList {
         let head = workspace.map { page?.store.parent(of: $0) == nil } == true
         let toggle = {
             if let page, let workspace {
-                withAnimation(Animation.reduced ? nil : .easeOut(duration: 0.2)) { page.togglePin(workspace.id) }
+                page.togglePin(workspace.id)
             }
         }
         return Command(section: .palette, title: pinned ? "Unpin Space" : "Pin Space", group: .workspaces,
                        symbol: pinned ? "pin.slash" : "pin", keywords: "workspace top", enabled: head, action: toggle)
+    }
+
+    private func onlyPinned(_ page: Page?) -> Command {
+        let only = page?.store.onlyPinned == true
+        return Command(section: .palette, title: only ? "Show All Spaces" : "Show Only Pinned Spaces",
+                       group: .workspaces, symbol: only ? "eye" : "line.3.horizontal.decrease",
+                       keywords: "hide workspaces unpinned",
+                       enabled: page?.store.pins.isEmpty == false) { page?.store.onlyPinned.toggle() }
     }
 
     private func palette(_ page: Page?) -> [Command] {
@@ -189,6 +197,7 @@ struct CommandList {
                         (workspace.label, { await page?.store.rename(workspace: workspace.id, label: $0) })
                     }),
             pin(page, workspace),
+            onlyPinned(page),
             Command(
                 section: .palette,
                 title: "Font Size",

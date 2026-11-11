@@ -19,7 +19,8 @@ extension AgentCommand {
         let title = try call.argument("title"), body = try call.optionalArgument() ?? ""
         try call.done()
         let (store, pane) = try call.found(target)
-        guard AppSettings().notifyFromAgents else {
+        // A space Show Only Pinned Spaces hides is as if it were not there.
+        guard AppSettings().notifyFromAgents, !store.hidden.contains(store.workspace(of: pane.tabID)?.id ?? "") else {
             return AgentOutput(["pane": target.id, "notified": false])
         }
         // By terminal: herdr reuses pane ids.

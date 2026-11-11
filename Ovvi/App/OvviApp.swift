@@ -85,7 +85,6 @@ struct ContentView: View {
     @SceneStorage("sidebar") private var sidebar = true
     @SceneStorage("sidebarWidth") private var sidebarWidth = 300.0
     @SceneStorage("picking") private var picking = false
-    @SceneStorage("spaceOrder") private var spaceOrder = ""
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openWindow) private var openWindow
 
@@ -102,7 +101,6 @@ struct ContentView: View {
         }
         .animation(Animation.reduced ? nil : .easeOut(duration: 0.2),
                    value: pages.current == nil && !picking)
-        .environment(\.spaceOrder, $spaceOrder)
         .onChange(of: pages.current == nil && !picking) { WindowStart.started = true }
         .task {
             let opening = WindowPages.opening

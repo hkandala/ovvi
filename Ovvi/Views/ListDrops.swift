@@ -110,13 +110,19 @@ struct MenuRowDrop: ViewModifier {
     }
 }
 
+/// The place under the pinned spaces while a space is dragged: a drop there pins it, last of the pinned ones.
+enum PinRegion {
+    static let id = "sidebar.pin-region"
+}
+
 struct RowsDrop: DropDelegate {
     struct State {
         var over: String?
         var ghost = false
+        /// A dragged space's place among `blocks`: before the one at it.
         var slot: Int?
-        /// A space's drop lands among the pinned ones: above the line under them.
-        var pinning = false
+        /// A dragged space over the pin region.
+        var region = false
         var spring: Task<Void, Never>?
     }
 
@@ -124,10 +130,11 @@ struct RowsDrop: DropDelegate {
     let frames: SidebarPage.RowFrames
     @Binding var state: State
     let reorders: Bool
-    /// The groups as the sidebar shows them, the pinned ones first.
+    /// The groups as the sidebar shows them: the pinned ones first, then the pin region (empty) while it shows.
     let shown: [[HostStore.Workspace]]
     let pinned: Set<String>
     let order: SpaceOrder
+    let land: (_ rows: [String], _ offset: CGFloat) -> Void
 
     func validateDrop(info _: DropInfo) -> Bool {
         switch page.dragging {
@@ -145,20 +152,16 @@ struct RowsDrop: DropDelegate {
             let imageY = pointY - DragSource.grabbed.y + (frames.rows[id]?.height ?? 0) / 2
             let blocks = blocks(id)
             // The lazy stack makes the rows in view: one not made lies above them, or below.
-            let made = blocks.firstIndex { middle($0) != nil } ?? 0
-            let index = blocks.indices.count { index in middle(blocks[index]).map { $0 < imageY } ?? (index < made) }
-            guard let (index, pinning) = shown.contains(where: { $0[0].id == id })
-                ? section(id, index, pinning(pointY, imageY, blocks), blocks) : (index, false)
-            else {
-                if state.slot != nil || state.pinning {
-                    withAnimation(.slide) { (state.slot, state.pinning) = (nil, false) }
-                }
-                return DropProposal(operation: .forbidden)
+            let made = blocks.firstIndex { rect($0) != nil } ?? 0
+            let index = blocks.indices.count { index in rect(blocks[index]).map { $0.midY < imageY } ?? (index < made) }
+            let region = blocks.contains(where: \.isEmpty) && frames.rows[PinRegion.id].map {
+                ($0.minY - WorkspaceRow.gap / 2 ... $0.maxY + WorkspaceRow.gap / 2).contains(imageY)
+            } == true
+            let slot = region ? nil : place(id, index, blocks)
+            if state.slot != slot || state.region != region {
+                withAnimation(.slide) { (state.slot, state.region) = (slot, region) }
             }
-            if state.slot != index || state.pinning != pinning {
-                withAnimation(.slide) { (state.slot, state.pinning) = (index, pinning) }
-            }
-            return DropProposal(operation: .move)
+            return DropProposal(operation: region || slot != nil ? .move : .forbidden)
         }
         let pane = page.dragging?.paneID != nil
         let ghost = pointY > frames.rows.values.map(\.maxY).max() ?? 0
@@ -188,8 +191,14 @@ struct RowsDrop: DropDelegate {
         withAnimation(state.slot == nil ? .highlight : .slide) { state = State() }
     }
 
-    func performDrop(info _: DropInfo) -> Bool {
+    func performDrop(info: DropInfo) -> Bool {
         let dropped = state
+        // Where the dragged row shows now, ahead of the slide's end.
+        let now: CGFloat = if case let .workspace(id) = page.dragging {
+            (frames.rows[id]?.minY ?? 0) + shift(id)
+        } else {
+            0
+        }
         state.spring?.cancel()
         state = State()
         switch page.dragging {
@@ -202,94 +211,78 @@ struct RowsDrop: DropDelegate {
             Task { await page.drop(tab: id, on: dropped.over) }
         case let .workspace(id):
             let blocks = blocks(id)
-            guard let slot = dropped.slot,
-                  let from = blocks.firstIndex(where: { $0.contains { $0.id == id } }) else { return false }
-            let moves = slot != from && slot != from + 1
-            if shown.contains(where: { $0[0].id == id }) {
-                dropSpace(blocks, from: from, slot: slot, pinning: dropped.pinning, moves: moves)
-            } else if moves {
-                // Its own place or the next is no move. The new order shows in this same update, as the slide ends.
+            guard let from = blocks.firstIndex(where: { $0.contains { $0.id == id } }),
+                  let slot = dropped.region ? blocks.firstIndex(where: \.isEmpty) : dropped.slot else { return false }
+            if shown.contains(where: { $0.first?.id == id }) {
+                dropSpace(blocks, from: from, slot: slot)
+            } else if slot != from, slot != from + 1 {
+                // Its own place or the next is no move.
                 page.store.move(workspaces: blocks[from].map(\.id), before: before(slot, blocks))
             }
-            // No glide: AppKit's drag loop draws no animation frame for 0.3–0.5 s after a drop, so a glide showed as a
-            // still frame and a jump. The row is already in the gap the slide opened.
             DragSource.land(page)
+            // As a tab's capsule: from the drop's image into its place, while the other rows move as for any order.
+            land(blocks[from].map(\.id), info.location.y + frames.top - DragSource.grabbed.y - now)
         default:
             return false
         }
         return true
     }
 
-    /// A space's slot kept on its side of the line, and whether that side is the pinned one; nil for an unpinned space
-    /// dropped among the unpinned ones in Recent, which orders them itself.
-    private func section(_ id: String, _ index: Int, _ pinning: Bool,
-                         _ blocks: [[HostStore.Workspace]]) -> (Int, Bool)?
-    {
-        let pins = blocks.prefix { pinned.contains($0[0].id) }.count
-        guard order == .recent, !pinning else { return (pinning ? min(index, pins) : max(index, pins), pinning) }
-        // Unpinned, it goes where Recent puts it: the gap opens under the pinned ones.
-        return pinned.contains(id) ? (pins, false) : nil
+    /// A space's slot: on its own side when the pin region does not show; nil for an unpinned space among the
+    /// unpinned ones in Recent, which orders them itself; a pinned one dropped there goes where Recent puts it, so its
+    /// gap opens first of them.
+    private func place(_ id: String, _ index: Int, _ blocks: [[HostStore.Workspace]]) -> Int? {
+        guard shown.contains(where: { $0.first?.id == id }) else { return index }
+        guard let region = blocks.firstIndex(where: \.isEmpty) else {
+            let pins = blocks.count { pinned.contains($0[0].id) }
+            return pinned.contains(id) ? min(index, pins) : max(index, pins)
+        }
+        guard index > region, order == .recent else { return index }
+        return pinned.contains(id) ? region + 1 : nil
     }
 
-    /// With none pinned, a drop with the pointer this far into the list pins.
-    static let pinZone: CGFloat = 8
-
-    /// Pinned or not by where it lands, then before the next of that section, which herdr may hold anywhere; last of
-    /// the pinned ones, right after the last (not at herdr's end); unpinned in Recent, where Recent puts it.
-    private func dropSpace(_ blocks: [[HostStore.Workspace]], from: Int, slot: Int, pinning: Bool, moves: Bool) {
-        let id = blocks[from][0].id, pins = pinning != pinned.contains(id)
-        if pins {
+    /// Pinned or not by its side of the pin region, then before the next of that side, which herdr may hold anywhere;
+    /// last of the pinned ones, right after the last (not at herdr's end); unpinned in Recent, where Recent puts it.
+    private func dropSpace(_ blocks: [[HostStore.Workspace]], from: Int, slot: Int) {
+        let id = blocks[from][0].id, place = slot > from ? slot - 1 : slot
+        var list = blocks
+        list.insert(list.remove(at: from), at: place)
+        let pinning = list.firstIndex(where: \.isEmpty).map { place < $0 } ?? pinned.contains(id)
+        if pinning != pinned.contains(id) {
             page.togglePin(id)
         }
-        guard pins || moves, pinning || order == .manual else { return }
-        var rest = blocks
-        rest.remove(at: from)
-        let section = rest.filter { pinned.contains($0[0].id) == pinning }
-        let place = (slot > from ? slot - 1 : slot) - (pinning ? 0 : rest.count - section.count)
-        var before = section.indices.contains(place) ? section[place][0].id : nil
+        guard slot != from, slot != from + 1, pinning || order == .manual else { return }
+        var before = list.indices.contains(place + 1) ? list[place + 1].first.flatMap {
+            pinned.contains($0.id) == pinning ? $0.id : nil
+        } : nil
         if before == nil, pinning {
+            // The only pinned one keeps herdr's place.
+            guard place > 0, let last = list[place - 1].first?.id else { return }
             let groups = page.store.groups.filter { $0[0].id != id }
-            guard let last = section.last?[0].id, let after = groups.firstIndex(where: { $0[0].id == last }),
-                  page.store.groups.firstIndex(where: { $0[0].id == id }).map({ $0 != after + 1 }) ?? true
-            else { return }
+            guard let after = groups.firstIndex(where: { $0[0].id == last }),
+                  page.store.groups.firstIndex(where: { $0[0].id == id }) != after + 1 else { return }
             before = groups.indices.contains(after + 1) ? groups[after + 1][0].id : nil
         }
         page.store.move(workspaces: blocks[from].map(\.id), before: before)
     }
 
+    /// How far a row, or the pin region, moves for the dragged one's gap: its place in the list as the drop would leave
+    /// it, less its place now.
     func shift(_ id: String) -> CGFloat {
         guard case let .workspace(dragged) = page.dragging, let slot = state.slot else { return 0 }
         let blocks = blocks(dragged)
         guard let from = blocks.firstIndex(where: { $0.contains { $0.id == dragged } }),
-              let index = blocks.firstIndex(where: { $0.contains { $0.id == id } }) else { return 0 }
+              let index = blocks.firstIndex(where: { id == PinRegion.id ? $0.isEmpty : $0.contains { $0.id == id } })
+        else { return 0 }
+        var list = Array(blocks.indices)
+        list.remove(at: from)
         // A snapshot during the drag may have closed workspaces.
-        let place = min(slot > from ? slot - 1 : slot, blocks.count - 1)
-        let gap = lineGap(blocks[index][0].id, dragged)
-        if index == from {
-            return gap + (place > from ? blocks[from + 1 ... place].map(height).reduce(0, +)
-                : -blocks[place ..< from].map(height).reduce(0, +))
-        }
-        return gap + (from < index && index <= place ? -height(blocks[from])
-            : place <= index && index < from ? height(blocks[from]) : 0)
+        list.insert(from, at: min(slot > from ? slot - 1 : slot, list.count))
+        let top = { (order: [Int]) in order.prefix { $0 != index }.map { height(blocks[$0]) }.reduce(0, +) }
+        return top(list) - top(Array(blocks.indices))
     }
 
-    /// What the line's gap (under the last pinned group, while unpinned ones follow) adds to a group's move when the
-    /// drop pins or unpins: the unpinned ones lose it when no pinned one stays, or gain it with the first.
-    private func lineGap(_ head: String, _ dragged: String) -> CGFloat {
-        let was = pinned.contains(dragged), will = state.pinning
-        guard was != will, shown.contains(where: { $0[0].id == dragged }) else { return 0 }
-        let others = shown.count { pinned.contains($0[0].id) && $0[0].id != dragged }
-        let rest = shown.count - 1 - others
-        let before = others + (was ? 1 : 0) > 0 && rest + (was ? 0 : 1) > 0
-        let after = others + (will ? 1 : 0) > 0 && rest + (will ? 0 : 1) > 0
-        let gap = WorkspaceRow.gap
-        if head == dragged {
-            return (!will && after ? gap : 0) - (!was && before ? gap : 0)
-        }
-        return pinned.contains(head) ? 0 : (after ? gap : 0) - (before ? gap : 0)
-    }
-
-    /// A worktree's: its repository's other worktrees; else the spaces pinned like it, as the sidebar shows them.
+    /// A worktree's: its repository's other worktrees; else the spaces as the sidebar shows them.
     private func blocks(_ id: String) -> [[HostStore.Workspace]] {
         let groups = page.store.groups
         if let group = groups.first(where: { $0.dropFirst().contains { $0.id == id } }) {
@@ -298,28 +291,16 @@ struct RowsDrop: DropDelegate {
         return shown
     }
 
-    /// Whether a drop lands above the line under the pinned spaces (the dragged row's middle above it); with none
-    /// pinned, whether the pointer is within `pinZone` of the list's top, where the line stands while a space is
-    /// dragged: the pointer cannot go above the list.
-    private func pinning(_ pointY: CGFloat, _ imageY: CGFloat, _ blocks: [[HostStore.Workspace]]) -> Bool {
-        let pins = blocks.prefix { pinned.contains($0[0].id) }.count
-        guard pins > 0 else {
-            return pointY < (blocks.first?.compactMap { frames.rows[$0.id]?.minY }.min() ?? -.infinity) + Self.pinZone
-        }
-        let bottom = blocks[pins - 1].compactMap { frames.rows[$0.id]?.maxY }.max() ?? -.infinity
-        let top = blocks.indices.contains(pins) ? blocks[pins].compactMap { frames.rows[$0.id]?.minY }.min() : nil
-        return imageY < top.map { (bottom + $0) / 2 } ?? bottom + WorkspaceRow.gap
+    /// A block's rows, or the pin region's, as laid out (before any slide).
+    private func rect(_ block: [HostStore.Workspace]) -> CGRect? {
+        block.isEmpty ? frames.rows[PinRegion.id]
+            : block.compactMap { frames.rows[$0.id] }.reduce(CGRect?.none) { $0?.union($1) ?? $1 }
     }
 
     /// A block's rows with the gap after each: how far the others move for it.
     private func height(_ block: [HostStore.Workspace]) -> CGFloat {
-        block.compactMap { frames.rows[$0.id]?.height }.reduce(0, +) + WorkspaceRow.gap * CGFloat(block.count)
-    }
-
-    private func middle(_ block: [HostStore.Workspace]) -> CGFloat? {
-        let rows = block.compactMap { frames.rows[$0.id] }
-        guard let top = rows.map(\.minY).min(), let bottom = rows.map(\.maxY).max() else { return nil }
-        return (top + bottom) / 2
+        guard !block.isEmpty else { return (frames.rows[PinRegion.id]?.height ?? 0) + WorkspaceRow.gap }
+        return block.compactMap { frames.rows[$0.id]?.height }.reduce(0, +) + WorkspaceRow.gap * CGFloat(block.count)
     }
 
     private func before(_ slot: Int, _ blocks: [[HostStore.Workspace]]) -> String? {

@@ -21,11 +21,12 @@ enum Notifications {
             }
             center.removeDeliveredNotifications(withIdentifiers: gone)
         }
-        let settings = AppSettings()
+        let settings = AppSettings(), hidden = store.hidden
         for change in changes where change.state.calls
             && (change.state == .needsYou ? settings.notifyNeedsYou : settings.notifyFinished)
         {
-            guard let pane = store.pane(change.paneID), pane.tabID != store.lookingTabID else { continue }
+            guard let pane = store.pane(change.paneID), pane.tabID != store.lookingTabID,
+                  !hidden.contains(store.workspace(of: pane.tabID)?.id ?? "") else { continue }
             let content = UNMutableNotificationContent()
             content.title = title(pane, change.state)
             content.body = "\(store.label) · \(page.place(pane))"

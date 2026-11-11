@@ -33,6 +33,26 @@ struct DropIndicator: View {
     }
 }
 
+/// A row-sized drop target in the sidebar (New Space, Pin Space): lit as a drop indicator while the drop would land
+/// there, else outlined as a row.
+struct DropRow: View {
+    let title: String
+    let lit: Bool
+
+    var body: some View {
+        Text(title).foregroundStyle(.secondary).padding(.leading, WorkspaceRow.textInset)
+            .frame(maxWidth: .infinity, minHeight: 30, alignment: .leading)
+            .background {
+                if lit {
+                    DropIndicator()
+                } else {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(.primary.opacity(0.14), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                }
+            }
+    }
+}
+
 func dropEdge(_ point: CGPoint, in size: CGSize) -> Heading? {
     let across = point.x / max(size.width, 1), down = point.y / max(size.height, 1)
     let distances: [(Heading, Double)] = [(.left, across), (.right, 1 - across), (.up, down), (.down, 1 - down)]
@@ -174,6 +194,8 @@ struct Landing: Equatable {
     let ids: [String]
     let offset: CGFloat
     let count: Int
+    /// A sidebar row's: the rows' own motion, which moves it at the same time.
+    var duration = 0.22, curve = UnitCurve.slide
 }
 
 extension View {
@@ -222,7 +244,7 @@ private struct Lands: ViewModifier {
                 .allowsHitTesting(offset == 0)
         } keyframes: { _ in
             MoveKeyframe(landing?.offset ?? 0)
-            LinearKeyframe(0, duration: 0.22, timingCurve: .slide)
+            LinearKeyframe(0, duration: landing?.duration ?? 0, timingCurve: landing?.curve ?? .slide)
         }
     }
 }

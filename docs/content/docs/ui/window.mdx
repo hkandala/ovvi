@@ -245,8 +245,9 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   `HostStore`, snapshot reads and an event stream.
 - **Session menu.** A right-click on the page header or on the sidebar's empty area under the rows shows the
   session's menu: New Space, Open Session…, Show Archived Sessions (Hide while it is open; not there while Settings
-  hides it), then Detach Session. New Space, Open Session… and Detach Session do what their menu bar items do; Show
-  Archived Sessions opens the shelf, Hide folds it.
+  hides it), Show Only Pinned Spaces (Show All Spaces while it is on; disabled with nothing pinned,
+  [Pinned spaces](#sidebar)), then Detach Session. New Space, Open Session… and Detach Session do what their menu bar
+  items do; Show Archived Sessions opens the shelf, Hide folds it.
 - **Detach Session.** The session menu and the context menu of its page dot
   have Detach Session (also in the File menu). It removes the page from this
   window. Its store disconnects, so its event stream and its terminal streams
@@ -290,28 +291,41 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   end, **Sort Spaces** (`arrow.up.arrow.down`, 11 pt semibold, so its glyph is as tall as the `+`'s, 10.5 pt) and a
   `+` that makes a new space in that session, in `$HOME`: two 28 pt buttons whose frames touch. The
   snapshot after it selects the new space.
-- **Sort Spaces.** A menu with a check on the current order of the unpinned spaces, the window's own (every page
-  of the window, kept with the window): a new window takes Settings ▸ Agents ▸ **Sort spaces** (Manual by default),
-  and follows it until its own menu picks.
+- **Sort Spaces.** A menu with a check on the current order of the unpinned spaces, the session's own (every
+  window that shows the session, kept in the sidebar's defaults as a line "‹machine› ‹session› sorted ‹order›"): a
+  session follows Settings ▸ Agents ▸ **Sort spaces** (Manual by default) until its own menu picks.
   **Manual** is herdr's order, which a drag or Move Up and Move Down change; **Recent** puts the space whose agent
   changed state last first (a start, a finish, a need: herdr's `state_change_seq`, one counter for the session; a
   look at a finish is no change), the spaces with no agent after in herdr's order, a worktree with its repository's
-  row. In Recent the rows hold still while the pointer is over them, and move 1 s after it leaves, sliding in 0.2 s
-  (no motion with Reduce Motion); the unpinned rows do not reorder (Move Up and Move Down are off on them), as
-  while the filter hides rows.
+  row. In Recent the rows hold still while the pointer is over them, and move 1 s after it leaves; the unpinned rows
+  do not reorder (Move Up and Move Down are off on them), as while the filter hides rows.
+- **Motion.** Every change of the rows' order slides them to their new places in one motion, a 0.2 s ease-out (none
+  with Reduce Motion): a sort, Move Up and Move Down, a pin or unpin, herdr's order, Recent's order, Show Only Pinned
+  Spaces, and a drag's start and drop. A change from a menu starts once the menu has closed, whose fade draws no
+  frame of it. A typed filter shows and hides rows at once.
 - **Pinned spaces.** Pin Space and Unpin Space, in a space row's context menu and the palette (on the space in
   view), keep a space at the top: the pinned ones in herdr's order whatever the sort, then a 1 pt line (primary at
   14 %) in the middle of a 20 pt gap, shown only while unpinned spaces follow, then the rest. Nothing says
   "pinned". A worktree goes with its repository (no Pin Space on its row). Pins are the session's, as herdr's order
-  is, kept in the sidebar's defaults (`pinnedSpaces`, a line per pin: machine, session, space); a space herdr no
-  longer has drops its pin. A drag of a space above the line pins it there (last of the pinned ones: right after
-  the last in herdr's order), under the line unpins it (in Manual at the drop's place; in Recent where Recent puts
-  it); the line hides while a space is dragged, as the rows slide across its place. With nothing pinned, a line
-  stands over the gap above the list while a space is dragged, tinted while a drop there would pin: the pointer
-  within 8 pt of the first row's top. In Recent a drag pins, unpins and reorders the pinned spaces,
-  never the rest.
+  is, kept in the sidebar's defaults (`pinnedSpaces`, a line per pin: "‹machine› ‹session› pinned ‹space›"); a
+  space herdr no longer has drops its pin.
+- **The pin region.** While a space is dragged, a row-sized region "Pin Space" takes the line's place (on top with
+  nothing pinned), as the New Space ghost row does for a pane: a dashed 1 pt outline (primary at 14 %, radius 10)
+  with secondary text, lit as a drop indicator (accent fill at 0.2, 2 pt accent stroke) while the dragged row's middle
+  is over it. A drop there pins the space, last of the pinned ones (right after the last in herdr's order). A drop
+  among the pinned rows pins it at that place; one under the region unpins it (in Manual at the drop's place; in
+  Recent where Recent puts it). In Recent a drag pins, unpins and reorders the pinned spaces, never the rest. Not
+  while the filter hides rows or only the pinned spaces show.
+- **Show Only Pinned Spaces**, in the session menu and the palette (Show All Spaces while it is on), hides the
+  unpinned spaces but the one a window shows, so the user never loses their place; with no line or pin region. It
+  is the session's, kept as a line "‹machine› ‹session› only pinned", disabled with nothing pinned, and ends when
+  the last pinned space is unpinned. A hidden space is as if it were not in the session: its agents show no state,
+  count toward no Dock badge, are not in the Dock menu, and send no notification, neither from herdr's states nor
+  from `ovvi notify` ([Notifications](/docs/status#notifications)). Show All Spaces brings their states back with no
+  notification for what changed meanwhile. The next and previous space keys, ⌃⌘1–9 and the overview skip them too.
 - **Order elsewhere.** Next and previous space (⌃⌘[ ]), ⌃⌘1–9, the overview, Move Pane to Tab and the palette follow
-  herdr's order with the pinned spaces first: the sidebar's in Manual. Not Recent's, which moves under the keys.
+  herdr's order with the pinned spaces first, less the hidden ones: the sidebar's in Manual. Not Recent's, which
+  moves under the keys.
 - **Middle.** The [space rows](#space-rows), 10 pt apart. 18 pt fades show at the top and
   bottom of the space list when content is under them. When the selected space
   changes, however it changes (a click, the overview, ⌃⌘[ ], ⌃⌘1–9, a
@@ -866,7 +880,7 @@ agents at once.
   the overview then shows; a sideways swipe alone goes nowhere. From the top:
   the session's title as the sidebar's
   page header has it (13 pt semibold; This Mac's name for `default`), then
-  the session's spaces in herdr's order, pinned ones first (the sidebar's in Manual), 32 pt apart: each
+  the session's spaces in herdr's order, pinned ones first, less the hidden ones (the sidebar's in Manual), 32 pt apart: each
   space's name (13 pt semibold, secondary), then its tabs as tiles in a
   grid, 2 to 4 a row (as many 340 pt tiles as fit), 16 pt apart. Wide
   margins all round: 8 % of the window's width

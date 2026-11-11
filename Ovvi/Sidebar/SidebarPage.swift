@@ -9,29 +9,50 @@ struct SidebarPage: View {
     var openSession: () -> Void = {}
     private var settings = AppSettings()
     typealias Row = (workspace: HostStore.Workspace, parent: HostStore.Workspace?)
+    /// A row, or the place under the pinned spaces: the line, or the pin region while a space is dragged.
+    enum Item: Identifiable {
+        case row(Row), pins
+
+        var id: String {
+            if case let .row(row) = self {
+                row.workspace.id
+            } else {
+                PinRegion.id
+            }
+        }
+    }
+
     @AppStorage(Page.openShelves, store: .agents) private var opened = ""
-    @Environment(\.spaceOrder) private var windowOrder
     @State private var held: [String]?
     @State private var hovering = false
     @State private var leaves = 0
 
     @State private var frames = RowFrames()
     @State private var drop = RowsDrop.State()
+    @State private var landing: Landing?
+    /// The order's changes with a motion and without, for the tests (`recordMotion`).
+    @State private var moves = (animated: 0, still: 0)
     @State private var plus = false
     @State private var position = ScrollPosition(idType: String.self)
 
     var body: some View {
         let store = page.store
-        let pinned = store.pins, all = store.groups
+        let pinned = store.pins, all = store.groups, hidden = store.hidden
         let spaceDrag: String? = if case let .workspace(id) = page.dragging {
             id
         } else {
             nil
         }
         let top = all.filter { pinned.contains($0[0].id) }
-        let rest = sorted(all.filter { !pinned.contains($0[0].id) })
-        let rowsDrop = RowsDrop(page: page, frames: frames, state: $drop, reorders: filter.isEmpty, shown: top + rest,
-                                pinned: pinned, order: spaceOrder)
+        let rest = sorted(all.filter { !pinned.contains($0[0].id) && !hidden.contains($0[0].id) })
+        // Not for a worktree, which goes with its repository; nothing to drag in while only the pinned ones show.
+        let region = filter.isEmpty && !store.onlyPinned && all.contains { $0[0].id == spaceDrag }
+        let items = items(top, rest, region: region)
+        // Not the filter's: typed, its rows come and go at once.
+        let order = top.map(\.[0].id) + ["pins"] + rest.map(\.[0].id) + [spaceDrag ?? ""]
+        let rowsDrop = RowsDrop(page: page, frames: frames, state: $drop, reorders: filter.isEmpty,
+                                shown: top + (region ? [[]] : []) + rest, pinned: pinned, order: spaceOrder,
+                                land: land)
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 0) {
                 Text(store.title).truncationMode(.middle)
@@ -61,71 +82,43 @@ struct SidebarPage: View {
             ScrollView {
                 // Lazy: at hundreds of spaces and agents an eager stack makes and lays out every row in each update.
                 LazyVStack(alignment: .leading, spacing: WorkspaceRow.gap) {
-                    let rows = rows(in: top + rest)
-                    // The line under the pinned spaces, when unpinned ones follow.
-                    let line = rows.last { pinned.contains(($0.parent ?? $0.workspace).id) }?.workspace.id
-                    let lined = rows.contains { !pinned.contains(($0.parent ?? $0.workspace).id) } ? line : nil
-                    ForEach(Array(rows.enumerated()), id: \.element.workspace.id) { index, row in
-                        let id = row.workspace.id, hasAgents = runsAgents(row.workspace)
-                        let isPinned = pinned.contains((row.parent ?? row.workspace).id),
-                            section = isPinned ? top : rest
-                        let shown = hasAgents && (!folds(id) || !filter.isEmpty) ? agents(of: row.workspace) : []
-                        WorkspaceRow(workspace: row.workspace, parent: row.parent, page: page, frames: frames,
-                                     guideBelow: rows.indices.contains(index + 1)
-                                         && rows[index + 1].parent != nil,
-                                     ends: spaceOrder == .recent && !isPinned ? (id, id)
-                                         : (section.first?.first?.id, section.last?.first?.id),
-                                     pinned: isPinned,
-                                     agents: shown, hasAgents: hasAgents,
-                                     fold: filter.isEmpty ? { fold(id) } : nil)
-                            .equatable()
-                            .overlay {
-                                if drop.over == id, page.dragging != nil {
-                                    DropIndicator()
+                    ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                        switch item {
+                        case let .row(row):
+                            let next = items.indices.contains(index + 1) ? items[index + 1] : nil
+                            self.row(row, top: top, rest: rest, guideBelow: next.map {
+                                if case let .row(row) = $0 {
+                                    row.parent != nil
+                                } else {
+                                    false
                                 }
-                            }
-                            .opacity(page.lifted == .workspace(id) ? 0.4 : 1)
-                            .offset(y: rowsDrop.shift(id))
-                            // Outside the drag's slide, so a moving row reports its place.
-                            .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("rows")) } action: {
-                                frames.rows[id] = $0
-                            }
-                            // A dragged row keeps its target (content frames hold through a scroll) for its slide and
-                            // landing.
-                            .onDisappear {
-                                if page.dragging != .workspace(id) {
-                                    frames.rows[id] = nil
+                            } ?? false, rowsDrop: rowsDrop)
+                        case .pins:
+                            pins(region: region)
+                                .offset(y: rowsDrop.shift(PinRegion.id))
+                                .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("rows")) } action: {
+                                    frames.rows[PinRegion.id] = $0
                                 }
-                            }
-                            .background {
-                                Color.clear.id("into view \(id)").padding(.top, -18).padding(.bottom, -18 - bottom)
-                                    .onAppear {
-                                        if frames.wanted == id {
-                                            frames.wanted = nil
-                                            position.scrollTo(id: "into view \(id)")
-                                        }
-                                    }
-                            }
-                            // On the middle of a gap twice the rows'.
-                            .padding(.bottom, lined == id ? WorkspaceRow.gap : 0)
-                            .overlay(alignment: .bottom) {
-                                // Hidden while a space is dragged: the rows slide across its place.
-                                if lined == id, spaceDrag == nil {
-                                    Rectangle().fill(.primary.opacity(0.14)).frame(height: 1).offset(y: 0.5)
-                                        .accessibilityIdentifier("sidebar.pinned-line")
-                                }
-                            }
+                                .onDisappear { frames.rows[PinRegion.id] = nil }
+                        }
                     }
                     if drop.ghost, page.dragging != nil {
-                        Text("New Space").foregroundStyle(.secondary).padding(.leading, WorkspaceRow.textInset)
-                            .frame(maxWidth: .infinity, minHeight: 30, alignment: .leading)
-                            .background { DropIndicator() }
+                        DropRow(title: "New Space", lit: true)
                     }
-                    if rows.isEmpty, !store.workspaces.isEmpty {
+                    if items.isEmpty, !store.workspaces.isEmpty {
                         EmptyState(symbol: "magnifyingglass", title: "No matching spaces", compact: true)
                             .frame(maxWidth: .infinity)
                     }
                 }
+                // Every move of the rows (a sort, a pin, Move Up, herdr's order, Show Only Pinned Spaces, a drag's
+                // start and drop) in one motion.
+                .transaction(value: order) { transaction in
+                    if SettlingHost.record {
+                        let animated = transaction.animation != nil
+                        Task { animated ? (moves.animated += 1) : (moves.still += 1) }
+                    }
+                }
+                .animation(motion, value: order)
                 .padding(Sidebar.rowInsets)
                 .padding(.bottom, bottom)
                 // The content's own space, which a scroll does not move: no frame changes at every scroll frame.
@@ -162,12 +155,7 @@ struct SidebarPage: View {
                 drop = RowsDrop.State()
             }
             .fadesScrolledEdges(end: 18 + bottom)
-            // Outside the fade's mask, over the header's bottom padding.
-            .overlay(alignment: .top) {
-                if pinned.isEmpty, filter.isEmpty, let spaceDrag, all.contains(where: { $0[0].id == spaceDrag }) {
-                    pinLine
-                }
-            }
+            .testValue("sidebar.moves", "Moves", "\(moves.animated) \(moves.still)", shown: SettlingHost.record)
             .onContinuousHover { phase in
                 switch phase {
                 case let .active(point):
@@ -187,66 +175,97 @@ struct SidebarPage: View {
             .task(id: leaves) {
                 try? await Task.sleep(for: .seconds(1))
                 if !Task.isCancelled, !hovering, held != nil {
-                    withAnimation(motion) {
-                        held = nil
-                    }
+                    held = nil
                 }
             }
-        }
-    }
-
-    /// Not observed: rows write their frames as the lazy stack makes them, and a body for each would make the rows in
-    /// view again.
-    final class RowFrames {
-        var rows: [String: CGRect] = [:]
-        var top: CGFloat = 0
-        var targets: [String: CGRect] = [:]
-        var point: CGPoint?
-        var scrolling = false
-        /// The selected row, asked into view before the lazy stack made it.
-        var wanted: String?
-        /// One hover for the list: a hover region in each row costs every scroll frame a hit test of each (half the
-        /// frames at 200 spaces). Each target observes its own light: one value all observe lights every made button
-        /// again.
-        var pointer: String? {
-            didSet {
-                if pointer != oldValue {
-                    oldValue.map { light($0).lit = false }
-                    pointer.map { light($0).lit = true }
-                }
-            }
-        }
-
-        private var lights: [String: RowLight] = [:]
-
-        /// ponytail: a light per target made, kept with the page (a few hundred); prune with the targets if it grows.
-        func light(_ id: String) -> RowLight {
-            let light = lights[id] ?? RowLight()
-            lights[id] = light
-            return light
-        }
-
-        func aim() {
-            let point = scrolling ? nil : point.map { CGPoint(x: $0.x, y: $0.y + top) }
-            pointer = point.flatMap { point in targets.first { $0.value.contains(point) }?.key }
         }
     }
 }
 
 private extension SidebarPage {
-    /// While a space is dragged and none is pinned: the line's place, over the gap above the rows; a drop at the
-    /// list's top (`RowsDrop.pinZone`) pins it.
-    private var pinLine: some View {
-        Rectangle().fill(drop.pinning ? AnyShapeStyle(.tint) : AnyShapeStyle(.primary.opacity(0.14)))
-            .frame(height: drop.pinning ? 2 : 1)
-            .padding(.horizontal, Sidebar.rowInsets.leading)
-            .offset(y: -4)
-            .allowsHitTesting(false)
-            .accessibilityIdentifier("sidebar.pin-line")
+    /// The dropped row's glide in the rows' own motion, which moves it too.
+    func land(_ ids: [String], _ offset: CGFloat) {
+        if !Animation.reduced {
+            landing = Landing(
+                ids: ids,
+                offset: offset,
+                count: (landing?.count ?? 0) + 1,
+                duration: 0.2,
+                curve: .easeOut,
+            )
+        }
     }
 
     private var spaceOrder: SpaceOrder {
-        SpaceOrder(rawValue: windowOrder.wrappedValue) ?? settings.spaceOrder
+        page.store.order ?? settings.spaceOrder
+    }
+
+    func row(_ row: Row, top: [[HostStore.Workspace]], rest: [[HostStore.Workspace]], guideBelow: Bool,
+             rowsDrop: RowsDrop) -> some View
+    {
+        let id = row.workspace.id, hasAgents = runsAgents(row.workspace)
+        let isPinned = page.store.pins.contains((row.parent ?? row.workspace).id), section = isPinned ? top : rest
+        let shown = hasAgents && (!folds(id) || !filter.isEmpty) ? agents(of: row.workspace) : []
+        return WorkspaceRow(workspace: row.workspace, parent: row.parent, page: page, frames: frames,
+                            guideBelow: guideBelow,
+                            ends: spaceOrder == .recent && !isPinned ? (id, id)
+                                : (section.first?.first?.id, section.last?.first?.id),
+                            pinned: isPinned, agents: shown, hasAgents: hasAgents,
+                            fold: filter.isEmpty ? { fold(id) } : nil)
+            .equatable()
+            .overlay {
+                if drop.over == id, page.dragging != nil {
+                    DropIndicator()
+                }
+            }
+            .opacity(page.lifted == .workspace(id) ? 0.4 : 1)
+            .offset(y: rowsDrop.shift(id))
+            .lands(id, landing, axis: .vertical)
+            // Outside the drag's slide and the drop's glide, so a moving row reports its place.
+            .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("rows")) } action: {
+                frames.rows[id] = $0
+            }
+            // A dragged row keeps its target (content frames hold through a scroll) for its slide and landing.
+            .onDisappear {
+                if page.dragging != .workspace(id) {
+                    frames.rows[id] = nil
+                }
+            }
+            .background {
+                Color.clear.id("into view \(id)").padding(.top, -18).padding(.bottom, -18 - bottom)
+                    .onAppear {
+                        if frames.wanted == id {
+                            frames.wanted = nil
+                            position.scrollTo(id: "into view \(id)")
+                        }
+                    }
+            }
+    }
+
+    /// The pin region while a space is dragged, lit while the drop would pin; else the line on the middle of a gap
+    /// twice the rows'.
+    @ViewBuilder
+    func pins(region: Bool) -> some View {
+        if region {
+            DropRow(title: "Pin Space", lit: drop.region)
+                .accessibilityElement(children: .ignore)
+                .accessibilityAddTraits(.isStaticText)
+                .accessibilityValue(drop.region ? "lit" : "")
+                .accessibilityIdentifier("sidebar.pin-region")
+        } else {
+            Color.clear.frame(height: 0).overlay {
+                Rectangle().fill(.primary.opacity(0.14)).frame(height: 1)
+                    .accessibilityIdentifier("sidebar.pinned-line")
+            }
+        }
+    }
+
+    /// The rows with the place under the pinned ones: the pin region while a space is dragged, else the line while
+    /// unpinned ones follow (not while only the pinned ones show).
+    func items(_ top: [[HostStore.Workspace]], _ rest: [[HostStore.Workspace]], region: Bool) -> [Item] {
+        let pinned = rows(in: top).map(Item.row), others = rows(in: rest).map(Item.row)
+        let line = !pinned.isEmpty && !others.isEmpty && !page.store.onlyPinned
+        return pinned + (region || line ? [.pins] : []) + others
     }
 
     /// Recent: the group whose agent changed state last first, held still under the pointer.
@@ -310,6 +329,10 @@ private extension SidebarPage {
                 }
             }
         }
+        Button(page.store.onlyPinned ? "Show All Spaces" : "Show Only Pinned Spaces") {
+            afterMenu { page.store.onlyPinned.toggle() }
+        }
+        .disabled(page.store.pins.isEmpty)
         Divider()
         Button("Detach Session") { pages.close(page) }.disabled(!pages.canDetach)
     }
@@ -318,7 +341,7 @@ private extension SidebarPage {
         Menu {
             Picker(
                 "Sort Spaces",
-                selection: Binding { spaceOrder } set: { windowOrder.wrappedValue = $0.rawValue }.animation(motion),
+                selection: Binding { spaceOrder } set: { order in afterMenu { page.store.order = order } },
             ) {
                 Text("Manual").tag(SpaceOrder.manual)
                 Text("Recent").tag(SpaceOrder.recent)
@@ -343,9 +366,4 @@ private extension SidebarPage {
     var motion: Animation? {
         Animation.reduced ? nil : .easeOut(duration: 0.2)
     }
-}
-
-@Observable
-final class RowLight {
-    var lit = false
 }

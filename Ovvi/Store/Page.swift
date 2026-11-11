@@ -11,6 +11,10 @@ final class Page: Identifiable {
         didSet {
             newest = selectedWorkspaceID == oldValue ? newest : nil
             leaving(oldValue.flatMap { selectedWorkspaceID != $0 ? selectedTabIDs[$0] : nil })
+            // The space in view is never hidden.
+            if store.onlyPinned, selectedWorkspaceID != oldValue {
+                store.showStates()
+            }
         }
     }
 

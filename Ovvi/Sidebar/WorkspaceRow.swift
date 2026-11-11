@@ -168,22 +168,12 @@ struct WorkspaceRow: View, Equatable {
         let first = ends.first == workspace.id, last = ends.last == workspace.id
         Button("New Tab") { Task { await page.newTab(in: workspace) } }
         Button("Rename Space") { startRenaming() }
-        Button("Move Up") { move(by: -1) }
+        Button("Move Up") { afterMenu { move(by: -1) } }
             .disabled(parent != nil || first)
-        Button("Move Down") { move(by: 1) }
+        Button("Move Down") { afterMenu { move(by: 1) } }
             .disabled(parent != nil || last)
         if parent == nil {
-            Button(pinned ? "Unpin Space" : "Pin Space") {
-                // Once the menu has closed: its fade draws no animation frame, so the move showed half done, then a
-                // jump.
-                RunLoop.main.perform(inModes: [.default]) {
-                    MainActor.assumeIsolated {
-                        withAnimation(Animation.reduced ? nil : .easeOut(duration: 0.2)) {
-                            page.togglePin(workspace.id)
-                        }
-                    }
-                }
-            }
+            Button(pinned ? "Unpin Space" : "Pin Space") { afterMenu { page.togglePin(workspace.id) } }
         }
         if workspace.git != nil {
             Divider()
