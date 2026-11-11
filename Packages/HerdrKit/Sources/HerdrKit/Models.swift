@@ -229,7 +229,7 @@ public struct Program: Equatable, Sendable {
         public let argv: [String]
         /// Its name and `argv[0]`: a Node CLI that sets its process title (npm's pi) is `node` with the title as
         /// `argv[0]`, and macOS lists no other argument for it.
-        public var name = ""
+        public let name: String
         public var argv0: String?
     }
 

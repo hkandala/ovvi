@@ -19,12 +19,8 @@ public struct PaneLabel: Equatable, Sendable {
         let body = label.dropFirst(5), head = body.prefix { $0 != " " }
         guard let hash = head.firstIndex(of: "#") else { return nil }
         let plugin = head[..<hash], iid = head[head.index(after: hash)...]
-        func word(_ text: Substring, _ most: Int, _ also: String) -> Bool {
-            let low = { (char: Character) in char.isASCII && (char.isLowercase || char.isNumber) }
-            return (1 ... most).contains(text.count) && text.first.map(low) == true
-                && text.allSatisfy { low($0) || also.contains($0) }
-        }
-        guard PluginManifest.isID(plugin), iid.count == 6, word(iid, 6, "") else { return nil }
+        let low = { (char: Character) in char.isASCII && (char.isLowercase || char.isNumber) }
+        guard PluginManifest.isID(plugin), iid.count == 6, iid.allSatisfy(low) else { return nil }
         let arg = String(body[head.endIndex...].drop { $0 == " " })
         guard arg.count <= Self.argLimit, !arg.contains(where: \.isControl) else { return nil }
         self.init(plugin: String(plugin), iid: String(iid), arg: arg)
@@ -83,12 +79,6 @@ extension Character {
 }
 
 public extension Exec {
-    /// Each writer goes through its own temporary file; last writer wins. Only the user can read it.
-    func write(home path: String, _ line: String) async {
-        let script = #"umask 077; f="$HOME/$1"; mkdir -p "${f%/*}" && cat >"$f.$$" && mv "$f.$$" "$f""#
-        await succeeds(script, [path], input: [line])
-    }
-
     /// Every write refreshes a file's age.
     func pruneState(session: String) async {
         _ = try? await output([
@@ -98,9 +88,5 @@ public extension Exec {
             "sh",
             session,
         ])
-    }
-
-    func remove(home path: String) async {
-        _ = try? await output(["sh", "-c", #"rm -f "$HOME/$1""#, "sh", path])
     }
 }

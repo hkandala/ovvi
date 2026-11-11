@@ -21,6 +21,16 @@ public extension Exec {
         return text?.isEmpty == false ? text : nil
     }
 
+    /// Each writer goes through its own temporary file; last writer wins. Only the user can read it.
+    func write(home path: String, _ line: String) async {
+        let script = #"umask 077; f="$HOME/$1"; mkdir -p "${f%/*}" && cat >"$f.$$" && mv "$f.$$" "$f""#
+        await succeeds(script, [path], input: [line])
+    }
+
+    func remove(home path: String) async {
+        _ = try? await output(["sh", "-c", #"rm -f "$HOME/$1""#, "sh", path])
+    }
+
     func output(_ argv: [String], timeout: Duration = .seconds(10)) async throws -> String {
         let channel = try await run(argv)
         channel.closeInput()
