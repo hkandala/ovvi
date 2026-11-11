@@ -29,7 +29,8 @@ struct SidebarPage: View {
 
     @State private var frames = RowFrames()
     @State private var drop = RowsDrop.State()
-    @State private var landing: Landing?
+    /// The dropped row's way from its place to the drag image's, which the rows' motion takes to 0.
+    @State private var landing: (ids: [String], offset: CGFloat)?
     /// The order's changes with a motion and without, for the tests (`recordMotion`).
     @State private var moves = (animated: 0, still: 0)
     @State private var plus = false
@@ -184,16 +185,13 @@ struct SidebarPage: View {
 }
 
 private extension SidebarPage {
-    /// The dropped row's glide in the rows' own motion, which moves it too.
+    /// At the drag image in the drop's update, outside the rows' motion; then to its place in that motion, so with the
+    /// rows' own move it goes from the image to its new place on one curve.
     func land(_ ids: [String], _ offset: CGFloat) {
-        if !Animation.reduced {
-            landing = Landing(
-                ids: ids,
-                offset: offset,
-                count: (landing?.count ?? 0) + 1,
-                duration: 0.2,
-                curve: .easeOut,
-            )
+        guard let motion else { return }
+        withTransaction(\.disablesAnimations, true) { landing = (ids, offset) }
+        DispatchQueue.main.async {
+            withAnimation(motion) { landing = nil }
         }
     }
 
@@ -220,8 +218,7 @@ private extension SidebarPage {
                 }
             }
             .opacity(page.lifted == .workspace(id) ? 0.4 : 1)
-            .offset(y: rowsDrop.shift(id))
-            .lands(id, landing, axis: .vertical)
+            .offset(y: rowsDrop.shift(id) + (landing.map { $0.ids.contains(id) ? $0.offset : 0 } ?? 0))
             // Outside the drag's slide and the drop's glide, so a moving row reports its place.
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("rows")) } action: {
                 frames.rows[id] = $0

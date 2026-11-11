@@ -60,7 +60,7 @@ struct TabBar: View {
                                 .scaleEffect(pulsing == tab.id ? 1.04 : 1)
                                 .opacity(page.lifted == .tab(tab.id) ? 0.4 : 1)
                                 .offset(x: shift(index))
-                                .lands(tab.id, landing, axis: .horizontal)
+                                .lands(tab.id, landing)
                         }
                         .onAppear {
                             if SettlingHost.record {

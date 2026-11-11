@@ -194,15 +194,13 @@ struct Landing: Equatable {
     let ids: [String]
     let offset: CGFloat
     let count: Int
-    /// A sidebar row's: the rows' own motion, which moves it at the same time.
-    var duration = 0.22, curve = UnitCurve.slide
 }
 
 extension View {
     /// No hover meanwhile: a view passing under the still pointer takes the hover and keeps it (no hover event
     /// follows).
-    func lands(_ id: String, _ landing: Landing?, axis: Axis) -> some View {
-        modifier(Lands(landing: landing?.ids.contains(id) == true ? landing : nil, axis: axis))
+    func lands(_ id: String, _ landing: Landing?) -> some View {
+        modifier(Lands(landing: landing?.ids.contains(id) == true ? landing : nil))
     }
 
     /// After a drop, a `dropUpdated` can come after `performDrop` with no `dropExited` to follow, even once the session
@@ -237,15 +235,14 @@ private struct DragSourceModifier: ViewModifier {
 
 private struct Lands: ViewModifier {
     let landing: Landing?
-    let axis: Axis
 
     func body(content: Content) -> some View {
         content.keyframeAnimator(initialValue: 0, trigger: landing) { content, offset in
-            content.offset(x: axis == .horizontal ? offset : 0, y: axis == .vertical ? offset : 0)
+            content.offset(x: offset)
                 .allowsHitTesting(offset == 0)
         } keyframes: { _ in
             MoveKeyframe(landing?.offset ?? 0)
-            LinearKeyframe(0, duration: landing?.duration ?? 0, timingCurve: landing?.curve ?? .slide)
+            LinearKeyframe(0, duration: 0.22, timingCurve: .slide)
         }
     }
 }
