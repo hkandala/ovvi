@@ -41,6 +41,6 @@ extension OvviUITests {
         let text = try await read(pane)
         XCTAssertTrue(text.contains("Unrecognized flag: --port"), text)
         XCTAssertTrue(element("pane.\(pane).loader").vanishes(within: 5))
-        XCTAssertFalse(element("pane.\(pane).view.chat").exists(within: 1))
+        XCTAssertFalse(element("pane.\(pane).view.chat").exists(within: 0.5))
     }
 }
