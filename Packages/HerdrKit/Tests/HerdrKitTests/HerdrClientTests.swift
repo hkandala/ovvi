@@ -90,8 +90,8 @@ final class FakeExec: Exec {
 
 /// A bound for a failure only: the HerdrKit tests start together, many spawning processes, and on CI's 3 cores a
 /// client's first reads took over 3 s.
-func eventually(within timeout: Duration = .seconds(20), _ condition: () async -> Bool) async -> Bool {
-    let deadline = ContinuousClock.now + timeout
+func eventually(_ condition: () async -> Bool) async -> Bool {
+    let deadline = ContinuousClock.now + .seconds(20)
     while await !condition() {
         guard ContinuousClock.now < deadline else { return false }
         try? await Task.sleep(for: .milliseconds(10))

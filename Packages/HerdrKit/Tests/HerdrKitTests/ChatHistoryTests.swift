@@ -14,25 +14,13 @@ private func history() throws -> ChatHistory {
 
 @Test func `claude transcript gives user text, replies and tools with their results`() throws {
     let history = try history()
-    let users = history.entries.compactMap {
-        if case let .user(text) = $0.kind {
-            text
-        } else {
-            nil
-        }
-    }
+    let users = history.entries.compactMap(\.user)
     // Task notices are not the user's; the queued prompt is.
     #expect(users.count == 6)
     #expect(users[0] == "Reply with just the word hello.")
     #expect(users.contains("Queued: say queued-ok."))
     #expect(history.model == "claude-opus-5-5")
-    let tools = history.entries.compactMap {
-        if case let .tool(tool) = $0.kind {
-            tool
-        } else {
-            nil
-        }
-    }
+    let tools = history.entries.compactMap(\.tool)
     #expect(tools.allSatisfy { $0.result != nil })
     let edit = try #require(tools.first { $0.name == "edit" })
     #expect(edit.target == "notes.txt" && edit.result == "+1 -1")

@@ -10,16 +10,6 @@ private func fixture(_ name: String, _ type: String) throws -> String {
 
 private let first = "ses_e7d8c818bffeiWemFHC4CGIFNZ"
 
-private func tools(_ history: ChatHistory) -> [ChatTool] {
-    history.entries.compactMap {
-        if case let .tool(tool) = $0.kind {
-            tool
-        } else {
-            nil
-        }
-    }
-}
-
 @Test func `opencode history gives user text, replies, tools with results, turn ends and interrupts`() throws {
     var session = OpenCodeSession(id: first)
     let loaded = try session.load(fixture("opencode-messages", "json"))
@@ -27,7 +17,7 @@ private func tools(_ history: ChatHistory) -> [ChatTool] {
     let history = session.history
     #expect(history.entries.first?.kind == .user("Run the shell command: echo hi-ovvi. Then reply with one word."))
     #expect(history.model == "claude-haiku-4-5")
-    let tools = tools(history)
+    let tools = history.entries.compactMap(\.tool)
     #expect(tools.map(\.name) == ["bash", "question", "read", "edit", "bash"])
     #expect(tools[0].target == "echo hi-ovvi" && tools[0].result == "hi-ovvi" && tools[0].category == .command)
     #expect(tools[0].input.hasPrefix("command: echo hi-ovvi") && tools[0].output == "hi-ovvi", "\(tools[0].input)")
@@ -60,7 +50,7 @@ private func tools(_ history: ChatHistory) -> [ChatTool] {
     let entries = live.history.entries
     #expect(!entries.isEmpty)
     #expect(Array(loaded.history.entries.prefix(entries.count)).map(\.kind) == entries.map(\.kind))
-    #expect(tools(live.history).allSatisfy { $0.result != nil })
+    #expect(live.history.entries.compactMap(\.tool).allSatisfy { $0.result != nil })
 }
 
 @Test func `a unified diff gives numbered lines, its headers skipped`() {

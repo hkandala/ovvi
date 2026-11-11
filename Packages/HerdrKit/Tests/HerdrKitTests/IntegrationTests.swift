@@ -197,15 +197,6 @@ private func talk(_ client: HerdrClient, _ exec: SubscribeCounter) async throws 
     #expect(try String(contentsOfFile: shell + ".count", encoding: .utf8) == "\n")
 }
 
-private struct NewWorkspace: Decodable {
-    struct Pane: Decodable {
-        let pane_id: String // swiftlint:disable:this identifier_name
-        let terminal_id: String // swiftlint:disable:this identifier_name
-    }
-
-    let root_pane: Pane // swiftlint:disable:this identifier_name
-}
-
 private func closedReason(_ events: inout AsyncStream<TerminalStream.Event>.Iterator) async -> TerminalStream.Closed? {
     while let event = await events.next() {
         if case let .closed(reason) = event {
@@ -221,8 +212,9 @@ func `controls a throwaway terminal`() async throws {
 }
 
 private func control(_ client: HerdrClient) async throws {
-    let pane = try await (client.call("workspace.create", ["cwd": "/tmp", "focus": false]) as NewWorkspace).root_pane
-    let terminal = pane.terminal_id
+    let pane = try #require(try await (client.call("workspace.create", ["cwd": "/tmp", "focus": false]) as Created)
+        .rootPane)
+    let terminal = try #require(pane.terminalID)
 
     try await withTimeout(.seconds(20), onTimeout: {}, {
         let control = try await client.terminal(terminal, cols: 60, rows: 12)
@@ -234,7 +226,7 @@ private func control(_ client: HerdrClient) async throws {
         var text = ""
         for _ in 0 ..< 50 where !text.contains("12 60") {
             try await Task.sleep(for: .milliseconds(100))
-            text = try await client.screen(pane.pane_id)
+            text = try await client.screen(pane.id)
         }
         #expect(text.contains("ovvi-42"))
         #expect(text.contains("12 60"))

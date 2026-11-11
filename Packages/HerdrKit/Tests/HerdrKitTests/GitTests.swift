@@ -24,7 +24,7 @@ import Testing
 }
 
 @Test func `reads a checkout's status and nothing outside one`() async {
-    let exec = ProcessExec(ProcessInfo.processInfo.environment, herdr: nil, asked: .now)
+    let exec = localExec
     #expect(await GitStatus.of(URL(filePath: #filePath).deletingLastPathComponent().path, exec: exec) != nil)
     #expect(await GitStatus.of("/", exec: exec) == nil)
     #expect(await GitStatus.usable(exec: exec))
