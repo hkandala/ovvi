@@ -185,6 +185,13 @@ extension OvviUITests {
         let terminal = element("terminal.\(pane)")
         XCTAssertTrue(terminal.has(\.isHittable, true, within: 3))
         try await waitForPrompt(pane)
+        // Its folder panel would show this Mac's folders.
+        terminal.click()
+        app.menuBars.menuBarItems["File"].click()
+        let goTo = app.menuBars.menuItems["Go to Directory…"]
+        XCTAssertTrue(goTo.exists(within: 2))
+        XCTAssertFalse(goTo.isEnabled)
+        app.typeKey(.escape, modifierFlags: [])
         try await send("cat ", to: pane)
         let from = element("sidebar").frame, card = terminal.frame
         let points = "\(from.midX) \(from.midY) \(card.midX) \(card.midY)"

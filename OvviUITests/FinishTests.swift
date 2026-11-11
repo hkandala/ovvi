@@ -170,7 +170,8 @@ extension OvviUITests {
         try await send(
             "rm -rf \(folder) && mkdir -p \(folder) && touch \(folder)/notes.md \(folder)/page.html && clear; "
                 + "echo ftp://example.com/x; echo \(address).; echo /reload your open pi; echo \(folder)/notes.md.; "
-                + "echo \(folder)/page.html\r",
+                + "echo \(folder)/page.html; echo /compact now; echo \(folder)/notes.md then more.; "
+                + "echo \(folder)/gone\r",
             to: pane,
         )
         try await waitFor(pane) { $0.hasPrefix("ftp://example.com/x\n\(address).\n") }
@@ -200,11 +201,32 @@ extension OvviUITests {
         let side = try await sidePane(in: tab, besides: [pane])
         try await labelEnds(side, " \(folder)/notes.md")
 
+        try await notLinksAndGone(terminal, link, folder, tabs: tabs.count + 1)
+
         link(1).rightClick()
         XCTAssertTrue(app.windows.menuItems["Select All"].exists(within: 2))
         XCTAssertFalse(app.windows.menuItems["Open to the Side"].exists)
         keepScreenshot("terminal menu over a link")
         app.typeKey(.escape, modifierFlags: [])
+    }
+
+    private func notLinksAndGone(_ terminal: XCUIElement, _ link: (Double) -> XCUICoordinate, _ folder: String,
+                                 tabs: Int) async throws
+    {
+        step("A slash command is no link, and a path ends before the words after it")
+        link(5).hover()
+        XCUIElement.perform(withKeyModifiers: .option) {
+            XCTAssertFalse(until(1) { !terminal.title.isEmpty }, terminal.title)
+            link(6).hover()
+            XCTAssertTrue(until(3) { terminal.title == "\(folder)/notes.md" }, terminal.title)
+        }
+
+        step("A path with nothing there says so")
+        XCUIElement.perform(withKeyModifiers: .command) { link(7).click() }
+        XCTAssertTrue(element("detail.notice").staticTexts
+            .matching(NSPredicate(format: "value CONTAINS 'File not found: \(folder)/gone'"))
+            .firstMatch.exists(within: 3))
+        await XCTAssertEqual(try tabIDs().count, tabs)
     }
 
     private func optionShowsLinks(_ terminal: XCUIElement, _ start: XCUICoordinate, _ first: String,

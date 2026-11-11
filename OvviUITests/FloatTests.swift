@@ -139,6 +139,34 @@ extension OvviUITests {
         XCTAssertTrue(element("pane.\(third).show").vanishes(within: 3))
     }
 
+    func testALinkInAFloatingCardOpensInAFloatingWindow() async throws {
+        let (tab, pane) = try await newTab("float-link")
+        element("tab.\(tab)").click()
+        XCTAssertTrue(element("terminal.\(pane)").exists(within: 3))
+        let window = float(pane)
+        let terminal = element("terminal.\(pane)", in: window)
+        XCTAssertTrue(terminal.exists(within: 3))
+        let address = "https://example.com/ovvi-float"
+        try await waitForPrompt(pane)
+        try await send("clear; echo \(address)\r", to: pane)
+        try await waitFor(pane) { $0.hasPrefix("\(address)\n") }
+        let grid = try XCTUnwrap(terminal.value as? String).split(separator: " ").compactMap { Double($0) }
+        let cell = CGSize(width: terminal.frame.width / grid[1], height: terminal.frame.height / grid[0])
+        let link = terminal.coordinate(withNormalizedOffset: .zero)
+            .withOffset(CGVector(dx: cell.width * 5.5, dy: cell.height * 0.5))
+        let before = try await tabIDs()
+        link.hover()
+        // ⌥: to the side in a main window, here in a floating window too.
+        XCUIElement.perform(withKeyModifiers: .option) { link.click() }
+        let made = try await newTabID(after: before)
+        closeAfter("tab", made)
+        let browser = try await self.pane(of: made)
+        XCTAssertTrue(app.windows.containing(.any, identifier: "float.\(browser)").firstMatch.exists(within: 5))
+        await XCTAssertEqual(try order(tab), [pane])
+        element("float.\(pane).detach", in: window).click()
+        XCTAssertTrue(window.vanishes(within: 3))
+    }
+
     func testClosingAFloatedPaneAsksInItsWindow() async throws {
         let (other, shell) = try await newTab("float-close-other")
         // A startup program still running would make its close ask.

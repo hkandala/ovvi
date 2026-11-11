@@ -760,13 +760,17 @@ terminal.
   as with neither: in Markdown (locked, and unlocked off the caret's line)
   an underline and the pointing hand, in the browser the page's own look.
   The terminal, where only ⌘- and ⌥-click open a link, shows an underline
-  and the pointing hand only while ⌘ or ⌥ is down, the same for either.
+  and the pointing hand only while ⌘ or ⌥ alone is down, the same for
+  either. ⌃, ⇧ or a pair of keys shows none.
 - **In the background** means that the selected tab and the keyboard stay
   where they are: a ⌘-click on one link after another opens each one. The
   menu's Open in New Tab and Open to the Side open in the background too.
-- **A new tab** is in the card's space, on the same machine, also from a
-  floating window ([New tabs](#tab-bar)). **To the side** is a split to the
-  right of the card.
+- **A new tab** is in the card's space, on the same machine ([New
+  tabs](#tab-bar)). **To the side** is a split to the right of the card.
+- **From a floating card** ([Floating pane](#floating-pane)), a link that
+  would open in a new tab or to the side opens in a new tab after the card's
+  tab, floated in a window of its own: ⌘-click and ⌥-click do the same
+  there, in every card, the browser too.
 - **Lists select first.** In File Explorer's tree and Git's commit list a
   click selects a row and a double-click opens it (in the tree also ⌘O, in
   Git's list Return), as in the Finder. ⌘-click and ⌥-click open at once.
@@ -784,32 +788,45 @@ terminal.
   rule ([When a page loads by
   itself](/docs/ui/browser#when-a-page-loads-by-itself)). One opened from
   the browser is approved: the user picked it there.
-- **A terminal's links** are the addresses and file paths libghostty finds
-  in its text, and OSC 8 links. A terminal has no Open: a plain click is
+- **A terminal's links** are what the app finds in the text on the screen,
+  and OSC 8 links (libghostty finds and underlines those; its own search
+  for addresses and paths is off). A terminal has no Open: a plain click is
   the program's. ⌘-click opens a link in a new tab and ⌥-click to the side,
-  both in the background. An ⌥-click anywhere else is still the program's
+  both in the background. A ⌥-click anywhere else is still the program's
   (a shell moves its cursor). The right click stays the card's menu, with no
-  link items.
-  - A link ends before the punctuation after it: `.`, `,`, `;`, `:`, `!`,
-    `?`, and a closing bracket or quote it did not open.
-  - A web address opens a browser pane. A file path (absolute, `file:`, `~`,
-    or from the card's folder) opens only when a file or folder is there on
-    the card's machine, so text that only looks like a path (`/reload your
-    open pi`) opens nothing. libghostty still underlines it while ⌘ or ⌥ is
-    down: the app cannot veto its highlight. A `file:` link, or an absolute
-    or `~` path whose name has an extension (`~/notes.md`), names a file for
-    sure: when it is gone, the click shows "File not found" instead. A
-    `:line` after the path lands on that line. Other schemes (`ftp:`) open
-    nothing.
+  link items. The card's accessibility title is the link under the pointer.
+  - **Addresses.** `scheme://…` (with a query, a fragment, a port, an IPv6
+    host in brackets, `localhost`), `mailto:` and emails (`me@example.com`).
+    A name with no scheme (`example.com`) is no link: it reads as a file
+    name too (`package.json`). A web address opens a browser pane, an email
+    the Mac's mail app. Other schemes (`ftp:`) open nothing and show the
+    notice "Ovvi can't open ‹address›".
+  - **Paths.** Absolute, `~/`, `./`, `../`, `file:`, and relative paths
+    (`src/main.rs`) resolved from the card's folder, the folder herdr
+    reports. An absolute path needs two names (`/usr/bin`), an extension
+    (`/notes.md`) or a closing `/` (`/tmp/`), so slash commands (`/compact`,
+    `/help`) are no paths. A relative path needs a `/` and an extension, so
+    `and/or`, `1/2` and `2026/11/11` are none. A space belongs to a path
+    only between quotes (`'/tmp/my file.txt'`) or escaped (`my\ file.txt`).
+    A `:line` or `:line:column` after the path lands on that line. In a diff
+    line (`--- a/`, `+++ b/`, `diff --git`) the `a/` and `b/` are dropped.
+  - **Ends.** A link ends at a space and before the punctuation after it:
+    `.`, `,`, `;`, `:`, `!`, `?`, a closing bracket or quote it did not open
+    (a Wikipedia address keeps its own `(…)`), and Markdown's `**`, `_` and
+    backticks. `Read(/tmp/a.txt)` is the path alone.
+  - **Wrapped lines.** A row whose last cell holds text goes on in the next
+    row, so an address wrapped across rows is one link (herdr's frames carry
+    no soft wraps, so a program's own full-width row joins its next too).
+  - **Nothing there.** A path opens only when a file or folder is there on
+    the card's machine (a remote machine checks there). Else the click shows
+    the notice "File not found: ‹path›", with a relative path joined to the
+    card's folder. A ⌘-click or ⌥-click on a link is never silent.
   - Markdown opens in File Explorer's Markdown, HTML as above, other files
     with their default plugin.
-  - libghostty underlines a link and reports it only while ⌘ is down, so the
-    app gives libghostty ⌘ in ⌥'s place: with the pointer's moves while ⌥
-    alone is down, and when ⌥ goes down or up with the pointer still (first
-    off the view: libghostty looks again only on a new cell). A ⌥-click
-    reads the link libghostty reports there the same way. On a remote
-    machine a ⌥-click on any path is taken, and the open checks the path
-    there. The card's accessibility title is the link under the pointer.
+  - libghostty reports an OSC 8 link only while ⌘ is down, so the app gives
+    libghostty ⌘ in ⌥'s place: with the pointer's moves while ⌥ alone is
+    down, and when ⌥ goes down or up with the pointer still (first off the
+    view: libghostty looks again only on a new cell).
 - A `mailto:` or an app's link in a page opens its app. In a chat reply only a
   `mailto:` does; other schemes open nothing.
 - **A file that is gone.** A click, ⌘-click, ⌥-click or menu item on a file
@@ -1144,7 +1161,8 @@ Two windows on different sessions each control their own session.
 - **Go to Directory** (⇧⌘G, which is Find Previous over a File or Markdown
   card) opens the system folder panel at the keyboard
   card's folder. Choosing a folder types `cd -- '‹path›'` and Return into the
-  card. Enabled only when the card runs only its shell.
+  card. Enabled only when the card runs only its shell, and only on This Mac:
+  the panel shows only this Mac's folders.
 - **Insert Path** (⇧⌘I) opens the same panel with files too. Choosing types
   the shell-quoted path at the cursor, without Return. On a remote machine the
   panel shows only This Mac's files: the chosen file is copied to the machine
