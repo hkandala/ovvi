@@ -6,7 +6,7 @@ extension PaneTerminal {
     static let fontSizes = 8 ... 32
 
     /// `keybind = clear`: app shortcuts reach the menu. No padding, so that cells map from the view's origin; no
-    /// scrollback, herdr keeps it.
+    /// scrollback, herdr keeps it. No links of libghostty's but OSC 8 ones: the app finds them (`Links.swift`).
     ///
     /// Selections keep each cell's own text color over a macOS-like blue. libghostty's Alabaster and Afterglow set
     /// only a selection background, and Ghostty then draws selected text in the window background: `#212121` on
@@ -25,6 +25,7 @@ extension PaneTerminal {
         $0.withWindowPaddingY(0)
         $0.withCustom("window-padding-balance", "false")
         $0.withCustom("scrollback-limit", "0")
+        $0.withCustom("link-url", "false")
     }
 
     static let systemFont = NSFont.monospacedSystemFont(ofSize: 0, weight: .regular).familyName ?? "Menlo"

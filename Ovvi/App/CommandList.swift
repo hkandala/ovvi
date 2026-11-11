@@ -52,7 +52,8 @@ struct CommandList {
                     }),
             Command(section: .file, title: "Go to Directory…", key: editor == nil ? .findPrevious : nil,
                     group: .edit, symbol: "folder", keywords: "cd folder path navigate",
-                    enabled: page?.keyboardPane.map { $0.program?.isShell == true && $0.plugin == nil } == true,
+                    enabled: page?.store.machine.isRemote == false
+                        && page?.keyboardPane.map { $0.program?.isShell == true && $0.plugin == nil } == true,
                     action: {
                         Task { await page?.choosePath(directory: true) }
                     }),

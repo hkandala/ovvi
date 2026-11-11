@@ -13,11 +13,14 @@ final class PaneSurfaceView: AppTerminalView {
     private(set) var metrics: TerminalGridMetrics?
     private var dragged: (column: Int, row: Int)?
     private var commandClick = false
-    private var sideClick = false
+    private var linkClick = false
     weak var linkSurface: TerminalSurface?
+    /// An OSC 8 link libghostty reports.
     var hoveredLink: String?
+    var hovered: Hovered?
+    var underline: CALayer?
     var sideHeld = false
-    var openLink: ((String, Opening) -> Bool)?
+    var openLink: ((TerminalLink, Opening) -> Void)?
     private var scrolled: CGFloat = 0
 
     var wantsKeyboard = false
@@ -154,23 +157,30 @@ final class PaneSurfaceView: AppTerminalView {
     // ponytail: in a mouse app a drag also draws libghostty's highlight; select locally only on
     // Shift+drag if that noise bothers users.
     override func mouseDown(with event: NSEvent) {
-        // ⌥-click on a link: to the side (libghostty opens one only with ⌘). Elsewhere it is the program's (a shell
-        // moves its cursor).
-        sideClick = Self.sideKey(event.modifierFlags)
-            && link(at: event).map { openLink?($0, .side) == true } == true
-        guard !sideClick else { return }
+        // ⌘-click on a link: in a new tab, ⌥-click: to the side. Elsewhere a ⌥-click is the program's (a shell moves
+        // its
+        // cursor), a ⌘-click libghostty's (an OSC 8 link).
+        let how = Self.linkKey(event.modifierFlags)
+        let link = how.flatMap { how in
+            link(at: convert(event.locationInWindow, from: nil))?.link ?? (how == .side ? reported(at: event) : nil)
+        }
+        linkClick = link != nil
+        if let link, let how {
+            openLink?(link, how)
+            return
+        }
         super.mouseDown(with: event)
         mouse(.down, .left, event)
     }
 
     override func mouseDragged(with event: NSEvent) {
-        guard !sideClick else { return }
+        guard !linkClick else { return }
         super.mouseDragged(with: event)
         mouse(.drag, .left, event)
     }
 
     override func mouseUp(with event: NSEvent) {
-        guard !sideClick else { return }
+        guard !linkClick else { return }
         super.mouseUp(with: event)
         mouse(.up, .left, event)
     }

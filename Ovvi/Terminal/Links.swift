@@ -1,118 +1,167 @@
 import AppKit
+import GhosttyKit
 import GhosttyTerminal
 import HerdrKit
 import SwiftUI
 
 enum Links {
-    struct Target {
-        let plugin: PluginManifest, arg: String, line: String?
-    }
-
-    static func trimmed(_ text: String) -> String {
-        var text = Substring(text)
-        let pairs: [Character: Character] = [")": "(", "]": "[", "}": "{"]
-        func unopened(_ last: Character) -> Bool {
-            let closes = text.count(where: { $0 == last })
-            if let open = pairs[last] {
-                return text.count(where: { $0 == open }) < closes
+    /// Never silent: a path with nothing there, or an address nothing in Ovvi opens, shows a notice.
+    static func open(_ link: TerminalLink, how: Opening, from terminalID: String, page: Page?) {
+        guard let page else { return }
+        let store = page.store
+        switch link.kind {
+        case .web:
+            guard let browser = Registry.openers(for: link.target).first else { return cannot(link, store) }
+            Task { await page.open(browser, arg: link.target, from: terminalID, how: how, background: true) }
+        case .mail:
+            if let url = URL(string: link.target), NSWorkspace.shared.urlForApplication(toOpen: url) != nil {
+                NSWorkspace.shared.open(url)
+            } else {
+                cannot(link, store)
             }
-            return "\"'".contains(last) && closes % 2 == 1
-        }
-        while let last = text.last, ".,;:!?".contains(last) || unopened(last) {
-            text.removeLast()
-        }
-        return String(text)
-    }
-
-    private static func target(_ text: String, store: HostStore, cwd: String) async -> Target? {
-        let url = URL(string: text), scheme = Self.scheme(text)
-        if scheme != nil, url?.isWebAddress == true {
-            return Registry.openers(for: text).first.map { Target(plugin: $0, arg: text, line: nil) }
-        }
-        guard scheme == nil || scheme == "file" else { return nil }
-        var path = scheme == "file" ? url?.path ?? "" : text
-        let line = path.firstMatch(of: lineSuffix)
-        if let line {
-            path = String(path[..<line.range.lowerBound])
-        }
-        guard !path.isEmpty, let found = await store.there(path, from: cwd) else { return nil }
-        let landing = line.map { String($0.1) }
-        if !store.machine.isRemote, !found.hasSuffix("/"),
-           ["html", "htm"].contains(URL(filePath: found).pathExtension.lowercased())
-        {
-            return Target(plugin: Registry.browser, arg: URL(filePath: found).absoluteString, line: nil)
-        }
-        return Registry.openers(for: found).first.map { Target(plugin: $0, arg: found, line: landing) }
-    }
-
-    private static let lineSuffix = /:(\d+)(?::\d+)?$/
-
-    /// A link's scheme, only with `://`: `notes.md:12` is a path and its line.
-    private static func scheme(_ text: String) -> String? {
-        text.contains("://") ? URL(string: text)?.scheme?.lowercased() : nil
-    }
-
-    /// False for one that opens nothing for sure: a ⌥-click on it is the program's.
-    static func open(_ text: String, how: Opening, from terminalID: String, page: Page?) -> Bool {
-        guard let page else { return false }
-        let text = trimmed(text), named = file(text)
-        let cwd = page.store.terminalPane(terminalID)?.cwd ?? "/"
-        guard named != nil || likely(text, remote: page.store.machine.isRemote, cwd: cwd) else { return false }
-        Task {
-            guard let target = await target(text, store: page.store, cwd: cwd) else {
-                if let named {
-                    page.store.notFound(named)
+        case .other:
+            cannot(link, store)
+        case .file:
+            let path = link.target.hasPrefix("file:") ? URL(string: link.target)?.path ?? "" : link.target
+            let cwd = store.terminalPane(terminalID)?.cwd ?? "/"
+            Task {
+                guard let found = await store.there(path, from: cwd) else {
+                    return store.notFound(path.hasPrefix("/") || path.hasPrefix("~") ? path : "\(cwd)/\(path)")
                 }
-                return
+                let url = URL(filePath: found)
+                if !store.machine.isRemote, !found.hasSuffix("/"), ["html", "htm"].contains(url.pathExtension) {
+                    return await page.open(Registry.browser, arg: url.absoluteString, from: terminalID, how: how,
+                                           background: true)
+                }
+                guard let plugin = Registry.openers(for: found).first else { return }
+                await page.open(plugin, arg: found, at: link.line.map(String.init), from: terminalID, how: how,
+                                background: true)
             }
-            await page.open(target.plugin, arg: target.arg, at: target.line, from: terminalID, how: how,
-                            background: true)
         }
-        return true
     }
 
-    private static func file(_ text: String) -> String? {
-        let scheme = scheme(text), path = text.replacing(lineSuffix, with: "")
-        if scheme == "file" {
-            return URL(string: path)?.path
-        }
-        guard scheme == nil, path.hasPrefix("/") || path.hasPrefix("~/"), !(path as NSString).pathExtension.isEmpty
-        else { return nil }
-        return path
-    }
-
-    private static func likely(_ text: String, remote: Bool, cwd: String) -> Bool {
-        let scheme = scheme(text)
-        if scheme != nil && URL(string: text)?.isWebAddress == true || remote && scheme == nil {
-            return true
-        }
-        guard scheme == nil else { return scheme == "file" }
-        let path = (text.replacing(lineSuffix, with: "") as NSString).expandingTildeInPath
-        return FileManager.default.fileExists(atPath: path.hasPrefix("/") ? path : "\(cwd)/\(path)")
+    private static func cannot(_ link: TerminalLink, _ store: HostStore) {
+        store.show(Notice(text: "Ovvi can't open \(link.target)", tone: .warning))
     }
 }
 
+/// The app finds links in libghostty's text itself (`link-url` is off): libghostty's own pattern took `/compact` and
+/// the words after a path. libghostty still reports OSC 8 links, and draws their underline.
 extension PaneSurfaceView {
-    /// libghostty reports a link only while ⌘ is down, so the pointer moves there with ⌘ for a moment; first off the
-    /// view, since libghostty looks for links again only on another cell than the last.
-    func link(at event: NSEvent) -> String? {
+    struct Hovered {
+        let link: TerminalLink, places: [TerminalLink.Place]
+    }
+
+    /// ⌘ or ⌥ alone shows and opens links.
+    static func linkKey(_ flags: NSEvent.ModifierFlags) -> Opening? {
+        switch flags.intersection([.command, .control, .option, .shift]) {
+        case .command: .tab
+        case .option: .side
+        default: nil
+        }
+    }
+
+    /// ponytail: libghostty-spm keeps its surface handle and its text reads internal; Mirror reads the handle until
+    /// the package makes `readCells` public.
+    private var raw: UnsafeMutableRawPointer? {
+        linkSurface.flatMap { Mirror(reflecting: $0).descendant("surface") as? UnsafeMutableRawPointer }
+    }
+
+    /// One string a cell: `""` for a wide glyph's second cell (it reads as the glyph again, and so does the pair),
+    /// `" "` for a blank one.
+    private func cells(_ row: Int, columns: Int) -> [String] {
+        guard let raw else { return [] }
+        func read(_ first: Int, _ last: Int) -> String {
+            func point(_ column: Int) -> ghostty_point_s {
+                ghostty_point_s(tag: GHOSTTY_POINT_VIEWPORT, coord: GHOSTTY_POINT_COORD_EXACT, x: UInt32(column),
+                                y: UInt32(row))
+            }
+            var text = ghostty_text_s()
+            let range = ghostty_selection_s(top_left: point(first), bottom_right: point(last), rectangle: false)
+            guard ghostty_surface_read_text(raw, range, &text) else { return "" }
+            defer { ghostty_surface_free_text(raw, &text) }
+            return text.text.map {
+                String(decoding: UnsafeRawBufferPointer(start: $0, count: Int(text.text_len)), as: UTF8.self)
+            } ?? ""
+        }
+        var cells: [String] = [], previous = ""
+        for column in 0 ..< columns {
+            let text = read(column, column)
+            let spacer = column > 0 && !text.isEmpty && text == previous && read(column - 1, column) == text
+            cells.append(spacer ? "" : text.isEmpty ? " " : text)
+            previous = spacer ? "" : text
+        }
+        return cells
+    }
+
+    func link(at point: NSPoint) -> Hovered? {
+        guard let metrics, metrics.cellWidthPixels > 0, metrics.cellHeightPixels > 0 else { return nil }
+        let scale = window?.backingScaleFactor ?? 2
+        let column = Int(point.x * scale) / Int(metrics.cellWidthPixels)
+        let row = Int((bounds.height - point.y) * scale) / Int(metrics.cellHeightPixels)
+        let columns = Int(metrics.columns), rows = Int(metrics.rows)
+        guard (0 ..< columns).contains(column), (0 ..< rows).contains(row) else { return nil }
+        let line = TerminalLink.line(at: row, rows: rows) { cells($0, columns: columns) }
+        guard let index = line.places.lastIndex(where: { $0.row == row && $0.column <= column }),
+              let link = TerminalLink.at(index, in: line.text)
+        else { return nil }
+        return Hovered(link: link, places: Array(line.places[link.range]))
+    }
+
+    /// Underlines the link under the pointer, one line a row it covers, in the text color.
+    func hover(_ point: NSPoint?) {
+        let found = point.flatMap(link(at:))
+        guard found?.link != hovered?.link || found?.places.first != hovered?.places.first else { return }
+        hovered = found
+        underline?.removeFromSuperlayer()
+        underline = nil
+        (found == nil && hoveredLink == nil ? NSCursor.arrow : .pointingHand).set()
+        guard let found, let metrics, let layer else { return }
+        let scale = window?.backingScaleFactor ?? 2
+        let cell = CGSize(width: CGFloat(metrics.cellWidthPixels) / scale,
+                          height: CGFloat(metrics.cellHeightPixels) / scale)
+        let lines = CALayer()
+        var color: CGColor?
+        effectiveAppearance.performAsCurrentDrawingAppearance { color = NSColor.textColor.cgColor }
+        for row in Set(found.places.map(\.row)) {
+            let columns = found.places.filter { $0.row == row }.map(\.column)
+            let first = columns.min() ?? 0, last = columns.max() ?? 0
+            let line = CALayer()
+            line.backgroundColor = color
+            line.frame = CGRect(x: CGFloat(first) * cell.width, y: bounds.height - CGFloat(row + 1) * cell.height + 1,
+                                width: CGFloat(last - first + 1) * cell.width, height: 1)
+            lines.addSublayer(line)
+        }
+        layer.addSublayer(lines)
+        underline = lines
+    }
+
+    /// An OSC 8 link libghostty reports: libghostty reports one only while ⌘ is down, so the pointer moves there with
+    /// ⌘ for a moment; first off the view, since libghostty looks for links again only on another cell than the last.
+    func reported(at event: NSEvent) -> TerminalLink? {
         let point = convert(event.locationInWindow, from: nil), top = bounds.height - point.y
         linkSurface?.sendMousePos(x: -1, y: -1, modifiers: .super_)
         hoveredLink = nil
         linkSurface?.sendMousePos(x: point.x, y: top, modifiers: .super_)
-        return hoveredLink
+        return hoveredLink.flatMap { TerminalLink.all(in: $0).first }
     }
 
     static func sideKey(_ flags: NSEvent.ModifierFlags) -> Bool {
-        flags.intersection([.command, .control, .option, .shift]) == .option
+        linkKey(flags) == .side
     }
 
-    /// Under ⌥ alone libghostty gets ⌘: it draws a link's underline and pointing hand only with ⌘ or ⌃. A plain move
+    /// Under ⌥ alone libghostty gets ⌘: it draws an OSC 8 link's underline and pointing hand only with ⌘. A plain move
     /// only: libghostty's drags call mouseMoved, and they keep their own modifiers (⌥ makes a selection a rectangle).
     override func mouseMoved(with event: NSEvent) {
-        guard event.type == .mouseMoved, Self.sideKey(event.modifierFlags) else { return super.mouseMoved(with: event) }
         let point = convert(event.locationInWindow, from: nil)
+        hover(Self.linkKey(event.modifierFlags) == nil ? nil : point)
+        guard event.type == .mouseMoved, Self.sideKey(event.modifierFlags) else { return super.mouseMoved(with: event) }
         linkSurface?.sendMousePos(x: point.x, y: bounds.height - point.y, modifiers: .super_)
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        hover(nil)
+        super.mouseExited(with: event)
     }
 
     /// libghostty reports a link again only on another cell, so the pointer leaves the view first. Only on a change of
@@ -121,11 +170,13 @@ extension PaneSurfaceView {
         super.flagsChanged(with: event)
         let side = Self.sideKey(event.modifierFlags)
         defer { sideHeld = side }
-        guard side != sideHeld, NSEvent.pressedMouseButtons == 0, let window,
+        guard NSEvent.pressedMouseButtons == 0, let window,
               NSWindow.windowNumber(at: NSEvent.mouseLocation, belowWindowWithWindowNumber: 0) == window.windowNumber,
               window.contentView?.hitTest(window.mouseLocationOutsideOfEventStream)?.isDescendant(of: self) == true
-        else { return }
+        else { return hover(nil) }
         let point = convert(window.mouseLocationOutsideOfEventStream, from: nil)
+        hover(Self.linkKey(event.modifierFlags) == nil ? nil : point)
+        guard side != sideHeld else { return }
         let modifiers: TerminalInputModifiers = side ? .super_ : .init(from: event.modifierFlags)
         linkSurface?.sendMousePos(x: -1, y: -1, modifiers: modifiers)
         linkSurface?.sendMousePos(x: point.x, y: bounds.height - point.y, modifiers: modifiers)
@@ -134,15 +185,19 @@ extension PaneSurfaceView {
 
 extension PaneSurfaceView: TerminalSurfaceOpenURLDelegate, TerminalSurfaceHoverLinkDelegate {
     func terminalDidRequestOpenURL(_ url: String, kind _: TerminalOpenURLKind) {
-        _ = openLink?(url, .tab)
+        if let link = TerminalLink.all(in: url).first {
+            openLink?(link, .tab)
+        } else {
+            store()?.show(Notice(text: "Ovvi can't open \(url)", tone: .warning))
+        }
     }
 
     func terminalDidUpdateHoverLink(_ url: String?) {
         hoveredLink = url
-        (url == nil ? NSCursor.arrow : .pointingHand).set()
+        (url == nil && hovered == nil ? NSCursor.arrow : .pointingHand).set()
     }
 
     override func accessibilityTitle() -> String? {
-        hoveredLink
+        hovered?.link.target ?? hoveredLink
     }
 }

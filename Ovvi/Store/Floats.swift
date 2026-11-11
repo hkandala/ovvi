@@ -17,6 +17,14 @@ extension Page {
         keyboardPane?.id == paneID || store.pane(paneID).map(floats) == true
     }
 
+    /// Once a snapshot has it.
+    func floatNew(_ made: HerdrKit.Pane) async {
+        try? await Ovvi.settle { store.pane(made.id)?.terminalID != nil }
+        if let pane = store.pane(made.id) {
+            float(pane)
+        }
+    }
+
     /// herdr keeps the pane in its tab.
     func float(_ pane: HostStore.Pane, agent: Bool = false) {
         guard let terminalID = pane.terminalID else { return }

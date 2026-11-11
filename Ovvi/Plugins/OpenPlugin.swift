@@ -61,21 +61,28 @@ extension Page {
         guard let tabID = card?.tabID ?? selectedTab?.id, let workspace = store.workspace(of: tabID) else { return }
         let label = store.newLabel(plugin, arg: arg), cwd = card?.cwd ?? keyboardPane?.cwd ?? "~"
         guard label.fits else { return }
+        // From a floating card, any gesture opens in a floating window of its own.
+        let floats = floating[source] != nil
+        var made: HerdrKit.Pane?
         await store.write { client in
-            let spot = if how == .side, let card {
+            let spot = if how == .side, let card, !floats {
                 PanePlace.split(tab: card.tabID, pane: card.id, .right)
             } else {
                 PanePlace.tab(after: tabID)
             }
             let pane = try await store.newPane(client, in: workspace.id, cwd: cwd, label: label, spot)
+            made = pane
             // ponytail: a card made from a snapshot ahead of this line misses its landing; hand it over in the label
             // if that shows.
             if let place, let terminalID = pane.terminalID {
                 terminals.landings[terminalID] = place
             }
-            if !background {
+            if !background, !floats {
                 follow(pane, pane.terminalID)
             }
+        }
+        if floats, let made {
+            await floatNew(made)
         }
     }
 }

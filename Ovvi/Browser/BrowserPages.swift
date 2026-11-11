@@ -181,11 +181,18 @@ extension Browser {
         if store.machine.isRemote {
             Self.keep(viaMac, label, store)
         }
+        // From a floating card, in a floating window of its own.
+        let floating = WindowPages.windows.lazy.flatMap(\.withFloats)
+            .first { page in page.store === store && pane.terminalID.map { page.floating[$0] != nil } == true }
         Task {
+            var made: HerdrKit.Pane?
             await store.write {
-                _ = try await store.newPane($0, in: workspace.id, cwd: pane.cwd ?? "~", label: label,
-                                            side ? .split(tab: pane.tabID, pane: pane.id, .right)
-                                                : .tab(after: pane.tabID))
+                made = try await store.newPane($0, in: workspace.id, cwd: pane.cwd ?? "~", label: label,
+                                               side && floating == nil ? .split(tab: pane.tabID, pane: pane.id, .right)
+                                                   : .tab(after: pane.tabID))
+            }
+            if let floating, let made {
+                await floating.floatNew(made)
             }
         }
         return true

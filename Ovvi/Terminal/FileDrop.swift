@@ -109,7 +109,8 @@ extension PaneSurfaceView {
 }
 
 extension Page {
-    /// ponytail: Go to Directory is This Mac's only; a remote machine needs another picker.
+    /// ponytail: Go to Directory is This Mac's only (its command is off on a remote machine); a remote one needs
+    /// another picker.
     func choosePath(directory: Bool) async {
         guard let pane = keyboardPane, let client = store.client, let window = NSApp.keyWindow else { return }
         let remote = store.machine.isRemote
