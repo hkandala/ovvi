@@ -38,25 +38,24 @@ struct Detail: View {
         case .live, .failed:
             // Reconnecting in one branch, so the page keeps its state through it.
             let reconnecting = store.reconnecting
+            let why = if case let .failed(error) = store.state {
+                error.localizedDescription
+            } else {
+                ""
+            }
+            let cards = page.selectedWorkspace.map { !$0.tabs.isEmpty } ?? false
             tabs()
-                // Before the overlay: the page's own Loader still draws.
                 .environment(\.pageReconnecting, reconnecting)
                 .opacity(reconnecting ? 0.5 : 1)
                 .allowsHitTesting(!reconnecting)
                 .overlay {
-                    if reconnecting {
-                        let why = if case let .failed(error) = store.state {
-                            error.localizedDescription
-                        } else {
-                            ""
-                        }
-                        // On a panel: it reads clearly over the dimmed cards' text.
+                    // With no cards, the page reads as Connecting does.
+                    if reconnecting, !cards {
                         Loader(symbol: store.machine.icon, text: "Reconnecting to \(machine)…", detail: why,
                                id: "detail.reconnecting")
-                            .padding(.horizontal, 28).padding(.vertical, 22).floatingGlass(in: .panel)
                     }
                 }
-                .overlay(alignment: .bottom) { notices(store) }
+                .overlay(alignment: .bottom) { notices(store, reconnecting: reconnecting && cards ? why : nil) }
         }
     }
 
@@ -82,7 +81,8 @@ struct Detail: View {
         }
     }
 
-    private func notices(_ store: HostStore) -> some View {
+    /// `reconnecting`: the reason, while the page reconnects over its cards.
+    private func notices(_ store: HostStore, reconnecting: String?) -> some View {
         VStack(spacing: gap) {
             if let notice = store.notice {
                 NoticeCapsule(tone: notice.tone, text: notice.text) {
@@ -113,6 +113,11 @@ struct Detail: View {
                 .onChange(of: notice.id, initial: true) {
                     AccessibilityNotification.Announcement(notice.text).post()
                 }
+            }
+            if let reconnecting {
+                // In the notices' place, so it never sits on the dimmed cards' text.
+                NoticeCapsule(tone: .progress, text: "Reconnecting to \(store.name)…", detail: reconnecting) {}
+                    .accessibilityIdentifier("detail.reconnecting")
             }
             if page.watched {
                 let text = "Controlled in another window"

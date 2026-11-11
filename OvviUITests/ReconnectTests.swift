@@ -1,6 +1,6 @@
 import XCTest
 
-/// A remote page while its machine reconnects (ui/states): the page says so once, over its cards.
+/// A remote page while its machine reconnects (ui/states): the page says so once, in a capsule at the page's bottom.
 extension OvviUITests {
     /// Key Host's master gone and Key Host unreachable. While the app finds out why (a link that is down: ssh waits out
     /// its 10 s ConnectTimeout), and then while it shows Reconnecting with ssh's reason, no card says its terminal
@@ -25,7 +25,7 @@ extension OvviUITests {
                 return early || reconnecting.exists
             }, "no Reconnecting")
             XCTAssertFalse(early, "a card says its terminal stopped before Reconnecting")
-            XCTAssertFalse(element("detail.reconnecting.detail").stringValue.isEmpty)
+            XCTAssertFalse(element("notice.detail").stringValue.isEmpty)
             try await hostname("ovvi-key.invalid")
             element("workspace.w2").click()
             XCTAssertFalse(until(6) { stopped.exists }, "a card first shown says its terminal stopped")
