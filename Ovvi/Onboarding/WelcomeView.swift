@@ -80,13 +80,13 @@ struct WelcomeView: View {
         // The clip fills the panel; the words and buttons sit over its foot, on a shade that keeps them legible.
         ZStack(alignment: .bottom) {
             picture(current, dark: dark).opacity(shown ? 1 : 0)
-            // One soft shade, only as tall as the words, that fades in from the clip: legible, and still the picture.
+            // Dark at the edge, fading out above the title; a soft glow keeps the words legible.
             if current != .herdr {
-                LinearGradient(stops: [.init(color: Look.shade(dark).opacity(0), location: 0),
-                                       .init(color: Look.shade(dark).opacity(0.72), location: 0.35),
-                                       .init(color: Look.shade(dark).opacity(0.9), location: 1)],
-                               startPoint: .top, endPoint: .bottom)
-                    .frame(height: 200).allowsHitTesting(false).opacity(shown ? 1 : 0).transition(.opacity)
+                LinearGradient(stops: [(0, 0), (0.35, 0.55), (1, 1)].map {
+                    .init(color: Look.shade(dark).opacity($0.1), location: $0.0)
+                },
+                startPoint: .top, endPoint: .bottom)
+                    .frame(height: 180).allowsHitTesting(false).opacity(shown ? 1 : 0).transition(.opacity)
             }
             VStack(spacing: 22) {
                 // In one place, and never both at once: the old words go before the new ones come.
@@ -94,9 +94,9 @@ struct WelcomeView: View {
                     VStack(spacing: 6) {
                         Text(words.title).font(.system(size: 26, weight: .semibold))
                         Text(LocalizedStringKey(words.text)).font(.system(size: 15))
-                            .foregroundStyle(.primary.opacity(0.82))
                             .multilineTextAlignment(.center).lineSpacing(2).frame(maxWidth: 680)
                     }
+                    .shadow(color: current == .herdr ? .clear : Look.shade(dark).opacity(0.7), radius: 8)
                     .id(page * 2 + (herdrFound ? 1 : 0))
                     .transition(.asymmetric(insertion: .opacity.animation(.easeOut(duration: 0.3).delay(0.15)),
                                             removal: .opacity.animation(.easeIn(duration: 0.15))))
