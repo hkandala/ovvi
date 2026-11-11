@@ -272,7 +272,8 @@ extension OvviUITests {
         element("workspace.\(workspace(of: tabs[0]))").click()
         XCTAssertTrue(first.has(\.isSelected, true, within: 3))
         let count = { (Int(made.stringValue) ?? 0) - before }
-        XCTAssertFalse(until(1) { count() > 2 * fit + 2 }, "\(count()) capsules made for 24 tabs, \(fit) fit")
+        // The lazy stack makes the capsules in view on the switch, which the selected capsule above already shows.
+        XCTAssertFalse(until(0.5) { count() > 2 * fit + 2 }, "\(count()) capsules made for 24 tabs, \(fit) fit")
         XCTAssertGreaterThan(count(), 0)
     }
 }

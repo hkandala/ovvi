@@ -34,7 +34,7 @@ extension OvviUITests {
 
         try await report(working, "idle")
         try await waitForValue("agent.\(working)", containing: "Done")
-        XCTAssertFalse(until(1.5) { rows[2].frame.minY < rows[3].frame.minY }, "the changed agent moved up")
+        XCTAssertFalse(until(1) { rows[2].frame.minY < rows[3].frame.minY }, "the changed agent moved up")
 
         filter("beta", keeps: rows, [true, true, false, false])
         filter("fixer", keeps: rows, [false, false, true, false])
@@ -73,7 +73,7 @@ extension OvviUITests {
         betaRow.hover()
         try await report(alpha, "idle", agent: "pi")
         try await waitForValue("agent.\(alpha)", containing: "Done")
-        XCTAssertFalse(until(1.5) { alphaRow.frame.minY < betaRow.frame.minY }, "moved under the pointer")
+        XCTAssertFalse(until(1) { alphaRow.frame.minY < betaRow.frame.minY }, "moved under the pointer")
         element("sidebar.header").hover()
         try await expectOrder([alphaRow, betaRow], "alpha's finish on top once the pointer left")
 

@@ -36,7 +36,7 @@ extension OvviUITests {
         for _ in 0 ..< 2 {
             let frame = window.frame
             XCUIElement.perform(withKeyModifiers: .option) { lights[2].click() }
-            _ = until(1) { window.frame != frame }
+            _ = until(0.5) { window.frame != frame }
             XCTAssertNotNil(steady(3) { window.frame })
             // On screen: the window opened at the screen's size, not at the 1200 pt default a zoom would give back.
             XCTAssertGreaterThanOrEqual(window.frame.minX, 0, "\(window.frame)")
