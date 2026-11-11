@@ -185,7 +185,6 @@ extension OvviUITests {
             let count = try await helpers(measure("overview", seconds: 1))
             return count <= helpers(page) + 1 ? count : nil
         }
-        _ = try await measure("overview")
         // Either way: the sign follows the natural scrolling setting.
         let last = element("overview.tab.\(tabs[5])")
         for delta in [-3000.0, 3000, -3000] where !(last.exists && last.isHittable) {

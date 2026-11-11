@@ -101,10 +101,14 @@ extension OvviUITests {
         let repo = "mkdir repo && cd repo && git init -q && for i in $(seq 40); do seq 300 >f$i.txt; done && "
             + "git add -A && git -c user.name=e2e -c user.email=e2e@ovvi.dev commit -qm one && "
             + "for i in $(seq 40); do seq 0 3 600 >f$i.txt; done"
-        sendAfter("rm -rf \(folder)\r", to: "w1:p1")
+        // A shell of its own: typed into a fixture pane, the build and the rm in teardown would reach the next test.
+        let (scratch, shell) = try await createTab(in: "w2", label: "switch")
+        closeAfter("tab", scratch)
+        try await waitForPrompt(shell)
+        sendAfter("rm -rf \(folder)\r", to: shell)
         try await send("(rm -rf \(folder) && mkdir \(folder) && cd \(folder) && \(markdown) && \(repo)); clear; "
-            + "echo made-$((1+1))\r", to: "w1:p1")
-        try await waitFor("w1:p1", times: 100) { $0.contains("made-2") }
+            + "echo made-$((1+1))\r", to: shell)
+        try await waitFor(shell, times: 100) { $0.contains("made-2") }
         var tabs: [String] = []
         for (kind, arg) in [("explorer", "\(folder)/big.md"), ("git", "\(folder)/repo/ uncommitted")] {
             let root: [String: Any] = ["type": "pane", "cwd": folder, "label": "ovvi:\(kind)#e2esw\(tabs.count) \(arg)",
