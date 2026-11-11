@@ -44,26 +44,6 @@ extension OvviUITests {
         try await Self.snapshot(five)
     }
 
-    /// A restart of the Mac stops every session: the window macOS restores starts its own, with no click.
-    func testARestoredWindowStartsItsStoppedSession() async throws {
-        let workspace = try await shown(running(five)).workspace
-        try await forgetWindows()
-        relaunch(five, windows: .saved)
-        let row = element("workspace.\(workspace)")
-        XCTAssertTrue(row.exists(within: connect))
-        app.typeKey("q", modifierFlags: .command)
-        XCTAssertTrue(app.wait(for: .notRunning, timeout: 5))
-        try await Self.post("\(five)/stop")
-        try await expect("five to stop") { try await answer(five) == nil }
-
-        relaunch(five, windows: .restored)
-        let start = element("detail.start")
-        XCTAssertTrue(until(connect) { start.exists || row.exists })
-        XCTAssertTrue(row.exists, "the page asked to start its session")
-        try await Self.snapshot(five)
-        try await forgetWindows()
-    }
-
     func testAFailedStartShowsStartingAndKeepsWhy() async throws {
         _ = try await running(five)
         try await Self.post("\(five)/stop")

@@ -151,8 +151,9 @@ extension OvviUITests {
         XCTAssertTrue(header.has(\.stringValue, two, within: 1.5), header.stringValue)
     }
 
-    func testRelaunchRestoresThePagesThatStillRun() async throws {
-        try await running(five)
+    /// A restart of the Mac stops every session: the restored window starts its own, with no click.
+    func testRelaunchRestoresEveryPageAndStartsTheStoppedOnes() async throws {
+        let workspace = try await shown(running(five)).workspace
         try await forgetWindows()
         relaunch(windows: .saved)
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
@@ -163,13 +164,18 @@ extension OvviUITests {
         app.typeKey("q", modifierFlags: .command)
         XCTAssertTrue(app.wait(for: .notRunning, timeout: 5))
         try await Self.post("\(five)/stop")
+        try await expect("five to stop") { try await answer(five) == nil }
 
         relaunch(windows: .restored)
         XCTAssertTrue(until(connect) { header == two })
-        XCTAssertTrue(pageList().contains(one))
-        XCTAssertFalse(pageList().contains(five))
+        XCTAssertTrue(pageList().contains(five), "\(pageList())")
         showPage(one)
         XCTAssertTrue(element("workspace.w2").has(\.isSelected, true, within: connect))
+        showPage(five)
+        let start = element("detail.start"), row = element("workspace.\(workspace)")
+        XCTAssertTrue(until(connect) { start.exists || row.exists })
+        XCTAssertTrue(row.exists, "the page asked to start its session")
+        try await Self.snapshot(five)
     }
 
     func testEmptyPageOffersNewWorkspace() async throws {

@@ -219,12 +219,14 @@ final class HostStore {
         if Self.starts[Self.key(session, machine)] == nil {
             starting = false
         }
-        // In this turn, so the page never draws its Start button first. Its sessions read: on a remote machine only
-        // once it is connected.
-        if startStopped, !isRunning {
+        // Decided once, on the first read with a session list (herdr always lists `default`; a remote machine's
+        // only once connected), so a later Stop is never undone. In this turn, so Start never draws first.
+        if startStopped, !sessions.isEmpty, !Task.isCancelled {
             startStopped = false
-            starting = true
-            Task { await start() }
+            if !isRunning {
+                starting = true
+                Task { await start() }
+            }
         }
         snapshotted([])
     }

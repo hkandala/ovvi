@@ -235,7 +235,7 @@ One loop per open session checks that it answers.
    the server is not running:
    - **This Mac:** a **Start** button. A new window's first page starts its
      session this way when it is stopped, and so does each page of a window
-     that macOS restores (on a remote machine too, once connected). In the Open Session panel, a stopped
+     that macOS restores. In the Open Session panel, a stopped
      session or a new name starts the same way. A server the app started gets
      its first space in `$HOME`; a server that already runs is left
      alone. The app starts the
@@ -261,7 +261,8 @@ One loop per open session checks that it answers.
      `sh -c 'nohup <herdr path> --session S server </dev/null >/dev/null 2>&1 &'`
      over SSH and polls `session.snapshot` as This Mac's start does. A window
      opened for a remote machine opens its `default` session without starting
-     it.
+     it; a window that macOS restores connects, then starts each of its pages'
+     sessions that is stopped.
 2. Open the event stream. Its `subscription_started` reply counts as an
    event, so the app reads the snapshot once more and misses nothing between
    the two steps.
