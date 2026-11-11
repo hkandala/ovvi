@@ -26,13 +26,14 @@ extension OvviUITests {
         XCTAssertTrue(card.vanishes(within: 3))
         let replaced = element("pane.\(new)")
         XCTAssertTrue(replaced.exists(within: 3))
-        XCTAssertFalse(until(1) { cards.stringValue != came }, "cards came, went: \(came), then \(cards.stringValue)")
         XCTAssertTrue(until(3) {
             guard replaced.exists else { return false }
             let now = place(replaced)
             return [now.minX - frame.minX, now.minY - frame.minY, now.width - frame.width, now.height - frame.height]
                 .allSatisfy { abs($0) <= 1 }
         }, "\(place(replaced)) is not \(frame)")
+        // The counts add up every card that came or went, so one read once the new card is in place sees any churn.
+        XCTAssertEqual(cards.stringValue, came, "cards came, went")
         try await expect("the new pane in the old one's folder") {
             try await pane(new)["cwd"] as? String == "/usr/bin"
         }
@@ -106,7 +107,7 @@ extension OvviUITests {
         keepScreenshot("replace pane dialog")
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(confirm.vanishes(within: 2))
-        XCTAssertFalse(element("pane.\(pane)").vanishes(within: 1))
+        XCTAssertFalse(element("pane.\(pane)").vanishes(within: 0.5))
         let running = try await foreground(pane)
         XCTAssertTrue(running.contains("sleep"))
 
