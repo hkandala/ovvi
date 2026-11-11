@@ -255,7 +255,7 @@ export interface Commit {
 export interface RunResult {
   code: number
   stdout: string
-  /** The last 8 KB. */
+  /** The last 8 KiB. */
   stderr: string
   /** stdout passed 4 MiB: the command stops there. */
   truncated: boolean
