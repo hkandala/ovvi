@@ -1,4 +1,3 @@
-import Synchronization
 import XCTest
 
 extension OvviUITests {
@@ -283,22 +282,6 @@ extension OvviUITests {
             throw Failed(description: "\(method): \(String(decoding: data, as: UTF8.self))")
         }
         return result
-    }
-
-    /// For a sync caller (relaunch): true when the helper answered.
-    nonisolated static func postNow(_ path: String) -> Bool {
-        guard let helper = ProcessInfo.processInfo.environment["OVVI_HELPER"],
-              let url = URL(string: "\(helper)/\(path)") else { return false }
-        var request = URLRequest(url: url, timeoutInterval: 10)
-        request.httpMethod = "POST"
-        let done = DispatchSemaphore(value: 0)
-        let answered = Mutex(false)
-        URLSession.shared.dataTask(with: request) { _, response, _ in
-            answered.withLock { $0 = (response as? HTTPURLResponse)?.statusCode == 200 }
-            done.signal()
-        }.resume()
-        done.wait()
-        return answered.withLock { $0 }
     }
 
     @discardableResult
