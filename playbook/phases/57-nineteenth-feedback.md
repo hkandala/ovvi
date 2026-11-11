@@ -2314,3 +2314,11 @@ ones".
   `testAnAgentsNoticeStaysUnderThePointer`) wait for the final CI round.
 - **For the user.** Right-click a pane in a split ▸ Move Pane to Tab ▸ New Tab: the tab lands right after its tab.
   Hover an "‹agent› opened …" notice: it stays until the pointer leaves.
+98. The first browser card after an install hangs (Track W3): "whenever app is reinstalled and on first open on browser
+    plugin it hangs a bit and then after few seconds it recovers, idk why this always happens, subsequent browser plugin
+    loads are generally fine, so when the system was at load, i reinstalled ovvi and opened the fresh .app and opened
+    browser, it hanged for some time and then system crashed, investigate if there's something we should take care
+    here, and fix accoridngly"
+99. Sessions after a restart (Track A2): "after restart, when i opened ovvi, it says default is not running, and start
+    default, whenever we restart and ovvi is opened, we should restore and start those sessions automatically, don't
+    ask whether to start session or not"
