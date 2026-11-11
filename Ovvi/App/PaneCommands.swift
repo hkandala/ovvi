@@ -20,6 +20,8 @@ extension CommandList {
                                }
                            })
         }
+        // Alone, herdr would close its tab and make it again in the same place.
+        let alone = (page?.store.panes(in: pane?.tabID).count ?? 0) < 2
         // herdr refuses a move into the pane's own tab, and without a target it splits the tab's focused pane.
         let others = (tabs ? page?.sidebarWorkspaces ?? [] : []).flatMap { workspace in
             workspace.tabs.filter { $0.id != pane?.tabID }.map { other in
@@ -41,10 +43,8 @@ extension CommandList {
                 enabled: pane.map { page?.canZoom($0.id) == true } ?? false) { $0.zoom($1.id) },
             Command(section: .paneMove, title: "Move Pane to Tab", symbol: "arrow.right.square", keywords: "pane",
                     enabled: pane != nil, menu: [
-                        act("New Tab", nil, .paneMove, symbol: "plus.square") { page, pane in
-                            if let workspace = page.store.workspace(of: pane.tabID) {
-                                await page.move(pane, to: .newTab(workspaceID: workspace.id))
-                            }
+                        act("New Tab", nil, .paneMove, symbol: "plus.square", enabled: !alone) { page, pane in
+                            await page.follow(page.store.moveToNewTab(pane.id), pane.terminalID)
                         },
                         act("New Space", nil, .paneMove, symbol: "folder.badge.plus") {
                             await $0.move($1, to: .newWorkspace())

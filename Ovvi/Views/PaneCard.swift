@@ -323,7 +323,7 @@ private struct PaneActions: View {
     var body: some View {
         let commands = CommandList.pane(page, tabs: false) { pane }.filter(\.enabled).flatMap { command in
             command.menu.isEmpty ? [(command.title, command.action)]
-                : command.menu.map { ("\(command.title) \($0.title)", $0.action) }
+                : command.menu.filter(\.enabled).map { ("\(command.title) \($0.title)", $0.action) }
         }
         ForEach(Array(commands.enumerated()), id: \.offset) { _, command in
             Button(command.0, action: command.1)

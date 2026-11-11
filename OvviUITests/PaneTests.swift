@@ -252,12 +252,17 @@ extension OvviUITests {
         try await expect("no label") { try await paneLabel(pane).isEmpty }
         XCTAssertTrue(until(2) { element("pane.\(pane)").label != "renamed" })
 
+        // A tab after it: herdr adds the new tab last, and the app moves it right after the pane's tab.
+        let (spare, _) = try await createTab(in: "w2")
+        closeAfter("tab", spare)
+        XCTAssertTrue(element("tab.\(spare)").exists(within: 5))
         let before = try await tabIDs()
         paneMenu(pane, "Move Pane to Tab", "New Tab")
         let moved = try await newTabID(after: before)
         closeAfter("tab", moved)
         try await expect("the pane in the new tab") { try await order(moved) == [pane] }
         XCTAssertTrue(element("tab.\(moved)").has(\.isSelected, true, within: 3))
+        try await expectBeside(moved, tab)
 
         let terminal = try await terminalID(pane)
         let workspaces = try await workspaceIDs()
