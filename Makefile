@@ -85,11 +85,13 @@ ONLY := $(shell scripts/shard.py $(SHARD) $(if $(ON_DEMAND_ONLY),--on-demand) $(
 # An empty list would run every test.
 $(if $(ONLY),,$(error no tests for SHARD=$(SHARD)))
 endif
+# PREBUILT=1 runs the tests of an earlier make build-tests (CI's build job) without building them again.
+E2E = $(if $(PREBUILT),xcodebuild test-without-building -xctestrun $(firstword $(wildcard $(DERIVED_DATA)/Build/Products/*.xctestrun)),$(XCODEBUILD) test)
 TESTS = -test-timeouts-enabled YES -default-test-execution-time-allowance 120 \
 	$(if $(ONLY),$(addprefix -only-testing:,$(subst $(comma), ,$(ONLY))),$(addprefix -skip-testing:OvviUITests/OvviUITests/,$(ON_DEMAND)))
 e2e: web
 	rm -rf $(DERIVED_DATA)/e2e.xcresult
-	scripts/e2e.sh $(XCODEBUILD) $(MAC) $(TESTS) -resultBundlePath $(DERIVED_DATA)/e2e.xcresult test $(BEAUTIFY)
+	scripts/e2e.sh $(E2E) $(MAC) $(TESTS) -resultBundlePath $(DERIVED_DATA)/e2e.xcresult $(BEAUTIFY)
 
 # The same tests in the Tart VM, off this Mac's screen (playbook/workflow.md, UI tests run in the VM). The result is vm.xcresult.
 vm-e2e: build-tests
