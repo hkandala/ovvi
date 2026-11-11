@@ -115,9 +115,12 @@ extension OvviUITests {
         app.launchEnvironment["SHELL"] = "\(Self.agents)/login-shell"
         app.launchEnvironment["PATH"] = "\(Self.fixtures)/late-herdr:/usr/bin:/bin"
         app.launchEnvironment["OVVI_E2E_HERDR"] = try env("OVVI_HERDR")
+        // The fixture marks its late answer here: a file of this run's, in the runner's own folder (it is sandboxed).
+        let answered = NSTemporaryDirectory() + "ovvi-late-answer-" + UUID().uuidString
+        app.launchEnvironment["OVVI_E2E_LATE_MARK"] = answered
+        defer { try? FileManager.default.removeItem(atPath: answered) }
         relaunch()
         let pane = try await twoHundredLines("late")
-        try? FileManager.default.removeItem(atPath: Self.lateAnswer)
         app.typeKey("f", modifierFlags: .command)
         let field = element("find.field")
         XCTAssertTrue(hasKeyboard(field))
@@ -126,16 +129,13 @@ extension OvviUITests {
         XCTAssertEqual(element("find.count").stringValue, "0 of 0")
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(field.vanishes(within: 2))
-        // The read answers 3 s after ⌘F: the fixture marks the answer, and a scroll it set off would land well within
-        // a second of it.
-        try await expect("herdr's late answer", times: 60) { FileManager.default.fileExists(atPath: Self.lateAnswer) }
+        // The read answers 3 s after ⌘F: the fixture marks it just before it lets the answer go, and a scroll it
+        // set off would land well within a second of that.
+        try await expect("herdr's late answer", times: 60) { FileManager.default.fileExists(atPath: answered) }
         try await Task.sleep(for: .seconds(1))
         let offset = try await scrollOffset(pane)
         XCTAssertEqual(offset, 0)
     }
-
-    /// Written by the late-herdr fixture when its late read answers.
-    private static let lateAnswer = "/tmp/ovvi-e2e-late-answer"
 
     private func twoHundredLines(_ label: String) async throws -> String {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))

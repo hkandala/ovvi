@@ -11,8 +11,8 @@ final class OvviUITests: XCTestCase {
     let app = XCUIApplication()
     /// The app's first snapshot: login shell, herdr checks and a few herdr runs; slow on CI runners.
     let connect: TimeInterval = 30
-    /// The part of the test that runs now (`step`): a failure names it. A Mutex: XCTest records issues off the main
-    /// actor too.
+    /// The part of the test that runs now (`step`): a failure names it, also one in a teardown block (the last part's
+    /// name). A Mutex: XCTest records issues off the main actor too.
     private let part = Mutex("")
 
     /// Starts one part of a test that walks several flows: an activity in the result, and the part's name before each
@@ -133,14 +133,18 @@ extension OvviUITests {
         do {
             try await poll("stty size in \(pane) to match its card", times: 30) { () async throws -> String? in
                 guard terminal.exists, let grid = terminal.value as? String, !grid.isEmpty else { return nil }
-                // Cleared first: the last try's size line would read as this one's.
-                try await send("clear\r", to: pane)
-                try await waitFor(pane, times: 20) { sizes($0).isEmpty }
-                try await send("stty size\r", to: pane)
+                // Cleared first: the last try's size line would read as this one's. A slow screen is one more try.
                 var screen = ""
-                try await waitFor(pane, times: 20) {
-                    screen = $0
-                    return !sizes($0).isEmpty
+                do {
+                    try await send("clear\r", to: pane)
+                    try await waitFor(pane, times: 20) { sizes($0).isEmpty }
+                    try await send("stty size\r", to: pane)
+                    try await waitFor(pane, times: 20) {
+                        screen = $0
+                        return !sizes($0).isEmpty
+                    }
+                } catch is Waited {
+                    return nil
                 }
                 seen = "card \(grid), screen \(screen.split(separator: "\n").suffix(3).joined(separator: " | "))"
                 return sizes(screen).contains { $0 == grid } ? grid : nil
@@ -229,8 +233,8 @@ extension OvviUITests {
     static let onKeyHost = ["-machines", keyHost, "-machine", "e2e-key"]
 
     /// The sign of a swipe's or a sideways wheel's step that goes forward (to the next page, or a page scrolled right):
-    /// natural scrolling sets it, one way here and the other on CI. A test that tries both signs tries this one first
-    /// and keeps the one that worked, so only the run's first such swipe waits out a wrong sign.
+    /// natural scrolling sets it, one way here and the other on CI. SidebarTests' and TabTests' swipes try this one
+    /// first and keep the one that worked, so only the run's first such swipe waits out a wrong sign.
     static var forward = -1.0
 
     /// Which sign goes forward follows the natural scrolling setting (one way here, the other on CI).

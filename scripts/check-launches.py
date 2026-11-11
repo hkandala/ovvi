@@ -2,7 +2,7 @@
 """Checks OvviUITests/OwnLaunch.swift: it lists exactly the UI tests that launch the app themselves before they use it.
 
 setUp skips its own launch for them (about 2 s a test). A test is listed when every statement before its first launch
-is one that needs no app: a skip, a launch environment, a literal, a helper or herdr call.
+is one that needs no app: a skip, a launch environment, a literal, a helper or herdr call. --write rewrites the list.
 """
 
 import re
@@ -14,6 +14,8 @@ NO_APP = re.compile("|".join([
     r"try await skipWithoutSSH\(\)$",
     r"app\.launchEnvironment\[",
     r"let \w+ = #?\"",
+    r"let \w+ = NSTemporaryDirectory\(\)",
+    r"defer \{ try\? FileManager\.default\.removeItem\(",
     r"\+ #?\"",  # the literal's next line
     r"(_ = )?try\?? await Self\.post\(",
     r"addTeardownBlock \{ \[one\] in _ = try\? await Self\.post\(.*\}$",
@@ -34,8 +36,13 @@ for file in Path("OvviUITests").glob("*.swift"):
                 own.add(name)
             if not NO_APP.match(line):
                 break
-listed = set(re.findall(r"\"(test\w+)\"", Path("OvviUITests/OwnLaunch.swift").read_text()))
+swift = Path("OvviUITests/OwnLaunch.swift")
+if "--write" in sys.argv:
+    text = swift.read_text()
+    swift.write_text(text[:text.index("[\n") + 2] + "".join(f'        "{name}",\n' for name in sorted(own))
+                     + text[text.index("    ]"):])
+listed = set(re.findall(r"\"(test\w+)\"", swift.read_text()))
 if own != listed:
-    sys.exit("OvviUITests/OwnLaunch.swift: " + "; ".join(
+    sys.exit("OvviUITests/OwnLaunch.swift (scripts/check-launches.py --write): " + "; ".join(
         part for part in [f"add {sorted(own - listed)}" if own - listed else "",
                           f"remove {sorted(listed - own)}" if listed - own else ""] if part))

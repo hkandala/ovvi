@@ -242,7 +242,8 @@ extension OvviUITests {
     func testAChatOnARemoteMachine() async throws {
         step("A Claude Code chat on a remote machine")
         try await skipWithoutSSH()
-        let pane = try await startChat(Self.onKeyHost).pane
+        relaunch(one, Self.onKeyHost)
+        let pane = try await startChat().pane
         try await say("hello", in: pane)
         XCTAssertTrue(row(pane, "reply", "Echo: **hello**").exists(within: 5))
         try await say("ask", in: pane)

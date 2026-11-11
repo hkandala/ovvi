@@ -13,6 +13,7 @@ extension OvviUITests {
         // The first card of a run waits for the default plugins to install and build.
         XCTAssertTrue(row("a.txt", in: tree).exists(within: 30))
         XCTAssertFalse(row(".gitignore", in: tree).exists)
+        XCTAssertFalse(field.exists)
         // The fresh card's keys first: they start on "..".
         try await keysHiddenFilesAndFind(card, tree, repo, root, shell)
         app.typeKey(.escape, modifierFlags: [])
@@ -22,7 +23,6 @@ extension OvviUITests {
         XCTAssertTrue(row("empty", in: tree).vanishes(within: 5))
 
         step("Find bar: the filter button and typing filter the rows")
-        XCTAssertFalse(field.exists)
         let filter = element("pane.\(card).filter")
         filter.click()
         XCTAssertTrue(field.exists(within: 3))

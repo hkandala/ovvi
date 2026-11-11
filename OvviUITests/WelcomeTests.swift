@@ -59,7 +59,7 @@ extension OvviUITests {
 
         step("Welcome: the next launch shows none")
         relaunch(one)
-        XCTAssertTrue(element("titlebar.machine").exists(within: connect))
+        XCTAssertTrue(element("titlebar.machine").exists(within: connect), "no window on the launch after Get Started")
         // The window opens only when no welcome shows on this launch (Welcome.firstLaunch).
         XCTAssertFalse(welcomeNext.exists, "the welcome again after it was done")
         showTheWelcomeFromSettings()

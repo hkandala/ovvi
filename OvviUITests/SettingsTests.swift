@@ -35,7 +35,7 @@ extension OvviUITests {
     }
 
     func testSettingsPagesSearchAndLook() {
-        // Light only: testSettingsScenes shows the pages in both looks.
+        // Light only: testSettingsScenes (on demand) shows the pages in both looks.
         relaunch(one, ["-appearance", "light"])
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         let controls = ["general": "settings.general.open-at-login", "appearance": "settings.style.glass",
