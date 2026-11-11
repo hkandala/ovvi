@@ -2322,3 +2322,23 @@ ones".
 99. Sessions after a restart (Track A2): "after restart, when i opened ovvi, it says default is not running, and start
     default, whenever we restart and ovvi is opened, we should restore and start those sessions automatically, don't
     ask whether to start session or not"
+
+### Track C2 (item 95)
+
+- **License.** No GNU libintl is linked. libghostty-spm (pin `1d84cf66`, 2.2.2026110702) builds Ghostty with
+  `-Di18n=false`, its patch `0021-no-libintl.sh` links libintl only with i18n on, and its verify script refuses an
+  archive with a `libintl_` symbol. The app's code (`Ovvi.debug.dylib`, libghostty linked in: `ghostty_surface_new`
+  defined) has no `gettext`, `textdomain` or `libintl` symbol and no dynamic libintl. The repo had no license: it is now
+  AGPL-3.0-only (`LICENSE`, gnu.org's text); the plugin API's types and the template are MIT. Every bundled piece goes
+  with AGPLv3: MIT, BSD, ISC, Apache-2.0, MPL-2.0 (z2d; noVNC in the separately installed Tart VM plugin), OFL and
+  GPL-2.0-with-font-exception fonts (data, not linked), CC0 icons, and in Shiki's bundled grammars and themes GPL-3.0
+  (ada, gnuplot, nginx, org, racket, aurora-x, compatible) and 33 grammars with no declared license (tm-grammars'
+  NOTICE). Acknowledgements lacked the default plugins' web libraries other than CodeMirror and pdf.js: added.
+- **Names.** The sidebar's suite `dev.ovvi.app.agents.‹config›` → `‹bundle id›.sidebar.‹config›`, `agentsOpen` →
+  `foldsAndShelves`, `pinnedSpaces` → `spaceChoices`. The other keys, files and scene ids already say what they hold.
+- **Compat leftovers.** OpenCode's first `getConfig` path (`_client`) never matched a TUI plugin: TUI plugins exist
+  from OpenCode 1.4.0, get the SDK's v2 client, and its field was `client` from 1.2.0 on (checked in the npm packages).
+  The browser's `Version/18.0` was stale (Safari is 27.2 here): it now follows the macOS version, as Safari has since 26.
+- **Reset.** `scripts/reset-app-data.sh`. The old suites (`dev.ovvi.app.agents.*`) are left to a one-off command.
+- **Runs.** None: `testABrowserSaysItIsThisSystemsSafari` waits for the final CI round.
+
