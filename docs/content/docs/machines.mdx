@@ -38,8 +38,10 @@ description: "What a machine is, its sessions, the SSH connection, the health ch
   only for This Mac's sessions, not for remote machines.
 
 ## The SSH connection
+
 - **SSH is the system `ssh`.** The user's `~/.ssh/config`, agent, keys,
-  `ProxyJump`, YubiKey and Tailscale SSH work unchanged.
+  `ProxyJump`, YubiKey and Tailscale SSH work unchanged. The app never
+  writes `~/.ssh`: only ssh itself writes `known_hosts`.
 - **One ControlMaster per host,** started on purpose, once, by the first run
   that finds none (`SSHExec` in HerdrKit):
   ```sh
@@ -80,7 +82,9 @@ description: "What a machine is, its sessions, the SSH connection, the health ch
     test's, another build) removes no socket and ends no master of this one.
     The folder is per user, mode 0700, with no spaces. The path stays under the
     104-byte socket limit for user names up to 44 characters, with ssh's
-    17-character temporary suffix.
+    17-character temporary suffix. The app makes the folder and the askpass
+    script (below) once per launch, so a cache cleaner that deletes
+    `~/Library/Caches/ovvi` breaks remote connects until Ovvi starts again.
   - Forwarding is off, so a machine cannot reach the Mac's SSH agent or ports
     through the app's long-lived connection. The app's own `-O forward` calls
     still work.
@@ -91,7 +95,7 @@ description: "What a machine is, its sessions, the SSH connection, the health ch
   - On quit the app runs `ssh -F /dev/null -S <ctl> -O exit -- <target>` for each master.
 - **The relay:** every run of a remote machine (calls, the events stream,
   every terminal stream) goes through one SSH session. A server may allow
-  only a few sessions per connection (`MaxSessions`; a server with one-time passcodes refused
+  only a few sessions per connection (`MaxSessions`; a server with one-time passcodes can refuse
   the third), and a second connection would ask for a second passcode. The
   first run on a new master starts that session; it runs a Perl script
   (`Relay.script` in HerdrKit, sent in the envelope; nothing is installed).
@@ -105,8 +109,11 @@ description: "What a machine is, its sessions, the SSH connection, the health ch
     run's output ended and it was reaped.
   - herdr's bridge, events and terminal streams are all lines, so this needs
     no other framing; one process writes them, so lines of two runs never mix.
+  - A line passes byte for byte, NUL bytes too, so the NUL-separated (`-z`)
+    listings of the plugin cards work over SSH.
   - When its stdin ends (the app quit, the connection dropped) it exits, and
-    every run's stdin closes with it, so every run ends as before.
+    every run's stdin closes with it, so every run ends
+    ([Running commands](/docs/talking-to-herdr#running-commands)).
   - Perl is on nearly every Unix (Debian's `perl-base` is essential, macOS has
     it). The relay greets with `ovvi-relay 1` within 10 s. On a machine where
     it does not, every run fails with "Ovvi needs Perl on ‹target›: its relay
@@ -132,7 +139,7 @@ description: "What a machine is, its sessions, the SSH connection, the health ch
   script with ssh's own stdin and stderr, which are the app's pipes: the
   script prints the question, base64 on one line after a marker, to stderr
   and reads the answer from stdin. The app shows the question in a dialog of
-  the window that connects ([The SSH connection](#the-ssh-connection)) and
+  the window that connects and
   writes the answer to ssh's stdin. Nothing is stored. A key or agent that
   works needs no question, so the start asks only what ssh asks.
   - A new host key shows ssh's text with its fingerprint and asks yes or no;
@@ -148,14 +155,13 @@ description: "What a machine is, its sessions, the SSH connection, the health ch
   - Why the app's own dialog and not `osascript`: it belongs to
     the window that asked, follows the app's look, and an e2e test can answer
     it.
-- **herdr on the machine:** the remote login shell gives its path, one run
-  over the master, `"$SHELL" -lic 'echo <marker>; command -v herdr || command -v "$HOME/.local/bin/herdr"'`,
-  once per master; a missing herdr is asked again at most every 30 s. The page
-  then shows "herdr is not installed on ‹machine›" with the install command
-  and **Install herdr**, which installs it over the connection
+- **herdr on the machine:** one run of the remote login shell gives its path,
+  once per master ([herdr on each machine](/docs/talking-to-herdr#herdr-on-each-machine)).
+  A missing herdr shows "herdr is not installed on ‹machine›" with the
+  install command and **Install herdr**, which installs it over the connection
   ([Install herdr](/docs/talking-to-herdr#install-herdr)).
-- **New tabs and spaces** pass `cwd` `~`, which herdr reads as the
-  machine's home, so the app never sends This Mac's home to a remote machine.
+- **New spaces**, and new tabs with no folder to take, pass `cwd` `~`, which
+  herdr reads as the machine's home, so the app never sends This Mac's home to a remote machine.
 - **Dropped files** (and Insert Path's file) are copied to the machine over the
   relay, one run per file, and the copies' paths are pasted
   ([Drag and drop](/docs/ui/drag-and-drop#files-and-images)).
@@ -173,8 +179,8 @@ description: "What a machine is, its sessions, the SSH connection, the health ch
   system events ([Remote machines](/docs/plugins/default-plugins#remote-machines)).
 - **Chat panes** of a remote machine work as on This Mac: the launch line,
   the side files and every follower run on the machine, over the relay
-  ([Chat view](/docs/ui/chat-view)). The relay passes lines, so pi-ovvi goes
-  as one base64 line. OpenCode's chat needs `curl` on the machine. The others
+  ([Chat panes](/docs/talking-to-herdr#chat-panes)). OpenCode's chat needs
+  `curl` on the machine. The others
   need only POSIX tools.
 - **Local Network privacy:** an `ssh` started by the app counts as the app,
   so a LAN target fails with "No route to host"; Tailscale addresses are not
@@ -207,9 +213,9 @@ One loop per open session checks that it answers.
 - On a remote machine a failed check runs over a new connection when the old
   one is gone: the next run starts a new ControlMaster (ssh's keepalive ends
   a dead one, [The SSH connection](#the-ssh-connection)).
-- **Automatic retries never prompt.** They run with `BatchMode=yes`. A host that needs a password, an OTP or a key prompt shows
-  **Disconnected** with **Connect** and stops retrying; only that button may
-  prompt.
+- Automatic retries never prompt
+  ([The SSH connection](#the-ssh-connection)): a host that needs an answer
+  shows **Disconnected** with **Connect** and stops retrying.
 - When a check succeeds after a failure, the app opens the event stream and
   the terminal streams again: the same path as the first connect
   ([Checks on connect](#checks-on-connect)).
@@ -239,7 +245,7 @@ One loop per open session checks that it answers.
        `dev.ovvi.app.herdr.<S>`, which runs
        `<herdr path> --session <S> server` (the path from the login shell).
      - `RunAtLoad` without `KeepAlive`: once `herdr session stop` ends the
-       server, launchd never runs it again (`launchctl submit` restarted it).
+       server, launchd never runs it again (a `launchctl submit` job restarts it).
      - `ProcessType Interactive`: launchd's default throttles the CPU and I/O
        of the server and every agent in it.
      - stderr goes to `~/Library/Logs/Ovvi/<S>.log`.

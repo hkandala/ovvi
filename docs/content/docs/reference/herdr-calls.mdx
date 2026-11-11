@@ -12,13 +12,13 @@ description: "Every herdr call and command the app uses, and the ones it never u
 | `workspace.create` \| `close` \| `rename` | sidebar actions: new (page header `+`, space menu), close, rename in place; folders dropped on the Dock icon; Archived's Resume when no space holds the session's folder. The new space's `root_pane` gets the [New pane](/docs/ui/new-pane) chooser | [Writes](/docs/talking-to-herdr#writes-are-herdr-calls) |
 | `workspace.move_block` | Move Up and Down, drag to reorder (always with the row's group: the space and its linked worktrees) | [Writes](/docs/talking-to-herdr#writes-are-herdr-calls) |
 | `tab.create` \| `close` \| `rename` \| `move` | tab bar and sidebar actions: new (also from a space row; its `root_pane` gets the chooser), close, Close Other Tabs and Close Tabs to the Right, rename, Move Tab Left and Right, drag to reorder; `move` puts an open from a card or a link in a new tab right after its card's tab; Archived's Resume (a new tab after the space's selected tab) | [Writes](/docs/talking-to-herdr#writes-are-herdr-calls) |
-| `pane.split` \| `close` \| `move` | split (left and up add a swap), close, Replace Pane and the commands that change a pane's kind (a split, then a close of the old pane), a browser or plugin pane's create (a move beside the old pane, then a close), a plugin card's open to the side (a move beside the card), Archived's Resume to the Side (a split right of the keyboard card), Move Pane to Tab ▸ (a tab, New Tab, New Space), drag (an edge of a card in the same tab is two moves and a swap; a tab dropped on another space or New Space moves pane by pane) | [Writes](/docs/talking-to-herdr#writes-are-herdr-calls) |
+| `pane.split` \| `close` \| `move` | split (left and up add a swap), close, Replace Pane and the commands that change a pane's kind (a split, then a close of the old pane), a browser or plugin pane's create (a move beside the old pane, then a close), a plugin card's open to the side (a move beside the card), Archived's Resume to the Side and `ovvi agent` (a split right of the card), Move Pane to Tab ▸ (a tab, New Tab, New Space), drag (an edge of a card in the same tab is two moves and a swap; a tab dropped on another space or New Space moves pane by pane) | [Writes](/docs/talking-to-herdr#writes-are-herdr-calls) |
 | `pane.swap` | drag onto a card in the same tab; the last step of a drop on a left or top edge; split left and up; with `direction`, ⌥⇧⌘ and an arrow | [Writes](/docs/talking-to-herdr#writes-are-herdr-calls) |
 | `pane.resize` | Resize Pane (View ▸ Pane, the palette), 5 % each | [Dividers](/docs/layout#dividers) |
 | `pane.rename` | Rename Pane, Reset Pane Name; a browser card's typed address goes into its label; each move inside a plugin card (a click, Back, Forward) goes into its label | [Writes](/docs/talking-to-herdr#writes-are-herdr-calls), [Browser](/docs/ui/browser#create) |
 | `layout.apply` | a browser or plugin pane: a new tab with one pane, its label and its placeholder command, never with a `tab_id`; also a link opened in a new tab, and a plugin card's open in a new tab or to the side | [Create](/docs/ui/browser#create), [Popups, links and dialogs](/docs/ui/browser#popups-links-and-dialogs), [Opening](/docs/plugins/default-plugins#opening) |
-| `pane.send_input` | Go to Directory and Insert Path; an agent's launch line (or its bare command) from the chooser, Start Agent Here or Archived's Resume; Relaunch with Chat's quit command and its launch line; chat text that starts with `/`, with no Return | [Writes](/docs/talking-to-herdr#writes-are-herdr-calls) |
-| `pane.send_keys` | special keys and Ctrl chords typed in a terminal card; a chat's Stop (Esc, OpenCode Esc twice); Relaunch with Chat's Stop keys while the agent works or waits, then ⌃C | [Terminal plane](/docs/talking-to-herdr#terminal-plane) |
+| `pane.send_input` | Go to Directory and Insert Path; the chooser's `cd` to its folder; a browser or plugin pane's placeholder line ([The placeholder](/docs/plugins/labels#the-placeholder)); an agent's launch line (or its bare command) from the chooser, Start Agent Here or Archived's Resume; Relaunch with Chat's quit command and its launch line; chat text that starts with `/`, with no Return | [Writes](/docs/talking-to-herdr#writes-are-herdr-calls) |
+| `pane.send_keys` | special keys and Ctrl chords typed in a terminal card; a chat's Stop (Esc, OpenCode Esc twice); Relaunch with Chat's Stop keys while the agent works or waits, then ⌃C; ⌃U before a placeholder line | [Terminal plane](/docs/talking-to-herdr#terminal-plane) |
 | `pane.read` | `visible`: the hover card's lines for a pane that needs you; `recent`: find in a pane, and a Codex chat's last 8 lines every 0.5 s ([Codex's screen check](/docs/ui/chat-view#codexs-screen-check)); `visible` again after a find scroll, for the highlights | [Find bar](/docs/ui/window#find-bar) |
 | `pane.process_info` | close and Replace Pane check, Go to Directory's shell check, program icons, the agent loader's failure check, a chat agent's launch marker in the foreground argv, Relaunch with Chat's wait for the shell | [Writes](/docs/talking-to-herdr#writes-are-herdr-calls), [Program icons](/docs/ui/program-icons#when-the-app-asks-herdr) |
 | `pane.get` | the keyboard card's fresh folder for New Tab, Go to Directory and Insert Path, and for a browser or plugin pane's create; the new pane of a plugin card's open; the viewport's offset after a find scroll; the agent loader's ready check, every 250 ms ([New pane](/docs/ui/new-pane#agent)); Relaunch with Chat's check that herdr let go of the agent | [Writes](/docs/talking-to-herdr#writes-are-herdr-calls) |
@@ -36,7 +36,8 @@ makes herdr send the event that the rename does not
 ([Agents open browser panes](/docs/ui/browser#agents-open-browser-panes)).
 An agent's `ovvi open` uses the app's own `layout.apply`, `tab.move`,
 `pane.move` and `pane.rename`, as a plugin card's open does
-([CLI](/docs/agent-control/cli#open)).
+([CLI](/docs/agent-control/cli#open)). `ovvi agent` makes its shell pane
+with `pane.split`, or `tab.create` and `tab.move`.
 
 ## Commands
 
@@ -75,15 +76,17 @@ sh -c 'f=$HOME/.cache/ovvi/bin/ovvi; base64 -d >"$f.$$" && chmod 755 "$f.$$" && 
 sh -c 'cd "$HOME/.cache/ovvi/rpc" && mv -- "$1.req" "$1.run" && head -c "$2" "$1.run" | base64' sh <id> 65537    # take a request
 sh -c 'f=$HOME/.cache/ovvi/rpc/$1.in; [ ! -f "$f" ] || head -c "$2" "$f" | base64' sh <id> 1048577    # ovvi copy's input
 sh -c 'cd "$HOME/.cache/ovvi/rpc" && base64 -d >"$1.o" && mv "$1.o" "$1.out" && printf "%s\n%s" "$2" "$3" >"$1.e" && mv "$1.e" "$1.exit"; s=$?; rm -f "$1.run" "$1.in"; exit $s' sh <id> <code> <err>    # the answer
+sh -c '[ -e "$1" ]' sh <path>; sh -c '[ -d "$1" ]' sh <path>   # ovvi open and ovvi plugins: is the path there, is it a folder
 ```
 
 A browser or plugin card's ([Browser](/docs/ui/browser), [State](/docs/plugins/api#state)):
 
 ```sh
-sh -c 'cat "$HOME/$1"' sh .local/state/ovvi/<S>/<browser or plugin id>/<iid>.json    # each machine: read the state file when the card is built
+sh -c 'cat "$HOME/$1"' sh .local/state/ovvi/<S>/<browser or plugin id>/<iid>.json    # a remote machine: read the state file when the card is built (This Mac reads it in the app)
 sh -c 'umask 077; f="$HOME/$1"; mkdir -p "${f%/*}" && cat >"$f.$$" && mv "$f.$$" "$f"' sh <path>   # write it, 500 ms after a navigation or a plugin's last change
 sh -c 'rm -f "$HOME/$1"' sh <path>                  # a typed address, a close
 find "$HOME/.local/state/ovvi/<S>" -type f -mtime +30 -delete       # once on connect
+sh -c 'kill -WINCH "$@"' sh <pid>…                 # a placeholder redraws its new label
 ssh -F /dev/null -S <ctl> -O forward -D 127.0.0.1:<P> <target>   # a remote machine: its first browser card's proxy
 ssh -F /dev/null -S <ctl> -O cancel -D 127.0.0.1:<P> <target>    # its last card went
 ```
@@ -95,8 +98,8 @@ name can hold a line break ([File Explorer and Git](/docs/plugins/default-plugin
 sh -c 'cd "$1" || exit; for f in * .[!.]* ..?*; do … printf "%s/\0" …; done; [ "$2" ] || exit 0; printf "\0"; for f in …; do printf "./%s\0" "$f"; done | git --no-optional-locks check-ignore -z --stdin' sh <folder> git   # a folder's entries (the File Explorer's tree), then the names git ignores
 sh -c 'cd "$1"; if [ "$2" ]; then git ls-files -z -co --exclude-standard; else find . -name .git -prune -o -type f -print0; fi | head -c 8388608' sh <root> git   # every path, for the filter
 sh -c '[ -f "$1" ] …; wc -c <"$1"; cksum <"$1" && base64 <"$1"' sh <path> 16777216   # read a file (size, hash, bytes)
-sh -c 'cksum <"$1"' sh <path>                       # has it changed (a reload check)
-sh -c 'wc -c <"$1"' sh <path>                       # the info view's size
+sh -c 'if [ -d "$1" ]; then echo d; elif [ -e "$1" ]; then wc -c <"$1" && cksum <"$1"; …' sh <path>   # a file's size and hash, or a folder (files.info)
+sh -c '…; mv -- "$1" "$2"' sh <path> <target>       # a rename that never replaces (files.move)
 sh -c 't=$(mktemp …/.ovvi-save.XXXXXX); cp -p "$1" "$t"; base64 -d >"$t"; …; mv -f "$t" "$1"' sh <path> <hash> <size>    # save: the bytes in base64 on stdin, checked by hash and size
 sh -c 'ls -1Ap "$1"; git status …; git ls-files -z -m -o … | xargs -0 cat; … | cksum' sh <path>   # a remote machine: the 2 s check while a card shows
 git -C <folder> rev-parse --show-toplevel           # the root for File Explorer and Git
@@ -105,6 +108,7 @@ git --no-optional-locks -C <root> status --porcelain=v2 --branch …   # the Git
 git -C <root> for-each-ref --format=%(HEAD)%(refname) refs/heads refs/remotes   # the Git home: the branch menu
 git -C <root> log --branches --remotes --tags HEAD -n <500, 1000, …> --topo-order --no-show-signature --decorate=full --format=%H%x1f%P%x1f%an%x1f%at%x1f%D%x1f%s --   # the Git home's history of every branch
 env GIT_TERMINAL_PROMPT=0 git -C <root> <write>     # the Git home's writes, one at a time (fetch, pull and push also from a space row's menu and File Explorer's status bar): fetch --all, pull, -c push.autoSetupRemote=true push, --literal-pathspecs add -A -- <path>, --literal-pathspecs reset -q -- <path>, add -A, reset -q, commit -m <message>, switch [--track] <branch>, init -q
+env GIT_TERMINAL_PROMPT=0 git -C <root> --literal-pathspecs ls-files -z --others --exclude-standard -- <paths>, then restore --staged --worktree --source=HEAD -- <tracked>, clean -fq -- <untracked>   # discard changes (git.revert)
 sh -c 'cd "$1"; h=$(git rev-parse -q --verify HEAD || git hash-object -t tree /dev/null); { git diff … "$h" --; git ls-files -z -o --exclude-standard | head -c 65536 | xargs -0 -r -n 1 git diff … --no-index -- /dev/null; } …' sh <root> …   # a diff: the working tree, with untracked files
 git -C <root> show --no-color --no-ext-diff -M -m --first-parent --format= <hash>   # a diff: one commit
 git -C <root> show -s --no-show-signature --format=%H%x1f%P%x1f%an%x1f%ae%x1f%at%x1f%s%x1f%b <hash> --   # a commit's page: its subject, body, author, date and parents
@@ -119,6 +123,8 @@ page's machine ([Opening links and files](/docs/ui/window#opening-links-and-file
 sh -c 'case $1 in "~"|"~/"*) p=$HOME${1#"~"} ;; /*) p=$1 ;; *) p=${2:-$HOME}/$1 ;; esac; if [ -d "$p" ] …' sh <path> <folder>   # a terminal link's path and the palette's Open File: what is there
 sh -c '{ [ -z "$4" ] || …; <the agent's script>; } 2>/dev/null' sh 50 <offset> <perl> ""   # a page of an agent's closed sessions: perl over pi's and Claude Code's JSONL files, sqlite3 -readonly on Codex's and OpenCode's index
 sh -c 'test -d "$1" && echo yes' sh <folder>        # Resume: is the session's folder there
+sh -c 'cd -- "$2"; …; cd -- "$1" && pwd -P' sh <typed> <folder>   # the New pane chooser's folder: the folder a typed path names
+sh -c 'exec "${SHELL:-sh}" -ilc "$1"' sh 'echo; for c in claude codex pi opencode; do command -v $c …; done; echo ovvi-end'   # the chooser: which agents the machine has
 ```
 
 A plugin's `ovvi.run` runs its argv on the card's machine, inside the envelope.
@@ -132,7 +138,7 @@ npm pack <spec> --pack-destination <staging> --json --ignore-scripts   # an npm:
 tar -xzf <tarball> -C <staging>
 env GIT_TERMINAL_PROMPT=0 git clone --quiet -- <url> <folder>          # a git: source
 env GIT_TERMINAL_PROMPT=0 git -C <folder> checkout --quiet <ref> --
-sh -c 'cd "$1" && shift && exec "$@" 2>&1' sh <package> npm ci --no-audit --no-fund --ignore-scripts --legacy-peer-deps   # its dependencies (pnpm, bun: their flags)
+sh -c 'cd "$1" && shift && exec "$@" 2>&1' sh <package> npm ci --no-audit --no-fund --ignore-scripts --legacy-peer-deps   # its dependencies (`install` without a lockfile; pnpm, bun: their flags)
 sh -c 'cd "$1" && shift && exec "$@" 2>&1' sh <package> npm run --silent build   # its build script: at install, Reload Plugin, Build
 ```
 
@@ -163,6 +169,6 @@ The UI tests call these on throwaway panes; the app never does:
 
 ## Never used
 
-`pane.focus`, `tab.focus`, `workspace.focus`, `agent.focus`, `pane.zoom`,
+`pane.focus`, `tab.focus`, `workspace.focus`, `agent.focus`,
 herdr popups, herdr plugin panes (`plugin.pane.open`), herdr's private client
 socket.

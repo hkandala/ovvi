@@ -120,8 +120,7 @@ prints:
   tab clears the mark, and another window or Mac that still shows it writes
   it again within 10 s. So `shown` can read false for up to 10 s while a
   second Mac shows the pane. A floating pane counts as shown.
-- **Ovvi quits:** it clears its marks, `ovvi-open` first. It waits up to
-  1 s. A crash leaves the marks until `ttl_ms` ends, 30 s at most.
+- **Ovvi quits:** it clears all its marks at once and waits up to 1 s. A crash leaves the marks until `ttl_ms` ends, 30 s at most.
 
 ## The user's view
 
@@ -148,23 +147,10 @@ An agent adds and offers. It never moves the view:
 Any process that can reach a session's herdr socket (the same user on that
 machine) can ring the doorbell. That process can already type into every pane
 of the session, so Ovvi gives it nothing on that machine that herdr does not.
-What is new is what lands on the Mac, so the rules limit that:
-- A request acts only on its own machine: panes of its own session, or
-  `‹session›/‹pane›` of a session on the same machine. A pane argument cannot
-  name another machine.
-- No file, app or clipboard read on the Mac. `copy` only writes the
-  clipboard. A browser card for a site that is not local still asks
-  **Open this page?** ([Browser](/docs/ui/browser#when-a-page-loads-by-itself)).
-- `plugins new`, `reload` and `install` work only from a pane on This Mac,
-  where the plugins are. An install waits for the user's **Install** in the
-  confirmation.
-- No focus steal and no view change (above). At most one notification per
-  pane every 10 s, and none while the user turned off
-  Settings ▸ Agents ▸ When an agent sends one.
-- Ovvi builds every file path itself from the request id, which must be a
-  UUID.
-
-Details: [Protocol](/docs/agent-control/protocol#security).
+The rules limit what lands on the Mac: a request acts only on its own
+machine, reads nothing on the Mac, changes plugins only from This Mac, never
+moves the view, and sends at most one notification per pane every 10 s
+([Protocol](/docs/agent-control/protocol#security)).
 
 ## Why this design
 

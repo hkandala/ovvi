@@ -418,7 +418,8 @@ $ ovvi notify "Review ready" --pane w2:p1
 - One per asking pane every 10 s, whatever `--pane` names: a second is
   `rate_limited`. A newer one from the same pane replaces the older in
   Notification Center.
-- With Settings ▸ Agents ▸ When an agent sends one off, it posts nothing and answers
+- With Settings ▸ Agents ▸ When an agent sends one off, or while Show Only
+  Pinned Spaces hides the pane's space, it posts nothing and answers
   `"notified": false` with exit 0. That does not count toward the limit.
 - If macOS does not let Ovvi post notifications, it is `failed` with
   macOS's words.
