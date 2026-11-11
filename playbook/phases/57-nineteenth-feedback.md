@@ -2009,6 +2009,8 @@ you did, no need of reverting them".
     Added later: "also include one more feature called hide all except pinned (rephrase that better), basically i
     should be able to hide other workspaces except the pinned ones, should be available from cmd+k or right clicking
     on sidebar"
+    Then: "not when right clicking on space, only on empty sidebar or at the top on the session header".
+    Then: "hiding spaces should hide their notifications as well btw".
 
 ### Tart VM plugin, second pass (p57-tart-plugin-v2)
 
@@ -2039,3 +2041,58 @@ webkit directly instead of using browser plugin … if not we should provide tha
   also after a kill (a killed run had left its app, herdr servers and run folder), and a run stops under 8 GB free.
 - **Runs.** `testAPluginPageReachesOnlyTheLocalOriginsItDeclares` and `testAPluginCardAsksAndItsPageSetsItsSettings`
   green in the VM.
+
+### Track B2 (item 89)
+
+- **What happened, item by item.** (1) The sort was the window's scene storage. (2) Recent worked on the old code (a
+  probe dragged within the pinned ones, pinned and unpinned by drag), but with nothing pinned a drop pinned only within
+  8 pt of the list's top, and with pins nothing showed where a pin would land. (3) Space rows had no landing at all
+  (Track B removed it). (5) Move Up and Move Down never had a motion; the sort jumped since its `.animation(motion)` moved
+  onto a custom binding that wrote the window's environment binding (it animated through `@AppStorage`'s binding
+  before, through the same menu).
+- **Fix.** Sort Spaces and Show Only Pinned Spaces are the session's, lines beside the pins in the sidebar's defaults
+  ("‹machine› ‹session› sorted recent", "… only pinned"), all three observable on `HostStore`. The sidebar is one
+  `ForEach` of rows and one place under the pinned ones (`Item.pins`): the line, or while a space is dragged the
+  "Pin Space" region (`DropRow`, shared with New Space), so the slot math is "place after the drop less place now" over
+  one list, with no line-gap terms. One `.animation(0.2 s ease-out, value:)` keyed on the shown order (with the line's
+  place and the drag) moves every reorder; menu actions run once the menu has closed (`afterMenu`). At the drop the row
+  shows at the drag image (an offset set outside the motion), then that offset and its gap go to 0 in the rows' motion,
+  so it moves from the image to its place while fading from 0.4. The tab capsules' keyframe landing (`Lands`) did not
+  show on space rows (the frames showed the row leaving its gap), so rows use the plain offset. Also: under load
+  DragGesture's first change came once the pointer was over another row, and the drag image showed that row; it shows
+  the grabbed place now.
+- **Show Only Pinned Spaces.** Hides unpinned spaces but any a window shows; a hidden space's panes get no state (one
+  place, `showStates`), so the Dock badge, the Dock menu, the row and tab icons and notifications (herdr's and
+  `ovvi notify`) leave them out; turning it off shows their states with no burst (notifications come only from
+  `Seen` changes). Off when the last pin goes.
+- **Decisions.** The region lights by the pointer; slots go by the drag image's middle (the header, not the agents).
+  The region pushes the rows below it down by 40 pt while a space is dragged, in the motion. A typed filter shows rows
+  at once (not in the motion's key). The ⌃⌘ keys, the overview and the palette's places skip hidden spaces.
+- **Measured** (VM recording, frames on change up to 60 fps, row tops by template match, 2x px). Manual drop: the
+  image's top 353 in the last frame before the drop; the dropped row 352 → 322 → 309 → 307 → 308 → 312 (its reset starts
+  a turn after the rows' move: a 2.5 pt dip), the rows around it 311 → 287 → 266 → 253 → 241 → 232;
+  Move Up, the sort and Show Only Pinned Spaces move in 4–6 frames after the menu's fade. The old code: the sort and
+  Move Up jump in one frame, the drop shows the row at its slot at once. AppKit draws frames right after the drop here:
+  B's "no frame for 0.3–0.5 s" did not reproduce, and the tab capsule's landing takes the same path. Sheets (dark,
+  light, before, after): `~/Downloads/ovvi-research/p57b2/`.
+- **Known.** With nothing pinned every space drag pushes the whole list down 40 pt (the region on top), so a drop aimed
+  before the drag lands a row short; the row-drag tests aim past it. A drag that starts late with the pointer already
+  where the region appears, and then holds still, gets no update once the region is laid out (it decides on the row
+  under it); a moving pointer lights it. A window's selection reaches `hidden` on its next selection or snapshot.
+- **Tests.** PinTests: each session's order (two windows follow one session, another session takes Settings'), the pin
+  region lit on the first and the next drag (a row with an agent held by its name), placing among the pinned ones and
+  unpinning, Recent (pin onto the region, reorder pinned, refuse unpinned), Show Only Pinned Spaces (in view stays,
+  badge, `ovvi notify`, Show All, last unpin), and every reorder's motion (`sidebar.moves`: a wiring check that each
+  order change carries the motion; the frames are the strips). XCUITest reads frames after the app idles, so a test
+  cannot see the motion's frames.
+- **Runs.** The new tests on the old code: CI 42969024976, all five red (no lit region, the other window kept its own
+  order, no `sidebar.moves`, no Show Only Pinned Spaces). VM: the six PinTests, the row and tab drags, Recent, the row
+  menu, green. CI on the pushed head: RUNID. Review, two rounds: the region lit by the whole row's middle (not the pointer), a landing not shown frame by
+  frame, a refused gap with Show Only Pinned in Recent, worktrees outside the motion's key, states stale after a window
+  closed, a session test that passed with Settings ignored; all fixed.
+- **For the user.** Drag a space with nothing pinned and with pins, dark and light: the region "Pin Space" shows under
+  the pinned ones (on top with none) and lights blue under the pointer on every drag; drop on it, among the pinned rows,
+  and under it. The dropped row moves from where you let go into place and fades in; Move Up/Down, Sort Spaces, pin and
+  unpin, and Show Only Pinned Spaces all slide. Sort Spaces in one session, then another session: the other follows
+  Settings ▸ Agents ▸ Sort spaces; a relaunch keeps each. With Show Only Pinned Spaces on, a hidden space's agent sends
+  no banner and leaves the Dock badge.

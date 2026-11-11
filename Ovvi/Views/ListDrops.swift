@@ -230,9 +230,8 @@ struct RowsDrop: DropDelegate {
     }
 
     /// A space's slot: on its own side when the pin region does not show (Show Only Pinned Spaces); nil for an unpinned
-    /// space among the
-    /// unpinned ones in Recent, which orders them itself; a pinned one dropped there goes where Recent puts it, so its
-    /// gap opens first of them.
+    /// space among the unpinned ones in Recent, which orders them itself; a pinned one dropped there goes where Recent
+    /// puts it, so its gap opens first of them.
     private func place(_ id: String, _ index: Int, _ blocks: [[HostStore.Workspace]]) -> Int? {
         guard shown.contains(where: { $0.first?.id == id }) else { return index }
         guard let region = blocks.firstIndex(where: \.isEmpty) else {
