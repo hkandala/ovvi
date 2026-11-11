@@ -88,10 +88,12 @@ final class FakeExec: Exec {
     }
 }
 
-/// A bound for a failure only: the HerdrKit tests start together, many spawning processes, and on CI's 3 cores a
-/// client's first reads took over 3 s.
+/// A bound for a failure only, never part of what a test checks: the HerdrKit tests start together, many spawning
+/// processes, and on a Mac at a load of 250 starting one took seconds.
+let failureBound = Duration.seconds(60)
+
 func eventually(_ condition: () async -> Bool) async -> Bool {
-    let deadline = ContinuousClock.now + .seconds(20)
+    let deadline = ContinuousClock.now + failureBound
     while await !condition() {
         guard ContinuousClock.now < deadline else { return false }
         try? await Task.sleep(for: .milliseconds(10))
@@ -133,7 +135,7 @@ final class Gate: Sendable {
 
 /// The timeout outlasts `eventually`: a read that timed out on a starved Mac would make the heartbeat read again at any
 /// moment, and the pacing tests count reads.
-func client(_ exec: FakeExec, _ gate: Gate? = nil, timeout: Duration = .seconds(30)) -> HerdrClient {
+func client(_ exec: FakeExec, _ gate: Gate? = nil, timeout: Duration = failureBound * 2) -> HerdrClient {
     guard let gate else { return HerdrClient(session: "s", exec: exec, timeout: timeout) }
     return HerdrClient(session: "s", exec: exec, timeout: timeout, wait: gate.wait)
 }

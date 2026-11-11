@@ -172,7 +172,7 @@ private func yields(_ changes: AsyncStream<Void>, writing file: URL) async throw
         }
     }
     defer { writer.cancel() }
-    let changed = try await withTimeout(.seconds(10), onTimeout: {}, { await changes.first { true } != nil })
+    let changed = try await withTimeout(failureBound, onTimeout: {}, { await changes.first { true } != nil })
     #expect(changed)
 }
 

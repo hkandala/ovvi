@@ -85,8 +85,7 @@ import Testing
     page.send(content: Data("ping".utf8), completion: .idempotent)
     #expect(await page.read(4) == Data("ping".utf8))
     front.stop()
-    try await Task.sleep(for: .milliseconds(300))
-    #expect(await connect(front, "devbox.localhost", 7, on: port).0 == nil)
+    #expect(await eventually { await connect(front, "devbox.localhost", 7, on: port).0 == nil })
 }
 
 @Test func `front fails at once without a machine`() async throws {

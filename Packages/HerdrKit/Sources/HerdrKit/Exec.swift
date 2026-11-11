@@ -106,6 +106,8 @@ public struct Channel: Sendable {
 public final class ProcessExec: Exec {
     let environment: [String: String]
     private let lookup: Mutex<Lookup>
+    /// The login shell's bound: it runs the user's rc files. Tests on a starved Mac pass a longer one.
+    private let shellLimit: Duration
     private struct Lookup {
         var path: String?
         var asked: ContinuousClock.Instant
@@ -130,8 +132,11 @@ public final class ProcessExec: Exec {
         }
     }
 
-    init(_ environment: [String: String], herdr: String?, asked: ContinuousClock.Instant) {
+    init(_ environment: [String: String], herdr: String?, asked: ContinuousClock.Instant,
+         shellLimit: Duration = .seconds(3))
+    {
         self.environment = environment
+        self.shellLimit = shellLimit
         lookup = Mutex(Lookup(path: herdr, asked: asked))
     }
 
@@ -156,15 +161,15 @@ public final class ProcessExec: Exec {
             return path
         }
         // Missing or gone since: ask again at most every 30 s (it runs the user's rc files); nil in between.
-        // `asked` is set as the run starts, and the 3 s shell timeout keeps the run inside the window, so one
-        // runs at a time.
+        // `asked` is set as the run starts, and the shell's bound (under 30 s) keeps the run inside the window, so
+        // one runs at a time.
         let ask = lookup.withLock {
             guard ContinuousClock.now - $0.asked >= .seconds(30) else { return false }
             $0.asked = .now
             return true
         }
         guard ask else { return nil }
-        let path = await Self.loginShell(environment).herdr
+        let path = await Self.loginShell(environment, within: shellLimit).herdr
         // An ask that ended late never drops a path found meanwhile (an install's ask); a stale one is checked above.
         lookup.withLock { $0 = Lookup(path: path ?? $0.path, asked: .now) }
         return path
@@ -172,7 +177,9 @@ public final class ProcessExec: Exec {
 
     /// A GUI app does not get the shell's environment, so ask the login shell, in one run, for its
     /// variables and for herdr.
-    static func loginShell(_ env: [String: String]) async -> (vars: [String: String], herdr: String?) {
+    static func loginShell(_ env: [String: String],
+                           within limit: Duration = .seconds(3)) async -> (vars: [String: String], herdr: String?)
+    {
         let marker = "ovvi-env-\(UUID().uuidString)"
         guard let channel = try? spawn(
             [env["SHELL"] ?? "/bin/zsh", "-lic",
@@ -181,7 +188,7 @@ public final class ProcessExec: Exec {
         ) else { return ([:], nil) }
         // Closed stdin reads like /dev/null.
         channel.closeInput()
-        return await (try? withTimeout(.seconds(3), onTimeout: channel.terminate) {
+        return await (try? withTimeout(limit, onTimeout: channel.terminate) {
             var vars: [String: String] = [:]
             var herdr: String?
             var seen = 0

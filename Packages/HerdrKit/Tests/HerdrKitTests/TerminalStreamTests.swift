@@ -61,6 +61,6 @@ func `sorts closed reasons`(reason: String, closed: TerminalStream.Closed) {
     defer { try? FileManager.default.removeItem(atPath: herdr) }
     let client = HerdrClient(session: "ovvi-e2e-none", exec: ProcessExec([:], herdr: herdr, asked: .now))
     let stream = try await client.terminal("term_1", cols: 10, rows: 5, observe: true)
-    let closed = try await withTimeout(.seconds(5), onTimeout: {}, { await stream.events.first { _ in true } })
+    let closed = try await withTimeout(failureBound, onTimeout: {}, { await stream.events.first { _ in true } })
     #expect(closed == .closed(.failed("handshake failed")))
 }

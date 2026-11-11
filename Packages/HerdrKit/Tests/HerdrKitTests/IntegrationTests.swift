@@ -98,7 +98,7 @@ private func talk(_ client: HerdrClient, _ exec: SubscribeCounter) async throws 
     let _: Created = try await client.call("workspace.create", ["cwd": "/tmp", "focus": false])
 
     let updates = await client.updates()
-    let found = try await withTimeout(.seconds(10), onTimeout: {}, { () -> Snapshot? in
+    let found = try await withTimeout(failureBound, onTimeout: {}, { () -> Snapshot? in
         var reads = 0
         for await case let .snapshot(snapshot) in updates {
             reads += 1
@@ -134,7 +134,7 @@ private func talk(_ client: HerdrClient, _ exec: SubscribeCounter) async throws 
             group.addTask {
                 let channel = try await exec.run(["sh", "-c", "echo hi"])
                 channel.closeInput()
-                return try await withTimeout(.seconds(5), onTimeout: channel.terminate) {
+                return try await withTimeout(failureBound, onTimeout: channel.terminate) {
                     await channel.lines.reduce(into: []) { $0.append($1) }
                 }
             }
@@ -167,11 +167,11 @@ private func talk(_ client: HerdrClient, _ exec: SubscribeCounter) async throws 
 
 @Test func `terminate stops the readers when a grandchild keeps the pipes open`() async throws {
     let exec = localExec
-    let channel = try await exec.run(["sh", "-c", "sleep 8 & echo hi"])
+    let channel = try await exec.run(["sh", "-c", "sleep 120 & echo hi"])
     #expect(await channel.lines.first { _ in true } == "hi")
     channel.terminate()
-    // stderr is still open in `sleep`; without stopping its reader, this waits 8 s.
-    _ = try await withTimeout(.seconds(5), onTimeout: {}, { await channel.exit() })
+    // stderr is still open in `sleep`; without stopping its reader, this waits 120 s.
+    _ = try await withTimeout(failureBound, onTimeout: {}, { await channel.exit() })
 }
 
 @Test func `the login shell gives its variables and herdr's path`() async throws {
@@ -185,12 +185,15 @@ private func talk(_ client: HerdrClient, _ exec: SubscribeCounter) async throws 
     for path in [shell, herdr] {
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: path)
     }
-    let found = await ProcessExec.loginShell(["SHELL": shell, "PATH": "\(dir.path)/bin:/usr/bin:/bin", "XDG_X": "1"])
+    let found = await ProcessExec.loginShell(["SHELL": shell, "PATH": "\(dir.path)/bin:/usr/bin:/bin", "XDG_X": "1"],
+                                             within: failureBound)
     #expect(found.herdr == herdr && found.vars["XDG_X"] == "1")
-    #expect(await ProcessExec.loginShell(["SHELL": shell, "PATH": "/usr/bin:/bin"]).herdr == nil)
+    #expect(await ProcessExec.loginShell(["SHELL": shell, "PATH": "/usr/bin:/bin"], within: failureBound).herdr == nil)
 
     try FileManager.default.removeItem(atPath: shell + ".count")
-    let exec = ProcessExec(["SHELL": shell, "PATH": "/usr/bin:/bin"], herdr: nil, asked: .now - .seconds(31))
+    // Inside the 30 s between asks, so a second ask never starts.
+    let exec = ProcessExec(["SHELL": shell, "PATH": "/usr/bin:/bin"], herdr: nil, asked: .now - .seconds(31),
+                           shellLimit: .seconds(25))
     async let first = exec.herdr(), second = exec.herdr(), third = exec.herdr()
     #expect(await [first, second, third] == [nil, nil, nil])
     #expect(await exec.herdr() == nil)
@@ -216,7 +219,7 @@ private func control(_ client: HerdrClient) async throws {
         .rootPane)
     let terminal = try #require(pane.terminalID)
 
-    try await withTimeout(.seconds(20), onTimeout: {}, {
+    try await withTimeout(failureBound * 2, onTimeout: {}, {
         let control = try await client.terminal(terminal, cols: 60, rows: 12)
         var events = control.events.makeAsyncIterator()
         guard case let .frame(first)? = await events.next() else { throw HerdrError.failed("no first frame") }
@@ -224,7 +227,7 @@ private func control(_ client: HerdrClient) async throws {
 
         control.input("echo ovvi-$((6*7)); stty size\r")
         var text = ""
-        for _ in 0 ..< 50 where !text.contains("12 60") {
+        for _ in 0 ..< 600 where !text.contains("12 60") {
             try await Task.sleep(for: .milliseconds(100))
             text = try await client.screen(pane.id)
         }
@@ -282,7 +285,7 @@ func `a started server shares the CLI's paths`() async throws {
     }
     let base = localExec
     let client = HerdrClient(session: session, exec: Moved(base: base, config: config))
-    try await client.startServer(within: .seconds(10))
+    try await client.startServer(within: failureBound)
     #expect(FileManager.default.fileExists(atPath: "\(config)/herdr/sessions/\(session)"))
     let job = try await base.output(["launchctl", "print", "gui/\(getuid())/dev.ovvi.app.herdr.\(session)"])
     let herdr = try #require(await base.herdr())

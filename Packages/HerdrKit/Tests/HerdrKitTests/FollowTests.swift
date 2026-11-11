@@ -134,28 +134,32 @@ func `a dropped follow leaves no process`(awk: Bool) async throws {
     }
 }
 
-/// A pi session can pass 100 MB: its backlog loads at `head`'s speed (0.9 s at a load of 15), not at macOS `tail`'s
-/// 17 MB a second (5.3 s). Measured against `tail` on the same file, so a busy Mac slows both, from each one's first
-/// line to its last: the follow starts a dozen processes ahead of its first read, `tail` one, and on a starved Mac
-/// a process can take seconds to start.
+/// A pi session can pass 100 MB: its backlog loads at `head`'s speed (0.9 s for 80 MB at a load of 15), not at macOS
+/// `tail`'s 17 MB a second (5.3 s). Measured against `tail` on the same file, so a busy Mac slows both, from each one's
+/// first line to its last: the follow starts a dozen processes ahead of its first read, `tail` one, and on a starved
+/// Mac a process can take seconds to start. Each is timed twice, in turns, and the faster time counts: a stall
+/// lengthens one run, not both.
 @Test func `a big backlog loads fast`() async throws {
     let file = FileManager.default.temporaryDirectory.appending(path: "ovvi-backlog-\(UUID().uuidString).jsonl")
     defer { try? FileManager.default.removeItem(at: file) }
-    try Data(String(repeating: String(repeating: "x", count: 7999) + "\n", count: 10000).utf8).write(to: file)
-    var start: ContinuousClock.Instant?
-    for await _ in try await localExec.run(["tail", "-c", "+1", file.path]).lines where start == nil {
-        start = .now
-    }
-    let tail = ContinuousClock.now - (start ?? .now)
-    start = nil
-    for await line in try await lineByLine(file.path, from: FileMark()) {
-        if case .line = line, start == nil {
+    try Data(String(repeating: String(repeating: "x", count: 7999) + "\n", count: 5000).utf8).write(to: file)
+    var tail = Duration.seconds(1000), follow = tail
+    for _ in 0 ..< 2 {
+        var start: ContinuousClock.Instant?
+        for await _ in try await localExec.run(["tail", "-c", "+1", file.path]).lines where start == nil {
             start = .now
-        } else if case .loaded = line {
-            break
         }
+        tail = min(tail, ContinuousClock.now - (start ?? .now))
+        start = nil
+        for await line in try await lineByLine(file.path, from: FileMark()) {
+            if case .line = line, start == nil {
+                start = .now
+            } else if case .loaded = line {
+                break
+            }
+        }
+        follow = min(follow, ContinuousClock.now - (start ?? .now))
     }
-    let follow = ContinuousClock.now - (start ?? .now)
     #expect(follow < tail / 2, "follow \(follow), tail \(tail)")
 }
 
@@ -180,11 +184,12 @@ func `a dropped follow leaves no process`(awk: Bool) async throws {
                                              count: 600).utf8))
     try handle.close()
     var count = 0
-    while lines < 601, let batch = try await batches.next() {
+    // Without batches, one per line: stop at the third.
+    while lines < 601, count < 3, let batch = try await batches.next() {
         lines += batch.count
         count += 1
-        // Busy: the rest of the burst comes meanwhile.
-        try await Task.sleep(for: .milliseconds(300))
+        // Busy: the rest of the burst comes meanwhile, also from `tail` on a starved Mac.
+        try await Task.sleep(for: .seconds(2))
     }
     #expect(lines == 601 && count <= 2)
 }
