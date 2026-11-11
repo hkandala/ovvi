@@ -54,6 +54,7 @@ extension OvviUITests {
         "testSplitsKeepTheDisplayRate",
         "testStoppedSessionSaysSoAndComesBackWhenStartedAgain",
         "testTheOvviPluginsCommandFromARemoteMachine",
+        "testThePointerLightsTheRowUnderItAfterPins",
         "testTheWelcomeInstallsAMissingHerdr",
         "testTheWelcomeTurnsItsPagesAndClosesForGood",
         "testTrafficLightsStayStillWhenWorkspacesSwitch",
