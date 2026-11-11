@@ -23,7 +23,8 @@ extension OvviUITests {
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(app.menuItems["Rename Space"].vanishes(within: 2))
         row.doubleClick()
-        XCTAssertFalse(element("workspace.\(workspace).rename").exists(within: 1))
+        // Local state on the second click (WorkspaceRow.startRenaming): its field would be drawn on the next frame.
+        XCTAssertFalse(element("workspace.\(workspace).rename").exists(within: 0.5))
         keepScreenshot("not running")
         try await expect("no stream") { try await streams(five).isEmpty }
 
@@ -59,7 +60,8 @@ extension OvviUITests {
         XCTAssertTrue(start.exists(within: 5))
         XCTAssertTrue(failed(1), why.debugDescription)
         keepScreenshot("start failed")
-        XCTAssertFalse(why.vanishes(within: 5))
+        // Only a snapshot clears it: past the 2 s start timeout and the client's 2 s read tick (HerdrClient.beat).
+        XCTAssertFalse(why.vanishes(within: 2.5))
 
         try await Self.post("\(five)/start")
         XCTAssertTrue(start.vanishes(within: connect))
