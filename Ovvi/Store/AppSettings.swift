@@ -51,8 +51,9 @@ enum AgentView: String {
 
 @MainActor
 extension UserDefaults {
-    /// Per config folder, so a test's `-configFolder` keeps its writes out of the user's. Not a suite at a path: once
-    /// its file exists, a new process's writes read back the prior value and notify no view.
-    static let agents = UserDefaults(suiteName: "dev.ovvi.app.agents." + Registry.config.path.replacing("/", with: "_"))
-        ?? .standard
+    /// The sidebar's state, per build and config folder, so a test's `-configFolder` keeps its writes out of the
+    /// user's. Not a suite at a path: once its file exists, a new process's writes read back the prior value and notify
+    /// no view.
+    static let sidebar = UserDefaults(suiteName: "\(Bundle.main.bundleIdentifier ?? "dev.ovvi.app").sidebar."
+        + Registry.config.path.replacing("/", with: "_")) ?? .standard
 }

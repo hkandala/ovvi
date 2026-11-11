@@ -22,7 +22,7 @@ struct SidebarPage: View {
         }
     }
 
-    @AppStorage(Page.openShelves, store: .agents) private var opened = ""
+    @AppStorage(Page.foldsAndShelves, store: .sidebar) private var opened = ""
     @State private var held: [String]?
     @State private var hovering = false
     @State private var leaves = 0

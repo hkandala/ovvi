@@ -108,7 +108,7 @@ final class HostStore {
     private init(session: String, machine: Machine) {
         self.session = session
         self.machine = machine
-        let saved = UserDefaults.agents.data(forKey: Self.marksKey(session, machine))
+        let saved = UserDefaults.sidebar.data(forKey: Self.marksKey(session, machine))
         marks = saved.flatMap { try? JSONDecoder().decode([String: Seen.Mark].self, from: $0) } ?? [:]
         seen = Seen(marks: marks)
         pins = Set(Self.saved("pinned", session, machine))
@@ -340,9 +340,9 @@ extension HostStore {
         marks = seen.marks
         let key = Self.marksKey(session, machine)
         if marks.isEmpty {
-            UserDefaults.agents.removeObject(forKey: key)
+            UserDefaults.sidebar.removeObject(forKey: key)
         } else {
-            UserDefaults.agents.set(try? JSONEncoder().encode(marks), forKey: key)
+            UserDefaults.sidebar.set(try? JSONEncoder().encode(marks), forKey: key)
         }
     }
 

@@ -145,7 +145,7 @@ final class Latency {
         return [page.id, workspace?.id ?? "", tab?.id ?? "", workspace?.tabs.map(\.id).joined(separator: ",") ?? "",
                 tab?.tree?.paneIDs.joined(separator: ",") ?? "", page.zoomedPaneID ?? "",
                 page.closing == nil ? "" : "closing", panel, filter, pages.overview ? "overview" : "",
-                UserDefaults.agents.string(forKey: Page.openShelves) ?? ""]
+                UserDefaults.sidebar.string(forKey: Page.foldsAndShelves) ?? ""]
             .joined(separator: " ")
     }
 

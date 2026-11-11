@@ -4,8 +4,8 @@ import SwiftUI
 struct ArchivedShelf: View {
     let pages: WindowPages
     let page: Page
-    @AppStorage("archivedAgent", store: .agents) private var agent = ""
-    @AppStorage(Page.openShelves, store: .agents) private var opened = ""
+    @AppStorage("archivedAgent", store: .sidebar) private var agent = ""
+    @AppStorage(Page.foldsAndShelves, store: .sidebar) private var opened = ""
     @State private var list = ClosedList()
     @State private var reading: Set<String> = []
     @State private var failed: Set<String> = []

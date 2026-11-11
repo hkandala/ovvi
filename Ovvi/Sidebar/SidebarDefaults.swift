@@ -15,7 +15,7 @@ enum SpaceOrder: String {
 
 extension Page {
     /// ponytail: folds are never pruned, so a space herdr makes again with a folded one's id starts folded.
-    static let openShelves = "agentsOpen"
+    static let foldsAndShelves = "foldsAndShelves"
 
     var archivedKey: String {
         "\(store.machine.id) archived-sessions"
@@ -48,14 +48,14 @@ extension HostStore {
     /// The session's lines of the kind replaced; the others kept.
     func save(_ kind: String, _ values: [String]) {
         let prefix = "\(machine.id) \(session) \(kind) "
-        UserDefaults.agents.set((Self.lines.filter { !$0.hasPrefix(prefix) } + values.map { prefix + $0 })
+        UserDefaults.sidebar.set((Self.lines.filter { !$0.hasPrefix(prefix) } + values.map { prefix + $0 })
             .joined(separator: "\n"), forKey: Self.key)
     }
 
-    private static let key = "pinnedSpaces"
+    private static let key = "spaceChoices"
 
     private static var lines: [String] {
-        (UserDefaults.agents.string(forKey: key) ?? "").split(separator: "\n").map(String.init)
+        (UserDefaults.sidebar.string(forKey: key) ?? "").split(separator: "\n").map(String.init)
     }
 
     /// While Show Only Pinned Spaces is on: the unpinned spaces, less any a window shows, so the user never loses
