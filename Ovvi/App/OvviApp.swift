@@ -109,7 +109,7 @@ struct ContentView: View {
                 picking = true
             }
             guard !picking else { return }
-            await restore(opening?.machine)
+            let restored = await restore(opening?.machine)
             // Closed while it restores: nothing of it may stay.
             if Task.isCancelled {
                 pages.closed()
@@ -123,7 +123,7 @@ struct ContentView: View {
                                          with: openWindow)
                     }
                 }
-                if opening?.connect == true, let store = pages.current?.store {
+                if opening?.connect == true || restored, let store = pages.current?.store {
                     await store.connect(in: pages)
                 }
             }
@@ -186,8 +186,9 @@ struct ContentView: View {
         var floating: [String: Bool]
     }
 
-    private func restore(_ opening: Machine?) async {
-        guard pages.list.isEmpty else { return }
+    /// Whether it opened the window's saved pages.
+    private func restore(_ opening: Machine?) async -> Bool {
+        guard pages.list.isEmpty else { return false }
         // A window macOS restores gets its scene storage a moment after it first shows; a restored window always
         // has saved pages.
         if AppDelegate.restoring {
@@ -196,7 +197,7 @@ struct ContentView: View {
             }
         }
         // Closed meanwhile: no session may start for it.
-        guard !Task.isCancelled else { return }
+        guard !Task.isCancelled else { return false }
         // A run against a throwaway session must open only it.
         let argument = MachineList.session
         let id = MachineList.machine ?? savedMachine
@@ -211,10 +212,11 @@ struct ContentView: View {
             .filter { MachineList.defaultSession == nil || $0.hasPrefix("ovvi-e2e-") } : []
         if !saved.isEmpty {
             let client: any Multiplexer = await HerdrClient(session: saved[0], exec: pages.machine.exec())
-            let running = await (try? client.sessions())?.filter(\.running).map(\.name)
-            guard !Task.isCancelled else { return }
-            for name in saved where running?.contains(name) ?? true {
-                pages.open(name)
+            // A deleted session stays deleted; a stopped one (a restart of the Mac) starts.
+            let names = await (try? client.sessions())?.map(\.name)
+            guard !Task.isCancelled else { return false }
+            for name in saved where names?.contains(name) ?? true {
+                pages.open(name, start: true)
             }
             if let page = pages.list.first(where: { $0.id == savedPage }) {
                 pages.show(page)
@@ -225,6 +227,7 @@ struct ContentView: View {
         }
         restoreSelection()
         pages.showTerminals() // The restored tab streams at once, not at the next snapshot.
+        return !saved.isEmpty
     }
 }
 

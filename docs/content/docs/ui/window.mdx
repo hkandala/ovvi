@@ -8,10 +8,11 @@ description: "Windows, the title row, tab bar, sidebar pages with spaces and the
 - Each window shows one machine
   ([What a machine is](/docs/machines#what-a-machine-is)). Two windows can show
   different machines or the same machine (D34).
-- **Ovvi never connects to a session by itself.** A window with nothing to
+- **Ovvi opens only sessions the user opened.** A window with nothing to
   restore shows the [new-window view](#new-window): at launch, on File ▸ New
   Window (⌘N), and when the app reopens with no window (a Dock click). A
-  window that macOS restores keeps its pages. A window opened for a machine
+  window that macOS restores keeps its pages, and starts their sessions
+  that are not running ([Restore](#sidebar)). A window opened for a machine
   (the machine menu, Add Machine) opens that machine's `default`, which
   the user asked for.
 - Two windows on the same machine share the live data of each session. Each
@@ -258,8 +259,9 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   windows when quitting an application" setting does not apply to it (a
   user's own `defaults write` still wins). A window that macOS restores opens
   the pages it had again,
-  each with its selected space and tabs. A session that is not running is
-  skipped, and a space or tab that is gone falls back to herdr's focus. A
+  each with its selected space and tabs. A session that is not running (the
+  Mac restarted) starts by itself, as its **Start** does; one deleted since is
+  skipped; and a space or tab that is gone falls back to herdr's focus. A
   window never comes back in full screen: one that macOS restores in full
   screen leaves it.
   Only the installed app (`make install`, `make dmg`) has its bundle id, so no

@@ -22,6 +22,7 @@ extension OvviUITests {
         "testARemoteNewPanesFolderLineTakesATypedFolder",
         "testARemotePageComesBackAfterItsConnectionDies",
         "testARemoteWindowOpensAnotherSessionOfItsMachine",
+        "testARestoredWindowStartsItsStoppedSession",
         "testATabClickComesIntoViewWithoutAFlicker",
         "testATabComesIntoViewWithoutAFlicker",
         "testAWorkspaceSwitchMakesOnlyTheCapsulesInView",

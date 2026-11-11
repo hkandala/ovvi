@@ -68,14 +68,16 @@ builds share. It never touches herdr's sessions or the agents' files.
 
 <Callout title="Nothing the app saves describes herdr's state">
 The only exception is each window's restore state: the names of its pages.
-A page whose session no longer runs is skipped. A fresh install on a new Mac rebuilds
+A page whose session was deleted is skipped. A fresh install on a new Mac rebuilds
 every space, tab and pane from herdr.
 </Callout>
 
 ## Which pages a window opens
 
 - A restored window opens the pages in `pages` again, in order, and shows
-  `page`, each with its `selection`. A name that no longer runs is skipped.
+  `page`, each with its `selection`. A session that is not running starts,
+  as its Start does (a restart of the Mac stops every session; a remote
+  machine connects first); a name the machine no longer lists is skipped.
   macOS hands a restored window its scene storage a moment after the window
   first shows, so the window waits for it (at most 1 s) before it opens a
   page.
@@ -86,7 +88,7 @@ every space, tab and pane from herdr.
   launch argument (a test's), else none: the window shows the
   [new-window view](/docs/ui/window#new-window). On This Mac the app starts
   `-session`'s session when it is stopped (a launchd job, D47). It never opens
-  a session by itself.
+  a session by itself: only a restored window starts the sessions it had.
 - A new window opened for a machine (the machine menu, a machine just added) is on
   that machine and opens its `default`. File ▸ New Window (⌘N) opens no page.
 - No setting names a session to open. `-session` is read from the argument

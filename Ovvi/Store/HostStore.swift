@@ -29,6 +29,8 @@ final class HostStore {
     /// The not-running page's reason, until the session answers or the next Start.
     var startProblem: String?
     var starting = false
+    /// Until its first snapshot: a session found stopped starts as its Start does.
+    @ObservationIgnored private var startStopped = false
     var flashing: String?
     var resuming: Set<String> = []
     var choosers: [Chooser] = []
@@ -132,7 +134,8 @@ final class HostStore {
         }
         let store = HostStore(session: session, machine: machine)
         open[key(session, machine)] = store
-        store.task = Task { await store.run(start: start) }
+        store.startStopped = start
+        store.task = Task { await store.run() }
         return store
     }
 
@@ -165,14 +168,7 @@ final class HostStore {
         }
     }
 
-    private func run(start: Bool) async {
-        if start {
-            do {
-                try await Self.start(session, on: machine)
-            } catch {
-                startProblem = error.localizedDescription
-            }
-        }
+    private func run() async {
         let client: any Multiplexer = await HerdrClient(session: session, exec: machine.exec())
         self.client = client
         defer { self.client = nil }
@@ -185,6 +181,7 @@ final class HostStore {
                 state = .live
                 startProblem = nil
                 starting = false
+                startStopped = false
                 snapshotted(changes)
                 Latency.shared.applied(since: start)
                 // After the first snapshot, so the session list never delays the layout.
@@ -221,6 +218,13 @@ final class HostStore {
         // Not a read that failed while the start still runs.
         if Self.starts[Self.key(session, machine)] == nil {
             starting = false
+        }
+        // In this turn, so the page never draws its Start button first. Its sessions read: on a remote machine only
+        // once it is connected.
+        if startStopped, !isRunning {
+            startStopped = false
+            starting = true
+            Task { await start() }
         }
         snapshotted([])
     }
