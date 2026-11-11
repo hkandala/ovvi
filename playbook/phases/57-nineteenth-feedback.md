@@ -1869,6 +1869,8 @@ you did, no need of reverting them".
   210–329 ms), so dropping the hold and fitting at the start cost nothing measurable. Chosen CI set on the head: see
   below. Films and sheets: `~/Downloads/ovvi-research/p57z/`.
 - **Not fixed.** A narrow chat card still wraps its messages 150 ms after its width changes, so after a split lands.
+  A close made by another herdr client can be preceded by herdr's own ratio a hair off (2 pt seen once): the test lets
+  an edge go back by up to 3 pt.
 - **For the user.** ⌘D and ⇧⌘D on File Explorer, a terminal and a browser, Glass and Classic, dark and light: every card
   slides once and stops; nothing moves or re-lays out after it lands. The split card's header buttons and path field
   sit at their final place from the first frame while its edge slides in to meet them.

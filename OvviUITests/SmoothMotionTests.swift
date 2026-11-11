@@ -193,13 +193,16 @@ extension OvviUITests {
         let names = ["left", "top", "right", "bottom"]
         let edges = { (row: [CGFloat]) in [row[1], row[2], row[1] + row[3], row[2] + row[4]] }
         let start = edges(first), end = edges(last)
+        // The armed motion's span per edge, for a track that began late.
+        let armed = head.firstIndex(of: "span").map { head[($0 + 1)...].prefix(4).compactMap { Double($0) } } ?? []
         var landed = false
         for (index, sample) in samples.enumerated() {
             let now = edges(sample)
             for edge in 0 ..< 4 {
                 let before = index > 0 ? (edges(samples[index - 1])[edge], samples[index - 1][0]) : nil
+                let span = max(abs(end[edge] - start[edge]), armed.count == 4 ? CGFloat(armed[edge]) : 0)
                 problems += edgeProblems(names[edge], (now[edge], sample[0]), before: before,
-                                         way: (start[edge], end[edge]), curve: curve)
+                                         way: [start[edge], end[edge], span], curve: curve)
             }
             if !landed, zip(now, end).allSatisfy({ abs($0 - $1) <= near }) {
                 landed = true
@@ -234,19 +237,20 @@ extension OvviUITests {
 
     /// One edge at one sample: between its start and its end, never back, in a step the curve allows.
     private static func edgeProblems(_ name: String, _ sample: (CGFloat, CGFloat), before: (CGFloat, CGFloat)?,
-                                     way: (CGFloat, CGFloat), curve: Bool) -> [String]
+                                     way: [CGFloat], curve: Bool) -> [String]
     {
-        let (now, time) = sample, (start, end) = way
+        let (now, time) = sample, (start, end, span) = (way[0], way[1], way[2])
         var problems: [String] = []
         if !(min(start, end) - near ... max(start, end) + near).contains(now) {
             problems.append("the \(name) edge at \(now), outside \(start) → \(end) at \(time) ms")
         }
         guard let (last, then) = before else { return problems }
         let step = now - last, sign: CGFloat = end >= start ? 1 : -1
-        if step * sign < -near {
+        // Up to 3 pt: herdr may send a ratio a hair off its last one as another client's close lands.
+        if step * sign < -3 {
             problems.append("the \(name) edge went back \(last) → \(now) at \(time) ms")
         }
-        if curve, abs(step) > abs(end - start) * steepest * (time - then + frame) / slide + near {
+        if curve, abs(step) > span * steepest * (time - then + frame) / slide + near {
             problems.append("the \(name) edge jumped \(last) → \(now) at \(time) ms")
         }
         return problems

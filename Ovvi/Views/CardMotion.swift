@@ -140,6 +140,9 @@ final class MovingCard: NSView {
             slides += 1
             setAccessibilityLabel("slides \(slides)")
             track()
+            // How far each edge goes (left, top, right, bottom): a busy main thread may sample only the motion's end.
+            let edges = [-offset.x, offset.y - rect.height + size.height, -offset.x + rect.width - size.width, offset.y]
+            span = zip(span, edges).map { max($0, Int(abs($1).rounded())) }
         }
     }
 
@@ -155,15 +158,15 @@ final class MovingCard: NSView {
     /// e2e: the card's place at each display frame, from a change until 0.4 s after the last one, in the window
     /// content's layer; the frames its surface was off the card by over a point; its content's laid out sizes.
     /// Each sample after the first is its change from the one before: an element's label holds 512 characters.
-    /// "slides N surface K content 1420x1030 706x1030 track ms x y w h;dms dx dy dw dh;…".
+    /// "slides N span l t r b surface K content 1420x1030 706x1030 track ms x y w h;dms dx dy dw dh;…".
     private var samples: [[Int]] = [], sampler: CADisplayLink?, sampled = (start: 0.0, changed: 0.0)
-    private var surfaceOff = 0, contents: [String] = []
+    private var surfaceOff = 0, contents: [String] = [], span = [0, 0, 0, 0]
 
     private func track() {
         let now = CACurrentMediaTime()
         sampled.changed = now
         guard sampler == nil else { return }
-        (samples, surfaceOff, contents, sampled.start) = ([], 0, [], now)
+        (samples, surfaceOff, contents, span, sampled.start) = ([], 0, [], [0, 0, 0, 0], now)
         // The screen's, not the view's: a new card's view has no window yet.
         sampler = (window?.screen ?? NSScreen.main)?.displayLink(target: self, selector: #selector(sample))
         sampler?.add(to: .main, forMode: .common)
@@ -198,7 +201,8 @@ final class MovingCard: NSView {
             let steps = zip([[]] + samples, samples).map { before, now in
                 (before.isEmpty ? now : zip(now, before).map { $0 - $1 }).map(String.init).joined(separator: " ")
             }
-            setAccessibilityLabel("slides \(slides) surface \(surfaceOff) content \(contents.joined(separator: " ")) "
+            setAccessibilityLabel("slides \(slides) span \(span.map(String.init).joined(separator: " ")) surface "
+                + "\(surfaceOff) content \(contents.joined(separator: " ")) "
                 + "track \(steps.joined(separator: ";"))")
         }
     }
