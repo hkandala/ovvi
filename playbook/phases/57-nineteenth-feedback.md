@@ -1960,3 +1960,27 @@ you did, no need of reverting them".
   drag pin sent to herdr's end, a pin zone only a centre grab could reach, and the line drawn under the fade's mask;
   all fixed.
 
+
+88. Onboarding v4 feedback (Track Y5; screenshot `.build/fb57/r7-ob-7.06.24.png`):
+    "- for some reason app window colors are different from original like its bit more light, in the screnshot i have
+    onboarding screen along with original app in the background, compare the background colors, tab color, sidebar
+    colors etc and verify and understadn why recordings have different colors, is it because of any background it
+    has? use plain dark background for dark theem and plain white background for light theme
+    - in the first recording, in the right pane we show some node test thing, instead of that can we show like build
+    is compiling, like may be like cargo compile, show line by line as they compile showing the progress
+    - let's reduce gradient point to 50% from 55%, that onboarding agent knows about what i am talking about
+    - in the second video, for the markdown content, remove extra empty lines between headers and checkboxes, and the
+    space switching animation is bit slow and jagged in the sidebar, can we fix that? also stay in the switched space
+    for sometime, it stays very brief and the video loops
+    - too much movement in the third video, just show an agent whic has its response already, first in tui view and
+    then switch to TUI view, also make sure thw window is active in the entire recording, i see in the beginning of
+    video, the window is not active and it got active later, and the caht view flickers when switched, so make sure
+    to open it before so when switching the flicker is not there
+    - in everything you need section, the text is going two lines, let's rephrase it so it fits in one line like every
+    other screen, also we should change the video recording, instead of showing like we are opening panes from cli, we
+    can show more like claude code is opening these panes, show a claude code tui, where the agent has finished its
+    work and opens git tree and the deployment plugin on the side similar to how its now, just not open the browser
+    down, instead open the browser in a new tab. we don't need to switch to the browser pane, and in the text as well
+    we should mention like either you open the pane or let agent opens panes etc, make sure to keep it one line
+    - and in the final remote screen, we are just opening the menu, but that doesn't seem clear, we should show
+    clicking on add machine and typing certain machine name in ssh and stop."
