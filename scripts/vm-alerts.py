@@ -7,7 +7,8 @@ Two of macOS's asks would sit over the tests' window:
   `tart exec` or ssh, the e2e helper's films. Its answer is replayd's approvals file: a recent alert date and a hint
   date far ahead keep it from asking.
 - Whether the tests' app may send notifications, a banner over the window's top right until it is answered. The
-  answer is usernoted's settings: the app's notifications are off, which also keeps its banners off the tests.
+  answer is usernoted's settings: the app's notifications are off, which also keeps its banners off the tests, and so
+  are those of "App Running in Background", an alert that stays until it is closed.
 A daemon reads its file when it starts and may write it when it stops, so a change goes in between two stops of its
 daemon. Prints what it changed.
 """
@@ -30,8 +31,8 @@ def restart(daemon):
 
 approvals = home / "group.com.apple.replayd/ScreenCaptureApprovals.plist"
 # The program macOS asks about is the one responsible: tart's guest agent (a Homebrew path with its version) and ssh's.
-agents = [line for line in subprocess.run(["ps", "-axo", "comm="], capture_output=True, text=True).stdout.splitlines()
-          if line.endswith("/tart-guest-agent")]
+running = subprocess.run(["ps", "-axo", "comm="], capture_output=True, text=True).stdout.splitlines()
+agents = [os.path.realpath(line) for line in running if line.endswith("/tart-guest-agent")]
 found = plistlib.loads(approvals.read_bytes()) if approvals.exists() else {}
 ahead = datetime.datetime(2099, 1, 1)  # plistlib wants naive dates, in UTC
 # A future alert date reads as no answer: macOS asks again.
@@ -51,13 +52,23 @@ if changed:
 
 settings = home / "group.com.apple.usernoted/Library/Preferences/group.com.apple.usernoted.plist"
 notes = plistlib.loads(settings.read_bytes())
-if not any(app["bundle-id"] == "dev.ovvi.app.debug" for app in notes["apps"]):
-    # Asked once in this VM and answered Don't Allow: auth is the options the app asked for (alert, badge), and
-    # flag 1 << 25 (Allow Notifications) is clear.
+allow = 1 << 25  # Allow Notifications
+# The tests' app, asked once in this VM and answered Don't Allow (auth is the options it asks for: alert, badge), and
+# "App Running in Background", which the open-at-login test brings.
+off = {"dev.ovvi.app.debug": {"auth": 5, "flags": 0x1080200E, "content_visibility": 0, "grouping": 0},
+       "com.apple.BTMNotificationAgent": {}}
+apps = {app["bundle-id"]: app for app in notes["apps"]}
+changed = [name for name, new in off.items()
+           if (name not in apps and new) or apps.get(name, {}).get("flags", 0) & allow]
+if changed:
     restart("usernoted")
     notes = plistlib.loads(settings.read_bytes())
-    notes["apps"].append({"bundle-id": "dev.ovvi.app.debug", "auth": 5, "flags": 0x1080200E,
-                          "content_visibility": 0, "grouping": 0})
+    for name in changed:
+        app = next((app for app in notes["apps"] if app["bundle-id"] == name), None)
+        if app is None:
+            notes["apps"].append({"bundle-id": name, **off[name]})
+        else:
+            app["flags"] &= ~allow
     settings.write_bytes(plistlib.dumps(notes, fmt=plistlib.FMT_BINARY))
     restart("usernoted")
-    print("notifications of dev.ovvi.app.debug answered: off")
+    print("notifications off:", ", ".join(changed))
