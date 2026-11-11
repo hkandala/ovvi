@@ -260,13 +260,22 @@ extension OvviUITests {
     }
 
     func testSidebarHandleResizesWithinItsBounds() {
+        step("Sidebar handle: the first tab lines up with its card")
         let sidebar = element("sidebar"), handle = element("sidebar.resize")
-        XCTAssertTrue(element("pane.w1:p1").exists(within: connect))
+        let tab = element("tab.w1:t1"), card = element("pane.w1:p1")
+        XCTAssertTrue(card.exists(within: connect))
+        XCTAssertEqual(tab.frame.minX, card.frame.minX, accuracy: 1)
         let start = sidebar.frame.width
         let drag = { (offset: CGFloat) in
+            let width = sidebar.frame.width, left = card.frame.minX
             let from = handle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
             from.click(forDuration: 0.2, thenDragTo: from.withOffset(CGVector(dx: offset, dy: 0)))
+            let moved = sidebar.frame.width - width
+            XCTAssertTrue(until(1) { abs(card.frame.minX - left - moved) <= 2 }, "the card did not move by \(moved)")
+            XCTAssertTrue(until(1) { abs(tab.frame.minX - card.frame.minX) <= 1 }, "\(tab.frame) \(card.frame)")
         }
+
+        step("Sidebar handle: drags resize within 227 and 480, and the tabs follow the card")
         drag(60)
         XCTAssertEqual(sidebar.frame.width, start + 60, accuracy: 2)
         drag(-600)
