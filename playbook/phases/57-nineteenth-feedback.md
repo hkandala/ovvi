@@ -1984,3 +1984,25 @@ you did, no need of reverting them".
     we should mention like either you open the pane or let agent opens panes etc, make sure to keep it one line
     - and in the final remote screen, we are just opening the menu, but that doesn't seem clear, we should show
     clicking on add machine and typing certain machine name in ssh and stop."
+
+89. Pinned spaces and sorting, second pass (Track B2):
+    "- let's change the sorting to specific to session instead of window and all sessions follow the default ones, if
+    their sortign is manually changed it should be remembered for those sessions
+    - when sort mode is recent i know we disable drag and drop for workspaces, but drag and drop should work within
+    pinned area if user wants to sort the pinned ones and also user should be able to drag and drop to a pinned region
+    to pin the workspaces, only dragging and moving workspaces within non pinned region should be disabled when
+    sorting mode is recent
+    - drag and drop animatino when i leave the mouse, it snaps immediately like without animation, check tab pill
+    animations, we should basically do something similar to to it just in vertical directions, like after leaving it
+    should move and fade in/out instead of just snap immediately, idk if i am explaining correctly understand tab pill
+    animations and do something similar and make sure not to overcomplicate the code and keep things simple please
+    - its not very clear when i am dropping to pinned region, on first drop the line separatro shows in blue color,
+    line seaprator shouold show blue even when i am dropping next one, so its evident that the dragged space is going
+    to the pinned region
+    - spaces sorting animations are inconsistent, like when the spaces are moved around we should always show
+    animations, like for exmaple when i use right click and do move up or move down i don't see animation, and when i
+    cahnge sorting before i used to see the spaces animate and change their positions, now i don't see that, make sure
+    to show the spaces moving animation all the time
+    - also for pinned region, whenever you drag, instead of just line, show like add to pinned or something,similar to
+    how we show new workspace when i am dragging a tab onto the sidebar, like a rectangular region instead of one
+    line, even if there are already pinned spaces, that region should be shown below the last pinned space"
