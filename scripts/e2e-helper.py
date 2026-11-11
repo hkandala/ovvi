@@ -66,6 +66,8 @@ Every script that posts events gets the tests' app's pid (OVVI_APP_PID) and refu
 
 import contextlib
 import ctypes
+import datetime
+import glob
 import http.server
 import os
 import re
@@ -141,6 +143,21 @@ def app_env():
 
 def masters(target):
     return subprocess.run(["pgrep", "-f", f"ssh -M -N -f .* {target}$"], capture_output=True, text=True).stdout.split()
+
+
+def plugin_logs(since):
+    """The plugin pages' console lines (the app's plugin logs) from `since` on, in every config folder of the tests."""
+    lines = []
+    for path in sorted(glob.glob("/tmp/ovvi-e2e-*/logs/plugins/*.log")):
+        keep = False
+        for line in open(path, errors="replace"):
+            # A line break inside a page's text comes indented, under its stamped line.
+            if not line.startswith("  "):
+                with contextlib.suppress(ValueError):
+                    keep = datetime.datetime.fromisoformat(line.split(" ", 1)[0]).timestamp() >= since
+            if keep:
+                lines.append(f"{os.path.basename(path)}: {line}")
+    return "".join(lines).encode()
 
 
 def signal_server(session, action):
@@ -292,6 +309,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 if action != "web-pids":
                     os.kill(pid, WEB[action])
             status, reply = 200, "".join(f"{pid}\n" for pid in pids).encode()
+        elif action == "plugin-logs" and not re.fullmatch(rb"\d+", body):
+            status, reply = 400, b"the body must be a time in seconds since 1970"
+        elif action == "plugin-logs":
+            status, reply = 200, plugin_logs(int(body))
         elif action == "forget-windows":
             shutil.rmtree(os.path.join(tempfile.gettempdir(), "dev.ovvi.app.debug.savedState"), ignore_errors=True)
             status, reply = 200, b""

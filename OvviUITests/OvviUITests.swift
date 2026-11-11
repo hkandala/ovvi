@@ -14,6 +14,8 @@ final class OvviUITests: XCTestCase {
     /// The part of the test that runs now (`step`): a failure names it, also one in a teardown block (the last part's
     /// name). A Mutex: XCTest records issues off the main actor too.
     private let part = Mutex("")
+    /// When the test began, in whole seconds since 1970: the plugin logs' lines from then on (`keepPluginConsole`).
+    let started = Mutex(0)
 
     /// Starts one part of a test that walks several flows: an activity in the result, and the part's name before each
     /// failure's message.
@@ -33,6 +35,7 @@ final class OvviUITests: XCTestCase {
 
     override func setUp() async throws {
         continueAfterFailure = false
+        started.withLock { $0 = Int(Date.now.timeIntervalSince1970) }
         one = try env("OVVI_SESSION")
         two = try env("OVVI_SESSION2")
         three = try env("OVVI_SESSION3")
@@ -72,6 +75,7 @@ final class OvviUITests: XCTestCase {
     /// first looks for a window over the point, and a floating window gone meanwhile fails the test (on CI). XCTest
     /// runs a sync tearDown on the main thread; a fresh XCUIApplication is the same app, so self stays out.
     override func tearDown() {
+        keepPluginConsole()
         MainActor.assumeIsolated {
             let main = XCUIApplication().windows.matching(NSPredicate(format: "identifier BEGINSWITH 'main-'"))
                 .firstMatch

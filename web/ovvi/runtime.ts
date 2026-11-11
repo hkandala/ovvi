@@ -50,7 +50,16 @@ const watches = new Map<number, () => void>()
 const toasts = new Map<number, (button: string | undefined) => void>()
 let next = 0
 
-window.ovvi_receive = (name, data: any) => {
+// The app calls it with no answer: an error thrown here would reach no one.
+window.ovvi_receive = (name, data) => {
+  try {
+    receive(name, data)
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+function receive(name: string, data: any) {
   switch (name) {
     case "watch":
       return watches.get(data)?.()

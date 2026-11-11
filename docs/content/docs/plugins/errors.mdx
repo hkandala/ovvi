@@ -57,7 +57,8 @@ What goes in:
 - Installs and updates: "installed from ‹source›" and the package manager's
   output, or what failed.
 - Each `console` line of the page, with its level (`log`, `info`, `warn`,
-  `error`, `debug`), and every uncaught error and rejected promise.
+  `error`, `debug`), and every uncaught error and rejected promise, also one
+  thrown in a handler of an app event (`ovvi.on`).
 - A command whose key the app already uses: "the key cmd+t of the command
   ‹id› is the app's: it is left off".
 - A page that stopped, and an API too new.

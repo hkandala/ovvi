@@ -72,6 +72,8 @@ How CI runs, how to run part of it, and how to keep it green and fast.
 2. Read the result before guessing: `gh run download <id> -p 'e2e-xcresult-*'` (one per shard), then
    `xcrun xcresulttool get test-results tests|activities --path …` for the failing step and its values, and
    `xcresulttool export attachments` for the screen recording (`ffmpeg -ss <s> -frames:v 1` gets a frame).
+   A failed test also keeps the attachment "plugin console": every plugin page's console lines and errors since the
+   test began (the plugin logs in the tests' config folders), as CI's recordings show no web content.
    A recording gets a frame only when the screen changes (about 17 fps on CI, one every 0.3–0.6 s while a
    test takes screenshots in a loop), so a one-frame jump shows only by luck: use `FrameProbe` for that.
 3. Think of CI's machine ([Layout](#layout)); Option sends Alt there.

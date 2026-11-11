@@ -1,3 +1,4 @@
+import Synchronization
 import XCTest
 
 extension OvviUITests {
@@ -282,6 +283,27 @@ extension OvviUITests {
             throw Failed(description: "\(method): \(String(decoding: data, as: UTF8.self))")
         }
         return result
+    }
+
+    /// A failed test keeps the plugin pages' console and errors in its result: CI's recordings show no web content.
+    /// Sync, for tearDown: URLSession answers on a queue of its own, never the main thread.
+    nonisolated func keepPluginConsole() {
+        let env = ProcessInfo.processInfo.environment
+        let path = "\(env["OVVI_HELPER"] ?? "")/\(env["OVVI_SESSION"] ?? "")/plugin-logs"
+        guard testRun?.hasSucceeded == false, let url = URL(string: path) else { return }
+        var request = URLRequest(url: url, timeoutInterval: 10)
+        request.httpMethod = "POST"
+        request.httpBody = Data("\(started.withLock(\.self))".utf8)
+        let log = Mutex(""), done = DispatchSemaphore(value: 0)
+        URLSession.shared.dataTask(with: request) { data, _, _ in
+            log.withLock { $0 = data.map { String(decoding: $0, as: UTF8.self) } ?? "" }
+            done.signal()
+        }.resume()
+        done.wait()
+        let text = log.withLock(\.self), attachment = XCTAttachment(string: text.isEmpty ? "(none)" : text)
+        attachment.name = "plugin console"
+        attachment.lifetime = .keepAlways
+        add(attachment)
     }
 
     @discardableResult
