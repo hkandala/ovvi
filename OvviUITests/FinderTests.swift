@@ -2,6 +2,7 @@ import XCTest
 
 extension OvviUITests {
     func testFileExplorerFindBarAndFinderKeys() async throws {
+        step("A repository in an explorer card")
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, shell) = try await newTab("files-finder")
         try await waitForPrompt(shell)
@@ -11,8 +12,17 @@ extension OvviUITests {
         let tree = element("files.\(card).page"), field = tree.textFields["Filter"]
         // The first card of a run waits for the default plugins to install and build.
         XCTAssertTrue(row("a.txt", in: tree).exists(within: 30))
-        XCTAssertFalse(field.exists)
+        XCTAssertFalse(row(".gitignore", in: tree).exists)
+        // The fresh card's keys first: they start on "..".
+        try await keysHiddenFilesAndFind(card, tree, repo, root, shell)
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(field.vanishes(within: 3))
+        // Gone, or selection()'s click under the rows lands on its row.
+        try await send("rm -r \(repo)/empty\r", to: shell)
+        XCTAssertTrue(row("empty", in: tree).vanishes(within: 5))
 
+        step("Find bar: the filter button and typing filter the rows")
+        XCTAssertFalse(field.exists)
         let filter = element("pane.\(card).filter")
         filter.click()
         XCTAssertTrue(field.exists(within: 3))
@@ -32,9 +42,12 @@ extension OvviUITests {
         XCTAssertTrue(row("a.txt", in: tree).exists(within: 5))
         keepScreenshot("file explorer find bar closed")
 
+        step("Explorer: the selection's ⌘O, Back and Forward")
         try await selection(card, tree, root)
+        step("Explorer: renames")
         try await renames(card, tree, shell)
 
+        step("Explorer: ⌘↓ and ⌘↑ move the root")
         row("src", in: tree).click()
         app.typeKey(.downArrow, modifierFlags: .command)
         try await labelEnds(card, " \(root)/src/")
@@ -42,6 +55,52 @@ extension OvviUITests {
         app.typeKey(.upArrow, modifierFlags: .command)
         try await labelEnds(card, " \(root)/")
         try await send("rm -rf \(repo)\r", to: shell)
+    }
+
+    private func keysHiddenFilesAndFind(_ card: String, _ tree: XCUIElement, _ repo: String, _ root: String,
+                                        _ shell: String) async throws
+    {
+        step("Explorer: arrow keys wrap, open and close folders, ⌘O opens")
+        XCTAssertTrue(hasKeyboard(row("..", in: tree)))
+        app.typeKey(.upArrow, modifierFlags: [])
+        XCTAssertTrue(hasKeyboard(row("a.txt", in: tree)))
+        app.typeKey(.upArrow, modifierFlags: [])
+        app.typeKey(.upArrow, modifierFlags: [])
+        app.typeKey(.upArrow, modifierFlags: [])
+        XCTAssertTrue(hasKeyboard(row("..", in: tree)))
+        app.typeKey(.downArrow, modifierFlags: [])
+        XCTAssertTrue(hasKeyboard(row("build", in: tree)))
+        app.typeKey(.downArrow, modifierFlags: [])
+        app.typeKey(.rightArrow, modifierFlags: [])
+        XCTAssertTrue(row("deep", in: tree).exists(within: 5))
+        app.typeKey(.leftArrow, modifierFlags: [])
+        XCTAssertTrue(row("deep", in: tree).vanishes(within: 5))
+        app.typeKey(.downArrow, modifierFlags: [])
+        app.typeKey("o", modifierFlags: .command)
+        try await labelEnds(card, " \(root)/a.txt")
+        element("pane.\(card).go-back").click()
+        XCTAssertTrue(row("a.txt", in: tree).exists(within: 10))
+
+        step("Explorer: hidden files, an empty folder, ⌘F")
+        let eye = element("pane.\(card).hidden-files")
+        eye.click()
+        XCTAssertTrue(row(".gitignore", in: tree).exists(within: 5))
+        eye.click()
+        XCTAssertTrue(row(".gitignore", in: tree).vanishes(within: 5))
+
+        try await send("mkdir \(repo)/empty\r", to: shell)
+        XCTAssertTrue(row("empty", in: tree).exists(within: 5))
+        row("empty", in: tree).doubleClick()
+        try await labelEnds(card, " \(root)/empty/")
+        let empty = tree.staticTexts.matching(NSPredicate(format: "value == 'This folder is empty'")).firstMatch
+        XCTAssertTrue(empty.exists(within: 10))
+        element("pane.\(card).go-back").click()
+        XCTAssertTrue(row("a.txt", in: tree).exists(within: 10))
+
+        app.typeKey("f", modifierFlags: .command)
+        app.typeText("main")
+        XCTAssertTrue(row("main.swift", in: tree).exists(within: 5))
+        XCTAssertFalse(row("..", in: tree).exists)
     }
 
     private func renames(_ card: String, _ tree: XCUIElement, _ shell: String) async throws {
