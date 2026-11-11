@@ -2277,3 +2277,21 @@ ones".
 - **Runs.** None: the new test (`testALocalPageReadsAndOpensOtherFolders`, in the home folder) waits for the final CI
   round. The reviewer's headless WKWebView probe showed a sibling image and an mp4 under `~` blocked on the old access
   and loaded on the new.
+
+93. Terminal links (Track L): "yeah go to directory opens up file picker, let's disable go to directory in remote
+    machines for now" · "ctrl doesn't show underlines" · "for the cmd+click and option+click we still don't show
+    error toast when file not found or path not found, its just silent when i cmd click invalid path" · "we need better
+    parsing for the urls in terms of file paths, urls etc, there are many edge cases where wrong urls are picked,
+    especially in terminal when some /commands are mentioned, and also sometimes the next sentence in url is captured as
+    well, figure out all edge cases and fix the parsing well" · "and when you do cmd+click or option+click in a floating
+    pane, we should show open that link in another floating window irrespective of the cmd+click or option+click"
+94. New tab placement and open toasts (Track N2): "we have move pane to tab and choose new tab option on right clicking
+    a pane, we should put that tab just beside the current tab, similar to how we handle cmd+click, instead of keeping
+    it at the end of current list of tabs" · "and when some process or agents open certain pane or tab, we show a toast
+    saying x opened y, but that toast doesn't stay for long, it goes away quite quickly before i can click on the
+    toast, let's keep them for few seconds"
+95. Compat leftovers and licence (Track C2): "what is the license issue? what should we change?" · "what are the name
+    changes in settings? its okay if we lose any settings for now, that's okay, we can also reset all app data
+    locally, so i can start fresh and see how it looks as well" · "any cleanups are skipped coz of backward compat, its
+    okay do them if needed"
+96. Then "do one last ci run, and make sure everything is green, don't let individual agents wait on ci".
