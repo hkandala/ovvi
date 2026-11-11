@@ -9,6 +9,8 @@ extension OvviUITests {
             try await fill(pane)
         }
         openPage(two)
+        // Only the shown session's page is in the window: two's card draws now, or its first picture comes in a record.
+        try await expectText(["w1:p1"], "warm-up")
         // Keys for the tabs: right after a session change a click can land beside the capsule (CI).
         for (act, panes) in [(key("1", [.command, .option]), ["w1:p1"]), (key("2"), ["w1:p4"]),
                              (click("workspace.w2"), ["w2:p1"]), (click("workspace.w1"), ["w1:p4"]),
