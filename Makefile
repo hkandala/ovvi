@@ -73,6 +73,7 @@ test:
 		sys.exit([f"{f} is not in Ovvi/Acknowledgements.txt" for f in pathlib.Path("resources/icons/licenses").iterdir() \
 			if f.read_text().strip() not in texts] or None)'
 	python3 scripts/check-settings.py
+	python3 scripts/check-launches.py
 	python3 -c 'import pathlib, sys; sys.exit("```sh\n" + pathlib.Path("Ovvi/Agent/ovvi.sh").read_text() + "```" not in \
 		pathlib.Path("docs/content/docs/agent-control/cli.mdx").read_text() and "cli.mdx: The script differs from Ovvi/Agent/ovvi.sh")'
 
