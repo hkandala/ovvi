@@ -41,6 +41,11 @@ final class PluginTrust {
         try? JSONEncoder().encode(trusted.sorted()).write(to: Self.file, options: .atomic)
     }
 
+    /// The local servers the page reaches past its own files (`connect`), or nil.
+    static func connects(_ manifest: PluginManifest) -> String? {
+        manifest.connect.isEmpty ? nil : "Its page connects to " + manifest.connect.joined(separator: ", ") + "."
+    }
+
     static func origin(_ manifest: PluginManifest, source: String?, folder: URL?) -> String {
         let folder = folder.map { ($0.path as NSString).abbreviatingWithTildeInPath } ?? ""
         return "\(manifest.id) \(manifest.version) \(source.map { "from \($0) " } ?? "")in \(folder)".shown
@@ -78,6 +83,9 @@ struct TrustPrompt: View {
                     .accessibilityIdentifier("\(id).origin")
                 if !manifest.description.isEmpty {
                     Text(manifest.description.shown).font(.system(size: 12)).lineLimit(3)
+                }
+                if let connects = PluginTrust.connects(manifest) {
+                    Text(connects).font(.system(size: 12)).accessibilityIdentifier("\(id).connect")
                 }
                 Text(PluginTrust.warning).font(.system(size: 12))
                     .foregroundStyle(.secondary).accessibilityIdentifier("\(id).words")

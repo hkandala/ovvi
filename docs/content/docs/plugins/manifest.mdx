@@ -73,6 +73,7 @@ In the `ovvi` key:
 | `commands` | no | Menu bar and ⌘K commands of the card, with keys ([Commands](#commands)). |
 | `handles` | no | The app's own commands that the card takes: `save` (⌘S), `find` (⌘F, ⌘G, ⇧⌘G). |
 | `settings` | no | Values the user sets on the plugin's page in Settings, which its cards read ([Settings](#settings)). |
+| `connect` | no | Servers on this Mac that the page reaches with `fetch` or a WebSocket, as origins: `http` or `ws`, the host `127.0.0.1`, `localhost` or `[::1]`, and a port, for example `["ws://127.0.0.1:57900"]`. They join the page's Content Security Policy, and the confirmation names them ([Security](/docs/plugins/security#what-the-app-protects)). |
 
 - The app reads the manifest leniently. An unknown field is ignored, so a
   manifest written for a newer app still loads.
@@ -86,8 +87,8 @@ In the `ovvi` key:
   `opens`, known header types with unique ids, a `gap` of 0 or more, `digits`
   only `mono`, a value on every segmented option, commands with ids unique
   among the commands and the header's controls, a
-  `file`, `edit` or `view` menu and a `cmd+` key, known `handles`, and the
-  settings' rules ([Settings](#settings)).
+  `file`, `edit` or `view` menu and a `cmd+` key, known `handles`, `connect`
+  origins as above, and the settings' rules ([Settings](#settings)).
 
 ## What a plugin opens
 

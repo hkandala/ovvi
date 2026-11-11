@@ -199,7 +199,8 @@ final class PluginInstalls {
         let asks = agent.map { "\($0.name) asks to install it." }
         let fetched = PluginSource(source)?.folder == nil ? nil : source
         let text = [asks ?? "", PluginTrust.origin(manifest, source: fetched, folder: folder),
-                    manifest.description.shown, PluginTrust.warning].filter { !$0.isEmpty }
+                    manifest.description.shown, PluginTrust.connects(manifest) ?? "", PluginTrust.warning]
+            .filter { !$0.isEmpty }
         // An agent's prompt is a sheet only: a modal alert would hold every request and could come up over the
         // user's app.
         if let agent, agent.window == nil {

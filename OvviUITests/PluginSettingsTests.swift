@@ -55,6 +55,35 @@ extension OvviUITests {
         settingsWindow.buttons["_XCUI:CloseWindow"].click()
     }
 
+    func testAPluginPageReachesOnlyTheLocalOriginsItDeclares() async throws {
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        let (_, shell) = try await newTab("plugin connect")
+        try await waitForPrompt(shell)
+        let config = "/tmp/ovvi-e2e-connect", folder = "\(config)/plugins/ovvi-e2e-connect"
+        let manifest = #"{"version":"1.0.0","ovvi":{"id":"ovvi-e2e-connect","name":"Connect","api":3,"#
+            + #""entry":"main.js","icon":"network","connect":["http://127.0.0.1:57931"]}}"#
+        // Two servers, one declared. No CORS headers: a no-cors fetch that gets through is opaque.
+        let main = #"export default async function main() { const get = (port) => fetch("#
+            + #""http://127.0.0.1:" + port, { mode: "no-cors" }).then((r) => r.type, () => "blocked"); "#
+            + #"document.body.appendChild(document.createElement("p")).textContent = "#
+            + #""declared " + await get(57931) + " other " + await get(57932) }"#
+        try await send("rm -rf \(config) && mkdir -p \(folder) && echo '\(manifest)' > \(folder)/package.json && "
+            + "echo '\(main)' > \(folder)/main.js && for p in 57931 57932; do "
+            + "python3 -m http.server $p --bind 127.0.0.1 -d \(config) >/dev/null 2>&1 & done; "
+            + "until curl -sf 127.0.0.1:57931 >/dev/null && curl -sf "
+            + "127.0.0.1:57932 >/dev/null; do sleep 0.1; done; clear; echo made-$((6*7))\r", to: shell)
+        try await waitFor(shell, times: 150) { $0.contains("made-42") }
+        sendAfter("kill %1 %2; rm -rf \(config)\r", to: shell)
+        relaunch(one, ["-configFolder", config])
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        element("workspace.w2").click()
+        let card = try await newCard("ovvi:ovvi-e2e-connect#e2ecnt")
+        XCTAssertTrue(element("pane.\(card.pane).trust.connect")
+            .has(\.stringValue, "Its page connects to http://127.0.0.1:57931.", within: 10))
+        element("pane.\(card.pane).trust.install").click()
+        XCTAssertTrue(text("declared opaque other blocked").exists(within: 10))
+    }
+
     private func cancelsASecondCard() async throws {
         let pane = try await newCard("ovvi:ovvi-e2e-shout#e2eshv /tmp").pane
         let cancel = element("pane.\(pane).trust.cancel")

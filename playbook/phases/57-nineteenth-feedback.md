@@ -2009,3 +2009,22 @@ you did, no need of reverting them".
     Added later: "also include one more feature called hide all except pinned (rephrase that better), basically i
     should be able to hide other workspaces except the pinned ones, should be available from cmd+k or right clicking
     on sidebar"
+
+### Tart VM plugin, second pass (p57-tart-plugin-v2)
+
+The user: "tart vm plugin shouldn't show that localhost urls … we just show the vm screen, show vm title and any
+metadata info in the header … instead show a button which opens the vm in original tart vm app … our plugin should use
+webkit directly instead of using browser plugin … if not we should provide that support".
+
+- **Fix.** The plugin's own card draws the VM's screen (noVNC in its page): no Browser card, no address, no reload.
+  Row 1 is "Tart VM ‹vm›" (the page's title), row 2 "Running · macOS 27.2 · 4 cores · 8 GB" and **Open in Screen
+  Sharing**. The bridge only joins the card's WebSocket to the guest's VNC (Origin `ovvi-plugin://tart-vm`).
+- **Ovvi's part.** A manifest field `connect` lists local `http`/`ws` origins (127.0.0.1, localhost, [::1], a port);
+  they join the page's `connect-src`, and the confirmation names them. Spike: a custom-scheme page is a secure context
+  (noVNC's Apple authentication needs WebCrypto), and its WebSocket's Origin is `ovvi-plugin://<id>`.
+- **Decisions.** Tart's window shows only a VM that `tart run` itself started with graphics (a `VZVirtualMachineView`
+  in that process; no display API): showing it there means a restart, which loses the guest's state and any test run.
+  So the button opens the same running VM in Screen Sharing.app, as `tart run --vnc` does. A card loaded again shows
+  its VM but never boots one by itself. `make vm-e2e FULL=1` runs the whole suite in the VM.
+- **Runs.** `testAPluginPageReachesOnlyTheLocalOriginsItDeclares` and `testAPluginCardAsksAndItsPageSetsItsSettings`
+  green in the VM.

@@ -77,6 +77,17 @@ private func error(_ ovvi: String, package: String = #""version": "0.1.0""#) -> 
     #expect(error(base + #", "chooser": "Notes", "opens": {"folders": true}"#) == nil)
 }
 
+@Test func `connect takes local http and ws origins only`() throws {
+    let tart = try manifest(base + #", "connect": ["ws://127.0.0.1:57900", "http://localhost:8080", "ws://[::1]:1"]"#)
+    let none = try manifest(base)
+    #expect(tart.connect.count == 3 && none.connect.isEmpty)
+    let rule = "only http or ws on 127.0.0.1, localhost or [::1], with a port"
+    let bads = ["https://example.com", "ws://127.0.0.1", "ws://127.0.0.1:1/x", "ws://10.0.0.1:1", "ws://127.0.0.1:1 *"]
+    for bad in bads {
+        #expect(error(base + #", "connect": ["\#(bad)"]"#) == "ovvi.connect has \(bad): \(rule)", "\(bad)")
+    }
+}
+
 @Test func `a web address matches a plugin's urls`() throws {
     let pulls = try manifest(base + #", "opens": {"urls": ["https://github.com/*/*/pull/*"]}"#)
     #expect(pulls.opens(url: "https://github.com/hkandala/ovvi/pull/12"))

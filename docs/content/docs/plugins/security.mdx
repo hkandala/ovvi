@@ -55,6 +55,9 @@ The confirmation in a card sits under the plugin's icon:
 - The id, the version and the folder come first, because a plugin picks its
   own name. For an npm or git source, the line also names the source:
   `csv-table 0.1.0 from npm:csv-table in ~/.config/ovvi/plugins/csv-table`.
+- A plugin with `connect` gets one more line before the warning: "Its page
+  connects to ws://127.0.0.1:57900." It is not a permission (`run` can reach
+  any server); it says what the page itself reaches.
 - A plugin with a `chooser` row also gets a **Show in New Pane** checkbox,
   on by default: the switch on the plugin's page in Settings
   ([The Plugins page](/docs/plugins/packages#the-plugins-page)).
@@ -98,14 +101,19 @@ The rules below keep that content from taking over the card and its bridge
   ```text
   default-src 'none'; script-src ovvi-plugin://<id> 'wasm-unsafe-eval';
   style-src ovvi-plugin://<id> 'unsafe-inline'; img-src ovvi-plugin://<id> data: blob:;
-  media-src blob:; font-src ovvi-plugin://<id> data:; connect-src ovvi-plugin://<id>;
+  media-src blob:; font-src ovvi-plugin://<id> data:; connect-src ovvi-plugin://<id> <connect>;
   frame-src 'none'; form-action 'none'; base-uri 'none'
   ```
 
+  `<connect>` is the manifest's `connect` list
+  ([Fields](/docs/plugins/manifest#fields)), empty for most plugins.
+
   No inline script and no `eval`, so HTML built from a file's text by
   mistake cannot run a script. WebAssembly is allowed, for a fast parser or
-  decoder (pdf.js's). `fetch` reaches only the plugin's own files: no
-  network from the page itself.
+  decoder (pdf.js's). `fetch` and WebSockets reach only the plugin's own
+  files and its `connect` servers, which are on this Mac: the page has no
+  network beyond them. A plugin that shows a local server's stream (the Tart
+  VM plugin's screen) names that server there.
 - **The navigation lock.** The card allows only its own page,
   `ovvi-plugin://<id>/main`. A link, a `<meta>` refresh or a form in shown
   content cannot take the page, and the bridge with it, to another site or

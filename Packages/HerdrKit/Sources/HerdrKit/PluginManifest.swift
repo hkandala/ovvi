@@ -17,6 +17,8 @@ public struct PluginManifest: Decodable, Sendable, Equatable {
     public let commands: [Command]
     public let handles: [String]
     public let settings: [PluginSetting]
+    /// Local origins the page may reach: added to its CSP's `connect-src`.
+    public let connect: [String]
 
     public struct Opens: Decodable, Sendable, Equatable {
         public var files: [String] = []
@@ -106,7 +108,7 @@ public struct PluginManifest: Decodable, Sendable, Equatable {
         self.settings = settings
         (self.id, self.name, version, api, entry, self.icon) = (id, name, "1.0.0", 1, nil, icon)
         (self.description, self.keywords, self.opens, self.chooser) = (description, keywords, opens, chooser)
-        (header, history, commands, handles) = ([], false, [], [])
+        (header, history, commands, handles, connect) = ([], false, [], [], [])
     }
 
     /// The runtime imports it by this name, and its CSS shares the name.
@@ -148,6 +150,7 @@ public struct PluginManifest: Decodable, Sendable, Equatable {
         commands = try values.decodeIfPresent([Command].self, forKey: .commands) ?? []
         handles = try values.decodeIfPresent([String].self, forKey: .handles) ?? []
         settings = try values.decodeIfPresent([PluginSetting].self, forKey: .settings) ?? []
+        connect = try values.decodeIfPresent([String].self, forKey: .connect) ?? []
         try check(values.codingPath)
     }
 
@@ -156,7 +159,7 @@ public struct PluginManifest: Decodable, Sendable, Equatable {
     }
 
     private enum Keys: String, CodingKey {
-        case id, name, api, entry, icon, opens, chooser, header, history, commands, handles, settings
+        case id, name, api, entry, icon, opens, chooser, header, history, commands, handles, settings, connect
     }
 
     static func isID(_ id: some StringProtocol) -> Bool {
@@ -182,6 +185,11 @@ public struct PluginManifest: Decodable, Sendable, Equatable {
         // A file or an address needs a path the chooser has not got.
         guard chooser == nil || opens.files.isEmpty && opens.urls.isEmpty || opens.folders || opens.git else {
             throw bad("chooser", "needs opens with folders or git, or no opens")
+        }
+        // This Mac only, and an origin only: shown content gets no road out, and the CSP needs no escaping.
+        let local = /(http|ws):\/\/(127\.0\.0\.1|localhost|\[::1\]):[0-9]{1,5}/
+        if let origin = connect.first(where: { (try? local.wholeMatch(in: $0)) == nil }) {
+            throw bad("connect", "has \(origin): only http or ws on 127.0.0.1, localhost or [::1], with a port")
         }
         try checkControls(bad)
         try Self.check(settings: settings, bad)
