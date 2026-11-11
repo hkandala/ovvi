@@ -67,6 +67,13 @@ Problems that came back across phases, and the rule that stops each. How we work
   `sips -m "/System/Library/ColorSync/Profiles/sRGB Profile.icc" in.png --out out.png`. A screenshot's size is
   in pixels (divide by `backingScaleFactor`). Glass colors depend on the wallpaper: compare Glass looks on one
   desktop. `ImageRenderer` in a `swiftc` script measures a view's pixels without the app.
+- **A capture draws glass its own way.** ScreenCaptureKit with a filter that names the windows it takes (an app's, its
+  backdrop's too) draws their behind-window glass over nothing: dark 33 and light 241, where the screen shows 26 over
+  black and 249 over white. Only an excluding filter (the display minus every other window) draws it as the screen
+  does. So the welcome's clips film with an excluding filter cut to the window's rect, rebuilt every 0.25 s, and any
+  other window over that rect deletes the film and fails the take. Tag the clips sRGB: AVFoundation plays sRGB values
+  tagged bt709 lighter (33 as 36). A recording backdrop covers only the recorded window plus a small margin and goes
+  away with the film: a full-screen one left up between takes locked the user out (phase 57).
 - **Never assert wall-clock time.** In unit tests compare against a ten times larger input or count the
   work.
 - **A pane's row that wraps at a space drops it.** herdr's `pane.read` keeps no trailing spaces, so a typed line

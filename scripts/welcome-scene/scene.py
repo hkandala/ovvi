@@ -843,7 +843,6 @@ ROADMAP = '''
 # Roadmap
 
 ## This month
-
 - [x] Links expire after 30 days by default
 - [x] Time left on each link
 - [ ] Dark mode on the page
@@ -851,13 +850,11 @@ ROADMAP = '''
 - [ ] Custom domains guide
 
 ## Next
-
 - [ ] Analytics: clicks per day, per country
 - [ ] QR codes for each link
 - [ ] Teams: shared links and roles
 
 ## Open questions
-
 - Should a kept link still expire after a year without clicks?
 - Six letters gives 42 billion codes. Enough, or plan for seven?
 '''
