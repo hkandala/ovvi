@@ -2,9 +2,6 @@ import Foundation
 
 public protocol Multiplexer: Sendable {
     func sessions() async throws -> [Session]
-    func stopSession() async throws
-    /// The session must be stopped.
-    func deleteSession() async throws
     func snapshot() async throws -> Snapshot
     /// Called once.
     func updates() async -> AsyncStream<Update>
@@ -75,14 +72,6 @@ public enum Destination: Sendable {
 }
 
 extension HerdrClient: Multiplexer {
-    public nonisolated func stopSession() async throws {
-        try await session("stop")
-    }
-
-    public nonisolated func deleteSession() async throws {
-        try await session("delete")
-    }
-
     public nonisolated func screen(_ paneID: String) async throws -> String {
         try await (call("pane.read", ["pane_id": paneID, "source": "visible", "format": "text"]) as Read).read.text
     }

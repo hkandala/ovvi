@@ -69,7 +69,16 @@ public actor HerdrClient {
         return try decode(SessionList.self, list).sessions
     }
 
-    nonisolated func session(_ command: String) async throws {
+    public nonisolated func stopSession() async throws {
+        try await session("stop")
+    }
+
+    /// The session must be stopped.
+    public nonisolated func deleteSession() async throws {
+        try await session("delete")
+    }
+
+    private nonisolated func session(_ command: String) async throws {
         let channel = try await exec.run([herdr(), "--session", session, "session", command, session, "--json"])
         channel.closeInput()
         try await withTimeout(timeout, onTimeout: channel.terminate) {
