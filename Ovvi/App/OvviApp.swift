@@ -199,8 +199,7 @@ struct ContentView: View {
         guard !Task.isCancelled else { return }
         // A run against a throwaway session must open only it.
         let argument = MachineList.session
-        let id = UserDefaults.standard.volatileDomain(forName: UserDefaults.argumentDomain)["machine"] as? String
-            ?? savedMachine
+        let id = MachineList.machine ?? savedMachine
         let machine = opening ?? MachineList.shared.machine(id)
         if let machine {
             pages.machine = machine

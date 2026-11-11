@@ -75,6 +75,7 @@ final class MachineList {
     private static let arguments = UserDefaults.standard.volatileDomain(forName: UserDefaults.argumentDomain)
     static let session = arguments["session"] as? String
     static let defaultSession = arguments["defaultSession"] as? String
+    static let machine = arguments["machine"] as? String
 
     private init() {
         // The argument as given: the argument domain reads a JSON array as something else.
