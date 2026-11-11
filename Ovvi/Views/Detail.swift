@@ -45,6 +45,7 @@ struct Detail: View {
             }
             let cards = page.selectedWorkspace.map { !$0.tabs.isEmpty } ?? false
             tabs()
+                // Before the overlay: the page's own Loader still draws.
                 .environment(\.pageReconnecting, reconnecting)
                 .opacity(reconnecting ? 0.5 : 1)
                 .allowsHitTesting(!reconnecting)
@@ -115,7 +116,7 @@ struct Detail: View {
                 }
             }
             if let reconnecting {
-                // In the notices' place, so it never sits on the dimmed cards' text.
+                // In the notices' place: small, at the bottom, not over the cards' middle.
                 NoticeCapsule(tone: .progress, text: "Reconnecting to \(store.name)…", detail: reconnecting) {}
                     .accessibilityIdentifier("detail.reconnecting")
             }

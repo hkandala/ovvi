@@ -2362,3 +2362,21 @@ ones".
   round.
 - **For the user.** Restart the Mac (or `herdr --session default session stop default` with Ovvi quit), then open
   Ovvi: the window comes back and its sessions start with no click.
+
+### Track F2 (item 97)
+
+- **Cause.** Item 83 put Reconnecting on a large glass panel in the middle of the dimmed cards, so its words never ran
+  through a card's text. The panel was the only state drawn that way.
+- **Fix.** Over cards, Reconnecting is now a notice: a capsule at the page's bottom with a spinner, "Reconnecting to
+  ‹machine›…" and the reason as a smaller second line, under any notice and over the control capsule. A page with no
+  cards (a first connect that failed, a space with no tabs) shows the plain loader, as Connecting does. The page still
+  owns the state: cards show none of their own.
+- **Decisions.** Three options as pictures, dark and light (`~/Downloads/ovvi-research/p57f2/options/`): A, the bottom
+  capsule (chosen: the same look as the notices and "Controlled in another window", which also dims the cards); B,
+  the plain loader over cards faded to 0.12 (faint terminal text still ran under its words); C, a capsule in the
+  middle (it still sat on the cards' text).
+- **Runs.** On the host under the GUI lock (the VM was off limits by then): a throwaway picture test, green, dark and
+  light, over cards and with none. `testAReconnectingPageShowsItsStateOnce` needs CI's sshd; it now also fails if
+  the centered loader comes back over cards.
+- **For the user.** Drop a remote machine's link with cards open: a small capsule at the bottom says Reconnecting, and
+  the dimmed cards stay readable.

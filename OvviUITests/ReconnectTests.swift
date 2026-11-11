@@ -25,7 +25,8 @@ extension OvviUITests {
                 return early || reconnecting.exists
             }, "no Reconnecting")
             XCTAssertFalse(early, "a card says its terminal stopped before Reconnecting")
-            XCTAssertFalse(element("notice.detail").stringValue.isEmpty)
+            XCTAssertFalse(reconnecting.descendants(matching: .any)["notice.detail"].stringValue.isEmpty)
+            XCTAssertFalse(element("detail.reconnecting.detail").exists, "the centered loader over the cards")
             try await hostname("ovvi-key.invalid")
             element("workspace.w2").click()
             XCTAssertFalse(until(6) { stopped.exists }, "a card first shown says its terminal stopped")
