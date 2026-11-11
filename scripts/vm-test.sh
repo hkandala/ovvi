@@ -58,9 +58,13 @@ tart exec "$vm" zsh -c "[[ \$(readlink /Applications/Xcode.app) == '$guest/xcode
       sudo xcodebuild -license accept && sudo xcodebuild -runFirstLaunch; }" >/dev/null
 
 # APFS clones: instant, and the next build cannot change a run under way.
-cp -cR "$dd/Build/Products" scripts "$run/"
+cp -cR "$dd/Build/Products" scripts OvviUITests/Fixtures "$run/"
 mkdir "$run/bin"
 cp -c "$(command -v herdr)" "$run/bin/"
+# The tests find their fixtures and scripts by this checkout's path (#filePath): the same path in the guest leads to the
+# run's copies.
+tart exec "$vm" sudo zsh -c "mkdir -p '$PWD/OvviUITests' &&
+    ln -sfn '$guest/runs/$$/Fixtures' '$PWD/OvviUITests/Fixtures' && ln -sfn '$guest/runs/$$/scripts' '$PWD/scripts'"
 # A system alert takes the tests' clicks: close an open one (UserNotificationCenter's), and answer the asks that would
 # come (scripts/vm-alerts.py).
 tart exec "$vm" zsh -c "cd '$guest/runs/$$' && python3 scripts/vm-alerts.py >&2
