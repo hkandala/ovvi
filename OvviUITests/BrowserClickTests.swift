@@ -119,4 +119,23 @@ extension OvviUITests {
         let address = element("browser.\(pane).address")
         XCTAssertTrue(until(2) { address.stringValue.hasSuffix("/other/page.html") }, address.stringValue)
     }
+
+    /// Sites that sniff for Safari see this system's Safari version.
+    func testABrowserSaysItIsThisSystemsSafari() async throws {
+        let (tab, shell) = try await newTab("agent")
+        try await waitForPrompt(shell)
+        let file = "/tmp/ovvi-e2e-agent-\(UUID().uuidString).html"
+        try await send("""
+        printf '<p id=s>ovvi-waiting</p><script>s.textContent=navigator.userAgent.split(") ").pop()</script>' \
+        >\(file) && clear\r
+        """, to: shell)
+        sendAfter("rm -f \(file)\r", to: shell)
+        try await waitFor(shell) { !$0.contains("printf") }
+        let pane = try await split(shell)
+        try await relabel(pane, "ovvi:browser#e2euag file://\(file)")
+        element("tab.\(tab)").click()
+        let system = ProcessInfo.processInfo.operatingSystemVersion
+        XCTAssertTrue(pageText("Version/\(system.majorVersion).\(system.minorVersion) Safari/605.1.15")
+            .exists(within: 10))
+    }
 }

@@ -17,8 +17,10 @@ class BrowserView: WKWebView {
     convenience init(store: WKWebsiteDataStore) {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = store
-        // Sites that sniff for Safari work.
-        configuration.applicationNameForUserAgent = "Version/18.0 Safari/605.1.15"
+        // Sites that sniff for Safari work. Safari's version is the system's since macOS 26.
+        let system = ProcessInfo.processInfo.operatingSystemVersion
+        let version = "\(system.majorVersion).\(system.minorVersion)"
+        configuration.applicationNameForUserAgent = "Version/\(version) Safari/605.1.15"
         // `_inspector show` opens nothing without it.
         configuration.preferences.setValue(true, forKey: "developerExtrasEnabled")
         self.init(frame: .zero, configuration: configuration)

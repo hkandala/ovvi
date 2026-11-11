@@ -492,8 +492,9 @@ gets the same card.
 
 ## Other rules
 
-- The web view's user agent ends with `Version/18.0 Safari/605.1.15`
-  (`applicationNameForUserAgent`), so sites that sniff for Safari work.
+- The web view's user agent ends with `Version/‹macOS major.minor›
+  Safari/605.1.15` (`applicationNameForUserAgent`), as Safari's does, so sites
+  that sniff for Safari work.
 - When the system ends the page's process
   (`webViewWebContentProcessDidTerminate`), the card loads the page again by
   itself, once per load, and WebKit brings back its scroll. A page whose
