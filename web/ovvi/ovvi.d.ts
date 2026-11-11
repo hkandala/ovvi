@@ -128,16 +128,16 @@ export interface Card {
 }
 
 export interface Files {
-  /** UTF-8 text up to 16 MB. `hash` is what `write` checks. `writable` is false over 4 MiB on a remote machine. */
+  /** UTF-8 text up to 16 MiB. `hash` is what `write` checks. `writable` is false over 4 MiB on a remote machine. */
   read(path: string): Promise<{ text: string; hash: string; writable: boolean }>
-  /** Bytes up to 16 MB, with the MIME type from the name. */
+  /** Bytes up to 16 MiB, with the MIME type from the name. */
   readBytes(path: string): Promise<{ data: Uint8Array; type: string; hash: string }>
   /** The info view's facts: the size in bytes, the kind's name, the system's icon as a PNG data URL; and the hash
    *  `read` gives (none for a folder), to tell a change without reading the file. */
   info(path: string): Promise<{ name: string; size: number; kind: string; icon: string; folder: boolean; hash: string }>
   /** A folder's entries but `.git`, folders first, by name as the Finder sorts; `ignored` when git ignores it. */
   list(folder: string): Promise<{ name: string; folder: boolean; ignored: boolean }[]>
-  /** Every file under the root, from it: the files git does not ignore in a repository, else every file, up to 8 MB
+  /** Every file under the root, from it: the files git does not ignore in a repository, else every file, up to 8 MiB
    *  of names. */
   paths(root: string): Promise<string[]>
   /** Writes a new file beside the path and moves it over. With `over`, fails with `changed` if the file's hash
@@ -166,7 +166,7 @@ export interface Git {
    *  graph's lanes. */
   log(root: string, options?: { limit?: number }): Promise<Commit[]>
   /** The patch as git prints it: "uncommitted" (staged, unstaged and untracked against HEAD) or a commit against its
-   *  first parent. Up to 16 MB. */
+   *  first parent. Up to 16 MiB. */
   diff(root: string, source: string): Promise<string>
   /** A commit's page, by its hex hash (not a ref name): its subject (git's `%s`, as `log` gives it) and body (`%b`, trimmed), author, email, date in
    *  milliseconds since 1970, and the full hashes of its parents. */
@@ -214,7 +214,7 @@ export interface Commit {
 export interface RunResult {
   code: number
   stdout: string
-  /** The last 8 KB. */
+  /** The last 8 KiB. */
   stderr: string
   /** stdout passed 4 MiB: the command stops there. */
   truncated: boolean
