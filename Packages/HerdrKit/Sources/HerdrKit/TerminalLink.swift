@@ -49,7 +49,8 @@ private struct Finder {
 
     // MARK: Quoted paths
 
-    /// `"/tmp/my file.txt"`: a path with spaces only between quotes.
+    /// `"/tmp/my file.txt"`: a path with spaces only between quotes, and one that starts as a path: a quoted sentence
+    /// (`-m "fix a/b.swift and c/d.md"`) keeps its own paths.
     mutating func quoted() {
         var start = 0
         while start < chars.count {
@@ -61,7 +62,7 @@ private struct Finder {
                 continue
             }
             let inside = String(chars[(start + 1) ..< end])
-            if inside.contains(" "), Self.isPath(inside) {
+            if inside.contains(" "), ["/", "~/", "./", "../"].contains(where: inside.hasPrefix), Self.isPath(inside) {
                 add((start + 1) ..< end, .file, inside)
                 start = end + 1
             } else {
@@ -167,18 +168,23 @@ private struct Finder {
         var index = 0
         while index < chars.count {
             guard !taken[index], Self.startsPath(chars[index]),
-                  index == 0 || Self.isBoundary(chars[index - 1], before: chars[index])
+                  index == 0 || Self.isBoundary(chars[index - 1], before: chars[index]),
+                  index < 2 || chars[index - 2] != "$" || !"{(".contains(chars[index - 1])
             else {
                 index += 1
                 continue
             }
-            var end = index
+            var end = index, open = 0
             while end < chars.count, !taken[end] {
                 if chars[end] == "\\", end + 1 < chars.count, !chars[end + 1].isLetter, !chars[end + 1].isNumber {
                     end += 2
-                } else if Self.isPathChar(chars[end]) || ")]}".contains(chars[end])
-                    || "([{".contains(chars[end]) && chars[end - 1] == "/"
-                {
+                } else if Self.isPathChar(chars[end]) {
+                    end += 1
+                } else if "([{".contains(chars[end]), chars[end - 1] == "/" {
+                    open += 1
+                    end += 1
+                } else if ")]}".contains(chars[end]), open > 0 {
+                    open -= 1
                     end += 1
                 } else {
                     break
@@ -186,20 +192,29 @@ private struct Finder {
             }
             let next = max(end, index + 1)
             end = trimmed(index, end)
-            var path = Self.unescaped(String(chars[index ..< end]))
+            // Claude Code names a file `@src/a.ts`.
+            let start = chars[index] == "@" ? index + 1 : index
+            var path = Self.unescaped(String(chars[start ..< end]))
             if Self.isPath(path) {
                 if diff, path.hasPrefix("a/") || path.hasPrefix("b/") {
                     path.removeFirst(2)
                 }
                 let (place, after) = place(after: end)
-                add(index ..< after, .file, path, line: place.line, column: place.column)
+                add(start ..< after, .file, path, line: place.line, column: place.column)
             }
             index = next
         }
     }
 
-    /// `:12` or `:12:5` right after the path.
+    /// `:12` or `:12:5` right after the path, tsc's `(12,5)`, or Python's `", line 12` (kept out of the link).
     private func place(after end: Int) -> (place: (line: Int?, column: Int?), end: Int) {
+        let rest = String(chars[end...].prefix(40))
+        if let match = rest.prefixMatch(of: /\((\d+),(\d+)\)/), let line = Int(match.1), let column = Int(match.2) {
+            return ((line, column), end + match.0.count)
+        }
+        if let match = rest.prefixMatch(of: /", line (\d+)/), let line = Int(match.1) {
+            return ((line, nil), end)
+        }
         func number(at colon: Int) -> (Int, Int)? {
             guard colon < chars.count, chars[colon] == ":" else { return nil }
             var end = colon + 1
@@ -214,8 +229,9 @@ private struct Finder {
     }
 
     /// After a `:` only an absolute path starts (`PATH=/usr/bin:/bin`): `git@github.com:me/repo.git` is no path.
+    /// Nor after `$` (`$HOME/a.txt`) or a closing bracket (`$(pwd)/a.txt`).
     private static func isBoundary(_ char: Character, before first: Character) -> Bool {
-        !isPathChar(char) && char != "\\" && (char != ":" || first == "/")
+        !isPathChar(char) && !"\\$".contains(char) && (char != ":" || first == "/") && !")]}".contains(char)
     }
 
     private static func startsPath(_ char: Character) -> Bool {

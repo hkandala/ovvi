@@ -17,11 +17,11 @@ extension Page {
         keyboardPane?.id == paneID || store.pane(paneID).map(floats) == true
     }
 
-    /// Once a snapshot has it.
+    /// Once a snapshot has it, in the background: the key window keeps the keys.
     func floatNew(_ made: HerdrKit.Pane) async {
         try? await Ovvi.settle { store.pane(made.id)?.terminalID != nil }
         if let pane = store.pane(made.id) {
-            float(pane)
+            float(pane, agent: true)
         }
     }
 

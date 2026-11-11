@@ -162,7 +162,8 @@ extension OvviUITests {
         closeAfter("tab", made)
         let browser = try await self.pane(of: made)
         XCTAssertTrue(app.windows.containing(.any, identifier: "float.\(browser)").firstMatch.exists(within: 5))
-        await XCTAssertEqual(try order(tab), [pane])
+        let panes = try await order(tab)
+        XCTAssertEqual(panes, [pane])
         element("float.\(pane).detach", in: window).click()
         XCTAssertTrue(window.vanishes(within: 3))
     }

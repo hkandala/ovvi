@@ -17,7 +17,7 @@ final class PaneSurfaceView: AppTerminalView {
     weak var linkSurface: TerminalSurface?
     /// An OSC 8 link libghostty reports.
     var hoveredLink: String?
-    var hovered: Hovered?
+    var hovered: Hovered?, hoveredCell: TerminalLink.Place?
     var underline: CALayer?
     var sideHeld = false
     var openLink: ((TerminalLink, Opening) -> Void)?
@@ -157,9 +157,8 @@ final class PaneSurfaceView: AppTerminalView {
     // ponytail: in a mouse app a drag also draws libghostty's highlight; select locally only on
     // Shift+drag if that noise bothers users.
     override func mouseDown(with event: NSEvent) {
-        // ⌘-click on a link: in a new tab, ⌥-click: to the side. Elsewhere a ⌥-click is the program's (a shell moves
-        // its
-        // cursor), a ⌘-click libghostty's (an OSC 8 link).
+        // ⌘-click on a link: in a new tab, ⌥-click: to the side. Elsewhere a ⌥-click is the program's (a shell
+        // moves its cursor), a ⌘-click libghostty's (an OSC 8 link).
         let how = Self.linkKey(event.modifierFlags)
         let link = how.flatMap { how in
             link(at: convert(event.locationInWindow, from: nil))?.link ?? (how == .side ? reported(at: event) : nil)
@@ -365,6 +364,7 @@ extension PaneSurfaceView: TerminalSurfaceGridResizeDelegate, TerminalSurfaceLif
             terminal?.hold()
         }
         metrics = size
+        hover(nil)
     }
 
     /// A new surface starts focused (a filled cursor) until it first loses the keyboard, and

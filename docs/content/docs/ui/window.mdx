@@ -808,8 +808,11 @@ terminal.
     `/help`) are no paths. A relative path needs a `/` and an extension, so
     `and/or`, `1/2` and `2026/11/11` are none. A space belongs to a path
     only between quotes (`'/tmp/my file.txt'`) or escaped (`my\ file.txt`).
-    A `:line` or `:line:column` after the path lands on that line. In a diff
-    line (`--- a/`, `+++ b/`, `diff --git`) the `a/` and `b/` are dropped.
+    A `:line` or `:line:column` after the path, tsc's `(line,column)` or
+    Python's `", line 12` lands on that line. In a diff line (`--- a/`,
+    `+++ b/`, `diff --git`) the `a/` and `b/` are dropped, and a mention's `@`
+    (`@src/a.ts`) too. A quoted sentence (`-m "fix a/b.swift"`) keeps its own
+    paths; `$HOME/a.txt` is none.
   - **Ends.** A link ends at a space and before the punctuation after it:
     `.`, `,`, `;`, `:`, `!`, `?`, a closing bracket or quote it did not open
     (a Wikipedia address keeps its own `(…)`), and Markdown's `**`, `_` and

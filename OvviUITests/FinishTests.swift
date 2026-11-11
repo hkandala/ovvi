@@ -187,6 +187,9 @@ extension OvviUITests {
         for row in [0.0, 2.0, 1.0] {
             link(row).hover()
             XCUIElement.perform(withKeyModifiers: .command) { link(row).click() }
+            if row == 0 {
+                XCTAssertTrue(notice("Ovvi can't open ftp://example.com/x").exists(within: 3))
+            }
         }
         try await expectBrowser(newTabID(after: before), " \(address)")
         let tabs = try await tabIDs()
@@ -214,19 +217,24 @@ extension OvviUITests {
                                  tabs: Int) async throws
     {
         step("A slash command is no link, and a path ends before the words after it")
-        link(5).hover()
+        link(4).hover()
         XCUIElement.perform(withKeyModifiers: .option) {
-            XCTAssertFalse(until(1) { !terminal.title.isEmpty }, terminal.title)
+            XCTAssertTrue(until(3) { terminal.title.hasSuffix("page.html") }, terminal.title)
+            link(5).hover()
+            XCTAssertTrue(until(3) { terminal.title.isEmpty }, terminal.title)
             link(6).hover()
             XCTAssertTrue(until(3) { terminal.title == "\(folder)/notes.md" }, terminal.title)
         }
 
         step("A path with nothing there says so")
         XCUIElement.perform(withKeyModifiers: .command) { link(7).click() }
-        XCTAssertTrue(element("detail.notice").staticTexts
-            .matching(NSPredicate(format: "value CONTAINS 'File not found: \(folder)/gone'"))
-            .firstMatch.exists(within: 3))
-        await XCTAssertEqual(try tabIDs().count, tabs)
+        XCTAssertTrue(notice("File not found: \(folder)/gone").exists(within: 3))
+        let now = try await tabIDs()
+        XCTAssertEqual(now.count, tabs, "\(now)")
+    }
+
+    private func notice(_ text: String) -> XCUIElement {
+        element("detail.notice").staticTexts.matching(NSPredicate(format: "value CONTAINS %@", text)).firstMatch
     }
 
     private func optionShowsLinks(_ terminal: XCUIElement, _ start: XCUICoordinate, _ first: String,

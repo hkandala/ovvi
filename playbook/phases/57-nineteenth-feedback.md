@@ -2380,3 +2380,24 @@ ones".
   the centered loader comes back over cards.
 - **For the user.** Drop a remote machine's link with cards open: a small capsule at the bottom says Reconnecting, and
   the dimmed cards stay readable.
+
+
+### Track L, item 93
+
+- **Cause.** libghostty found the terminal's links with its own fixed pattern (`link-url`; libghostty cannot take
+  another): its path branch takes any `/word` (`/compact`) and the words after a path up to one that ends in `.` or `/`
+  (`/tmp/a.txt then more.`). A path that matched nothing on This Mac fell through silently, and Go to Directory on a
+  remote card showed This Mac's folder panel.
+- **Fix.** `link-url = false`; the app reads libghostty's cells and finds links itself (`TerminalLink` in HerdrKit,
+  106 table cases), draws its own underline under ⌘ or ⌥ alone, and shows "File not found: ‹path›" (checked on the
+  card's machine) or "Ovvi can't open ‹address›" instead of silence. OSC 8 links stay libghostty's. From a floating
+  card any open that would go to a new tab or the side floats in a window of its own (browser cards too). Go to
+  Directory is off on remote machines.
+- **Decisions.** No bare domains (`example.com` reads as a file name too). An absolute path needs two names, an
+  extension or a closing `/`, so `/tmp` alone is no link either. Rows join when the row above fills its width: herdr's
+  frames carry no soft-wrap flag. libghostty-spm keeps its surface handle internal: a `Mirror` reads it (ponytail).
+- **Runs.** On this Mac under the GUI lock: `testCommandClickOnALinkOpensIt` (now also `/compact`, the words after a
+  path, the ftp and not-found notices) and `testALinkInAFloatingCardOpensInAFloatingWindow` green. The remote Go to
+  Directory check (`testAFileDroppedOnARemoteCardPastesItsCopysPath`) needs CI's sshd: final CI round.
+- **For the user.** ⌘ and ⌥ over a long URL that wraps; `/compact` and dates show no underline; ⌘-click a missing path
+  on a remote machine; ⌘- and ⌥-click in a floating terminal.

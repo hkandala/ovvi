@@ -26,14 +26,17 @@ enum Links {
             let cwd = store.terminalPane(terminalID)?.cwd ?? "/"
             Task {
                 guard let found = await store.there(path, from: cwd) else {
-                    return store.notFound(path.hasPrefix("/") || path.hasPrefix("~") ? path : "\(cwd)/\(path)")
+                    return store.notFound(path.hasPrefix("/") || path.hasPrefix("~")
+                        ? path : MachinePath.tidy("\(cwd)/\(path)"))
                 }
                 let url = URL(filePath: found)
-                if !store.machine.isRemote, !found.hasSuffix("/"), ["html", "htm"].contains(url.pathExtension) {
+                if !store.machine.isRemote, !found.hasSuffix("/"),
+                   ["html", "htm"].contains(url.pathExtension.lowercased())
+                {
                     return await page.open(Registry.browser, arg: url.absoluteString, from: terminalID, how: how,
                                            background: true)
                 }
-                guard let plugin = Registry.openers(for: found).first else { return }
+                guard let plugin = Registry.openers(for: found).first else { return cannot(link, store) }
                 await page.open(plugin, arg: found, at: link.line.map(String.init), from: terminalID, how: how,
                                 background: true)
             }
@@ -68,7 +71,8 @@ extension PaneSurfaceView {
     }
 
     /// One string a cell: `""` for a wide glyph's second cell (it reads as the glyph again, and so does the pair),
-    /// `" "` for a blank one.
+    /// `" "` for a blank one. A row without wide glyphs is its text, padded: libghostty writes blanks before text as
+    /// spaces and drops the ones after it, so text in the cells past its length means a wide glyph.
     private func cells(_ row: Int, columns: Int) -> [String] {
         guard let raw else { return [] }
         func read(_ first: Int, _ last: Int) -> String {
@@ -84,6 +88,10 @@ extension PaneSurfaceView {
                 String(decoding: UnsafeRawBufferPointer(start: $0, count: Int(text.text_len)), as: UTF8.self)
             } ?? ""
         }
+        let whole = read(0, columns - 1)
+        if whole.count == columns || whole.count < columns && read(whole.count, columns - 1).isEmpty {
+            return whole.map(String.init) + Array(repeating: " ", count: columns - whole.count)
+        }
         var cells: [String] = [], previous = ""
         for column in 0 ..< columns {
             let text = read(column, column)
@@ -94,13 +102,18 @@ extension PaneSurfaceView {
         return cells
     }
 
-    func link(at point: NSPoint) -> Hovered? {
+    private func cell(at point: NSPoint) -> TerminalLink.Place? {
         guard let metrics, metrics.cellWidthPixels > 0, metrics.cellHeightPixels > 0 else { return nil }
         let scale = window?.backingScaleFactor ?? 2
         let column = Int(point.x * scale) / Int(metrics.cellWidthPixels)
         let row = Int((bounds.height - point.y) * scale) / Int(metrics.cellHeightPixels)
-        let columns = Int(metrics.columns), rows = Int(metrics.rows)
-        guard (0 ..< columns).contains(column), (0 ..< rows).contains(row) else { return nil }
+        guard (0 ..< Int(metrics.columns)).contains(column), (0 ..< Int(metrics.rows)).contains(row) else { return nil }
+        return TerminalLink.Place(row: row, column: column)
+    }
+
+    func link(at point: NSPoint) -> Hovered? {
+        guard let metrics, let cell = cell(at: point) else { return nil }
+        let row = cell.row, column = cell.column, columns = Int(metrics.columns), rows = Int(metrics.rows)
         let line = TerminalLink.line(at: row, rows: rows) { cells($0, columns: columns) }
         guard let index = line.places.lastIndex(where: { $0.row == row && $0.column <= column }),
               let link = TerminalLink.at(index, in: line.text)
@@ -109,7 +122,12 @@ extension PaneSurfaceView {
     }
 
     /// Underlines the link under the pointer, one line a row it covers, in the text color.
+    /// Reads the screen again only on another cell. ponytail: output that changes under a still pointer keeps the old
+    /// underline until the pointer moves or a key changes.
     func hover(_ point: NSPoint?) {
+        let spot = point.flatMap(cell(at:))
+        guard spot == nil || spot != hoveredCell else { return }
+        hoveredCell = spot
         let found = point.flatMap(link(at:))
         guard found?.link != hovered?.link || found?.places.first != hovered?.places.first else { return }
         hovered = found
@@ -146,16 +164,14 @@ extension PaneSurfaceView {
         return hoveredLink.flatMap { TerminalLink.all(in: $0).first }
     }
 
-    static func sideKey(_ flags: NSEvent.ModifierFlags) -> Bool {
-        linkKey(flags) == .side
-    }
-
     /// Under ⌥ alone libghostty gets ⌘: it draws an OSC 8 link's underline and pointing hand only with ⌘. A plain move
     /// only: libghostty's drags call mouseMoved, and they keep their own modifiers (⌥ makes a selection a rectangle).
     override func mouseMoved(with event: NSEvent) {
-        let point = convert(event.locationInWindow, from: nil)
-        hover(Self.linkKey(event.modifierFlags) == nil ? nil : point)
-        guard event.type == .mouseMoved, Self.sideKey(event.modifierFlags) else { return super.mouseMoved(with: event) }
+        _ = Self.linkKeys
+        let point = convert(event.locationInWindow, from: nil), moved = event.type == .mouseMoved
+        let how = moved ? Self.linkKey(event.modifierFlags) : nil
+        hover(how == nil ? nil : point)
+        guard how == .side else { return super.mouseMoved(with: event) }
         linkSurface?.sendMousePos(x: point.x, y: bounds.height - point.y, modifiers: .super_)
     }
 
@@ -164,19 +180,39 @@ extension PaneSurfaceView {
         super.mouseExited(with: event)
     }
 
+    /// AppKit sends flagsChanged to the first responder only: the card under the pointer may be another.
+    static let linkKeys: Any? = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { event in
+        let flags = event.modifierFlags
+        MainActor.assumeIsolated {
+            let shown = underPointer, view = under()
+            if shown !== view {
+                shown?.hover(nil)
+            }
+            underPointer = view
+            if let view, let window = view.window {
+                let point = view.convert(window.mouseLocationOutsideOfEventStream, from: nil)
+                view.hover(linkKey(flags) == nil || NSEvent.pressedMouseButtons != 0 ? nil : point)
+            }
+        }
+        return event
+    }
+
+    private weak static var underPointer: PaneSurfaceView?
+
+    private static func under() -> PaneSurfaceView? {
+        let number = NSWindow.windowNumber(at: NSEvent.mouseLocation, belowWindowWithWindowNumber: 0)
+        guard let window = NSApp.windows.first(where: { $0.windowNumber == number }) else { return nil }
+        return window.contentView?.hitTest(window.mouseLocationOutsideOfEventStream) as? PaneSurfaceView
+    }
+
     /// libghostty reports a link again only on another cell, so the pointer leaves the view first. Only on a change of
     /// ⌥ alone: made-up moves on every ⇧ or ⌃ would reach a program that tracks the mouse.
     override func flagsChanged(with event: NSEvent) {
         super.flagsChanged(with: event)
-        let side = Self.sideKey(event.modifierFlags)
+        let side = Self.linkKey(event.modifierFlags) == .side
         defer { sideHeld = side }
-        guard NSEvent.pressedMouseButtons == 0, let window,
-              NSWindow.windowNumber(at: NSEvent.mouseLocation, belowWindowWithWindowNumber: 0) == window.windowNumber,
-              window.contentView?.hitTest(window.mouseLocationOutsideOfEventStream)?.isDescendant(of: self) == true
-        else { return hover(nil) }
+        guard side != sideHeld, NSEvent.pressedMouseButtons == 0, let window, Self.under() === self else { return }
         let point = convert(window.mouseLocationOutsideOfEventStream, from: nil)
-        hover(Self.linkKey(event.modifierFlags) == nil ? nil : point)
-        guard side != sideHeld else { return }
         let modifiers: TerminalInputModifiers = side ? .super_ : .init(from: event.modifierFlags)
         linkSurface?.sendMousePos(x: -1, y: -1, modifiers: modifiers)
         linkSurface?.sendMousePos(x: point.x, y: bounds.height - point.y, modifiers: modifiers)

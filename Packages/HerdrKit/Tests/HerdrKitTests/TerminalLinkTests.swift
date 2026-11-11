@@ -142,6 +142,23 @@ private let cases: [(String, [Found])] = [
     ("diff --git a/x.swift b/x.swift", [file("a/x.swift", "x.swift"), file("b/x.swift", "x.swift")]),
     ("a/x.swift", [file("a/x.swift")]),
 
+    // A quoted sentence keeps its own paths.
+    ("git commit -m \"fix Ovvi/a.swift and docs/b.mdx\"", [file("Ovvi/a.swift"), file("docs/b.mdx")]),
+    ("\"see /tmp/a.txt and more.md\"", [file("/tmp/a.txt")]),
+    ("echo 'copy a/b.txt to c/d.txt'", [file("a/b.txt"), file("c/d.txt")]),
+    ("`src/a b.ts`", []),
+
+    // Mentions, variables and commands.
+    ("look at @Ovvi/Terminal/Links.swift", [file("Ovvi/Terminal/Links.swift")]),
+    ("@/tmp/a.txt", [file("/tmp/a.txt")]),
+    ("$HOME/foo.txt", []),
+    ("${HOME}/foo.txt", []),
+    ("$(pwd)/a.txt", []),
+
+    // Other compilers' and tracebacks' lines.
+    ("File \"/tmp/a.py\", line 12, in main", [file("/tmp/a.py", line: 12)]),
+    ("src/a.ts(3,7): error TS2322", [file("src/a.ts(3,7)", "src/a.ts", line: 3, column: 7)]),
+
     // A path inside an address is the address's.
     ("https://x.dev/tmp/a.txt", [web("https://x.dev/tmp/a.txt")]),
     ("see https://x.dev/a and /tmp/b.txt", [web("https://x.dev/a"), file("/tmp/b.txt")]),
