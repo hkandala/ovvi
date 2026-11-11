@@ -49,6 +49,8 @@
 				Fixtures/agents/pi,
 				"Fixtures/failing-herdr/herdr",
 				"Fixtures/late-herdr/herdr",
+				"Fixtures/late-snapshot/herdr",
+				Fixtures/films/curl,
 				"Fixtures/no-server/herdr",
 				"Fixtures/no-herdr/install",
 				"Fixtures/no-herdr/login-shell",
