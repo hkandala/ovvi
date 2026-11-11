@@ -15,8 +15,6 @@ struct WelcomeView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
 
-    /// The clips fill the panel (`Welcome.size`).
-    static let picture = CGRect(origin: .zero, size: Welcome.size)
     /// The clips show the app's whole 1200 x 800 pt window at this scale (scripts/record-onboarding.sh: 1920 x 1280
     /// pixels).
     static let pictureScale: CGFloat = 0.8
@@ -227,10 +225,10 @@ struct WelcomeView: View {
 }
 
 private extension CGRect {
-    /// A fraction of the picture's frame, in the panel's points.
+    /// A fraction of the picture, in the panel's points: the clips fill the panel (`Welcome.size`).
     var inPicture: CGRect {
-        let frame = WelcomeView.picture
-        return CGRect(x: frame.minX + minX * frame.width, y: frame.minY + minY * frame.height,
-                      width: width * frame.width, height: height * frame.height)
+        let size = Welcome.size
+        return CGRect(x: minX * size.width, y: minY * size.height, width: width * size.width,
+                      height: height * size.height)
     }
 }

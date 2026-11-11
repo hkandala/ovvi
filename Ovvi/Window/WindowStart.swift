@@ -8,10 +8,6 @@ struct WindowStart: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
 
-    init(pages: WindowPages) {
-        self.pages = pages
-    }
-
     var body: some View {
         let look = Look(style: settings.style, dark: colorScheme == .dark, contrast: colorSchemeContrast == .increased)
         Color.clear

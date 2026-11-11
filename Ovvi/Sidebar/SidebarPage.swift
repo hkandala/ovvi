@@ -5,8 +5,8 @@ struct SidebarPage: View {
     let page: Page
     let pages: WindowPages
     let filter: String
-    var bottom: CGFloat = 0
-    var openSession: () -> Void = {}
+    let bottom: CGFloat
+    let openSession: () -> Void
     private var settings = AppSettings()
     typealias Row = (workspace: HostStore.Workspace, parent: HostStore.Workspace?)
     /// A row, or the place under the pinned spaces: the line, or the pin region while a space is dragged.

@@ -10,10 +10,6 @@ struct SessionPicker: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
 
-    init(pages: WindowPages) {
-        self.pages = pages
-    }
-
     /// A run against a throwaway session (`-session`, a test's `-defaultSession`) lists only throwaway ones, never the
     /// user's.
     private static let throwaway = MachineList.session ?? MachineList.defaultSession
