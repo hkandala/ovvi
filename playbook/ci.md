@@ -35,10 +35,9 @@ How CI runs, how to run part of it, and how to keep it green and fast.
 - **Time.** A full run takes 21–25 minutes and about 94 runner-minutes: 3–4 minutes of the build job, then about a
   minute of setup and upload per test job and a fifth of about 4700 s of UI tests, 271 of them (the slowest shard ends
   2–5 minutes after the fastest: runners differ in speed, and one shard of times from before a change can run 5 minutes
-  over the others). The build job makes a lone run no shorter (each job used to build for itself in the same time),
-  but it saves four builds, about 12 runner-minutes a run. Two full runs dispatched together take about twice as long
+  over the others). The build job makes a lone run no shorter than a build in each job, but it saves four builds, about 12 runner-minutes a run. Two full runs dispatched together take about twice as long
   as one, since the second waits for runners, and any other run (a chosen-tests run) takes one of the 5. A test job
-  stops at 30 minutes (`timeout-minutes`): at 25, a shard of 1171 s on a slow runner (phase 56) crossed the limit
+  stops at 30 minutes (`timeout-minutes`): at 25, a shard of 1171 s on a slow runner crossed the limit
   after every test passed, as one of 873 s had at 20. Each test stops at 120 s, so the limit costs a green run
   nothing. Refresh the test times when tests are added, or the shards stop balancing.
 
@@ -78,7 +77,7 @@ How CI runs, how to run part of it, and how to keep it green and fast.
 3. Think of CI's machine ([Layout](#layout)); Option sends Alt there.
 4. A shard where every test from one point on runs out its 120 s with no assertion (the session log shows a launch
    whose pid never came, then "requesting to start screen recording" with no answer) is the runner's
-   `testmanagerd`, not the tests: judge the tests before that point, and the next full run (phase 57).
+   `testmanagerd`, not the tests: judge the tests before that point, and the next full run.
 5. Give it 20 minutes from the logs. Then simplify the test or the feature and write it down, or hand it on.
    No debug branches.
 6. Never rerun to green: run again only after a code change. A flake fix is proven by two full runs in a

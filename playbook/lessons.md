@@ -1,6 +1,6 @@
 # Lessons
 
-Problems that came back across phases, and the rule that stops each. How we work is in
+Problems that came back, and the rule that stops each. How we work is in
 [workflow.md](workflow.md); this file is what to watch out for while doing it.
 
 ## Testing the UI
@@ -55,7 +55,7 @@ Problems that came back across phases, and the rule that stops each. How we work
   test clears them first (`forget-windows`).
 - **The argument domain drops a value it cannot read as a property list** (`-machines []`, any JSON): read such
   arguments from `ProcessInfo.arguments`. The machine list's guard read the domain, so a test launched without
-  `-session` loaded the user's machines, and the new-window view tried their SSH (phase 57).
+  `-session` loaded the user's machines, and the new-window view tried their SSH.
 - **Every app with the installed bundle id shares its saved windows and defaults.** A Release build run by hand (a
   measure) quit with its throwaway session's window, and the user's next launch restored that window instead of
   theirs. `make app` builds `dev.ovvi.app.release` (scheme `ovvi-release://`); only `make install` and `make dmg`
@@ -73,14 +73,14 @@ Problems that came back across phases, and the rule that stops each. How we work
   does. So the welcome's clips film with an excluding filter cut to the window's rect, rebuilt every 0.25 s, and any
   other window over that rect deletes the film and fails the take. Tag the clips sRGB: AVFoundation plays sRGB values
   tagged bt709 lighter (33 as 36). A recording backdrop covers only the recorded window plus a small margin and goes
-  away with the film: a full-screen one left up between takes locked the user out (phase 57).
+  away with the film: a full-screen one left up between takes locked the user out.
 - **Never assert wall-clock time.** In unit tests compare against a ten times larger input or count the
   work.
 - **A pane's row that wraps at a space drops it.** herdr's `pane.read` keeps no trailing spaces, so a typed line
   read across a wrap lost its space (`claude--resume`) and missed its match on CI's narrow cards only. Wait with
   `waitFor(_:toShow:)`, which compares without whitespace.
 - **Profilers launch by bundle id.** `xctrace --launch` with an app name started the user's installed Ovvi.app with
-  test arguments (phase 57). Launch the test build by its full path, and delete the 12-26 GB traces it leaves in
+  test arguments. Launch the test build by its full path, and delete the 12-26 GB traces it leaves in
   `$TMPDIR` after each run: they filled the disk twice.
 
 ## CI and git
@@ -95,7 +95,7 @@ Problems that came back across phases, and the rule that stops each. How we work
 - **Automated rewrites change meaning.** Formatter rules and scripted replaces have flipped logic or matched
   nothing. Read the diff; make every scripted edit fail loudly when it matches nothing.
 - **No pattern kills on the user's Mac.** macOS `pkill -f "x" -P 1` read `-P` and `1` as more patterns and sent
-  SIGTERM to every process whose command line held a "1": the user's apps, other agents, two builds (phase 57).
+  SIGTERM to every process whose command line held a "1": the user's apps, other agents, two builds.
   Kill the exact pids you started; a pattern only when anchored to a full path of your own, checked with `ps` first.
   `make lint` rejects `pkill` and `killall`.
 
@@ -119,14 +119,14 @@ Problems that came back across phases, and the rule that stops each. How we work
 
 ## SwiftUI and AppKit
 
-- **A motion has one target, known when it starts, and nothing moves a card after it lands.** Each split fix (phase 57,
-  rounds 2–7) made a new artifact because four parts moved cards: SwiftUI's layout, Core Animation, herdr's later
+- **A motion has one target, known when it starts, and nothing moves a card after it lands.** Split fixes made one new
+  artifact after another because four parts moved cards: SwiftUI's layout, Core Animation, herdr's later
   snapshot (applied after a 0.13 s hold, so a stale one moved every card again at landing) and the content's relayout
   at landing. Hand a layout shown ahead of herdr over only when herdr's tree puts every pane in the same place; lay a
   moving card's content out once, at its final size; and check a change with the per-frame track
   (`testSplitsMoveEachCardOnceToItsPlace`), not a single mid-motion sample.
 - **Never give a `ScrollPosition` binding back what the scroll view wrote into it.** It names a row as a scroll
-  begins or ends, and the next body puts that row back at the top: a jump (phases 49, 51 and 52). Use a binding that
+  begins or ends, and the next body puts that row back at the top: a jump. Use a binding that
   drops the writes and set it only for the app's own scrolls. `defaultScrollAnchor(.bottom)` alone follows new rows
   only at the exact bottom, and keeps the offset when scrolled up by any amount.
 - **Inside a sideways scroll view, a SwiftUI scroll view of both axes gets no vertical wheel**: only its
@@ -142,11 +142,11 @@ Problems that came back across phases, and the rule that stops each. How we work
 - **View identity cuts both ways.** A view shared by all workspaces carries stale scroll and lazy state; an
   `.id` per page makes a fresh view that flickers at offset 0.
 - **WebKit scrolls on its own thread: a scroll listener runs a frame or more behind.** A clip or a cover set from one
-  showed rows under a sticky header in a fast scroll (phase 56). Tie what must follow a scroll to CSS (`position:
+  showed rows under a sticky header in a fast scroll. Tie what must follow a scroll to CSS (`position:
   sticky`, opaque), and check a fast scroll frame by frame.
 - **SwiftUI's `.onDrop` is an AppKit view of its own** (`DraggingDestinationView`, for any data), under the view
   it is on. Opacity 0 and `allowsHitTesting(false)` do not stop it: a kept page's took every drop from the shown
-  page below it (phase 56). Make it only while its view shows (`.background { if shown { … } }`).
+  page below it. Make it only while its view shows (`.background { if shown { … } }`).
 - **An overlay blocks every input path to the page below:** swipes, the wheel, menu shortcuts and clicks.
   Check all of them when you add one.
 - **A new or lazy scroll view's first layout lies.** The first scroll position gets dropped,
@@ -155,11 +155,11 @@ Problems that came back across phases, and the rule that stops each. How we work
 - **A list typed into stays in AppKit.** With an accessibility client attached (Raycast, VoiceOver, XCUITest), every
   SwiftUI row made or changed walks all the window's focusable views; each live glass element (a keycap) is a SwiftUI
   host of its own, and so is a hosting view per table cell. The palette's rows took 136–173 ms a key that way and
-  25–28 ms drawn in a reused `NSTableView` (phase 57). Time a list with its rows hidden first: that is its floor.
+  25–28 ms drawn in a reused `NSTableView`. Time a list with its rows hidden first: that is its floor.
 - **A lazy stack's height is a guess** from the rows it built, often 2–3× off, and it changes as it measures more.
   Anchored at the bottom, a resize jumps to the end, or past it to a blank view: lay out a short plain stack instead
   (the chat, D95), and test a one-step resize too (Reduce Motion). Fed back into its own frame (`onGeometryChange` into
-  the list's height), it made the palette's list 45 times in one turn for one typed key (300 ms, phase 57): clamp the
+  the list's height), it made the palette's list 45 times in one turn for one typed key (300 ms): clamp the
   read to the most the frame shows. Give each `ForEach` element one view: a header beside its row made the stack make
   5 to 8 times as many rows. Count bodies per key before you guess.
 - **An environment change alone does not call `updateNSView`.** A representable that reads a value from
@@ -183,14 +183,14 @@ Problems that came back across phases, and the rule that stops each. How we work
   never showed). Read them into `let`s in the body and use those inside; observed models are tracked inside.
 - **A busy app's `DragGesture` reports its first change late,** after the pointer moved on. Take the grab from
   `startLocation`, never the first `location`: the late one put a dragged row's image off the pointer and its drop a
-  row short (phase 57).
+  row short.
 - **Take a hit frame outside any offset that moves a view for a while** (a slide, a landing). `onGeometryChange` inside an
-  `.offset` saw the offset set but not always its return to 0, and the sidebar lit the row 50 pt under the pointer
-  (phase 57): measure in the view's own space and place it by a frame taken outside the offset.
+  `.offset` saw the offset set but not always its return to 0, and the sidebar lit the row 50 pt under the pointer:
+  measure in the view's own space and place it by a frame taken outside the offset.
 - **Hover state is unreliable.** A view removed under the pointer gets no hover end, and a busy app runs
   hover late. Decide from the pointer's location when it matters.
 - **WebKit cannot end its own helper processes here** (xpc: "Operation not permitted"): a GPU or page process it gave
-  up on lives on, and its pages stayed blank with no delegate call (phase 57). Force a hang with SIGSTOP, not only a
+  up on lives on, and its pages stayed blank with no delegate call. Force a hang with SIGSTOP, not only a
   `kill -9`, and check the log for "Could not signal".
 - **A web page takes the keyboard by itself.** WebKit makes its web view first responder when the page focuses an
   element (`PageClientImpl::makeFirstResponder`), and `NSWindow.makeFirstResponder` never asks `acceptsFirstResponder`:
