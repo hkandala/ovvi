@@ -1,4 +1,4 @@
-// The welcome clips' custom plugin: the latest deploys of the card's project, made up (scripts/welcome-clips.sh).
+// The welcome clips' custom plugin: the latest deploys of the card's project, made up (scripts/record-onboarding.sh).
 import type { Ovvi } from "@ovvi/plugin-api"
 import "./main.css"
 
