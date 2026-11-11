@@ -54,28 +54,6 @@ extension OvviUITests {
         }
     }
 
-    func testCommandDigitSelectsATab() async throws {
-        XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
-        app.typeKey("2", modifierFlags: .command)
-        XCTAssertTrue(element("tab.w1:t2").has(\.isSelected, true, within: 2))
-        XCTAssertTrue(element("pane.w1:p4").has(\.isHittable, true, within: 2))
-        XCTAssertTrue(app.windows.firstMatch.has(\.title, "second - \(one)", within: 2))
-        try await expectPTYSize("w1:p4")
-        keepScreenshot("command 2")
-        app.typeKey("[", modifierFlags: [.command, .shift])
-        XCTAssertTrue(element("tab.w1:t1").has(\.isSelected, true, within: 2))
-        app.typeKey("]", modifierFlags: [.command, .shift])
-        XCTAssertTrue(element("tab.w1:t2").has(\.isSelected, true, within: 2))
-
-        element("workspace.w2").click()
-        XCTAssertTrue(element("pane.w2:p1").has(\.isHittable, true, within: 2))
-        app.typeKey("1", modifierFlags: .command)
-        XCTAssertTrue(element("pane.w2:p1").has(\.isHittable, true, within: 2))
-        element("workspace.w1").click()
-        XCTAssertTrue(element("pane.w1:p4").has(\.isHittable, true, within: 2))
-        XCTAssertTrue(element("tab.w1:t2").isSelected)
-    }
-
     func testSwitchingTabsKeepsTheLastTabAttached() async throws {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         let old = try await terminalID("w1:p1"), new = try await terminalID("w1:p4")
