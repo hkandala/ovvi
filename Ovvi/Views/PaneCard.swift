@@ -206,11 +206,7 @@ struct PaneCard: View {
                         .fontWeight(.regular).lineLimit(1).truncationMode(.middle).allowsHitTesting(false)
                     CardState(chat: chat, state: pane.state, paneID: id).padding(.leading, 4)
                     Spacer(minLength: 0)
-                    if let chat {
-                        ChatSwitch(chat: chat, page: page)
-                    } else if EnableChat.offered(pane, page.store) {
-                        EnableChat(pane: pane, page: page)
-                    }
+                    AgentControl(pane: pane, chat: chat, page: page)
                 }
                 .frame(height: Self.row)
             }

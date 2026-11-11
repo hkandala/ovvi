@@ -40,3 +40,19 @@ struct EnableChat: View {
         }
     }
 }
+
+/// An agent's header control, the same in a card and in a floating pane's title row: the Chat | TUI switch, else
+/// Relaunch with Chat.
+struct AgentControl: View {
+    let pane: HostStore.Pane
+    let chat: Chat?
+    let page: Page
+
+    var body: some View {
+        if let chat {
+            ChatSwitch(chat: chat, page: page)
+        } else if EnableChat.offered(pane, page.store) {
+            EnableChat(pane: pane, page: page)
+        }
+    }
+}
