@@ -25,6 +25,14 @@ extension OvviUITests {
             XCTAssertTrue(text(line).exists, line)
         }
         XCTAssertEqual(NSPasteboard.general.string(forType: .string), "ovvi-plugin-api")
+        let log = "\(config)/logs/plugins/plugin-api.log", line = "/ log: order /"
+        let ordered = #"awk '\#(line) { if ($4 != ++n) { print "un" "ordered at " n; exit } } "#
+            + #"END { print "calls-" n "-in-order-" 6*7 }' "# + log
+        try await send("clear; for t in 1 2 3 4 5 6; do [ $(awk '\(line)' \(log) | wc -l) = 1000 ] && break; "
+            + "sleep 0.5; done; \(ordered)\r", to: shell)
+        try await waitFor(shell) { $0.contains("-in-order-42") }
+        let order = try await read(shell)
+        XCTAssertTrue(order.contains("calls-1000-in-order") && !order.contains("unordered"), order)
         keepScreenshot("plugin API fixture")
 
         let shown = count("visible: true ")

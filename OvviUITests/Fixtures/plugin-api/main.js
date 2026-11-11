@@ -24,6 +24,8 @@ export default async function main(ovvi) {
     node.onclick = fn
   }
 
+  // The app takes the calls in this order: the test reads them in the plugin's log.
+  for (let i = 1; i <= 1000; i++) console.log("order", i)
   const runs = (ovvi.state.get()?.runs ?? 0) + 1
   ovvi.state.set({ runs })
   line("state", runs)

@@ -50,14 +50,16 @@ const watches = new Map<number, () => void>()
 const toasts = new Map<number, (button: string | undefined) => void>()
 let next = 0
 
-// The app calls it with no answer: an error thrown here would reach no one.
-window.ovvi_receive = (name, data) => {
+/** The app calls the page with no answer: an error thrown in it would reach no one. */
+function logged(fn: () => void) {
   try {
-    receive(name, data)
+    fn()
   } catch (error) {
     console.error(error)
   }
 }
+
+window.ovvi_receive = (name, data) => logged(() => receive(name, data))
 
 function receive(name: string, data: any) {
   switch (name) {
@@ -88,7 +90,8 @@ function receive(name: string, data: any) {
       Object.assign(context.settings, data)
       break
   }
-  handlers.get(name)?.forEach((fn) => fn(data))
+  // Each on its own: a hidden page's handler that throws stops no other page's.
+  handlers.get(name)?.forEach((fn) => logged(() => fn(data)))
 }
 
 const card: Card = {

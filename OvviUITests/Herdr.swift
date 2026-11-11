@@ -290,13 +290,14 @@ extension OvviUITests {
     nonisolated func keepPluginConsole() {
         let env = ProcessInfo.processInfo.environment
         let path = "\(env["OVVI_HELPER"] ?? "")/\(env["OVVI_SESSION"] ?? "")/plugin-logs"
-        guard testRun?.hasSucceeded == false, let url = URL(string: path) else { return }
+        guard let run = testRun, !run.hasSucceeded, let url = URL(string: path) else { return }
         var request = URLRequest(url: url, timeoutInterval: 10)
         request.httpMethod = "POST"
-        request.httpBody = Data("\(started.withLock(\.self))".utf8)
+        request.httpBody = Data("\(Int(run.startDate?.timeIntervalSince1970 ?? 0))".utf8)
         let log = Mutex(""), done = DispatchSemaphore(value: 0)
-        URLSession.shared.dataTask(with: request) { data, _, _ in
-            log.withLock { $0 = data.map { String(decoding: $0, as: UTF8.self) } ?? "" }
+        URLSession.shared.dataTask(with: request) { data, _, error in
+            let text = data.map { String(decoding: $0, as: UTF8.self) } ?? error.map { "\($0)" }
+            log.withLock { $0 = text ?? "" }
             done.signal()
         }.resume()
         done.wait()

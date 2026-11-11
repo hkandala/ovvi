@@ -33,6 +33,8 @@ POST /<session>/web-kill kills the app's WebKit page processes (SIGKILL, as the 
 Networking as the body its GPU or network process, and gives back the pids it killed, one per line. /<session>/web-stop
 stops them instead (SIGSTOP, as a process that hangs), /<session>/web-resume lets them go on, and /<session>/web-pids
 only lists them.
+POST /<session>/plugin-logs with a time (seconds since 1970) as the body gives back the plugin pages' console lines
+since then, from the plugin logs of every config folder of the tests: a failed test keeps them.
 POST /<session>/forget-windows removes the Debug build's saved windows ($TMPDIR/dev.ovvi.app.debug.savedState): a test
 that restores windows starts from none, not from an earlier test's.
 POST /<session>/ssh-hostname with an SSH target and a host name as the body sets that HostName in its ~/.ssh/config

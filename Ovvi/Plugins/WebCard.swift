@@ -104,7 +104,7 @@ private final class Relay: NSObject, WKScriptMessageHandlerWithReply, WKNavigati
     func userContentController(_: WKUserContentController, didReceive message: WKScriptMessage,
                                replyHandler: @escaping @MainActor @Sendable (Any?, String?) -> Void)
     {
-        guard let bridge = card?.bridge else { return replyHandler(nil, "Closed") }
+        guard let bridge = card?.bridge else { return replyHandler(nil, "closed: Closed") }
         let body = message.body as? [String: Any] ?? [:]
         Task {
             let (reply, error) = await bridge.call(body)

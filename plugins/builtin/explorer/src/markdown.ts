@@ -300,9 +300,9 @@ export async function show(place: Place): Promise<Reveal> {
     if (id === "lock-editing") change(view, { locked: !now.locked })
   })
   ovvi.on("settings", (changed) => {
-    const next = mode(changed.markdown), locked = changed["markdown-lock"], choices = own(ovvi)
-    if (next && choices.mode === undefined) present(view, { ...now, mode: next }, outlined)
-    if (typeof locked === "boolean" && choices.locked === undefined) present(view, { ...now, locked }, outlined)
+    const choices = own(ovvi)
+    const mine = (id: string, choice: unknown) => id in changed && choice === undefined
+    if (mine("markdown", choices.mode) || mine("markdown-lock", choices.locked)) present(view, chosen(ovvi), outlined)
   })
   titles(view, all(view.state))
   present(view, first, false)
