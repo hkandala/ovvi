@@ -288,29 +288,3 @@ extension OvviUITests {
                       "\(first) then \(title.stringValue)")
     }
 }
-
-extension OvviUITests {
-    func testEachOpenInANewTabShowsItsOwnPage() async throws {
-        let (_, shell) = try await newTab("opens")
-        try await waitForPrompt(shell)
-        let repo = "/tmp/ovvi-e2e-opens", names = ["one.txt", "two.txt", "three.txt", "four.txt", "five.txt"]
-        try await send("rm -rf \(repo) && mkdir -p \(repo) && cd \(repo) && touch \(names.joined(separator: " ")) "
-            + "&& clear && echo ready-$((6*7))\r", to: shell)
-        try await waitFor(shell) { $0.contains("ready-42") }
-        let tab = try await newCard("ovvi:explorer#e2eops /private\(repo)/", cwd: repo, show: false).tab
-        for name in names {
-            try await show(tab)
-            let row = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", name)).firstMatch
-            XCTAssertTrue(row.exists(within: 10), name)
-            let before = try await tabIDs()
-            XCUIElement.perform(withKeyModifiers: .command) { row.click() }
-            let opened = try await newTabID(after: before)
-            closeAfter("tab", opened)
-            XCTAssertTrue(element("tab.\(opened)").exists(within: 5), name)
-            XCTAssertFalse(until(0.5) { !element("tab.\(tab)").isSelected }, name)
-            try await show(opened)
-            XCTAssertTrue(element("page.\(opened)").has(\.isHittable, true, within: 5), name)
-        }
-        try await send("rm -rf \(repo)\r", to: shell)
-    }
-}

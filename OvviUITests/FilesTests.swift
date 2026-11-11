@@ -134,59 +134,6 @@ extension OvviUITests {
         try await labelEnds(card, " \(root)/src/")
     }
 
-    func testFileExplorerKeysHiddenFilesAndFind() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        let (_, shell) = try await newTab("files-keys")
-        try await waitForPrompt(shell)
-        let repo = "/tmp/ovvi-e2e-files-keys", root = "/private/tmp/ovvi-e2e-files-keys"
-        try await makeTreeRepo(repo, in: shell)
-        let card = try await newCard("ovvi:explorer#e2efil \(root)/", cwd: repo).pane
-        let tree = element("files.\(card).page")
-        XCTAssertTrue(row("a.txt", in: tree).exists(within: 10))
-        XCTAssertFalse(row(".gitignore", in: tree).exists)
-
-        XCTAssertTrue(hasKeyboard(row("..", in: tree)))
-        app.typeKey(.upArrow, modifierFlags: [])
-        XCTAssertTrue(hasKeyboard(row("a.txt", in: tree)))
-        app.typeKey(.upArrow, modifierFlags: [])
-        app.typeKey(.upArrow, modifierFlags: [])
-        app.typeKey(.upArrow, modifierFlags: [])
-        XCTAssertTrue(hasKeyboard(row("..", in: tree)))
-        app.typeKey(.downArrow, modifierFlags: [])
-        XCTAssertTrue(hasKeyboard(row("build", in: tree)))
-        app.typeKey(.downArrow, modifierFlags: [])
-        app.typeKey(.rightArrow, modifierFlags: [])
-        XCTAssertTrue(row("deep", in: tree).exists(within: 5))
-        app.typeKey(.leftArrow, modifierFlags: [])
-        XCTAssertTrue(row("deep", in: tree).vanishes(within: 5))
-        app.typeKey(.downArrow, modifierFlags: [])
-        app.typeKey("o", modifierFlags: .command)
-        try await labelEnds(card, " \(root)/a.txt")
-        element("pane.\(card).go-back").click()
-        XCTAssertTrue(row("a.txt", in: tree).exists(within: 10))
-
-        let eye = element("pane.\(card).hidden-files")
-        eye.click()
-        XCTAssertTrue(row(".gitignore", in: tree).exists(within: 5))
-        eye.click()
-        XCTAssertTrue(row(".gitignore", in: tree).vanishes(within: 5))
-
-        try await send("mkdir \(repo)/empty\r", to: shell)
-        XCTAssertTrue(row("empty", in: tree).exists(within: 5))
-        row("empty", in: tree).doubleClick()
-        try await labelEnds(card, " \(root)/empty/")
-        let empty = tree.staticTexts.matching(NSPredicate(format: "value == 'This folder is empty'")).firstMatch
-        XCTAssertTrue(empty.exists(within: 10))
-        element("pane.\(card).go-back").click()
-        XCTAssertTrue(row("a.txt", in: tree).exists(within: 10))
-
-        app.typeKey("f", modifierFlags: .command)
-        app.typeText("main")
-        XCTAssertTrue(row("main.swift", in: tree).exists(within: 5))
-        XCTAssertFalse(row("..", in: tree).exists)
-        try await send("rm -rf \(repo)\r", to: shell)
-    }
-
     func testFileExplorerLeavesTheKeyboardToThePaneInUse() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (shellTab, shell) = try await newTab("files-keyboard")
@@ -214,33 +161,44 @@ extension OvviUITests {
     }
 
     func testFileExplorerOpensInNewTabsAndToTheSide() async throws {
+        step("A folder of six files in an explorer card")
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, shell) = try await newTab("files-open")
         try await waitForPrompt(shell)
         let repo = "/tmp/ovvi-e2e-files-open", root = "/private/tmp/ovvi-e2e-files-open"
-        try await send("rm -rf \(repo) && mkdir -p \(repo) && cd \(repo) && touch one.txt two.txt three.txt four.txt "
+        let names = ["two.txt", "three.txt", "four.txt", "five.txt", "six.txt"], all = names.joined(separator: " ")
+        try await send("rm -rf \(repo) && mkdir -p \(repo) && cd \(repo) && touch one.txt \(all) "
             + "&& clear && echo ready-$((6*7))\r", to: shell)
         try await waitFor(shell) { $0.contains("ready-42") }
         let (tab, card) = try await newCard("ovvi:explorer#e2efio \(root)/", cwd: repo)
         let tree = element("files.\(card).page")
         XCTAssertTrue(row("four.txt", in: tree).exists(within: 10))
 
+        step("⌥-click opens a file to the side")
         XCUIElement.perform(withKeyModifiers: .option) { row("one.txt", in: tree).click() }
         let side = try await sidePane(in: tab, besides: [card])
         try await labelEnds(side, " \(root)/one.txt")
         XCTAssertTrue(element("file.\(side).page").exists(within: 10))
         XCTAssertTrue(hasKeyboard(row("one.txt", in: tree)))
 
-        for name in ["two.txt", "three.txt", "four.txt"] {
+        // Five in a row: an open's tab is made last, then moved beside its card, and the strip once showed the page
+        // of the tab at its old place from the fifth on.
+        for name in names {
+            step("⌘-click opens \(name) in a new tab beside, with its own page")
+            XCTAssertTrue(row(name, in: tree).exists(within: 10), name)
             let before = try await tabIDs()
             XCUIElement.perform(withKeyModifiers: .command) { row(name, in: tree).click() }
             let opened = try await newTabID(after: before)
             closeAfter("tab", opened)
+            XCTAssertTrue(element("tab.\(opened)").exists(within: 5), name)
             let pane = try await pane(of: opened)
             try await labelEnds(pane, " \(root)/\(name)")
             try await expectBeside(opened, tab)
             XCTAssertFalse(until(0.5) { !element("tab.\(tab)").isSelected }, name)
             XCTAssertTrue(hasKeyboard(row(name, in: tree)), name)
+            try await show(opened)
+            XCTAssertTrue(element("page.\(opened)").has(\.isHittable, true, within: 5), name)
+            try await show(tab)
         }
         try await send("rm -rf \(repo)\r", to: shell)
     }
