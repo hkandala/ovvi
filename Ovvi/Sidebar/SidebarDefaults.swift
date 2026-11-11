@@ -39,8 +39,7 @@ extension Page {
 }
 
 extension HostStore {
-    /// The session's lines of a kind ("‹machine› ‹session› ‹kind› ‹value›") in the sidebar's defaults, under the key
-    /// that held only pins at first, so those stay.
+    /// The session's lines of a kind ("‹machine› ‹session› ‹kind› ‹value›") in the sidebar's defaults.
     static func saved(_ kind: String, _ session: String, _ machine: Machine) -> [String] {
         let prefix = "\(machine.id) \(session) \(kind) "
         return lines.filter { $0.hasPrefix(prefix) }.map { String($0.dropFirst(prefix.count)) }

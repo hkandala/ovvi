@@ -235,7 +235,7 @@ final class PaneTerminal {
     // MARK: Size and input
 
     /// The first grid waits for the layout to settle, so that the first stream opens at the card's real size, not at
-    /// the surface's first guess (50×17), which makes an agent redraw twice. Later ones go at once: the host waits
+    /// the surface's first guess, which makes an agent redraw twice. Later ones go at once: the host waits
     /// for the card's size to settle.
     private func resized(_ size: InMemoryTerminalViewport) {
         latest = size

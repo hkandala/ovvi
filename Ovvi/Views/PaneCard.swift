@@ -129,9 +129,9 @@ struct PaneCard: View {
             }
         }
         .clipShape(CardSurface.shape)
-        // The card's element is its background: a container would merge into a one-pane page's.
+        // The card's element is its background (a container would merge into a one-pane page's); `CardChrome` draws
+        // the surface.
         .background {
-            // `CardChrome` draws the surface: this is the card's element.
             Color.clear.contentShape(CardSurface.shape)
                 .readableText(terminal.map { $0.state.isFailed ? "failed" : $0.ready ? "" : "loading" } ?? "")
                 .accessibilityLabel(page.cardLabel(pane))
