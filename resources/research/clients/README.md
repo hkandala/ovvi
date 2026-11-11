@@ -1,20 +1,20 @@
 # herdr clients
 
-One file per client of herdr (and a few near relatives), with how it talks to herdr, draws terminals, lays out
-panes and handles remote machines. How herdr itself works is in [../multiplexers/herdr.md](../multiplexers/herdr.md);
+The clients of herdr (and a few near relatives): how each talks to herdr, draws terminals, lays out panes and
+handles remote machines. The clients that Ovvi's design draws on have a file here. How herdr itself works is in [../multiplexers/herdr.md](../multiplexers/herdr.md);
 the client files say only what each one uses.
 
 ## Native macOS
 
-| File | What it is |
+| Client | What it is |
 |---|---|
-| [bigtty.md](bigtty.md) | AppKit and libghostty, spaces sidebar, browser and file panes |
+| bigtty | AppKit and libghostty, spaces sidebar, browser and file panes |
 | [uherdr.md](uherdr.md) | local and remote over SSH, image paste, ⌘1…0 |
-| [herdrm.md](herdrm.md) | SwiftUI console with rows for spaces and agents |
-| [paca.md](paca.md) | Slack-style window and a menu bar panel |
-| [rai.md](rai.md) | who is working, stuck or needs approval |
-| [allward.md](allward.md) | a terminal for agents across machines |
-| [moo.md](moo.md) | terminal, agents sidebar, browser tabs, ⌘K |
+| herdrm | SwiftUI console with rows for spaces and agents |
+| paca | Slack-style window and a menu bar panel |
+| rai | who is working, stuck or needs approval |
+| allward | a terminal for agents across machines |
+| moo | terminal, agents sidebar, browser tabs, ⌘K |
 | [herdr-gpui.md](herdr-gpui.md) | Rust and GPUI client (macOS, Linux, Windows): client-only browser, diff review and chat tabs |
 | [rex.md](rex.md) | Rex.app, the macOS client of the Rex multiplexer: the look Ovvi follows |
 | [gorex.md](gorex.md) | a Rex-like app in Go (and MyGo, its framework) |
@@ -22,72 +22,60 @@ the client files say only what each one uses.
 
 ## Mobile
 
-| File | What it is |
+| Client | What it is |
 |---|---|
 | [heeler.md](heeler.md) | iOS, libghostty, SSH, QR pairing, push |
-| [kelpie.md](kelpie.md) | a Heeler fork for iPad and iPhone |
-| [herdr-connect.md](herdr-connect.md) | iPhone companion over LAN or Tailscale |
-| [herdrup.md](herdrup.md) | iOS client on a herdr fork |
-| [whip.md](whip.md) | React Native and Rust, Android first |
-| [multiplex.md](multiplex.md) | tmux first, herdr per host; Vision Pro, iPad, iPhone |
-| [anyssh.md](anyssh.md) | an SSH client for iOS with herdr support |
-| [pairfob.md](pairfob.md) | the computer dials out to a relay; PWA |
-| [pdx.md](pdx.md) | Android launcher for remote herdr agents |
+| kelpie | a Heeler fork for iPad and iPhone |
+| herdr-connect | iPhone companion over LAN or Tailscale |
+| herdrup | iOS client on a herdr fork |
+| whip | React Native and Rust, Android first |
+| multiplex | tmux first, herdr per host; Vision Pro, iPad, iPhone |
+| anyssh | an SSH client for iOS with herdr support |
+| pairfob | the computer dials out to a relay; PWA |
+| pdx | Android launcher for remote herdr agents |
 
 ## Web and bridges
 
-| File | What it is |
+| Client | What it is |
 |---|---|
-| [herdr-web-ui.md](herdr-web-ui.md) | browser and phone PWA with a chat view, remote PCs over SSH, web push |
+| herdr-web-ui | browser and phone PWA with a chat view, remote PCs over SSH, web push |
 | [collie.md](collie.md) | self-hosted PWA with push alerts |
 | [roamgate.md](roamgate.md) | web client for desktop and mobile, files and diffs (was herdr-studio) |
-| [herdr-world.md](herdr-world.md) | a roamgate fork with visual "world" views, local and SSH hosts |
-| [herdr-webui-alecuba16.md](herdr-webui-alecuba16.md) | local browser UI: worktrees, git, files |
+| herdr-world | a roamgate fork with visual "world" views, local and SSH hosts |
+| herdr-webui-alecuba16 | local browser UI: worktrees, git, files |
 | [termote.md](termote.md) | Go binary that streams sessions to xterm.js |
-| [herdr-remote.md](herdr-remote.md) | menu bar, phone and Telegram, a free tunnel |
-| [herdr-browser.md](herdr-browser.md) | a Chromium view inside a herdr pane (plugin; deprecated) |
-| [agentaps.md](agentaps.md) | GPUI and WASM over iroh; runs its own agents over ACP, not herdr |
+| herdr-remote | menu bar, phone and Telegram, a free tunnel |
+| herdr-browser | a Chromium view inside a herdr pane (plugin; deprecated) |
+| agentaps | GPUI and WASM over iroh; runs its own agents over ACP, not herdr |
 
 ## Agent apps with a chat view
 
 Read for the chat view; the decisions are in [../ui/chat-view.md](../ui/chat-view.md). "Same process" means the chat
 shows the agent's live TUI process, not a second one.
 
-| File | Same process | What it is |
+| Client | Same process | What it is |
 |---|---|---|
 | [cmux.md](cmux.md) | yes | Ghostty terminal; its chat tails the running agent's transcript, path from per-run hooks; "Answer in terminal" |
-| [nimbalyst.md](nimbalyst.md) | opt-in, Claude only | structured workspace; the real Claude TUI with an API-proxy tee and Claude's session record |
-| [pi-agent-dashboard.md](pi-agent-dashboard.md) | yes | a pi extension mirrors a live TUI to a web chat; dialogs in both places, first answer wins |
-| [orca.md](orca.md) | yes (transcript chat) | Electron IDE: a transcript chat over the TUI, or a structured chat that forks to switch |
+| nimbalyst | opt-in, Claude only | structured workspace; the real Claude TUI with an API-proxy tee and Claude's session record |
+| pi-agent-dashboard | yes | a pi extension mirrors a live TUI to a web chat; dialogs in both places, first answer wins |
+| orca | yes (transcript chat) | Electron IDE: a transcript chat over the TUI, or a structured chat that forks to switch |
 | [herdr-gpui.md](herdr-gpui.md) | yes, opt-in, Linux hosts | herdr client; Claude Code and Codex messages drawn above the CLI's own input rows, which grow while blocked |
-| [omnara.md](omnara.md) | yes (dropped) | PTY wrapper with `--session-id`, scraped approvals |
-| [happy.md](happy.md) | no: kills the TUI | phone app that resumes the session with the Agent SDK |
-| [superset.md](superset.md), [paradev.md](paradev.md) | no | ACP chats in a host daemon; terminal agents tracked by hooks |
-| [emdash.md](emdash.md) | no | each conversation is a chat or a TUI, chosen at creation |
-| [super-engineering.md](super-engineering.md) | no | closed Rust ADE; switches views only when idle, by resuming |
-| [sculptor.md](sculptor.md) | no | chat agents and terminal agents apart; per-run hooks for terminal agents |
-| [claudecodeui.md](claudecodeui.md) | no | headless chat turns beside a separate `claude --resume` shell |
-| [remodex.md](remodex.md) | no | iPhone chat on Codex's app-server, a rollout tail for outside runs |
-| [paseo.md](paseo.md) | no | a daemon that runs agents headless; terminals apart |
+| omnara | yes (dropped) | PTY wrapper with `--session-id`, scraped approvals |
+| happy | no: kills the TUI | phone app that resumes the session with the Agent SDK |
+| superset, paradev | no | ACP chats in a host daemon; terminal agents tracked by hooks |
+| emdash | no | each conversation is a chat or a TUI, chosen at creation |
+| super-engineering | no | closed Rust ADE; switches views only when idle, by resuming |
+| sculptor | no | chat agents and terminal agents apart; per-run hooks for terminal agents |
+| claudecodeui | no | headless chat turns beside a separate `claude --resume` shell |
+| remodex | no | iPhone chat on Codex's app-server, a rollout tail for outside runs |
+| paseo | no | a daemon that runs agents headless; terminals apart |
 | [t3code.md](t3code.md) | no TUI | chat only, over the Agent SDK, app-server, pi RPC, ACP, opencode |
-| [vibe-kanban.md](vibe-kanban.md), [crystal.md](crystal.md), [opcode.md](opcode.md), [terragon.md](terragon.md) | no TUI | headless runs, mostly one process per turn |
-
-## Tools that control agent TUIs
-
-Compared in [../ui/controlling-agent-tuis.md](../ui/controlling-agent-tuis.md).
-
-| File | What it is |
-|---|---|
-| [agentapi.md](agentapi.md) | an HTTP API made from a screen scraper; deprecated |
-| [agent-deck.md](agent-deck.md) | a hardened send layer, and Claude's inbox socket |
-| [claude-code-own-surfaces.md](claude-code-own-surfaces.md) | Claude Code's session record, inbox socket, agent view, channels, Remote Control |
-| [tmux-and-pty-controllers.md](tmux-and-pty-controllers.md) | tmux, PTY and MCP controllers |
-| [acp-bridges.md](acp-bridges.md) | ACP bridges and wrappers that own the agent process |
+| vibe-kanban, crystal, opcode, terragon | no TUI | headless runs, mostly one process per turn |
 
 ## Compared
 
 One row per client that talks to herdr. "Terminal" is how live pane output reaches the screen; "Remote" is how
-the client reaches a herdr on another machine. Details and sources are in each client's file.
+the client reaches a herdr on another machine. Details are in the client's file, where it has one.
 
 | Client | Stack | Terminal | herdr access | Remote | Chat | Push | Web panes |
 |---|---|---|---|---|---|---|---|

@@ -6,7 +6,6 @@ it on remote machines. Based on two spikes per agent in throwaway herdr panes (C
 is [chat-view.mdx](../../../docs/content/docs/ui/chat-view.mdx). Evidence per agent:
 [Claude Code](../agents/claude-code.md), [Codex](../agents/codex.md), [pi](../agents/pi.md),
 [opencode](../agents/opencode.md). Other apps: [../clients/README.md](../clients/README.md#agent-apps-with-a-chat-view).
-Tools that drive agent TUIs: [controlling-agent-tuis.md](controlling-agent-tuis.md).
 
 ## Decisions
 
