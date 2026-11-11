@@ -2100,3 +2100,7 @@ webkit directly instead of using browser plugin … if not we should provide tha
 90. Sidebar hover on the wrong row (Track B3; video `.build/fb57/r7-hover-11.16.11.mov`): "i tested the new sidebar
     changes, everything is good, one weird issue is when i hover mouse on certain worksapces sometimes it focuses on
     something else, it happens when i pin things, its not consistent, it happens randomly"
+
+91. Faster UI tests (Track CI2; report `~/Downloads/ovvi-research/ci-speed/report.html`): the user approved the
+    coverage-neutral cuts, the 4 drops, 31 merges and 5 slims, and clearing the VM's notification dialog: "yep go with
+    1,2 and 4, no paid ones".
