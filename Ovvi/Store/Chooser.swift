@@ -216,6 +216,10 @@ extension HostStore {
             release(chooser)
             if ended == .agent, let id = chooser.paneID {
                 await settle(id)
+            } else if ended == .shell, let id = chooser.paneID {
+                // The snapshot can still name an agent that ran a moment and ended: its title stays, so nothing asks
+                // again, and its chat would show and refuse a retry.
+                await askProgram(id, soon: true)
             }
             unlaunch(chooser, unless: ended)
             // Its pane may have closed meanwhile.
