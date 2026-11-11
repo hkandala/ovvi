@@ -2,47 +2,81 @@ import XCTest
 
 extension OvviUITests {
     func testSwitchingTabsShowsOnlyTheirPage() async throws {
+        step("Tabs: clicks, keys and the palette show only their page")
         let first = element("tab.w1:t1"), second = element("tab.w1:t2")
         XCTAssertTrue(element("pane.w1:p1").exists(within: connect))
         let before = try await tabIDs()
         closeNew("tab", besides: before)
-        let pages = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'page.'"))
-        let shows = { (tab: String) in
-            until(2) { pages.allElementsBoundByIndex.map(\.identifier) == ["page.\(tab)"] }
-        }
 
         second.click()
-        XCTAssertTrue(shows("w1:t2"))
+        XCTAssertTrue(showsOnly("w1:t2"))
         first.click()
-        XCTAssertTrue(shows("w1:t1"))
+        XCTAssertTrue(showsOnly("w1:t1"))
         app.typeKey("2", modifierFlags: .command)
-        XCTAssertTrue(shows("w1:t2"))
+        XCTAssertTrue(showsOnly("w1:t2"))
+        XCTAssertTrue(second.has(\.isSelected, true, within: 2))
+        XCTAssertTrue(element("pane.w1:p4").has(\.isHittable, true, within: 2))
+        XCTAssertTrue(app.windows.firstMatch.has(\.title, "second - \(one)", within: 2))
+        try await expectPTYSize("w1:p4")
+        keepScreenshot("command 2")
+        app.typeKey("[", modifierFlags: [.command, .shift])
+        XCTAssertTrue(first.has(\.isSelected, true, within: 2))
         app.typeKey("]", modifierFlags: [.command, .shift])
-        XCTAssertTrue(shows("w1:t1"))
+        XCTAssertTrue(second.has(\.isSelected, true, within: 2))
+        app.typeKey("]", modifierFlags: [.command, .shift])
+        XCTAssertTrue(showsOnly("w1:t1"))
         openPalette()
         element("palette.tab.w1:t2").click()
-        XCTAssertTrue(shows("w1:t2"))
+        XCTAssertTrue(showsOnly("w1:t2"))
         XCTAssertTrue(second.isSelected)
+        expectTheWorkspaceKeeps(second)
 
+        step("Tabs: + makes a selected tab; ⌘⇧W, ⌘T and herdr close tabs")
         element("titlebar.new-tab").click()
         let plus = try await newTabID(after: before)
-        XCTAssertTrue(shows(plus))
+        XCTAssertTrue(plus.hasPrefix("w1:"), plus)
+        XCTAssertTrue(showsOnly(plus))
+        XCTAssertTrue(element("tab.\(plus)").has(\.isSelected, true, within: 3))
+        XCTAssertTrue(element("page.\(plus)").has(\.isHittable, true, within: 3))
         try await settle([plus])
         app.typeKey("w", modifierFlags: [.command, .shift])
         XCTAssertTrue(element("tab.\(plus)").vanishes(within: 3))
-        XCTAssertTrue(shows("w1:t2"))
+        XCTAssertTrue(showsOnly("w1:t2"))
         app.typeKey("t", modifierFlags: .command)
         let made = try await newTabID(after: before)
-        XCTAssertTrue(shows(made))
+        XCTAssertTrue(showsOnly(made))
         try await Self.call(one, "tab.close", ["tab_id": made])
-        XCTAssertTrue(shows("w1:t2"))
+        XCTAssertTrue(showsOnly("w1:t2"))
+        try await expectCardSwipesKeep(second)
+    }
 
+    /// ⌘1 in a workspace of one tab keeps it.
+    private func expectTheWorkspaceKeeps(_ tab: XCUIElement) {
+        step("Tabs: each workspace keeps its tab")
+        element("workspace.w2").click()
+        XCTAssertTrue(element("pane.w2:p1").has(\.isHittable, true, within: 2))
+        app.typeKey("1", modifierFlags: .command)
+        XCTAssertTrue(element("pane.w2:p1").has(\.isHittable, true, within: 2))
+        element("workspace.w1").click()
+        XCTAssertTrue(element("pane.w1:p4").has(\.isHittable, true, within: 2))
+        XCTAssertTrue(tab.isSelected)
+    }
+
+    private func expectCardSwipesKeep(_ tab: XCUIElement) async throws {
+        step("Tabs: a card swipe keeps the tab")
         let card = element("terminal.w1:p4").frame
-        for step in [30, -30] {
-            try await Self.post("\(one)/swipe", Data("\(card.midX) \(card.midY) \(step) 14".utf8))
-            XCTAssertFalse(until(1) { !second.isSelected }, "a swipe of \(step) changed the tab")
+        for delta in [30, -30] {
+            try await Self.post("\(one)/swipe", Data("\(card.midX) \(card.midY) \(delta) 14".utf8))
+            // A swipe that changes the tab does so within a frame or two.
+            XCTAssertFalse(until(0.5) { !tab.isSelected }, "a swipe of \(delta) changed the tab")
         }
-        XCTAssertTrue(shows("w1:t2"))
+        XCTAssertTrue(showsOnly("w1:t2"))
+    }
+
+    /// Only that tab's page, of every tab's.
+    private func showsOnly(_ tab: String) -> Bool {
+        let pages = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'page.'"))
+        return until(2) { pages.allElementsBoundByIndex.map(\.identifier) == ["page.\(tab)"] }
     }
 
     func testSidewaysScrollsReachAWidePage() async throws {

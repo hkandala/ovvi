@@ -77,17 +77,6 @@ extension OvviUITests {
         XCTAssertFalse(tabs.contains(tab))
     }
 
-    func testPlusMakesATabAndSelectsIt() async throws {
-        XCTAssertTrue(element("tab.w1:t2").exists(within: connect))
-        let before = try await tabIDs()
-        element("titlebar.new-tab").click()
-        let tab = try await newTabID(after: before)
-        closeAfter("tab", tab)
-        XCTAssertTrue(tab.hasPrefix("w1:"))
-        XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, true, within: 3))
-        XCTAssertTrue(element("page.\(tab)").has(\.isHittable, true, within: 3))
-    }
-
     func testCommandTOpensInTheKeyboardCardsDirectoryAndCommandWClosesIt() async throws {
         XCTAssertTrue(element("terminal.w1:p2").exists(within: connect))
         try await waitForPrompt("w1:p2")
