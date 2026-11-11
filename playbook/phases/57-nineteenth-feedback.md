@@ -1866,8 +1866,11 @@ you did, no need of reverting them".
   (Classic dark, ⌘D on File Explorer): the edge lands at 2012 px, the next frame is at 2096 px (42 pt back), then a
   second 0.13 s slide; on the fix it lands once and stays. The display rate (`testSplitsKeepTheDisplayRate`, local,
   main → fix, medians): hitches, worst gaps and the main thread's CPU moved within the run-to-run noise (CPU 211–331 →
-  210–329 ms), so dropping the hold and fitting at the start cost nothing measurable. Chosen CI set on the head: see
-  below. Films and sheets: `~/Downloads/ovvi-research/p57z/`.
+  210–329 ms), so dropping the hold and fitting at the start cost nothing measurable. CI: 26 chosen tests (splits, quick
+  splits and closes, dividers, drops, context menus, zoom, keys, float, kept cards, web drags) 42929763942: 24 green,
+  the two motion tests failed only where CI's main thread sampled a slide's tail (now judged by the armed span);
+  then 42933010318 on the head: the motion test, the layout motion test and the keys test green. A shadowed
+  `active` (focus follows the mouse) that the first run found is fixed. Films and sheets: `~/Downloads/ovvi-research/p57z/`.
 - **Not fixed.** A narrow chat card still wraps its messages 150 ms after its width changes, so after a split lands.
   A close made by another herdr client can be preceded by herdr's own ratio a hair off (2 pt seen once): the test lets
   an edge go back by up to 3 pt.
