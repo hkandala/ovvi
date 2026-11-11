@@ -95,16 +95,19 @@ extension HostStore {
     /// Right after the pane's tab, as an open from a card.
     func moveToNewTab(_ paneID: String) async -> HerdrKit.Pane? {
         guard let tabID = pane(paneID)?.tabID, let workspaceID = workspace(of: tabID)?.id else { return nil }
-        let placing = placeBeside(tabID, in: workspaceID)
         var moved: HerdrKit.Pane?
         await write { client in
-            moved = try await client.move(pane: paneID, to: .newTab(workspaceID: workspaceID))
-            if let moved {
-                await moveBeside(placing, moved.tabID, after: tabID, in: workspaceID, client)
+            // In the write's turn, as `newPane`: a queued ⌘T's tab is no tab of this move's.
+            let placing = placeBeside(tabID, in: workspaceID)
+            do {
+                guard let pane = try await client.move(pane: paneID, to: .newTab(workspaceID: workspaceID))
+                else { throw HerdrError.failed("herdr named no pane") }
+                moved = pane
+                await moveBeside(placing, pane.tabID, after: tabID, in: workspaceID, client)
+            } catch {
+                dropBeside(placing)
+                throw error
             }
-        }
-        if moved == nil {
-            dropBeside(placing)
         }
         return moved
     }

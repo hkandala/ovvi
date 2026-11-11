@@ -327,6 +327,7 @@ extension OvviUITests {
         let notice = element("detail.notice")
         XCTAssertTrue(notice.staticTexts.matching(NSPredicate(format: "value == 'Claude Code did not start again'"))
             .firstMatch.exists(within: 20))
+        notice.hover()
         keepScreenshot("relaunch failed")
         notice.buttons["notice.retry"].click()
         XCTAssertTrue(element("chat.\(pane).composer").exists(within: 20))

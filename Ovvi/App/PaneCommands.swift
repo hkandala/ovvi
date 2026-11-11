@@ -20,7 +20,7 @@ extension CommandList {
                                }
                            })
         }
-        // Alone, herdr would close its tab and make it again in the same place.
+        // Alone, herdr would close its tab, and the move beside would put the new one where it was.
         let alone = (page?.store.panes(in: pane?.tabID).count ?? 0) < 2
         // herdr refuses a move into the pane's own tab, and without a target it splits the tab's focused pane.
         let others = (tabs ? page?.sidebarWorkspaces ?? [] : []).flatMap { workspace in

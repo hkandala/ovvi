@@ -115,7 +115,6 @@ extension HostStore {
     /// One with an action (Show, Retry) stays longer, and none goes while the pointer is over it.
     func show(_ new: Notice, for time: Duration? = nil) {
         notice = new
-        noticeHovered = false
         Task {
             try? await Task.sleep(for: time ?? .seconds(new.show == nil && new.retry == nil ? 4 : 6))
             while noticeHovered, notice?.id == new.id {

@@ -108,6 +108,8 @@ struct Detail: View {
                 }
                 .accessibilityIdentifier("detail.notice")
                 .onHover { store.noticeHovered = $0 }
+                // A notice removed under the pointer gets no hover end.
+                .onDisappear { store.noticeHovered = false }
                 .onChange(of: notice.id, initial: true) {
                     AccessibilityNotification.Announcement(notice.text).post()
                 }

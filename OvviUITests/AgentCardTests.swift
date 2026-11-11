@@ -149,9 +149,10 @@ extension OvviUITests {
         XCTAssertTrue(element("terminal.\(beside)").exists(within: 3))
         try await waitForPrompt(beside)
         try await expectOpen("w2")
-        try await run("clear; \(Self.ovviCommand) reveal \(first)", in: beside, "notice", 0, "shown: false")
+        // Hovered at once: with no hold the notice goes after 6 s.
+        try await send("clear; \(Self.ovviCommand) reveal \(first)\r", to: beside)
         let notice = element("detail.notice")
-        XCTAssertTrue(notice.exists(within: 3))
+        XCTAssertTrue(notice.exists(within: 5))
         notice.hover()
         XCTAssertFalse(notice.vanishes(within: 8))
         element("tab.\(tab)").hover()
