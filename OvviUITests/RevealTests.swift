@@ -106,21 +106,8 @@ extension OvviUITests {
         XCTAssertTrue(drawn(pane))
         try await fill(pane)
         try await expectText([pane], "filled")
-        let steps: [(String, () async throws -> Void)] = [
-            ("split left", { self.paneMenu(pane, "Split Left") }),
-            ("zoom", {
-                self.hoverHeader(pane)
-                self.element("pane.\(pane).zoom").click()
-            }),
-            ("restore", { self.app.typeKey(.return, modifierFlags: [.command, .shift]) }),
-            ("close", {
-                let other = try await self.order(tab).first { $0 != pane } ?? ""
-                _ = try await Self.call(self.one, "pane.close", ["pane_id": other])
-            }),
-            ("sidebar hidden", { self.element("titlebar.sidebar").click() }),
-            ("sidebar shown", { self.element("titlebar.sidebar").click() }),
-            ("split down", { self.paneMenu(pane, "Split Down") }),
-        ]
+        let steps = motionSteps(pane, in: tab)
+        var sampled = 0
         for (step, act) in steps {
             XCTAssertTrue(host.exists(within: 3), step)
             let sizes = Self.motion(host).sizes, slides = Self.slides(card.label)
@@ -135,15 +122,38 @@ extension OvviUITests {
                 XCTAssertGreaterThan(inks.min() ?? 0, before / 3, "\(step): ink \(before) before, then \(inks)")
             }
             if step.hasPrefix("sidebar") {
-                XCTAssertGreaterThanOrEqual(Self.motion(host).sizes - sizes, 4,
-                                            "\(step): sizes from \(sizes) to \(host.label)")
+                XCTAssertGreaterThanOrEqual(
+                    Self.motion(host).sizes - sizes,
+                    4,
+                    "\(step): sizes \(sizes) to \(host.label)",
+                )
             } else {
                 XCTAssertGreaterThan(Self.slides(card.label), slides, "\(step): \(card.label)")
-                let problems = Self.smoothness(card.label)
-                XCTAssertTrue(problems.isEmpty, "\(step): \(problems.joined(separator: "; "))")
+                XCTAssertEqual(Self.smoothness(card.label), [], step)
+                sampled += Self.sampled(card.label) ? 1 : 0
             }
             try await expectText([pane], step)
         }
+        // A busy main thread may look only after a motion ended: some must be seen.
+        XCTAssertGreaterThan(sampled, 0, "no motion sampled while it ran")
+    }
+
+    private func motionSteps(_ pane: String, in tab: String) -> [(String, () async throws -> Void)] {
+        [
+            ("split left", { self.paneMenu(pane, "Split Left") }),
+            ("zoom", {
+                self.hoverHeader(pane)
+                self.element("pane.\(pane).zoom").click()
+            }),
+            ("restore", { self.app.typeKey(.return, modifierFlags: [.command, .shift]) }),
+            ("close", {
+                let other = try await self.order(tab).first { $0 != pane } ?? ""
+                _ = try await Self.call(self.one, "pane.close", ["pane_id": other])
+            }),
+            ("sidebar hidden", { self.element("titlebar.sidebar").click() }),
+            ("sidebar shown", { self.element("titlebar.sidebar").click() }),
+            ("split down", { self.paneMenu(pane, "Split Down") }),
+        ]
     }
 
     func testAVisitedCardComesBackAtOnce() async throws {

@@ -39,7 +39,7 @@ struct PaneCard: View {
         let lit = hidden ? keptLit : newest.map { $0 == id || store.ahead.splitPanes[id] == $0 }
             ?? pane.map { page.keyboardCard($0.tabID) === $0 } ?? (id == page.standIn)
         // `CardChrome` draws its border.
-        let active = lit && shown.count > 1 && page.zoomedPaneID == nil
+        let bordered = lit && shown.count > 1 && page.zoomedPaneID == nil
         let floated = pane.map(page.floats) ?? false
         let follow = hovering && settings.followMouse && !away && active && !floated
         let content = page.watched ? 0.85 : 1
@@ -108,10 +108,10 @@ struct PaneCard: View {
         // The whole card, also with no terminal (a split's stand-in): else the empty content takes no room and the card
         // is a header-high band.
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .onChange(of: [lit, active], initial: true) {
+        .onChange(of: [lit, bordered], initial: true) {
             if !hidden {
                 keptLit = lit
-                chromeLink?.card?.lit = (lit, active)
+                chromeLink?.card?.lit = (lit, bordered)
             }
         }
         // Not the view's task: a page that leaves at once (a quick switch) would cancel it. Hidden, it gets no hover
@@ -134,7 +134,7 @@ struct PaneCard: View {
                 .accessibilityActions { PaneActions(page: page, pane: pane) }
                 .contextMenu { PaneItems(page: page, pane: pane) }
         }
-        .testValue("pane.\(id).border", "Active", "", shown: SettlingHost.record && active)
+        .testValue("pane.\(id).border", "Active", "", shown: SettlingHost.record && bordered)
         .overlay(alignment: .topLeading) {
             if let zone, page.dragging != nil {
                 let half = CGSize(width: size.width / 2, height: size.height / 2)

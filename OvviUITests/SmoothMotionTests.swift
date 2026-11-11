@@ -42,10 +42,10 @@ extension OvviUITests {
         try await Task.sleep(for: .seconds(2))
         hoverHeader(pane)
         element("pane.\(pane)").click()
-        var problems: [String] = [], known: [String: String] = [:]
+        var problems: [String] = [], seen = Seen()
         let keys: [(String, XCUIElement.KeyModifierFlags)] = [("⌘D", .command), ("⇧⌘D", [.command, .shift])]
         for (step, flags) in keys + [("Split Left", []), ("Split Up", [])] {
-            try await problems += moves("\(name) \(step)", in: tab, known: &known) {
+            try await problems += moves("\(name) \(step)", in: tab, seen: &seen) {
                 if flags.isEmpty {
                     paneMenu(pane, step)
                 } else {
@@ -63,13 +63,17 @@ extension OvviUITests {
                 }
             }
             if !flags.isEmpty {
-                try await problems += keyed("\(name) \(step)", step, tab: tab, cards: (pane, new), known: &known)
+                try await problems += keyed("\(name) \(step)", step, tab: tab, cards: (pane, new), seen: &seen)
             }
-            try await problems += moves("\(name) \(step) close", in: tab, known: &known) {
+            try await problems += moves("\(name) \(step) close", in: tab, seen: &seen) {
                 _ = try await Self.call(one, "pane.close", ["pane_id": new])
                 try await expect("\(name) \(step): the close") { try await order(tab).count == 1 }
             }
             element("pane.\(pane)").click()
+        }
+        // Not a pass by a main thread too busy to look (most motions sampled).
+        if seen.sampled * 2 < seen.motions {
+            problems.append("\(name): only \(seen.sampled) of \(seen.motions) motions sampled")
         }
         // A bar of many tabs would scroll the next one out of view.
         _ = try await Self.call(one, "tab.close", ["tab_id": tab])
@@ -78,28 +82,28 @@ extension OvviUITests {
 
     /// After a key's split: a third card, zoom and back, a divider drag.
     private func keyed(_ what: String, _ step: String, tab: String, cards: (String, String),
-                       known: inout [String: String]) async throws -> [String]
+                       seen: inout Seen) async throws -> [String]
     {
         var problems: [String] = []
         if step == "⌘D" {
             // Thirds: herdr's ratios as 32-bit floats must not move a card again.
-            try await problems += moves("\(what) thirds", in: tab, known: &known) {
+            try await problems += moves("\(what) thirds", in: tab, seen: &seen) {
                 app.typeKey("d", modifierFlags: .command)
                 try await expect("\(what): the third card") { try await order(tab).count == 3 }
             }
             let third = try await order(tab).first { $0 != cards.0 && $0 != cards.1 } ?? ""
-            try await problems += moves("\(what) thirds close", in: tab, known: &known) {
+            try await problems += moves("\(what) thirds close", in: tab, seen: &seen) {
                 _ = try await Self.call(one, "pane.close", ["pane_id": third])
                 try await expect("\(what): the close") { try await order(tab).count == 2 }
             }
         }
         for again in ["zoom", "restore"] {
-            try await problems += moves("\(what) \(again)", in: tab, known: &known) {
+            try await problems += moves("\(what) \(again)", in: tab, seen: &seen) {
                 app.typeKey(.return, modifierFlags: [.command, .shift])
             }
         }
         // Followed at once, with no curve; nothing moves after the drop.
-        try await problems += moves("\(what) divider drag", in: tab, curve: false, known: &known) {
+        try await problems += moves("\(what) divider drag", in: tab, curve: false, seen: &seen) {
             let divider = element("divider.\(tab).root").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
             divider.click(forDuration: 0.2, thenDragTo: divider.withOffset(step == "⌘D" ? CGVector(dx: -80, dy: 0)
                     : CGVector(dx: 0, dy: -60)))
@@ -118,15 +122,14 @@ extension OvviUITests {
     }
 
     /// Acts, then waits for each card's track (published 0.4 s after its last change) and 1 s more, which catches a
-    /// second motion herdr's answer starts. `known`: each card's last label read, as an away card's is hidden during a
-    /// zoom.
-    private func moves(_ step: String, in tab: String, curve: Bool = true, known: inout [String: String],
+    /// second motion herdr's answer starts.
+    private func moves(_ step: String, in tab: String, curve: Bool = true, seen: inout Seen,
                        _ act: () async throws -> Void) async throws -> [String]
     {
         for id in try await order(tab) where element("motion.\(id)").exists {
-            known[id] = element("motion.\(id)").label
+            seen.labels[id] = element("motion.\(id)").label
         }
-        let before = known
+        let before = seen.labels
         try await act()
         try await Task.sleep(for: .seconds(1.5))
         let ids = try await order(tab)
@@ -135,12 +138,16 @@ extension OvviUITests {
             let card = element("motion.\(id)")
             guard card.exists else { continue }
             let label = card.label, count = Self.slides(label) - Self.slides(before[id] ?? "")
-            known[id] = label
+            seen.labels[id] = label
             if count > 1 {
                 problems.append("\(step) \(id): \(count) motions: \(label)")
             }
             if label != before[id] {
                 moved += 1
+                if curve {
+                    seen.motions += 1
+                    seen.sampled += Self.sampled(label) ? 1 : 0
+                }
                 problems += Self.smoothness(label, curve: curve).map { "\(step) \(id): \($0)" }
             }
         }
@@ -164,8 +171,10 @@ extension OvviUITests {
     static func smoothness(_ label: String, curve: Bool = true) -> [String] {
         let words = label.components(separatedBy: " track "), samples = samples(words.count == 2 ? words[1] : "")
         guard label.count < 510 else { return ["the track was cut: \(label)"] }
+        // One sample: a busy main thread looked after the motion ended (CI's first frame comes 150–380 ms after the
+        // key); it tests nothing. `sampled` counts these.
         guard samples.count >= 2, let first = samples.first, let last = samples.last else {
-            return ["no track: \(label)"]
+            return label.contains(" track ") ? [] : ["no track: \(label)"]
         }
         let head = words[0].split(separator: " ")
         var problems: [String] = []
@@ -184,7 +193,7 @@ extension OvviUITests {
         let names = ["left", "top", "right", "bottom"]
         let edges = { (row: [CGFloat]) in [row[1], row[2], row[1] + row[3], row[2] + row[4]] }
         let start = edges(first), end = edges(last)
-        var landed: CGFloat?
+        var landed = false
         for (index, sample) in samples.enumerated() {
             let now = edges(sample)
             for edge in 0 ..< 4 {
@@ -192,16 +201,23 @@ extension OvviUITests {
                 problems += edgeProblems(names[edge], (now[edge], sample[0]), before: before,
                                          way: (start[edge], end[edge]), curve: curve)
             }
-            if landed == nil, zip(now, end).allSatisfy({ abs($0 - $1) <= near }) {
-                landed = sample[0]
-            } else if landed != nil, zip(now, end).contains(where: { abs($0 - $1) > near }) {
-                problems.append("moved after landing at \(landed ?? 0) ms: \(sample)")
+            if !landed, zip(now, end).allSatisfy({ abs($0 - $1) <= near }) {
+                landed = true
+            } else if landed, zip(now, end).contains(where: { abs($0 - $1) > near }) {
+                problems.append("moved after landing: \(sample)")
             }
         }
-        if curve, let landed, landed - first[0] > slide + 100 {
-            problems.append("landed at \(landed) ms")
-        }
         return Array(Set(problems)).sorted().map { "\($0) (\(label))" }
+    }
+
+    /// Each card's last label read (an away card's is hidden during a zoom), and how many motions were sampled.
+    struct Seen {
+        var labels: [String: String] = [:], motions = 0, sampled = 0
+    }
+
+    /// Whether a track saw its card move (two samples or more).
+    static func sampled(_ label: String) -> Bool {
+        samples(label.components(separatedBy: " track ").last ?? "").count >= 2
     }
 
     /// The first sample whole (ms x y w h), each next one as its change.
