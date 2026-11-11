@@ -23,8 +23,8 @@ struct WelcomeView: View {
     /// Where the logo's panes go, back to front, as fractions of the first clip's frame (measured on its first
     /// frame): the window's sidebar and its two panes.
     private static let firstPanes = [CGRect(x: 0.0073, y: 0.0563, width: 0.2375, height: 0.9336),
-                                     CGRect(x: 0.25, y: 0.0563, width: 0.3677, height: 0.9336),
-                                     CGRect(x: 0.625, y: 0.0563, width: 0.3682, height: 0.9336)]
+                                     CGRect(x: 0.25, y: 0.0563, width: 0.3381, height: 0.9336),
+                                     CGRect(x: 0.5955, y: 0.0563, width: 0.3977, height: 0.9336)]
 
     private enum Page: String {
         case running, layout, agents, plugins, machines, herdr
@@ -38,8 +38,8 @@ struct WelcomeView: View {
                     + "in its own space.")
             case .agents: ("Work with agents your way", "Watch an agent in its terminal, then switch to the chat when "
                     + "it suits you: the same agent, mid-task.")
-            case .plugins: ("Everything you need, right there", "Open Git, a browser or your files beside any pane. "
-                    + "Need something else? Make a plugin in TypeScript.")
+            case .plugins: ("Everything you need, right there", "Open Git, a browser or your own plugins beside any "
+                    + "pane, or let your agent open them.")
             case .machines: ("Remote, without the hassle", "Any machine you can ssh to: the same panes and agents, "
                     + "still running while your Mac sleeps.")
             case .herdr where herdrFound: ("You're all set", "Your sessions will keep running from here on. Get "
@@ -54,9 +54,9 @@ struct WelcomeView: View {
             switch self {
             case .running: 4.5
             case .layout: 3
-            case .agents: 7.5
-            case .plugins: 6.8
-            case .machines: 3
+            case .agents: 5
+            case .plugins: 14
+            case .machines: 7
             case .herdr: 0
             }
         }
@@ -83,7 +83,7 @@ struct WelcomeView: View {
             // Dark at the edge, fading out above the title; a soft glow keeps the words legible.
             if current != .herdr {
                 LinearGradient(stops: [.init(color: Look.shade(dark).opacity(0), location: 0),
-                                       .init(color: Look.shade(dark).opacity(0.55), location: 0.35),
+                                       .init(color: Look.shade(dark).opacity(0.5), location: 0.35),
                                        .init(color: Look.shade(dark), location: 1)],
                                startPoint: .top, endPoint: .bottom)
                     .frame(height: 180).allowsHitTesting(false).opacity(shown ? 1 : 0).transition(.opacity)
