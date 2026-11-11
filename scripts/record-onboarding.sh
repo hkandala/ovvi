@@ -258,13 +258,20 @@ machines() {
 # the welcome panel's 960 x 640 points, which the clip fills), 60 fps; its last half second fades back to its first frame, so the loop has no
 # seam. HEVC Main 4:2:0, bt709, at a quality where no artifact shows at 100%.
 encode() {
-    local film="$C/$1-$2.mp4" length wx wy ww wh
+    local film="$C/$1-$2.mp4" length wx wy ww wh under
     read -r wx wy ww wh <"$C/$1-$2.at"
     length=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$film")
+    # The capture mark covers the window's buttons: the glass under them, from this film, then only the three
+    # buttons themselves from the picture (a soft-edged circle each), so no edge of another moment's glass shows.
+    under=$(ffmpeg -loglevel error -ss 0.5 -i "$film" -frames:v 1 -vf \
+        "crop=2:2:$(((wx + 60) * 2)):$(((wy + 44) * 2)),scale=1:1" -f rawvideo -pix_fmt rgb24 - | xxd -p)
     mkdir -p "$CLIPS"
     ffmpeg -loglevel error -y -i "$film" -i "$C/buttons-$2.png" -filter_complex "[0:v]fps=60,\
-crop=$((ww * 2)):$((wh * 2)):$((wx * 2)):$((wy * 2))[w];[1:v]crop=200:88:0:0[b];[w][b]overlay=0:0,\
-scale=1920:1280:flags=lanczos,format=yuv420p,split[a][f];[f]trim=end_frame=1,loop=loop=60:size=1,setpts=N/60/TB,fps=60[s];\
+crop=$((ww * 2)):$((wh * 2)):$((wx * 2)):$((wy * 2)),drawbox=12:8:180:76:0x$under:t=fill[w];\
+[1:v]crop=200:88:0:0,format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':\
+a='255*clip(16.5-min(min(hypot(X-45.5,Y-45.5),hypot(X-91.5,Y-45.5)),hypot(X-137.5,Y-45.5)),0,1)'[b];\
+[w][b]overlay=0:0,scale=1920:1280:flags=lanczos,format=yuv420p,split[a][f];\
+[f]trim=end_frame=1,loop=loop=60:size=1,setpts=N/60/TB,fps=60[s];\
 [a][s]xfade=transition=fade:duration=0.5:offset=$(python3 -c "print(round($length - 0.6, 2))"),format=yuv420p[v]" \
         -map "[v]" -c:v libx265 -tag:v hvc1 -crf "${CRF:-24}" -preset slow -an -movflags +faststart \
         -x265-params log-level=error:colorprim=bt709:transfer=bt709:colormatrix=bt709 "$CLIPS/welcome-$1-$2.mp4"
@@ -298,7 +305,7 @@ encode_all() {
     local jobs look page
     say "Encoding the clips"
     for look in $LOOKS; do
-        rm -f "$CLIPS"/welcome-*-"$look".mp4
+        for page in $PAGES; do rm -f "$CLIPS/welcome-$page-$look.mp4"; done
         jobs=()
         for page in $PAGES; do
             encode "$page" "$look" &
