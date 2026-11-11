@@ -82,10 +82,36 @@ paraphrase.
 - **Commands:** use the Makefile targets (`make lint`, `format`, `build`, `test`, `e2e`, `run`). A new
   command gets a target. A rule a tool can check gets a lint rule or a script, not a line in a doc.
 
+### UI tests run in the VM
+
+XCUITest and manual runs take over the mouse and keyboard of the Mac they run on. So UI tests run in one Tart VM,
+`ovvi-test`, never on the Mac the user works on ([how it works](ci.md#the-vm)):
+
+```sh
+OWNER=<your agent name> make vm-e2e DERIVED_DATA=/tmp/ovvi-dd-NN<track> ONLY=…
+```
+
+- `make vm-e2e` builds the tests on the Mac, then runs them in the VM with the Mac's build and Xcode, shared read
+  only. The result is `$DERIVED_DATA/vm.xcresult`. Run it in a background command.
+- **The VM lock** (`/tmp/ovvi-vm.lock`, its `owner` holds the run's pid and your name): the script takes it for the
+  test run only, and waits while another run holds it. A lock whose pid is gone is stale, and the next run removes
+  it. One VM only: never start a second one for tests.
+- The VM stays running between runs (a boot costs about 40 s, and start and stop cycles can hit macOS's VM limit).
+  The orchestrator stops it when a project ends: `tart stop ovvi-test`.
+- Run the tests you add or change in the VM, a few at a time (two short ones take about 30 s once the VM runs). Larger sets
+  go to a [chosen-tests CI run](ci.md#running-part-of-it): dispatch it, give the run id in your report, and go
+  on. The orchestrator watches it and sends back failures. Never run the same tests again without a code change.
+- To see the VM, open it in an Ovvi pane: `ovvi open browser "$(ovvi-tart view ovvi-test)"` (the Tart VM plugin). Its screenshots:
+  the xcresult's attachments, or `tart exec ovvi-test screencapture -x <path in a shared folder>`. Inside the VM,
+  `osascript` and System Events are safe: they reach only the VM.
+- RemoteTests skip on a local run (they need CI's sshd): run them in a chosen-tests CI run.
+
 ### The GUI lock
 
-XCUITest and manual runs take over the real mouse and keyboard of the Mac the user works on. One agent
-drives the GUI at a time ([more slots in VMs](ci.md#more-gui-slots-not-set-up)):
+Only what must run on the Mac itself takes the GUI lock, `/tmp/ovvi-gui.lock`: **the onboarding recordings** (the
+welcome film and its retakes, which need the Mac's display for full quality), and a check that the VM cannot
+make (the Mac's own GPU or display, a measure the user asked for on this Mac). Nothing else holds it; UI tests
+never do.
 
 ```sh
 ( mkdir /tmp/ovvi-gui.lock || exit 1; trap 'rm -rf /tmp/ovvi-gui.lock' EXIT
@@ -93,22 +119,17 @@ drives the GUI at a time ([more slots in VMs](ci.md#more-gui-slots-not-set-up)):
   make e2e DERIVED_DATA=/tmp/ovvi-dd-NN<track> ONLY=… )
 ```
 
-- Run UI tests locally only when the run is quick: one test, under about 2 minutes, and the lock is free.
-  Otherwise use a [chosen-tests CI run](ci.md#running-part-of-it): dispatch it, give the run id in your
-  report, and go on. The orchestrator watches it and sends back failures. Never run the same tests again
-  without a code change.
-- Take the lock only if it is free. If it is not, work on and try later (no waiting loop). One run per hold,
-  released by the trap, also on failure. Never hold it while you read results, edit, build or wait for CI.
-  Never remove someone else's lock. A lock older than 10 minutes whose owner is not `user` and whose agent is
-  gone (`agent_list` with `scope: "all"`) is stale: the orchestrator removes it.
+- Take the lock only if it is free. If it is not, work on and try later. One run per hold, released by the trap,
+  also on failure. Never hold it while you read results, edit, build or wait for CI. Never remove someone else's
+  lock. A lock older than 10 minutes whose owner is not `user` and whose agent is gone (`agent_list` with
+  `scope: "all"`) is stale: the orchestrator removes it.
 - When the user tests on the Mac, the orchestrator holds the lock for them
   (`mkdir /tmp/ovvi-gui.lock && echo user > /tmp/ovvi-gui.lock/owner`; `rm -rf /tmp/ovvi-gui.lock` to
-  release). Then all UI tests run on CI.
-- RemoteTests skip on a local run (they need CI's sshd): run them in a chosen-tests CI run.
-- Never send keys with `osascript` or System Events: when Ovvi loses focus, the keys land in the user's
-  apps. Keys go through XCUITest only.
-- Screenshots: `screencapture -x -l <windowid>`, the xcresult's attachments, or frames of a CI recording.
-  Put the ones you report in `/tmp/ovvi-shots/`.
+  release). UI tests in the VM go on.
+- On the Mac, never send keys with `osascript` or System Events: when Ovvi loses focus, the keys land in the
+  user's apps. Keys go through XCUITest only.
+- Screenshots on the Mac: `screencapture -x -l <windowid>`, the xcresult's attachments, or frames of a CI
+  recording. Put the ones you report in `/tmp/ovvi-shots/`.
 
 ### herdr safety
 
@@ -164,7 +185,7 @@ A feature runs the same loop.
    panel: send the orchestrator one rough screenshot before you polish it. The orchestrator checks it
    against the design bar and settles order and wording then.
 4. Small commits on your branch, `make lint build test` green on each.
-5. Run only the UI tests you add or change ([the GUI lock](#the-gui-lock)).
+5. Run only the UI tests you add or change, in the VM ([UI tests run in the VM](#ui-tests-run-in-the-vm)).
 6. Self-review the diff against the phase file and the ponytail rules. Write your Findings.
 7. Start your code reviewer on the branch's head ([Reviews](#reviews)). Fix every blocker and should in one
    commit. Answer each nit with a fix or a one-line reason.
@@ -235,8 +256,8 @@ the tests, and anything the user must decide or check by hand."
 after), against the phase file, the design pages and `playbook/workflow.md`. Cover every side: bugs, races,
 leaks, error paths, edge cases; does it do what the user asked; what can be deleted or made simpler (the
 ponytail-review skill); herdr safety; accessibility identifiers; tests that assert nothing real, sleep,
-duplicate others, mock herdr where it is cheap, or would pass without the feature. Run UI tests only as
-[the GUI lock](#the-gui-lock) allows. Write a numbered list to ‹path›: file:line, severity, the concrete fix.
+duplicate others, mock herdr where it is cheap, or would pass without the feature. Run UI tests only in
+the VM ([UI tests run in the VM](#ui-tests-run-in-the-vm)). Write a numbered list to ‹path›: file:line, severity, the concrete fix.
 Say what is clean. End with a verdict."
 
 **Final reviewer.** "Read-only final review of phase NN at ‹sha› (main after every track and the docs pass),

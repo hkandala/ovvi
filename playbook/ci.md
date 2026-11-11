@@ -41,7 +41,7 @@ How CI runs, how to run part of it, and how to keep it green and fast.
 | Full run | `gh workflow run ci.yml --ref main` | 5 |
 | Chosen UI tests | `gh workflow run ci.yml --ref main -f only_testing=OvviUITests/OvviUITests/testA,OvviUITests/OvviUITests/testB` | 1 |
 | On-demand tests | `gh workflow run ci.yml --ref main -f on_demand=true` | 4 |
-| Same locally | `make e2e ONLY=…`, `make e2e ON_DEMAND_ONLY=1` (under the GUI lock) | this Mac |
+| Same locally | `make vm-e2e ONLY=…` (in the Tart VM); `make e2e ONLY=…` only under the GUI lock | the VM; this Mac |
 
 - **Find your run:** `gh run list --workflow ci.yml --limit 5 --json databaseId,headSha,event,createdAt`,
   the one on your commit (or created after your dispatch).
@@ -110,54 +110,39 @@ Round the means to whole seconds: `scripts/shard.py` reads integers.
 - Caching Swift packages: libghostty's 190 MB xcframework restored in 2 s, but build and setup stayed
   65–105 s per job.
 
-## More GUI slots (not set up)
+## The VM
 
-Local UI runs take the GUI lock because XCUITest drives the real pointer. Nothing on the host isolates it:
-the runner asks `testmanagerd` to post HID events into the login session, so the pointer moves on every
-display, virtual ones (`CGVirtualDisplay`, BetterDisplay, DeskPad) too. A second macOS user has no display
-and no known XCUITest support. Only another session isolates it: a VM or another Mac.
+UI tests on this Mac run in one Tart VM, `ovvi-test` ([UI tests run in the VM](workflow.md#ui-tests-run-in-the-vm)).
+Nothing on the host isolates XCUITest: the runner asks `testmanagerd` to post HID events into the login session,
+so the pointer moves on every display, virtual ones (`CGVirtualDisplay`, BetterDisplay, DeskPad) too. A VM is
+another login session, with its own pointer, keyboard and screen.
 
-If one slot is not enough, run each extra slot in a headless Tart VM. Set it up once:
-
-```sh
-brew install openai/tools/tart
-tart clone ghcr.io/cirruslabs/macos-golden-gate-base:latest ovvi-vm    # 34 GB download, ~41 GB on disk
-tart set ovvi-vm --cpu 4 --memory 8192 --display 1024x768              # CI's 1x screen
-tart run ovvi-vm --no-graphics --no-audio --no-clipboard               # a background command
-VM=$(tart ip ovvi-vm)                                                  # user and password: admin
-ssh-keygen -t ed25519 -N '' -f ~/.ssh/ovvi_vm && ssh-copy-id -i ~/.ssh/ovvi_vm admin@$VM
-# ~/.ssh/config: Host 192.168.64.*  User admin  IdentityFile ~/.ssh/ovvi_vm   StrictHostKeyChecking no
-rsync -a /Applications/Xcode.app admin@$VM:/Applications/
-ssh admin@$VM 'sudo xcode-select -s /Applications/Xcode.app && sudo xcodebuild -license accept &&
-  sudo xcodebuild -runFirstLaunch && automationmodetool'   # must say "DOES NOT REQUIRE user authentication"
-ssh admin@$VM 'mkdir -p .local/bin && echo "export PATH=\$HOME/.local/bin:\$PATH" >> ~/.zshrc'
-scp ~/.local/bin/herdr admin@$VM:.local/bin/herdr      # CI's herdr version
-```
-
-Then do one run (below): if a privacy (TCC) prompt shows, allow it over VNC (`open vnc://$VM`). Save the
-guest to reset from: `tart stop ovvi-vm && tart clone ovvi-vm ovvi-vm-clean`, and `tart run` it again.
-
-One run: build on the host, test in the guest.
-
-```sh
-NAME=<agent>; DD=/tmp/ovvi-dd-$NAME
-xcodebuild -scheme Ovvi -derivedDataPath $DD -destination platform=macOS build-for-testing
-rsync -a --delete $DD/Build/Products/ admin@$VM:runs/$NAME/Products/
-rsync -a --delete scripts/ admin@$VM:runs/$NAME/scripts/
-ssh admin@$VM "cd runs/$NAME && scripts/e2e.sh xcodebuild test-without-building \
-  -xctestrun Products/Ovvi_*.xctestrun -destination platform=macOS -only-testing:… \
-  -resultBundlePath e2e.xcresult"
-rsync -a admin@$VM:runs/$NAME/e2e.xcresult /tmp/ovvi-e2e-$NAME.xcresult
-```
-
-- **Rules.** One lock per VM (`/tmp/ovvi-vm-1.lock`, `-2`), as the GUI lock. The guest runs its own herdr,
-  so the user's sessions are out of reach, and `osascript` is safe there. Reset a dirty guest from
-  `ovvi-vm-clean`.
-- **Limits.** Apple allows 2 macOS VMs per host. After a few start and stop cycles the limit error can stay
-  until the host reboots (Tart #1217), so keep VMs running. Two 8 GB guests plus host builds make a laptop
-  swap: run one. The guest's macOS must not be newer than the host's.
-- **Risks.** `screencapture` over ssh asks again every 30 days. The guest's GPU reports an old Metal family:
-  it renders, but timing is slower, as on CI. Some host and guest pairs draw no windows: check the first
-  screenshot. The guest's password is `admin`, on the host's private network only.
-- **More slots.** A Mac mini on the network (about $800–1,000) with the same setup adds two (`ssh -J`);
-  rented Macs (Scaleway, EC2 Mac) cost more over time.
+- **Set up once.** `brew install openai/tools/tart` (as on this Mac);
+  `tart clone ghcr.io/cirruslabs/macos-golden-gate-base:latest golden-gate` (about 34 GB);
+  `tart clone golden-gate ovvi-test`; and the Tart VM plugin, which gives `ovvi-tart` (`~/code/ovvi-tart-plugin`,
+  outside this repository; its README installs it).
+- **The image.** `golden-gate` (from `ghcr.io/cirruslabs/macos-golden-gate-base`): the host's macOS, the Command
+  Line Tools, no Xcode, user and password `admin`, logged in at boot, Screen Sharing on, and Tart's guest agent
+  (`tart exec`). It stays clean: `ovvi-test` is a clone of it (`tart clone golden-gate ovvi-test`; an APFS copy,
+  instant). A dirty `ovvi-test` is deleted and cloned again; the next run sets it up again by itself (about 30 s).
+- **Nothing is built or installed in the VM.** `make vm-e2e` runs `build-for-testing` on the Mac, then
+  `scripts/vm-test.sh`. The script boots the VM or keeps the running one (`ovvi-tart start`, from the Tart VM
+  plugin) with two shares: the Mac's Xcode, read only (the guest's `/Applications/Xcode.app` is a link to it, and
+  `xcodebuild -runFirstLaunch` runs once), and `/tmp/ovvi-vm/runs`, where each run gets an APFS copy of the build
+  products, `scripts/` and the Mac's herdr. In the guest, `scripts/e2e.sh xcodebuild test-without-building`
+  runs the `.xctestrun`, and the xcresult lands in the share, then in `$DERIVED_DATA/vm.xcresult`.
+- **Permissions.** None to grant: `automationmodetool` says the image needs no authentication for Automation
+  Mode, and the first UI test ran green with no prompt. A `screencapture` through `tart exec` asks once in the
+  guest; allow it in the VM's pane.
+- **Cost.** 4 cores and 8 GB (about 4.6 GB resident while tests run). A boot takes about 40 s to a working
+  `tart exec`. On a running VM, a run of two short tests takes about 30 s (11 s of tests). The first run on a new
+  clone adds about 30 s of setup. Idle, the VM takes about a quarter of a core.
+- **Its screen.** 1024 × 768 points at 2x, not CI's 1x 1024 × 674. Open it in an Ovvi pane with the Tart VM plugin
+  (`ovvi open browser "$(ovvi-tart view ovvi-test)"`, or New pane ▸ Tart VM) to watch a run; the plugin's README says how to install it.
+- **Limits.** Apple allows 2 macOS VMs per host; after a few start and stop cycles the limit error can stay until
+  the host reboots (Tart #1217), so the VM stays running. The guest's macOS must not be newer than the host's: a
+  host update needs a new `golden-gate` (`tart clone ghcr.io/cirruslabs/macos-golden-gate-base:latest golden-gate`,
+  about 34 GB). The guest's GPU reports an old Metal family: it renders, but timing is slower, as on CI. The
+  guest's password is `admin`, on the host's private network only.
+- **More slots.** One VM is the rule: two 8 GB guests plus the agents' builds make this Mac swap. A Mac mini on the
+  network with the same setup would add two.

@@ -108,7 +108,7 @@ Problems that came back across phases, and the rule that stops each. How we work
 - **Validate outside input before it reaches argv or a shell:** `ovvi://` URLs, herdr metadata, dropped
   file names. Reject names that start with `-`.
 - **Machine-wide resources have a budget too:** ptys (`kern.tty.ptmx_max`), herdr sessions. Make a stress
-  session inside a GUI-lock hold and delete it in the same command.
+  session inside one test run and delete it in the same command.
 
 ## SwiftUI and AppKit
 

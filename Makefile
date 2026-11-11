@@ -1,5 +1,5 @@
 SHELL := /bin/bash -eo pipefail
-.PHONY: setup format lint web build build-tests test e2e run app dmg install icons
+.PHONY: setup format lint web build build-tests test e2e vm-e2e run app dmg install icons
 
 DERIVED_DATA ?= .build/DerivedData
 XCODEBUILD := xcodebuild -project Ovvi.xcodeproj -scheme Ovvi -derivedDataPath $(DERIVED_DATA)
@@ -85,13 +85,15 @@ ONLY := $(shell scripts/shard.py $(SHARD) $(if $(ON_DEMAND_ONLY),--on-demand) $(
 # An empty list would run every test.
 $(if $(ONLY),,$(error no tests for SHARD=$(SHARD)))
 endif
+TESTS = -test-timeouts-enabled YES -default-test-execution-time-allowance 120 \
+	$(if $(ONLY),$(addprefix -only-testing:,$(subst $(comma), ,$(ONLY))),$(addprefix -skip-testing:OvviUITests/OvviUITests/,$(ON_DEMAND)))
 e2e: web
 	rm -rf $(DERIVED_DATA)/e2e.xcresult
-	scripts/e2e.sh $(XCODEBUILD) $(MAC) \
-		-test-timeouts-enabled YES -default-test-execution-time-allowance 120 \
-		-resultBundlePath $(DERIVED_DATA)/e2e.xcresult \
-		$(if $(ONLY),$(addprefix -only-testing:,$(subst $(comma), ,$(ONLY))),$(addprefix -skip-testing:OvviUITests/OvviUITests/,$(ON_DEMAND))) \
-		test $(BEAUTIFY)
+	scripts/e2e.sh $(XCODEBUILD) $(MAC) $(TESTS) -resultBundlePath $(DERIVED_DATA)/e2e.xcresult test $(BEAUTIFY)
+
+# The same tests in the Tart VM, off this Mac's screen (playbook/workflow.md, UI tests run in the VM). The result is vm.xcresult.
+vm-e2e: build-tests
+	scripts/vm-test.sh $(DERIVED_DATA) $(TESTS) $(BEAUTIFY)
 
 run: build
 	open "$(DERIVED_DATA)/Build/Products/Debug/Ovvi Dev.app" $(if $(SESSION),--args -session $(SESSION))
