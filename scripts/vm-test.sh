@@ -46,7 +46,11 @@ tidy
 # A full guest disk kills the test runner (a low-space purge): stop before that.
 free=$(tart exec "$vm" df -m /System/Volumes/Data | awk 'NR == 2 { print $4 }')
 ((free > 8000)) || { echo "$vm has $free MB free, under 8 GB: free space in it, or grow its disk (ci.md)" >&2; exit 1; }
-tart exec "$vm" test -d "$guest/runs/$$" ||
+# A resumed VM (suspended, then run again) keeps the guest's cached lookups in the shares from before the suspend, and
+# they are wrong for the new shares: xcodebuild, seen before, is "No such file". Mounting the shares again drops them.
+live="test -x '$guest/xcode/Contents/Developer/usr/bin/xcodebuild' -a -d '$guest/runs/$$'"
+tart exec "$vm" zsh -c "$live" || tart exec "$vm" zsh -c "sudo /sbin/umount -f '$guest' 2>/dev/null; sudo mkdir -p '$guest' &&
+    sudo /sbin/mount_virtiofs com.apple.virtio-fs.automount '$guest' && $live" ||
     { echo "$vm runs without the test shares: tart stop $vm, then run again" >&2; exit 1; }
 # Once per VM, and again after an Xcode update: the shared Xcode is the guest's Xcode.
 tart exec "$vm" zsh -c "[[ \$(readlink /Applications/Xcode.app) == '$guest/xcode' ]] && xcodebuild -checkFirstLaunchStatus ||

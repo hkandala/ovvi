@@ -161,7 +161,9 @@ another login session, with its own pointer, keyboard and screen.
 - **Its screen.** 1024 × 768 points at 2x, not CI's 1x 1024 × 674. The user watches it in an Ovvi pane: New pane ▸
   Tart VM (the plugin's README installs it). The VM runs `--suspendable`: the card's **Open in Tart** suspends it and
   resumes it in Tart's window (about 8 s, refused while a run holds the lock); closing that window suspends it, and the
-  next run resumes it headless.
+  next run resumes it headless. A resumed guest keeps its old lookups in the shares, and the files it saw before
+  (xcodebuild) are gone for it; a run that finds the shares stale mounts them again in the guest (`mount_virtiofs`),
+  with no restart.
 - **Limits.** Apple allows 2 macOS VMs per host; after a few start and stop cycles the limit error can stay until
   the host reboots (Tart #1217), so the VM stays running. The guest's macOS must not be newer than the host's: a
   host update needs a new `golden-gate` (`tart clone ghcr.io/cirruslabs/macos-golden-gate-base:latest golden-gate`,
