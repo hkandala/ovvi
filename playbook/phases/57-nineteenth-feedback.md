@@ -2093,6 +2093,12 @@ ones".
   (tart-vm: checked by `make lint`, installed from its folder, not carried). The plugin moved from its own repo
   (`~/code/ovvi-tart-plugin` at 5051b1a) as a copy, then 0.5 (the in-use lock). `scripts/vm-test.sh` runs
   `ovvi-tart` from the tree. A card's next screen replaces a bridge LaunchAgent made from another folder.
+- **0.6, Delete.** User: "for tart vm, let's have option for delete vm as well, and when stopping vm the toast should
+  show red button, also for stop and delete, delete should be shown only for stopped vms". Delete shows on a
+  stopped VM only (a suspended one keeps its state: no Delete), never on golden-gate; it asks with the VM's size and
+  a red button, as Stop now does (`destructive`). `ovvi-tart delete` refuses while the lock is held or the VM is not
+  stopped, and drops the VM's kept args, macOS and log. No pictures: a dev build with the card needs the Mac's
+  screen for longer than one short hold.
 
 ### Track B2 (item 89)
 

@@ -21,6 +21,7 @@ ovvi-tart window <vm>                   show it in Tart's own window: a running 
 ovvi-tart view <vm>                     start it and the screen bridge; prints its macOS, cores and memory
                                         as JSON, for the card
 ovvi-tart stop <vm>                     shut it down
+ovvi-tart delete <vm>                   delete a stopped VM that is not in use, with its disk
 ovvi-tart in-use <vm>                   exit 0 and print the owner while a tool holds the VM's lock (README, In use)
 EOF
     exit 2
@@ -138,6 +139,15 @@ stop)
     [[ ${2:-} =~ $valid ]] || usage
     ! busy "$2" || exit 1
     tart stop "$2"
+    ;;
+delete)
+    [[ ${2:-} =~ $valid ]] || usage
+    ! busy "$2" || exit 1
+    # A suspended VM keeps its state on disk: only a stopped one goes.
+    tart list --source local --format json | jq -e --arg vm "$2" '.[] | select(.Name == $vm and .State == "stopped")' \
+        >/dev/null || { echo "$2 is not stopped: stop it first" >&2; exit 1; }
+    tart delete "$2"
+    rm -f "$state/$2.args" "$state/$2.os" "$state/$2.log"
     ;;
 in-use)
     [[ ${2:-} =~ $valid ]] || usage

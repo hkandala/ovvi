@@ -7,10 +7,10 @@ import "./main.css"
 declare const PLUGIN_DIR: string
 const cli = `${PLUGIN_DIR}/bin/ovvi-tart`
 
-interface VM { Name: string; State: string; Running: boolean; Memory: number; CPU: number; os: string }
+interface VM { Name: string; State: string; Running: boolean; Size: number; Memory: number; CPU: number; os: string }
 interface Info { os: string; CPU: number; Memory: number }
 
-/** Cirrus Labs' base image, the first choice to copy: it stays clean, so it is never started or stopped here. */
+/** Cirrus Labs' base image, the first choice to copy: it stays clean, so it is never started, stopped or deleted here. */
 const BASE = "golden-gate"
 const valid = /^[A-Za-z0-9][A-Za-z0-9._-]*$/
 
@@ -151,10 +151,21 @@ export default async function main(ovvi: Ovvi) {
   }
 
   async function stop(vm: string) {
-    const pick = await ovvi.toast(`Stop ${vm}? It shuts down: what is not saved in it is lost.`, ["Cancel", "Stop"])
+    const pick = await ovvi.toast(`Stop ${vm}? It shuts down: what is not saved in it is lost.`, ["Cancel", "Stop"],
+      { destructive: true })
     if (pick !== "Stop") return
     draw(`Stopping ${vm}…`, "")
     await tart(["stop", vm], 90_000).catch((error) => void ovvi.toast(`${vm} did not stop: ${(error as Error).message}`))
+    await home()
+  }
+
+  async function remove(v: VM) {
+    const pick = await ovvi.toast(`Delete ${v.Name}? Its ${v.Size} GB disk goes with it. This cannot be undone.`,
+      ["Cancel", "Delete"], { destructive: true })
+    if (pick !== "Delete") return
+    draw(`Deleting ${v.Name}…`, "")
+    await tart(["delete", v.Name], 90_000)
+      .catch((error) => void ovvi.toast(`${v.Name} was not deleted: ${(error as Error).message}`))
     await home()
   }
 
@@ -225,6 +236,7 @@ export default async function main(ovvi: Ovvi) {
       if (v.Name === BASE) continue
       li.append(buttons([
         ...(v.Running ? [["Stop", () => void stop(v.Name)] as Button] : []),
+        ...(v.State === "stopped" ? [["Delete", () => void remove(v)] as Button] : []),
         ["Open", () => void show(v.Name, v.Running), true],
       ]))
     }

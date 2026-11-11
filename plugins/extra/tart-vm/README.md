@@ -1,21 +1,22 @@
 # Tart VM, an Ovvi plugin
 
-This Mac's [Tart](https://tart.run) VMs in an Ovvi card: start, stop and create them, and a VM's screen in the card,
-with its keyboard and pointer, scaled to the card.
+This Mac's [Tart](https://tart.run) VMs in an Ovvi card: start, stop, create and delete them, and a VM's screen in
+the card, with its keyboard and pointer, scaled to the card.
 
 - **New pane ▸ Tart VM** (or ⌘K "Open Tart VM Here") shows the list of VMs, every time the card opens: each with
   its state, macOS version (once the card has seen it), cores and memory. **Open** shows a VM's screen in the card
-  (a VM that is off starts first, with no window); **Stop** shuts a running VM down, after a question. The base,
-  `golden-gate` (Cirrus Labs' image), is never started or stopped here: **New VM…** makes a copy of it (or of another
-  VM that is off), with a name, and says what it costs
-  (its memory and cores; with a VM running, it asks for a second one; macOS runs two at most).
+  (a VM that is off starts first, with no window); **Stop** shuts a running VM down; **Delete**, on a stopped VM only
+  (not a suspended one), deletes it with its disk. Each asks first, with a red button. The base, `golden-gate`
+  (Cirrus Labs' image), is never started, stopped or deleted here: **New VM…** makes a copy of it (or of another VM
+  that is off), with a name, and says what it costs (its memory and cores; with a VM running, it asks for a second
+  one; macOS runs two at most).
 - A VM's page shows its screen and nothing else. The title is the VM's name; the header shows **‹** (back to the
   list), its state, macOS version, cores and memory, and **Open in Tart**. Back, or closing the card, only ends the
   screen's connection: the VM runs on until **Stop**.
 - **Open in Tart** moves the same VM, with its state, into Tart's own window: Tart saves it (`tart suspend`) and
   restores it there, in about 8 seconds. Closing Tart's window suspends the VM; **Open** in the card resumes it.
 - While a VM is in use (below), its card only watches: it sends no pointer or key to the VM, and the header shows
-  "In use · ‹owner›". Input comes back when the lock frees. **Open in Tart** and **Stop** refuse then.
+  "In use · ‹owner›". Input comes back when the lock frees. **Open in Tart**, **Stop** and **Delete** refuse then.
 - macOS Screen Sharing sends no pointer shape and draws no pointer into a VM's screen: the card shows the system
   arrow over the screen.
 
@@ -54,7 +55,7 @@ LaunchAgent keeps it too; a card's next screen replaces an agent made from anoth
 ## How it works
 
 ```text
-Tart VM card ── ovvi.run ──> bin/ovvi-tart list | new | view | window | stop
+Tart VM card ── ovvi.run ──> bin/ovvi-tart list | new | view | window | stop | delete
      │                          view: starts the VM (tart run --no-graphics --suspendable) and the bridge
      │                          window: tart suspend, then tart run with Tart's window
      └── noVNC ── WebSocket ws://127.0.0.1:57900 ──> bridge.mjs (a LaunchAgent, dev.ovvi.tart-bridge)

@@ -1,9 +1,9 @@
 {
   "name": "ovvi-tart-plugin",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "type": "module",
-  "description": "This Mac's Tart VMs in a card: start, stop and create them, and a VM's screen with its keyboard and pointer.",
+  "description": "This Mac's Tart VMs in a card: start, stop, create and delete them, and a VM's screen with its keyboard and pointer.",
   "keywords": ["tart", "vm", "virtual machine", "macos", "vnc", "screen sharing"],
   "scripts": {
     "build": "node build.mjs",
