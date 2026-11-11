@@ -82,6 +82,7 @@ extension OvviUITests {
             app.typeKey(.rightArrow, modifierFlags: [])
             _ = until(1) { welcomePage != page }
         }
+        XCTAssertEqual(welcomeNext.label, "Get Started")
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(welcomeNext.vanishes(within: 3))
     }
@@ -117,6 +118,8 @@ extension OvviUITests {
         app.launchEnvironment["PATH"] = "/usr/bin:/bin"
         relaunch(one, ["-welcomeDone", "NO", "-herdrInstall", install])
         XCTAssertTrue(welcomeNext.exists(within: connect))
+        // A click during the intro only ends it.
+        XCTAssertTrue(element("welcome.intro").vanishes(within: 5), "the intro stays")
     }
 
     /// Next until the herdr step's button shows: its button. herdr is missing before the panel opens, so the step is

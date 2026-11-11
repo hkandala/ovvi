@@ -60,7 +60,7 @@ jobs:
       - uses: actions/checkout@v7
       - run: make build-tests
       # A tar keeps the bundles' symlinks and modes, which the artifact's zip drops.
-      - run: tar -cf products.tar -C .build/DerivedData/Build Products
+      - run: tar -cf products.tar .build/DerivedData/Build/Products
       - uses: actions/upload-artifact@v7
         with:
           name: products
@@ -71,8 +71,8 @@ jobs:
   # 5 shards: the account's limit of parallel macOS jobs.
   test:
     needs: build
-    # Also when build was skipped (a chosen-tests run).
-    if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && needs.build.result != 'failure' }}
+    # A chosen-tests run skips build.
+    if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && (needs.build.result == 'success' || inputs.only_testing) }}
     runs-on: xcode-27
     timeout-minutes: 30
     strategy:
@@ -86,7 +86,7 @@ jobs:
         with:
           name: products
       - if: ${{ !inputs.only_testing }}
-        run: mkdir -p .build/DerivedData/Build && tar -xf products.tar -C .build/DerivedData/Build
+        run: tar -xf products.tar && rm products.tar
       # The image has xcbeautify and node.
       - name: install herdr
         run: *install-herdr

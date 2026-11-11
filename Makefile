@@ -86,7 +86,7 @@ ONLY := $(shell scripts/shard.py $(SHARD) $(if $(ON_DEMAND_ONLY),--on-demand) $(
 $(if $(ONLY),,$(error no tests for SHARD=$(SHARD)))
 endif
 # PREBUILT=1 runs the tests of an earlier make build-tests (CI's build job) without building them again.
-E2E = $(if $(PREBUILT),xcodebuild test-without-building -xctestrun $(firstword $(wildcard $(DERIVED_DATA)/Build/Products/*.xctestrun)),$(XCODEBUILD) test)
+E2E = $(if $(PREBUILT),xcodebuild test-without-building -xctestrun $(shell ls -t $(DERIVED_DATA)/Build/Products/*.xctestrun | head -1),$(XCODEBUILD) test)
 TESTS = -test-timeouts-enabled YES -default-test-execution-time-allowance 120 \
 	$(if $(ONLY),$(addprefix -only-testing:,$(subst $(comma), ,$(ONLY))),$(addprefix -skip-testing:OvviUITests/OvviUITests/,$(ON_DEMAND)))
 e2e: web
