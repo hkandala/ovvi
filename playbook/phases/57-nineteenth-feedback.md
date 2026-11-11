@@ -1933,6 +1933,8 @@ you did, no need of reverting them".
   testPinnedSpacesStayOnTopAboveALine (menu and palette, the line only with both groups, Recent leaves pins),
   testDraggingASpaceAboveTheLinePinsIt (the first pin by drag, grabbed by its name, then unpinned by drag). The pin
   tests run in their own config folders.
+- **Runs.** CI 42943686518 (11 chosen tests, before the flicker fix) and CI 42949477329 (10: the pin tests, the
+  row and tab drags, Recent, Settings search, the palette, scroll into view, new window), green.
 - **Review.** Three rounds: a strip that pushed every row 30 pt on any space drag (now an overlay), the line 4.5 pt
   off the gap's middle, pruning only in the visible sidebar (now every snapshot), palette places not pins first, a
   drag pin sent to herdr's end, a pin zone only a centre grab could reach, and the line drawn under the fade's mask;
