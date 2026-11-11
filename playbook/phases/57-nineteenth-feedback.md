@@ -1847,7 +1847,7 @@ you did, no need of reverting them".
   The audit: `~/Downloads/ovvi-research/p57z/audit.md`.
 - **Fix (one motion per card, its place known at the start).** herdr's tree takes over, after the write, only once it
   places every pane where the stand-in tree does (`SplitNode.places(like:renaming:)`, 32-bit ratios allowed), else
-  at the third snapshot after the write. The hold is deleted (`Slide.swift`). A card going to the same place (within
+  at the second snapshot after the write. The hold is deleted (`Slide.swift`). A card going to the same place (within
   half a point) is never armed again. Content lays out once, at its final size, as the motion starts; a terminal or
   web view in a moving card fits then too (`SettlingHost`); drags, the sidebar and window resizes still settle. A new
   card is armed in `makeNSView`, in the same update as the others (`entering` deleted). The keyboard card's 1 pt

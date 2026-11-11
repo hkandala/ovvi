@@ -88,11 +88,12 @@ struct Ahead {
             let now = snapshot.trees[split.tabID]
             let shown = split.tree.removing(closing.union(splitPanes.filter { closing.contains($0.value) }.keys))
             // After the write, herdr's tree takes over once it places the panes where the split shows them: one read
-            // ahead of the swap or the balance would move the cards a second time. Else the third snapshot after the
-            // write: herdr may keep a ratio its own way, or another client changed the tab. Not during the write: a
-            // stand-in closed meanwhile stays in `closing` only while the split lives.
+            // ahead of the swap or the balance would move the cards a second time. Else the second snapshot after the
+            // write (reads are serial: at most one began before the write's end): herdr may keep a ratio its own way,
+            // or another client changed the tab. Not during the write: a stand-in closed meanwhile stays in `closing`
+            // only while the split lives.
             let same = trees[split.tabID].flatMap { now in shown?.places(like: now, renaming: splitPanes) } == true
-            if now == nil || split.after.map({ $0 > 1 || same }) == true {
+            if now == nil || split.after.map({ $0 > 0 || same }) == true {
                 self.split = nil
             } else {
                 trees[split.tabID] = shown
