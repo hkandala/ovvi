@@ -2096,3 +2096,7 @@ webkit directly instead of using browser plugin … if not we should provide tha
   unpin, and Show Only Pinned Spaces all slide. Sort Spaces in one session, then another session: the other follows
   Settings ▸ Agents ▸ Sort spaces; a relaunch keeps each. With Show Only Pinned Spaces on, a hidden space's agent sends
   no banner and leaves the Dock badge.
+
+90. Sidebar hover on the wrong row (Track B3; video `.build/fb57/r7-hover-11.16.11.mov`): "i tested the new sidebar
+    changes, everything is good, one weird issue is when i hover mouse on certain worksapces sometimes it focuses on
+    something else, it happens when i pin things, its not consistent, it happens randomly"
