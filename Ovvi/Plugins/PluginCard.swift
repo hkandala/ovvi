@@ -57,7 +57,7 @@ private struct ToastView: View {
 
     var body: some View {
         let id = "pane.\(plugin.paneID).toast"
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             Text(toast.text).lineLimit(1).accessibilityIdentifier(id)
             if let other = toast.other {
                 Button(other.title, role: other.role) {
