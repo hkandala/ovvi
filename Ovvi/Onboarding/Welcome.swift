@@ -98,7 +98,8 @@ enum Welcome {
 
 /// The panel's background: the window's own glass (Classic: opaque), its corners and a hairline rim.
 struct WelcomeBackground: View {
-    static let shape = RoundedRectangle(cornerRadius: 24, style: .continuous)
+    /// A titled window's corner, as NSWindow reports it: the same as Ovvi's own windows.
+    static let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
     @Environment(\.look) private var look
 
     var body: some View {
