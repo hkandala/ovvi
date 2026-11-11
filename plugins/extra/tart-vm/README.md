@@ -3,13 +3,14 @@
 This Mac's [Tart](https://tart.run) VMs in an Ovvi card: start, stop, create and delete them, and a VM's screen in
 the card, with its keyboard and pointer, scaled to the card.
 
-- **New pane ▸ Tart VM** (or ⌘K "Open Tart VM Here") shows the list of VMs, every time the card opens: each with
-  its state, macOS version (once the card has seen it), cores and memory. **Open** shows a VM's screen in the card
-  (a VM that is off starts first, with no window); **Stop** shuts a running VM down; **Delete**, on a stopped VM only
-  (not a suspended one), deletes it with its disk. Each asks first, with a red button. The base, `golden-gate`
-  (Cirrus Labs' image), is never started, stopped or deleted here: **New VM…** makes a copy of it (or of another VM
-  that is off), with a name, and says what it costs (its memory and cores; with a VM running, it asks for a second
-  one; macOS runs two at most).
+- **New pane ▸ Tart VM** (or ⌘K "Open Tart VM Here") shows the list of VMs: each with its state, macOS version
+  (once the card has seen it), cores and memory. "Looking for VMs…" shows on the card's first load only: back from a
+  VM or New VM…, the card shows the list it has at once and updates it from Tart; each card has its own, in memory.
+  **Open** shows a VM's screen in the card (a VM that is off starts first, with no window); **Stop** shuts a running
+  VM down; **Delete**, on a stopped VM only (not a suspended one), deletes it with its disk. Each asks first, with a
+  red button. The base, `golden-gate` (Cirrus Labs' image), is never started, stopped or deleted here: **New VM…**
+  makes a copy of it (or of another VM that is off), with a name, and says what it costs (its memory and cores; with
+  a VM running, it asks for a second one; macOS runs two at most).
 - A VM's page shows its screen and nothing else. The title is the VM's name; the header shows **‹** (back to the
   list), its state, macOS version, cores and memory, and **Open in Tart**. Back, or closing the card, only ends the
   screen's connection: the VM runs on until **Stop**.

@@ -49,10 +49,11 @@ running() { tart list --source local --format json | jq -e --arg vm "$1" '.[] | 
 case ${1:-} in
 list)
     # Each VM's memory and cores come from its own config: `tart list` has neither. Its macOS, from its last view.
+    # No Accessed: `tart get` changes it, and the card redraws its list only when the list changed.
     tart list --source local --format json | jq -c '.[]' | while IFS= read -r vm; do
         name=$(jq -r .Name <<<"$vm")
         jq -c --argjson get "$(tart get "$name" --format json)" --arg os "$(cat "$state/$name.os" 2>/dev/null)" \
-            '. + {Memory: $get.Memory, CPU: $get.CPU, os: $os}' <<<"$vm"
+            '. + {Memory: $get.Memory, CPU: $get.CPU, os: $os} | del(.Accessed)' <<<"$vm"
     done | jq -s --argjson mem "$(($(sysctl -n hw.memsize) / 1048576))" '{vms: ., hostMemory: $mem}'
     ;;
 new)

@@ -156,7 +156,7 @@ export default async function main(ovvi: Ovvi) {
     if (pick !== "Stop") return
     draw(`Stopping ${vm}…`, "")
     await tart(["stop", vm], 90_000).catch((error) => void ovvi.toast(`${vm} did not stop: ${(error as Error).message}`))
-    await home()
+    await home(true)
   }
 
   async function remove(v: VM) {
@@ -166,7 +166,7 @@ export default async function main(ovvi: Ovvi) {
     draw(`Deleting ${v.Name}…`, "")
     await tart(["delete", v.Name], 90_000)
       .catch((error) => void ovvi.toast(`${v.Name} was not deleted: ${(error as Error).message}`))
-    await home()
+    await home(true)
   }
 
   function create(vms: VM[], hostMemory: number) {
@@ -206,30 +206,54 @@ export default async function main(ovvi: Ovvi) {
     draw(`Creating ${name}…`, `A copy of ${from}: it shares the disk until it changes.`)
     try {
       await tart(["new", name, from], 120_000)
+      // The kept list gets the new VM while it boots, so the list shows it on the way back.
+      void fetchList().catch(() => {})
       await show(name)
     } catch (error) {
       draw(`${name} was not created`, (error as Error).message, [["All VMs", () => void home()]])
     }
   }
 
-  /** The card's home, every time it opens: this Mac's VMs. */
-  async function home() {
+  /** `ovvi-tart list`'s last answer: this card's own (each pane runs its own page), kept while the page lives. */
+  let kept: string | undefined
+  let asked = 0
+
+  /** Tart's list now; it is kept only while no newer one was asked for. */
+  async function fetchList() {
+    const n = ++asked
+    const json = await tart(["list"])
+    if (n === asked) kept = json
+    return json
+  }
+
+  /** The card's home, this Mac's VMs: the kept list at once, then Tart's answer. `fresh` (after a change) waits for it. */
+  async function home(fresh = false) {
     shown = ""
     drop()
     document.title = "All VMs"
     header()
-    draw("Looking for VMs…", "")
-    let vms: VM[], hostMemory: number
+    const old = kept
+    if (!old) draw("Looking for VMs…", "")
+    else if (!fresh) list(old)
+    // Each draw makes a new title: another title means the user went on (a VM, New VM…), and the answer waits.
+    const at = notice.firstChild
+    let json: string
     try {
-      ;({ vms, hostMemory } = JSON.parse(await tart(["list"])))
+      json = await fetchList()
     } catch (error) {
-      return draw("Tart did not answer", (error as Error).message, [["Try Again", () => void home()]])
+      if (notice.firstChild === at) draw("Tart did not answer", (error as Error).message, [["Try Again", () => void home()]])
+      return
     }
+    if (notice.firstChild === at && (fresh || json !== old)) list(json)
+  }
+
+  function list(json: string) {
+    const { vms, hostMemory }: { vms: VM[]; hostMemory: number } = JSON.parse(json)
     if (!vms.length) return draw("No VMs on this Mac", "Make one with `tart clone`, then try again.", [["Try Again", () => void home()]])
-    const list = el("ul")
+    const ul = el("ul")
     for (const v of vms) {
       const state = v.Name === BASE ? "Base for new VMs" : v.State[0].toUpperCase() + v.State.slice(1)
-      const li = list.appendChild(el("li"))
+      const li = ul.appendChild(el("li"))
       const text = li.appendChild(el("div"))
       text.append(el("b", { textContent: v.Name }),
         el("span", { textContent: [state, v.os && `macOS ${v.os}`, `${v.CPU} cores`, gb(v.Memory)].filter(Boolean).join(" · ") }))
@@ -240,7 +264,7 @@ export default async function main(ovvi: Ovvi) {
         ["Open", () => void show(v.Name, v.Running), true],
       ]))
     }
-    draw("Tart VMs", "", [["New VM…", () => create(vms, hostMemory)]], list)
+    draw("Tart VMs", "", [["New VM…", () => create(vms, hostMemory)]], ul)
   }
 
   ovvi.card.ready()
