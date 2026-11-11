@@ -2006,3 +2006,6 @@ you did, no need of reverting them".
     - also for pinned region, whenever you drag, instead of just line, show like add to pinned or something,similar to
     how we show new workspace when i am dragging a tab onto the sidebar, like a rectangular region instead of one
     line, even if there are already pinned spaces, that region should be shown below the last pinned space"
+    Added later: "also include one more feature called hide all except pinned (rephrase that better), basically i
+    should be able to hide other workspaces except the pinned ones, should be available from cmd+k or right clicking
+    on sidebar"
