@@ -40,7 +40,8 @@ make dmg        # a disk image of it
 make run        # build and open the app (SESSION=<name> for one session; agents: ovvi-dev-* only)
 make format     # SwiftLint's fixes and SwiftFormat
 make lint build test   # checks, the build, the unit tests and the docs and license checks
-make e2e        # the UI tests against throwaway herdr sessions (ONLY=… for some)
+make e2e        # the UI tests against throwaway herdr sessions (ONLY=… for some), on this Mac's screen
+make vm-e2e ONLY=…   # the same in the Tart VM, off this Mac's screen (playbook/ci.md, The VM)
 ```
 
 Pass `DERIVED_DATA=/tmp/ovvi-dd-<name>` when several checkouts build at once.

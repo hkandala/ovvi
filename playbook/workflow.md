@@ -79,7 +79,7 @@ paraphrase.
   ≤ 72 characters (`feat`, `fix`, `chore`, `test`, `docs`, `refactor`, `perf`, `ci`, `build`). The hooks in
   `.githooks/` must pass. Never `--no-verify`. Never commit build output, DerivedData, `.xcresult`,
   screenshots or secrets.
-- **Commands:** use the Makefile targets (`make lint`, `format`, `build`, `test`, `e2e`, `run`). A new
+- **Commands:** use the Makefile targets (`make lint`, `format`, `build`, `test`, `vm-e2e`, `e2e`, `run`). A new
   command gets a target. A rule a tool can check gets a lint rule or a script, not a line in a doc.
 
 ### UI tests run in the VM
@@ -93,25 +93,27 @@ OWNER=<your agent name> make vm-e2e DERIVED_DATA=/tmp/ovvi-dd-NN<track> ONLY=…
 
 - `make vm-e2e` builds the tests on the Mac, then runs them in the VM with the Mac's build and Xcode, shared read
   only. The result is `$DERIVED_DATA/vm.xcresult`. Run it in a background command.
-- **The VM lock** (`/tmp/ovvi-vm.lock`, its `owner` holds the run's pid and your name): the script takes it for the
-  test run only, and waits while another run holds it. A lock whose pid is gone is stale, and the next run removes
-  it. One VM only: never start a second one for tests.
+- **The VM lock** (`/tmp/ovvi-vm.lock`, held with `lockf`; `/tmp/ovvi-vm.lock.owner` names the holder): the script
+  takes it for the test run only, and waits while another run holds it. The kernel frees it when the run ends,
+  also when it is killed, so it never goes stale. One VM only: never start a second one for tests.
+- Anything else you do in the VM that clicks, types or opens apps takes the lock too:
+  `lockf -k /tmp/ovvi-vm.lock tart exec ovvi-test …`. A click in the VM's pane during a run breaks that run.
 - The VM stays running between runs (a boot costs about 40 s, and start and stop cycles can hit macOS's VM limit).
   The orchestrator stops it when a project ends: `tart stop ovvi-test`.
 - Run the tests you add or change in the VM, a few at a time (two short ones take about 30 s once the VM runs). Larger sets
   go to a [chosen-tests CI run](ci.md#running-part-of-it): dispatch it, give the run id in your report, and go
   on. The orchestrator watches it and sends back failures. Never run the same tests again without a code change.
-- To see the VM, open it in an Ovvi pane: `ovvi open browser "$(ovvi-tart view ovvi-test)"` (the Tart VM plugin). Its screenshots:
-  the xcresult's attachments, or `tart exec ovvi-test screencapture -x <path in a shared folder>`. Inside the VM,
-  `osascript` and System Events are safe: they reach only the VM.
+- Agents read a run from its xcresult (attachments and recordings) and take the VM's screen with
+  `tart exec ovvi-test screencapture -x '/Volumes/My Shared Files/runs/…'`. The VM's pane (New pane ▸ Tart VM, the
+  Tart VM plugin) is for the user: agents open no panes in the user's sessions. Inside the VM, `osascript` and
+  System Events are safe: they reach only the VM.
 - RemoteTests skip on a local run (they need CI's sshd): run them in a chosen-tests CI run.
 
 ### The GUI lock
 
 Only what must run on the Mac itself takes the GUI lock, `/tmp/ovvi-gui.lock`: **the onboarding recordings** (the
 welcome film and its retakes, which need the Mac's display for full quality), and a check that the VM cannot
-make (the Mac's own GPU or display, a measure the user asked for on this Mac). Nothing else holds it; UI tests
-never do.
+make (the Mac's own GPU or display, a measure the user asked for on this Mac). No other UI test run holds it.
 
 ```sh
 ( mkdir /tmp/ovvi-gui.lock || exit 1; trap 'rm -rf /tmp/ovvi-gui.lock' EXIT

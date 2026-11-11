@@ -93,6 +93,7 @@ e2e: web
 
 # The same tests in the Tart VM, off this Mac's screen (playbook/workflow.md, UI tests run in the VM). The result is vm.xcresult.
 vm-e2e: build-tests
+	$(if $(ONLY),,$(error vm-e2e runs chosen tests: ONLY=…; a full run goes to CI))
 	scripts/vm-test.sh $(DERIVED_DATA) $(TESTS) $(BEAUTIFY)
 
 run: build

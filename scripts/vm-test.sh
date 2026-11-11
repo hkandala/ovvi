@@ -3,33 +3,31 @@
 # Runs UI tests in the one Tart VM, ovvi-test, so they never take this Mac's pointer or keyboard. The VM runs this
 # Mac's build (build-for-testing) and this Mac's Xcode, shared from the Mac: nothing is built or installed in it.
 set -euo pipefail
+lock=/tmp/ovvi-vm.lock
+# One run at a time: lockf waits for the lock, and the kernel frees it when the run ends, also when it is killed.
+if [[ -z ${VM_LOCKED:-} ]]; then
+    # -k everywhere: lockf without it deletes the file, and a later run would lock a new one beside the held one.
+    lockf -k -s -t 0 "$lock" true || echo "the VM is busy: $(cat "$lock.owner" 2>/dev/null); waiting" >&2
+    VM_LOCKED=1 exec lockf -k "$lock" "$0" "$@"
+fi
 cd "$(dirname "$0")/.."
 dd=$1
 shift
-vm=ovvi-test runs=/tmp/ovvi-vm lock=/tmp/ovvi-vm.lock
-command -v ovvi-tart >/dev/null || { echo "ovvi-tart is missing: install the Tart VM plugin (playbook/ci.md)" >&2; exit 1; }
-tart list --source local --quiet | grep -qx "$vm" || { echo "no VM $vm: tart clone golden-gate $vm" >&2; exit 1; }
-
-# One run at a time. The owner's pid makes a lock stale by itself once that run is gone.
-until mkdir "$lock" 2>/dev/null; do
-    owner=$(cat "$lock/owner" 2>/dev/null || true)
-    if [[ -n $owner ]] && ! kill -0 "${owner%% *}" 2>/dev/null; then
-        echo "removing the stale VM lock of '$owner'" >&2
-        rm -rf "$lock"
-        continue
-    fi
-    echo "the VM is busy: ${owner:-starting}; waiting" >&2
-    sleep 5
+vm=ovvi-test runs=/tmp/ovvi-vm
+for tool in tart herdr ovvi-tart; do
+    command -v $tool >/dev/null || { echo "$tool is missing (playbook/ci.md, The VM)" >&2; exit 1; }
 done
+tart list --source local --quiet | grep -qx "$vm" || { echo "no VM $vm: tart clone golden-gate $vm" >&2; exit 1; }
+echo "${OWNER:-$USER} $$ $(date +%H:%M)" >"$lock.owner"
 run=$runs/runs/$$
-trap 'rm -rf "$lock" "$run"' EXIT
-echo "$$ ${OWNER:-$USER} $(date +%H:%M)" >"$lock/owner"
+trap 'rm -rf "$run" "$lock.owner"' EXIT
 
 # The shares are set when the VM boots (ovvi-tart keeps them for its later starts).
 xcode=$(dirname "$(dirname "$(xcode-select -p)")")
 mkdir -p "$run"
 ovvi-tart start "$vm" "--dir=xcode:$xcode:ro" "--dir=runs:$runs/runs" >/dev/null
-until tart exec "$vm" true 2>/dev/null; do sleep 1; done
+for _ in $(seq 60); do tart exec "$vm" true 2>/dev/null && break; sleep 1; done
+tart exec "$vm" true || { echo "$vm: tart exec does not answer" >&2; exit 1; }
 guest="/Volumes/My Shared Files"
 tart exec "$vm" test -d "$guest/runs/$$" ||
     { echo "$vm runs without the test shares: tart stop $vm, then run again" >&2; exit 1; }
@@ -43,9 +41,11 @@ cp -cR "$dd/Build/Products" scripts "$run/"
 mkdir "$run/bin"
 cp -c "$(command -v herdr)" "$run/bin/"
 rm -rf "$dd/vm.xcresult"
+# The newest: an Xcode or SDK update leaves the old one beside it.
+xctestrun=$(cd "$run/Products" && ls -t ./*.xctestrun | head -1)
 status=0
 tart exec "$vm" zsh -c "cd '$guest/runs/$$' && PATH=\$PWD/bin:\$PATH scripts/e2e.sh xcodebuild test-without-building \
-    -xctestrun Products/*.xctestrun -destination platform=macOS -resultBundlePath vm.xcresult $(printf '%q ' "$@")" ||
+    -xctestrun Products/$xctestrun -destination platform=macOS -resultBundlePath vm.xcresult $(printf '%q ' "$@")" ||
     status=$?
 mv "$run/vm.xcresult" "$dd/" 2>/dev/null && echo "result: $dd/vm.xcresult" >&2
 exit $status

@@ -137,8 +137,8 @@ another login session, with its own pointer, keyboard and screen.
 - **Cost.** 4 cores and 8 GB (about 4.6 GB resident while tests run). A boot takes about 40 s to a working
   `tart exec`. On a running VM, a run of two short tests takes about 30 s (11 s of tests). The first run on a new
   clone adds about 30 s of setup. Idle, the VM takes about a quarter of a core.
-- **Its screen.** 1024 × 768 points at 2x, not CI's 1x 1024 × 674. Open it in an Ovvi pane with the Tart VM plugin
-  (`ovvi open browser "$(ovvi-tart view ovvi-test)"`, or New pane ▸ Tart VM) to watch a run; the plugin's README says how to install it.
+- **Its screen.** 1024 × 768 points at 2x, not CI's 1x 1024 × 674. The user watches it in an Ovvi pane: New pane ▸
+  Tart VM (the plugin's README installs it).
 - **Limits.** Apple allows 2 macOS VMs per host; after a few start and stop cycles the limit error can stay until
   the host reboots (Tart #1217), so the VM stays running. The guest's macOS must not be newer than the host's: a
   host update needs a new `golden-gate` (`tart clone ghcr.io/cirruslabs/macos-golden-gate-base:latest golden-gate`,
