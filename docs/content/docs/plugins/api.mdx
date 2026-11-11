@@ -324,7 +324,7 @@ export interface OvviError extends Error {
 | `card` | who the card is: its iid, plugin, machine, place, folder and landing; `go`, `ready`, `setDirty` | the label and the pane in the snapshot; `Plugin` |
 | `files` | read, list, write and watch on the card's machine | HerdrKit's `Files` (`read`, `list`, `paths`, `save` by hash, `watch`) over the machine's `Exec`, in `PluginCalls` |
 | `git` | the root, status, changes, branch, branches, history with lanes, patches, and the everyday writes | HerdrKit's `Git`, in `PluginCalls`; on This Mac only once git passed its check ([Git status](/docs/talking-to-herdr#git-status)) |
-| `run` | any command on the card's machine | `Exec.run` inside the envelope: argv only, no shell; 30 s by default; 4 MiB of stdout, then `truncated`; stderr's last 8 KB; a last line break added to stdin; two at a time per card |
+| `run` | any command on the card's machine | `Exec.run` inside the envelope: argv only, no shell; 30 s by default; 4 MiB of stdout, then `truncated`; stderr's last 8 KiB; a last line break added to stdin; two at a time per card |
 | `state` | the card's state for drops, reloads and relaunches | [State](#state) |
 | `controls` | the header row and the card's commands | the native header (`Header`, `HeaderView`) |
 | `theme` | colors, light or dark, glass or classic, the text size | the `Look` tokens |

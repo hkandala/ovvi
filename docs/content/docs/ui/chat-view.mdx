@@ -48,8 +48,8 @@ and
   the launch line (two checks in a row, from 1 s on), the chooser types the
   bare command once more, for every agent. An agent build that refuses
   Ovvi's flags then starts with no chat, not with no agent.
-- **MetaCode**, the company's OpenCode build, ignores Ovvi's plugin and
-  sends no state line. After 15 s the chat says "OpenCode has not reported
+- **An OpenCode build that ignores plugins** (a vendor's own build) sends no
+  state line. After 15 s the chat says "OpenCode has not reported
   its session" and the card flips to its terminal, once. The header shows
   Error only while the card shows the chat. A late line (a slow first plugin
   install) clears it when the card shows the chat again. The app does not
@@ -117,7 +117,7 @@ agent has ended and the shell is in front):
 
 `T` is a new lowercase UUID per launch. The chooser types the line into the
 pane's shell, so the user's own alias or function for the command still runs
-(for example a company `codex` alias). The line reads the same in sh, bash,
+(for example a managed `codex` alias). The line reads the same in sh, bash,
 zsh and fish (OpenCode: fish 3.4 or later), because its hooks hold no quote
 and no backslash.
 
@@ -368,7 +368,7 @@ dialogs and every picker.
 and **Show TUI**, and the header's state label says Error:
 - "‹Agent› has not started a session": Claude Code or Pi after 10 s with no
   session, or Codex when a message is not sent and its hook never ran.
-- "OpenCode has not reported its session" ([MetaCode](#which-panes-have-it)),
+- "OpenCode has not reported its session" ([an OpenCode build that ignores plugins](#which-panes-have-it)),
   "OpenCode's server did not answer" or "did not give the session".
 - "The transcript is not in a format the chat knows".
 
@@ -672,7 +672,7 @@ does not answer).
   key. Codex runs that hook without a question, and every other hook
   needs review. No bypass flag.
 - **Claude Code's hooks** come in the inline `--settings`, so nothing is
-  written to the user's settings. The user's and the company's hooks run
+  written to the user's settings. The user's and any managed hooks run
   too.
 - Simpler choice: a home folder with a space gets no chat (`$HOME` is not
   quoted in the hooks). OpenCode's `tui.json` breaks on a home folder with a
@@ -705,13 +705,13 @@ on This Mac and on a remote machine, in light mode and in Classic.
 - **OpenCode** (the npm build): a reply. A bash permission answered in the
   chat, and one answered in the TUI. A question. `/sessions` to an old
   session. Stop. A remote machine needs `curl`.
-- **MetaCode:** the card falls back to its terminal after 15 s.
+- **An OpenCode build that ignores plugins:** the card falls back to its terminal after 15 s.
 - **Relaunch with Chat:** each agent started by hand, idle and working (the alert),
   comes back in the same session with its chat. Codex keeps its hook after
   `resume`.
 - **Titles:** real sessions' titles in the tab and the sidebar's agent rows, after
   `/rename` (Claude Code) and `/name` (Pi).
-- The company launchers rewrite `~/.claude/settings.json` and reinstall a
+- Managed launchers can rewrite `~/.claude/settings.json` and reinstall a
   plugin into `~/.codex` on each start. That is their own behavior.
 
 ## Choices
