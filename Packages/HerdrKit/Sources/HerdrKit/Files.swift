@@ -11,7 +11,7 @@ public struct FileContents: Equatable, Sendable {
     public let hash: String
 }
 
-public enum FileError: Error, Equatable, Sendable {
+enum FileError: Error, Equatable, Sendable {
     case tooLarge(Int)
     case changed
 }
