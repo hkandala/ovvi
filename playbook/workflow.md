@@ -102,7 +102,8 @@ OWNER=<your agent name> make vm-e2e DERIVED_DATA=/tmp/ovvi-dd-NN<track> ONLY=…
   The orchestrator stops it when a project ends: `tart stop ovvi-test`.
 - Run the tests you add or change in the VM, a few at a time (two short ones take about 30 s once the VM runs). Larger sets
   go to a [chosen-tests CI run](ci.md#running-part-of-it): dispatch it, give the run id in your report, and go
-  on. The orchestrator watches it and sends back failures. Never run the same tests again without a code change.
+  on. The orchestrator watches it and sends back failures. The whole suite runs in the VM only when the orchestrator
+  asks for it: `make vm-e2e FULL=1` holds the lock for over an hour. Never run the same tests again without a code change.
 - Agents read a run from its xcresult (attachments and recordings) and take the VM's screen with
   `tart exec ovvi-test screencapture -x '/Volumes/My Shared Files/runs/…'`. The VM's pane (New pane ▸ Tart VM, the
   Tart VM plugin) is for the user: agents open no panes in the user's sessions. Inside the VM, `osascript` and

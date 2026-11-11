@@ -92,8 +92,9 @@ e2e: web
 	scripts/e2e.sh $(XCODEBUILD) $(MAC) $(TESTS) -resultBundlePath $(DERIVED_DATA)/e2e.xcresult test $(BEAUTIFY)
 
 # The same tests in the Tart VM, off this Mac's screen (playbook/workflow.md, UI tests run in the VM). The result is vm.xcresult.
+# FULL=1 runs the whole suite (as make e2e, over an hour): it holds the VM lock all that time.
 vm-e2e: build-tests
-	$(if $(ONLY),,$(error vm-e2e runs chosen tests: ONLY=…; a full run goes to CI))
+	$(if $(ONLY)$(FULL),,$(error vm-e2e runs chosen tests: ONLY=…, or FULL=1 for the whole suite))
 	scripts/vm-test.sh $(DERIVED_DATA) $(TESTS) $(BEAUTIFY)
 
 run: build
