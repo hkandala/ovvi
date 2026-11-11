@@ -17,12 +17,14 @@ STEPS=${1:-all} LOOKS=${2:-both} PAGES=${PAGES:-running layout agents plugins ma
 [ "$LOOKS" = both ] && LOOKS="dark light"
 unset "${!HERDR_@}"
 HERDR=$(command -v herdr) CLAUDE=$(command -v claude || true)
-started=$SECONDS lock= REC= up= BACKDROP=
+started=$SECONDS lock= REC= up= BACKDROP= FILM=
 say() { printf '\n[%s +%dm%02ds] %s\n' "$(date +%H:%M:%S)" $(((SECONDS - started) / 60)) $(((SECONDS - started) % 60)) "$*"; }
 
 cleanup() {
     if [ -n "$REC" ] && ps -p "$REC" -o command= | grep -qF "$C/film"; then kill "$REC" 2>/dev/null || true; fi
     if [ -n "$BACKDROP" ] && ps -p "$BACKDROP" -o command= | grep -qF "$C/backdrop"; then kill "$BACKDROP" || true; fi
+    # A take that did not end well keeps no film: it was not checked.
+    [ -n "$FILM" ] && rm -f "$FILM"
     if [ -n "$up" ] && [ -d "$W" ]; then scene down "$S" >/dev/null 2>&1 || true; fi
     [ -n "$lock" ] && rm -rf /tmp/ovvi-gui.lock
     return 0
@@ -76,26 +78,27 @@ tap() {
 
 # Films the app's windows into $C/<page>-<look>.mp4 until `wrap`.
 roll() {
-    # The glass shows what is under the window: black in dark, white in light, as on a plain desktop; only behind the
-    # window, and only while the film runs.
-    # shellcheck disable=SC2046 # x y w h
-    BACKDROP_MAX_SECONDS=170 "$C/backdrop" "$([ "$look" = dark ] && echo black || echo white)" $(window) \
-        >"$C/backdrop.log" &
-    BACKDROP=$!
-    for _ in $(seq 200); do grep -q shown "$C/backdrop.log" && break; sleep 0.05; done
-    # The window is key from the first frame, over the backdrop.
+    # The window is key from the first frame, in front of every other app's.
     "$W/tools/ax" "$pid" front
     "$W/tools/ax" "$pid" park 2>/dev/null || true
+    # The glass shows what is under the window: black in dark, white in light, as on a plain desktop; right under the
+    # window, and only while the film runs.
+    # shellcheck disable=SC2046 # x y w h
+    BACKDROP_MAX_SECONDS=200 "$C/backdrop" "$([ "$look" = dark ] && echo black || echo white)" $(window) \
+        >"$C/backdrop.log" &
+    BACKDROP=$!
+    for _ in $(seq 600); do grep -q shown "$C/backdrop.log" && break; sleep 0.05; done
     sleep 0.3
     grep -q shown "$C/backdrop.log" || { echo "no backdrop" && exit 1; }
     # The film holds the window's rect alone (film.swift).
     window | awk '{ print 0, 0, $4, $5 }' >"$C/$1.at"
-    rm -f "$C/cue" "$C/$1.cut"
+    rm -f "$C/cue"
     mkfifo "$C/cue"
     FILM=$C/$1.mp4
     FILM_MAX_SECONDS=150 "$C/film" "$pid" "$FILM" "$BACKDROP" <"$C/cue" >"$C/film.log" 2>&1 &
     REC=$!
     exec 3>"$C/cue"
+    # "recording" comes with the film's first frame: the steps' times are the clip's.
     for _ in $(seq 400); do grep -q recording "$C/film.log" && break; sleep 0.05; done
     grep -q recording "$C/film.log" || { echo "the film did not start: $(cat "$C/film.log")" && exit 1; }
     T0=$(python3 -c "import time; print(time.time())")
@@ -106,11 +109,9 @@ wrap() {
     REC=
     kill "$BACKDROP"
     BACKDROP=
-    # Another app's window came over the window while it filmed: the film goes at once.
-    if grep -q intruder "$C/film.log"; then
-        rm -f "$FILM"
-        grep intruder "$C/film.log" && exit 1
-    fi
+    # Another app's window came over or under the window while it filmed: the film goes at once (cleanup deletes it).
+    grep intruder "$C/film.log" && exit 1
+    FILM=
 }
 # Waits until $1 seconds after the film started: the steps keep their times however long each one takes.
 upto() { sleep "$(python3 -c "import time; print(max(0, $T0 + $1 - time.time()))")"; }
@@ -135,33 +136,37 @@ running() {
     (for path in / /style.css /app.js /api/links /api/links /k3vZ9a / /api/links /app.js /api/links; do
         curl -s -o /dev/null "http://localhost:$port$path" || true
         sleep 0.45
-    done) &
+    done) 3>&- &
     upto 1
     h pane run "$build" "cargo build --release" >/dev/null
     upto 7.5
     wrap
 }
 
-# One pane grows: a split (the card's own Split Right), a tab, then another space.
+# One pane grows, at an easy pace: a split (the card's own Split Right), a tab, then a space no other clip shows.
 layout() {
-    local explorer
-    local split shortlink
+    local explorer split docs
     tap w5
     explorer=$(panes w5:t1 | head -1)
     sleep 1
     split=$(spot "pane.$explorer.split-right")
-    shortlink=$(spot w1)
+    docs=$(spot w3)
+    # The docs space once, off camera, so its cards are drawn when the switch shows them.
+    press "$docs"
+    sleep 3
+    tap w5
+    sleep 1
     roll "layout-$1"
     # The card's own Split Right, as a click makes it: the new pane asks what it runs.
-    upto 0.6
+    upto 1.5
     press "$split"
-    upto 2.2
+    upto 3.2
     # The app shows a tab made in the space in view by itself.
     h tab create --workspace w5 --cwd "$R/notes" --label Ideas --no-focus >/dev/null
-    upto 3.6
-    press "$shortlink"
+    upto 5.5
+    press "$docs"
     # The switched space stays a while before the loop.
-    upto 8.6
+    upto 9.5
     wrap
 }
 
@@ -251,13 +256,14 @@ headerless() {
 }
 
 # Claude Code's finished turn in its terminal (TUI), then a click on Chat: the same turn, as messages, beside Git's
-# diff. Nothing moves but the switch.
+# diff. Nothing else moves, so the clip is two pictures from the film, the TUI and the chat, faded into each other.
 agents() {
     local c chat
     real_claude "$1"
     # In place of the scene's Dark mode tab.
     h tab close "$(tab_of "$c2")" >/dev/null
     c=$(claude_tab "Created dates")
+    tap w1
     tap "$(tab_of "$c")"
     o "$c" "$R/shortlink" open git . uncommitted --beside "$c" --new >/dev/null
     echo "  the turn, off camera"
@@ -271,16 +277,28 @@ Keep the change small, then run npm test and sum it up in two lines."
     sleep 2
     chat=$(spot "pane.$c.view.chat")
     roll "agents-$1"
-    upto 2.5
+    upto 1.5
     press "$chat"
-    upto 8
+    upto 4
     wrap
     o "$c" "$R/shortlink" view "$c" tui >/dev/null
+    pictures "$C/agents-$1.mp4" 1 3.5
+}
+
+# Turns film $1 into its frames at $2 and $3 s, each held 3.5 s and faded into the next (encode fades the last back
+# into the first). The frames stay as the film has them: no trip through RGB.
+pictures() {
+    local film=$1
+    ffmpeg -loglevel error -y -ss "$2" -i "$film" -ss "$3" -i "$film" -filter_complex "\
+[0:v]trim=end_frame=1,loop=loop=239:size=1,setpts=N/60/TB,fps=60[a];\
+[1:v]trim=end_frame=1,loop=loop=245:size=1,setpts=N/60/TB,fps=60[b];\
+[a][b]xfade=transition=fade:duration=0.5:offset=3.5" \
+        -c:v libx264 -crf 8 -preset slow -pix_fmt yuv420p "${film%.mp4}-pictures.mp4" || exit 1
+    mv "${film%.mp4}-pictures.mp4" "$film"
 }
 
 # Claude Code ends its work by opening Git and the deploys plugin beside it, and the browser in a new tab: the film
-# runs through its turn and keeps the part from a few seconds before the first card (seen a poll or two late) to just
-# after its last words.
+# runs through its turn, and `reply` keeps the cards opening and Claude Code's whole reply.
 plugins() {
     local c opened=0 first= last= count base
     real_claude "$1"
@@ -293,8 +311,9 @@ plugins() {
     # What to open for review is in Claude Code's memory (~/.claude/CLAUDE.md, read as it starts), how in the skill.
     printf '%s\n' "When you finish a change in a repository, open it for me to review with Ovvi (the ovvi skill), one \
 at a time: the repository's Git home (its changes and history) beside you, then the Deploys plugin under that Git \
-card (beside its pane, --down), then the site (http://localhost:$port) in a browser in a new tab. Then say in one line \
-that it is ready." >"$R/.claude/CLAUDE.md"
+card (beside its pane, --down), then the site (http://localhost:$port) in a browser in a new tab. Then reply with \
+what is open for review, one short line each, and under it what changed, in two or three short bullets." \
+        >"$R/.claude/CLAUDE.md"
     c=$(claude_tab "Dark mode")
     tap "$(tab_of "$c")"
     # Its tab alone in the space, so the browser's new tab shows clearly, and no card there for Claude Code to reuse.
@@ -334,10 +353,53 @@ npm test." >/dev/null
     done
     [ "$opened" -ge 3 ] || { echo "Claude Code opened $opened cards" && exit 1; }
     last=$(now)
-    upto "$(python3 -c "print($last + 2.5)")"
-    wrap
     headerless "$c"
-    python3 -c "print(max(0, $first - 4), round($last + 2.5 - max(0, $first - 4), 2))" >"$C/plugins-$1.cut"
+    # As the user asked: Git's home and Deploys beside Claude Code, the browser in a tab of its own, Claude Code's tab
+    # still in view.
+    h pane list | json "d['result']['panes']" >"$C/panes.json"
+    python3 - "$C/panes.json" "$(tab_of "$c")" "$c" <<'PY' || exit 1
+import ast, sys
+panes, tab, claude = ast.literal_eval(open(sys.argv[1]).read()), sys.argv[2], sys.argv[3]
+here = [p.get("label", "") for p in panes if p["tab_id"] == tab and p["pane_id"] != claude]
+git = [label for label in here if label.startswith("ovvi:git") and not label.endswith("uncommitted")]
+deploys = [label for label in here if label.startswith("ovvi:deploys")]
+browser = [p for p in panes if p.get("label", "").startswith("ovvi:browser") and p["tab_id"] != tab
+           and p["workspace_id"] == tab.split(":")[0]]
+focused = [p for p in panes if p.get("focused")]
+if len(here) != 2 or not git or not deploys or len(browser) != 1 or (focused and focused[0]["tab_id"] != tab):
+    sys.exit(f"not the cards asked for: {here}, browser tabs {len(browser)}")
+PY
+    upto "$(python3 -c "print($last + 8)")"
+    wrap
+    reply "$C/plugins-$1.mp4" "$(python3 -c "print(max(0, $first - 4))")"
+}
+
+# Film $1 from $2 s, a few seconds before the first card: the cards as they open (the Git card from the moment its
+# page has drawn, no blank card), until a second after the browser's tab shows, then a fade to Claude Code's whole
+# reply, held 4 s (its words stream in slowly). The reply is the window's last change: the turn's end shows in herdr a
+# few seconds late.
+reply() {
+    local film=$1 start=$2 tab settled b0 b1 cut
+    tab=$(ffmpeg -ss "$start" -i "$film" -vf "crop=440:70:1060:10,select='gt(scene,0.01)',showinfo" -f null - 2>&1 |
+        sed -n 's/.*pts_time:\([0-9.]*\).*/\1/p' | head -1)
+    settled=$(ffmpeg -ss "$start" -i "$film" -vf freezedetect=n=0.001:d=1.5 -map 0:v -f null - 2>&1 |
+        sed -n 's/.*freeze_start: \([0-9.]*\).*/\1/p' | tail -1)
+    [ -n "$tab" ] && [ -n "$settled" ] || { echo "no browser tab or no reply in $film" && exit 1; }
+    # Where the Git card's lists go, a single gray while its page loads: from its first such frame to its last.
+    read -r b0 b1 < <(ffmpeg -loglevel error -ss "$start" -t "$tab" -i "$film" \
+        -vf "fps=60,crop=800:150:1550:250,scale=200:38,format=gray" -f rawvideo - | python3 -c "import sys
+d, n = sys.stdin.buffer.read(), 200 * 38
+flat = [i / 60 for i in range(len(d) // n) if max(d[i * n:(i + 1) * n]) - min(d[i * n:(i + 1) * n]) < 10]
+print(flat[0], flat[-1] + 1 / 60) if flat else print(0, 0)")
+    cut="[0:v]setpts=PTS-STARTPTS,fps=60[a]"
+    [ "$b0" = 0 ] || cut="[0:v]setpts=PTS-STARTPTS,fps=60,split[x][y];[x]trim=end=$b0[x0];\
+[y]trim=start=$b1,setpts=PTS-STARTPTS[y0];[x0][y0]concat=n=2:v=1,fps=60[a]"
+    ffmpeg -loglevel error -y -ss "$start" -t "$(python3 -c "print($tab + 1.5)")" -i "$film" \
+        -ss "$(python3 -c "print($start + $settled + 0.3)")" -i "$film" -filter_complex "$cut;\
+[1:v]trim=end_frame=1,loop=loop=309:size=1,setpts=N/60/TB,fps=60[b];\
+[a][b]xfade=transition=fade:duration=0.5:offset=$(python3 -c "print(round($tab + 1 - ($b1 - $b0), 3))")" \
+        -c:v libx264 -crf 8 -preset slow -pix_fmt yuv420p "${film%.mp4}-reply.mp4" || exit 1
+    mv "${film%.mp4}-reply.mp4" "$film"
 }
 
 # The machine menu, then Add Machine: Settings opens on a new machine, and an SSH target is typed in (never added).
@@ -347,7 +409,8 @@ machines() {
     tap w2:t1
     # The window in the screen's middle, where Settings opens: the film holds only the window's rect.
     read -r -a screen <<<"$("$W/tools/ax" "$pid" screen)"
-    "$W/tools/ax" "$pid" window $(((screen[0] - 1200) / 2)) $(((screen[1] - 800) / 2 + 12)) 1200 800 >/dev/null
+    "$W/tools/ax" "$pid" window $(((screen[0] - ${SIZE%x*}) / 2)) $(((screen[1] - ${SIZE#*x}) / 2 + 12)) \
+        "${SIZE%x*}" "${SIZE#*x}" >/dev/null
     sleep 1
     # The whole way once, off camera, for its spots (and Settings' place, which it keeps): no walk of the
     # accessibility tree while the film runs.
@@ -359,21 +422,21 @@ machines() {
     field=$(spot settings.machine.target)
     "$W/tools/ax" "$pid" close
     sleep 1
+    # At an easy pace, the target typed fast, and it stays a while before the loop.
     roll "machines-$1"
-    # A film's first frame can come most of a second after it starts: the window as it is first.
     upto 1.5
     press "$machine"
-    upto 2.9
+    upto 3.2
     press "$add"
-    upto 4.3
+    upto 4.4
     press "$field"
-    sleep 0.4
+    sleep 0.5
     for ((i = 0; i < ${#target}; i++)); do
         typed+=${target:i:1}
         "$W/tools/ax" "$pid" set "$typed"
         sleep 0.04
     done
-    upto "$(python3 -c "print($(now) + 2)")"
+    sleep 4
     wrap
     "$W/tools/ax" "$pid" set ""
     "$W/tools/ax" "$pid" close
@@ -384,20 +447,15 @@ machines() {
 # frame, so the loop has no seam. HEVC Main 4:2:0 at a quality where no artifact shows at 100%, its colors marked as
 # what they are: sRGB's curve. Marked bt709's, AVFoundation plays them lighter (dark 33 shows as 36, 43 as 49).
 encode() {
-    local film="$C/$1-$2.mp4" length wx wy ww wh under start=0 cut
+    local film="$C/$1-$2.mp4" length wx wy ww wh under
     read -r wx wy ww wh <"$C/$1-$2.at"
     length=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$film")
-    # A clip that keeps only part of its film (plugins): its start and length.
-    if [ -f "$C/$1-$2.cut" ]; then
-        read -r start cut <"$C/$1-$2.cut"
-        length=$(python3 -c "print(round(min($cut, $length - $start), 2))")
-    fi
     # The capture mark covers the window's buttons: the glass under them, from this film, then only the three
     # buttons themselves from the picture (a soft-edged circle each), so no edge of another moment's glass shows.
-    under=$(ffmpeg -loglevel error -ss "$(python3 -c "print($start + 0.5)")" -i "$film" -frames:v 1 -vf \
+    under=$(ffmpeg -loglevel error -ss 0.5 -i "$film" -frames:v 1 -vf \
         "crop=2:2:$(((wx + 60) * 2)):$(((wy + 44) * 2)),scale=1:1" -f rawvideo -pix_fmt rgb24 - | xxd -p)
     mkdir -p "$CLIPS"
-    ffmpeg -loglevel error -y -ss "$start" -t "$length" -i "$film" -i "$C/buttons-$2.png" -filter_complex "[0:v]fps=60,\
+    ffmpeg -loglevel error -y -i "$film" -i "$C/buttons-$2.png" -filter_complex "[0:v]fps=60,\
 crop=$((ww * 2)):$((wh * 2)):$((wx * 2)):$((wy * 2)),drawbox=12:8:180:76:0x$under:t=fill[w];\
 [1:v]crop=200:88:0:0,format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':\
 a='255*clip(16.5-min(min(hypot(X-45.5,Y-45.5),hypot(X-91.5,Y-45.5)),hypot(X-137.5,Y-45.5)),0,1)'[b];\

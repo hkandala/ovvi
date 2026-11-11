@@ -1,9 +1,8 @@
 // A plain color behind the scene's window while record-onboarding.sh films it: the window's glass blurs whatever is
 // under it, so the clips show it as on a plain black (dark) or white (light) desktop. A borderless window a little
-// larger than the scene's (its blur reaches past its edge), under the app's windows, until killed: the recorder shows
-// it only while a film runs, and it goes by itself after BACKDROP_MAX_SECONDS (default 75) in any case. The films take
-// the app's windows and this one. Usage: backdrop <black|white> <window id>
-// x y w h (the scene window's number and frame in screen points, top left origin): it goes right under that window.
+// larger than the scene's (its blur reaches past its edge), right under it. The recorder shows it only while a film
+// runs; it also goes with the process that started it, or after BACKDROP_MAX_SECONDS (default 75). Usage:
+// backdrop <black|white> <window id> x y w h (the scene window's number and frame in screen points, top left origin).
 import AppKit
 
 let arguments = CommandLine.arguments
@@ -30,4 +29,8 @@ print("shown")
 fflush(stdout)
 let limit = Double(ProcessInfo.processInfo.environment["BACKDROP_MAX_SECONDS"] ?? "") ?? 75
 DispatchQueue.main.asyncAfter(deadline: .now() + limit) { exit(0) }
+/// Never on the user's screen after the recorder is gone, however it went.
+let parent = DispatchSource.makeProcessSource(identifier: getppid(), eventMask: .exit, queue: .main)
+parent.setEventHandler { exit(0) }
+parent.resume()
 app.run()

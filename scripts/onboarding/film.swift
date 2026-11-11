@@ -1,9 +1,10 @@
-// Films an app's largest window, its rect on the display, until stdin closes: only that app's windows
-// (ScreenCaptureKit), never another app's, the desktop or the pointer; H.264 at the display's scale, 60 fps.
-// The backdrop (scripts/onboarding/backdrop.swift) shows through the app's glass: a capture that names
-// the windows it takes draws glass over nothing (dark 33, light 241 where the screen shows 26 and 249 over black and
-// white); one that names the windows it leaves out draws the glass as the screen does. It stops by itself after
-// FILM_MAX_SECONDS (default 60), whatever its caller does. Usage: film <pid> <out.mp4> <backdrop's pid>
+// Films an app's largest window, its rect on the display only, until stdin closes or FILM_MAX_SECONDS (default 60),
+// with no pointer; H.264 at the display's scale, 60 fps. The backdrop (scripts/onboarding/backdrop.swift) shows
+// through the app's glass. A capture that names the windows it takes draws glass over nothing (dark 33, light 241,
+// where the screen shows 26 and 249 over black and white); one that leaves the other windows out draws it as the
+// screen does. So this one leaves out every other app's window, and the desktop's lie under the backdrop. Prints
+// "recording" with the film's first frame, and "intruder: …" when another app's window shows over the rect or under it
+// above the backdrop (record-onboarding.sh then deletes the film). Usage: film <pid> <out.mp4> <backdrop's pid>
 import AVFoundation
 import ScreenCaptureKit
 
@@ -15,6 +16,12 @@ guard arguments.count == 4, let pid = pid_t(arguments[1]), let backdrop = pid_t(
 
 final class Finished: NSObject, SCRecordingOutputDelegate {
     let done = DispatchSemaphore(value: 0)
+    /// The caller times its steps from here: the first frame comes up to a second after the stream starts.
+    func recordingOutputDidStartRecording(_: SCRecordingOutput) {
+        print("recording")
+        fflush(stdout)
+    }
+
     func recordingOutputDidFinishRecording(_: SCRecordingOutput) {
         done.signal()
     }
@@ -42,8 +49,7 @@ else {
 }
 
 // Every other window, those off screen too, so one that comes on screen stays out; a window made later is left out
-// within a quarter of a second, and marks the film (record-onboarding.sh deletes it). Not the desktop's: with those
-// left out the glass is drawn over nothing again (33), and they lie under the backdrop.
+// within a quarter of a second. Not the desktop's: with those left out the glass is drawn over nothing again (33).
 let kept = Set([pid, backdrop])
 func others(_ content: SCShareableContent) -> [SCWindow] {
     content.windows.filter { !kept.contains($0.owningApplication?.processID ?? 0) }
@@ -66,13 +72,35 @@ recording.outputFileType = .mp4
 recording.videoCodecType = .h264
 let finished = Finished()
 try stream.addRecordingOutput(SCRecordingOutput(configuration: recording, delegate: finished))
+/// Another app's window the film could show: over the window's rect, or under the window above the backdrop (the glass
+/// blurs it). Windows in front first.
+func intruders() -> [String] {
+    let list = CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID) as? [[String: Any]] ?? []
+    func owner(_ window: [String: Any]) -> pid_t {
+        window[kCGWindowOwnerPID as String] as? pid_t ?? 0
+    }
+    func crosses(_ window: [String: Any]) -> Bool {
+        (window[kCGWindowBounds as String] as? NSDictionary)
+            .flatMap { CGRect(dictionaryRepresentation: $0 as CFDictionary) }?.intersects(largest.frame) == true
+    }
+    guard let filmed = list.firstIndex(where: { $0[kCGWindowNumber as String] as? CGWindowID == largest.windowID }),
+          let under = list[filmed...].firstIndex(where: { owner($0) == backdrop })
+    else { return ["no backdrop under the window"] }
+    let above = list[..<filmed].filter { !known.contains($0[kCGWindowNumber as String] as? CGWindowID ?? 0) }
+    return (above + list[filmed ..< under]).filter { !kept.contains(owner($0)) && crosses($0) }
+        .map { $0[kCGWindowOwnerName as String] as? String ?? "a window" }
+}
+
+/// The windows over the rect now are left out of the film; only new ones count.
+var known = Set(left.map(\.windowID))
 try await stream.startCapture()
-print("recording")
-fflush(stdout)
 let limit = Double(ProcessInfo.processInfo.environment["FILM_MAX_SECONDS"] ?? "") ?? 60
 let watch = Task {
-    var known = Set(left.map(\.windowID))
     while !Task.isCancelled {
+        for name in intruders() {
+            print("intruder: \(name)")
+            fflush(stdout)
+        }
         try? await Task.sleep(for: .milliseconds(250))
         guard let now = try? await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: false) else {
             continue
@@ -82,15 +110,6 @@ let watch = Task {
         known.formUnion(new.map(\.windowID))
         left += new
         try? await stream.updateContentFilter(SCContentFilter(display: display, excludingWindows: left))
-        // Only a window over the filmed one can show in its rect: under it is the backdrop.
-        let list = CGWindowListCopyWindowInfo(.optionOnScreenAboveWindow, largest.windowID) as? [[String: Any]] ?? []
-        let above = Set(list
-            .filter { ($0[kCGWindowAlpha as String] as? Double ?? 0) > 0.01 }
-            .compactMap { $0[kCGWindowNumber as String] as? CGWindowID })
-        for window in new where above.contains(window.windowID) && window.frame.intersects(largest.frame) {
-            print("intruder: \(window.owningApplication?.applicationName ?? "a window") over the film")
-            fflush(stdout)
-        }
     }
 }
 
@@ -108,6 +127,9 @@ watch.cancel()
 try? await stream.stopCapture()
 // The delegate may report on the main queue, which a blocking wait here would hold. It often never reports, and the
 // file is whole by then: 3 s at most.
-for _ in 0 ..< 60 where finished.done.wait(timeout: .now()) == .timedOut {
+for _ in 0 ..< 60 {
+    if finished.done.wait(timeout: .now()) == .success {
+        break
+    }
     try await Task.sleep(for: .milliseconds(50))
 }

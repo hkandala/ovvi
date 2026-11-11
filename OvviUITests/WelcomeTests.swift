@@ -163,12 +163,12 @@ extension OvviUITests {
                 throw XCTSkip("\(error)")
             }
             XCTAssertTrue(welcomeNext.exists(within: connect))
-            // The intro (about 2 s), then each page's clip loops twice: pages turn only on Next. The herdr step is
-            // last: why, Install, then all set.
-            try await Task.sleep(for: .seconds(2.5 + 14))
+            // The intro (about 2 s), then each page's clip plays through (the longest is 20 s): pages turn only on
+            // Next. The herdr step is last: why, Install, then all set.
+            try await Task.sleep(for: .seconds(2.5 + 21))
             while welcomeNext.label != "Get Started" {
                 welcomeNext.click()
-                try await Task.sleep(for: .seconds(14))
+                try await Task.sleep(for: .seconds(21))
             }
             let install = element("welcome.herdr.install")
             if install.exists {

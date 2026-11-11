@@ -27,26 +27,21 @@ GREEN, CYAN, OFF = "\x1b[1m\x1b[32m", "\x1b[1m\x1b[36m", "\x1b[0m"
 
 
 def main():
-    if sys.argv[1:2] != ["build"]:
-        sys.exit(f"{GREEN}error{OFF}: this cargo only builds")
     crates = [crate.strip().split() for crate in CRATES.split(",")]
     root = os.getcwd().replace(os.path.expanduser("~"), "/Users/alex")
     name = os.path.basename(os.getcwd())
     crates.append([name, "0.4.0", f"({root})"])
-    pace = float(os.environ.get("OVVI_CARGO_SECONDS", "3")) / len(crates)
+    pace = 3 / len(crates)
     width = shutil.get_terminal_size().columns
     building = []
-    shown = random.Random(7)
+    rng = random.Random(7)
 
     def bar(done):
         room = max(10, min(40, width - 40))
         fill = room * done // len(crates)
         text = f"[{'=' * max(0, fill - 1)}{'>' if fill else ''}{' ' * (room - fill)}] {done}/{len(crates)}: "
-        names = building[:]
-        while len(names) > 1 and 13 + len(text + ", ".join(names)) >= width:
-            names.pop(0)
         # Never wider than the terminal: a wrapped bar would stay above the next line.
-        return f"\r\x1b[K{CYAN}    Building{OFF} " + (text + ", ".join(names))[:width - 14]
+        return f"\r\x1b[K{CYAN}    Building{OFF} " + (text + ", ".join(building))[:width - 14]
 
     for done, crate in enumerate(crates):
         building = (building + [crate[0]])[-4:]
@@ -55,7 +50,7 @@ def main():
         sys.stdout.flush()
         # Small crates come in bursts; the big ones (and the service itself) take their time.
         big = crate[0] in {"syn", "tokio", "hyper", "serde_derive", "axum", "tower-http", name}
-        time.sleep(pace * (4 if big else shown.uniform(0.3, 1.4)))
+        time.sleep(pace * (4 if big else rng.uniform(0.3, 1.4)))
     time.sleep(0.5)
     # Cargo's words before 1.77: today's add "`release` profile" and wrap in the clip's pane.
     sys.stdout.write(f"\r\x1b[K{GREEN}    Finished{OFF} release [optimized] target(s) in 38.42s\n")
