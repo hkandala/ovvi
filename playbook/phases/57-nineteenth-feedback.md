@@ -2099,6 +2099,11 @@ ones".
   a red button, as Stop now does (`destructive`). `ovvi-tart delete` refuses while the lock is held or the VM is not
   stopped, and drops the VM's kept args, macOS and log. No pictures: a dev build with the card needs the Mac's
   screen for longer than one short hold.
+- **0.6.1, button gaps.** User: "the stop and open button in the plugin has very less space between, while in the
+  toast stop button and cancel has too much space, keep the spaces consistent please". **Cause:** the row's buttons
+  sat in a `div` no flex rule matched (0 px apart); the toast's HStack used 10 pt. **Fix:** both use the app's 8 (its
+  other button pairs and NoticeCapsule); the plugin API has no spacing variable, so the CSS says 8px. Every toast's
+  text and buttons are 8 pt apart now. Measures: ~/Downloads/ovvi-research/tart-vm/v7/measures.md.
 
 ### Track B2 (item 89)
 
