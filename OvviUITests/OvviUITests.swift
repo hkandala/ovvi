@@ -237,7 +237,28 @@ extension OvviUITests {
         app.launchArguments = start + config + pinned + args
         // The default plugins install from npm's cache (`make web` fills it), never the network.
         app.launchEnvironment["npm_config_offline"] = "true"
+        // launch() ends the running app with a kill, then waits for its exit with XCTest's own wait: about 1 s when
+        // the app is gone after 0.2 s. The helper sends the same kill, and the wait is ours.
+        if app.state != .notRunning, Self.postNow("\(one)/kill-app") {
+            _ = until(5) { app.state == .notRunning }
+        }
         app.launch()
+    }
+
+    /// For a sync caller (relaunch): true when the helper answered.
+    static func postNow(_ path: String) -> Bool {
+        guard let helper = ProcessInfo.processInfo.environment["OVVI_HELPER"],
+              let url = URL(string: "\(helper)/\(path)") else { return false }
+        var request = URLRequest(url: url, timeoutInterval: 10)
+        request.httpMethod = "POST"
+        let done = DispatchSemaphore(value: 0)
+        let answered = Mutex(false)
+        URLSession.shared.dataTask(with: request) { _, response, _ in
+            answered.withLock { $0 = (response as? HTTPURLResponse)?.statusCode == 200 }
+            done.signal()
+        }.resume()
+        done.wait()
+        return answered.withLock { $0 }
     }
 
     static let fixtures = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "Fixtures").path
