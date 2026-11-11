@@ -200,8 +200,8 @@ extension HostStore {
         }
     }
 
-    func move(workspace workspaceID: String, by offset: Int) {
-        let groups = groups
+    /// One place up or down among `groups`: the sidebar's pinned or unpinned ones.
+    func move(workspace workspaceID: String, by offset: Int, in groups: [[Workspace]]) {
         guard let index = groups.firstIndex(where: { $0.first?.id == workspaceID }),
               groups.indices.contains(index + offset) else { return }
         let before = offset < 0 ? groups[index - 1].first?.id : groups.indices.contains(index + 2)

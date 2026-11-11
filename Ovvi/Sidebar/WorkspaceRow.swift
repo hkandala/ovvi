@@ -11,6 +11,8 @@ struct WorkspaceRow: View, Equatable {
     let frames: SidebarPage.RowFrames
     let guideBelow: Bool
     let ends: (first: String?, last: String?)
+    /// Its group's: a worktree goes with its repository.
+    let pinned: Bool
     let agents: [HostStore.Pane]
     let hasAgents: Bool
     let fold: (() -> Void)?
@@ -22,6 +24,7 @@ struct WorkspaceRow: View, Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.workspace === rhs.workspace && lhs.parent === rhs.parent && lhs.page === rhs.page
             && lhs.frames === rhs.frames && lhs.guideBelow == rhs.guideBelow && lhs.ends == rhs.ends
+            && lhs.pinned == rhs.pinned
             && lhs.hasAgents == rhs.hasAgents && (lhs.fold == nil) == (rhs.fold == nil)
             && lhs.agents.elementsEqual(rhs.agents, by: ===)
     }
@@ -165,10 +168,23 @@ struct WorkspaceRow: View, Equatable {
         let first = ends.first == workspace.id, last = ends.last == workspace.id
         Button("New Tab") { Task { await page.newTab(in: workspace) } }
         Button("Rename Space") { startRenaming() }
-        Button("Move Up") { store.move(workspace: workspace.id, by: -1) }
+        Button("Move Up") { move(by: -1) }
             .disabled(parent != nil || first)
-        Button("Move Down") { store.move(workspace: workspace.id, by: 1) }
+        Button("Move Down") { move(by: 1) }
             .disabled(parent != nil || last)
+        if parent == nil {
+            Button(pinned ? "Unpin Space" : "Pin Space") {
+                // Once the menu has closed: its fade draws no animation frame, so the move showed half done, then a
+                // jump.
+                RunLoop.main.perform(inModes: [.default]) {
+                    MainActor.assumeIsolated {
+                        withAnimation(Animation.reduced ? nil : .easeOut(duration: 0.2)) {
+                            page.togglePin(workspace.id)
+                        }
+                    }
+                }
+            }
+        }
         if workspace.git != nil {
             Divider()
             Button("Fetch") { Task { await store.sync(workspace, .fetch) } }
@@ -177,6 +193,13 @@ struct WorkspaceRow: View, Equatable {
         }
         Divider()
         Button("Close Space") { page.close(.workspace(workspace.id)) }
+    }
+
+    /// Among the spaces pinned like it.
+    private func move(by offset: Int) {
+        let pinned = page.store.pins
+        page.store.move(workspace: workspace.id, by: offset,
+                        in: page.sidebarGroups.filter { pinned.contains($0[0].id) == self.pinned })
     }
 
     private func startRenaming() {

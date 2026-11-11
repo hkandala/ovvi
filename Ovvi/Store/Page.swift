@@ -231,7 +231,7 @@ final class Page: Identifiable {
     }
 
     var sidebarWorkspaces: [HostStore.Workspace] {
-        store.groups.flatMap(\.self)
+        sidebarGroups.flatMap(\.self)
     }
 
     func stepWorkspace(_ offset: Int) {

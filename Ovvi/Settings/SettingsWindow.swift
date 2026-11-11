@@ -226,6 +226,8 @@ struct SettingsSearch: Identifiable {
         SettingsSearch(id: "terminal.copy", title: "Copy text when you select it", page: .terminal,
                        words: "clipboard selection"),
         SettingsSearch(id: "agents.view", title: "Open new agents in", page: .agents, words: "chat terminal tui"),
+        SettingsSearch(id: "agents.sort", title: "Sort spaces", page: .agents,
+                       words: "sidebar order manual recent workspaces"),
         SettingsSearch(id: "agents.closed", title: "Show closed sessions", page: .agents,
                        words: "sidebar archived sessions resume history"),
         SettingsSearch(id: "agents.new-pane", title: "Agents in New Pane", page: .agents,

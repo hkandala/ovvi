@@ -30,6 +30,8 @@ final class HostStore {
     var flashing: String?
     var resuming: Set<String> = []
     var choosers: [Chooser] = []
+    /// The session's pinned spaces (ui/window#sidebar), kept in the sidebar's defaults.
+    private(set) var pins: Set<String> = []
     @ObservationIgnored var chats: [String: Chat] = [:]
     /// Not observed: an observed write (`program`, `choosers`) follows each change.
     @ObservationIgnored var launches: [String: Launch] = [:]
@@ -77,6 +79,7 @@ final class HostStore {
         let saved = UserDefaults.agents.data(forKey: Self.marksKey(session, machine))
         marks = saved.flatMap { try? JSONDecoder().decode([String: Seen.Mark].self, from: $0) } ?? [:]
         seen = Seen(marks: marks)
+        pins = Self.loadPins(session, machine)
     }
 
     private(set) static var open: [String: HostStore] = [:]
@@ -220,6 +223,10 @@ final class HostStore {
         // herdr's raw panes, so one made since the last snapshot stays.
         let gone = Set(last?.panes.compactMap(\.terminalID) ?? []).subtracting(snapshot.panes.compactMap(\.terminalID))
         drop(closed: gone)
+        if !pins.isSubset(of: snapshot.workspaces.map(\.id)) {
+            // herdr gives a new space an old id after a restart.
+            savePins(pins.intersection(snapshot.workspaces.map(\.id)))
+        }
         last = snapshot
         let shown = ahead.show(snapshot)
         let tabs = Dictionary(grouping: shown.tabs, by: \.workspaceID)
@@ -339,3 +346,21 @@ extension HostStore {
 }
 
 let localExec = Task { await ProcessExec() }
+
+extension HostStore {
+    static func loadPins(_ session: String, _ machine: Machine) -> Set<String> {
+        let prefix = "\(machine.id) \(session) pinned "
+        let lines = UserDefaults.agents.string(forKey: Page.pinnedSpaces)?.split(separator: "\n") ?? []
+        return Set(lines.filter { $0.hasPrefix(prefix) }.map { String($0.dropFirst(prefix.count)) })
+    }
+
+    /// The session's lines replaced; the other sessions' kept.
+    func savePins(_ new: Set<String>) {
+        let prefix = "\(machine.id) \(session) pinned "
+        let others = (UserDefaults.agents.string(forKey: Page.pinnedSpaces)?.split(separator: "\n") ?? [])
+            .filter { !$0.hasPrefix(prefix) }.map(String.init)
+        UserDefaults.agents.set((others + new.sorted().map { prefix + $0 }).joined(separator: "\n"),
+                                forKey: Page.pinnedSpaces)
+        pins = new
+    }
+}

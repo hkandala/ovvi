@@ -17,6 +17,7 @@ struct AppSettings: DynamicProperty {
     @AppStorage("copyOnSelect") var copyOnSelect = false
     @AppStorage("agentView") var agentView = AgentView.terminal
     @AppStorage("showClosedSessions") var showClosed = true
+    @AppStorage("spaceOrder") var spaceOrder = SpaceOrder.manual
 
     var terminal: [String] {
         [terminalFont, "\(fontSize)", cursorStyle.rawValue, "\(cursorBlink)", optionKey.rawValue, "\(copyOnSelect)"]

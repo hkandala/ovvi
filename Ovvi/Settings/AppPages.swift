@@ -269,6 +269,14 @@ struct AgentsPage: View {
                 .identifiedSettingsRow("agents.view")
             }
             Section("Sidebar") {
+                Picker(selection: settings.$spaceOrder) {
+                    Text("Manual").tag(SpaceOrder.manual)
+                    Text("Recent").tag(SpaceOrder.recent)
+                } label: {
+                    Text("Sort spaces")
+                    Text("In a new window. Each window keeps its own choice from the sidebar's Sort Spaces.")
+                }
+                .identifiedSettingsRow("agents.sort")
                 Toggle(isOn: settings.$showClosed) {
                     Text("Show closed sessions")
                     Text("Archived Sessions lists the Claude Code, Codex, Pi and OpenCode sessions no pane runs.")

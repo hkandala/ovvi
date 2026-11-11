@@ -10,25 +10,28 @@ struct SidebarPage: View {
     private var settings = AppSettings()
     typealias Row = (workspace: HostStore.Workspace, parent: HostStore.Workspace?)
     @AppStorage(Page.openShelves, store: .agents) private var opened = ""
-    @AppStorage(SpaceOrder.key, store: .agents) private var spaceOrder = SpaceOrder.manual
+    @Environment(\.spaceOrder) private var windowOrder
     @State private var held: [String]?
     @State private var hovering = false
     @State private var leaves = 0
 
     @State private var frames = RowFrames()
     @State private var drop = RowsDrop.State()
-    @State private var landing: Landing?
     @State private var plus = false
     @State private var position = ScrollPosition(idType: String.self)
 
     var body: some View {
         let store = page.store
-        let reorders = filter.isEmpty && spaceOrder == .manual
-        let rowsDrop = RowsDrop(page: page, frames: frames, state: $drop, reorders: reorders) { rows, offset in
-            if !Animation.reduced {
-                landing = Landing(ids: rows, offset: offset, count: (landing?.count ?? 0) + 1)
-            }
+        let pinned = store.pins, all = store.groups
+        let spaceDrag: String? = if case let .workspace(id) = page.dragging {
+            id
+        } else {
+            nil
         }
+        let top = all.filter { pinned.contains($0[0].id) }
+        let rest = sorted(all.filter { !pinned.contains($0[0].id) })
+        let rowsDrop = RowsDrop(page: page, frames: frames, state: $drop, reorders: filter.isEmpty, shown: top + rest,
+                                pinned: pinned, order: spaceOrder)
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 0) {
                 Text(store.title).truncationMode(.middle)
@@ -58,15 +61,21 @@ struct SidebarPage: View {
             ScrollView {
                 // Lazy: at hundreds of spaces and agents an eager stack makes and lays out every row in each update.
                 LazyVStack(alignment: .leading, spacing: WorkspaceRow.gap) {
-                    let groups = sorted(store.groups), rows = rows(in: groups)
+                    let rows = rows(in: top + rest)
+                    // The line under the pinned spaces, when unpinned ones follow.
+                    let line = rows.last { pinned.contains(($0.parent ?? $0.workspace).id) }?.workspace.id
+                    let lined = rows.contains { !pinned.contains(($0.parent ?? $0.workspace).id) } ? line : nil
                     ForEach(Array(rows.enumerated()), id: \.element.workspace.id) { index, row in
                         let id = row.workspace.id, hasAgents = runsAgents(row.workspace)
+                        let isPinned = pinned.contains((row.parent ?? row.workspace).id),
+                            section = isPinned ? top : rest
                         let shown = hasAgents && (!folds(id) || !filter.isEmpty) ? agents(of: row.workspace) : []
                         WorkspaceRow(workspace: row.workspace, parent: row.parent, page: page, frames: frames,
                                      guideBelow: rows.indices.contains(index + 1)
                                          && rows[index + 1].parent != nil,
-                                     ends: spaceOrder == .recent ? (row.workspace.id, row.workspace.id)
-                                         : (groups.first?.first?.id, groups.last?.first?.id),
+                                     ends: spaceOrder == .recent && !isPinned ? (id, id)
+                                         : (section.first?.first?.id, section.last?.first?.id),
+                                     pinned: isPinned,
                                      agents: shown, hasAgents: hasAgents,
                                      fold: filter.isEmpty ? { fold(id) } : nil)
                             .equatable()
@@ -77,8 +86,7 @@ struct SidebarPage: View {
                             }
                             .opacity(page.lifted == .workspace(id) ? 0.4 : 1)
                             .offset(y: rowsDrop.shift(id))
-                            .lands(id, landing, axis: .vertical)
-                            // Outside the drag's slide and the drop's glide, so a moving row reports its place.
+                            // Outside the drag's slide, so a moving row reports its place.
                             .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("rows")) } action: {
                                 frames.rows[id] = $0
                             }
@@ -97,6 +105,15 @@ struct SidebarPage: View {
                                             position.scrollTo(id: "into view \(id)")
                                         }
                                     }
+                            }
+                            // On the middle of a gap twice the rows'.
+                            .padding(.bottom, lined == id ? WorkspaceRow.gap : 0)
+                            .overlay(alignment: .bottom) {
+                                // Hidden while a space is dragged: the rows slide across its place.
+                                if lined == id, spaceDrag == nil {
+                                    Rectangle().fill(.primary.opacity(0.14)).frame(height: 1).offset(y: 0.5)
+                                        .accessibilityIdentifier("sidebar.pinned-line")
+                                }
                             }
                     }
                     if drop.ghost, page.dragging != nil {
@@ -145,12 +162,19 @@ struct SidebarPage: View {
                 drop = RowsDrop.State()
             }
             .fadesScrolledEdges(end: 18 + bottom)
+            // Outside the fade's mask, over the header's bottom padding.
+            .overlay(alignment: .top) {
+                if pinned.isEmpty, filter.isEmpty, let spaceDrag, all.contains(where: { $0[0].id == spaceDrag }) {
+                    pinLine
+                }
+            }
             .onContinuousHover { phase in
                 switch phase {
                 case let .active(point):
                     if frames.point == nil {
                         hovering = true
-                        held = held ?? sorted(store.groups).map(\.[0].id)
+                        let pinned = store.pins
+                        held = held ?? sorted(store.groups.filter { !pinned.contains($0[0].id) }).map(\.[0].id)
                     }
                     frames.point = point
                 case .ended:
@@ -207,7 +231,25 @@ struct SidebarPage: View {
             pointer = point.flatMap { point in targets.first { $0.value.contains(point) }?.key }
         }
     }
+}
 
+private extension SidebarPage {
+    /// While a space is dragged and none is pinned: the line's place, over the gap above the rows; a drop at the
+    /// list's top (`RowsDrop.pinZone`) pins it.
+    private var pinLine: some View {
+        Rectangle().fill(drop.pinning ? AnyShapeStyle(.tint) : AnyShapeStyle(.primary.opacity(0.14)))
+            .frame(height: drop.pinning ? 2 : 1)
+            .padding(.horizontal, Sidebar.rowInsets.leading)
+            .offset(y: -4)
+            .allowsHitTesting(false)
+            .accessibilityIdentifier("sidebar.pin-line")
+    }
+
+    private var spaceOrder: SpaceOrder {
+        SpaceOrder(rawValue: windowOrder.wrappedValue) ?? settings.spaceOrder
+    }
+
+    /// Recent: the group whose agent changed state last first, held still under the pointer.
     private func sorted(_ groups: [[HostStore.Workspace]]) -> [[HostStore.Workspace]] {
         guard spaceOrder == .recent else { return groups }
         let place = Dictionary(uniqueKeysWithValues: (held ?? []).enumerated().map { ($1, $0) })
@@ -256,9 +298,7 @@ struct SidebarPage: View {
             return (shown.first === head ? shown : [head] + shown).map { Row($0, $0 === head ? nil : head) }
         }
     }
-}
 
-private extension SidebarPage {
     @ViewBuilder var sessionMenu: some View {
         Button("New Space") { Task { await page.newWorkspace() } }
             .disabled(page.store.state != .live)
@@ -276,7 +316,10 @@ private extension SidebarPage {
 
     var sortMenu: some View {
         Menu {
-            Picker("Sort Spaces", selection: $spaceOrder.animation(motion)) {
+            Picker(
+                "Sort Spaces",
+                selection: Binding { spaceOrder } set: { windowOrder.wrappedValue = $0.rawValue }.animation(motion),
+            ) {
                 Text("Manual").tag(SpaceOrder.manual)
                 Text("Recent").tag(SpaceOrder.recent)
             }

@@ -145,7 +145,7 @@ struct Palette: View {
                             })
         }
         let workspaces = pages.list.flatMap { other in
-            other.store.workspaces.map { workspace in
+            other.sidebarWorkspaces.map { workspace in
                 FilterList.Item(id: "workspace.\(other.id).\(workspace.id)", symbol: "folder",
                                 title: workspace.label, detail: other.id,
                                 section: Command.Group.workspaces.rawValue, act: {

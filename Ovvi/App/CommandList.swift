@@ -162,6 +162,19 @@ struct CommandList {
         ]
     }
 
+    /// On the space in view; a worktree goes with its repository.
+    private func pin(_ page: Page?, _ workspace: HostStore.Workspace?) -> Command {
+        let pinned = workspace.map { page?.store.pins.contains($0.id) == true } == true
+        let head = workspace.map { page?.store.parent(of: $0) == nil } == true
+        let toggle = {
+            if let page, let workspace {
+                withAnimation(Animation.reduced ? nil : .easeOut(duration: 0.2)) { page.togglePin(workspace.id) }
+            }
+        }
+        return Command(section: .palette, title: pinned ? "Unpin Space" : "Pin Space", group: .workspaces,
+                       symbol: pinned ? "pin.slash" : "pin", keywords: "workspace top", enabled: head, action: toggle)
+    }
+
     private func palette(_ page: Page?) -> [Command] {
         let tab = page?.selectedTab, workspace = page?.selectedWorkspace
         let fullScreen = NSApp.keyWindow?.styleMask.contains(.fullScreen) == true
@@ -175,6 +188,7 @@ struct CommandList {
                     name: workspace.map { workspace in
                         (workspace.label, { await page?.store.rename(workspace: workspace.id, label: $0) })
                     }),
+            pin(page, workspace),
             Command(
                 section: .palette,
                 title: "Font Size",

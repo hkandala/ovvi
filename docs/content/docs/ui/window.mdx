@@ -290,14 +290,28 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   end, **Sort Spaces** (`arrow.up.arrow.down`, 11 pt semibold, so its glyph is as tall as the `+`'s, 10.5 pt) and a
   `+` that makes a new space in that session, in `$HOME`: two 28 pt buttons whose frames touch. The
   snapshot after it selects the new space.
-- **Sort Spaces.** A menu with a check on the current order, one for the app, kept across relaunches: **Manual**
-  (the default), herdr's order, which a drag or Move Up and Move Down change; or **Recent**, the space whose agent
+- **Sort Spaces.** A menu with a check on the current order of the unpinned spaces, the window's own (every page
+  of the window, kept with the window): a new window takes Settings ▸ Agents ▸ **Sort spaces** (Manual by default),
+  and follows it until its own menu picks.
+  **Manual** is herdr's order, which a drag or Move Up and Move Down change; **Recent** puts the space whose agent
   changed state last first (a start, a finish, a need: herdr's `state_change_seq`, one counter for the session; a
   look at a finish is no change), the spaces with no agent after in herdr's order, a worktree with its repository's
   row. In Recent the rows hold still while the pointer is over them, and move 1 s after it leaves, sliding in 0.2 s
-  (no motion with Reduce Motion); no row reorders (a dropped row stays, Move Up and Move Down are off), as while
-  the filter hides rows. Next and previous space (⌃⌘[ ]), ⌃⌘1–9, the overview, Move Pane to Tab and the palette
-  keep herdr's order.
+  (no motion with Reduce Motion); the unpinned rows do not reorder (Move Up and Move Down are off on them), as
+  while the filter hides rows.
+- **Pinned spaces.** Pin Space and Unpin Space, in a space row's context menu and the palette (on the space in
+  view), keep a space at the top: the pinned ones in herdr's order whatever the sort, then a 1 pt line (primary at
+  14 %) in the middle of a 20 pt gap, shown only while unpinned spaces follow, then the rest. Nothing says
+  "pinned". A worktree goes with its repository (no Pin Space on its row). Pins are the session's, as herdr's order
+  is, kept in the sidebar's defaults (`pinnedSpaces`, a line per pin: machine, session, space); a space herdr no
+  longer has drops its pin. A drag of a space above the line pins it there (last of the pinned ones: right after
+  the last in herdr's order), under the line unpins it (in Manual at the drop's place; in Recent where Recent puts
+  it); the line hides while a space is dragged, as the rows slide across its place. With nothing pinned, a line
+  stands over the gap above the list while a space is dragged, tinted while a drop there would pin: the pointer
+  within 8 pt of the first row's top. In Recent a drag pins, unpins and reorders the pinned spaces,
+  never the rest.
+- **Order elsewhere.** Next and previous space (⌃⌘[ ]), ⌃⌘1–9, the overview, Move Pane to Tab and the palette follow
+  herdr's order with the pinned spaces first: the sidebar's in Manual. Not Recent's, which moves under the keys.
 - **Middle.** The [space rows](#space-rows), 10 pt apart. 18 pt fades show at the top and
   bottom of the space list when content is under them. When the selected space
   changes, however it changes (a click, the overview, ⌃⌘[ ], ⌃⌘1–9, a
@@ -359,13 +373,13 @@ Spaces panel.
   With no such space in the session, it is a normal row.
 - **Click** selects the space in the app only ([Selection and "seen" are
   the app's own](/docs/layout#selection-and-seen-are-the-apps-own)).
-- **Context menu.** New Tab, Rename Space, Move Up, Move Down, Close
+- **Context menu.** New Tab, Rename Space, Move Up, Move Down, Pin Space or Unpin Space, Close
   Space. A row with a git line also has Fetch, Pull and Push, between
   separators before Close Space.
   - New Tab opens in the folder of that space's keyboard card, or `$HOME`.
-  - Move Up and Move Down move a group past the next group. A group is a
+  - Move Up and Move Down move a group past the next group pinned like it. A group is a
     space and its worktrees. Both are disabled on a worktree row (it
-    moves with its repository) and at the ends.
+    moves with its repository) and at the ends of the pinned or unpinned spaces.
   - Fetch (`git fetch --all`), Pull (`git pull`) and Push (`git push`, which
     sets the upstream of a branch that has none) run in the folder of the
     row's git line, on the session's machine. git never asks for a password:
@@ -852,7 +866,7 @@ agents at once.
   the overview then shows; a sideways swipe alone goes nowhere. From the top:
   the session's title as the sidebar's
   page header has it (13 pt semibold; This Mac's name for `default`), then
-  the session's spaces in herdr's order (the sidebar's in Manual), 32 pt apart: each
+  the session's spaces in herdr's order, pinned ones first (the sidebar's in Manual), 32 pt apart: each
   space's name (13 pt semibold, secondary), then its tabs as tiles in a
   grid, 2 to 4 a row (as many 340 pt tiles as fit), 16 pt apart. Wide
   margins all round: 8 % of the window's width
@@ -1076,7 +1090,7 @@ A window that watches a session another window controls (D66).
   tie, the title that is the whole filter comes first ("open file" gives
   Open File › before Open File Explorer Here), then a title that starts with
   the filter ("font size" gives Font Size › before Increase Font Size), then
-  commands before places, then the menu's and herdr's order (the sidebar's in Manual).
+  commands before places, then the menu's and herdr's order, pinned spaces first (the sidebar's in Manual).
 - **Rows at open.** The palette reads its commands and places once, as it
   opens. A tab that changes its title while the palette is open keeps the
   old title in it, and a tab closed meanwhile stays listed and does nothing.

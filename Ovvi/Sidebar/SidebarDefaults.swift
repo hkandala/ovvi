@@ -1,8 +1,13 @@
-import Foundation
+import SwiftUI
 
+/// A window's order of the unpinned spaces; a new window takes Settings'.
 enum SpaceOrder: String {
     case manual, recent
-    static let key = "spaceOrder"
+}
+
+extension EnvironmentValues {
+    /// The window's `SpaceOrder` (scene storage), empty for Settings'.
+    @Entry var spaceOrder: Binding<String> = .constant("")
 }
 
 extension Page {
@@ -15,6 +20,20 @@ extension Page {
 
     func foldKey(_ workspace: String) -> String {
         "\(store.machine.id) \(id) folded \(workspace)"
+    }
+
+    /// The pinned spaces, a line each ("‹machine› ‹session› pinned ‹id›"): the session's, as herdr's own order is.
+    static let pinnedSpaces = "pinnedSpaces"
+
+    func togglePin(_ workspace: String) {
+        store.savePins(store.pins.symmetricDifference([workspace]))
+    }
+
+    /// herdr's order with the pinned spaces first, a worktree with its repository: the sidebar's in Manual, and the
+    /// order of ⌃⌘[ ], ⌃⌘1–9, the overview and the palette's places.
+    var sidebarGroups: [[HostStore.Workspace]] {
+        let pinned = store.pins, groups = store.groups
+        return groups.filter { pinned.contains($0[0].id) } + groups.filter { !pinned.contains($0[0].id) }
     }
 }
 

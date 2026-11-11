@@ -1888,5 +1888,53 @@ you did, no need of reverting them".
     keep pinned ones to the top all the time in the manual sorted position, and a line separator and then rest of
     agents, no need to say anywhere like pinned etc. and the pinned section should be unaffected from the sorting"
     (Track B).
+    Then: "actually dragging to pinned group can be a way to pin as well".
+    Then: "pinning spaces should have animation where space moves up similar to the animation we already have when
+    changing sorting, i don't see that happening in the agent testing i noticed".
+    Then: "this drag and drop animation of pinned ones shouldn't have any flicker, i see some flickers right now", and
+    "i think its struggling to prevent flicker, may be its just overcomplicating code, like how we did for split
+    animations etc, let's make the code simple and do the dragging straightforward with no flicker and stuff".
 87. "i don't see relaunch with chat button in flaoting pnae, i see chat tui toggle button though when its enabled, we
     should make sure to show relaunch with chat even in floating pane" (Track G).
+
+### Track B, round 7 (items 85, 86)
+
+- **85.** Sort Spaces is the window's own: scene storage `spaceOrder` in the window's root, handed to the sidebar as
+  an environment binding (every page of the window shares it). Empty is Settings ▸ Agents ▸ **Sort spaces** (Manual
+  by default; in Settings search as "sort spaces", "order", "recent"), so a window follows Settings until its menu
+  picks. Agents ▸ Sidebar, beside Show closed sessions: the page that already has the sidebar's setting. The old
+  app-wide key is left behind (no migration).
+- **86.** Pin Space / Unpin Space in a space row's menu (not on a worktree row: it goes with its repository) and the
+  palette, on the space in view. Pinned spaces sit on top in herdr's order whatever the sort, then a 1 pt line on the
+  middle of a 20 pt gap while unpinned ones follow; nothing says "pinned". Pins are the session's, as herdr's order
+  is: lines "‹machine› ‹session› pinned ‹id›" in the sidebar's defaults, beside the folds. Every snapshot drops the
+  pins of spaces it no longer has (herdr gives a new space an old id after a restart; checked by the reviewer).
+- **Drag.** Above the line pins, under it unpins (Manual: at the drop's place, before the next of that group in
+  herdr's order, which may lie anywhere; last of the pinned ones goes right after the last, not to herdr's end;
+  Recent: where Recent puts it). Recent refuses a drag among the unpinned ones, keeps pins and the pinned group's
+  order. With nothing pinned, a line stands over the gap above the list while a space is dragged, tinted while the
+  pointer is within 8 pt of the list's top: the pointer cannot go above the list, so it decides there (checked by
+  eye in a mid-drag frame of the test's recording). Move Up and Move Down stay within the row's group.
+- **Order elsewhere.** ⌃⌘[ ], ⌃⌘1–9, the overview, Move Pane to Tab and the palette's places follow herdr's order
+  with the pinned spaces first, the sidebar's in Manual; not Recent, which moves under the keys.
+- **Flicker, cause and fix.** Frame by frame (30 fps from the test's recording): (1) the sidebar read pins through
+  @AppStorage, a frame or more after the drop wrote them, so for about 200 ms the rows showed Ahead's new order with
+  the old pins; now pins are one observable set on the session's store (`HostStore.pins`), written and shown in the
+  drop's own call. (2) The slide math counted a 2 pt gap per row (from before rows were 10 pt apart) and not the
+  line's 10 pt, so rows jumped 8–18 pt at the drop; now 10 pt, and the line's gap when a drop pins or unpins.
+  (3) AppKit's drag loop draws no frame for 0.3–0.5 s after a drop (measured: performDrop to `endedAt`), so the
+  0.22 s landing glide showed as a still frame and a jump; space rows no longer glide: the image goes and the row is
+  in the gap the slide opened. A pin from the row's menu waits for the menu to close (its fade draws no frame
+  either), then moves as a sort change does (0.2 s ease-out). The line hides while a space is dragged.
+- **Measured** (2x px, 30 fps): menu pin, the row under moves 94 → 111 → 135 → 155 → 174 → 188 → 193 → 194; drag pin,
+  the dropped row in its slot in the drop's frame, the others still; drag unpin, the slide 194 → 136 → 111 → 101 →
+  95 → 94, the row in its gap at the drop. Frames: `~/Downloads/ovvi-research/p57b/r7c/frames/`.
+- **Tests.** PinTests: testEachWindowKeepsItsOwnSpaceOrder (two windows, then Settings' default on a new launch),
+  testPinnedSpacesStayOnTopAboveALine (menu and palette, the line only with both groups, Recent leaves pins),
+  testDraggingASpaceAboveTheLinePinsIt (the first pin by drag, grabbed by its name, then unpinned by drag). The pin
+  tests run in their own config folders.
+- **Review.** Three rounds: a strip that pushed every row 30 pt on any space drag (now an overlay), the line 4.5 pt
+  off the gap's middle, pruning only in the visible sidebar (now every snapshot), palette places not pins first, a
+  drag pin sent to herdr's end, a pin zone only a centre grab could reach, and the line drawn under the fade's mask;
+  all fixed.
+
