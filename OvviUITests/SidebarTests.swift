@@ -76,14 +76,14 @@ extension OvviUITests {
         showPage(one)
         XCTAssertTrue(until(3) { header == one })
         let card = element("terminal.w1:p1").frame, center = "\(card.midX) \(card.midY)"
-        // The other way if natural scrolling is off.
-        var forward = -1.0
-        for sign in [-1.0, 1.0] where header != two {
-            forward = sign
+        for sign in [Self.forward, -Self.forward] where header != two {
             try await Self.post("\(one)/swipe", Data("\(center) \(10 * sign) 14 0 0 1".utf8))
-            _ = until(3) { header == two }
+            if until(3, { header == two }) {
+                Self.forward = sign
+            }
         }
         XCTAssertEqual(header, two)
+        let forward = Self.forward
         try await Self.post("\(one)/swipe", Data("\(center) \(-10 * forward) 14 0 0 1".utf8))
         XCTAssertTrue(until(3) { header == one })
         XCTAssertTrue(element("tab.w1:t1").isSelected)
@@ -104,29 +104,8 @@ extension OvviUITests {
         XCTAssertTrue(until(3) { self.app.windows.firstMatch.title.hasSuffix(" - \(two)") })
     }
 
-    func testSwipesPageTheSidebarAndNotTheTabs() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        openPage(two)
-        showPage(one)
-        let sidebar = element("sidebar"), header = element("sidebar.header")
-        XCTAssertTrue(header.has(\.stringValue, one, within: 3))
-        try await swipe(sidebar, until: header, \.stringValue, two)
-        try await swipe(sidebar, until: header, \.stringValue, one)
-        XCTAssertTrue(element("tab.w1:t1").isSelected)
-        let edge = element("terminal.w1:p1").coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0.5))
-            .withOffset(CGVector(dx: 30, dy: 0))
-        let width = Double(element("terminal.w1:p1").frame.width)
-        for delta in [-width, width] {
-            edge.hover()
-            edge.scroll(byDeltaX: delta, deltaY: 0)
-            XCTAssertFalse(until(1) { !self.element("tab.w1:t1").isSelected }, "a wheel of \(delta) changed the tab")
-        }
-        XCTAssertEqual(header.stringValue, one)
-
-        try await swipe(sidebar, until: header, \.stringValue, two)
-    }
-
     func testSwipedSessionPagesShowTheirRows() async throws {
+        step("Sidebar swipes: forward and back, each page shows its rows")
         try await running(five)
         openPage(two)
         openPage(five)
@@ -134,20 +113,38 @@ extension OvviUITests {
         let sidebar = element("sidebar"), header = element("sidebar.header")
         XCTAssertTrue(header.has(\.stringValue, one, within: 3))
         let rows = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'workspace.'"))
-        var delta = -Double(sidebar.frame.width)
-        for session in [two, five] {
+        let width = Double(sidebar.frame.width)
+        let page = { (sign: Double) in
             sidebar.hover()
-            sidebar.scroll(byDeltaX: delta, deltaY: 0)
-            if !header.has(\.stringValue, session, within: 1.5) {
-                delta = -delta
-                sidebar.scroll(byDeltaX: delta, deltaY: 0)
+            sidebar.scroll(byDeltaX: sign * width, deltaY: 0)
+        }
+        for (index, session) in [two, five, two, one].enumerated() {
+            page(index < 2 ? Self.forward : -Self.forward)
+            if index == 0, !header.has(\.stringValue, session, within: 1.5) {
+                Self.forward = -Self.forward
+                page(Self.forward)
             }
-            XCTAssertTrue(header.has(\.stringValue, session, within: 1.5))
-            try await Task.sleep(for: .seconds(0.5))
+            XCTAssertTrue(header.has(\.stringValue, session, within: 1.5), "\(header.stringValue), not \(session)")
             XCTAssertTrue(rows.firstMatch.exists(within: 3), session)
+            XCTAssertNotNil(steady(3) { rows.firstMatch.frame }, "\(session)'s rows still slide")
             XCTAssertTrue(sidebar.frame.contains(rows.firstMatch.frame), "\(rows.firstMatch.frame) \(sidebar.frame)")
             XCTAssertTrue(rows.firstMatch.isHittable, session)
         }
+        XCTAssertTrue(element("tab.w1:t1").isSelected)
+
+        step("Sidebar swipes: a wheel at a card's edge leaves the tab, and the sidebar still pages")
+        let edge = element("terminal.w1:p1").coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0.5))
+            .withOffset(CGVector(dx: 30, dy: 0))
+        let card = Double(element("terminal.w1:p1").frame.width)
+        for delta in [-card, card] {
+            edge.hover()
+            edge.scroll(byDeltaX: delta, deltaY: 0)
+            // A wheel that changes the tab does so within a frame or two.
+            XCTAssertFalse(until(0.5) { !self.element("tab.w1:t1").isSelected }, "a wheel of \(delta) changed the tab")
+        }
+        XCTAssertEqual(header.stringValue, one)
+        page(Self.forward)
+        XCTAssertTrue(header.has(\.stringValue, two, within: 1.5), header.stringValue)
     }
 
     func testRelaunchRestoresThePagesThatStillRun() async throws {

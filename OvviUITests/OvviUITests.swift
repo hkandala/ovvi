@@ -228,6 +228,11 @@ extension OvviUITests {
 
     static let onKeyHost = ["-machines", keyHost, "-machine", "e2e-key"]
 
+    /// The sign of a swipe's or a sideways wheel's step that goes forward (to the next page, or a page scrolled right):
+    /// natural scrolling sets it, one way here and the other on CI. A test that tries both signs tries this one first
+    /// and keeps the one that worked, so only the run's first such swipe waits out a wrong sign.
+    static var forward = -1.0
+
     /// Which sign goes forward follows the natural scrolling setting (one way here, the other on CI).
     func swipe<Value: Equatable>(_ element: XCUIElement, by distance: Double? = nil, until target: XCUIElement,
                                  _ property: KeyPath<XCUIElement, Value>, _ value: Value) async throws

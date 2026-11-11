@@ -95,9 +95,11 @@ extension OvviUITests {
         XCTAssertTrue(page.has(\.isHittable, true, within: 5))
         // Fingers right to left move the page to the right, or the other way if natural scrolling is off.
         let swipe = "\(page.frame.midX) \(page.frame.midY)"
-        for step in [-30, 30] where title.stringValue == "x 0" {
-            try await Self.post("\(one)/swipe", Data("\(swipe) \(step) 14".utf8))
-            _ = until(2) { title.stringValue != "x 0" }
+        for sign in [Self.forward, -Self.forward] where title.stringValue == "x 0" {
+            try await Self.post("\(one)/swipe", Data("\(swipe) \(30 * sign) 14".utf8))
+            if until(2, { title.stringValue != "x 0" }) {
+                Self.forward = sign
+            }
         }
         let swiped = title.stringValue
         XCTAssertNotEqual(swiped, "x 0", "a swipe did not scroll the page")
