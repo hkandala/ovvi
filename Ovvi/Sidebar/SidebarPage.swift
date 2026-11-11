@@ -48,8 +48,9 @@ struct SidebarPage: View {
         // Not for a worktree, which goes with its repository; nothing to drag in while only the pinned ones show.
         let region = filter.isEmpty && !store.onlyPinned && all.contains { $0[0].id == spaceDrag }
         let items = items(top, rest, region: region)
-        // Not the filter's: typed, its rows come and go at once.
-        let order = top.map(\.[0].id) + ["pins"] + rest.map(\.[0].id) + [spaceDrag ?? ""]
+        // Not the filter's: typed, its rows come and go at once. "pins" is the line's place: a pin or unpin at the
+        // groups' border moves no row in the list.
+        let order = top.flatMap { $0.map(\.id) } + ["pins"] + rest.flatMap { $0.map(\.id) } + [spaceDrag ?? ""]
         let rowsDrop = RowsDrop(page: page, frames: frames, state: $drop, reorders: filter.isEmpty,
                                 shown: top + (region ? [[]] : []) + rest, pinned: pinned, order: spaceOrder,
                                 land: land)
@@ -250,6 +251,7 @@ private extension SidebarPage {
             DropRow(title: "Pin Space", lit: drop.region)
                 .accessibilityElement(children: .ignore)
                 .accessibilityAddTraits(.isStaticText)
+                .accessibilityLabel("Pin Space")
                 .accessibilityValue(drop.region ? "lit" : "")
                 .accessibilityIdentifier("sidebar.pin-region")
         } else {

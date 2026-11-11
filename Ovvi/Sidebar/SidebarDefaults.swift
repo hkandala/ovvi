@@ -50,11 +50,13 @@ extension HostStore {
     func save(_ kind: String, _ values: [String]) {
         let prefix = "\(machine.id) \(session) \(kind) "
         UserDefaults.agents.set((Self.lines.filter { !$0.hasPrefix(prefix) } + values.map { prefix + $0 })
-            .joined(separator: "\n"), forKey: "pinnedSpaces")
+            .joined(separator: "\n"), forKey: Self.key)
     }
 
+    private static let key = "pinnedSpaces"
+
     private static var lines: [String] {
-        (UserDefaults.agents.string(forKey: "pinnedSpaces") ?? "").split(separator: "\n").map(String.init)
+        (UserDefaults.agents.string(forKey: key) ?? "").split(separator: "\n").map(String.init)
     }
 
     /// While Show Only Pinned Spaces is on: the unpinned spaces, less any a window shows, so the user never loses

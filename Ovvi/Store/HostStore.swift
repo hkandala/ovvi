@@ -76,7 +76,15 @@ final class HostStore {
     }
 
     /// The controller first: the window where the user last typed or clicked in a card of the session.
-    var windows: [WindowPages] = []
+    var windows: [WindowPages] = [] {
+        // A space a closed window showed hides.
+        didSet {
+            if onlyPinned {
+                showStates()
+            }
+        }
+    }
+
     @ObservationIgnored var marked: Set<String> = []
     @ObservationIgnored var openMarked: Set<String> = []
     @ObservationIgnored var marking: Task<Void, Never>?
@@ -213,18 +221,6 @@ final class HostStore {
             starting = false
         }
         snapshotted([])
-    }
-
-    func loadSessions() async {
-        guard let client, let listed = try? await client.sessions() else { return }
-        sessions = listed
-        KnownSessions.keep(listed, of: machine)
-    }
-
-    func redraw() {
-        if let last {
-            snapshotted(apply(last))
-        }
     }
 
     private func apply(_ snapshot: Snapshot) -> [Seen.Change] {
@@ -373,5 +369,17 @@ extension HostStore {
 
     var isRunning: Bool {
         sessions.isEmpty || sessions.contains { $0.name == session && $0.running }
+    }
+
+    func loadSessions() async {
+        guard let client, let listed = try? await client.sessions() else { return }
+        sessions = listed
+        KnownSessions.keep(listed, of: machine)
+    }
+
+    func redraw() {
+        if let last {
+            snapshotted(apply(last))
+        }
     }
 }

@@ -17,8 +17,8 @@ extension OvviUITests {
         mine.menuItems["Recent"].click()
         XCTAssertTrue(mine.has(\.stringValue, "Recent", within: 2))
         XCTAssertTrue(other.has(\.stringValue, "Recent", within: 2), "the session's other window kept its own order")
-        relaunch(two, ["-configFolder", Self.pins("a")])
-        XCTAssertTrue(element("sidebar.sort").has(\.stringValue, "Manual", within: connect), "another session's order")
+        relaunch(two, ["-configFolder", Self.pins("a"), "-spaceOrder", "recent"])
+        XCTAssertTrue(element("sidebar.sort").has(\.stringValue, "Recent", within: connect), "not Settings' order")
         relaunch(one, ["-configFolder", Self.pins("a")])
         XCTAssertTrue(element("sidebar.sort").has(\.stringValue, "Recent", within: connect), "not kept")
     }
@@ -82,7 +82,7 @@ extension OvviUITests {
         let region = element("sidebar.pin-region")
         XCTAssertTrue(third.exists(within: 3))
         XCTAssertFalse(region.exists)
-        // Grabbed by the middle, so the pointer is the dragged row's middle; the region opens at the first row's place.
+        // The region opens at the first row's place.
         try await press(third, at: alpha.frame.minY + 15)
         XCTAssertTrue(region.has(\.stringValue, "lit", within: 2), "no lit pin region on the first drag")
         keepScreenshot("pin region lit")
@@ -91,6 +91,10 @@ extension OvviUITests {
         XCTAssertTrue(element("sidebar.pinned-line").exists(within: 2))
         XCTAssertFalse(region.exists)
 
+        // A row with an agent, held by its name: the region lights under the pointer, not under the row's middle.
+        let agent = try await newTab("pin-agent", in: "w2").pane
+        try await report(agent, "working", agent: "pi")
+        XCTAssertTrue(element("agent.\(agent)").exists(within: 3))
         try await press(beta, at: alpha.frame.minY + 15)
         XCTAssertTrue(region.has(\.stringValue, "lit", within: 2), "no lit pin region on the next drag")
         XCTAssertGreaterThan(region.frame.minY, third.frame.maxY, "the region not under the pinned one")
@@ -137,7 +141,7 @@ extension OvviUITests {
 
         during(third.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
                to: alpha.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.1)))
-        try await expectTops([third, alpha], "the pinned ones did not reorder")
+        try await expectTops([third, alpha], "the pinned ones reordered in Recent")
         try await expect("herdr's order") {
             let ids = try await workspaceIDs()
             return ids.firstIndex(of: gamma) ?? 0 < ids.firstIndex(of: "w1") ?? 0

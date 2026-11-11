@@ -274,7 +274,7 @@ struct AgentsPage: View {
                     Text("Recent").tag(SpaceOrder.recent)
                 } label: {
                     Text("Sort spaces")
-                    Text("Each session follows this until its own Sort Spaces, in the sidebar, picks.")
+                    Text("Each session uses this until you pick an order in its sidebar's Sort Spaces menu.")
                 }
                 .identifiedSettingsRow("agents.sort")
                 Toggle(isOn: settings.$showClosed) {

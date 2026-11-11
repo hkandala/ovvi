@@ -9,6 +9,8 @@ final class DragSource: NSObject, NSDraggingSource {
     private static let shared = DragSource()
     private weak var page: Page?
     private(set) static var grabbed = CGPoint.zero
+    /// The drag image's: a space row's is its header, without its agents.
+    private(set) static var size = CGSize.zero
     /// From its first move: AppKit can also run a whole session inside `beginDraggingSession`.
     private static var session: NSDraggingSession?
 
@@ -42,6 +44,7 @@ final class DragSource: NSObject, NSDraggingSource {
         }
         shared.page = page
         self.grabbed = grabbed
+        self.size = size
         page.dragging = item
         view.beginDraggingSession(with: [dragging], event: event, source: shared)
     }

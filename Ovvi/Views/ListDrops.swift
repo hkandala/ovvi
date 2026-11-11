@@ -149,13 +149,14 @@ struct RowsDrop: DropDelegate {
         guard page.dragging != nil else { return nil }
         let pointY = info.location.y + frames.top
         if case let .workspace(id) = page.dragging {
-            let imageY = pointY - DragSource.grabbed.y + (frames.rows[id]?.height ?? 0) / 2
+            let imageY = pointY - DragSource.grabbed.y + DragSource.size.height / 2
             let blocks = blocks(id)
             // The lazy stack makes the rows in view: one not made lies above them, or below.
             let made = blocks.firstIndex { rect($0) != nil } ?? 0
             let index = blocks.indices.count { index in rect(blocks[index]).map { $0.midY < imageY } ?? (index < made) }
+            // By the pointer, wherever it holds the row.
             let region = blocks.contains(where: \.isEmpty) && frames.rows[PinRegion.id].map {
-                ($0.minY - WorkspaceRow.gap / 2 ... $0.maxY + WorkspaceRow.gap / 2).contains(imageY)
+                ($0.minY - WorkspaceRow.gap / 2 ... $0.maxY + WorkspaceRow.gap / 2).contains(pointY)
             } == true
             let slot = region ? nil : place(id, index, blocks)
             if state.slot != slot || state.region != region {
@@ -228,14 +229,15 @@ struct RowsDrop: DropDelegate {
         return true
     }
 
-    /// A space's slot: on its own side when the pin region does not show; nil for an unpinned space among the
+    /// A space's slot: on its own side when the pin region does not show (Show Only Pinned Spaces); nil for an unpinned
+    /// space among the
     /// unpinned ones in Recent, which orders them itself; a pinned one dropped there goes where Recent puts it, so its
     /// gap opens first of them.
     private func place(_ id: String, _ index: Int, _ blocks: [[HostStore.Workspace]]) -> Int? {
         guard shown.contains(where: { $0.first?.id == id }) else { return index }
         guard let region = blocks.firstIndex(where: \.isEmpty) else {
             let pins = blocks.count { pinned.contains($0[0].id) }
-            return pinned.contains(id) ? min(index, pins) : max(index, pins)
+            return pinned.contains(id) ? min(index, pins) : order == .recent ? nil : max(index, pins)
         }
         guard index > region, order == .recent else { return index }
         return pinned.contains(id) ? region + 1 : nil

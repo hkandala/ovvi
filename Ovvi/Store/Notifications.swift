@@ -21,12 +21,13 @@ enum Notifications {
             }
             center.removeDeliveredNotifications(withIdentifiers: gone)
         }
-        let settings = AppSettings(), hidden = store.hidden
+        let settings = AppSettings()
         for change in changes where change.state.calls
             && (change.state == .needsYou ? settings.notifyNeedsYou : settings.notifyFinished)
         {
-            guard let pane = store.pane(change.paneID), pane.tabID != store.lookingTabID,
-                  !hidden.contains(store.workspace(of: pane.tabID)?.id ?? "") else { continue }
+            // A pane Show Only Pinned Spaces hides shows no state.
+            guard let pane = store.pane(change.paneID), pane.state != nil, pane.tabID != store.lookingTabID
+            else { continue }
             let content = UNMutableNotificationContent()
             content.title = title(pane, change.state)
             content.body = "\(store.label) · \(page.place(pane))"
