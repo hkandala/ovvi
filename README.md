@@ -34,7 +34,7 @@ Website and docs: [ovvi.dev](https://ovvi.dev).
 
 ```sh
 make setup      # Homebrew tools and the git hooks
-make install    # a Release build copied to ~/Applications
+make install    # a Release build copied to ~/Applications, and the ovvi skill linked for agents
 make app        # the Release app only
 make dmg        # a disk image of it
 make run        # build and open the app (SESSION=<name> for one session; agents: ovvi-dev-* only)
@@ -54,8 +54,8 @@ keyboard shortcuts ([all of them](https://ovvi.dev/docs/ui/theme-and-accessibili
 
 ## Future work
 
-Bundling herdr in the app, an iPhone and iPad app, image paste, floating status pills, a changes panel. Their designs
-are in [Future work](docs/content/docs/future-work/index.mdx).
+herdr inside the app, releases with an updater, an iPhone and iPad app, image paste, floating status pills, a changes
+panel: [Future work](docs/content/docs/future-work/index.mdx).
 
 ## Links
 
@@ -63,4 +63,5 @@ are in [Future work](docs/content/docs/future-work/index.mdx).
   [ovvi.dev](https://ovvi.dev) (`cd docs && pnpm install && pnpm dev` to run it).
 - How it is built, for agents: [`playbook/`](playbook/README.md).
 - Code: `Ovvi/` (the app), `Packages/HerdrKit/` (herdr calls, no UI), `OvviUITests/` (UI tests),
-  `scripts/`, `resources/` (the app icon, program icons and research notes).
+  `web/` (the runtime of plugin pages), `plugins/` (the built-in and extra plugins), `skills/ovvi/` (the agent
+  skill), `scripts/`, `resources/` (the app icon, program icons and research notes).
