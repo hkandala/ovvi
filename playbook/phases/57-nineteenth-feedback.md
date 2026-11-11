@@ -2087,7 +2087,7 @@ webkit directly instead of using browser plugin … if not we should provide tha
   cannot see the motion's frames.
 - **Runs.** The new tests on the old code: CI 42969024976, all five red (no lit region, the other window kept its own
   order, no `sidebar.moves`, no Show Only Pinned Spaces). VM: the six PinTests, the row and tab drags, Recent, the row
-  menu, green. CI on the pushed head: RUNID. Review, two rounds: the region lit by the whole row's middle (not the pointer), a landing not shown frame by
+  menu, green. CI 42974865786 on the head (17 chosen tests: these, the row and tab drags, Recent, the row menu, notify, Settings search, the palette, the Dock badge), green. Review, two rounds: the region lit by the whole row's middle (not the pointer), a landing not shown frame by
   frame, a refused gap with Show Only Pinned in Recent, worktrees outside the motion's key, states stale after a window
   closed, a session test that passed with Settings ignored; all fixed.
 - **For the user.** Drag a space with nothing pinned and with pins, dark and light: the region "Pin Space" shows under
