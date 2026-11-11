@@ -16,7 +16,7 @@ dev.ovvi.app | dev.ovvi.app.*) ;;
 esac
 # The installed app's reset deletes folders every build uses.
 running=$(lsappinfo list | grep -o 'bundleID="dev\.ovvi\.app[A-Za-z0-9.-]*"' | tr -d '"' | sed 's/bundleID=//')
-if [ "$id" = dev.ovvi.app ] && [ -n "$running" ] || echo "$running" | grep -qx "$id"; then
+if [ "$id" = dev.ovvi.app ] && [ -n "$running" ] || echo "$running" | grep -qxF "$id"; then
     echo "an Ovvi build is running ($(echo $running)): quit it first" >&2
     exit 1
 fi
