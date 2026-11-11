@@ -261,6 +261,73 @@ extension OvviUITests {
         try await moved("Show Only Pinned Spaces")
     }
 
+    /// The pointer lights the row under it, headers and agent lines, after pins and drags move the rows
+    /// (`sidebar.lit`: the target the pointer found).
+    func testThePointerLightsTheRowUnderItAfterPins() async throws {
+        relaunch(one, ["-configFolder", Self.pins("g"), "-recordMotion", "YES", "-forceMotion", "YES"])
+        XCTAssertTrue(element("workspace.w1").exists(within: connect))
+        addTeardownBlock { [one] in
+            _ = try? await Self.call(
+                one,
+                "workspace.move_block",
+                ["workspace_ids": ["w1"], "before_workspace_id": "w2"],
+            )
+        }
+        let gamma = try await newSpace("pin-g")
+        let alpha = element("workspace.w1"), beta = element("workspace.w2"), third = element("workspace.\(gamma)")
+        let rows = try await [("w1", alpha), ("w2", beta), (gamma, third)] + agents(in: ["w1", "w2", gamma])
+        XCTAssertTrue(rows.allSatisfy { $0.1.exists(within: 3) })
+        let lightsEach = { (after: String) in self.lightsEach(rows, after) }
+        lightsEach("the start")
+        try await press(third, at: alpha.frame.minY + 15)
+        XCTAssertTrue(element("sidebar.pin-region").has(\.stringValue, "lit", within: 2))
+        try await release()
+        try await expectTops([third, alpha, beta], "dropped on the pin region")
+        lightsEach("a drop on the pin region")
+        beta.rightClick()
+        app.menuItems["Pin Space"].click()
+        try await expectTops([beta, third, alpha], "pinned from the menu")
+        lightsEach("a pin from the menu")
+        // Onto third's last agent line: past the middle of its block, the header and its agents.
+        during(beta.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2)),
+               to: rows[rows.count - 1].1.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
+        try await expectTops([third, beta, alpha], "reordered among the pinned ones")
+        lightsEach("a drag among the pinned ones")
+        beta.rightClick()
+        app.menuItems["Move Up"].click()
+        try await expectTops([beta, third, alpha], "moved up")
+        lightsEach("Move Up")
+        beta.rightClick()
+        app.menuItems["Unpin Space"].click()
+        try await expect("unpinned") { element("sidebar.pinned-line").frame.midY < beta.frame.minY }
+        lightsEach("an unpin")
+    }
+
+    /// Two agent lines in each space.
+    private func agents(in spaces: [String]) async throws -> [(String, XCUIElement)] {
+        var agents: [(String, XCUIElement)] = []
+        for space in spaces {
+            for name in ["builder", "author"] {
+                let (tab, pane) = try await createTab(in: space, label: "hover-\(name)")
+                closeAfter("tab", tab)
+                try await report(pane, "working", agent: "pi")
+                agents.append((pane, element("agent.\(pane)")))
+            }
+        }
+        return agents
+    }
+
+    /// The pointer over each row in turn lights that row.
+    private func lightsEach(_ rows: [(String, XCUIElement)], _ after: String) {
+        let lit = element("sidebar.lit")
+        for (id, row) in rows {
+            // Again until it lights: one hover in the rows' 0.2 s motion can land on the row's last place.
+            XCTAssertTrue(until(2) { row.hover(); return lit.stringValue == id },
+                          "after \(after): over \(id) at \(row.frame.minY)...\(row.frame.maxY), lit \(lit.stringValue)")
+        }
+        element("sidebar.header").hover()
+    }
+
     /// Its id from herdr's list: after the shard's earlier tests the new tab's id did not name its space.
     private func newSpace(_ label: String) async throws -> String {
         let before = try await workspaceIDs()

@@ -177,6 +177,9 @@ Problems that came back across phases, and the rule that stops each. How we work
 - **A busy app's `DragGesture` reports its first change late,** after the pointer moved on. Take the grab from
   `startLocation`, never the first `location`: the late one put a dragged row's image off the pointer and its drop a
   row short (phase 57).
+- **Take a hit frame outside any offset that moves a view for a while** (a slide, a landing). `onGeometryChange` inside an
+  `.offset` saw the offset set but not always its return to 0, and the sidebar lit the row 50 pt under the pointer
+  (phase 57): measure in the view's own space and place it by a frame taken outside the offset.
 - **Hover state is unreliable.** A view removed under the pointer gets no hover end, and a busy app runs
   hover late. Decide from the pointer's location when it matters.
 - **WebKit cannot end its own helper processes here** (xpc: "Operation not permitted"): a GPU or page process it gave

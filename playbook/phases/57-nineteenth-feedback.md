@@ -2133,6 +2133,25 @@ ones".
     changes, everything is good, one weird issue is when i hover mouse on certain worksapces sometimes it focuses on
     something else, it happens when i pin things, its not consistent, it happens randomly"
 
+### Track B3 (item 90)
+
+- **Cause.** Track U's one pointer tracker found the hovered row by frames each header and agent line took in the
+  list's space, from inside the row's `.offset`: the drop's landing and the drag's slide (the pin region's 40 pt and its
+  gap). SwiftUI did not always report the offset's end: in the VM, after a pin by drag the dropped row's targets stayed
+  at its landing offset (240 pt up), so nothing lit over it; in the user's video the pinned rows kept the slide's 50 pt,
+  so the pointer lit the row 50 pt under it (one or two rows off), and rows under the line were right.
+- **Fix.** Each target takes its frame in its own row (`WorkspaceRow.space`), placed by the row's frame, which is
+  taken outside the offsets; a row that moves aims again.
+- **Test.** `testThePointerLightsTheRowUnderItAfterPins`: three spaces with two agent lines each; after a drop on the
+  pin region, a menu pin, a drag among the pinned ones, Move Up and an unpin, the pointer over each row lights that row
+  (`sidebar.lit`, shown with `-recordMotion`).
+- **Runs.** VM, the old code: red after the drop on the pin region (over the dropped row, nothing lit). CI 42983421875
+  on the review's head: 10 of 11 green (the pin tests, the row drags, hover cards, the stress test); the new test's drag
+  among the pinned ones aimed at a header, not past the block's middle (fixed, green in the VM). CI 42985378561 on the
+  final head: the new test and the agent row's hover card, green.
+- **For the user.** Pin a space by dragging it onto Pin Space and from its menu, reorder the pinned ones, then move the
+  pointer slowly over every header and agent line: the lit row is the one under the pointer.
+
 91. Faster UI tests (Track CI2; report `~/Downloads/ovvi-research/ci-speed/report.html`): the user approved the
     coverage-neutral cuts, the 4 drops, 31 merges and 5 slims, and clearing the VM's notification dialog: "yep go with
     1,2 and 4, no paid ones".

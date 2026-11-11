@@ -4,6 +4,7 @@ import SwiftUI
 struct WorkspaceRow: View, Equatable {
     static let textInset: CGFloat = 8
     static let gap: CGFloat = 10
+    nonisolated static let space = "row"
 
     let workspace: HostStore.Workspace
     let parent: HostStore.Workspace?
@@ -40,7 +41,7 @@ struct WorkspaceRow: View, Equatable {
             header(selected: selected, shown: shown, height: height)
             if open {
                 VStack(spacing: 0) {
-                    ForEach(agents) { AgentLine(pane: $0, page: page, frames: frames) }
+                    ForEach(agents) { AgentLine(pane: $0, row: workspace.id, page: page, frames: frames) }
                 }
                 .padding([.horizontal, .bottom], 4)
             }
@@ -53,6 +54,8 @@ struct WorkspaceRow: View, Equatable {
             }
         }
         .padding(.leading, parent == nil ? 0 : 14)
+        // The targets' space: a row's place in the list goes by its layout, not by the slide or landing offset on it.
+        .coordinateSpace(.named(Self.space))
         .background(alignment: .topLeading) {
             if guideBelow {
                 GeometryReader { geometry in
@@ -79,7 +82,7 @@ struct WorkspaceRow: View, Equatable {
                 .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .leading)
         }
         .buttonStyle(ChromeStyle(radius: 10, hovered: selected ? false : nil, light: frames.light(workspace.id)))
-        .target(workspace.id, in: frames)
+        .target(workspace.id, in: workspace.id, frames)
         .dragSource(.workspace(workspace.id), page: page)
         .accessibilityIdentifier("workspace.\(workspace.id)")
         .accessibilityAddTraits(selected ? .isSelected : [])
@@ -206,6 +209,7 @@ struct WorkspaceRow: View, Equatable {
 
 struct AgentLine: View {
     let pane: HostStore.Pane
+    let row: String
     let page: Page
     let frames: SidebarPage.RowFrames
     @Environment(\.look) private var look
@@ -230,7 +234,7 @@ struct AgentLine: View {
             .frame(height: 28)
         }
         .buttonStyle(ChromeStyle(selected: lit, radius: 7, tint: .primary.opacity(0.08), light: light))
-        .target(pane.id, in: frames)
+        .target(pane.id, in: row, frames)
         .accessibilityIdentifier("agent.\(pane.id)")
         .accessibilityLabel("\(title), \(page.place(pane))")
         .accessibilityValue(pane.state?.title ?? "")
@@ -240,9 +244,11 @@ struct AgentLine: View {
 }
 
 private extension View {
-    func target(_ id: String, in frames: SidebarPage.RowFrames) -> some View {
-        onGeometryChange(for: CGRect.self) { $0.frame(in: .named("rows")) } action: {
-            frames.targets[id] = $0
+    /// In its row: an offset's change (a drop's landing, a drag's slide) is not always reported once it ends, and a hit
+    /// frame with the offset in it lit the row 50 pt under the pointer after a drag.
+    func target(_ id: String, in row: String, _ frames: SidebarPage.RowFrames) -> some View {
+        onGeometryChange(for: CGRect.self) { $0.frame(in: .named(WorkspaceRow.space)) } action: {
+            frames.targets[id] = (row, $0)
             // Moved under a still pointer: a snapshot, a fold, the filter.
             frames.aim()
         }

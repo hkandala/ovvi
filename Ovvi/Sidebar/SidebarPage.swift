@@ -158,6 +158,11 @@ struct SidebarPage: View {
             }
             .fadesScrolledEdges(end: 18 + bottom)
             .testValue("sidebar.moves", "Moves", "\(moves.animated) \(moves.still)", shown: SettlingHost.record)
+            .background {
+                if SettlingHost.record {
+                    LitValue(lit: frames.lit)
+                }
+            }
             .onContinuousHover { phase in
                 switch phase {
                 case let .active(point):
@@ -222,6 +227,8 @@ private extension SidebarPage {
             // Outside the drag's slide and the drop's glide, so a moving row reports its place.
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("rows")) } action: {
                 frames.rows[id] = $0
+                // Moved under a still pointer: a snapshot, a fold, the filter, a reorder.
+                frames.aim()
             }
             // A dragged row keeps its target (content frames hold through a scroll) for its slide and landing.
             .onDisappear {
