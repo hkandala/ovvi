@@ -21,7 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             .map(ObjectIdentifier.init))
         PluginBuilds.writeTypes()
         Task { await DefaultPlugins.shared.install() }
-        // After the launch's own work: restored windows' cards are made by then.
+        // Usually after restored windows made their cards; if not, it costs one more page process.
         Task {
             try? await Task.sleep(for: .seconds(3))
             await Browser.prewarm()

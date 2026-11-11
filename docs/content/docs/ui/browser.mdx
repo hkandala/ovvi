@@ -502,17 +502,16 @@ gets the same card.
   **Reload**, so the card never stays blank, also in a card out of view. A
   load counts until it finished: a page whose load never ends (an image that
   never answers) shows the failure on its next ended process.
-- WebKit starts three helper processes for the first web card: a GPU process
-  and a network process, which all web cards share, and the card's own page
-  process. It starts the network process only after the page process runs.
-  On a busy Mac, right after an install, the three took 12.6 s, 12.5 s and
-  13.3 s, and the first card stayed empty for 26 s. So 3 s after launch, if
-  no web card shows yet, the app opens one hidden empty page in This Mac's
-  browser store, and WebKit starts its processes then. That is one set of
-  processes, as for one card. A later card starts only its own page process
-  (33–73 ms on that same busy Mac). The app never waits for these
-  processes: while they start, the rest of the app works, and the card keeps
-  its loader or its empty look until its page draws.
+- WebKit runs helper processes for web cards: one GPU process and one
+  network process, which all cards share, and one page process for each
+  card. It starts the network process only after the first page process
+  runs. On a busy Mac, the first start of these processes can take many
+  seconds. So 3 s after launch, if no web card is open, the app opens one
+  hidden empty page in This Mac's browser store, and WebKit starts its
+  processes for it. When the page answers, the app lets it go: its page
+  process ends, and the GPU and network processes stay for the cards. The
+  app never waits for these processes: a card keeps its loader or its
+  empty look until its page draws.
 - When WebKit's GPU process stops answering (a busy Mac), WebKit gives up on
   it and starts another, but it cannot end the old one, and every page keeps
   drawing through it: each web card, browser and plugin, stays blank, also

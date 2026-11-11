@@ -55,18 +55,16 @@ extension Browser {
         return store
     }
 
-    /// WebKit starts the GPU and network processes that every web card shares with the first card, the network one
-    /// only once that card's page process runs. Right after an install on a busy Mac they took 12.6 s, 12.5 s and then
-    /// 13.3 s, so the first card stayed empty for 26 s, while later cards' page processes took 33–73 ms. One hidden
-    /// page starts them ahead of any card: one set, as a card's, that WebKit keeps for the cards.
+    /// WebKit starts the GPU and network processes that all web cards share with the first card, the network one only
+    /// once that card's page process runs, which can take many seconds on a busy Mac. One hidden page starts them
+    /// ahead of any card; its own page process ends with it.
     static func prewarm() async {
         guard PaneViewRegistry.recentWeb.isEmpty else { return }
-        let configuration = WKWebViewConfiguration()
-        configuration.websiteDataStore = dataStore(.thisMac)
-        let view = WKWebView(frame: .zero, configuration: configuration)
+        let view = BrowserView(store: dataStore(.thisMac))
         view.loadHTMLString("", baseURL: nil)
         // Answers once its page process runs, which has asked for the network process by then.
         await withCheckedContinuation { done in view.evaluateJavaScript("0") { _, _ in done.resume() } }
+        withExtendedLifetime(view) {}
     }
 
     /// WebKit keeps a store a window still uses.
