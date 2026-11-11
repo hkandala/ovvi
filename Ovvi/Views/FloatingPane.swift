@@ -140,8 +140,8 @@ struct FloatingWindow: View {
                 .accessibilityIdentifier("\(id).place")
             }
             Spacer(minLength: 0)
-            if let chat {
-                ChatSwitch(chat: chat, page: page)
+            if let pane {
+                AgentControl(pane: pane, chat: chat, page: page)
             }
             IconButton(symbol: pinned ? "pin.fill" : "pin", help: "Stay on Top", accent: pinned) {
                 page.floating[floating.terminalID]?.toggle()

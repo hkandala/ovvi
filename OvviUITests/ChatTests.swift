@@ -243,6 +243,23 @@ extension OvviUITests {
         XCTAssertFalse(enable.exists)
     }
 
+    /// A floating pane's title row has the same agent control: Relaunch with Chat there brings its chat into the float.
+    func testRelaunchWithChatFromAFloatingPane() async throws {
+        let pane = try await startChat(chat: false, plain: true).pane
+        XCTAssertTrue(element("pane.\(pane).enable-chat").exists(within: 10))
+        let window = float(pane)
+        XCTAssertTrue(element("float.\(pane).info", in: window).exists(within: 5))
+        keepScreenshot("float relaunch", of: window)
+        let enable = element("pane.\(pane).enable-chat", in: window)
+        XCTAssertTrue(enable.exists(within: 5))
+        enable.click()
+        XCTAssertTrue(element("chat.\(pane).composer", in: window).exists(within: 20))
+        XCTAssertTrue(element("pane.\(pane).view.chat", in: window).exists)
+        keepScreenshot("float chat", of: window)
+        element("float.\(pane).detach", in: window).click()
+        XCTAssertTrue(window.vanishes(within: 3))
+    }
+
     /// The retry's agent lists no arguments, as npm's pi whose process title overwrites them.
     func testRelaunchSaysWhyAndRetriesWithoutArguments() async throws {
         let failed = NSTemporaryDirectory() + "ovvi-fail-resume-" + UUID().uuidString
