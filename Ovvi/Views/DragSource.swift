@@ -14,7 +14,8 @@ final class DragSource: NSObject, NSDraggingSource {
     /// From its first move: AppKit can also run a whole session inside `beginDraggingSession`.
     private static var session: NSDraggingSession?
 
-    static func begin(_ item: Dragged, page: Page, grabbed: CGPoint, size: CGSize) {
+    /// `moved`: how far the pointer went before the gesture's first change, which a busy app reports late.
+    static func begin(_ item: Dragged, page: Page, grabbed: CGPoint, moved: CGSize, size: CGSize) {
         // The gesture runs while SwiftUI handles the drag event.
         guard page.dragging == nil, page.store.state == .live, let event = NSApp.currentEvent,
               event.type == .leftMouseDragged,
@@ -25,7 +26,9 @@ final class DragSource: NSObject, NSDraggingSource {
         let pointer = view.convert(event.locationInWindow, from: nil)
         let rect = NSRect(x: pointer.x - grabbed.x, y: view.isFlipped ? pointer.y - grabbed.y
             : pointer.y + grabbed.y - size.height, width: size.width, height: size.height)
-        if case .pane = item, let card = snapshot(view, rect) {
+        // The image of what was grabbed, not of what the pointer is over by now.
+        let source = rect.offsetBy(dx: -moved.width, dy: view.isFlipped ? -moved.height : moved.height)
+        if case .pane = item, let card = snapshot(view, source) {
             let lifted = lift(card, from: rect, under: pointer, flipped: view.isFlipped)
             dragging.setDraggingFrame(lifted.frame, contents: lifted.image)
         } else {
@@ -33,7 +36,7 @@ final class DragSource: NSObject, NSDraggingSource {
             if case .tab = item {
                 (radius, inset) = (TabBar.radius - TabBar.inset, TabBar.inset)
             }
-            dragging.setDraggingFrame(rect, contents: snapshot(view, rect).map { image in
+            dragging.setDraggingFrame(rect, contents: snapshot(view, source).map { image in
                 NSImage(size: image.size, flipped: false) { bounds in
                     NSBezierPath(roundedRect: bounds.insetBy(dx: 0, dy: inset), xRadius: radius, yRadius: radius)
                         .addClip()

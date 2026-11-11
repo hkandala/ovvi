@@ -92,9 +92,10 @@ extension OvviUITests {
     {
         let gamma = try await workspace(of: createWorkspace("recent-c").tab), gammaRow = element("workspace.\(gamma)")
         try await expectOrder([betaRow, alphaRow, gammaRow], "the space with no agent last")
+        // Among the unpinned ones, clear of the pin region on top.
         let before = try await workspaceIDs()
         during(gammaRow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
-               to: betaRow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.1)))
+               to: alphaRow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
         try await Task.sleep(for: .seconds(1))
         let after = try await workspaceIDs()
         XCTAssertEqual(after, before, "a drag reordered in Recent")
@@ -107,8 +108,12 @@ extension OvviUITests {
         sort.menuItems["Manual"].click()
         try await expectOrder([alphaRow, betaRow], "herdr's order")
         XCTAssertEqual(sort.value as? String, "Manual")
+        // Above beta's middle once the pin region pushed it 40 pt down.
         during(gammaRow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
-               to: betaRow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.1)))
+               to: betaRow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).withOffset(CGVector(
+                   dx: 0,
+                   dy: 20,
+               )))
         try await expect("the space with no agent before beta's in Manual") {
             try await workspaceIDs().suffix(2) == [gamma, "w2"]
         }

@@ -240,8 +240,12 @@ extension OvviUITests {
         let firstRow = element("workspace.\(first)"), secondRow = element("workspace.\(second)")
         XCTAssertTrue(secondRow.exists(within: 3))
 
+        // Past the last row: the pin region pushes the rows down by 40 pt while a space is dragged.
         during(firstRow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
-               to: secondRow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9)))
+               to: secondRow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1)).withOffset(CGVector(
+                   dx: 0,
+                   dy: 45,
+               )))
         try await expect("first below second") { try await workspaceIDs().suffix(2) == [second, first] }
 
         let root = "/tmp/ovvi-e2e-drag-\(Int.random(in: 10000 ... 99999))"
@@ -257,8 +261,12 @@ extension OvviUITests {
         closeAfter("workspace", tree)
         let repoRow = element("workspace.\(repo)")
         XCTAssertTrue(element("workspace.\(tree)").exists(within: 3))
+        // Above second's middle once the pin region pushed it 40 pt down.
         during(repoRow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
-               to: secondRow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.1)))
+               to: secondRow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).withOffset(CGVector(
+                   dx: 0,
+                   dy: 20,
+               )))
         try await expect("the repository and its worktree before second") {
             try await workspaceIDs().suffix(4) == [repo, tree, second, first]
         }

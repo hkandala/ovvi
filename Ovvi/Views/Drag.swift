@@ -229,7 +229,8 @@ private struct DragSourceModifier: ViewModifier {
             .onGeometryChange(for: CGSize.self, of: \.size) { size = $0 }
             .simultaneousGesture(DragGesture(minimumDistance: 4).onChanged { value in
                 // Where the mouse went down: a busy app's first change comes late.
-                DragSource.begin(item, page: page, grabbed: value.startLocation, size: previewSize ?? size)
+                DragSource.begin(item, page: page, grabbed: value.startLocation, moved: value.translation,
+                                 size: previewSize ?? size)
             })
     }
 }
