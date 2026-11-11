@@ -171,6 +171,7 @@ extension OvviUITests {
     }
 
     func testDraggingATabOntoAWorkspaceRowOrMenuRowMovesItWithItsLayout() async throws {
+        step("A tab onto its own space's row stays, onto another space's row moves")
         let (tab, terminal) = try await movingTab(), layout = try await terminalLayout(tab)
         let home = workspace(of: tab)
         let capsule = element("tab.\(tab)")
@@ -193,6 +194,7 @@ extension OvviUITests {
         XCTAssertTrue(hasKeyboard("terminal.\(keyboard)"))
         XCTAssertTrue(element("drop.indicator").vanishes(within: 2))
 
+        step("With the sidebar hidden: onto a space in the workspace menu")
         element("titlebar.sidebar").click()
         let row = try await dragThroughWorkspaceMenu(moved, onto: "workspaces.\(one).\(home)")
         let back = try await movedTab(of: terminal, layout) { $0 == home }
@@ -201,24 +203,25 @@ extension OvviUITests {
         let arrived = try await place(of: terminal)
         XCTAssertTrue(try hasKeyboard("terminal.\(XCTUnwrap(arrived).pane)"))
         XCTAssertTrue(element("drop.indicator").vanishes(within: 2))
-        element("titlebar.sidebar").click()
+
+        try await toNewWorkspaces(back, terminal, layout)
     }
 
-    func testDraggingATabOntoNewWorkspaceMovesItWithItsLayout() async throws {
-        let (tab, terminal) = try await movingTab(), layout = try await terminalLayout(tab)
+    /// Through the workspace menu with the sidebar hidden, then onto the empty sidebar under the rows.
+    private func toNewWorkspaces(_ back: String, _ terminal: String, _ layout: String) async throws {
+        step("With the sidebar hidden: onto the workspace menu's New Workspace")
         let workspaces = try await workspaceIDs()
         closeNew("workspace", besides: workspaces)
-        XCTAssertTrue(element("tab.\(tab)").has(\.isHittable, true, within: 3))
-
-        element("titlebar.sidebar").click()
-        let row = try await dragThroughWorkspaceMenu(tab, onto: "workspaces.new")
+        XCTAssertTrue(element("tab.\(back)").has(\.isHittable, true, within: 3))
+        let newRow = try await dragThroughWorkspaceMenu(back, onto: "workspaces.new")
         let away = try await movedTab(of: terminal, layout) { !workspaces.contains($0) }
-        XCTAssertTrue(row.vanishes(within: 2))
+        XCTAssertTrue(newRow.vanishes(within: 2))
         XCTAssertTrue(element("tab.\(away)").has(\.isSelected, true, within: 3))
-        let arrived = try await place(of: terminal)
-        XCTAssertTrue(try hasKeyboard("terminal.\(XCTUnwrap(arrived).pane)"))
+        let landed = try await place(of: terminal)
+        XCTAssertTrue(try hasKeyboard("terminal.\(XCTUnwrap(landed).pane)"))
         XCTAssertTrue(element("drop.indicator").vanishes(within: 2))
 
+        step("Onto the empty sidebar under the rows: a new space")
         element("titlebar.sidebar").click()
         let made = workspace(of: away)
         XCTAssertTrue(element("workspace.\(made)").exists(within: 3))
