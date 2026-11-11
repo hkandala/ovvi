@@ -20,6 +20,7 @@ NO_APP = re.compile("|".join([
     r"try await forgetWindows\(\)$",
     r"(let .* = )?try await (shown\()?running\(",
     r"executionTimeAllowance = ",
+    r"step\(\"",
     r"for .* in .* \{$",
 ]))
 
