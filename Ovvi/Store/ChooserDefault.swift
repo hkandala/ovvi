@@ -48,40 +48,35 @@ extension HostStore {
         }
     }
 
-    /// All as herdr's keys, characters too, in one call: text goes by the terminal's stream and keys by herdr's API,
-    /// so a key sent right after text could pass it (CI: arrows held after a typed line landed on the empty prompt).
+    /// All as herdr's keys, characters too, in order: text goes by the terminal's stream and keys by herdr's API, so
+    /// a key sent right after text could pass it (CI: arrows held after a typed line landed on the empty prompt).
     func release(_ chooser: Chooser) {
         drop(chooser)
         let held = chooser.held
         chooser.held = []
         guard !held.isEmpty else { return }
         guard let terminal = keyboardTerminal(chooser) else { return NSSound.beep() }
-        var keys: [String] = []
         for event in held {
             if let key = PaneSurfaceView.herdrKey(event) {
-                keys.append(key)
+                terminal.keys([key])
             } else if event.modifierFlags.contains(.command) {
-                // ⌘V, framed as libghostty frames a paste; herdr pastes it. The keys before it go first: a text
-                // waits for herdr's answer to them.
-                if !keys.isEmpty {
-                    terminal.keys(keys)
-                }
-                keys = []
+                // ⌘V, framed as libghostty frames a paste; herdr pastes it.
+                // ponytail: by the stream, so a key held after it can pass it; an awaited paste if that shows.
                 NSPasteboard.general.string(forType: .string).map { terminal.type("\u{1B}[200~" + $0 + "\u{1B}[201~") }
             } else if let text = event.characters,
                       // Not AppKit's function-key characters (Home, End, Page Up and Down, forward delete).
                       !text.unicodeScalars.contains(where: { (0xF700 ... 0xF8FF).contains($0.value) })
             {
-                keys += text.map { Self.named[$0] ?? String($0) }
+                // herdr refuses a name of several scalars, and the whole call with it.
+                terminal.keys(text.unicodeScalars.map { Self.named[$0] ?? String($0) })
             }
-        }
-        if !keys.isEmpty {
-            terminal.keys(keys)
         }
     }
 
-    /// herdr takes any one character as a key but these.
-    private static let named: [Character: String] = [" ": "space", "\r": "enter", "\t": "tab", "\u{7F}": "backspace"]
+    /// herdr takes any one character as a key but these (the keypad's Enter is ETX).
+    private static let named: [Unicode.Scalar: String] = [
+        " ": "space", "\r": "enter", "\u{3}": "enter", "\t": "tab", "\u{7F}": "backspace",
+    ]
 
     private func keyboardTerminal(_ chooser: Chooser) -> PaneTerminal? {
         guard let id = chooser.paneID, let view = NSApp.keyWindow?.firstResponder as? PaneSurfaceView,
