@@ -53,10 +53,10 @@ struct WelcomeView: View {
         var still: Double {
             switch self {
             case .running: 4.5
-            case .layout: 3
+            case .layout: 4.5
             case .agents: 5
-            case .plugins: 14
-            case .machines: 7
+            case .plugins: 13
+            case .machines: 8
             case .herdr: 0
             }
         }

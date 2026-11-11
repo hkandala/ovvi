@@ -13,18 +13,15 @@ struct HerdrStep: View {
         // The page's title and line say why (WelcomeView); this is the picture's place: herdr's logo and its install.
         VStack(spacing: 20) {
             if found {
-                // Ovvi's own mark: all set.
-                Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 88, height: 88)
+                // All set: a green check on the logo's tile.
+                tile(Image(systemName: "checkmark").font(.system(size: 34, weight: .semibold))
+                    .foregroundStyle(look.finished))
                     .accessibilityHidden(true).transition(.scale(scale: 0.9).combined(with: .opacity))
                 Text("herdr is installed").font(.system(size: 15, weight: .medium)).foregroundStyle(.secondary)
             } else {
-                // herdr's own logo (github.com/herdrdev/herdr, assets/logo.svg; Apache-2.0, Acknowledgements) on a
-                // small tile, as an app's icon.
-                Image("HerdrLogo").resizable().scaledToFit().frame(width: 44, height: 44).foregroundStyle(.primary)
-                    .frame(width: 72, height: 72)
-                    .background(look.cardSolid(), in: RoundedRectangle(cornerRadius: 17, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 17, style: .continuous).strokeBorder(look.divider))
-                    .accessibilityLabel("herdr")
+                // herdr's own logo as it is (github.com/herdrdev/herdr, assets/logo.png; Apache-2.0, Acknowledgements),
+                // on a tile with an app icon's corners.
+                tile(Image("HerdrLogo").resizable().scaledToFill()).accessibilityLabel("herdr")
                 switch HerdrInstall.shared.steps[machine.id] {
                 case let .running(line):
                     HStack(spacing: 8) {
@@ -63,6 +60,12 @@ struct HerdrStep: View {
                 try? await Task.sleep(for: .seconds(1))
             }
         }
+    }
+
+    private func tile(_ content: some View) -> some View {
+        let shape = RoundedRectangle(cornerRadius: 17, style: .continuous)
+        return content.frame(width: 72, height: 72).background(look.cardSolid(), in: shape).clipShape(shape)
+            .overlay(shape.strokeBorder(look.divider))
     }
 
     private func install() {

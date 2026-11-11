@@ -1991,6 +1991,19 @@ you did, no need of reverting them".
     should probably run in yolo mode to avaoid those"; "its claude code opening deploy plugin beisde but opening working
     tree in another tab, we should also not have any tabs in that workspace, so we can clarly see the brwoser tab
     getting opened, and open git tree, not working tree".
+    On the takes: "in the second clip, wait for sometime before opening pane, split pane, then after a sec open a tab,
+    then wait for some time and then switch the space, and the space that is switched should be a new one which we
+    didn't see in previous screen"; "in the third clip as we are just showing chat view and tui view and no other
+    movements, let's just make it two images one in chat view and one in tui view and then we fade between those two
+    images and loop"; "in the fourth clip, it is not very clear that agent is opening those panes, i think that text is
+    bit hidden under our shadow and text, lets ask claude to show some text or something after so we can see clearly
+    that claude opnede, make it subtle it shouldn't look like this is done for demo btw, also once all are opened and
+    claude responded, wait for sometime before looping" ("make it 4s"); "in the last clip as well, wait for sometime
+    after typing ssh name, like it loops too quickly, maintain slow pace overall, don't rush" ("typing should be fast
+    for remote ssh one, keep it same"); "herdr logo don't change colors, just use official log and use some border or
+    something around it, and once installed idk why we are showing our ovvi logo again? we should show green check
+    mark instead"; "on the clip where agent opens panes, after they open the panes, let's fade and skip to show the
+    full agent answer ... once full text is shown we wait for 4s and then loop".
 
 89. Pinned spaces and sorting, second pass (Track B2):
     "- let's change the sorting to specific to session instead of window and all sessions follow the default ones, if
@@ -2185,12 +2198,24 @@ ones".
   shows "bypass permissions on" under the prompt. It runs Opus 4.5, as the scene's stand-ins show it.
 - **Cause, the jagged space switch.** The recording, not the app. The old take clicked the space twice and walked the
   window's accessibility tree between the clicks, and each walk holds the app's main thread. So the highlight came in
-  three steps over 0.35 s, 1.1 s after the click. Clicks on camera now go to spots found before the film starts, and
-  the switch lands in the click's frame (60 fps track: 20, then 26 on hover, then 45).
+  three steps over 0.35 s, 1.1 s after the click. Clicks on camera now go to spots found before the film starts:
+  hover, press, then the selection about 0.14 s after the mouse-up, each in one frame with no fade (60 fps track: 20,
+  26, 45). The switched space holds 4 s.
 - **Found on the way.** SCRecordingOutput's finish callback often never comes: the film waited on it forever and kept
   its backdrop up over the user's screen. It now waits 3 s at most, and a stdin read ends it. A `withTaskGroup` waits
   for all its children, so a timeout child kept the film running until the timeout. A menu item's title with a space
   shifted the fields of `ax find`. A full-screen backdrop and a hung film locked the user out twice: the backdrop is now
   window-sized and short-lived (lessons.md).
-- **For the user.** Watch the five clips in both looks in the report. The plugins clip is Claude Code's real turn, so
-  its pace is the model's.
+- **The second pass.** Clip 2 splits at 1.5 s, adds a tab, then switches to docs, which no other clip shows (opened
+  once off camera, so its cards are drawn). Clip 3 is two frames of its film, TUI and Chat, faded into each other.
+  Clip 4: Claude Code's memory asks for a short "Open for review / What changed" reply, which sits above the shade;
+  the clip keeps the cards opening (cut where the Git card's page is still blank), then fades to the whole reply and
+  holds it 4 s. Clip 5 is slower, its target still typed fast. The herdr step shows herdr's own logo.png on a bordered
+  tile, and a green check on the same tile once herdr is installed.
+- **Review.** A window of another app could sit between the backdrop and the window, and the glass would blur it:
+  the recorder now raises the window before the backdrop, and the film marks any other app's window over the rect or
+  under it above the backdrop, whatever its alpha. A failed take deletes its film; the backdrop ends with its parent;
+  "recording" comes with the first frame, so the steps' times are the clip's; the plugins take checks the cards'
+  places.
+- **For the user.** Watch the five clips in both looks in the report. Claude Code's footer reads "manual mode on": the
+  hook approves every tool, and the mode label stays.
