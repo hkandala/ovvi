@@ -52,7 +52,6 @@ extension OvviUITests {
     /// `ovvi open git .` puts the Git card beside the shell with no tab of its own on the way: herdr makes a labeled
     /// pane only as a new tab, which the app hides until its move.
     func testOpenBesideShowsNoTemporaryTab() async throws {
-        relaunch(one, Self.agentHold)
         let (tab, first) = try await newTab("beside")
         try await closeNew("tab", besides: tabIDs())
         element("tab.\(tab)").click()
@@ -117,7 +116,12 @@ extension OvviUITests {
         try await run("clear; \(ovvi) reveal \(browser)", in: first, "flash", 0, "shown: true")
         XCTAssertTrue(element("pane.\(browser).flash").exists(within: 3))
 
-        let other = try await field(tabIDs().first { $0.hasPrefix("w2:") && $0 != tab }, "another tab of w2") as String
+        // Split, and off balance: the Balance Splits below makes a write that herdr shows.
+        let (other, beside) = try await createTab(in: "w2")
+        closeAfter("tab", other)
+        try await split(beside)
+        try await Self.call(one, "layout.set_split_ratio", ["tab_id": other, "path": [Bool](), "ratio": 0.3])
+        XCTAssertTrue(element("tab.\(other)").exists(within: 5))
         element("tab.\(other)").click()
         XCTAssertTrue(element("tab.\(other)").has(\.isSelected, true, within: 3))
         try await run("clear; \(ovvi) reveal \(browser)", in: first, "notice", 0, "shown: false")
@@ -127,7 +131,9 @@ extension OvviUITests {
         // Balance Splits: a write of the user's own, which leaves an agent's notice up. By its menu item: a global
         // hotkey on this Mac takes ⌥⌘= ahead of the app.
         pick("Pane", "Balance Splits")
-        XCTAssertFalse(notice.vanishes(within: 2))
+        // A write drops old notices ahead of its herdr call, so once herdr has the balance, any drop has happened.
+        try await expect("the balance in herdr") { try await abs((root(other)["ratio"] as? Double ?? 0) - 0.5) < 0.01 }
+        XCTAssertFalse(notice.vanishes(within: 0.5))
         notice.buttons["notice.show"].click()
         XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, true, within: 3))
         try await run("cd /tmp && rm -rf \(folder)", in: first, "clean", 0)
