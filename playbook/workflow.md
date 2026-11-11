@@ -98,12 +98,13 @@ OWNER=<your agent name> make vm-e2e DERIVED_DATA=/tmp/ovvi-dd-NN<track> ONLY=…
 
 - `make vm-e2e` builds the tests on the Mac, then runs them in the VM with the Mac's build and Xcode, shared read
   only. The result is `$DERIVED_DATA/vm.xcresult`. Run it in a background command.
-- **The VM lock** (`/tmp/ovvi-vm.lock`, held with `lockf`; `/tmp/ovvi-vm.lock.owner` names the holder): the script
+- **The VM lock** (`~/.config/ovvi-tart/locks/ovvi-test.lock`, held with `lockf`; `ovvi-test.owner` beside it names
+  the holder; the Tart VM plugin's "in use" lock, so a card on the VM only watches and Stop refuses): the script
   takes it for the run, and stops at once with "the VM is busy" while another holds it. The kernel frees it when the
   run ends, also when it is killed. One VM only: never start a second one for tests.
 - Anything else you do in the VM that clicks, types or opens apps takes the lock too:
-  `lockf -k -t 0 /tmp/ovvi-vm.lock tart exec ovvi-test …`. The pointer over the VM's card, or a click in it, during a
-  run breaks that run.
+  `lockf -k -t 0 ~/.config/ovvi-tart/locks/ovvi-test.lock tart exec ovvi-test …`. A card on the VM sends it no
+  input while the lock is held.
 - The VM stays running between runs (a boot costs about 40 s, and start and stop cycles can hit macOS's VM limit).
   The orchestrator stops it when a project ends: `tart stop ovvi-test`.
 - Never run the same tests again without a code change, in the VM or on CI.

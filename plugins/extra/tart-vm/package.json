@@ -1,0 +1,39 @@
+{
+  "name": "ovvi-tart-plugin",
+  "version": "0.5.0",
+  "private": true,
+  "type": "module",
+  "description": "This Mac's Tart VMs in a card: start, stop and create them, and a VM's screen with its keyboard and pointer.",
+  "keywords": ["tart", "vm", "virtual machine", "macos", "vnc", "screen sharing"],
+  "scripts": {
+    "build": "node build.mjs",
+    "check": "tsc -p ."
+  },
+  "dependencies": {
+    "@novnc/novnc": "1.7.0",
+    "ws": "8.22.2"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2"
+  },
+  "peerDependencies": { "@ovvi/plugin-api": "*" },
+  "peerDependenciesMeta": { "@ovvi/plugin-api": { "optional": true } },
+  "ovvi": {
+    "id": "tart-vm",
+    "name": "Tart VM",
+    "api": 3,
+    "entry": "dist/main.js",
+    "icon": "macwindow",
+    "chooser": "Tart VM",
+    "header": [
+      { "id": "back", "type": "button", "symbol": "chevron.left", "title": "All VMs", "hidden": true },
+      { "id": "info", "type": "text", "style": "dim", "hidden": true },
+      { "type": "spacer" },
+      { "id": "in-use", "type": "text", "symbol": "lock", "hidden": true },
+      { "id": "tart", "type": "button", "style": "bordered", "symbol": "arrow.up.forward.app", "title": "Open in Tart",
+        "hidden": true }
+    ],
+    "connect": ["ws://127.0.0.1:57900"]
+  }
+}

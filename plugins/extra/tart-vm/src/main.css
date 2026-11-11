@@ -1,0 +1,27 @@
+html, body { margin: 0; height: 100%; overflow: hidden; }
+#screen { position: absolute; inset: 0; }
+/* The card's corner radius (CardSurface.radius), on the screen at its scaled size. */
+#screen canvas { border-radius: 10px; }
+/* macOS Screen Sharing sends no cursor shape and draws none into a VM's screen, so noVNC's cursor stays "none": the
+   system arrow instead. A shape from another server still shows. */
+#screen canvas[style*="cursor: none"] { cursor: default !important; }
+main { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; padding: 0 24px; text-align: center; }
+main[hidden] { display: none; }
+h2 { margin: 0; font-size: 15px; font-weight: 600; }
+p { margin: 0 0 10px; max-width: 420px; color: var(--dim); line-height: 1.4; }
+main > div, form { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+form { margin-bottom: 10px; }
+ul { width: min(520px, 100%); margin: 6px 0 14px; padding: 0; list-style: none; text-align: left; }
+li { display: flex; align-items: center; gap: 12px; padding: 9px 2px; border-bottom: 0.5px solid var(--divider); }
+li:first-child { border-top: 0.5px solid var(--divider); }
+li > div:first-child { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+li span { color: var(--dim); }
+input { height: 28px; padding: 0 10px; border: 0; border-radius: 7px; font: inherit; color: var(--text); outline: none;
+  background: color-mix(in srgb, var(--text) 9%, transparent); }
+button { all: unset; height: 28px; padding: 0 14px; border-radius: 14px; font-weight: 500; color: var(--text);
+  background: color-mix(in srgb, var(--text) 9%, transparent); }
+button.main { color: var(--on-accent); background: var(--accent); }
+button:hover { filter: brightness(1.08); }
+button:active { filter: brightness(0.92); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

@@ -133,15 +133,16 @@ another login session, with its own pointer, keyboard and screen.
 
 - **Set up once.** `brew install openai/tools/tart` (as on this Mac);
   `tart clone ghcr.io/cirruslabs/macos-golden-gate-base:latest golden-gate` (about 34 GB);
-  `tart clone golden-gate ovvi-test`, then grow its disk ([Disk](#the-vm)); and the Tart VM plugin, which gives `ovvi-tart` (`~/code/ovvi-tart-plugin`,
-  outside this repository; its README installs it).
+  `tart clone golden-gate ovvi-test`, then grow its disk ([Disk](#the-vm)); and `jq`. The script runs `ovvi-tart`
+  from the Tart VM plugin in this tree (`plugins/extra/tart-vm`); the plugin itself, to watch the VM in a card,
+  installs as its README says.
 - **The image.** `golden-gate` (from `ghcr.io/cirruslabs/macos-golden-gate-base`): the host's macOS, the Command
   Line Tools, no Xcode, user and password `admin`, logged in at boot, Screen Sharing on, and Tart's guest agent
   (`tart exec`). It stays clean: `ovvi-test` is a clone of it (`tart clone golden-gate ovvi-test`; an APFS copy,
   instant). A dirty `ovvi-test` is deleted and cloned again; the next run sets it up again by itself (about 30 s).
 - **Nothing is built or installed in the VM.** `make vm-e2e` runs `build-for-testing` on the Mac, then
-  `scripts/vm-test.sh`. The script boots the VM or keeps the running one (`ovvi-tart start`, from the Tart VM
-  plugin) with two shares: the Mac's Xcode, read only (the guest's `/Applications/Xcode.app` is a link to it, and
+  `scripts/vm-test.sh`. The script boots the VM or keeps the running one (`plugins/extra/tart-vm/bin/ovvi-tart
+  start`) with two shares: the Mac's Xcode, read only (the guest's `/Applications/Xcode.app` is a link to it, and
   `xcodebuild -runFirstLaunch` runs once), and `/tmp/ovvi-vm/runs`, where each run gets an APFS copy of the build
   products, `scripts/` and the Mac's herdr. In the guest, `scripts/e2e.sh xcodebuild test-without-building`
   runs the `.xctestrun`, and the xcresult lands in the share, then in `$DERIVED_DATA/vm.xcresult`.

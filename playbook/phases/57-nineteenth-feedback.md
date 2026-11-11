@@ -2042,6 +2042,38 @@ webkit directly instead of using browser plugin … if not we should provide tha
 - **Runs.** `testAPluginPageReachesOnlyTheLocalOriginsItDeclares` and `testAPluginCardAsksAndItsPageSetsItsSettings`
   green in the VM.
 
+### Tart VM plugin, third pass (p57-tart-plugin-v3, v4) and the plugin folders
+
+The user: "when connecting there is some different colored box instead of pane color, when connecting just show text
+and use pane background, don't add any solid color bacakground"; "can we add rounded borders to the screen sharing
+content? … similar to the pane border radius"; "mouse cursor doesn't work inside the vm area, i see mouse cursor
+disappears, and secondly does clicking on open in tart doesn't end the vm and restarts it right? … once i open the
+plugin, list all vms, and have option to stop them or open them and create a new one … closing plugin shouldn't stop
+the vm btw. it just disables that screen sharing thing"; "for tart plugins, can we keep it our repo only? … no top
+level folder, let's have plugins/ folder and within that may be two sub folders on for builtin and for these other
+ones".
+
+- **Fix (plugin 0.3, 0.4).** Status pages are text on the card's fill (no panel color). The screen's canvas has the
+  card's 10 pt corners (CardSurface.radius). The card's home is the VM list, every time it opens: Open (starts a VM
+  that is off, with no window), Stop (asks; `ovvi-tart stop`), New VM… (a name, the cost, a question with a VM
+  running); ‹ All VMs in the header. golden-gate is never started, stopped or deleted.
+- **Cause (the pointer vanished).** macOS Screen Sharing sends no cursor shape (no Cursor or VMware cursor rects, an
+  RFB probe under the VM lock) and draws no pointer into a VM's screen, so noVNC keeps the canvas at `cursor: none`.
+  **Fix:** the system arrow while noVNC has no shape.
+- **In use (generic).** The user: "we want the plugin to be generic not specific to any ovvi tests". The plugin
+  defines one convention: a tool holds `~/.config/ovvi-tart/locks/<vm>.lock` (lockf/flock), optionally naming
+  itself in `<vm>.owner`; while it is held the card sends no pointer or key (noVNC `viewOnly`, also until the bridge
+  first answers), shows "In use · ‹owner›", and Stop and Open in Tart refuse. `ovvi-tart in-use` reads the lock with
+  `F_GETLK`, never taking it (a probe would fail a holder's `lockf -t 0`). Ovvi's VM lock is now that lock for
+  `ovvi-test` (`/tmp/ovvi-vm.lock` is gone; one lock).
+- **Open in Tart** is a suspend and a resume (about 8 s): apps, files and processes survive; connections into the
+  guest (VNC, ssh, `tart exec`) drop. Closing the card ends only its VNC connection (checked: the bridge's connection
+  to `:5900` closed, the VM ran on).
+- **Folders.** `plugins/builtin/` (explorer, git, template: built and carried by `make web`) and `plugins/extra/`
+  (tart-vm: checked by `make lint`, installed from its folder, not carried). The plugin moved from its own repo
+  (`~/code/ovvi-tart-plugin` at 5051b1a) as a copy, then 0.5 (the in-use lock). `scripts/vm-test.sh` runs
+  `ovvi-tart` from the tree. A card's next screen replaces a bridge LaunchAgent made from another folder.
+
 ### Track B2 (item 89)
 
 - **What happened, item by item.** (1) The sort was the window's scene storage. (2) Recent worked on the old code (a

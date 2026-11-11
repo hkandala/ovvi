@@ -26,26 +26,34 @@ format:
 	swiftlint lint --fix --quiet
 	swiftformat .
 
-lint:
+# The extra plugins (plugins/extra) are checked here, not bundled: a user installs one from its folder.
+EXTRAS := tart-vm
+lint: plugins/node_modules/@ovvi/plugin-api $(EXTRAS:%=plugins/extra/%/node_modules/.package-lock.json)
+	for id in $(EXTRAS); do npm --prefix plugins/extra/$$id run --silent check || exit 1; done
 	swiftformat --lint .
 	swiftlint lint --strict --quiet
 	@if git grep -nwE 'p[k]ill|kill[a]ll' -- . ':!docs' ':!playbook' ':!resources'; then \
 		echo 'No pattern kills: kill the exact pids you started'; exit 1; fi
 
+# The built-in plugins: the defaults and the template, in the app.
 PLUGINS := explorer git template
-web: web/node_modules/.package-lock.json $(PLUGINS:%=plugins/%/node_modules/.package-lock.json)
+web: web/node_modules/.package-lock.json plugins/node_modules/@ovvi/plugin-api \
+		$(PLUGINS:%=plugins/builtin/%/node_modules/.package-lock.json)
 	rm -rf .build/web
-	mkdir -p plugins/node_modules/@ovvi && ln -sfn ../../../web/ovvi plugins/node_modules/@ovvi/plugin-api
-	for id in $(PLUGINS); do npm --prefix plugins/$$id run --silent check && npm --prefix plugins/$$id run --silent build \
-		|| exit 1; done
+	for id in $(PLUGINS); do npm --prefix plugins/builtin/$$id run --silent check && \
+		npm --prefix plugins/builtin/$$id run --silent build || exit 1; done
 	mkdir -p .build/web/defaults .build/web/plugin-api
-	rsync -a --exclude node_modules --exclude dist plugins/explorer plugins/git .build/web/defaults/
-	rsync -a --exclude node_modules --exclude dist plugins/template .build/web/
+	rsync -a --exclude node_modules --exclude dist plugins/builtin/explorer plugins/builtin/git .build/web/defaults/
+	rsync -a --exclude node_modules --exclude dist plugins/builtin/template .build/web/
 	web/node_modules/.bin/tsc -p web/ovvi
 	web/node_modules/.bin/esbuild web/ovvi/runtime.ts --bundle --format=esm --minify --target=safari18 \
 		--log-level=warning --outfile=.build/web/ovvi.js
 	cp web/ovvi/card.css .build/web/
 	cp web/ovvi/ovvi.d.ts web/ovvi/package.json .build/web/plugin-api/
+
+# Every plugin finds the types above its folder.
+plugins/node_modules/@ovvi/plugin-api:
+	mkdir -p plugins/node_modules/@ovvi && ln -sfn ../../../web/ovvi plugins/node_modules/@ovvi/plugin-api
 
 plugins/%/node_modules/.package-lock.json: plugins/%/package-lock.json
 	npm ci --prefix plugins/$* --no-audit --no-fund

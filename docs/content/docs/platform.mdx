@@ -26,7 +26,7 @@ description: "The codebase, dependencies, swipes and views, the tab bar and test
 | Terminal drawing | `Lakr233/libghostty-spm`, exact pin (it brings DisplayLink) | Metal, IME, one Swift API |
 | SSH | the system `/usr/bin/ssh` | the user's SSH setup works unchanged |
 | The chat's Markdown | `swiftlang/swift-markdown` 0.9.0, exact pin (it brings cmark-gfm) | Apple's GFM parser: tables, task lists, strikethrough (D86) |
-| The default plugins' content ([File Explorer and Git](/docs/plugins/default-plugins)) | CodeMirror 6 (editor, languages, search), `@pierre/trees`, `markdown-it` and `pdfjs-dist` in `plugins/explorer`, `@pierre/diffs` in `plugins/git`; exact pins in each package's lockfile | recognized editors and viewers in the system's WebKit; no framework of our own |
+| The default plugins' content ([File Explorer and Git](/docs/plugins/default-plugins)) | CodeMirror 6 (editor, languages, search), `@pierre/trees`, `markdown-it` and `pdfjs-dist` in `plugins/builtin/explorer`, `@pierre/diffs` in `plugins/builtin/git`; exact pins in each package's lockfile | recognized editors and viewers in the system's WebKit; no framework of our own |
 | Building the plugins | Node with npm (in the `Brewfile`, and installed on CI). Each package builds with its own `esbuild` and checks with its own TypeScript; `web/` builds the API's runtime and checks it against its types. `make web` runs them all | the app ships no bundler and no package manager; at run time it uses the user's own ([Build a plugin](/docs/plugins/building)); no build output is in git |
 
 Each library has its entry, with its license, in the app's `Acknowledgements.txt`, the web ones included

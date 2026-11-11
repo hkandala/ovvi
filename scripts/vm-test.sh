@@ -3,24 +3,28 @@
 # Runs UI tests in the one Tart VM, ovvi-test, so they never take this Mac's pointer or keyboard. The VM runs this
 # Mac's build (build-for-testing) and this Mac's Xcode, shared from the Mac: nothing is built or installed in it.
 set -euo pipefail
-lock=/tmp/ovvi-vm.lock
+# The VM lock: the Tart VM plugin's "in use" lock of ovvi-test (plugins/extra/tart-vm, In use). While it is held, a
+# card on the VM sends it no input, and Stop and Open in Tart refuse.
+locks=~/.config/ovvi-tart/locks
+lock=$locks/ovvi-test.lock owner=$locks/ovvi-test.owner
+mkdir -p "$locks"
 # One run at a time, and no queue: a busy VM sends the tests to CI (playbook/workflow.md). The kernel frees the lock
 # when the run ends, also when it is killed.
 if [[ -z ${VM_LOCKED:-} ]]; then
     # -k everywhere: lockf without it deletes the file, and a later run would lock a new one beside the held one.
     lockf -k -s -t 0 "$lock" true ||
-        { echo "the VM is busy: $(cat "$lock.owner" 2>/dev/null); run the tests on CI (ci.md)" >&2; exit 75; }
+        { echo "the VM is busy: $(cat "$owner" 2>/dev/null); run the tests on CI (ci.md)" >&2; exit 75; }
     VM_LOCKED=1 exec lockf -k -t 0 "$lock" "$0" "$@"
 fi
 cd "$(dirname "$0")/.."
 dd=$1
 shift
 vm=ovvi-test runs=/tmp/ovvi-vm
-for tool in tart herdr ovvi-tart; do
+for tool in tart herdr; do
     command -v $tool >/dev/null || { echo "$tool is missing (playbook/ci.md, The VM)" >&2; exit 1; }
 done
 tart list --source local --quiet | grep -qx "$vm" || { echo "no VM $vm: tart clone golden-gate $vm" >&2; exit 1; }
-echo "${OWNER:-$USER} $$ $(date +%H:%M)" >"$lock.owner"
+echo "${OWNER:-$USER} $$ $(date +%H:%M)" >"$owner"
 run=$runs/runs/$$ guest="/Volumes/My Shared Files"
 # What a run leaves in the guest, also a killed one: the app and herdr servers it started, and xcodebuild's folder
 # for its products' path (a new one per run). The guest's disk is the VM's own.
@@ -28,13 +32,14 @@ tidy() {
     tart exec "$vm" zsh -c "pgrep -f '$guest/runs/|/bin/herdr --session ovvi-e2e-' | xargs kill 2>/dev/null
         rm -rf ~/Library/Developer/Xcode/DerivedData/Ovvi-*" || true
 }
-trap 'tidy; rm -rf "$run" "$lock.owner"' EXIT
+trap 'tidy; rm -rf "$run" "$owner"' EXIT
 trap 'exit 143' TERM INT HUP
 
 # The shares are set when the VM boots (ovvi-tart keeps them for its later starts).
 xcode=$(dirname "$(dirname "$(xcode-select -p)")")
 mkdir -p "$run"
-ovvi-tart start "$vm" "--dir=xcode:$xcode:ro" "--dir=runs:$runs/runs" >/dev/null
+# The Tart VM plugin's CLI, from this tree: nothing to install.
+plugins/extra/tart-vm/bin/ovvi-tart start "$vm" "--dir=xcode:$xcode:ro" "--dir=runs:$runs/runs" >/dev/null
 for _ in $(seq 60); do tart exec "$vm" true 2>/dev/null && break; sleep 1; done
 tart exec "$vm" true || { echo "$vm: tart exec does not answer" >&2; exit 1; }
 tidy

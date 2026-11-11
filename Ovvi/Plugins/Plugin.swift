@@ -1,7 +1,7 @@
 import HerdrKit
 import SwiftUI
 
-/// Must match `kind` in plugins/explorer/src/place.ts.
+/// Must match `kind` in plugins/builtin/explorer/src/place.ts.
 enum ExplorerPlace: String, CaseIterable {
     case files, file, preview, markdown
 

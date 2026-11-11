@@ -13,7 +13,7 @@ pnpm or bun on your login `PATH`. It ships no bundler.
 ## Start from the template
 
 The template is a plugin package with everything a build needs. It is
-`plugins/template` in the repository, and the app carries it in
+`plugins/builtin/template` in the repository, and the app carries it in
 `Ovvi.app/Contents/Resources/web/template/`.
 
 - **From the app:** **New Plugin…** on Settings ▸ Plugins asks for a name. It
@@ -312,8 +312,8 @@ the same `build`, `dev` and `check` scripts, a lockfile, their own
 
 | Plugin | Dependencies | Build |
 |---|---|---|
-| File Explorer (`plugins/explorer`) | CodeMirror 6 with its languages, `@pierre/trees`, markdown-it, `pdfjs-dist` | copies pdf.js's files into `dist/`, then the template's esbuild line |
-| Git (`plugins/git`) | `@pierre/diffs`, `@pierre/trees` | the template's esbuild line |
+| File Explorer (`plugins/builtin/explorer`) | CodeMirror 6 with its languages, `@pierre/trees`, markdown-it, `pdfjs-dist` | copies pdf.js's files into `dist/`, then the template's esbuild line |
+| Git (`plugins/builtin/git`) | `@pierre/diffs`, `@pierre/trees` | the template's esbuild line |
 
 - Each has one entry, `src/main.ts`, that routes the card's places and
   loads each heavy place with `import()`

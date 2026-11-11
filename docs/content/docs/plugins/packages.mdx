@@ -35,6 +35,10 @@ entry is a source string, or an object with a `source` (pi's form):
   author's: run `npm install` and `npm run build` in its folder.
 - A folder that the user or an agent puts in `~/.config/ovvi/plugins/` by
   hand also loads. It is not in `settings.json`.
+- The repository's extra plugins, in `plugins/extra/` (Tart VM), are local
+  paths: `npm install` and `npm run build` in the folder, then
+  `ovvi plugins install ~/code/ovvi/plugins/extra/<name>` or the path in
+  Settings ▸ Plugins. The app carries only `plugins/builtin/`.
 - `hideInNewPane` lists the ids of the plugins that the
   [New pane](/docs/ui/new-pane) chooser leaves out, for example
   `"hideInNewPane": ["git"]`. A plugin's page in Settings and the

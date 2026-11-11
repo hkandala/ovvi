@@ -99,11 +99,15 @@ This Mac, or a remote machine over the relay
 - The launch argument `-configFolder <path>` puts the whole folder
   somewhere else, and the plugin logs in its `logs/plugins`. The UI tests
   use it, so they never touch the user's plugins or logs.
-- In the repository, the defaults are `plugins/explorer` and `plugins/git`,
-  and the template is `plugins/template`. The runtime and the types are in
-  `web/ovvi/`. `make web` installs, checks and builds the three packages as
-  a user would, then copies their source without `node_modules` and `dist`
-  into `.build/web`, which the project copies into the app.
+- In the repository, the defaults are `plugins/builtin/explorer` and
+  `plugins/builtin/git`, and the template is `plugins/builtin/template`. The
+  runtime and the types are in `web/ovvi/`. `make web` installs, checks and
+  builds the three packages as a user would, then copies their source
+  without `node_modules` and `dist` into `.build/web`, which the project
+  copies into the app.
+- `plugins/extra/` holds plugins that the repository keeps but the app does
+  not carry (Tart VM). `make lint` checks them; a user installs one from its
+  folder ([Packages](/docs/plugins/packages)).
 
 ## Remote machines
 

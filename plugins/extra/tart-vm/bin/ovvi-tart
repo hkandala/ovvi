@@ -1,0 +1,148 @@
+#!/bin/bash
+# ovvi-tart: list, make, start and show Tart VMs, for the Tart VM plugin of Ovvi and for scripts.
+# /bin/bash is 3.2 on macOS: no mapfile, and an empty array needs ${a[@]+"${a[@]}"}.
+set -euo pipefail
+# Ovvi and launchd give a short PATH: add where tart, jq, herdr and node live.
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:${PATH:-}:/usr/bin:/bin:/usr/sbin:/sbin"
+here=$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)
+state=~/.config/ovvi-tart
+port=57900
+label=dev.ovvi.tart-bridge
+mkdir -p "$state"
+
+usage() {
+    cat >&2 <<'EOF'
+ovvi-tart list                          local VMs, as JSON, with "Memory", "CPU" and "os" (macOS, once seen)
+ovvi-tart new <name> [<from>]           clone <from> (golden-gate) into a new VM
+ovvi-tart start <vm> [<tart run arg>]…  boot it with no window, or keep the one running; prints its IP
+                                        (args are kept for later starts of that VM, e.g. --dir=…)
+ovvi-tart window <vm>                   show it in Tart's own window: a running VM is suspended and resumed
+                                        there with its state (a few seconds)
+ovvi-tart view <vm>                     start it and the screen bridge; prints its macOS, cores and memory
+                                        as JSON, for the card
+ovvi-tart stop <vm>                     shut it down
+ovvi-tart in-use <vm>                   exit 0 and print the owner while a tool holds the VM's lock (README, In use)
+EOF
+    exit 2
+}
+
+valid='^[A-Za-z0-9][A-Za-z0-9._-]*$'
+# A tool that uses a VM (a test run, a script that clicks in it) holds $state/locks/<vm>.lock, with lockf or flock,
+# and may name itself in <vm>.owner. Read with F_GETLK, without taking the lock: a probe that took it for a moment
+# would fail the holder's own `lockf -t 0`.
+in_use() {
+    perl -MFcntl -e 'open(my $f, "<", $ARGV[0]) or exit 1; my $l = pack("q q l s s", 0, 0, 0, F_WRLCK, 0);
+        fcntl($f, F_GETLK, $l) or exit 1; exit((unpack("q q l s s", $l))[3] == F_UNLCK)' "$state/locks/$1.lock"
+}
+owner() { head -1 "$state/locks/$1.owner" 2>/dev/null || true; }
+# A suspend or a stop would break what the holder does. ponytail: checked, not held, so a tool that starts in these
+# seconds can still lose the VM.
+busy() {
+    in_use "$1" || return 1
+    local o
+    o=$(owner "$1")
+    echo "$1 is in use${o:+ by $o}: try when it is free" >&2
+}
+running() { tart list --source local --format json | jq -e --arg vm "$1" '.[] | select(.Name == $vm and .Running)' >/dev/null; }
+
+case ${1:-} in
+list)
+    # Each VM's memory and cores come from its own config: `tart list` has neither. Its macOS, from its last view.
+    tart list --source local --format json | jq -c '.[]' | while IFS= read -r vm; do
+        name=$(jq -r .Name <<<"$vm")
+        jq -c --argjson get "$(tart get "$name" --format json)" --arg os "$(cat "$state/$name.os" 2>/dev/null)" \
+            '. + {Memory: $get.Memory, CPU: $get.CPU, os: $os}' <<<"$vm"
+    done | jq -s --argjson mem "$(($(sysctl -n hw.memsize) / 1048576))" '{vms: ., hostMemory: $mem}'
+    ;;
+new)
+    [[ ${2:-} =~ $valid && ${3:-golden-gate} =~ $valid ]] || usage
+    tart clone "${3:-golden-gate}" "$2"
+    ;;
+start | window)
+    vm=${2:-}
+    [[ $vm =~ $valid ]] || usage
+    how=--no-graphics
+    if [[ $1 == window ]]; then
+        # Only the process that runs a VM can draw it: save the running VM, then restore it in Tart's own window.
+        how=
+        ! busy "$vm" || exit 1
+        if running "$vm"; then
+            tart suspend "$vm" >/dev/null
+            for _ in $(seq 120); do running "$vm" || break; sleep 0.5; done
+            ! running "$vm" || { echo "$vm did not suspend: $(tail -1 "$state/$vm.log")" >&2; exit 1; }
+        fi
+    fi
+    shift 2
+    [[ $# -gt 0 ]] && printf '%s\n' "$@" >"$state/$vm.args"
+    if ! running "$vm"; then
+        args=()
+        [[ -f $state/$vm.args ]] && while IFS= read -r a; do args+=("$a"); done <"$state/$vm.args"
+        # In a session of its own, on its own log: the VM outlives the caller, its process group (a killed job, the
+        # bridge's launchd job) and Ovvi, until `tart stop` or a shutdown inside. Suspendable, so `window` can move
+        # it into Tart's window with its state (closing that window suspends it; the next start resumes it).
+        nohup perl -MPOSIX -e 'setsid; exec @ARGV' tart run "$vm" $how --suspendable ${args[@]+"${args[@]}"} \
+            >"$state/$vm.log" 2>&1 </dev/null &
+        pid=$!
+        for _ in $(seq 120); do
+            # Another start at the same moment (a script and the card) wins the VM: then this one waits for it.
+            kill -0 $pid 2>/dev/null || running "$vm" ||
+                { echo "$vm did not start: $(tail -1 "$state/$vm.log")" >&2; exit 1; }
+            tart ip "$vm" >/dev/null 2>&1 && break
+            sleep 1
+        done
+    fi
+    ip=$(tart ip "$vm")
+    # Screen Sharing answers last of what a client needs: then the screen and ssh are up.
+    for _ in $(seq 120); do nc -z -G1 "$ip" 5900 2>/dev/null && break; sleep 1; done
+    nc -z -G1 "$ip" 5900 2>/dev/null || { echo "$vm booted, but its Screen Sharing does not answer on $ip:5900" >&2; exit 1; }
+    echo "$ip"
+    ;;
+view)
+    "$0" start "${2:-}" >/dev/null
+    command -v node >/dev/null || { echo "node is missing: the bridge needs Node.js" >&2; exit 1; }
+    plist=~/Library/LaunchAgents/$label.plist
+    # A LaunchAgent, so a card shows its screen again after a restart: the bridge starts at login.
+    agent=$(launchctl print "gui/$(id -u)/$label" 2>/dev/null || true)
+    # One made from another folder (this one was moved or copied) runs that folder's bridge: replace it.
+    if [[ -n $agent && $agent != *"$here/bridge.mjs"* ]]; then
+        launchctl bootout "gui/$(id -u)/$label"
+        for _ in $(seq 50); do launchctl print "gui/$(id -u)/$label" >/dev/null 2>&1 || break; sleep 0.1; done
+        agent=
+    fi
+    if [[ -z $agent ]]; then
+        mkdir -p ~/Library/LaunchAgents ~/Library/Logs
+        cat >"$plist" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>$label</string>
+  <key>ProgramArguments</key><array><string>$(command -v node)</string><string>$here/bridge.mjs</string></array>
+  <key>EnvironmentVariables</key><dict><key>PATH</key><string>$PATH</string></dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>AbandonProcessGroup</key><true/>
+  <key>StandardErrorPath</key><string>$HOME/Library/Logs/ovvi-tart-bridge.log</string>
+</dict></plist>
+EOF
+        launchctl bootstrap "gui/$(id -u)" "$plist"
+    fi
+    for _ in $(seq 50); do nc -z -G1 127.0.0.1 $port 2>/dev/null && break; sleep 0.2; done
+    nc -z -G1 127.0.0.1 $port 2>/dev/null ||
+        { echo "the screen bridge does not answer: ~/Library/Logs/ovvi-tart-bridge.log" >&2; exit 1; }
+    # The guest agent answers a little after Screen Sharing on a fresh boot; no version beats a stuck card.
+    os=$(perl -e 'alarm 10; exec @ARGV' tart exec "$2" sw_vers -productVersion 2>/dev/null || true)
+    [[ -n $os ]] && echo "$os" >"$state/$2.os"
+    tart get "$2" --format json | jq -c --arg os "$os" '{os: $os, CPU, Memory}'
+    ;;
+stop)
+    [[ ${2:-} =~ $valid ]] || usage
+    ! busy "$2" || exit 1
+    tart stop "$2"
+    ;;
+in-use)
+    [[ ${2:-} =~ $valid ]] || usage
+    in_use "$2" || exit 1
+    owner "$2"
+    ;;
+*) usage ;;
+esac
