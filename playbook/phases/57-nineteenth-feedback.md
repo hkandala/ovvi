@@ -1984,6 +1984,13 @@ you did, no need of reverting them".
     we should mention like either you open the pane or let agent opens panes etc, make sure to keep it one line
     - and in the final remote screen, we are just opening the menu, but that doesn't seem clear, we should show
     clicking on add machine and typing certain machine name in ssh and stop."
+    Later, on the Everything you need clip: "in the recording i noticed, we are providing exact ovvi commands to claude
+    code to open the panes, instead point the claude code to ovvi skill before itself and keep the session ready, and
+    there shoulnd't be a rpopmt, instead it should look like claude is done with its work, and opening git, deploy panes
+    and then browser pane for user review"; "in its recording i noticed claude code permission propmts were coming, it
+    should probably run in yolo mode to avaoid those"; "its claude code opening deploy plugin beisde but opening working
+    tree in another tab, we should also not have any tabs in that workspace, so we can clarly see the brwoser tab
+    getting opened, and open git tree, not working tree".
 
 89. Pinned spaces and sorting, second pass (Track B2):
     "- let's change the sorting to specific to session instead of window and all sessions follow the default ones, if
@@ -2155,3 +2162,35 @@ ones".
 91. Faster UI tests (Track CI2; report `~/Downloads/ovvi-research/ci-speed/report.html`): the user approved the
     coverage-neutral cuts, the 4 drops, 31 merges and 5 slims, and clearing the VM's notification dialog: "yep go with
     1,2 and 4, no paid ones".
+
+### Track Y5 (item 88)
+
+- **Cause, colors.** Two causes, both measured in sRGB. (1) The recorder filmed with a ScreenCaptureKit filter that
+  names the windows it takes. Such a capture draws the window's behind-window glass over nothing: dark 33 and light
+  241, whatever is under the window. The same window on screen shows 26 over black and 249 over white (the user's
+  screenshot: 27). Only a filter that leaves the other windows out draws the glass from what is really under it. Even
+  then, leaving out the desktop's own windows brings the 33 back. (2) The clips were tagged bt709, and AVFoundation
+  plays sRGB pixels with that tag lighter (33 as 36, 43 as 49, as in the screenshot). They are now tagged sRGB, and
+  they play as encoded.
+- **Fix, colors.** Each film keeps only the window's rect. Its filter leaves out every other app's window, those off
+  screen too, but not the desktop's, which lie under the backdrop. The filter is rebuilt every 0.25 s for new windows.
+  A new window over the rect marks the take, and the script deletes the film and fails the take. The backdrop (black
+  or white) covers only the window plus 80 pt. It sits right under the window and lives only while a film runs (it
+  ends by itself at 170 s, the film at 150 s). Measured, the new clips' top bar and sidebar: dark 26, light 249, the
+  same as the real window on screen over the backdrop.
+- **Decisions.** The orchestrator chose the leave-others-out filter with the intrusion rule over a take-only filter
+  (safe by construction, but 7–8 levels off) and over recording-only app code. The build in clip 1 replays a real
+  cargo build's lines (no Rust crates offline), with cargo's pre-1.77 Finished line, which fits the pane. The scene's
+  Claude Code approves every tool through a PreToolUse hook in its own settings: `--dangerously-skip-permissions`
+  shows "bypass permissions on" under the prompt. It runs Opus 4.5, as the scene's stand-ins show it.
+- **Cause, the jagged space switch.** The recording, not the app. The old take clicked the space twice and walked the
+  window's accessibility tree between the clicks, and each walk holds the app's main thread. So the highlight came in
+  three steps over 0.35 s, 1.1 s after the click. Clicks on camera now go to spots found before the film starts, and
+  the switch lands in the click's frame (60 fps track: 20, then 26 on hover, then 45).
+- **Found on the way.** SCRecordingOutput's finish callback often never comes: the film waited on it forever and kept
+  its backdrop up over the user's screen. It now waits 3 s at most, and a stdin read ends it. A `withTaskGroup` waits
+  for all its children, so a timeout child kept the film running until the timeout. A menu item's title with a space
+  shifted the fields of `ax find`. A full-screen backdrop and a hung film locked the user out twice: the backdrop is now
+  window-sized and short-lived (lessons.md).
+- **For the user.** Watch the five clips in both looks in the report. The plugins clip is Claude Code's real turn, so
+  its pace is the model's.
