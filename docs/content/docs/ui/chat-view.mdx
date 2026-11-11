@@ -410,8 +410,8 @@ A run is one quiet line with no card: its summary and a chevron.
   failures: "Ran 89 commands, talked to 69 agents, stopped 26 agents, +4
   more, 4 failed". A tool it does not know reads "ran ‹tool› N times". The
   tool calls of a codemode script count as their own, failures too.
-- As in its groups, thinking between tool calls is a step of the run (a
-  "Thought" row inside it).
+- As in pi-content-layout's groups, thinking between tool calls is a step of
+  the run (a "Thought" row inside it).
 - Open, a run has one row per step: a symbol for its kind, the tool, its
   target, its result (failed in red, a spinner while it runs), its time and
   a chevron (`bash npm test exit 1   4.2s`). The symbols are squares and
@@ -520,7 +520,7 @@ A run is one quiet line with no card: its summary and a chevron.
 - **Over the messages.** The question card and the reply box sit over the
   bottom of the messages, which scroll under the glass. The last message
   scrolls clear of the box as it grows. This is the one place where
-  something sits over pane content, because the user asked for it. The live
+  something sits over pane content. The live
   terminal keeps its own row under the messages. Simpler choice: a wheel
   over the reply box does not scroll the messages under it.
 - **Markdown.** `swift-markdown` (cmark-gfm) parses it. 14 pt text with
@@ -712,7 +712,7 @@ on This Mac and on a remote machine, in light mode and in Classic.
 - **Titles:** real sessions' titles in the tab and the sidebar's agent rows, after
   `/rename` (Claude Code) and `/name` (Pi).
 - The company launchers rewrite `~/.claude/settings.json` and reinstall a
-  plugin into `~/.codex` on each start, as they always do.
+  plugin into `~/.codex` on each start. That is their own behavior.
 
 ## Choices
 

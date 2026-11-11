@@ -113,10 +113,8 @@ the agent rows, the hover card, notifications):
   button. Hover controls are also in context menus and the menu bar.
 - Each divider is an adjustable element: "Divider between ‹a› and ‹b›", with
   the ratio as a percent ([Dividers](/docs/layout#dividers)).
-- The terminal font size is the app's text size: 13 pt by default, 8 to 32,
-  with View ▸ Increase Font Size (⌘+ or ⌘=), Decrease Font Size (⌘-) and Reset
-  Font Size (⌘0)
-  ([Settings](/docs/ui/settings)).
+- The terminal font size is the app's text size
+  ([Settings](/docs/ui/settings#appearance)).
 - Reduce Motion makes the sidebar's session pages jump, and turns off the icon
   bounce, the layout motion, the reorder slides, the
   spring-load pulse, the sidebar's slide, the plugins' sidebar slide, a plugin
@@ -219,8 +217,7 @@ floats a pane, and the dividers and Balance Splits cover resizing. Open
 Terminal Here, Start Agent Here, Open Browser Here, Open File Explorer Here
 and Open Git Here (File, the card's menu, the palette) have none either
 ([New pane](/docs/ui/new-pane#commands-that-change-a-panes-kind)). In the palette: ↩ runs, ⎋ goes back or closes, ⌫ on an empty
-field goes back. Keyboard focus among the chrome's buttons follows the
-system's Full Keyboard Access setting.
+field goes back.
 
 The menu bar redraws whenever a command's title, key, or enabled state
 changes: SwiftUI rebuilds the menu bar only when the window's command list
@@ -228,7 +225,7 @@ changes, and a stale disabled item would swallow its key (⇧⌘↩ after a spli
 
 Rex shortcuts not taken, and why:
 - ⌘K stays the palette (D48), so Change Session (⌘K in Rex) is not taken;
-  sessions open with Open Session (⌥⌘T). ⇧⌘P also opens it (Rex's key).
+  sessions open with Open Session (⌥⌘T).
 - ⌘/ (sidebar) is Keyboard Shortcuts instead: ⌃⌘S is the macOS sidebar key.
 - ⌘R reloads only a browser card's page: the snapshot is live, so nothing else needs a refresh. Replace Pane
   is ⇧⌘R, Redraw Terminal ⌥⌘R: no card has both Redraw Terminal and Reload Plugin, and ⌃L stays the program's
