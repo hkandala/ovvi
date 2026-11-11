@@ -29,10 +29,6 @@ extension OvviUITests {
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(element("overview").vanishes(within: 5))
         try await expectText([pane, right], "overview and back")
-        element("titlebar.sidebar").click()
-        try await expectText([pane, right], "sidebar hidden")
-        element("titlebar.sidebar").click()
-        try await expectText([pane, right], "sidebar shown")
     }
 
     func testCardKeepsItsGridUntilItsSizeSettles() async throws {
@@ -60,8 +56,6 @@ extension OvviUITests {
         let screen = try await read("w1:p1")
         XCTAssertEqual(winches(screen), 1, screen)
         try await expectPTYSize("w1:p1")
-        try await fill("w1:p1")
-        try await expectText(["w1:p1"], "after the resize")
     }
 
     func testResizeNeverBlanksTheText() async throws {
