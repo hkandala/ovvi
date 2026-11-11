@@ -18,8 +18,13 @@ extension OvviUITests {
             // The link down only once: the light pass goes straight to a name that does not resolve.
             try await hostname(appearance == "dark" ? "192.0.2.1" : "ovvi-key.invalid")
             _ = try await Self.post("\(one)/ssh-drop", Data("ovvi-key".utf8))
-            XCTAssertFalse(until(6) { stopped.exists }, "a card says its terminal stopped before Reconnecting")
-            XCTAssertTrue(reconnecting.exists(within: connect))
+            // The whole time until Reconnecting shows, however long ssh takes to say why.
+            var early = false
+            XCTAssertTrue(until(connect) {
+                early = stopped.exists
+                return early || reconnecting.exists
+            }, "no Reconnecting")
+            XCTAssertFalse(early, "a card says its terminal stopped before Reconnecting")
             XCTAssertFalse(element("detail.reconnecting.detail").stringValue.isEmpty)
             try await hostname("ovvi-key.invalid")
             element("workspace.w2").click()

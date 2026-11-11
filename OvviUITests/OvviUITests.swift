@@ -128,15 +128,22 @@ extension OvviUITests {
     func expectPTYSize(_ pane: String, in window: XCUIElement? = nil) async throws {
         let terminal = element("terminal.\(pane)", in: window)
         try await waitForPrompt(pane)
+        let sizes = { (screen: String) in screen.split(separator: "\n").filter { $0.wholeMatch(of: /\d+ \d+/) != nil } }
         var seen = "no grid"
         do {
             try await poll("stty size in \(pane) to match its card", times: 30) { () async throws -> String? in
                 guard terminal.exists, let grid = terminal.value as? String, !grid.isEmpty else { return nil }
-                try await send("clear; stty size\r", to: pane)
-                try await Task.sleep(for: .milliseconds(200))
-                let screen = try await read(pane)
+                // Cleared first: the last try's size line would read as this one's.
+                try await send("clear\r", to: pane)
+                try await waitFor(pane, times: 20) { sizes($0).isEmpty }
+                try await send("stty size\r", to: pane)
+                var screen = ""
+                try await waitFor(pane, times: 20) {
+                    screen = $0
+                    return !sizes($0).isEmpty
+                }
                 seen = "card \(grid), screen \(screen.split(separator: "\n").suffix(3).joined(separator: " | "))"
-                return screen.split(separator: "\n").contains { $0 == grid } ? grid : nil
+                return sizes(screen).contains { $0 == grid } ? grid : nil
             }
         } catch {
             throw Waited(description: "waited for stty size in \(pane) to match its card: \(seen)")

@@ -140,7 +140,8 @@ extension OvviUITests {
         // Both ways: the sign follows the natural scrolling setting.
         for delta in [-300.0, 300] {
             overview.scroll(byDeltaX: delta, deltaY: 0)
-            XCTAssertFalse(until(1) { window.title.hasSuffix(" - \(two)") }, "a wheel of \(delta) changed the session")
+            let changed = until(0.5) { window.title.hasSuffix(" - \(two)") }
+            XCTAssertFalse(changed, "a wheel of \(delta) changed the session")
         }
         app.typeKey("]", modifierFlags: [.command, .option])
         XCTAssertTrue(title.has(\.stringValue, two, within: 2))

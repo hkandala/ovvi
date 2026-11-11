@@ -82,7 +82,8 @@ extension OvviUITests {
         XCTAssertTrue(hasKeyboard("pane.\(first).rename"))
         hoverHeader(second)
         let rename = element("pane.\(first).rename")
-        XCTAssertFalse(until(1) { !NSPredicate(format: "hasKeyboardFocus == true").evaluate(with: rename) })
+        // Focus Follows Mouse moves the keyboard 150 ms after the pointer rests.
+        XCTAssertFalse(until(0.5) { !NSPredicate(format: "hasKeyboardFocus == true").evaluate(with: rename) })
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(hasKeyboard("terminal.\(second)"))
     }

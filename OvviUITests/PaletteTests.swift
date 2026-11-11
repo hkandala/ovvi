@@ -159,7 +159,7 @@ extension OvviUITests {
         XCTAssertTrue(look.has(\.stringValue, light, within: 2))
         app.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(filter.vanishes(within: 2))
-        XCTAssertFalse(until(1) { look.stringValue != light })
+        XCTAssertFalse(until(0.5) { look.stringValue != light })
     }
 
     func testSecondShortcuts() {

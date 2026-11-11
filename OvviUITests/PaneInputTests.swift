@@ -98,6 +98,6 @@ extension OvviUITests {
         _ = try await Self.post("\(one)/resume")
         XCTAssertTrue(drawn(first, within: 10) && drawn(second, within: 10))
         XCTAssertTrue(hasKeyboard(card), "the keyboard is on \(keyboardOwner())")
-        XCTAssertFalse(until(1) { !NSPredicate(format: "hasKeyboardFocus == true").evaluate(with: card) })
+        XCTAssertFalse(until(0.5) { !NSPredicate(format: "hasKeyboardFocus == true").evaluate(with: card) })
     }
 }

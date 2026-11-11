@@ -113,8 +113,12 @@ extension OvviUITests {
         try await poll("typing to reach the pane again", times: 20) { () async throws -> Bool? in
             app.typeText("echo relay-$((40+3))")
             app.typeKey(.return, modifierFlags: [])
-            try await Task.sleep(for: .seconds(1))
-            return try await read("w1:p2").contains("\nrelay-43") ? true : nil
+            do {
+                try await waitFor("w1:p2", times: 10) { $0.contains("\nrelay-43") }
+                return true
+            } catch is Waited {
+                return nil
+            }
         }
         XCTAssertFalse(element("ask.text").exists)
         XCTAssertFalse(element("detail.reconnecting").exists)
