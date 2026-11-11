@@ -41,7 +41,7 @@ How CI runs, how to run part of it, and how to keep it green and fast.
 | Full run | `gh workflow run ci.yml --ref main` | 5 |
 | Chosen UI tests | `gh workflow run ci.yml --ref main -f only_testing=OvviUITests/OvviUITests/testA,OvviUITests/OvviUITests/testB` | 1 |
 | On-demand tests | `gh workflow run ci.yml --ref main -f on_demand=true` | 4 |
-| Same locally | `make vm-e2e ONLY=…`, or `FULL=1` for the whole suite (in the Tart VM); `make e2e ONLY=…` only under the GUI lock | the VM; this Mac |
+| Same locally, to explore | `make vm-e2e ONLY=…` (in the Tart VM; busy: use CI); `make e2e ONLY=…` only under the GUI lock | the VM; this Mac |
 
 - **Find your run:** `gh run list --workflow ci.yml --limit 5 --json databaseId,headSha,event,createdAt`,
   the one on your commit (or created after your dispatch).
@@ -112,14 +112,15 @@ Round the means to whole seconds: `scripts/shard.py` reads integers.
 
 ## The VM
 
-UI tests on this Mac run in one Tart VM, `ovvi-test` ([UI tests run in the VM](workflow.md#ui-tests-run-in-the-vm)).
+Exploratory UI test runs on this Mac go to one Tart VM, `ovvi-test`; tests of a defined flow go to CI
+([UI tests run in the VM or on CI](workflow.md#ui-tests-run-in-the-vm-or-on-ci)).
 Nothing on the host isolates XCUITest: the runner asks `testmanagerd` to post HID events into the login session,
 so the pointer moves on every display, virtual ones (`CGVirtualDisplay`, BetterDisplay, DeskPad) too. A VM is
 another login session, with its own pointer, keyboard and screen.
 
 - **Set up once.** `brew install openai/tools/tart` (as on this Mac);
   `tart clone ghcr.io/cirruslabs/macos-golden-gate-base:latest golden-gate` (about 34 GB);
-  `tart clone golden-gate ovvi-test`; and the Tart VM plugin, which gives `ovvi-tart` (`~/code/ovvi-tart-plugin`,
+  `tart clone golden-gate ovvi-test`, then grow its disk ([Disk](#the-vm)); and the Tart VM plugin, which gives `ovvi-tart` (`~/code/ovvi-tart-plugin`,
   outside this repository; its README installs it).
 - **The image.** `golden-gate` (from `ghcr.io/cirruslabs/macos-golden-gate-base`): the host's macOS, the Command
   Line Tools, no Xcode, user and password `admin`, logged in at boot, Screen Sharing on, and Tart's guest agent
@@ -137,6 +138,12 @@ another login session, with its own pointer, keyboard and screen.
 - **Cost.** 4 cores and 8 GB (about 4.6 GB resident while tests run). A boot takes about 40 s to a working
   `tart exec`. On a running VM, a run of two short tests takes about 30 s (11 s of tests). The first run on a new
   clone adds about 30 s of setup. Idle, the VM takes about a quarter of a core.
+- **Disk.** `ovvi-test` has 100 GB (about 56 GB free): the image's 50 GB left about 4 GB, and a low-space purge
+  killed a test runner. To grow it: stop the VM, `tart set ovvi-test --disk-size 100`, boot, and in the guest
+  `yes | sudo diskutil repairDisk disk1`, `sudo diskutil eraseVolume free free disk1s3` (the recovery container,
+  which sits after the main one), `sudo diskutil apfs resizeContainer disk1s2 0`. Tart's disk is a sparse file: the
+  Mac's disk holds only what the guest wrote (37 GB). Each run removes what it left in the guest (its processes and
+  xcodebuild's folder), also after a kill, and stops under 8 GB free.
 - **Its screen.** 1024 × 768 points at 2x, not CI's 1x 1024 × 674. The user watches it in an Ovvi pane: New pane ▸
   Tart VM (the plugin's README installs it). The VM runs `--suspendable`: the card's **Open in Tart** suspends it and
   resumes it in Tart's window (about 8 s, refused while a run holds the lock); closing that window suspends it, and the

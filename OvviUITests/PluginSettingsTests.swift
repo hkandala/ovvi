@@ -62,14 +62,16 @@ extension OvviUITests {
         let config = "/tmp/ovvi-e2e-connect", folder = "\(config)/plugins/ovvi-e2e-connect"
         let manifest = #"{"version":"1.0.0","ovvi":{"id":"ovvi-e2e-connect","name":"Connect","api":3,"#
             + #""entry":"main.js","icon":"network","connect":["http://127.0.0.1:57931"]}}"#
-        // Two servers, one declared. No CORS headers: a no-cors fetch that gets through is opaque.
+        // Two servers, one declared; nc, as python3 took over 15 s to start on a cold VM. No CORS headers: a
+        // no-cors fetch that gets through is opaque.
         let main = #"export default async function main() { const get = (port) => fetch("#
             + #""http://127.0.0.1:" + port, { mode: "no-cors" }).then((r) => r.type, () => "blocked"); "#
             + #"document.body.appendChild(document.createElement("p")).textContent = "#
             + #""declared " + await get(57931) + " other " + await get(57932) }"#
         try await send("rm -rf \(config) && mkdir -p \(folder) && echo '\(manifest)' > \(folder)/package.json && "
             + "echo '\(main)' > \(folder)/main.js && for p in 57931 57932; do "
-            + "python3 -m http.server $p --bind 127.0.0.1 -d \(config) >/dev/null 2>&1 & done; "
+            + "(while :; do printf 'HTTP/1.1 204 No Content\\r\\n\\r\\n' | nc -l 127.0.0.1 $p; done) >/dev/null 2>&1 & "
+            + "done; "
             + "until curl -sf 127.0.0.1:57931 >/dev/null && curl -sf "
             + "127.0.0.1:57932 >/dev/null; do sleep 0.1; done; clear; echo made-$((6*7))\r", to: shell)
         try await waitFor(shell, times: 150) { $0.contains("made-42") }

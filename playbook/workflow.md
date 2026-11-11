@@ -82,10 +82,15 @@ paraphrase.
 - **Commands:** use the Makefile targets (`make lint`, `format`, `build`, `test`, `vm-e2e`, `e2e`, `run`). A new
   command gets a target. A rule a tool can check gets a lint rule or a script, not a line in a doc.
 
-### UI tests run in the VM
+### UI tests run in the VM or on CI
 
-XCUITest and manual runs take over the mouse and keyboard of the Mac they run on. So UI tests run in one Tart VM,
-`ovvi-test`, never on the Mac the user works on ([how it works](ci.md#the-vm)):
+XCUITest and manual runs take over the mouse and keyboard of the Mac they run on, so UI tests never run on the Mac the
+user works on. An agent has two places:
+
+- **A chosen-tests CI run** for tests that exist, of a flow that is defined: dispatch it
+  ([how](ci.md#running-part-of-it)), give the run id in your report, and go on. Full runs go to CI only.
+- **The Tart VM `ovvi-test`** for exploring: screenshots, frame strips, a review-and-improve loop, anything you drive
+  or look at by hand ([how it works](ci.md#the-vm)). When the VM is busy, use CI.
 
 ```sh
 OWNER=<your agent name> make vm-e2e DERIVED_DATA=/tmp/ovvi-dd-NN<track> ONLY=…
@@ -94,22 +99,19 @@ OWNER=<your agent name> make vm-e2e DERIVED_DATA=/tmp/ovvi-dd-NN<track> ONLY=…
 - `make vm-e2e` builds the tests on the Mac, then runs them in the VM with the Mac's build and Xcode, shared read
   only. The result is `$DERIVED_DATA/vm.xcresult`. Run it in a background command.
 - **The VM lock** (`/tmp/ovvi-vm.lock`, held with `lockf`; `/tmp/ovvi-vm.lock.owner` names the holder): the script
-  takes it for the test run only, and waits while another run holds it. The kernel frees it when the run ends,
-  also when it is killed, so it never goes stale. One VM only: never start a second one for tests.
+  takes it for the run, and stops at once with "the VM is busy" while another holds it. The kernel frees it when the
+  run ends, also when it is killed. One VM only: never start a second one for tests.
 - Anything else you do in the VM that clicks, types or opens apps takes the lock too:
-  `lockf -k /tmp/ovvi-vm.lock tart exec ovvi-test …`. The pointer over the VM's card, or a click in it, during a run breaks that run.
+  `lockf -k -t 0 /tmp/ovvi-vm.lock tart exec ovvi-test …`. The pointer over the VM's card, or a click in it, during a
+  run breaks that run.
 - The VM stays running between runs (a boot costs about 40 s, and start and stop cycles can hit macOS's VM limit).
   The orchestrator stops it when a project ends: `tart stop ovvi-test`.
-- Run the tests you add or change in the VM, a few at a time (two short ones take about 30 s once the VM runs). Larger sets
-  go to a [chosen-tests CI run](ci.md#running-part-of-it): dispatch it, give the run id in your report, and go
-  on. The orchestrator watches it and sends back failures. The whole suite runs in the VM only when the orchestrator
-  asks for it: `make vm-e2e FULL=1` holds the lock for over an hour. Never run the same tests again without a code
-  change.
+- Never run the same tests again without a code change, in the VM or on CI.
 - Agents read a run from its xcresult (attachments and recordings) and take the VM's screen with
   `tart exec ovvi-test screencapture -x '/Volumes/My Shared Files/runs/…'`. The VM's pane (New pane ▸ Tart VM, the
   Tart VM plugin) is for the user: agents open no panes in the user's sessions. Inside the VM, `osascript` and
   System Events are safe: they reach only the VM.
-- RemoteTests skip on a local run (they need CI's sshd): run them in a chosen-tests CI run.
+- RemoteTests skip on a local run (they need CI's sshd): run them on CI.
 
 ### The GUI lock
 
@@ -189,7 +191,7 @@ A feature runs the same loop.
    panel: send the orchestrator one rough screenshot before you polish it. The orchestrator checks it
    against the design bar and settles order and wording then.
 4. Small commits on your branch, `make lint build test` green on each.
-5. Run only the UI tests you add or change, in the VM ([UI tests run in the VM](#ui-tests-run-in-the-vm)).
+5. Run only the UI tests you add or change, on CI or in the VM ([UI tests run in the VM or on CI](#ui-tests-run-in-the-vm-or-on-ci)).
 6. Self-review the diff against the phase file and the ponytail rules. Write your Findings.
 7. Start your code reviewer on the branch's head ([Reviews](#reviews)). Fix every blocker and should in one
    commit. Answer each nit with a fix or a one-line reason.
@@ -260,8 +262,8 @@ the tests, and anything the user must decide or check by hand."
 after), against the phase file, the design pages and `playbook/workflow.md`. Cover every side: bugs, races,
 leaks, error paths, edge cases; does it do what the user asked; what can be deleted or made simpler (the
 ponytail-review skill); herdr safety; accessibility identifiers; tests that assert nothing real, sleep,
-duplicate others, mock herdr where it is cheap, or would pass without the feature. Run UI tests only in
-the VM ([UI tests run in the VM](#ui-tests-run-in-the-vm)). Write a numbered list to ‹path›: file:line, severity, the concrete fix.
+duplicate others, mock herdr where it is cheap, or would pass without the feature. Run UI tests only on CI or in
+the VM ([UI tests run in the VM or on CI](#ui-tests-run-in-the-vm-or-on-ci)). Write a numbered list to ‹path›: file:line, severity, the concrete fix.
 Say what is clean. End with a verdict."
 
 **Final reviewer.** "Read-only final review of phase NN at ‹sha› (main after every track and the docs pass),

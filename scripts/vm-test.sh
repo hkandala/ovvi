@@ -4,11 +4,13 @@
 # Mac's build (build-for-testing) and this Mac's Xcode, shared from the Mac: nothing is built or installed in it.
 set -euo pipefail
 lock=/tmp/ovvi-vm.lock
-# One run at a time: lockf waits for the lock, and the kernel frees it when the run ends, also when it is killed.
+# One run at a time, and no queue: a busy VM sends the tests to CI (playbook/workflow.md). The kernel frees the lock
+# when the run ends, also when it is killed.
 if [[ -z ${VM_LOCKED:-} ]]; then
     # -k everywhere: lockf without it deletes the file, and a later run would lock a new one beside the held one.
-    lockf -k -s -t 0 "$lock" true || echo "the VM is busy: $(cat "$lock.owner" 2>/dev/null); waiting" >&2
-    VM_LOCKED=1 exec lockf -k "$lock" "$0" "$@"
+    lockf -k -s -t 0 "$lock" true ||
+        { echo "the VM is busy: $(cat "$lock.owner" 2>/dev/null); run the tests on CI (ci.md)" >&2; exit 75; }
+    VM_LOCKED=1 exec lockf -k -t 0 "$lock" "$0" "$@"
 fi
 cd "$(dirname "$0")/.."
 dd=$1
@@ -19,8 +21,15 @@ for tool in tart herdr ovvi-tart; do
 done
 tart list --source local --quiet | grep -qx "$vm" || { echo "no VM $vm: tart clone golden-gate $vm" >&2; exit 1; }
 echo "${OWNER:-$USER} $$ $(date +%H:%M)" >"$lock.owner"
-run=$runs/runs/$$
-trap 'rm -rf "$run" "$lock.owner"' EXIT
+run=$runs/runs/$$ guest="/Volumes/My Shared Files"
+# What a run leaves in the guest, also a killed one: the app and herdr servers it started, and xcodebuild's folder
+# for its products' path (a new one per run). The guest's disk is the VM's own.
+tidy() {
+    tart exec "$vm" zsh -c "pgrep -f '$guest/runs/|/bin/herdr --session ovvi-e2e-' | xargs kill 2>/dev/null
+        rm -rf ~/Library/Developer/Xcode/DerivedData/Ovvi-*" || true
+}
+trap 'tidy; rm -rf "$run" "$lock.owner"' EXIT
+trap 'exit 143' TERM INT HUP
 
 # The shares are set when the VM boots (ovvi-tart keeps them for its later starts).
 xcode=$(dirname "$(dirname "$(xcode-select -p)")")
@@ -28,7 +37,10 @@ mkdir -p "$run"
 ovvi-tart start "$vm" "--dir=xcode:$xcode:ro" "--dir=runs:$runs/runs" >/dev/null
 for _ in $(seq 60); do tart exec "$vm" true 2>/dev/null && break; sleep 1; done
 tart exec "$vm" true || { echo "$vm: tart exec does not answer" >&2; exit 1; }
-guest="/Volumes/My Shared Files"
+tidy
+# A full guest disk kills the test runner (a low-space purge): stop before that.
+free=$(tart exec "$vm" df -m /System/Volumes/Data | awk 'NR == 2 { print $4 }')
+((free > 8000)) || { echo "$vm has $free MB free, under 8 GB: free space in it, or grow its disk (ci.md)" >&2; exit 1; }
 tart exec "$vm" test -d "$guest/runs/$$" ||
     { echo "$vm runs without the test shares: tart stop $vm, then run again" >&2; exit 1; }
 # Once per VM, and again after an Xcode update: the shared Xcode is the guest's Xcode.

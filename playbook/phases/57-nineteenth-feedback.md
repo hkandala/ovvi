@@ -2028,6 +2028,14 @@ webkit directly instead of using browser plugin … if not we should provide tha
   window: the same VM, with its state, in Tart's window after about 8 s (spiked on a clone: a file in `/tmp` and a
   `--dir` share survived). Closing Tart's window suspends the VM; the card's Start and Connect, or the next
   `make vm-e2e`, resumes it headless. The button refuses while a test run holds the VM lock. A card loaded again
-  shows its VM but never boots one by itself. `make vm-e2e FULL=1` runs the whole suite in the VM.
+  shows its VM but never boots one by itself.
+- **The user's rule (VM or CI).** "use tart vms only for ad hoc runs, and should fall back to github ci ad hoc runs if
+  the vms are busy … if agents is testing already defined flow adn there is a test case already exists then running
+  in github ci should be fine, but if exploring certain thing and want to take screenshots and review and improve
+  then tart vms are good, again use the lock for tart vm". So `make vm-e2e` no longer queues: a busy VM stops it
+  with "the VM is busy", and the agent uses CI. Full runs go to CI only (a full VM run was started and stopped).
+- **Cause (a test runner killed in the VM).** The guest had about 4 GB free of the image's 50 GB, and macOS purged
+  the runner. **Fix:** a 100 GB disk (56 GB free; sparse, 37 GB on the Mac), each run tidies its guest leftovers,
+  also after a kill (a killed run had left its app, herdr servers and run folder), and a run stops under 8 GB free.
 - **Runs.** `testAPluginPageReachesOnlyTheLocalOriginsItDeclares` and `testAPluginCardAsksAndItsPageSetsItsSettings`
   green in the VM.
