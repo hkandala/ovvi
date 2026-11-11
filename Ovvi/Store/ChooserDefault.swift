@@ -48,28 +48,40 @@ extension HostStore {
         }
     }
 
-    /// Named keys as the terminal sends them, the rest as their text: libghostty would send its text later than the
-    /// keys.
+    /// All as herdr's keys, characters too, in one call: text goes by the terminal's stream and keys by herdr's API,
+    /// so a key sent right after text could pass it (CI: arrows held after a typed line landed on the empty prompt).
     func release(_ chooser: Chooser) {
         drop(chooser)
         let held = chooser.held
         chooser.held = []
         guard !held.isEmpty else { return }
         guard let terminal = keyboardTerminal(chooser) else { return NSSound.beep() }
+        var keys: [String] = []
         for event in held {
             if let key = PaneSurfaceView.herdrKey(event) {
-                terminal.keys([key])
+                keys.append(key)
             } else if event.modifierFlags.contains(.command) {
-                // ⌘V, framed as libghostty frames a paste; herdr pastes it.
+                // ⌘V, framed as libghostty frames a paste; herdr pastes it. The keys before it go first: a text
+                // waits for herdr's answer to them.
+                if !keys.isEmpty {
+                    terminal.keys(keys)
+                }
+                keys = []
                 NSPasteboard.general.string(forType: .string).map { terminal.type("\u{1B}[200~" + $0 + "\u{1B}[201~") }
             } else if let text = event.characters,
                       // Not AppKit's function-key characters (Home, End, Page Up and Down, forward delete).
                       !text.unicodeScalars.contains(where: { (0xF700 ... 0xF8FF).contains($0.value) })
             {
-                terminal.type(text)
+                keys += text.map { Self.named[$0] ?? String($0) }
             }
         }
+        if !keys.isEmpty {
+            terminal.keys(keys)
+        }
     }
+
+    /// herdr takes any one character as a key but these.
+    private static let named: [Character: String] = [" ": "space", "\r": "enter", "\t": "tab", "\u{7F}": "backspace"]
 
     private func keyboardTerminal(_ chooser: Chooser) -> PaneTerminal? {
         guard let id = chooser.paneID, let view = NSApp.keyWindow?.firstResponder as? PaneSurfaceView,
