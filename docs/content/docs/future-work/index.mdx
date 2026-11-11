@@ -30,7 +30,7 @@ never calls herdr's focus methods. A design gets decision numbers on the
   are not in the app's list, each with a checkbox. While the app's list is
   empty, they start checked. The app never writes herdr's list
   ([The machine list](/docs/machines#the-machine-list)).
-- **Image paste.** ⌘V (or Paste on iOS) with an image and no text on the
+- **Image paste.** ⌘V with an image and no text on the
   clipboard, in a terminal or agent card or the chat reply box: the app
   encodes it as PNG, copies it to the pane's machine as a dropped file is
   copied (`Exec.upload`, at most 16 MB, over the relay on a remote machine;
@@ -41,8 +41,15 @@ never calls herdr's focus methods. A design gets decision numbers on the
   same. Rejected: image bytes through the terminal (herdr's stream and agents
   do not take them); a server helper.
 - **Reorder the machines** in the machine menu.
-- **Bundling herdr** with the app, so a Mac without herdr can still show its
-  own sessions.
+- **herdr inside the app** (herdr-core), so the user never installs herdr or
+  needs to know about it: no mention of herdr anywhere in the app's UI.
+- **Releases and updates:** CI builds the `.dmg` and `.app` on a version tag
+  and uploads them to GitHub, and the app checks for updates and tells the
+  user.
+- **Anonymous telemetry:** daily users, error reports and other usage
+  numbers (PostHog or a similar service).
+- **Richer agent notifications** than the needs-you and finished banners
+  ([Status](/docs/status)).
 - **A notarized Developer ID download** outside the App Store (signed ad hoc
   now: [Platform](/docs/platform)).
 - **Local Network privacy** (macOS 15 and later). An `ssh` that the app starts
@@ -79,14 +86,11 @@ never calls herdr's focus methods. A design gets decision numbers on the
     edit it.
   - "‹machine› does not allow port forwarding": an `ssh -W` probe after a
     refusal tells it from a closed port.
-- **The rest of the default plugins** ([Not built](/docs/plugins/default-plugins#not-built)):
-  Go to File in ⌘K, project search, Discard, stash, merge and rebase in Git,
-  Quick Look for more file types, expandable unmodified lines in a diff, and
-  Back and Forward kept over a relaunch.
-- **The rest of the plugin system** ([Not built](/docs/plugins#not-built)):
-  network from a plugin page, plugins from a project folder, install and
-  reload from an agent, and a plugin setting with a value per machine (the
-  browser's network is one value for new cards on every machine).
+- **The rest of the default plugins** and **of the plugin system**: their
+  Not built lists ([default plugins](/docs/plugins/default-plugins#not-built),
+  [plugins](/docs/plugins#not-built)), and a plugin setting with a value per
+  machine (the browser's network is one value for new cards on every
+  machine).
 - **The rest of the chat view** ([Chat view](/docs/ui/chat-view)):
   - A host for the pill card: the chat at 360 pt, built
     when the [floating pills](/docs/future-work/pills) land.
@@ -200,7 +204,7 @@ never calls herdr's focus methods. A design gets decision numbers on the
 - Many themes and a theme editor: the user wants only light, dark, Glass and
   Classic. A compact density: the user dropped it.
 - A menu bar status item: the floating pills would cover it.
-- Sparkle updates and a diagnostics window: not interface work.
+- A diagnostics window: not interface work.
 - Decorations with a GPU cost (Rex's melt transition, selection pulse).
 - Rex's theme, material or decompiled files in the repo: Ovvi copies looks
   by measuring, never Rex's files or icon art.
