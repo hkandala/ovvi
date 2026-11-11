@@ -1,8 +1,8 @@
 # herdr clients
 
 The clients of herdr (and a few near relatives): how each talks to herdr, draws terminals, lays out panes and
-handles remote machines. The clients that Ovvi's design draws on have a file here. How herdr itself works is in [../multiplexers/herdr.md](../multiplexers/herdr.md);
-the client files say only what each one uses.
+handles remote machines. The clients that Ovvi's design draws on have a file here. How herdr itself works is in
+[../multiplexers/herdr.md](../multiplexers/herdr.md); the client files say only what each one uses.
 
 ## Native macOS
 
