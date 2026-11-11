@@ -78,17 +78,21 @@ func drag() {
     post(.leftMouseUp, end)
 }
 
+var pressed = false
+
 func pressWhenShown() {
     let shown = (CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID) as? [[String: Any]] ?? [])
         .contains { $0[kCGWindowNumber as String] as? Int == panel.windowNumber }
     guard shown else { return DispatchQueue.main.asyncAfter(deadline: .now() + 0.05, execute: pressWhenShown) }
+    pressed = true
     Thread.detachNewThread(drag)
 }
 
 DispatchQueue.main.async(execute: pressWhenShown)
 
 DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
-    fputs("no drag ended\n", stderr)
+    // Which part waited: the window server showing the panel, or the drag after the press.
+    fputs("no drag ended (\(pressed ? "pressed" : "its window never showed"))\n", stderr)
     exit(2)
 }
 

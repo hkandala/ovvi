@@ -185,13 +185,6 @@ extension OvviUITests {
         let terminal = element("terminal.\(pane)")
         XCTAssertTrue(terminal.has(\.isHittable, true, within: 3))
         try await waitForPrompt(pane)
-        // Its folder panel would show this Mac's folders.
-        terminal.click()
-        app.menuBars.menuBarItems["File"].click()
-        let goTo = app.menuBars.menuItems["Go to Directory…"]
-        XCTAssertTrue(goTo.exists(within: 2))
-        XCTAssertFalse(goTo.isEnabled)
-        app.typeKey(.escape, modifierFlags: [])
         try await send("cat ", to: pane)
         let from = element("sidebar").frame, card = terminal.frame
         let points = "\(from.midX) \(from.midY) \(card.midX) \(card.midY)"
@@ -203,6 +196,15 @@ extension OvviUITests {
         XCTAssertFalse(pasted.contains(folder), pasted)
         try await send("\r", to: pane)
         try await waitFor(pane) { $0.contains("\novvi-e2e-dropped") }
+
+        // After the drop: the drag's own window never showed once, right after this menu closed (CI).
+        // Its folder panel would show this Mac's folders.
+        terminal.click()
+        app.menuBars.menuBarItems["File"].click()
+        let goTo = app.menuBars.menuItems["Go to Directory…"]
+        XCTAssertTrue(goTo.exists(within: 2))
+        XCTAssertFalse(goTo.isEnabled)
+        app.typeKey(.escape, modifierFlags: [])
     }
 
     func testAddMachineOpensSettingsAtItsForm() {
