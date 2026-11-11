@@ -230,3 +230,6 @@ Problems that came back, and the rule that stops each. How we work is in
 
 - **Driving the real app by hand finds what the suite misses** (keys typing characters, a cold Dock drop).
   Write the test after the bug is found.
+- **Never make artificial load to reproduce a flake.** 150 `yes` processes at load 250, beside builds, the VM and a
+  Blender render, crashed the Mac. Starve only the test process instead (`taskpolicy -c background <cmd>`, `nice`),
+  and run heavy jobs through the shared load gate.
