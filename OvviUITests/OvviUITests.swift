@@ -1,3 +1,4 @@
+import Synchronization
 import XCTest
 
 /// The runner is sandboxed and cannot reach herdr, so herdr calls go through the e2e helper on localhost
@@ -10,6 +11,25 @@ final class OvviUITests: XCTestCase {
     let app = XCUIApplication()
     /// The app's first snapshot: login shell, herdr checks and a few herdr runs; slow on CI runners.
     let connect: TimeInterval = 30
+    /// The part of the test that runs now (`step`): a failure names it. A Mutex: XCTest records issues off the main
+    /// actor too.
+    private let part = Mutex("")
+
+    /// Starts one part of a test that walks several flows: an activity in the result, and the part's name before each
+    /// failure's message.
+    func step(_ name: String) {
+        part.withLock { $0 = name }
+        XCTContext.runActivity(named: name) { _ in }
+    }
+
+    override nonisolated func record(_ issue: XCTIssue) {
+        var issue = issue
+        let name = part.withLock { $0 }
+        if !name.isEmpty {
+            issue.compactDescription = "\(name): \(issue.compactDescription)"
+        }
+        super.record(issue)
+    }
 
     override func setUp() async throws {
         continueAfterFailure = false
