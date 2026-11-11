@@ -2342,3 +2342,23 @@ ones".
 - **Reset.** `scripts/reset-app-data.sh`. The old suites (`dev.ovvi.app.agents.*`) are left to a one-off command.
 - **Runs.** None: `testABrowserSaysItIsThisSystemsSafari` waits for the final CI round.
 
+### Track A2 (item 99)
+
+- **Cause.** A restored window read the machine's session list and skipped every page whose session was not running.
+  After a restart of the Mac every session is stopped, so the user had to pick and start each one by hand.
+- **Fix.** A restored window opens every saved page that the machine still lists, and a page found stopped starts as
+  its Start button does ("Starting ‹session›…", then the page; a failed start shows "not running" with why and Start).
+  The decision is made once, on the page's first read with a session list, in the same turn as the failed read, so
+  Start never draws first and a later Stop is never undone. A restored remote window connects as a machine window
+  does (it asks what ssh asks), then starts its stopped pages. ⌘N's view and Open Session stay manual.
+- **Decisions.** The start-on-open flag (`-session`, the new-window pick) now starts after the first failed read
+  instead of before the first read: one path, the Start button's, for every automatic start. A session deleted since
+  stays skipped; on a remote machine that does not answer at launch it cannot be told apart, so its page opens and
+  its start makes a new session of that name.
+- **Runs.** On this Mac under the GUI lock (no VM): 6 of 8 green (the start, stop and restore tests of FailureTests
+  and WindowTests). `testRelaunchRestoresEveryPageAndStartsTheStoppedOnes` and the floating-window relaunch test failed
+  at their first, saving launch, before any restore: it came up with three windows of `one` right after
+  `forget-windows`, in steps this change does not touch. They wait for the final CI
+  round.
+- **For the user.** Restart the Mac (or `herdr --session default session stop default` with Ovvi quit), then open
+  Ovvi: the window comes back and its sessions start with no click.
