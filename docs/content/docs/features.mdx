@@ -23,6 +23,7 @@ Each part of the window has its own page under UI design.
   repository. Rename in place, add a tab, reorder or close a space, and
   Fetch, Pull or Push a repository's row from its menu.
 - The sidebar resizes from 227 to 480 pt; each window keeps its width.
+
 ## Tabs and panes
 
 - Each herdr tab is one page; the window shows the selected tab's page and
@@ -44,7 +45,8 @@ Each part of the window has its own page under UI design.
 - A new pane asks what it runs: Terminal, Agent (Claude Code, Codex, Pi or
   OpenCode, with a loader until it is ready), Browser, File Explorer, Git
   or another plugin with a chooser row.
-  Return gives a terminal.
+  Return gives a terminal. Settings can make every new pane open one kind
+  at once; hold ⌥ to choose.
 - Browser panes: a web page in a card, with Web Inspector, its own logins
   per machine, the page's icon, and a remote machine's `localhost` through
   the SSH connection. ⌘-click and Open Link in New Tab open a link in a new
@@ -82,8 +84,9 @@ Each part of the window has its own page under UI design.
   above every app.
 - Agents drive Ovvi with one command, `ovvi`, on This Mac and on every
   remote machine: open a browser or plugin card beside themselves or in a
-  new tab, float a pane, point the user at a card with a notice and Show,
-  copy to the Mac's clipboard, and list, make, build and install plugins.
+  new tab, start another agent with a chat, float a pane, balance a tab,
+  point the user at a card with a notice and Show, post a notification, copy
+  to the Mac's clipboard, and list, make, build and install plugins.
   They never move the user's view ([Agent control](/docs/agent-control)).
 - The overview (⌃⌘O) shows every tab of the session as a miniature,
   browser pages and chats too.
@@ -124,7 +127,7 @@ Each part of the window has its own page under UI design.
   in the same session.
 - Agent panes show their sessions' own titles in the card, the tab and the
   sidebar.
-- Notifications when an agent needs you or finishes. The Dock badge shows the
+- Notifications when an agent needs you, finishes or sends one. The Dock badge shows the
   number of agents that need you; the Dock menu lists those that need you or
   finished. No sounds.
 

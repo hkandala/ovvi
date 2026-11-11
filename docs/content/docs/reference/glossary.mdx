@@ -26,7 +26,7 @@ description: "The words these docs use"
 | manifest | the `ovvi` key of a plugin's `package.json`: its id, name, entry, icon, what it opens, its header, commands and settings |
 | registry | the app's list of every pane kind it draws over a placeholder: the browser and each plugin package |
 | plugins folder | `~/.config/ovvi/plugins/`, where Ovvi installs plugin packages |
-| plugin confirmation | the question a plugin asks once before its code or build script first runs: Install or Cancel, with a warning that plugins run code as you |
+| confirmation (plugin) | the question a plugin asks once before its code or build script first runs: Install or Cancel, with a warning that plugins run code as you |
 | web card | a browser or plugin card, whose content is a web view of its own; a plugin's page comes from its package's build |
 | picture (card) | a card's last image at 1x, shown in place of a dropped web card until the card made again has loaded, and in its overview tile |
 | plugin API / `ovvi` | the typed object a plugin's page calls: files, git, run, state, the header, opens, toasts; behind it, the bridge's messages to the app |
@@ -64,14 +64,14 @@ description: "The words these docs use"
 | agent row | an agent pane's one-line row inside its unfolded space row in the sidebar |
 | Archived Sessions | the folded shelf at the sidebar's foot: the closed sessions of Claude Code, Codex, Pi and OpenCode on the machine, read from their own stores; a click resumes one |
 | Take Back | the button that moves control of a session to this window, or of a pane to this device |
-| OSC 7501 | the Program Status Protocol: an escape sequence a program writes to its terminal to report idle, working, blocked, done or error. herdr does not read it yet; the app reads status only from herdr |
+| OSC 7501 | the Program Status Protocol: an escape sequence a program writes to its terminal to report idle, working, blocked, done or error. herdr does not read it, and the app reads status only from herdr |
 | plain-text title | a tab's or pane's title where it cannot dim its second part (⌘K, menus, window titles): the two parts joined by ` \| ` |
 | badge | the Dock tile's count of the agents that need you |
 | state icon | a still round icon in the status color: a dashed circle (working), an alert circle (needs you), a check circle (finished); none for idle |
 | state label | an agent state as its icon and its word in the status color |
 | state box | an agent row's state: its icon and time in a box tinted with the status color |
 | status word | working (blue), needs you (orange), finished (emerald), idle (gray); VoiceOver reads it with every state icon |
-| seen | this device has shown the agent's last finish to the user: its tab was selected on the page in view of the key window |
+| seen | this device has shown the agent's last finish to the user: its pane had the keyboard on the page in view of the last key window, and the user left it |
 | git state | a space row's branch and its ahead and behind counts, from `git status` on the machine |
 | PTY | the pseudo-terminal a shell runs in; it has one size |
 | frame | one message of ANSI bytes from `terminal session` |

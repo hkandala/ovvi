@@ -36,7 +36,7 @@ build(path) = split at path exists ? Split(dir, ratio, build(path+0), build(path
                                    : Leaf(next pane from panes[])
 ```
 
-- About 15 lines. If the leaf count does not equal `panes.count`, the app
+- If the leaf count does not equal `panes.count`, the app
   falls back to `layout.export {tab_id}` (the same tree, nested). The order is
   depth-first in herdr's source but not a documented contract, hence the
   check.

@@ -10,18 +10,12 @@ description: "Agent states in the sidebar and tabs, notifications and the Dock"
   snapshot. No extra calls.
 - Status comes only from the multiplexer's API (D55), never from
   [OSC 7501](/docs/reference/glossary) ([Future work](/docs/future-work)).
-- **"Finished, not seen"** = `completion_seq` in `snapshot.agents[]` is not
-  null and differs from the value this device recorded as seen. How "seen"
-  works: [Selection and "seen" are the app's own](/docs/layout#selection-and-seen-are-the-apps-own).
 - Each agent pane is needs you (herdr's `blocked`), working, finished (not
   seen) or idle. herdr's `done` is not used. A tab and a space show the
   strongest state of their panes, as one icon: needs you, then finished, then
   working; nothing when all are idle.
-- Looking at a pane means it is the keyboard card on the page in view of the
-  last key window, or the pane of a floating window that was key last; the
-  app going to the background does not change it. A
-  finish counts as seen when the user leaves the pane: another pane, tab,
-  space or session gets the keyboard. Until then it stays Done.
+- A finish stays unseen until the user leaves the agent's pane. The rules:
+  [Selection and "seen" are the app's own](/docs/layout#selection-and-seen-are-the-apps-own).
 - Each change carries the time the app saw it, kept across relaunches while
   herdr's `state_change_seq` of the agent stays the same. An agent row
   shows a Working agent's time from that time.
@@ -32,8 +26,7 @@ One sidebar (D111): each space row shows its strongest agent's state and, unless
 each with its state box and working time, by tab and place in the tab. A click on an agent row selects
 that space, tab and pane and gives the pane the keyboard. Its unread check stays until the user leaves the pane;
 the row does not move for it. Archived Sessions at the foot lists the
-closed sessions of Claude Code, Codex, Pi and OpenCode, which a click resumes. The Dock badge counts the agents that
-need you, over every open session.
+closed sessions of Claude Code, Codex, Pi and OpenCode, which a click resumes.
 
 The look is in [Main window: Space rows](/docs/ui/window#space-rows) and
 [Agent rows](/docs/ui/window#agent-rows).
@@ -72,8 +65,7 @@ the session:
   every 10 s.
 - Three switches in Settings ▸ Agents turn them off: When an agent needs you,
   When an agent finishes and When an agent sends one, each on by default (D105,
-  [Settings](/docs/ui/settings#agents)). The Dock badge counts needs you only, and
-  no notification has a sound.
+  [Settings](/docs/ui/settings#agents)).
 
 ### Delivery
 
