@@ -40,6 +40,7 @@ extension OvviUITests {
     }
 
     func testWorkspaceMenuMakesAndPicksWorkspaces() async throws {
+        step("Workspace menu: arrows move the light, Esc closes it")
         XCTAssertTrue(element("tab.w1:t2").exists(within: connect))
         app.typeKey("s", modifierFlags: [.command, .control])
         let button = element("titlebar.workspace")
@@ -51,8 +52,9 @@ extension OvviUITests {
         XCTAssertTrue(element("workspaces.\(one).w2").has(\.isSelected, true, within: 2))
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(filter.vanishes(within: 2))
-        openWorkspaceMenu()
 
+        step("Workspace menu: a typed name makes a workspace in home")
+        openWorkspaceMenu()
         let name = "made-\(Int.random(in: 1000 ... 9999))"
         app.typeText(name)
         XCTAssertTrue(element("workspaces.create").has(\.isSelected, true, within: 2))
@@ -72,31 +74,29 @@ extension OvviUITests {
         try await expect("the button to show \(name)") { button.value as? String == "\(one) | \(name)" }
         XCTAssertTrue(element("tab.\(made):t1").exists(within: 2))
 
+        step("Workspace menu: a click picks another workspace")
         openWorkspaceMenu()
         element("workspaces.\(one).w2").click()
         XCTAssertTrue(element("tab.w2:t1").exists(within: 2))
         XCTAssertTrue(element("tab.\(made):t1").vanishes(within: 2))
         XCTAssertEqual(button.value as? String, "\(one) | beta")
         keepScreenshot("one tab")
+        try await expectTheMenusFilterAndItems()
     }
 
-    func testWorkspaceMenuFiltersAndItsItemsAct() async throws {
-        XCTAssertTrue(element("tab.w1:t2").exists(within: connect))
-        app.typeKey("s", modifierFlags: [.command, .control])
-        XCTAssertTrue(element("titlebar.workspace").exists(within: 2))
+    private func expectTheMenusFilterAndItems() async throws {
+        step("Workspace menu: the filter, the New item and the Open Session item")
         let filter = openWorkspaceMenu()
         app.typeText("bet")
         XCTAssertTrue(element("workspaces.\(one).w1").vanishes(within: 2))
         XCTAssertTrue(element("workspaces.\(one).w2").exists)
-
         let before = try await workspaceIDs()
         closeNew("workspace", besides: before)
         element("workspaces.new").click()
-        let made = try await poll("a new workspace") { () async throws -> String? in
+        let new = try await poll("a new workspace") { () async throws -> String? in
             try await workspaceIDs().first { !before.contains($0) }
         }
-        XCTAssertTrue(element("tab.\(made):t1").has(\.isSelected, true, within: 3))
-
+        XCTAssertTrue(element("tab.\(new):t1").has(\.isSelected, true, within: 3))
         openWorkspaceMenu()
         element("workspaces.open-session").click()
         XCTAssertTrue(hasKeyboard("open-session.filter"))
