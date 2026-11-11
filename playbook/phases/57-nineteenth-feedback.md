@@ -2234,3 +2234,36 @@ ones".
 92. A local page in a browser card can't load files from other folders (Track W2): the landing page's clips in a
     sibling folder were blocked, because the card grants read access only to the opened file's folder. The user: "yeah
     let's fix that in ovvi browser card".
+
+### Track CI2 (item 91)
+
+- **Cause, the quit between tests.** Not the app: XCUITest ends the app with a kill (gone in 0.2 s) and then checks
+  for its exit once a second, so each relaunch waits about 1 s more. A kill by the e2e helper left XCUITest's state
+  "running" for 5 s and more, so the next launch waited longer: dropped. The app's own quit (⌘Q) was slow, though: its
+  marks went one herdr run at a time (9 runs: 0.85 s on a busy Mac, 0.16 s at once), and the 1 s wait cut the rest. The
+  quit's marks now go at once, and an earlier batch sends only its unmarks once the quit starts.
+- **Fix, launches.** setUp skips its launch for the 60 tests that launch before they use the app
+  (`OvviUITests/OwnLaunch.swift`; `scripts/check-launches.py` in `make test` keeps the list exact) and ends the earlier
+  test's app instead, so nothing sees what such a test sets up.
+- **Fix, the cuts.** The report's 4 drops, 30 merges and 5 slims, each merged test one flow whose parts start with
+  `step()`: an activity in the result, and the part's name before each failure's message. The longest merged tests
+  take 45–63 s (the remote chat test runs three agents).
+- **Decisions.** testALaunchWithNothingToRestoreConnectsToNothing stays a test of its own (the first-launch path).
+  Not done from Appendix C, as not honest: DragTests' notice waits (the next write clears an error notice, so a later
+  check passes even when the drop failed), FilesTests' Forward waits (a wrong Back comes through WebKit with no bound),
+  PinTests' 2 s (the app's Recent order holds 1 s after the pointer leaves), LatencyTests' key() sleeps (one run
+  cannot prove the turn counts), LongChat's sign (CI's is tried first already).
+- **Cause, the VM's dialog.** `screencapture` through `tart exec` or ssh (agents' screenshots of the guest): macOS asks
+  whether that program may go on capturing the screen, a UserNotificationCenter alert, again after a month. Two more
+  asks would take the tests' clicks: whether the tests' app may send notifications (a banner over the window's top
+  right) and "App Running in Background". `scripts/vm-alerts.py` answers all three before each VM run, and the script
+  closes an alert still open. Also found: in the VM the tests' fixtures were missing at the checkout's path, so every
+  fixture test failed there (the welcome's herdr install); the path now links to the run's copies.
+- **Runs.** Chosen-tests runs 42986570225 (the launches, the quit's marks: 11 green) and 42991076749 (the review's
+  fixes: 12 green); the helpers' 42983298014, 42984043803 and 42984177251 (every merged test green). Full run
+  42988751759 of the merged suite: green, 271 tests, 4729 s of tests (5051 s for 289 before), 25.5 min and 94
+  runner-minutes (before: 22.5–23.4 min, 92–93), with one shard on old times 5 min over the rest; the times are now
+  refreshed from it (the plan: 946 s a shard). One VM run of the welcome tests: green, no alert. The user's call:
+  the proof pair 42993147651 and 42993159009 runs after the push, unread.
+- **For the user.** In the VM, the welcome opened a second time from Settings showed a spinning cursor for about 5 s
+  before it drew (CI: under 5 s). It may be worth a look on a slow Mac.
