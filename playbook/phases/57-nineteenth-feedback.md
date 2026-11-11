@@ -1834,6 +1834,10 @@ you did, no need of reverting them".
     onboarding pane should be opened and once it reached you'r are all done state then window should open or on skip -
     that split issue is very evident in the onboarding video as well, once the split fixes are done we should re
     record everything once again" (item 78, Track Y4).
+    Onboarding, later: "the border radius of onboarding panes should be same as regular ovvi window, it is bit too
+    curved now - and the shadow thing is too dark and big now, see the shadow should be of less height just covering
+    the text and it should be gradient like blending with the the video. after these changes don't do re recording
+    etc, just finish things and rebase it on master" (item 78, Track Y4).
 
 ### Track Z (item 84)
 
