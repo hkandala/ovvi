@@ -21,9 +21,9 @@ How CI runs, how to run part of it, and how to keep it green and fast.
   the Settings rows (`scripts/check-settings.py`) and the cli.mdx script checks). It takes about 3 minutes.
 - **Full run** (a dispatch): a `build` job (`make build-tests`, its products uploaded as a tar), then five jobs
   (`test (0)` to `test (4)`), each a shard of the UI tests, which run that build (`make e2e PREBUILT=1`:
-  `test-without-building`) and reach their first test about 30 s after they start. A chosen-tests run builds in its one
-  job. Every test job starts CI's sshd on localhost for the remote-host tests (`scripts/ci-sshd.sh`). The image has
-  xcbeautify and node.
+  `test-without-building`) and reach their first test about a minute after they start, half of it the e2e helper's
+  tools (`swiftc`, 20–40 s). A chosen-tests run builds in its one job. Every test job starts CI's sshd on localhost
+  for the remote-host tests (`scripts/ci-sshd.sh`). The image has xcbeautify and node.
 - **Shards by time.** `make e2e SHARD=i/5` runs the tests that `scripts/shard.py` gives shard i: the slowest
   test first, each to the shard with the least time so far, from `scripts/test-times.tsv` (a test not
   listed counts 15 s).
@@ -35,7 +35,7 @@ How CI runs, how to run part of it, and how to keep it green and fast.
 - **Time.** A full run takes 21–25 minutes: 3–4 minutes of the build job, then about a minute of setup and upload
   per test job and a fifth of about 5000 s of UI tests (the slowest shard ends 2–5 minutes after the fastest: runners
   differ in speed). The build job makes a lone run no shorter (each job used to build for itself in the same time),
-  but it saves four builds, about 15 runner-minutes a run. Two full runs dispatched together take about twice as long
+  but it saves four builds, about 12 runner-minutes a run. Two full runs dispatched together take about twice as long
   as one, since the second waits for runners, and any other run (a chosen-tests run) takes one of the 5. A test job
   stops at 30 minutes (`timeout-minutes`): at 25, a shard of 1171 s on a slow runner (phase 56) crossed the limit
   after every test passed, as one of 873 s had at 20. Each test stops at 120 s, so the limit costs a green run
