@@ -1,4 +1,5 @@
 import AppKit
+import HerdrKit
 import SwiftUI
 
 /// SwiftUI places a new floating window at the frame asked for with it (`defaultWindowPlacement`): a frame set once the
@@ -49,12 +50,10 @@ enum FloatFrames {
         return next.map(placement) ?? WindowPlacement()
     }
 
-    /// `WindowPlacement` takes the screen's top-left based points.
+    /// On the screen of the frame, also when it is not the focused one.
     static func placement(_ frame: NSRect) -> WindowPlacement {
-        guard let screen = NSScreen.screens.first(where: { $0.frame.intersects(frame) }) ?? NSScreen.main
-        else { return WindowPlacement() }
-        return WindowPlacement(CGPoint(x: frame.minX - screen.frame.minX, y: screen.frame.maxY - frame.maxY),
-                               size: frame.size)
+        guard let primary = NSScreen.screens.first?.frame else { return WindowPlacement() }
+        return WindowPlacement(frame.windowPosition(primary: primary), size: frame.size)
     }
 
     static func frame(over main: NSWindow) -> NSRect {
