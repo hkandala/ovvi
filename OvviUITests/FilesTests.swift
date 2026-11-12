@@ -116,12 +116,15 @@ extension OvviUITests {
         XCTAssertTrue(row("out.o", in: tree).exists(within: 3))
         // Part of the way: at its end the tree beside the file, with no status bar under it, would scroll less.
         tree.scroll(byDeltaX: 0, deltaY: -240)
-        let last = row("f30.txt", in: tree)
-        let scrolled = until(3) { last.isHittable && !self.row("build", in: tree).isHittable }
+        // A row in the middle: one under the status bar would scroll fully into view as it opens.
+        let last = row("f20.txt", in: tree)
+        let scrolled = until(3) {
+            last.isHittable && !self.row("build", in: tree).isHittable && !self.row("f49.txt", in: tree).isHittable
+        }
         XCTAssertTrue(scrolled, "the tree did not scroll")
         let top = last.frame.minY
         last.doubleClick()
-        try await labelEnds(card, " \(root)/f30.txt")
+        try await labelEnds(card, " \(root)/f20.txt")
         XCTAssertTrue(file.textViews.firstMatch.exists(within: 10))
         // A run that failed midway left the card's choice in its state file.
         if toggle.isSelected {
@@ -130,7 +133,7 @@ extension OvviUITests {
 
         step("Beside the file: the page's tree, where it was scrolled, with its open folders")
         toggle.click()
-        let beside = row("f30.txt", in: file)
+        let beside = row("f20.txt", in: file)
         XCTAssertTrue(beside.exists(within: 3))
         XCTAssertEqual(beside.frame.minY, top, accuracy: 1, "the tree beside the file scrolled elsewhere")
         beside.scroll(byDeltaX: 0, deltaY: 2000)
@@ -143,7 +146,7 @@ extension OvviUITests {
         toggle.click()
         element("pane.\(card).close-file").click()
         try await labelEnds(card, " \(root)/")
-        XCTAssertTrue(row("f30.txt", in: tree).exists(within: 5))
+        XCTAssertTrue(row("f20.txt", in: tree).exists(within: 5))
         tree.scroll(byDeltaX: 0, deltaY: 2000)
         XCTAssertTrue(row("deep", in: tree).exists(within: 3))
         XCTAssertTrue(row("out.o", in: tree).exists)
