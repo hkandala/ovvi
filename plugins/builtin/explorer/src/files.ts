@@ -3,7 +3,7 @@ import { FileTree, type FileTreeBatchOperation, type FileTreeDirectoryHandle, ty
 import type { Change } from "@ovvi/plugin-api"
 import { footer } from "./footer"
 import { stack } from "./stack"
-import { choose, how, menu, open, own, type Place, type Reveal, sf, symbols } from "./place"
+import { choose, how, menu, name, open, own, type Place, type Reveal, sf, symbols } from "./place"
 
 const STATUS: Record<string, GitStatus> = {
   M: "modified", T: "modified", C: "modified", A: "added", D: "deleted", R: "renamed", U: "untracked",
@@ -39,7 +39,6 @@ const look = {
     --trees-focus-ring-color-override: var(--accent); --trees-focus-ring-offset-override: -1.5px;
     --trees-selected-focused-border-color-override: var(--accent);
     --trees-indent-guide-bg-override: var(--divider);
-    --truncate-marker-background-color: transparent;
     --trees-git-modified-color-override: var(--needs-you); --trees-git-deleted-color-override: var(--error);
     --trees-git-added-color-override: var(--finished); --trees-git-untracked-color-override: var(--finished);
     --trees-git-renamed-color-override: var(--finished);
@@ -53,6 +52,14 @@ const look = {
     background: var(--folder-blue); -webkit-mask: var(--folder) center / 16px no-repeat; }
   [data-item-path="${UP}"] > [data-item-section="icon"] > svg { visibility: hidden; }
   [data-item-selected="true"] > [data-item-section="icon"] { color: var(--dim); }
+  /* A long name on one line, cut at its end, as VS Code's explorer: Pierre cuts it in the middle, under a marker that
+     needs an opaque row to hide the letters below it. */
+  [data-item-section="content"] { white-space: nowrap; }
+  [data-item-section="content"] :is([data-truncate-group-container], [data-truncate-segment-priority],
+    [data-truncate-container], [data-truncate-grid], [data-truncate-grid] > div) { display: contents; }
+  [data-item-section="content"] [data-truncate-content="visible"] { display: inline; direction: ltr; }
+  [data-item-section="content"] :is([data-truncate-content="overflow"], [data-truncate-marker-cell],
+    [data-truncate-fill]) { display: none !important; }
   /* The sticky folders on the card, with no band (stack.ts): the view masked under them, their copy over it. */
   :host { position: relative; }
   :host([data-stack]) [data-file-tree-virtualized-scroll] {
@@ -452,6 +459,12 @@ export async function show(place: Place): Promise<Reveal> {
   }
 
   for (const trees of [host, matches]) {
+    // A cut name shows whole in a tooltip, as in the Finder.
+    trees.addEventListener("pointerover", (event) => {
+      const node = event.composedPath().find((n): n is HTMLElement => n instanceof HTMLElement && Boolean(n.dataset.itemPath))
+      const text = node?.querySelector<HTMLElement>('[data-item-section="content"]')
+      if (node && text) node.title = text.scrollWidth > text.clientWidth ? name(node.dataset.itemPath!) : ""
+    })
     // Captured ahead of the tree's own click: ⌘ adds to its selection, a click toggles a folder.
     trees.addEventListener(
       "click",

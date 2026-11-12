@@ -119,7 +119,7 @@ export async function show(place: Place): Promise<Reveal> {
     ovvi.controls.set("jump", { value: [...trail, ...(scope ? [scope] : [])], symbol: scope ? "curlybraces" : "" })
   let last = ""
   const wrap = new Compartment(), wrapped = (on: boolean) => (on ? [EditorView.lineWrapping, hanging] : [])
-  const chosen = () => own(ovvi).wrap ?? true
+  const chosen = () => own(ovvi).wrap ?? false
   let on = chosen()
   ovvi.controls.set("wrap", { value: on })
   const shown = await editor(place, [

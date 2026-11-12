@@ -286,16 +286,16 @@ a remote machine, Open With shows only when another plugin opens the file.
 File, Preview and Markdown share one row 2, with the same order, spacing and
 22 pt buttons:
 
-- **On the left:** Back and Forward, **File Tree** (`sidebar.left`, in the
-  accent while [the tree](#the-tree-beside-a-file) shows beside the file), the
-  outline toggle (Markdown only, and only while the file has a heading), the
-  breadcrumbs, then **Close File** (`xmark`: it closes the file and leaves the
+- **On the left:** Back and Forward, **File Tree** (`sidebar.left` while
+  [the tree](#the-tree-beside-a-file) is hidden,
+  `rectangle.leadingthird.inset.filled` while it shows beside the file, both
+  in the card buttons' color), the breadcrumbs, then **Close File** (`xmark`: it closes the file and leaves the
   tree, as an editor tab's close button after its name; Back returns to the
   file).
 - **On the right:** Preview's page and zoom, Word Wrap (File only),
   **Open in Browser** (`globe`, File on an HTML file on This
-  Mac only: the page in a browser pane in a new tab, selected), the mode
-  and the lock (Markdown only), then Open With.
+  Mac only: the page in a browser pane in a new tab, selected), the outline
+  toggle, the mode and the lock (Markdown only), then Open With.
 - **The breadcrumbs** are the file's path, its parts with `›` between them
   and the first part in secondary text. Inside a Git repository the path
   starts at the repository's root, with the root's name first
@@ -311,7 +311,9 @@ The tree of the root (`@pierre/trees`), in the style of Finder's list and
 Xcode's navigator: a thin disclosure chevron, folders in the Finder's folder
 blue (the same in light and dark), files with an icon for their type in its
 color (TypeScript, Swift, Markdown, JSON, images, and so on), 24 pt rows, the
-selection in the accent at 24 %. A 4 pt gap sits under the header.
+selection in the accent at 24 %. A 4 pt gap sits under the header. A name too
+long for its row is cut at its end with "…", as in VS Code, and its tooltip
+shows it whole.
 - **Row 2:** Back and Forward, the root (it takes the rest of the row), then
   three icon buttons: **Filter** (`magnifyingglass`, in the accent while the
   find bar shows), **Collapse All** and **Show Hidden Files** (`eye`).
@@ -434,11 +436,14 @@ same card, as a text editor's sidebar does. Row 2's **File Tree** shows and
 hides it. The card keeps that choice for every file it shows; a card with no
 choice follows the setting "When a file opens" (Show only the file).
 
-- **One tree for the card.** It is the tree of [The tree](#the-tree), with its
-  rows, letters, keys, filter and menus, at 220 pt wide (drag its right edge
-  for 140 pt up to 60 % of the card; the card keeps the width). It has no
-  status bar and no row 2 of its own: row 2 is the file's. Its open folders,
-  selection and scroll stay while the card shows one file after another.
+- **One tree for the card.** It is the tree of [The tree](#the-tree) itself,
+  the same rows, not a copy: its open folders, selection, scroll and filter
+  stay as the card goes from the tree's page to a file and back, shows or
+  hides the tree, and shows one file after another. Nothing draws again. It
+  is 220 pt wide beside a file (drag its right edge for 140 pt up to 60 % of
+  the card; the card keeps the width), with no status bar and no row 2 of its
+  own: row 2 is the file's. The card keeps the trees of its last five roots,
+  as it keeps pages.
 - **Its root** is the tree's root the card came from, else the file's folder.
   A double-click on a folder or on `..`, ⌘↑, or Open as Root roots the tree
   there, and the card keeps its file.
@@ -460,10 +465,10 @@ An editable text view (CodeMirror 6).
 - **Text:** line numbers, the current line lit, bracket matching, the other
   matches of the selection marked, undo and redo, and Tab to indent. The
   selection is the accent at 35 %, in File and in every Markdown mode, so
-  the text stays readable in light and dark. Lines wrap, because cards are
-  often narrow, and a wrapped line goes on at its own indent. Row 2's **Word
-  Wrap** (`text.wrap`) turns the wrap off and on for every file the card
-  shows; the line at the top stays in place.
+  the text stays readable in light and dark. Lines do not wrap, as in a code
+  editor: a long line scrolls sideways. Row 2's **Word Wrap** (`text.wrap`)
+  turns the wrap on and off for every file the card shows; a wrapped line goes
+  on at its own indent, and the line at the top stays in place.
 - **Colors** for Swift, TypeScript, JavaScript, Python, Go, Rust, C, C++,
   Java, Kotlin, Ruby, shell, JSON, YAML, TOML, HTML and CSS, by extension.
   The colors are the diff's: Pierre Light and Pierre Dark, the default
@@ -500,9 +505,9 @@ An editable text view (CodeMirror 6).
 
 ### Markdown
 
-- **Row 2** ([A file's row 2](#a-files-row-2)): the outline toggle
-  (`list.bullet.indent`, in the accent while the outline shows) after File
-  Tree; the mode and the lock before Open With. The mode is two icon
+- **Row 2** ([A file's row 2](#a-files-row-2)): at the right, before Open
+  With, the outline toggle (`list.bullet.indent`, in the accent while the
+  outline shows, only while the file has a heading), the mode and the lock. The mode is two icon
   segments, **Rich Text** (`doc.richtext`) and **Source**
   (`chevron.left.forwardslash.chevron.right`), with their names as the
   tooltips; the segment not picked is gray, as the card buttons. The lock is

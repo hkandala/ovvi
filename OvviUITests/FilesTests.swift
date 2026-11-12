@@ -98,6 +98,57 @@ extension OvviUITests {
         try await send("rm -rf \(repo)\r", to: shell)
     }
 
+    /// The tree's page and the tree beside a file are one tree: its scroll and its open folders go both ways.
+    func testFileExplorerKeepsOneTreeForItsPageAndItsFiles() async throws {
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        let (_, shell) = try await newTab("files one")
+        try await waitForPrompt(shell)
+        let repo = "/tmp/ovvi-e2e-one", root = "/private/tmp/ovvi-e2e-one"
+        try await makeTreeRepo(repo, in: shell)
+        try await send("touch \(repo)/f{10..49}.txt && echo made-$((6*7))\r", to: shell)
+        try await waitFor(shell) { $0.contains("made-42") }
+        let card = try await newCard("ovvi:explorer#e2eone \(root)/", cwd: repo).pane
+        let tree = element("files.\(card).page"), file = element("file.\(card).page")
+        let toggle = element("pane.\(card).tree")
+        XCTAssertTrue(row("build", in: tree).exists(within: 10))
+        row("build", in: tree).click()
+        app.typeKey(.rightArrow, modifierFlags: [])
+        XCTAssertTrue(row("out.o", in: tree).exists(within: 3))
+        tree.scroll(byDeltaX: 0, deltaY: -2000)
+        let last = row("f49.txt", in: tree)
+        XCTAssertTrue(last.exists(within: 5))
+        XCTAssertTrue(until(3) { last.isHittable })
+        let top = last.frame.minY
+        last.doubleClick()
+        try await labelEnds(card, " \(root)/f49.txt")
+        XCTAssertTrue(file.textViews.firstMatch.exists(within: 10))
+        // A run that failed midway left the card's choice in its state file.
+        if toggle.isSelected {
+            toggle.click()
+        }
+
+        step("Beside the file: the page's tree, where it was scrolled, with its open folders")
+        toggle.click()
+        let beside = row("f49.txt", in: file)
+        XCTAssertTrue(beside.exists(within: 3))
+        XCTAssertEqual(beside.frame.minY, top, accuracy: 1, "the tree beside the file scrolled elsewhere")
+        beside.scroll(byDeltaX: 0, deltaY: 2000)
+        XCTAssertTrue(row("out.o", in: file).exists(within: 3), "a new tree, with only the file's folders open")
+        row("src", in: file).click()
+        app.typeKey(.rightArrow, modifierFlags: [])
+        XCTAssertTrue(row("deep", in: file).exists(within: 3))
+
+        step("Back on the tree's page: the folder opened beside the file is open")
+        toggle.click()
+        element("pane.\(card).close-file").click()
+        try await labelEnds(card, " \(root)/")
+        XCTAssertTrue(row("f49.txt", in: tree).exists(within: 5))
+        tree.scroll(byDeltaX: 0, deltaY: 2000)
+        XCTAssertTrue(row("deep", in: tree).exists(within: 3))
+        XCTAssertTrue(row("out.o", in: tree).exists)
+        try await send("rm -rf \(repo)\r", to: shell)
+    }
+
     private func upCollapseAndClose(_ card: String, tree: XCUIElement, file: XCUIElement, root: String) async throws {
         let toggle = element("pane.\(card).tree")
         step("Up past the root and back, with the file where it was")

@@ -18,9 +18,8 @@ const CONTROLS: Record<Kind, string[]> = {
 }
 const ALL = manifest.header.map((control) => control.id)
 
-const load = (kind: Kind): Promise<{ show(place: Place): Promise<Reveal> }> =>
-  kind === "files" ? import("./files")
-    : kind === "file" ? import("./file")
+const load = (kind: Exclude<Kind, "files">): Promise<{ show(place: Place): Promise<Reveal> }> =>
+  kind === "file" ? import("./file")
     : kind === "markdown" ? import("./markdown")
     : import("./preview")
 
@@ -42,16 +41,23 @@ export default async function main(ovvi: Ovvi) {
     scoped.controls.set("browser", { hidden: place !== "file" || !htmlPage(scoped, arg) })
     if (place !== "markdown") scoped.controls.set("lock-editing", { enabled: false, checked: false })
     root.dataset.place = place
+    if (place === "files") {
+      // The page stays empty: the card's tree shows over it, with this page's row 2.
+      scoped.on("place", ({ at }) => void side.page(scoped, arg, at))
+      scoped.on("control", (event) => side.emit("control", event))
+      scoped.on("find", () => side.emit("find"))
+      return side.page(scoped, arg, page.at)
+    }
     // Each page keeps its own row 2: a page shown again, or a setting, follows the card's sidebar.
-    const sync = () => place !== "files" && scoped.controls.set("tree", { value: side.open })
-    const shows = () => (place === "files" ? side.root(arg) : (sync(), side.file(arg)))
+    const sync = () => scoped.controls.set("tree", { value: side.open })
+    const shows = () => (sync(), side.file(arg))
     shows()
     scoped.on("place", shows)
     scoped.on("settings", sync)
     const read = place === "file" || place === "markdown" ? ovvi.files.read(arg) : undefined
     read?.catch(() => undefined)
-    const [code, crumbs] = await Promise.all([load(place), place === "files" ? [] : trail(scoped, arg)])
-    if (place !== "files") scoped.controls.set("jump", { value: crumbs, symbol: "" })
+    const [code, crumbs] = await Promise.all([load(place), trail(scoped, arg)])
+    scoped.controls.set("jump", { value: crumbs, symbol: "" })
     const reveal = await code.show(Object.assign(page, { read, trail: crumbs }))
     if (reveal) scoped.on("place", ({ at }) => at && reveal(at))
   })

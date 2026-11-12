@@ -93,11 +93,11 @@ extension OvviUITests {
         let editor = element("file.\(card).page").textViews.firstMatch, wrap = element("pane.\(card).wrap")
         let width = element("pane.\(card)").frame.width
         XCTAssertTrue(until(5) { editor.stringValue.contains("word word") })
-        XCTAssertTrue(editor.frame.width < width, "\(editor.frame.width) in \(width)")
-        wrap.click()
-        XCTAssertTrue(until(3) { editor.frame.width > width }, "\(editor.frame.width) in \(width)")
+        XCTAssertTrue(editor.frame.width > width, "lines wrap by default: \(editor.frame.width) in \(width)")
         wrap.click()
         XCTAssertTrue(until(3) { editor.frame.width < width }, "\(editor.frame.width) in \(width)")
+        wrap.click()
+        XCTAssertTrue(until(3) { editor.frame.width > width }, "\(editor.frame.width) in \(width)")
     }
 
     private func crumbs(_ card: String, _ value: String) -> Bool {
