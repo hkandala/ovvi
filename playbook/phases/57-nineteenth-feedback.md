@@ -2854,6 +2854,17 @@ ones".
   step does. The chat reads a link click's keys from the click, not from the keys held when it runs late.
 - **Runs.** Red: full run 43171070157 (shard 3). The VM green before and after; CI 43181605437 (chosen, executed 1)
   green. Two full runs in a row green prove it.
+- **Shard 4 of 43171081544, the runner.** From `testPluginPanesOpenFromTheChooserThePaletteAndLinks` on (it hung in
+  XCUITest's idle wait after a typed Return, with no assertion), every test ran out its 120 s at "requesting to start
+  screen recording" and the job hit its 30 minutes: CI's `testmanagerd` ([ci.md](../ci.md#a-test-fails-only-on-ci)),
+  judged by the next full runs, where it passed.
+- **Runs.** p57-r8-final1 (00bd2f3a): full 43171070157 (25.5 min; the chat link red), full 43171081544 (56 min, with
+  queueing; the Recent red and the stuck shard), on-demand 43171091937 green (53.5 min, with queueing).
+  p57-r8-final2 (f69f467e, both fixes): full 43183029474 green (45.5 min, queued behind the other), full 43183012067
+  green but for `testWorkspaceAndSessionKeysStepAndJump`, the shard's last test, which passed its steps and failed on
+  "Critical process DTServiceHub crashed" (Xcode's service, in teardown): infra, its shard rerun once, green (20 min).
+  On-demand not run again: no fix touched what it measures. Test times not refreshed: 282 tests, about 5000 s, as
+  before.
 
 ### Round 8, chat review (items 120–125)
 
