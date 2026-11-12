@@ -127,7 +127,7 @@ export async function show(place: Place): Promise<Reveal> {
     if (outlined) list(view, all(view.state))
     focus(view)
     ovvi.controls.set("mode", { value: next.mode })
-    ovvi.controls.set("lock", { value: !next.locked, title: next.locked ? "Edit" : "Stop Editing" })
+    ovvi.controls.set("lock", { value: next.locked ? "read" : "edit" })
     ovvi.controls.set("outline", { value: outlined })
     ovvi.controls.set("lock-editing", { enabled: true, checked: next.locked })
   }
@@ -296,7 +296,7 @@ export async function show(place: Place): Promise<Reveal> {
   ovvi.on("control", ({ id, value }) => {
     if (id === "outline") present(view, now, value === true)
     if (id === "mode" && mode(value)) change(view, { mode: mode(value) })
-    if (id === "lock") change(view, { locked: value !== true })
+    if (id === "lock") change(view, { locked: value !== "edit" })
     if (id === "lock-editing") change(view, { locked: !now.locked })
   })
   ovvi.on("settings", (changed) => {

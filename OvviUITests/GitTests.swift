@@ -74,7 +74,7 @@ extension OvviUITests {
         try await expectGit("rev-parse --is-inside-work-tree", "true", in: left, repo: folder)
 
         try await send("git config user.name e2e && git config user.email e2e@ovvi && git config commit.gpgsign false "
-            + "&& seq 501 | awk -v ref=$(git symbolic-ref HEAD) '{printf \"commit %s\\n"
+            + "&& seq 101 | awk -v ref=$(git symbolic-ref HEAD) '{printf \"commit %s\\n"
             + "committer e2e <e2e@ovvi> %d +0000\\ndata <<E\\nc%d\\nE\\n\\n\", ref, 1000000000+$1, $1}' "
             + "| git fast-import --quiet && echo a >a.txt && clear\r",
             to: left)

@@ -6,7 +6,10 @@ export type Place = Page & {
   trail: string[]
 }
 
-type Own = { hiddenFiles?: boolean; mode?: string; locked?: boolean; preview?: boolean; wrap?: boolean }
+type Own = {
+  hiddenFiles?: boolean; mode?: string; locked?: boolean; preview?: boolean; wrap?: boolean; side?: boolean
+  sideWidth?: number
+}
 export const own = (ovvi: Ovvi) => ovvi.state.get<Own>() ?? {}
 export const choose = (ovvi: Ovvi, change: Own) => ovvi.state.set({ ...ovvi.state.get<object>(), ...change })
 

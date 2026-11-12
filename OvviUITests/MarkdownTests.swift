@@ -18,8 +18,8 @@ extension OvviUITests {
         let page = element("markdown.\(card).page")
         XCTAssertTrue(page.staticTexts.matching(NSPredicate(format: "value == 'Second'")).firstMatch.exists(within: 10))
         XCTAssertTrue(element("pane.\(card).mode.rich text").has(\.isSelected, true, within: 3))
-        XCTAssertFalse(element("pane.\(card).lock").isSelected)
-        XCTAssertEqual(element("pane.\(card).lock").label, "Edit")
+        XCTAssertTrue(element("pane.\(card).lock.read").isSelected)
+        XCTAssertFalse(element("pane.\(card).lock.edit").isSelected)
         XCTAssertTrue(page.staticTexts.matching(NSPredicate(format: "value == 'B'")).firstMatch.exists)
         XCTAssertFalse(page.textViews.firstMatch.exists)
         element("pane.\(card).outline").click()
@@ -41,7 +41,11 @@ extension OvviUITests {
         app.typeText("markdown read")
         XCTAssertTrue(element("palette.command.Lock Editing").has(\.isSelected, true, within: 2))
         app.typeKey(.return, modifierFlags: [])
-        XCTAssertTrue(element("pane.\(card).lock").has(\.isSelected, false, within: 3))
+        XCTAssertTrue(element("pane.\(card).lock.read").has(\.isSelected, true, within: 3))
+        element("pane.\(card).lock.edit").click()
+        XCTAssertTrue(page.textViews.firstMatch.exists(within: 3))
+        element("pane.\(card).lock.read").click()
+        XCTAssertTrue(page.textViews.firstMatch.vanishes(within: 3))
         try await send("printf '## Third\\n' >>notes.md\r", to: shell)
         XCTAssertTrue(page.staticTexts.matching(NSPredicate(format: "value == 'Third'")).firstMatch.exists(within: 5))
         copyAll(page)
@@ -63,7 +67,7 @@ extension OvviUITests {
     }
 
     private func source(_ card: String, page: XCUIElement, shell: String) async throws {
-        let mode = element("pane.\(card).mode.source"), lock = element("pane.\(card).lock")
+        let mode = element("pane.\(card).mode.source"), lock = element("pane.\(card).lock.edit")
         mode.click()
         XCTAssertTrue(mode.has(\.isSelected, true, within: 3))
         let box = page.checkBoxes.firstMatch, dirty = element("pane.\(card).dirty")
@@ -147,8 +151,7 @@ extension OvviUITests {
         app.typeText("q")
         let link = page.links["Other"].frame
         app.typeKey("e", modifierFlags: .command)
-        XCTAssertTrue(element("pane.\(card).lock").has(\.isSelected, true, within: 3))
-        XCTAssertEqual(element("pane.\(card).lock").label, "Stop Editing")
+        XCTAssertTrue(element("pane.\(card).lock.edit").has(\.isSelected, true, within: 3))
         let editor = page.textViews.firstMatch
         XCTAssertTrue(until(5) { editor.exists && editor.stringValue.contains("## Second") }, editor.stringValue)
         XCTAssertTrue(editor.stringValue.contains("Some words."))

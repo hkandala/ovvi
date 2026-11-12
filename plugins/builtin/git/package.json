@@ -1,7 +1,7 @@
 {
   "name": "@ovvi/git",
   "license": "AGPL-3.0-only",
-  "version": "1.10.7",
+  "version": "1.10.8",
   "private": true,
   "description": "Changes and history",
   "keywords": ["diff", "changes", "commit", "uncommitted", "history"],
@@ -39,7 +39,7 @@
         "options": [{ "value": "unified", "title": "Unified" }, { "value": "split", "title": "Side by Side" }] },
       { "id": "wrap", "type": "toggle", "title": "Wrap long lines", "default": false },
       { "id": "file-list", "type": "toggle", "title": "Show the file list when a diff opens", "default": false },
-      { "id": "commits", "type": "number", "title": "Commits in the history", "default": 500, "min": 100,
+      { "id": "commits", "type": "number", "title": "Commits in the history", "default": 100, "min": 100,
         "max": 5000, "step": 100 }
     ],
     "header": [

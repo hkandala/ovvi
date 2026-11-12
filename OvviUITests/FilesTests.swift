@@ -39,8 +39,8 @@ extension OvviUITests {
         keepScreenshot("file explorer file")
 
         try await backAndForward(card, tree, file, root)
-        element("pane.\(card).reveal").click()
-        try await labelEnds(card, " \(root)/src/deep/")
+        element("pane.\(card).close-file").click()
+        try await labelEnds(card, " \(root)/")
         XCTAssertTrue(row("main.swift", in: tree).exists(within: 10))
         XCTAssertTrue(until(3) { hasKeyboard(row("main.swift", in: tree)) })
         XCTAssertTrue(element("pane.\(card).go-forward").has(\.isEnabled, false, within: 3))
@@ -51,6 +51,62 @@ extension OvviUITests {
 
         try await moveRoot(card, tree, root)
         floatsWithRoomUnderTheRow(card) { self.row("..", in: self.element("files.\(card).page", in: $0)) }
+        try await send("rm -rf \(repo)\r", to: shell)
+    }
+
+    func testFileExplorerShowsTheTreeBesideAFile() async throws {
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        let (_, shell) = try await newTab("files side")
+        try await waitForPrompt(shell)
+        let repo = "/tmp/ovvi-e2e-side", root = "/private/tmp/ovvi-e2e-side"
+        try await makeTreeRepo(repo, in: shell)
+        let card = try await newCard("ovvi:explorer#e2eside \(root)/", cwd: repo).pane
+        let tree = element("files.\(card).page"), file = element("file.\(card).page")
+        let toggle = element("pane.\(card).tree")
+        XCTAssertTrue(row("a.txt", in: tree).exists(within: 10))
+        row("a.txt", in: tree).doubleClick()
+        try await labelEnds(card, " \(root)/a.txt")
+        XCTAssertTrue(file.textViews.firstMatch.exists(within: 10))
+        XCTAssertFalse(toggle.isSelected)
+        XCTAssertFalse(row("src", in: file).exists, "the tree shows with Show only the file")
+
+        step("The tree beside the file: a click selects, a double-click shows the file")
+        toggle.click()
+        XCTAssertTrue(toggle.has(\.isSelected, true, within: 3))
+        XCTAssertTrue(row("src", in: file).exists(within: 10))
+        XCTAssertLessThan(row("src", in: file).frame.maxX, file.textViews.firstMatch.frame.minX)
+        row("src", in: file).click()
+        app.typeKey(.rightArrow, modifierFlags: [])
+        XCTAssertTrue(row("deep", in: file).exists(within: 3))
+        row("deep", in: file).click()
+        app.typeKey(.rightArrow, modifierFlags: [])
+        XCTAssertTrue(row("main.swift", in: file).exists(within: 3))
+        row("main.swift", in: file).click()
+        XCTAssertFalse(until(1) { file.textViews.firstMatch.stringValue.contains("print(1)") }, "a click opened it")
+        row("main.swift", in: file).doubleClick()
+        try await labelEnds(card, " \(root)/src/deep/main.swift")
+        XCTAssertTrue(until(5) { file.textViews.firstMatch.stringValue.contains("print(1)") })
+        XCTAssertTrue(row("deep", in: file).exists && toggle.isSelected, "the tree kept its open folders")
+
+        step("Up past the root and back, with the file where it was")
+        row("..", in: file).doubleClick()
+        XCTAssertTrue(row("ovvi-e2e-side", in: file).exists(within: 10))
+        row("ovvi-e2e-side", in: file).doubleClick()
+        XCTAssertTrue(row("a.txt", in: file).exists(within: 10))
+        try await labelEnds(card, " \(root)/src/deep/main.swift")
+
+        step("Collapse the tree, then close the file")
+        toggle.click()
+        XCTAssertTrue(row("a.txt", in: file).vanishes(within: 3))
+        toggle.click()
+        XCTAssertTrue(row("a.txt", in: file).exists(within: 3))
+        element("pane.\(card).close-file").click()
+        try await labelEnds(card, " \(root)/")
+        XCTAssertTrue(row("main.swift", in: tree).exists(within: 10))
+        row("a.txt", in: tree).doubleClick()
+        try await labelEnds(card, " \(root)/a.txt")
+        XCTAssertTrue(row("src", in: file).exists(within: 10), "the card's choice shows the tree again")
+        toggle.click()
         try await send("rm -rf \(repo)\r", to: shell)
     }
 

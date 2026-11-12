@@ -138,7 +138,7 @@ export async function make(place: Page, root: string) {
       const more = element("button", "more", "Show More")
       more.onclick = () => {
         more.disabled = true
-        limit += 500
+        limit += ovvi.settings.get<number>("commits")
         void load()
       }
       rows.append(more)

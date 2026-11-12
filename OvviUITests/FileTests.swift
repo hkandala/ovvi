@@ -136,7 +136,7 @@ extension OvviUITests {
         app.typeKey(.downArrow, modifierFlags: .command)
         app.typeText("mine")
         XCTAssertTrue(dirty.exists(within: 3))
-        element("pane.\(card).reveal").click()
+        element("pane.\(card).close-file").click()
         XCTAssertTrue(toast.has(\.stringValue, "main.swift has unsaved edits.", within: 3))
         element("pane.\(card).toast.main").click()
         XCTAssertTrue(toast.vanishes(within: 2) && dirty.exists)

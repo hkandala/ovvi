@@ -31,7 +31,7 @@ the card shows, and it picks the card's page. A relaunch, a cold restart of
 herdr or another device makes the card at that place. The instance state
 file on the pane's machine keeps the rest: Git's commit message, the diff's
 Side by Side, Word Wrap and its file list, and File Explorer's Show Hidden
-Files, File's Word Wrap and Markdown's mode, lock and fold once the user
+Files, the tree beside a file and its width, File's Word Wrap and Markdown's mode, lock and fold once the user
 changed them in the card
 ([State](/docs/plugins/api#state)).
 
@@ -46,12 +46,13 @@ changed that value in the card's header: the card keeps its own choice.
 |---|---|---|---|---|
 | File Explorer | Show hidden files (`hidden-files`), "Names that start with a dot." | switch | off | row 2's Show Hidden Files in new trees |
 | File Explorer | Dim files that Git ignores (`ignored`) | switch | on | whether the tree dims the files git ignores, in every tree at once |
+| File Explorer | When a file opens (`file-tree`): Show only the file, Show the file with the tree | menu | Show only the file | whether a file shows with [the tree beside it](#the-tree-beside-a-file) in a card with no choice of its own |
 | File Explorer | Markdown opens in (`markdown`): Rich Text, Source | segmented | Rich Text | the mode of a Markdown file in a card with no mode of its own |
 | File Explorer | Lock Markdown for reading (`markdown-lock`) | switch | on | the lock of a Markdown file in a card with no lock of its own |
 | Git | Diff layout (`diff-layout`): Unified, Side by Side | segmented | Unified | row 2's layout in new diffs |
 | Git | Wrap long lines (`wrap`) | switch | off | row 2's Word Wrap in new diffs |
 | Git | Show the file list when a diff opens (`file-list`) | switch | off | whether a diff opens with its file list |
-| Git | Commits in the history (`commits`) | number, 100 to 5,000, step 100 | 500 | the history's length; Show More adds 500. The home reads again at a change |
+| Git | Commits in the history (`commits`) | number, 100 to 5,000, step 100 | 100 | the history's length; Show More adds as many again. The home reads again at a change |
 
 | Plugin | Label argument | Page | Title | Tab |
 |---|---|---|---|---|
@@ -123,7 +124,9 @@ the click.
 |---|---|---|
 | the tree: a file | double-click, ⌘O or ⌘↓ | the file, with its page |
 | the tree: a folder | double-click, ⌘O, ⌘↓, ⌘-click, ⌥-click, or Open as Root | the tree rooted there |
-| a file's **Show in File Explorer** | click | the tree of the file's folder, with the file selected |
+| the tree beside a file: a file | double-click, ⌘O or ⌘↓ | the file, with its page; the tree stays |
+| the tree beside a file: a folder | double-click, ⌘O, ⌘↓, or Open as Root | the tree beside the file, rooted there; the card stays |
+| a file's **Close File** | click | the tree, with the file selected ([The tree beside a file](#the-tree-beside-a-file)) |
 | an HTML file's **Open in Browser** | click | the file's page in a browser pane, in a new tab |
 | the Git home: a change | click | the Working Tree diff, scrolled to that file |
 | the Git home: **Working Tree** | click | the Working Tree diff |
@@ -277,22 +280,22 @@ its icon (`NSWorkspace`), then the other plugins that open the file. A pick
 of a plugin turns the card into that plugin's card. A file with no default
 app shows a plain "Open With" menu. The Mac's apps show on This Mac only: on
 a remote machine, Open With shows only when another plugin opens the file.
-Before it (and before Markdown's mode and lock), **Show in File Explorer**
-(`list.bullet.indent`) shows the tree with the file's folder as its root, the
-file selected and scrolled into view.
-Back returns to the file.
+After it, **Close File** (`xmark`) closes the file and leaves the tree
+([The tree beside a file](#the-tree-beside-a-file)). Back returns to the file.
 
 ## A file's row 2
 
 File, Preview and Markdown share one row 2, with the same order, spacing and
 22 pt buttons:
 
-- **On the left:** Back and Forward, the outline toggle (Markdown only, and
-  only while the file has a heading), then the breadcrumbs.
-- **On the right:** Preview's page and zoom, Word Wrap (File only), Show in
-  File Explorer, **Open in Browser** (`globe`, File on an HTML file on This
+- **On the left:** Back and Forward, **File Tree** (`sidebar.left`, in the
+  accent while [the tree](#the-tree-beside-a-file) shows beside the file), the
+  outline toggle (Markdown only, and only while the file has a heading), then
+  the breadcrumbs.
+- **On the right:** Preview's page and zoom, Word Wrap (File only),
+  **Open in Browser** (`globe`, File on an HTML file on This
   Mac only: the page in a browser pane in a new tab, selected), the mode
-  and the lock (Markdown only), then Open With.
+  and the lock (Markdown only), Open With, then Close File.
 - **The breadcrumbs** are the file's path, its parts with `›` between them
   and the first part in secondary text. Inside a Git repository the path
   starts at the repository's root, with the root's name first
@@ -424,6 +427,30 @@ selection in the accent at 24 %. A 4 pt gap sits under the header.
     tree's letters, after each change under the root and after each of its
     own writes, with no polling of its own.
 
+### The tree beside a file
+
+File, Preview and Markdown can show the tree at the left of the file, in the
+same card, as a text editor's sidebar does. Row 2's **File Tree** shows and
+hides it. The card keeps that choice for every file it shows; a card with no
+choice follows the setting "When a file opens" (Show only the file).
+
+- **One tree for the card.** It is the tree of [The tree](#the-tree), with its
+  rows, letters, keys, filter and menus, at 220 pt wide (drag its right edge
+  for 140 pt up to 60 % of the card; the card keeps the width). It has no
+  status bar and no row 2 of its own: row 2 is the file's. Its open folders,
+  selection and scroll stay while the card shows one file after another.
+- **Its root** is the tree's root the card came from, else the file's folder.
+  A double-click on a folder or on `..`, ⌘↑, or Open as Root roots the tree
+  there, and the card keeps its file.
+- **A click** selects a row only. A double-click on a file (or ⌘O, ⌘↓) shows it
+  in the card, as the tree's page does, and the tree selects it. ⌘ and ⌥ open as
+  in [Opening](#opening). A file that the card shows from elsewhere (Back, a
+  Markdown link) is selected too, when it is under the root.
+- **Close File** (`xmark`, at the right of row 2) moves the card to the tree's
+  page, rooted where the tree beside the file is (else at the file's folder),
+  with the file selected. Unsaved edits ask first. On the tree's page the
+  sidebar does not show.
+
 ### File
 
 An editable text view (CodeMirror 6).
@@ -459,8 +486,7 @@ An editable text view (CodeMirror 6).
 
 ### Preview
 
-- **Row 2** ([A file's row 2](#a-files-row-2)): before Show in File
-  Explorer, the page as "3 of 12" for a PDF, and zoom for images and PDFs
+- **Row 2** ([A file's row 2](#a-files-row-2)): before Open With, the page as "3 of 12" for a PDF, and zoom for images and PDFs
   (Zoom to Fit, Actual Size, Zoom Out, Zoom In).
 - **Images** (PNG, JPEG, GIF, WebP, HEIC, TIFF, BMP and SVG), centered and
   scrollable. Fit shrinks a large image to the card and never enlarges a
@@ -475,13 +501,13 @@ An editable text view (CodeMirror 6).
 ### Markdown
 
 - **Row 2** ([A file's row 2](#a-files-row-2)): the outline toggle
-  (`sidebar.left`, in the accent while the outline shows) after Back and
-  Forward; the mode and the lock before Open With. The mode is two icon
+  (`list.bullet.indent`, in the accent while the outline shows) after File
+  Tree; the mode and the lock before Open With. The mode is two icon
   segments, **Rich Text** (`doc.richtext`) and **Source**
   (`chevron.left.forwardslash.chevron.right`), with their names as the
-  tooltips; the segment not picked is gray, as Show in File Explorer. The
-  lock is a pencil (`pencil`): gray while locked ("Edit"), in the accent
-  while the page edits ("Stop Editing").
+  tooltips; the segment not picked is gray, as the card buttons. The lock is
+  two segments with words, **Read** (locked) and **Edit** (unlocked), drawn
+  as the mode's.
 - **Two modes, each locked or not:**
 
   | Mode | Locked | Unlocked |
@@ -636,7 +662,7 @@ app's fonts and `Look` colors. From the top:
   at that file.
 - **No changes:** with nothing to commit, the message, Commit and both lists
   give way to one placeholder: `checkmark.circle` and "No changes".
-- **History**, 26 pt under the changes, after a hairline: the last 500
+- **History**, 26 pt under the changes, after a hairline: the last 100
   commits (the setting "Commits in the history") of every branch, remote branch and tag,
   and HEAD, as a graph, newest first (`git log --branches --remotes --tags
   HEAD --topo-order`, not `--all`, which adds the stash and notes). Each row
@@ -647,7 +673,7 @@ app's fonts and `Look` colors. From the top:
   --graph`. Lane colors cycle through the accent, finished, working,
   needs-you and error colors. "No commits yet" before the first commit. A
   full page ends with **Show More**, a plain gray button in the middle,
-  which reads 500 more (`git log -n 1000` after 500, and so on). The page ends 10 pt
+  which reads as many again (`git log -n 200` after 100, and so on). The page ends 10 pt
   under the last row.
 - **Selecting a commit** works as in File Explorer. A click selects a
   commit: its row takes the accent at 24 %. A double-click or Return opens
