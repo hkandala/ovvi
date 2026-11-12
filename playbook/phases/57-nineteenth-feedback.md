@@ -3018,6 +3018,8 @@ ones".
 132. "okay for file explorer one more improvement, can we not show that cross icon to close current file that is being
      previewed, show some different icon but in different locaiton, give me some options first, i just don't like that
      cross icon sitting near file path and its not intuitive enough what it means" (Track E4, options first).
+     Of the first five options: "none of the options are good, more ideas please". Of the next five: "let's impl option
+     3": no Close File button; a click on a folder in the path closes the file and shows that folder in the tree.
 133. "and another one i noticed, in any of our plugin panes if we right click on empty space, it shows two options
      reload and inspect element, we shouldn't show inspect element, we should show only reload, can we fix that too"
      (Track E4). Then: "what do you mean keep plugins inspectable for authors only? how can you do that? let's keep it
