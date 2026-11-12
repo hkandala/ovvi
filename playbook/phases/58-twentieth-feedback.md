@@ -317,3 +317,30 @@ fails; lessons.md's rule makes it 60 s (round 8's final CI, '### Final CI, round
     `pane.read` check gets cheaper, with no change in what shows or when; (5) card state files are written without
     `sh`/`mkdir`/`cat`/`mv` and programs start without the `/usr/bin/env` step (the program found on PATH at each run);
     the presence marks stay as they are (cheap once (2) lands). Memory: no change.
+
+### Track E
+
+- **Cause (17).** A remote card has no file system events: the app checks each watched path every 2 s, under the
+  10 s bound of each run over the relay. The check read its own failure (a dropped or stalled link, the bound) as a
+  change, so every watcher refreshed at the very moment the machine could not answer. The tree's root listing then
+  failed, and any failed root listing cleared the tree to "Can't list". The next check that answered was a change
+  again, and the rows came back. This Mac uses FSEvents and runs nothing over a link, so it never showed there.
+- **Fix (17).** A failed check reports nothing; the first check that answers after it reports one change (for what a
+  caller's own calls missed meanwhile). A gone path prints nothing, so it is still an answer. The tree empties a
+  listed root only for `notFound`; any other failure keeps its rows, its Git letters and its bar. `files.list` of a
+  missing folder is `notFound` under dash too (dash says only "can't cd"). The same fix stops a remote Preview card
+  showing its error on a check that failed.
+- **Decisions.** ⇧⌘E, **Switch Between Tree and File** (View menu, ⌘K): VS Code's Show Explorer key, which also goes
+  back to the editor; free in Ovvi's map, while VS Code's ⌘0 and ⌘1 and Xcode's ⌘J are taken or open a chooser. It
+  shows a hidden tree first, gives the file's row the keys (with the focus ring), and takes them only if the user did
+  not move on meanwhile. The outline toggle is a toggle with `"style": "segment"`, drawn as one pill segment. ⌘⌥ is
+  `ovvi.open`'s new `how: "mac"`, routed through the terminal's `Links.open`; commits, a commit's parents, Git's home
+  (the explorer bar's **Git**) and a deleted change keep ⌘⌥ as ⌘. Path crumbs take no modifiers at all (header
+  clicks carry none), so they are left as they are. The API stays 3: an older app opens `mac` as a new tab.
+- **Runs.** The two new HerdrKit tests fail on the old poll and listing script (no change during an outage; dash's
+  `notFound`) and pass now. VM: the touched Markdown, header, File Explorer and Git tests green; the new
+  `testExplorerSwitchesTheKeyboardAndOpensInTheMacsApps` first failed in its repo setup (the VM's first git after boot
+  took over 10 s: that wait is now a 60 s failure bound). Pictures: `~/Downloads/ovvi-research/p58e/`.
+- **For the user.** On a remote machine, a dropped link no longer blanks the tree. ⇧⌘E in a file with the tree beside
+  it, and back; with the tree hidden. Markdown's three pill segments at the right. ⌘⌥-click a tree row, a Markdown
+  link, a Git change and a diff's Open File.

@@ -25,9 +25,8 @@ public enum Files {
     /// `git check-ignore` asks only about the folder's own names, so a listing never walks the whole repository.
     public static func list(_ folder: String, git: Bool, exec: any Exec) async throws -> [FileEntry] {
         // A missing folder is `notFound` on every `sh` (dash says only "can't cd"). Links to folders are folders; a
-        // name
-        // may hold a line break. The ignored names come after an empty one; none outside a repository. Each name is
-        // asked as `./name`: git reads them as pathspecs, so `:foo` would be `foo`.
+        // name may hold a line break. The ignored names come after an empty one; none outside a repository. Each name
+        // is asked as `./name`: git reads them as pathspecs, so `:foo` would be `foo`.
         let script = #"""
         [ -d "$1" ] || { echo "Not a folder" >&2; exit 1; }
         cd "$1" || exit

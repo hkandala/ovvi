@@ -244,20 +244,20 @@ private final class Dropping: Exec {
     }
 
     func run(_ argv: [String]) throws -> Channel {
-        guard !counts.withLock({ $0.down }) else {
-            counts.withLock { $0.failed += 1 }
-            throw HerdrError.failed("The SSH connection closed")
+        let down = counts.withLock { counts in
+            if counts.down {
+                counts.failed += 1
+            } else {
+                counts.answered += 1
+            }
+            return counts.down
         }
-        counts.withLock { $0.answered += 1 }
+        guard !down else { throw HerdrError.failed("The SSH connection closed") }
         return try relay.run(argv)
     }
 
     func herdr() -> String? {
         nil
-    }
-
-    var isRemote: Bool {
-        true
     }
 }
 

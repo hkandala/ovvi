@@ -52,8 +52,10 @@ extension Bridge {
         case "mac": .mac
         default: .tab
         }
-        try plugin.web.open?(opener(arg, args["plugin"] as? String), arg, args["at"] as? String, how,
-                             args["background"] as? Bool ?? false)
+        // The Mac's app needs no plugin.
+        let manifest = try how == .mac ? plugin.manifest : opener(arg, args["plugin"] as? String)
+        plugin.web.open?(manifest, arg, args["at"] as? String, how,
+                         args["background"] as? Bool ?? false)
     }
 
     func dropToast() {

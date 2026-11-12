@@ -27,8 +27,8 @@ export interface Ovvi {
   run(argv: string[], options?: { cwd?: string; stdin?: string; timeout?: number }): Promise<RunResult>
   /** An open of a file, a folder (ends in `/`), a URL or a plugin's argument: in this card, in a new tab right after
    *  this card's tab (the default), in a pane to its side, or (`mac`, a ⌘⌥-click) in the Mac's default app for it,
-   *  outside Ovvi (a notice on a remote machine). No `plugin`: the file's default plugin, the browser for a web
-   *  address. `at`: the new card's landing (`card.at`). */
+   *  outside Ovvi (a remote machine's file or folder shows a notice). No `plugin`: the file's default plugin, the
+   *  browser for a web address. `at`: the new card's landing (`card.at`). */
   open(arg: string, options?: {
     plugin?: string
     how?: "card" | "tab" | "side" | "mac"

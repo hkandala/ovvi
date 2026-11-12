@@ -196,22 +196,27 @@ export async function make(place: Page, root: string) {
     const node = element("div", "row"), button = element("button", "open")
     button.ariaLabel = label
     node.append(button)
-    // ⌘⌥ opens the file itself in the Mac's app.
-    node.onclick = (event) => how(event) === "mac" ? open(`${home(root)}${at}`, { how: "mac" })
-      : open(arg, { how: how(event), at, plugin: "git" })
+    node.onclick = (event) => open(arg, { how: how(event), at, plugin: "git" })
     node.oncontextmenu = (event) => void menu(event, arg, { at, plugin: "git" })
     return { node, open: button }
   }
 
   function changeRow(change: Change, staged: boolean) {
     const name = change.path.replace(/\/$/, ""), [base, folder] = nameAndFolder(name)
-    const { node, open } = row(`${WORDS[change.letter] ?? change.letter}: ${name}`, `${home(root)} uncommitted`, change.path)
+    const diff = `${home(root)} uncommitted`
+    const { node, open: face } = row(`${WORDS[change.letter] ?? change.letter}: ${name}`, diff, change.path)
+    // ⌘⌥ opens the file itself in the Mac's app; a deleted one has none, so ⌘⌥ is ⌘ there.
+    node.onclick = (event) => {
+      const by = how(event, change.letter !== "D")
+      if (by === "mac") open(`${home(root)}${change.path}`, { how: by })
+      else open(diff, { how: by, at: change.path, plugin: "git" })
+    }
     node.id = `${staged ? "staged" : "change"}.${change.path}`
     node.title = change.oldPath ? `${change.oldPath} → ${name}` : name
     const toggle = staged ? "Unstage" : "Stage", letter = element("span", `letter ${change.letter}`, change.letter)
     // The label says it.
     letter.ariaHidden = "true"
-    open.append(fileIcon(name), element("span", "name", base), element("span", "folder", folder))
+    face.append(fileIcon(name), element("span", "name", base), element("span", "folder", folder))
     node.append(
       button("arrow.uturn.backward", `Revert ${name}`, () => void revert([change])),
       button(staged ? "minus" : "plus", `${toggle} ${name}`, () =>

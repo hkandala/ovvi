@@ -104,7 +104,8 @@ export async function show(place: Place): Promise<Reveal> {
 
   let repo: string | null = null
   let repository = false
-  const rooted = () => ovvi.git.root(top).catch(() => null)
+  // A failed call keeps what the tree knew, as a failed listing keeps its rows.
+  const rooted = () => ovvi.git.root(top).catch(() => repo)
 
   root.innerHTML = `<div id="find" class="find" hidden><div class="find-row"><input class="find-field" placeholder="Filter"
     aria-label="Filter" spellcheck="false"><span class="find-count"></span><button class="find-icon" aria-label="Close Filter"
@@ -284,8 +285,8 @@ export async function show(place: Place): Promise<Reveal> {
    *  ponytail: `--numstat` leaves untracked files out; count them too if the bar should match Git's diff. */
   async function git() {
     const at = repo
-    const [now, head, numstat] = at ? await Promise.all([ovvi.git.status(at).catch(() => []),
-      ovvi.git.head(at).catch(() => null), ovvi.run(["git", "--no-optional-locks", "diff-index", "--numstat", "HEAD"], { cwd: at }).catch(() => null)])
+    const [now, head, numstat] = at ? await Promise.all([ovvi.git.status(at).catch(() => changes),
+      ovvi.git.head(at).catch(() => undefined), ovvi.run(["git", "--no-optional-locks", "diff-index", "--numstat", "HEAD"], { cwd: at }).catch(() => null)])
       : [[], null, null]
     changes = now
     showStatus()
@@ -295,7 +296,7 @@ export async function show(place: Place): Promise<Reveal> {
       lines.added += Number(plus) || 0
       lines.removed += Number(minus) || 0
     }
-    status.repo(at, head, lines)
+    if (head !== undefined) status.repo(at, head, lines)
   }
 
   /** The tree moved its row already. */
@@ -574,6 +575,8 @@ export async function show(place: Place): Promise<Reveal> {
   run(git)
   return (at, keys) => void run(async () => {
     await reveal(at, "nearest")
-    if (keys) take()
+    if (!keys?.()) return
+    ring(true)
+    take()
   })
 }

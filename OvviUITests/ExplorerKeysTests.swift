@@ -21,11 +21,11 @@ extension OvviUITests {
         app.typeKey("e", modifierFlags: [.command, .shift])
         XCTAssertTrue(toggle.has(\.isSelected, true, within: 3))
         XCTAssertTrue(row("a.txt", in: file).exists(within: 10))
-        XCTAssertTrue(until(3) { hasKeyboard(row("a.txt", in: file)) })
+        XCTAssertTrue(hasKeyboard(row("a.txt", in: file)))
         app.typeKey("e", modifierFlags: [.command, .shift])
-        XCTAssertTrue(until(3) { !hasKeyboard(row("a.txt", in: file)) })
+        XCTAssertTrue(hasKeyboard(file.textViews.firstMatch))
         app.typeKey("e", modifierFlags: [.command, .shift])
-        XCTAssertTrue(until(3) { hasKeyboard(row("a.txt", in: file)) })
+        XCTAssertTrue(hasKeyboard(row("a.txt", in: file)))
 
         step("⌘⌥-click on a folder shows it in the Finder, outside Ovvi")
         let tabs = try await tabIDs().count

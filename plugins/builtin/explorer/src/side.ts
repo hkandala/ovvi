@@ -136,13 +136,13 @@ export function sidebar(ovvi: Ovvi) {
     tree.due.clear()
   }
 
-  function show(keys = false) {
+  function show(keys?: () => boolean) {
     const on = chosen()
     document.body.toggleAttribute("data-side", on)
     if (!file) return
     if (!on) return give()
-    if (!current) void rooted(folder(file), file).then(() => keys && current?.reveal.then((reveal) => reveal?.(file, true)))
-    else void current.reveal.then((reveal) => reveal?.(file, keys))
+    void (current ? Promise.resolve() : rooted(folder(file), file))
+      .then(() => current?.reveal.then((reveal) => reveal?.(file, keys)))
   }
 
   /** A hidden tree gives the keys to the page, as the runtime's `present` does. */
@@ -183,8 +183,10 @@ export function sidebar(ovvi: Ovvi) {
     /** Switch Between Tree and File (⇧⌘E): from the file to its row in the tree, shown if hidden, and back. */
     keys() {
       if (aside.contains(document.activeElement)) return give()
+      // Only if the keyboard stayed: a slow remote listing must not take it from what the user went on to.
+      const before = document.activeElement
       choose(ovvi, { side: true })
-      show(true)
+      show(() => document.activeElement === before)
     },
     /** Where a file closed from its path's folder leaves the card: the tree beside it, kept, when it holds the
      *  folder, else that folder's tree. */
