@@ -2839,3 +2839,5 @@ ones".
      transient bug, figure it out and fix it" (Track C5). Then: "yeah i see the pattern, just open like 10 browser
      panes, go to each of its tab and make it active, then come back to the chat view you see the tui for a breif
      milliseconds".
+127. "okay one more thing, in browser or in file explorer, i don't see option to make vidoes full screen, can we
+     enable that? so i can easily open and watch videos in full screen" (Track V2).
