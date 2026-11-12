@@ -120,3 +120,32 @@ fails; lessons.md's rule makes it 60 s (round 8's final CI, '### Final CI, round
 20. "cmd+option+click not working in file explorer and git plugins, wherever cmd+click and option+click is enabeld,
     cmd+option+click should work too (except clicking on commit, i don't think there are any default apps you can bind
     to open diffs)"
+
+## Findings
+
+### Track P
+
+- **Cause, item 7 (why it went).** Phase 48 ("instant tabs", commit 1ce19276) removed every tab motion with the strip.
+  The user had asked to drop the motion between tabs; the overview's zoom and its chrome fade went with it as part of
+  that cleanup, not for a reason of their own (a tile open went from 240 ms to 38 ms, all of it the 0.18 s zoom).
+- **Fix, item 7.** Leaving the overview (a tile, Esc, ×, ⌃⌘O) grows the selected tab's miniature from its tile to the
+  page in 0.18 s while the other tiles fade out, and the sidebar and title row fade in over 0.12 s; then the page
+  shows. Smaller than the old one: no session paging, the miniature draws pictures only (a live terminal stays in its
+  tile until the page takes it). At once under Reduce Motion, with the tile out of view, or on a second leave.
+- **Cause, item 8.** Only ⌘D, ⇧⌘D and drops evened their run (`balance(around:)` in their write). A card opened beside
+  another (`newPane(.split)`: a link, a plugin, `ovvi open`, `ovvi agent`) kept herdr's half, and a close never evened.
+- **Fix, item 8.** Settings ▸ General ▸ Balance splits automatically (on by default; also View ▸ Pane and the palette).
+  Every open and close in the app evens its run in the same write, best effort; a close shows the evened run ahead of
+  herdr (`Ahead.layout`, the split's hold), so cards move once. Another client's open or close, a shell's exit and a
+  move out of a tab even once a snapshot shows them, if the tab did not change since (cards move twice there: herdr's
+  change shows first). Off: herdr's halves everywhere, as in its own window; ⌥⌘= still works.
+- **Decisions.** The setting also evens panes that other clients (herdr's window, `herdr pane split`, another Mac) open
+  or close in a session Ovvi shows, since the user asked for it "all the time". A replaced pane leaves its place to the
+  new one, unevened. `SplitNode.closing` evens only the run the pane was in: a row that drops to one pane stays one
+  unit of its column.
+- **Runs.** VM, the tile test with its new zoom count and the balance test: on the first build the zoom passed and the
+  balance test's Off half failed on the test (it reopened the same folder, which `ovvi open` reuses). Frame strips of
+  the zoom from the VM recording: `~/Downloads/ovvi-research/p58p/`.
+- **For the user.** Open the overview and click a tile, press Esc, ⌃⌘O: the tile should grow into the page while the
+  sidebar and tabs fade in. Split three panes and close the middle one with ×; open a file to the side with ⌥-click;
+  type `exit` in one of three panes: each time the row should end equal. Turn the setting off and split twice: halves.

@@ -46,6 +46,8 @@ extension HostStore {
         guard Self.balances, let old,
               Set(old.panes.map { "\($0.id) \($0.tabID)" }) != Set(new.panes.map { "\($0.id) \($0.tabID)" })
         else { return }
+        // herdr keeps a moved pane's terminal: a tab the app rebuilds pane by pane (`move(tab:to:)`) keeps its ratios.
+        let had = Set(old.panes.compactMap(\.terminalID))
         for (tabID, now) in new.trees {
             guard let tree = old.trees[tabID] else { continue }
             let gone = Set(tree.paneIDs).subtracting(now.paneIDs), added = Set(now.paneIDs).subtracting(tree.paneIDs)
@@ -54,7 +56,9 @@ extension HostStore {
                             let left = tree.closing(id), left.tree.places(like: now, renaming: [:])
             {
                 left.evened
-            } else if gone.isEmpty, added.count == 1, let id = added.first {
+            } else if gone.isEmpty, added.count == 1, let id = added.first,
+                      new.panes.first(where: { $0.id == id })?.terminalID.map(had.contains) != true
+            {
                 now.evened(around: id)
             } else {
                 [(path: [Bool], ratio: Double)]()

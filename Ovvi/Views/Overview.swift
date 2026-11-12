@@ -77,11 +77,16 @@ struct Overview: View {
     private func leave(_ page: Page) {
         guard let tab = page.selectedTab, pages.overviewTabs[page.id]?.contains(tab.id) == true,
               let from = pages.tileFrames["\(page.id) \(tab.id)"] else { return pages.closeOverview() }
+        // A tile that still streams has no picture yet for the zoom to grow.
+        pages.terminals.takePictures(of: pages.tileCards(page, tab.id).map(\.0))
         zoom = (tab, from)
         // Next turn: a view inserted in the same update as the change starts at its end, with no motion.
         Task {
             withAnimation(.easeOut(duration: 0.18)) { grown = true } completion: {
-                pages.closeOverview()
+                // Not an overview opened again since a second leave closed this one.
+                if pages.leaving {
+                    pages.closeOverview()
+                }
             }
         }
     }
