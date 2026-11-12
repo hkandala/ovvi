@@ -2926,3 +2926,6 @@ ones".
 128. "in chat view one more thing, before when the message is in stil waiting to be sent like its waiting in queue
      etc, message used to be shown bit less opacity or dimmed, and that changes to correct color once it submits, now i
      don't see that, let's bring that back too" (Track C5).
+129. "yo one more improvement to chat view new chat state, i konw we do show now random greeting, but the placeholder
+     remains same ask anything, can we change the placeholder as well dynamically relevant to the greeeting message, so
+     essentially we have tuples of greeting and its placeholder and we show that accoridngly" (Track C5).
