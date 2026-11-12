@@ -28,10 +28,10 @@ struct Detail: View {
             // session, changes it.
             EmptyState(symbol: "arrow.up.circle", title: "herdr is too old", text: text + ".", id: "detail")
         case .failed where store.starting:
-            Loader(symbol: "power.circle", text: "Starting \(store.session)…", id: "detail.starting")
+            Loader(symbol: "rectangle.stack", text: "Starting \(store.session)…", id: "detail.starting")
         case .failed where !store.isRunning:
             let title = "\(store.session) is not running"
-            EmptyState(symbol: "power.circle", title: title, text: store.startProblem, id: "detail") {
+            EmptyState(symbol: "rectangle.stack", title: title, text: store.startProblem, id: "detail") {
                 Button("Start \(store.session)") { Task { await store.start() } }.buttonStyle(.glassProminent)
                     .accessibilityIdentifier("detail.start")
             }
