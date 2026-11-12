@@ -45,6 +45,28 @@ extension OvviUITests {
         XCTAssertFalse(row(pane, "reply", "Allowed.").exists)
     }
 
+    /// Codex names a resumed session only at its first prompt: the chat shows the session's history before that.
+    func testRelaunchWithChatShowsACodexSessionsHistory() async throws {
+        let home = Self.archivedHome + "/.codex"
+        defer { try? FileManager.default.removeItem(atPath: home) }
+        let pane = try await startChat(agent: 1, environment: "CODEX_HOME=\(home) ", chat: false, plain: true).pane
+        try await waitFor(pane) { $0.contains("Ask Codex") }
+        try await send("hello\r", to: pane)
+        try await waitFor(pane) { $0.contains("• done") }
+        let enable = element("pane.\(pane).enable-chat")
+        XCTAssertTrue(enable.exists(within: 10))
+        XCTAssertEqual(enable.label, "Relaunch with Chat")
+        enable.click()
+        XCTAssertTrue(element("chat.\(pane).composer").exists(within: 35))
+        XCTAssertTrue(row(pane, "reply", "Echo: **hello**").exists(within: 5))
+        XCTAssertTrue(row(pane, "user", "hello").exists)
+        // The hook's line at the first message names the same rollout: the history stays.
+        element("chat.\(pane).composer").click()
+        try await say("again", in: pane)
+        XCTAssertTrue(row(pane, "reply", "Echo: **again**").exists(within: 5))
+        XCTAssertTrue(row(pane, "reply", "Echo: **hello**").exists)
+    }
+
     func testACodexChatOnARemoteMachine() async throws {
         try await skipWithoutSSH()
         relaunch(one, Self.onKeyHost)

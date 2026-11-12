@@ -146,6 +146,25 @@ fails; lessons.md's rule makes it 60 s (round 8's final CI, '### Final CI, round
     The limitation, from phase 57 Track C5: "A resumed Codex chat stays empty until its first prompt, because Codex
     starts its session only then."
 
+### Findings (Track X)
+
+- **How it works.** No app server: the Codex chat already reads the transcript. Ovvi launches `codex` with an inline
+  SessionStart hook (and its trust hash) that appends the hook's JSON to `~/.cache/ovvi/chat/T/hooks.jsonl`; the chat
+  follows the `transcript_path` there, the rollout `~/.codex/sessions/Y/M/D/rollout-<time>-<id>.jsonl`, and reads its
+  `item_completed` events.
+- **Cause.** Codex queues SessionStart until the first turn (`run_pending_session_start_hooks` in `session/turn.rs`),
+  for a resume too. So a resumed chat's side file named no rollout before the first prompt, and the chat was empty.
+- **Fix.** Before a resume line, one run on the pane's machine finds the session's rollout by its id and appends
+  `{"transcript_path": …}` to the side file. A resumed Codex appends to that same file (`open_rollout_for_append`), so
+  the hook's later line names it again and changes nothing. A `.zst` rollout is named by its plain path, which Codex
+  makes as it resumes. Resume from Archived Sessions and Relaunch with Chat both go through it.
+- **Decisions.** The rollout is looked for under `$HOME/.codex`, as Archived Sessions already reads Codex's store (UI
+  tests: `-archivedHome`). A `CODEX_HOME` set only in the pane's shell is not seen: that chat fills at its first prompt,
+  as before. The stand-in now honors `CODEX_HOME` (default: its own temporary folder), keeps its rollout when started
+  without Ovvi's flags, reports its session to herdr then, and goes on with `resume <id>`.
+- **For the user.** With a real Codex: resume a session from Archived Sessions and one with Relaunch with Chat. The
+  history shows before the first message and does not load again at it. Once with an old, compressed (`.zst`) session.
+
 ## Track E: File Explorer and Git (items 17, 18, 19, 20)
 
 17. "sometimes i see file explorer listing goes blank like this randomly and then comes back on its own? folder is

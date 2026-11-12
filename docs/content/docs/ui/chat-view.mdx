@@ -108,8 +108,6 @@ agent has ended and the shell is in front):
 | "‹agent› started again without chat" | herdr reports the agent, but none of its processes carries the marker or is named as the agent (after the 10 s search) |
 | "‹agent› is not back after 10 s" | herdr reports no agent yet; the chat still opens if it comes |
 
-- Codex shows its old messages only after the first message, when its hook
-  runs.
 - With no session from herdr there is no button. The app does not look for
   one in the agent's files.
 
@@ -124,18 +122,26 @@ and no backslash.
 | Agent | Written first | The launch line | Marker |
 |---|---|---|---|
 | Claude Code | nothing | `claude --session-id T --settings '<json>'`: inline hooks. A SessionStart hook appends the session's JSON (with `transcript_path`) to `hooks.jsonl`. A PermissionRequest hook for AskUserQuestion only waits for the chat's answer ([Waiting](#waiting)) | the hooks' folder `/.cache/ovvi/chat/T` in the `--settings` value |
-| Codex | nothing | `codex -c 'hooks.SessionStart=[…]' -c 'hooks.state={…}'`: a SessionStart hook that appends the session's JSON to `hooks.jsonl`, and that hook's trust hash | `/.cache/ovvi/chat/T/` inside a `hooks.SessionStart=` argument |
+| Codex | on a resume, the session's rollout in `hooks.jsonl` | `codex -c 'hooks.SessionStart=[…]' -c 'hooks.state={…}'`: a SessionStart hook that appends the session's JSON to `hooks.jsonl`, and that hook's trust hash | `/.cache/ovvi/chat/T/` inside a `hooks.SessionStart=` argument |
 | Pi | `~/.cache/ovvi/pi-ovvi-<sha8>.ts` | `pi -e ~/.cache/ovvi/pi-ovvi-<sha8>.ts --ovvi ~/.cache/ovvi/chat/T/pi.jsonl` | that `--ovvi` path, in the argv of `pi` or `pi.real` |
 | OpenCode | `~/.cache/ovvi/opencode/ovvi-tui.js` and its `tui.json`; the launch's password file `chat/T/pw` | `OVVI_OC_STATE=…/state.jsonl OPENCODE_TUI_CONFIG=…/tui.json OPENCODE_SERVER_PASSWORD=$(cat "…/pw") opencode --port 0 --hostname 127.0.0.1 -- ovvi-T` | `-- ovvi-T` after `--port` (opencode ignores what follows `--`), and the state line's `pid` is a marked process's |
 
 - Before the line, one run on the pane's machine writes what the line needs
   (Pi and OpenCode): pi-ovvi, the OpenCode plugin and its `tui.json` go whole
   (a temporary file, then a rename). If that run fails, the plain command starts, with no chat.
+  Codex's run on a resume (below) only helps: when it fails or finds no
+  rollout, the chat still starts and fills at the first message.
 - The flags write no user config. The user's own settings, hooks, plugins
   and extensions keep working. One exception: a user's own
   `OPENCODE_TUI_CONFIG` is replaced for a chat launch.
 - **Codex** runs its hook with `$SHELL -lc` at each session's first prompt,
-  not at launch. The trust hash in `hooks.state` is the one Codex keeps for
+  not at launch, also for a resumed session. So before a resume line, the
+  run on the pane's machine looks for the session's rollout,
+  `~/.codex/sessions/*/*/*/rollout-*-<id>.jsonl` (or the same name with
+  `.zst`, a compressed rollout, which Codex makes plain again as it
+  resumes). It appends `{"transcript_path": …}` to `hooks.jsonl`, so the
+  chat shows the session's history at once. The hook's line at the first
+  prompt names the same file. The trust hash in `hooks.state` is the one Codex keeps for
   that hook, so Codex shows no "Hooks need review" picker
   ([Security](#security)).
 - **pi-ovvi** is a small pi extension that ships inside the app. Its file
@@ -155,7 +161,7 @@ and no backslash.
 | Agent | History | Phase |
 |---|---|---|
 | Claude Code | the `transcript_path` of the last SessionStart line | `status` in its session record `~/.claude/sessions/<pid>.json`: `idle` and `shell` are ready, `busy` works, `waiting` waits. Without a record, herdr's status |
-| Codex | the `transcript_path` of the last SessionStart line that has one (its rollout) | herdr's status, and [the screen check](#codexs-screen-check) |
+| Codex | the last `transcript_path` in `hooks.jsonl` (its rollout): the resume's line, then each SessionStart line that has one | herdr's status, and [the screen check](#codexs-screen-check) |
 | Pi | the `path` of the last `session` line; `tree` lines move the branch ([Pi's tree](#pis-tree)) | the state file alone: `working`, `idle`, `blocked` until `unblocked`; starting before the first `session` line and after `shutdown` |
 | OpenCode | `GET /session/<id>/message` for the session in the last state line, then `GET /event` (opencode writes no transcript file) | a dialog or a pending request waits; a busy `session.status` works; else herdr's status |
 
@@ -208,8 +214,8 @@ and no backslash.
     one that nothing followed for a while (its card was out of view, or the
     TUI showed) are current once their transcript is read to its end, or is
     missing (OpenCode: once its history loads, or it has no session; Codex:
-    also once its side file names no session, as Codex starts one only with
-    the first prompt, so a resumed Codex chat stays empty until then). Until
+    also once its side file names no session, as Codex starts a new one only
+    with the first prompt). Until
     then the chat shows a loader in Chat from its first frame, never the TUI
     or the empty chat, and then the chat whole and at the bottom: not the old
     rows and then a jump. A message sent meanwhile shows at once, and the
@@ -378,7 +384,7 @@ dialogs and every picker.
 **The chat cannot read the session.** A red card says so, with the reason
 and **Show TUI**, and the header's state label says Error:
 - "‹Agent› has not started a session": Claude Code or Pi after 10 s with no
-  session, or Codex when a message is not sent and its hook never ran.
+  session, or a new Codex chat when a message is not sent and its hook never ran.
 - "OpenCode has not reported its session" ([an OpenCode build that ignores plugins](#which-panes-have-it)),
   "OpenCode's server did not answer" or "did not give the session".
 - "The transcript is not in a format the chat knows".
@@ -710,7 +716,7 @@ user's own on a shared machine.
 
 | File | Written by |
 |---|---|
-| `~/.cache/ovvi/chat/T/` (0700) | the launch: `hooks.jsonl`, `ask`, `answer` (Claude Code), `hooks.jsonl` (Codex), `pi.jsonl` (Pi), `state.jsonl` and `pw` (OpenCode) |
+| `~/.cache/ovvi/chat/T/` (0700) | the launch: `hooks.jsonl`, `ask`, `answer` (Claude Code), `hooks.jsonl` (Codex; on a resume the app writes its first line), `pi.jsonl` (Pi), `state.jsonl` and `pw` (OpenCode) |
 | `~/.cache/ovvi/pi-ovvi-<sha8>.ts` | the app, before a Pi launch |
 | `~/.cache/ovvi/opencode/ovvi-tui.js`, `tui.json` | the app, rewritten before each OpenCode launch |
 
@@ -762,7 +768,10 @@ on This Mac and on a remote machine, in light mode and in Classic.
   drawer). `/clear` in the terminal: the chat starts the new session.
 - **Codex:** no "Hooks need review" picker. A reply, and Stop. `/model`
   typed in the chat flips the card. A picker left open shows the drawer when
-  you flip back. `/new`, then a message.
+  you flip back. `/new`, then a message. Resume a session from Archived
+  Sessions, and one with Relaunch with Chat: the history shows before the
+  first message and does not load again at it. Once with an old session whose
+  rollout Codex compressed (`.zst`).
 - **Pi:** an extension dialog shows the drawer, and herdr refuses a send
   meanwhile. `/tree` to an earlier message, `/new`, `/fork` and `/resume`. A
   message sent during a long tool shows no "Not sent" until pi takes it. Esc

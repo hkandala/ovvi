@@ -97,3 +97,25 @@ private func history() throws -> ChatHistory {
                                         ["reply", "reply", "stack", "reply", "worked"],
                                         ["reply", "note", "stack"], ["note", "reply", "stack", "worked"]])
 }
+
+@Test func `a resumed codex session's rollout goes in the side file, plain where Codex compressed it`() async throws {
+    let home = URL(filePath: "/tmp/ovvi-codex-name-\(UUID().uuidString)"), store = home.appending(path: "store")
+    defer { try? FileManager.default.removeItem(at: home) }
+    let exec = ProcessExec(["HOME": home.path, "PATH": "/usr/bin:/bin"], herdr: nil, asked: .now)
+    let id = "019a2b3c-4d5e-7f60-8a9b-0c1d2e3f4a5b", other = "019a2b3c-4d5e-7f60-8a9b-0c1d2e3f4a5c"
+    let folder = ".codex/sessions/2026/11/02/", name = "rollout-2026-11-02T10-00-00-\(id).jsonl"
+    for (root, file) in [(home, name + ".zst"), (home, "rollout-2026-11-02T11-00-00-\(other).jsonl"), (store, name)] {
+        let url = root.appending(path: folder + file)
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data().write(to: url)
+    }
+    let side = ".cache/ovvi/chat/t/hooks.jsonl"
+    await CodexRollout.name(id, in: side, on: exec)
+    await CodexRollout.name("019a2b3c-0000-7f60-8a9b-0c1d2e3f4a5b", in: side, on: exec)
+    await CodexRollout.name(id, in: side, home: store.path, on: exec)
+    let lines = try String(contentsOf: home.appending(path: side), encoding: .utf8).split(separator: "\n")
+    let paths = try lines.map { line in
+        try #require(JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: String])["transcript_path"]
+    }
+    #expect(paths == [home.path + "/" + folder + name, store.path + "/" + folder + name])
+}

@@ -114,6 +114,18 @@ public enum CodexRollout {
         history.append(ChatEntry(id: id, .tool(tool), time: time))
     }
 
+    /// Codex runs its SessionStart hook at a session's first prompt, a resumed one's too: a line ahead of the hook's
+    /// names the resumed session's rollout in the side file, so the chat shows its history at once. Codex makes a
+    /// compressed rollout (`.zst`) plain as it resumes and appends to it. `home` holds the store instead of `$HOME`.
+    public static func name(_ session: String, in sideFile: String, home: String? = nil, on exec: any Exec) async {
+        let script = #"""
+        s=$HOME/$1; \#(ClosedSessions.home(3))
+        f=$(ls "$HOME"/.codex/sessions/*/*/*/rollout-*-"$2".jsonl* 2>/dev/null | head -n 1)
+        [ -z "$f" ] || { umask 077; mkdir -p "${s%/*}" && printf '{"transcript_path":"%s"}\n' "${f%.zst}" >>"$s"; }
+        """#
+        await exec.succeeds(script, [sideFile, session, home ?? ""])
+    }
+
     /// Codex's input box (`› …`) directly above its status row (`<model> <effort> · <folder>`), among the screen's
     /// last rows: no picker, dialog or question is open. A picker's selected row is `› 1. …`.
     public static func ready(_ screen: String) -> Bool {

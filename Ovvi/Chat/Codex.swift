@@ -27,9 +27,17 @@ struct Codex: ChatAdapter {
             + (resume.map { " " + $0 } ?? "")
     }
 
-    /// The hook reports the thread at the first prompt after the resume: the chat stays empty until then.
     static func resume(_ session: String) -> String? {
         ChatAdapters.uuid(session).map { "resume \($0)" }
+    }
+
+    /// The hook names a resumed session only at its first prompt: the side file names its rollout first.
+    static func prepare(_ token: String, resume: String?, arguments: String, on exec: any Exec) async -> String? {
+        if let session = resume?.split(separator: " ").last {
+            await CodexRollout.name(String(session), in: ChatAdapters.folder(token) + "/hooks.jsonl",
+                                    home: HostStore.archivedHome, on: exec)
+        }
+        return command + arguments + " " + flags(token, resume: resume)
     }
 
     /// The launcher's `codex` and the native binary both carry the `hooks.SessionStart` value.

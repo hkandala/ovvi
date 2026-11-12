@@ -2,7 +2,8 @@ import Foundation
 import HerdrKit
 
 extension HostStore {
-    /// UI tests' stores (`-archivedHome`), never the user's; the agents' session titles too.
+    /// UI tests' stores (`-archivedHome`), never the user's: the archived sessions, their titles and a resumed Codex
+    /// session's rollout.
     static let archivedHome = UserDefaults.standard.string(forKey: "archivedHome")
 
     func askProgram(_ paneID: String, soon: Bool = false) async {
