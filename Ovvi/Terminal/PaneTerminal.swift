@@ -6,7 +6,7 @@ import Observation
 @MainActor @Observable
 final class PaneTerminal {
     private(set) var state = State.idle {
-        // A failure is the connection's until the page answers after it: the page reads at once to tell.
+        // A failure is the connection's until a try made while the page answers fails too (`show`): it reads at once.
         didSet {
             if state.isFailed, !oldValue.isFailed {
                 own = false
@@ -15,7 +15,7 @@ final class PaneTerminal {
         }
     }
 
-    /// Its failure came while the page answers (a snapshot after it): the pane's own, which its card says.
+    /// A try after a failure failed too, and the page answers after it: the pane's own failure, which its card says.
     private(set) var own = false
     var hasKeyboard = false
     /// Off from a new surface's start and from each grid change until the grid settles, so that herdr's first frame
@@ -44,9 +44,9 @@ final class PaneTerminal {
     @ObservationIgnored private var stream: TerminalStream?
     @ObservationIgnored private(set) var observing = false
     @ObservationIgnored private var shown = false
-    @ObservationIgnored private var retried: ContinuousClock.Instant?
-    /// Failed while its page did not answer: the stream fails with its connection, not by itself.
-    @ObservationIgnored private var lost = false
+    @ObservationIgnored private var retried = ContinuousClock.now
+    /// Its stream opens again after a failure, while the page answers: if that one fails too, the failure is its own.
+    @ObservationIgnored private var confirming = false
     /// Counts streams, so a stream that is ending cannot change the state of the next one.
     @ObservationIgnored private(set) var generation = 0
     @ObservationIgnored var watches: () -> Bool = { false }
@@ -55,6 +55,8 @@ final class PaneTerminal {
     @ObservationIgnored var inView = false {
         didSet {
             if inView != oldValue {
+                // Out of view, no snapshot judges its failure (`show`): back in view, it loads first.
+                (own, confirming) = (false, false)
                 inViewChanged()
             }
         }
@@ -97,17 +99,16 @@ final class PaneTerminal {
             return open()
         }
         guard state.isFailed else { return }
-        guard live else {
-            lost = true
-            return retried = nil
+        guard live else { return (own, confirming) = (false, false) }
+        if confirming {
+            (own, confirming) = (true, false)
         }
-        own = true
-        if retried.map({ .now - $0 >= .seconds(5) }) ?? true {
-            // Back from Reconnecting: its card loads, not "stopped". A failing stream's later tries keep the panel
-            // (`end`).
-            if lost {
-                (state, lost) = (.idle, false)
-            }
+        if !own {
+            // Maybe the connection's (`state`): a stream that ended with it, also out of view, loads, not "stopped".
+            (state, confirming, retried) = (.idle, true, .now)
+            open()
+        } else if .now - retried >= .seconds(5) {
+            // A failing stream's later tries keep the panel (`end`, `closed`).
             retried = .now
             open()
         }
@@ -179,6 +180,7 @@ final class PaneTerminal {
 
     private func started(_ frame: TerminalStream.Frame) {
         state = observing ? .watching : .live
+        confirming = false
         // The card may have changed size while the stream opened. Its latest size: a new surface's first guess (100×40
         // at 1x) may be `grid` while the real size waits in `resized`, and that one would be cancelled.
         if let latest, frame.width != latest.columns || frame.height != latest.rows {
@@ -202,7 +204,12 @@ final class PaneTerminal {
     private func closed(_ reason: TerminalStream.Closed) {
         // No frame yet: herdr refused the stream at open.
         let refused = state == .idle || state.isFailed
-        state = .idle
+        // From failed to failed: the failure stays the pane's own (`own`), and its panel shows on.
+        state = if case let .failed(text) = reason {
+            .failed(text)
+        } else {
+            .idle
+        }
         switch reason {
         case .held:
             // Takes over only if the user typed while a refused control opened. A new task: `open` waits for this
@@ -224,11 +231,8 @@ final class PaneTerminal {
                     open(observe: observing)
                 }
             }
-        case .ended:
+        case .ended, .failed:
             pending = []
-        case let .failed(text):
-            pending = []
-            state = .failed(text)
         }
     }
 
@@ -314,7 +318,7 @@ final class PaneTerminal {
 extension PaneTerminal {
     func pause() {
         guard shown else { return }
-        shown = false
+        (shown, own, confirming) = (false, false, false)
         pending = []
         paste = nil
         end()

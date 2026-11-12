@@ -40,6 +40,48 @@ extension OvviUITests {
         }
     }
 
+    /// A tab kept out of view while Key Host's master drops: its stream ends with the connection. Shown once the page
+    /// is back, while herdr holds its new stream (paused, as a slow link would), it loads and never says its terminal
+    /// stopped. In both looks.
+    func testAKeptTabShownAfterADropNeverSaysStopped() async throws {
+        try await skipWithoutSSH()
+        addTeardownBlock { [one] in _ = try? await Self.post("\(one)/resume") }
+        for appearance in ["dark", "light"] {
+            relaunch(one, Self.onKeyHost + ["-appearance", appearance])
+            let stopped = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'pane.' AND identifier "
+                    + "ENDSWITH '.retry'")).firstMatch
+            let (kept, pane) = try await newTab("kept \(appearance)")
+            let (other, shown) = try await newTab("other \(appearance)")
+            try await show(kept)
+            XCTAssertTrue(drawn(pane, within: connect), element("pane.\(pane)").stringValue)
+            let found = try await order(of: kept)
+            let index = try XCTUnwrap(found)
+            try await show(other)
+            XCTAssertTrue(drawn(shown, within: connect), element("pane.\(shown)").stringValue)
+            let (terminal, back) = try await (terminalID(pane), terminalID(shown))
+
+            _ = try await Self.post("\(one)/ssh-drop", Data("ovvi-key".utf8))
+            try await expect("the shown tab to stream again", times: 300) {
+                try await streams(one).contains { $0.contains(back) }
+            }
+            let ended = try await streams(one).allSatisfy { !$0.contains(terminal) }
+            XCTAssertTrue(ended, "the kept tab's stream outlived the drop")
+            XCTAssertFalse(stopped.exists, "a card says its terminal stopped once back")
+
+            _ = try await Self.post("\(one)/pause")
+            app.typeKey("\(index + 1)", modifierFlags: .command)
+            XCTAssertTrue(element("tab.\(kept)").has(\.isSelected, true, within: 3))
+            XCTAssertFalse(until(1) { stopped.exists }, "the kept tab says its terminal stopped as it opens")
+            keepScreenshot("kept tab opening \(appearance)")
+            XCTAssertFalse(until(1) { stopped.exists }, "the kept tab says its terminal stopped as it opens")
+            _ = try await Self.post("\(one)/resume")
+            XCTAssertFalse(until(3) { stopped.exists }, "the kept tab says its terminal stopped")
+            XCTAssertTrue(drawn(pane, within: connect), element("pane.\(pane)").stringValue)
+            try await expect("the kept tab to stream") { try await streams(one).contains { $0.contains(terminal) } }
+            keepScreenshot("kept tab back \(appearance)")
+        }
+    }
+
     /// Key Host's HostName in CI's ~/.ssh/config.
     private func hostname(_ name: String) async throws {
         _ = try await Self.post("\(one)/ssh-hostname", Data("ovvi-key \(name)".utf8))

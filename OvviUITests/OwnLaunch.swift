@@ -14,6 +14,7 @@ extension OvviUITests {
         "testAFixedPickSkipsTheChooserAndOptionShowsIt",
         "testAFixedPicksMenuItemsAndSetting",
         "testAFixedTerminalTakesTheKeysTypedBeforeItsPane",
+        "testAKeptTabShownAfterADropNeverSaysStopped",
         "testALaunchWithNothingToRestoreConnectsToNothing",
         "testAPasswordHostAsksAndNeverRetriesByItself",
         "testAReconnectingPageShowsItsStateOnce",
