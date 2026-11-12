@@ -2615,7 +2615,8 @@ ones".
 - **Runs.** VM: a scratch look scene (not committed) on `4942f142^` and on the fix, Glass and Classic, dark and
   light: text, ⌘ hover, selection; a second one with the four hover looks. Ghostty.app in the VM with SF Mono and
   with its defaults. CI 43147471618 (chosen
-  tests, executed 3: the link test with its new ⌘⌥ steps, selected text, the floating link) green. Pictures:
+  tests, executed 3: the link test with its new ⌘⌥ steps, selected text, the floating link) green. The tint: CI 43151724862
+  (the link and floating-link tests) green. Pictures:
   `~/Downloads/ovvi-research/p57l2/`.
 - **For the user.** Select text in a pi or Claude Code pane, dark and light: one text color on the blue. Hold ⌘ over
   a link, also one a TUI underlines: a soft grey box behind it, no second line. ⌘⌥-click a web link (default browser), a file (its app) and a folder
