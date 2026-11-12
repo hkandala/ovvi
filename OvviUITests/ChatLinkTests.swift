@@ -1,8 +1,8 @@
 import XCTest
 
 extension OvviUITests {
-    /// A path in the chat is a link, as in the terminal: ⌘-click opens it in a new tab in the background, a plain click
-    /// in a new tab, selected.
+    /// A path in the chat is a link, as in the terminal: ⌘-click opens it in a new tab in the background, ⌥-click
+    /// to the side, a plain click in a new tab, selected.
     func testALinkInAChatOpensAsInTheTerminal() async throws {
         let folder = "/tmp/ovvi-e2e-chat-links", file = "\(folder)/notes.md"
         // The agent's shell function makes the file first: the tests' runner may not write /tmp.
@@ -33,5 +33,11 @@ extension OvviUITests {
         closeAfter("tab", selected)
         try await labelEnds(self.pane(of: selected), " \(file)")
         XCTAssertTrue(element("tab.\(selected)").has(\.isSelected, true, within: 3))
+
+        step("⌥-click opens it to the side")
+        element("tab.\(tab)").click()
+        XCTAssertTrue(reply.exists(within: 3))
+        XCUIElement.perform(withKeyModifiers: .option) { end(reply).click() }
+        try await labelEnds(sidePane(in: tab, besides: [pane]), " \(file)")
     }
 }

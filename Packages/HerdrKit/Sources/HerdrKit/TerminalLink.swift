@@ -12,6 +12,14 @@ public struct TerminalLink: Codable, Equatable, Sendable {
     public var line: Int?
     public var column: Int?
 
+    public init(range: Range<Int>, kind: Kind, target: String, line: Int? = nil, column: Int? = nil) {
+        self.range = range
+        self.kind = kind
+        self.target = target
+        self.line = line
+        self.column = column
+    }
+
     public static func at(_ index: Int, in text: String) -> TerminalLink? {
         all(in: text).first { $0.range.contains(index) }
     }

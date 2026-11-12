@@ -789,11 +789,14 @@ terminal.
   Link in New Tab** and **Open Link to the Side**. A `target=_blank` link
   opens a new tab in the background ([Popups, links and
   dialogs](/docs/ui/browser#popups-links-and-dialogs)).
-- **The chat's links** are what the terminal finds, in every message and
-  tool call ([Markdown](/docs/ui/chat-view#what-it-looks-like)), and they
+- **The chat's links** are what the terminal finds, in the messages, their
+  code and a tool call's Input and Output
+  ([Markdown](/docs/ui/chat-view#what-it-looks-like)), and they
   open as the terminal's do: ⌘-click in a new tab and ⌥-click to the side,
   both in the background, and ⌘⌥-click in the Mac's default app. A plain click opens as a browser's link does, in
   a new tab, selected: chat text is no program's, so the click is free. A
+  ⇧- or ⌃-click elsewhere is the text's (it selects or opens the text's
+  menu); on a link it does nothing. A
   link has no menu of its own: SwiftUI's text has none, so the right click
   shows the text's menu.
 - A web page opened from Markdown or the chat follows the browser's load

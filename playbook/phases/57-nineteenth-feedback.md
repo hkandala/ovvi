@@ -2711,3 +2711,29 @@ ones".
   light, green. Pictures: `~/Downloads/ovvi-research/p57c3/`.
 - **For the user.** The first send in a new chat, wide, narrow and floating, dark and light; a pi that waits on agents
   shows Working in Chat as in the TUI.
+
+### Track C4 (item 110)
+
+- **Cause.** The chat linked only `http`, `https` and `www.` addresses (`NSDataDetector`), drew them in the accent
+  with no underline, and opened only web pages, on a plain click, ⌘ or ⌥. No paths, no `:line`, no ⌘⌥.
+- **Fix.** The chat finds links with the terminal's `TerminalLink`, one line at a time, in the user's messages, the
+  replies, inline code, code blocks and a tool call's Input and Output (`ChatLinks`), and opens them with the
+  terminal's `Links.open` and `linkKey`, so ⌘-, ⌥- and ⌘⌥-click (L2's `.mac`) match the terminal. A found link rides in
+  SwiftUI's `.link` as JSON under `ovvi-chat-link:`. Links are underlined in the accent (white in the user's bubble);
+  under the pointer they turn 70 % and the pointer is the pointing hand. Text is 14 pt on 20 pt lines (was 17.2).
+- **Decisions.** A plain click opens as a browser's link does, in a new tab, selected (`Links.open` passes
+  `background: how != .here`); ⇧- and ⌃-click stay the text's. A Markdown `[label](…)` opens only `http`, `https` or
+  `mailto` (its label hides the target). `www.example.com` is no longer a link, as in the terminal. An edit's diff has
+  no links. A text with more than 100 links shows them without the hover (each link nests the joined `Text` a level
+  deeper: the reviewer's probe overflowed the stack at 750).
+- **Hover, what held.** Selectable text puts its I-beam over a SwiftUI `pointerStyle` and over `NSCursor.set()`, so a
+  clear area over each link takes the pointer and the click; SwiftUI then sends no hover (neither on the areas nor on
+  the text), so an AppKit tracking area (hit-test nil) tells the link. The 70 % is a `TextRenderer`: a changed
+  attribute lays the text out again and cleared a selection. Checked in the VM, frame by frame (hand cursor, the
+  lighter link, the selection kept).
+- **Runs.** Chosen tests on CI: 43151059879 (before pictures), 43151068571 (after; the link test failed on its own
+  prompt: a message that starts with `/` is a command, for the TUI). VM: `testALinkInAChatOpensAsInTheTerminal` green,
+  the pictures. Pictures: `~/Downloads/ovvi-research/p57c4/`.
+- **For the user.** Hover a link and a path in a reply and in a tool's Output (the hand, the lighter link); ⌘-, ⌥-,
+  ⌘⌥- and plain click on a path with `:line`; select text, then hover a link; the new line height in long replies,
+  lists and code blocks.

@@ -162,10 +162,12 @@ private struct WaitingDrawer: View {
 extension ChatMessages {
     /// As in the terminal, with a plain click too: chat text is no program's, so a click opens as a browser's link
     /// does, in a new tab, selected.
+    /// A ⇧- or ⌃-click is the text's.
     func openLink(_ url: URL) -> OpenURLAction.Result {
-        guard let link = ChatLinks.link(url) else { return .discarded }
-        Links.open(link, how: PaneSurfaceView.linkKey(NSEvent.modifierFlags) ?? .here, from: chat.terminalID,
-                   page: page)
+        let flags = NSEvent.modifierFlags.intersection([.command, .control, .option, .shift])
+        guard let link = ChatLinks.link(url), let how = flags.isEmpty ? .here : PaneSurfaceView.linkKey(flags)
+        else { return .discarded }
+        Links.open(link, how: how, from: chat.terminalID, page: page)
         return .handled
     }
 }

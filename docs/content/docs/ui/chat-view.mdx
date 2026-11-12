@@ -567,10 +567,14 @@ A run is one quiet line with no card: its summary and a chevron.
     A path opens from the card's folder. A Markdown link (`[label](…)`)
     opens only an `http`, `https` or `mailto` address: its label hides where
     it goes, and a transcript could hold `file:` or `ovvi:` links. A bare
-    name such as `Ovvi.app` or `example.com` is no link.
+    name such as `Ovvi.app`, `example.com` or `www.example.com` is no link.
+    An edit's diff has no links.
   - A link is underlined and in the accent color (white in the user's
     bubble). Under the pointer it turns lighter (70 % opacity) and the
-    pointer is the pointing hand.
+    pointer is the pointing hand. A link takes the press, as in a browser:
+    a drag that starts on it selects nothing. A text with more than 100 links (a tool's
+    output that lists paths) shows them without the hover: each link in it
+    costs layout.
   - An image shows as its description, linked to its address. The chat never
     fetches it: a reply could send what the agent read to any server.
   - Footnotes read as written (`[^1]`): swift-markdown has none.
