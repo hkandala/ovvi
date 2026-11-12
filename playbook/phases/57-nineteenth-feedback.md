@@ -2492,3 +2492,8 @@ ones".
      job, like you are right now, so now when i switch to caht view i don't see status, but if there is active work
      going on this main session without just waiting on agents or stuff, that time it shows the status fine, weird
      stuff".
+110. "yo one more thing, just realised in chat view currently no links support exist, can we use same url parsing in
+     the chat view as well, and include supprot for cmd+click, option+click and cmd+option+click from chat view as
+     well? also in chat view can we slightly increase line height, i feel the text is too congested, in chat view we
+     should show underline by default not just on hover for links, and on hover some color or some changes, basically
+     how any link would look in browser or any other app yk" (Track C4).
