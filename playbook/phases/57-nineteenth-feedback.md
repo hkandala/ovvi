@@ -2945,3 +2945,6 @@ ones".
      anywhere, and we reset whatever typed with a short timer, like 1s or something, if i type file then fle explorer
      should be selected, essentially you highlight on the relevant ones based on what i type yk, it won't open it will
      just select it, does that makes sense" (Track N3).
+131. "another improvement to chat view, can we make markdown tables horizontally scrollable if they are not fitting
+     fine? like right now in our markdown viewer in file plugin, we do something like that"
+     (`.build/fb57/r8-table-1.45.36.png`; Track C5).
