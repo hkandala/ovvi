@@ -295,7 +295,8 @@ struct ChatMessages: View, Equatable {
 private extension ChatMessages {
     func outgoing(_ message: Chat.Outgoing, error: Color) -> some View {
         VStack(alignment: .trailing, spacing: 4) {
-            UserBubble(text: message.text, paneID: chat.paneID, sending: true)
+            // Dimmed until the agent takes it.
+            UserBubble(text: message.text, paneID: chat.paneID, sending: true).opacity(message.notSent ? 0.5 : 0.7)
             if message.notSent {
                 Text("Not sent").font(.system(size: 11)).foregroundStyle(error)
                     .accessibilityIdentifier("chat.\(chat.paneID).not-sent")

@@ -30,8 +30,12 @@ extension OvviUITests {
         XCTAssertFalse(element("chat.\(pane).not-sent").exists(within: 7))
         let stop = element("chat.\(pane).stop")
         XCTAssertTrue(stop.exists)
+        step("A message pi has not taken yet is dimmed, then full")
+        let full = bubbleFill(row(pane, "user", "slow")), dimmed = bubbleFill(element("chat.\(pane).sending"))
+        XCTAssertGreaterThan(apart(dimmed, full), 0.1, "\(dimmed) \(full)")
         stop.click()
         XCTAssertTrue(row(pane, "user", "later").exists(within: 5))
+        XCTAssertLessThan(apart(bubbleFill(row(pane, "user", "later")), full), 0.05)
         XCTAssertTrue(row(pane, "note", "Interrupted").exists(within: 5))
         XCTAssertTrue(element("chat.\(pane).send").exists(within: 5))
 
