@@ -70,7 +70,7 @@ extension OvviUITests {
             }
             let ended = try await streams(one).allSatisfy { !$0.contains(terminal) }
             XCTAssertTrue(ended, "the kept tab's stream outlived the drop")
-            // Asserted after the strip, so that a failing run still takes it.
+            // Asserted after the strip, so that a failing run still takes the strip's screenshots.
             let early = stopped.exists
 
             // After the tabs' own: their closes call herdr.

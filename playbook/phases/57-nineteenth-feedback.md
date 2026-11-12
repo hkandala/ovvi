@@ -3123,8 +3123,8 @@ ones".
   selected, not a tree rooted at the folder: the user's open folders and scroll stay, as 116 asked. A folder above
   it, or any folder while the card has no tree, shows a tree rooted at that folder. The API stays version 3,
   although api.mdx says each addition raises it: E3's `onSymbol` did not raise it either, and an app without
-  `links` shows the path as text. The orchestrator may want version 4 for both. A long path cuts its middle folders
-  first.
+  `links` shows the path as text. Kept at 3: such an addition keeps the version (Round 8 simplification review).
+  A long path cuts its middle folders first.
 - **For the user.** Right-click empty space in a File Explorer, Git and Markdown card: only Reload. Right-click a page
   in a browser card: Inspect Element is still there.
 - **132, runs.** Tart VM: the three FilesTests explorer tests and the Markdown test green, and FileTests green
@@ -3144,11 +3144,13 @@ ones".
   flag.
 - **Fix.** OpenCode's history fetch no longer sets `Chat.loading`. Since C5 no view reads it (the loader follows
   `current`), so it is now only the follow's own flag, unobserved. The chooser's rows and type-select build one list
-  (`Chooser.rows(open:)`). The sidebar's sort hold is set in one line. Two UI test comments that named old runs now
+  (`Chooser.rows(open:)`). Two UI test comments that named old runs now
   say why.
-- **Decisions.** The plugin API stays at version 3. The number goes up only for a breaking change. An addition keeps
-  it, because the manifest decodes leniently and an older app ignores fields it does not know (api.mdx, Versions).
+- **Decisions.** The plugin API stays at version 3. The number goes up only for a breaking change. A new event,
+  manifest key or control field keeps it: the manifest decodes leniently, and an older app ignores what it does not
+  know (api.mdx, Versions). A new call would break on an older app, so it raises the version.
   The version check itself stays: it serves plugins from other sources.
 - **Kept.** `FollowedLine.read` (inlining it puts `follow` over lint's complexity limit). The generic warm-view pool
   in `BrowserView` (two kinds keyed by type; two explicit pairs of statics would be longer). The first launch's two
-  guards (AppDelegate closes the restored windows; ContentView restores no pages).
+  guards (AppDelegate closes the restored windows; ContentView restores no pages). The sidebar's sort hold: `sorted`
+  reads `held`, so it must clear before the new order is read.
