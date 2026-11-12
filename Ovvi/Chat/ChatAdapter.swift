@@ -74,9 +74,13 @@ extension Chat {
             }
         }
         defer { timer.cancel() }
-        guard let lines = try? await exec.follow(sideFile, from: marks[sideFile] ?? FileMark()) else { return }
+        // Ahead of the side file's: a chat shown again catches up in one process start, not two in a row.
         if let source {
             follow(source)
+        }
+        guard let lines = try? await exec.follow(sideFile, from: marks[sideFile] ?? FileMark()) else {
+            transcript?.cancel()
+            return
         }
         // Lines buffered ahead of a cancel still come: not into the next follow's chat.
         for await batch in lines {
