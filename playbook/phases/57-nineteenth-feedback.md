@@ -2488,4 +2488,7 @@ ones".
      agent" (`.build/fb57/r8-6.07.11.png`).
 109. "one more thing when i am in chat view of an agent session i don't see its status in it pane title, like in tui i
      see working text with its icon, but as soon as i switch to chat, that status goes away, let's keep them
-     consistent" (Track C3).
+     consistent" (Track C3). Then: "okay i noticed this specifically when pi agent is waiting on agents or background
+     job, like you are right now, so now when i switch to caht view i don't see status, but if there is active work
+     going on this main session without just waiting on agents or stuff, that time it shows the status fine, weird
+     stuff".
