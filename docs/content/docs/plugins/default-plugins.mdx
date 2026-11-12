@@ -101,7 +101,10 @@ Everywhere a plugin card opens a file, a folder, a diff or a link, the app's
 one rule applies ([Opening links and files](/docs/ui/window#opening-links-and-files)):
 a click opens in the card itself, as its next place ([Back and
 Forward](#back-and-forward)), or in a new tab when the card cannot show it;
-⌘-click in a new tab and ⌥-click to the side, both in the background; a right
+⌘-click in a new tab and ⌥-click to the side, both in the background;
+⌘⌥-click opens a file, a folder or a link in the Mac's default app for it, outside Ovvi, as a terminal's links do
+(on a remote machine, a notice that it is not on this Mac). A commit and Git's home have no such app: there ⌘⌥-click
+is ⌘-click. A right
 click shows the app's menu of **Open** (**Open as Root** on a folder), **Open
 in New Tab** and **Open to the Side**, then **Rename** on a tree row other
 than `..`, and **Copy Link** on a Markdown link. In the tree, a double-click or ⌘O is
@@ -402,7 +405,9 @@ shows it whole.
 
 - The tree and the letters update after each change under the root while
   the card shows. The open folders list again. A root that cannot be listed
-  shows "Can't list ‹root›" in the middle of the card, under `folder.badge.questionmark`.
+  shows "Can't list ‹root›" in the middle of the card, under `folder.badge.questionmark`. Only a root that is gone
+  empties a tree it listed: any other failure (a remote machine's dropped link, its 10 s bound) keeps the rows, and the
+  next listing brings them up to date.
 - **The status bar.** A 27 pt line under the tree (16 pt buttons), with
   10 pt more above its text, so the space above the text and below it to
   the card's edge (the card's 10 pt inset) is the same. It hides only while the root cannot
@@ -437,6 +442,8 @@ File, Preview and Markdown can show the tree at the left of the file, in the
 same card, as a text editor's sidebar does. Row 2's **File Tree** shows and
 hides it. The card keeps that choice for every file it shows; a card with no
 choice follows the setting "When a file opens" (Show only the file).
+**Switch Between Tree and File** (⇧⌘E, View menu and ⌘K, as VS Code's Show Explorer) moves the keyboard from the
+file to its row in the tree, showing the tree first when it is hidden, and from the tree back to the file.
 
 - **One tree for the card.** It is the tree of [The tree](#the-tree) itself,
   the same rows, not a copy: its open folders, selection, scroll and filter
@@ -511,8 +518,8 @@ An editable text view (CodeMirror 6).
 ### Markdown
 
 - **Row 2** ([A file's row 2](#a-files-row-2)): at the right, before Open
-  With, the outline toggle (`list.bullet.indent`, in the accent while the
-  outline shows, only while the file has a heading), the mode and the lock. The mode is two icon
+  With, the outline toggle (`list.bullet.indent`, only while the file has a heading), the mode and the lock, all three
+  pill segments: the outline toggle is one segment, picked while the outline shows. The mode is two icon
   segments, **Rich Text** (`doc.richtext`) and **Source**
   (`chevron.left.forwardslash.chevron.right`), with their names as the
   tooltips; the segment not picked is gray, as the card buttons. The lock is
@@ -855,6 +862,7 @@ over the card that uses it, because a disabled menu item swallows its key.
 | ⌘G | Find Next (Edit menu); in a Git diff, Next Change | always. Over a terminal it steps the find bar |
 | ⇧⌘G | Find Previous (Edit menu); in a Git diff, Previous Change | only while File, Markdown, the tree or a Git diff has the keyboard. Elsewhere ⇧⌘G is Go to Directory |
 | ⌘E | Lock Editing (View menu, while a File Explorer card has the keyboard; disabled outside Markdown): locks and unlocks Markdown | only while Markdown has the keyboard |
+| ⇧⌘E | Switch Between Tree and File (View menu): the keyboard to the file's row in the tree beside it, and back ([The tree beside a file](#the-tree-beside-a-file)) | while File, Preview or Markdown has the keyboard |
 | ⌥⌘R | Reload Plugin (the card's menu, View ▸ Pane) | over a plugin card |
 | ⌘↩ | Commit | in the Git home's message field |
 | ↑ ↓, Return | select a commit, open it | in the Git home, outside its message field |
@@ -882,7 +890,8 @@ the machine. The limits:
   through the relay.
 - Choose Folder… is a typed path, not the folder panel. A path that is no
   folder shows "No folder ‹path›".
-- No file system events: while a card shows, the app checks every 2 s. For a
+- No file system events: while a card shows, the app checks every 2 s. A check that fails (a dropped link, its 10 s
+  bound) reports no change, and the first one that answers after it reports one. For a
   file it compares the file's `cksum`. For a folder (the tree, the Git home,
   a Working Tree diff) it compares the folder's entries, its `git status`
   and the changed files' text. A hidden card checks nothing.

@@ -39,6 +39,7 @@ export default async function main(ovvi: Ovvi) {
     scoped.controls.set("open-with", { value: place === "files" ? "" : arg })
     scoped.controls.set("browser", { hidden: place !== "file" || !htmlPage(scoped, arg) })
     if (place !== "markdown") scoped.controls.set("lock-editing", { enabled: false, checked: false })
+    scoped.controls.set("tree-keys", { enabled: place !== "files" })
     root.dataset.place = place
     if (place === "files") {
       // The page stays empty: the card's tree shows over it, with this page's row 2.
@@ -52,6 +53,7 @@ export default async function main(ovvi: Ovvi) {
     const shows = () => (sync(), side.file(arg))
     shows()
     scoped.on("place", shows)
+    scoped.on("control", ({ id }) => id === "tree-keys" && (side.keys(), sync()))
     scoped.on("settings", sync)
     const read = place === "file" || place === "markdown" ? ovvi.files.read(arg) : undefined
     read?.catch(() => undefined)

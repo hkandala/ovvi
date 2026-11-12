@@ -136,13 +136,13 @@ export function sidebar(ovvi: Ovvi) {
     tree.due.clear()
   }
 
-  function show() {
+  function show(keys = false) {
     const on = chosen()
     document.body.toggleAttribute("data-side", on)
     if (!file) return
     if (!on) return give()
-    if (!current) void rooted(folder(file), file)
-    else void current.reveal.then((reveal) => reveal?.(file))
+    if (!current) void rooted(folder(file), file).then(() => keys && current?.reveal.then((reveal) => reveal?.(file, true)))
+    else void current.reveal.then((reveal) => reveal?.(file, keys))
   }
 
   /** A hidden tree gives the keys to the page, as the runtime's `present` does. */
@@ -179,6 +179,12 @@ export function sidebar(ovvi: Ovvi) {
     toggle(on: boolean) {
       choose(ovvi, { side: on })
       show()
+    },
+    /** Switch Between Tree and File (⇧⌘E): from the file to its row in the tree, shown if hidden, and back. */
+    keys() {
+      if (aside.contains(document.activeElement)) return give()
+      choose(ovvi, { side: true })
+      show(true)
     },
     /** Where a file closed from its path's folder leaves the card: the tree beside it, kept, when it holds the
      *  folder, else that folder's tree. */

@@ -111,12 +111,27 @@ private struct HeaderItem: View {
         }
     }
 
+    @ViewBuilder
     private func toggle(_ id: String) -> some View {
         let isOn = control.value == .bool(true), onSymbol = isOn ? control.onSymbol : nil
-        return IconButton(symbol: onSymbol ?? control.symbol ?? "questionmark", help: control.title ?? "", size: 22) {
-            plugin.header.pick(id, .bool(!isOn))
+        let symbol = onSymbol ?? control.symbol ?? "questionmark", pick = { plugin.header.pick(id, .bool(!isOn)) }
+        Group {
+            if control.style == "segment" {
+                // One of the pill segments, drawn as `Segments` draws a picked one while on.
+                Button(action: pick) {
+                    Image(symbol: symbol).font(.system(size: 11)).frame(width: 26, height: 20)
+                        .foregroundStyle(isOn ? AnyShapeStyle(.primary) : AnyShapeStyle(look.paneButton))
+                }
+                .buttonStyle(ChromeStyle(selected: isOn, radius: 6))
+                .help(control.title ?? "")
+                .padding(2)
+                .background(look.track, in: .rect(cornerRadius: 8))
+            } else {
+                IconButton(symbol: symbol, help: control.title ?? "", size: 22, action: pick)
+                    .foregroundStyle(isOn && control
+                        .onSymbol == nil ? AnyShapeStyle(.tint) : AnyShapeStyle(look.paneButton))
+            }
         }
-        .foregroundStyle(isOn && control.onSymbol == nil ? AnyShapeStyle(.tint) : AnyShapeStyle(look.paneButton))
         .accessibilityAddTraits(isOn ? .isSelected : [])
         .accessibilityLabel(control.label ?? control.title ?? "")
     }

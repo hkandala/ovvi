@@ -36,7 +36,8 @@ export function kind(arg: string): "files" | "file" | "preview" | "markdown" {
   return drawn(arg) || places.binary.includes(ext) ? "preview" : "file"
 }
 
-export type Reveal = ((at: string) => void) | undefined
+/** `keys`: the tree takes the keyboard on that row. */
+export type Reveal = ((at: string, keys?: boolean) => void) | undefined
 
 type How = "card" | "tab" | "side" | "mac"
 /** ⌘⌥: the Mac's default app, as a terminal's links. A Git card, which no app opens, takes `files: false`: ⌘ wins. */

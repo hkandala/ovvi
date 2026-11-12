@@ -1,7 +1,7 @@
 {
   "name": "@ovvi/explorer",
   "license": "AGPL-3.0-only",
-  "version": "1.13.0",
+  "version": "1.14.0",
   "private": true,
   "description": "Files and folders",
   "keywords": ["files", "tree", "folder", "finder"],
@@ -78,7 +78,7 @@
       { "type": "toggle", "id": "wrap", "symbol": "text.wrap", "title": "Word Wrap", "value": false, "hidden": true },
       { "type": "button", "id": "browser", "symbol": "globe", "title": "Open in Browser", "hidden": true },
       { "type": "toggle", "id": "outline", "symbol": "list.bullet.indent", "title": "Outline", "value": false,
-        "hidden": true },
+        "style": "segment", "hidden": true },
       { "type": "segmented", "id": "mode", "value": "rich", "hidden": true,
         "options": [{ "value": "rich", "title": "Rich Text", "symbol": "doc.richtext" },
           { "value": "source", "title": "Source", "symbol": "chevron.left.forwardslash.chevron.right" }] },
@@ -99,7 +99,9 @@
     ],
     "commands": [
       { "id": "lock-editing", "title": "Lock Editing", "menu": "view", "key": "cmd+e", "symbol": "lock",
-        "keywords": ["markdown", "read", "edit", "unlock"] }
+        "keywords": ["markdown", "read", "edit", "unlock"] },
+      { "id": "tree-keys", "title": "Switch Between Tree and File", "menu": "view", "key": "cmd+shift+e",
+        "symbol": "sidebar.left", "keywords": ["focus", "keyboard", "file tree", "sidebar", "editor"] }
     ]
   }
 }

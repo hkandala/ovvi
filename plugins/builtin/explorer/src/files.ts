@@ -572,5 +572,8 @@ export async function show(place: Place): Promise<Reveal> {
   await run(() => list("", rooted()))
   if (place.at) await run(() => reveal(place.at!))
   run(git)
-  return (at) => void run(() => reveal(at, "nearest"))
+  return (at, keys) => void run(async () => {
+    await reveal(at, "nearest")
+    if (keys) take()
+  })
 }
