@@ -95,7 +95,8 @@ extension OvviUITests {
         let repo = "/tmp/ovvi-e2e-csv-repo", git = "git -C \(repo) -c user.name=e2e -c user.email=e2e@e2e"
         try await send(
             "rm -rf \(repo) && cp -R \(fixture) \(repo) && sed -i '' "
-                + "'s/\"ovvi-e2e-csv-table\"/\"ovvi-e2e-csv-git\"/; s/\"CSV Table\"/\"CSV Git\"/' "
+                + "'s/\"ovvi-e2e-csv-table\"/\"ovvi-e2e-csv-git\"/; "
+                + "s/\"CSV Table\"/\"CSV Git\", \"chooser\": \"CSV Git\"/' "
                 + "\(repo)/package.json && git init -q \(repo) && \(git) add . && "
                 + "\(git) commit -qm one && \(git) tag v1 && sed -i '' 's/0.1.0/0.2.0/' \(repo)/package.json && "
                 + "\(git) commit -qam two && clear && echo repo-$((6*7))\r",
@@ -110,6 +111,8 @@ extension OvviUITests {
         source.typeText("git:\(repo)@v1\r")
         let allow = app.sheets.buttons["Install"]
         XCTAssertTrue(allow.exists(within: 10))
+        let newPane = app.sheets.checkBoxes["Show in New Pane"]
+        XCTAssertEqual(newPane.value as? Int, 0, "Show in New Pane is on for a new plugin")
         allow.click()
         let installed = element("plugins.ovvi-e2e-csv-git")
         XCTAssertTrue(installed.has(\.label, "CSV Git, 0.1.0, git:\(repo)@v1", within: 30), installed.label)

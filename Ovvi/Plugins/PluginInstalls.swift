@@ -207,10 +207,10 @@ final class PluginInstalls {
             throw refuse("no window to ask the user for \(agent.name)")
         }
         let alert = NSAlert()
+        // Off: a plugin joins New Pane only when the user checks it.
         if manifest.chooser != nil {
             alert.showsSuppressionButton = true
             alert.suppressionButton?.title = "Show in New Pane"
-            alert.suppressionButton?.state = Registry.inNewPane(manifest) ? .on : .off
         }
         guard await Self.ask("Install “\(manifest.name.shown)”?", text.joined(separator: "\n\n"), button: "Install",
                              alert: alert, for: agent) else { throw CancellationError() }
