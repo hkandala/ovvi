@@ -2800,3 +2800,12 @@ ones".
 - **Runs.** CI 43179476920 on the fix (the Recent test, agents by tab and place, the pointer after pins), green. The
   old code with the sharper test passed too (43179470745): no cheap repro, as XCUITest opens the menu only by a click
   that leaves the list.
+
+- **Cause (⌥-click on a chat link), unproven.** In 43171070157 the ⌥-click landed on the reply's link, where the green
+  ⌘-click had landed, 0.7 s after the switch back to the chat's tab; the app worked 2 s on it (1.2 s in the green
+  run) and opened nothing: no split, notice or tab. The step's wait was blind (the hidden, kept page has the reply
+  too), and ⌥ went down with the pointer still on the tab bar. A VM probe showed only the green path (tap, ⌥, side,
+  split). Best guess: the re-show's focus and redraw ate the tap.
+- **Fix.** The step waits for the shown page's reply box to take the keys, then hovers the link before ⌥, as the ⌘
+  step does. The chat reads a link click's keys from the click, not from the keys held when it runs late.
+- **Runs.** The VM green before and after.

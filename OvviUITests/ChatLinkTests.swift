@@ -36,9 +36,9 @@ extension OvviUITests {
 
         step("⌥-click opens it to the side")
         element("tab.\(tab)").click()
-        // The reply exists on the hidden page too: wait for the shown page's reply box to take the keys. Then, as
-        // in the ⌘ step, the pointer rests on the link before the key goes down.
-        XCTAssertTrue(hasKeyboard("chat.\(pane).composer"))
+        // The reply exists on the hidden page too: the shown page's reply box takes the keys once its page is drawn.
+        // Then the click has the green ⌘ step's shape: the pointer on the link before the key goes down.
+        XCTAssertTrue(hasKeyboard("chat.\(pane).composer"), "the chat's page did not show again")
         end(reply).hover()
         XCUIElement.perform(withKeyModifiers: .option) { end(reply).click() }
         try await labelEnds(sidePane(in: tab, besides: [pane]), " \(file)")
