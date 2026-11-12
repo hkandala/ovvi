@@ -65,6 +65,8 @@ extension OvviUITests {
                 sort.menuItems["Manual"].click()
             }
         }
+        // In Manual the pointer over the list holds that order; the menu's Recent item puts it back there.
+        betaRow.hover()
         sort.click()
         keepScreenshot("sort menu")
         sort.menuItems["Recent"].click()

@@ -168,8 +168,7 @@ struct SidebarPage: View {
                 case let .active(point):
                     if frames.point == nil {
                         hovering = true
-                        let pinned = store.pins
-                        held = held ?? sorted(store.groups.filter { !pinned.contains($0[0].id) }).map(\.[0].id)
+                        held = held ?? unpinnedOrder()
                     }
                     frames.point = point
                 case .ended:
@@ -183,6 +182,14 @@ struct SidebarPage: View {
                 try? await Task.sleep(for: .seconds(1))
                 if !Task.isCancelled, !hovering, held != nil {
                     held = nil
+                }
+            }
+            // A hold from the old sort would keep its order: the menu's pick leaves the pointer over the list, so the
+            // hold never clears.
+            .onChange(of: spaceOrder) {
+                held = nil
+                if hovering {
+                    held = unpinnedOrder()
                 }
             }
         }
@@ -272,6 +279,12 @@ private extension SidebarPage {
         let pinned = rows(in: top).map(Item.row), others = rows(in: rest).map(Item.row)
         let line = !pinned.isEmpty && !others.isEmpty && !page.store.onlyPinned
         return pinned + (region || line ? [.pins] : []) + others
+    }
+
+    /// The unpinned groups' ids in the current sort.
+    func unpinnedOrder() -> [String] {
+        let pinned = page.store.pins
+        return sorted(page.store.groups.filter { !pinned.contains($0[0].id) }).map(\.[0].id)
     }
 
     /// Recent: the group whose agent changed state last first, held still under the pointer.
