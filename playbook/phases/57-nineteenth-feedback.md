@@ -2832,3 +2832,8 @@ ones".
      and so on, keep it consistent like this, its bit buggy right now, make sure this flow works well" (Track C5).
 125. "clean up chat view code better and make it simple and clean we shouldn't have too many edge cases handling, it
      should be clean, simple following ponytail principles, and work reliably" (Track C5).
+126. "one more thing, let's say a pane is in chat view, and leave it for sometime, and go to other tabs and work on
+     other tabs, idk when exactly may be open amny panes or soemthing, then come back to this chat pane, for a very
+     brief second you see tui and then it shifts to chat view, it doesn't happen for recentyl viewed chat view, like i
+     see it happens only some time, make it reliable, i think we rerender or something and that's causing this
+     transient bug, figure it out and fix it" (Track C5).
