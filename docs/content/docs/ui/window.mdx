@@ -743,6 +743,7 @@ terminal.
 | ⌘-click | in a new tab, in the background |
 | ⌥-click | in a pane to the side of the card, in the background |
 | a right click | a menu of **Open**, **Open in New Tab** and **Open to the Side**, which do what the three gestures do |
+| ⌘⌥-click | a terminal's link only: in the Mac's default app for it, outside Ovvi |
 
 - **What a card shows itself.** File Explorer shows files and folders (a
   file from its tree, a relative link in Markdown). Git shows its home and
@@ -760,9 +761,11 @@ terminal.
 - **The look.** A link looks the same under the pointer with ⌘ or ⌥ down
   as with neither: in Markdown (locked, and unlocked off the caret's line)
   an underline and the pointing hand, in the browser the page's own look.
-  The terminal, where only ⌘- and ⌥-click open a link, shows an underline
-  and the pointing hand only while ⌘ or ⌥ alone is down, the same for
-  either. ⌃, ⇧ or a pair of keys shows none.
+  The terminal, where only ⌘-, ⌥- and ⌘⌥-click open a link, shows an
+  underline and the pointing hand only while ⌘, ⌥ or ⌘⌥ alone is down, the
+  same for each. ⌃, ⇧ or another pair of keys shows none. The underline is
+  the font's own: at its underline position, as thick as its underline, in
+  the secondary text color.
 - **In the background** means that the selected tab and the keyboard stay
   where they are: a ⌘-click on one link after another opens each one. The
   menu's Open in New Tab and Open to the Side open in the background too.
@@ -793,7 +796,10 @@ terminal.
   and OSC 8 links (libghostty finds and underlines those; its own search
   for addresses and paths is off). A terminal has no Open: a plain click is
   the program's. ⌘-click opens a link in a new tab and ⌥-click to the side,
-  both in the background. A ⌥-click anywhere else is still the program's
+  both in the background. ⌘⌥-click opens it in the Mac's default app for
+  it: a web address in the default browser, a file in its app, a folder in
+  the Finder. A file on a remote machine opens nothing there and shows the
+  notice "‹path› is on ‹machine›, not on this Mac". A ⌥-click anywhere else is still the program's
   (a shell moves its cursor). The right click stays the card's menu, with no
   link items. The card's accessibility title is the link under the pointer.
   - **Addresses.** `scheme://…` (with a query, a fragment, a port, an IPv6
@@ -801,7 +807,8 @@ terminal.
     A name with no scheme (`example.com`) is no link: it reads as a file
     name too (`package.json`). A web address opens a browser pane, an email
     the Mac's mail app. Other schemes (`ftp:`) open nothing and show the
-    notice "Ovvi can't open ‹address›".
+    notice "Ovvi can't open ‹address›"; with ⌘⌥ they open in the Mac's app
+    for the scheme, when there is one.
   - **Paths.** Absolute, `~/`, `./`, `../`, `file:`, and relative paths
     (`src/main.rs`) resolved from the card's folder, the folder herdr
     reports. An absolute path needs two names (`/usr/bin`), an extension
@@ -824,12 +831,12 @@ terminal.
   - **Nothing there.** A path opens only when a file or folder is there on
     the card's machine (a remote machine checks there). Else the click shows
     the notice "File not found: ‹path›", with a relative path joined to the
-    card's folder. A ⌘-click or ⌥-click on a link is never silent.
+    card's folder. A ⌘-, ⌥- or ⌘⌥-click on a link is never silent.
   - Markdown opens in File Explorer's Markdown, HTML as above, other files
     with their default plugin.
   - libghostty reports an OSC 8 link only while ⌘ is down, so the app gives
-    libghostty ⌘ in ⌥'s place: with the pointer's moves while ⌥ alone is
-    down, and when ⌥ goes down or up with the pointer still (first off the
+    libghostty ⌘ in place of ⌥ and ⌘⌥: with the pointer's moves while they
+    are down, and when they go down or up with the pointer still (first off the
     view: libghostty looks again only on a new cell).
 - A `mailto:` or an app's link in a page opens its app. In a chat reply only a
   `mailto:` does; other schemes open nothing.

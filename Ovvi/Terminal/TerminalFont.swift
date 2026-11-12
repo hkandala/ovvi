@@ -8,16 +8,14 @@ extension PaneTerminal {
     /// `keybind = clear`: app shortcuts reach the menu. No padding, so that cells map from the view's origin; no
     /// scrollback, herdr keeps it. No links of libghostty's but OSC 8 ones: the app finds them (`Links.swift`).
     ///
-    /// Selections keep each cell's own text color over a macOS-like blue. libghostty's Alabaster and Afterglow set
-    /// only a selection background, and Ghostty then draws selected text in the window background: `#212121` on
-    /// `#303030` in dark, `#F7F7F7` on `#C9D0D9` in light. Light: macOS's selected-text blue;
-    /// dark: the system blue at 0.25 over Afterglow's background, for 7.6 to 1 under Afterglow's text (macOS's dark
-    /// `#3F638B` gives 4.0, under WCAG's 4.5). Reverse-video cells still draw in the background color
-    /// (Ghostty's rule).
+    /// A selection draws its text in the theme's text color, as Ghostty's own Alabaster and Afterglow themes do, so a
+    /// program's colors (one chosen for the other appearance, a dark text color) never hide it. Light: Ghostty's
+    /// Alabaster selection, `#000000` on `#BFDBFE`. Dark: Afterglow's `#D0D0D0` on the system blue at 0.25 over
+    /// Afterglow's background, 7.6 to 1 (Ghostty's `#303030` is hardly darker than a card).
     /// ponytail: always blue; follow the accent color (`NSColor.selectedTextBackgroundColor`) if users ask.
     static let controller = TerminalController(theme: TerminalTheme(
-        light: .alabaster.selectionBackground("B3D7FF").selectionForeground("cell-foreground"),
-        dark: .afterglow.selectionBackground("1B3A58").selectionForeground("cell-foreground"),
+        light: .alabaster.selectionBackground("BFDBFE").selectionForeground("000000"),
+        dark: .afterglow.selectionBackground("1B3A58").selectionForeground("D0D0D0"),
     )) {
         $0.withCustom("keybind", "clear")
         $0.withBackgroundOpacity(0)
@@ -29,6 +27,14 @@ extension PaneTerminal {
     }
 
     static let systemFont = NSFont.monospacedSystemFont(ofSize: 0, weight: .regular).familyName ?? "Menlo"
+
+    /// The terminal's font in pixels, as libghostty finds it by its family.
+    static func font(scale: CGFloat) -> NSFont {
+        let settings = AppSettings(), size = CGFloat(clamped(settings.fontSize)) * scale
+        return (settings.terminalFont.isEmpty ? nil
+            : NSFontManager.shared.font(withFamily: settings.terminalFont, traits: [], weight: 5, size: size))
+            ?? .monospacedSystemFont(ofSize: size, weight: .regular)
+    }
 
     static var fonts: [String] {
         let names = NSFontManager.shared.availableFontNames(with: .fixedPitchFontMask) ?? []

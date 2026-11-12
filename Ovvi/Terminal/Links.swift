@@ -9,37 +9,59 @@ enum Links {
     static func open(_ link: TerminalLink, how: Opening, from terminalID: String, page: Page?) {
         guard let page else { return }
         let store = page.store
+        if how == .mac, link.kind != .file {
+            return onMac(link, store)
+        }
         switch link.kind {
         case .web:
             guard let browser = Registry.openers(for: link.target).first else { return cannot(link, store) }
             Task { await page.open(browser, arg: link.target, from: terminalID, how: how, background: true) }
         case .mail:
-            if let url = URL(string: link.target), NSWorkspace.shared.urlForApplication(toOpen: url) != nil {
-                NSWorkspace.shared.open(url)
-            } else {
-                cannot(link, store)
-            }
+            onMac(link, store)
         case .other:
             cannot(link, store)
         case .file:
-            let path = link.target.hasPrefix("file:") ? URL(string: link.target)?.path ?? "" : link.target
-            let cwd = store.terminalPane(terminalID)?.cwd ?? "/"
-            Task {
-                guard let found = await store.there(path, from: cwd) else {
-                    return store.notFound(path.hasPrefix("/") || path.hasPrefix("~")
-                        ? path : MachinePath.tidy("\(cwd)/\(path)"))
-                }
-                let url = URL(filePath: found)
-                if !store.machine.isRemote, !found.hasSuffix("/"),
-                   ["html", "htm"].contains(url.pathExtension.lowercased())
-                {
-                    return await page.open(Registry.browser, arg: url.absoluteString, from: terminalID, how: how,
-                                           background: true)
-                }
-                guard let plugin = Registry.openers(for: found).first else { return cannot(link, store) }
-                await page.open(plugin, arg: found, at: link.line.map(String.init), from: terminalID, how: how,
-                                background: true)
+            Task { await openFile(link, how: how, from: terminalID, page: page) }
+        }
+    }
+
+    private static func openFile(_ link: TerminalLink, how: Opening, from terminalID: String, page: Page) async {
+        let store = page.store
+        let path = link.target.hasPrefix("file:") ? URL(string: link.target)?.path ?? "" : link.target
+        let cwd = store.terminalPane(terminalID)?.cwd ?? "/"
+        guard let found = await store.there(path, from: cwd) else {
+            return store
+                .notFound(path.hasPrefix("/") || path.hasPrefix("~") ? path : MachinePath.tidy("\(cwd)/\(path)"))
+        }
+        let url = URL(filePath: found)
+        if how == .mac {
+            guard !store.machine.isRemote else {
+                let shown = MachinePath.short(found, remote: true)
+                return store.show(Notice(text: "\(shown) is on \(store.machine.name), not on this Mac", tone: .warning))
             }
+            return NSWorkspace.shared.open(url) ? () : cannot(link, store)
+        }
+        if !store.machine.isRemote, !found.hasSuffix("/"), ["html", "htm"].contains(url.pathExtension.lowercased()) {
+            return await page.open(Registry.browser, arg: url.absoluteString, from: terminalID, how: how,
+                                   background: true)
+        }
+        guard let plugin = Registry.openers(for: found).first else { return cannot(link, store) }
+        await page.open(
+            plugin,
+            arg: found,
+            at: link.line.map(String.init),
+            from: terminalID,
+            how: how,
+            background: true,
+        )
+    }
+
+    /// The Mac's default app for the address: the browser for a web page, Mail for `mailto:`.
+    private static func onMac(_ link: TerminalLink, _ store: HostStore) {
+        if let url = URL(string: link.target), NSWorkspace.shared.urlForApplication(toOpen: url) != nil {
+            NSWorkspace.shared.open(url)
+        } else {
+            cannot(link, store)
         }
     }
 
@@ -55,11 +77,12 @@ extension PaneSurfaceView {
         let link: TerminalLink, places: [TerminalLink.Place]
     }
 
-    /// ⌘ or ⌥ alone shows and opens links.
+    /// ⌘, ⌥ or ⌘⌥ alone shows and opens links.
     static func linkKey(_ flags: NSEvent.ModifierFlags) -> Opening? {
         switch flags.intersection([.command, .control, .option, .shift]) {
         case .command: .tab
         case .option: .side
+        case [.command, .option]: .mac
         default: nil
         }
     }
@@ -121,7 +144,8 @@ extension PaneSurfaceView {
         return Hovered(link: link, places: Array(line.places[link.range]))
     }
 
-    /// Underlines the link under the pointer, one line a row it covers, in the text color.
+    /// Underlines the link under the pointer, one line a row it covers, as Ghostty draws an underline, in the
+    /// secondary text color.
     /// Reads the screen again only on another cell. ponytail: output that changes under a still pointer keeps the old
     /// underline until the pointer moves or a key changes.
     func hover(_ point: NSPoint?) {
@@ -139,19 +163,30 @@ extension PaneSurfaceView {
         let cell = CGSize(width: CGFloat(metrics.cellWidthPixels) / scale,
                           height: CGFloat(metrics.cellHeightPixels) / scale)
         let lines = CALayer()
+        let stroke = Self.underline(cellHeight: CGFloat(metrics.cellHeightPixels), scale: scale)
         var color: CGColor?
-        effectiveAppearance.performAsCurrentDrawingAppearance { color = NSColor.textColor.cgColor }
+        effectiveAppearance.performAsCurrentDrawingAppearance { color = NSColor.secondaryLabelColor.cgColor }
         for row in Set(found.places.map(\.row)) {
             let columns = found.places.filter { $0.row == row }.map(\.column)
             let first = columns.min() ?? 0, last = columns.max() ?? 0
             let line = CALayer()
             line.backgroundColor = color
-            line.frame = CGRect(x: CGFloat(first) * cell.width, y: bounds.height - CGFloat(row + 1) * cell.height + 1,
-                                width: CGFloat(last - first + 1) * cell.width, height: 1)
+            line.frame = CGRect(x: CGFloat(first) * cell.width,
+                                y: bounds.height - CGFloat(row + 1) * cell.height + stroke.bottom / scale,
+                                width: CGFloat(last - first + 1) * cell.width, height: stroke.height / scale)
             lines.addSublayer(line)
         }
         layer.addSublayer(lines)
         underline = lines
+    }
+
+    /// Ghostty's underline in pixels from a cell's bottom (`font/Metrics.zig`): the font centered in the cell, the
+    /// line's top at the font's underline position under the baseline, at least 1 px thick.
+    private static func underline(cellHeight: CGFloat, scale: CGFloat) -> (bottom: CGFloat, height: CGFloat) {
+        let font = PaneTerminal.font(scale: scale), face = font.ascender - font.descender + font.leading
+        let baseline = (font.leading / 2 - font.descender - (cellHeight - face) / 2).rounded()
+        let height = max(1, font.underlineThickness.rounded(.up))
+        return (max(0, (baseline + font.underlinePosition).rounded() - height), height)
     }
 
     /// An OSC 8 link libghostty reports: libghostty reports one only while ⌘ is down, so the pointer moves there with
@@ -164,14 +199,15 @@ extension PaneSurfaceView {
         return hoveredLink.flatMap { TerminalLink.all(in: $0).first }
     }
 
-    /// Under ⌥ alone libghostty gets ⌘: it draws an OSC 8 link's underline and pointing hand only with ⌘. A plain move
-    /// only: libghostty's drags call mouseMoved, and they keep their own modifiers (⌥ makes a selection a rectangle).
+    /// Under ⌥ or ⌘⌥ libghostty gets ⌘ alone: it draws an OSC 8 link's underline and pointing hand only with ⌘. A
+    /// plain move only: libghostty's drags call mouseMoved, and they keep their own modifiers (⌥ makes a selection a
+    /// rectangle).
     override func mouseMoved(with event: NSEvent) {
         _ = Self.linkKeys
         let point = convert(event.locationInWindow, from: nil), moved = event.type == .mouseMoved
         let how = moved ? Self.linkKey(event.modifierFlags) : nil
         hover(how == nil ? nil : point)
-        guard how == .side else { return super.mouseMoved(with: event) }
+        guard how == .side || how == .mac else { return super.mouseMoved(with: event) }
         linkSurface?.sendMousePos(x: point.x, y: bounds.height - point.y, modifiers: .super_)
     }
 
@@ -205,11 +241,11 @@ extension PaneSurfaceView {
         return window.contentView?.hitTest(window.mouseLocationOutsideOfEventStream) as? PaneSurfaceView
     }
 
-    /// libghostty reports a link again only on another cell, so the pointer leaves the view first. Only on a change of
-    /// ⌥ alone: made-up moves on every ⇧ or ⌃ would reach a program that tracks the mouse.
+    /// libghostty reports a link again only on another cell, so the pointer leaves the view first. Only on a change to
+    /// or from ⌥ or ⌘⌥: made-up moves on every ⇧ or ⌃ would reach a program that tracks the mouse.
     override func flagsChanged(with event: NSEvent) {
         super.flagsChanged(with: event)
-        let side = Self.linkKey(event.modifierFlags) == .side
+        let side = [.side, .mac].contains(Self.linkKey(event.modifierFlags))
         defer { sideHeld = side }
         guard side != sideHeld, NSEvent.pressedMouseButtons == 0, let window, Self.under() === self else { return }
         let point = convert(window.mouseLocationOutsideOfEventStream, from: nil)

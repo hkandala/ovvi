@@ -57,10 +57,16 @@ highlight (the palette, the space menu, Open Session) moves at once.
 Terminals keep a transparent background, so the card shows through. Their
 text uses libghostty's defaults: Alabaster in light, Afterglow in dark. They
 follow the appearance. A change updates every terminal without opening its
-stream again. Selected text keeps its own color over a blue like macOS's
-(`#B3D7FF` in light, `#1B3A58` in dark), except reverse-video text; the
-defaults draw it in the terminal's background color, close to their grey
-selection. There are no other themes.
+stream again. Selected text takes the theme's text color over a blue, as
+Ghostty's own Alabaster and Afterglow themes draw it: `#000000` on `#BFDBFE`
+in light (Ghostty's Alabaster), `#D0D0D0` on `#1B3A58` in dark (Ghostty's
+Afterglow selects on `#303030`, which hardly shows on a card). So a program's
+colors never hide selected text. There are no other themes.
+
+The text draws as Ghostty draws it by default: no `font-thicken`,
+`alpha-blending = native`, 13 pt. Ghostty's own default font is the JetBrains
+Mono it carries, a heavier face than SF Mono, Ovvi's default
+([Settings](/docs/ui/settings)): pick JetBrains Mono there for Ghostty's look.
 
 ## Status
 

@@ -157,11 +157,11 @@ final class PaneSurfaceView: AppTerminalView {
     // ponytail: in a mouse app a drag also draws libghostty's highlight; select locally only on
     // Shift+drag if that noise bothers users.
     override func mouseDown(with event: NSEvent) {
-        // ⌘-click on a link: in a new tab, ⌥-click: to the side. Elsewhere a ⌥-click is the program's (a shell
-        // moves its cursor), a ⌘-click libghostty's (an OSC 8 link).
+        // ⌘-click on a link: in a new tab, ⌥-click: to the side, ⌘⌥-click: in the Mac's app for it. Elsewhere a
+        // ⌥-click is the program's (a shell moves its cursor), a ⌘-click libghostty's (an OSC 8 link).
         let how = Self.linkKey(event.modifierFlags)
         let link = how.flatMap { how in
-            link(at: convert(event.locationInWindow, from: nil))?.link ?? (how == .side ? reported(at: event) : nil)
+            link(at: convert(event.locationInWindow, from: nil))?.link ?? (how == .tab ? nil : reported(at: event))
         }
         linkClick = link != nil
         if let link, let how {

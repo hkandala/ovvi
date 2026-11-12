@@ -2,7 +2,8 @@ import HerdrKit
 import SwiftUI
 
 enum Opening {
-    case here, tab, side
+    /// `mac`: the Mac's default app for it, outside Ovvi (a terminal link's ⌘⌥-click).
+    case here, tab, side, mac
 }
 
 extension Page {

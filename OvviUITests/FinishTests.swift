@@ -171,7 +171,7 @@ extension OvviUITests {
             "rm -rf \(folder) && mkdir -p \(folder) && touch \(folder)/notes.md \(folder)/page.html && clear; "
                 + "echo ftp://example.com/x; echo \(address).; echo /reload your open pi; echo \(folder)/notes.md.; "
                 + "echo \(folder)/page.html; echo /compact now; echo \(folder)/notes.md then more.; "
-                + "echo \(folder)/gone\r",
+                + "echo \(folder)/gone; echo \(folder)/gone-too\r",
             to: pane,
         )
         try await waitFor(pane) { $0.hasPrefix("ftp://example.com/x\n\(address).\n") }
@@ -229,6 +229,14 @@ extension OvviUITests {
         step("A path with nothing there says so")
         XCUIElement.perform(withKeyModifiers: .command) { link(7).click() }
         XCTAssertTrue(notice("File not found: \(folder)/gone").exists(within: 3))
+
+        step("⌘⌥ shows a link as ⌘ does, and its click on a path with nothing there says so")
+        XCUIElement.perform(withKeyModifiers: [.command, .option]) {
+            link(6).hover()
+            XCTAssertTrue(until(3) { terminal.title == "\(folder)/notes.md" }, terminal.title)
+            link(8).click()
+        }
+        XCTAssertTrue(notice("File not found: \(folder)/gone-too").exists(within: 3))
         let now = try await tabIDs()
         XCTAssertEqual(now.count, tabs, "\(now)")
     }
