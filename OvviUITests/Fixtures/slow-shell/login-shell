@@ -1,0 +1,5 @@
+#!/bin/sh
+# A login shell slower than the app's 3 s bound for it at launch (a busy Mac, heavy rc files): its script
+# (`-lic <script>`) runs after 4 s with the PATH it gets and no profile.
+sleep 4
+exec /bin/sh -c "$2"

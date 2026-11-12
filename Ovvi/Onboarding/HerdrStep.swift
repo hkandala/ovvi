@@ -52,8 +52,8 @@ struct HerdrStep: View {
             }
         }
         .animation(Animation.reduced ? nil : .spring(duration: 0.5, bounce: 0.2), value: found)
-        // Found however it came: this install, the window's own, one outside Ovvi, or a login shell slower than the
-        // lookup's 3 s at launch. A missing herdr is asked about at most every 30 s (`Exec.herdr`).
+        // Found however it came: this install, the window's own or one outside Ovvi. A missing herdr is asked about at
+        // most every 30 s (`Exec.herdr`).
         .task {
             while !found, !Task.isCancelled {
                 found = await (try? Machine.thisMac.exec().herdr()) != nil
@@ -74,6 +74,6 @@ struct HerdrStep: View {
     }
 
     static func missing() async -> Bool {
-        await (try? Machine.thisMac.exec().herdr()) == nil
+        await localExec.value.answeredHerdr() == nil
     }
 }

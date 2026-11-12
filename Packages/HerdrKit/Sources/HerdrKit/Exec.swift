@@ -170,7 +170,21 @@ public final class ProcessExec: Exec {
             return true
         }
         guard ask else { return nil }
-        let path = await Self.loginShell(environment, within: shellLimit).herdr
+        return await lookUp(within: shellLimit)
+    }
+
+    /// herdr's path from a login shell that answered, for what must not change once shown (the welcome's pages): a
+    /// nil from `herdr()` may be a shell that ran out of its 3 s on a busy Mac, kept for 30 s. This bound is only for a
+    /// hung rc file.
+    public func answeredHerdr(within limit: Duration = .seconds(30)) async -> String? {
+        if let path = await herdr() {
+            return path
+        }
+        return await lookUp(within: limit)
+    }
+
+    private func lookUp(within limit: Duration) async -> String? {
+        let path = await Self.loginShell(environment, within: limit).herdr
         // An ask that ended late never drops a path found meanwhile (an install's ask); a stale one is checked above.
         lookup.withLock { $0 = Lookup(path: path ?? $0.path, asked: .now) }
         return path

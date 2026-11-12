@@ -199,6 +199,13 @@ private func talk(_ client: HerdrClient, _ exec: SubscribeCounter) async throws 
     #expect(await [first, second, third] == [nil, nil, nil])
     #expect(await exec.herdr() == nil)
     #expect(try String(contentsOfFile: shell + ".count", encoding: .utf8) == "\n")
+
+    // A nil kept from a lookup that ran out of time is no answer: the welcome asks the shell itself, and keeps its
+    // path.
+    let late = ProcessExec(["SHELL": shell, "PATH": "\(dir.path)/bin:/usr/bin:/bin"], herdr: nil, asked: .now)
+    #expect(await late.herdr() == nil)
+    #expect(await late.answeredHerdr(within: failureBound) == herdr)
+    #expect(await late.herdr() == herdr)
 }
 
 private func closedReason(_ events: inout AsyncStream<TerminalStream.Event>.Iterator) async -> TerminalStream.Closed? {

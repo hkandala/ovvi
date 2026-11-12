@@ -159,6 +159,25 @@ extension OvviUITests {
         XCTAssertTrue(element("titlebar.machine").exists(within: connect), "no window after Skip")
     }
 
+    /// A login shell slower than the launch's 3 s bound still finds herdr before the panel opens: no herdr step.
+    func testASlowLoginShellStillLeavesOutTheHerdrStep() throws {
+        app.launchEnvironment["SHELL"] = "\(Self.fixtures)/slow-shell/login-shell"
+        let herdr = try URL(filePath: env("OVVI_HERDR")).deletingLastPathComponent().path
+        app.launchEnvironment["PATH"] = "\(herdr):/usr/bin:/bin"
+        relaunch(one, ["-welcomeDone", "NO"])
+        XCTAssertTrue(welcomeNext.exists(within: connect))
+        XCTAssertTrue(element("welcome.intro").vanishes(within: 5), "the intro stays")
+        while welcomeNext.label == "Next" {
+            XCTAssertFalse(element("welcome.herdr.install").exists, "a herdr step with herdr installed")
+            let page = welcomePage
+            welcomeNext.click()
+            XCTAssertTrue(until(3) { welcomePage != page }, "Next stayed on \(page)")
+        }
+        XCTAssertFalse(element("welcome.herdr.install").exists, "a herdr step with herdr installed")
+        element("welcome.skip").click()
+        XCTAssertTrue(welcomeNext.vanishes(within: 3))
+    }
+
     /// A Mac with no herdr on its login shell's PATH (HerdrInstallTests' seam), the welcome not done yet.
     func launchWithoutHerdr(install: String) throws {
         app.launchEnvironment["OVVI_E2E_HERDR"] = try env("OVVI_HERDR")
