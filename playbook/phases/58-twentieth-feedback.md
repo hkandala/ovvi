@@ -70,6 +70,11 @@ fails; lessons.md's rule makes it 60 s (round 8's final CI, '### Final CI, round
    was pi's reverse-video selection drawn beside the card's. Both must hold: pi's own selection and copy work, and no
    white block.
 
+   herdr drops the program's mouse mode (`MouseCapture`) in its CLI bridge, so Ovvi can't follow Ghostty's rule without
+   an upstream change (patch: `~/Downloads/ovvi-research/p58m/herdr-mouse-mode.patch`). Asked about the options: "revert
+   the fix, and figure is there a better way to fix that white block issue when selecting without removing the native
+   drag".
+
 ## Track C: a smoother chat (items 10, 11, 12, 13, 15, 16)
 
 10. "on new chat, let's move it bit up such that propmt input is vertically center aligned, right now with logo and
