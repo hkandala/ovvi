@@ -35,6 +35,8 @@ final class Chooser {
     var holding = false
     @ObservationIgnored var held: [NSEvent] = []
     @ObservationIgnored var typed = false
+    @ObservationIgnored private var search = ""
+    @ObservationIgnored private var searched: TimeInterval = 0
     var folder: String?
     /// herdr picks it with its default `new_cwd` (`resolve_new_terminal_cwd`, src/app/creation.rs). A `cd` since
     /// herdr's last report is not in the snapshot: herdr's answer corrects it.
@@ -63,6 +65,27 @@ final class Chooser {
     func number(_ row: Row) -> Int? {
         let numbered = open ? Self.shownAgents : rows.filter { $0.agent == nil }
         return numbered.firstIndex(of: row).map { $0 + 1 }
+    }
+
+    /// Type-select, as in Finder: keys less than a second apart make one word, matched against the start of a row's
+    /// name, then the start of a word in it. An agent's row opens Agent. No match keeps the selection.
+    func select(typed key: String, at time: TimeInterval, installed: Set<String>?) {
+        let kept = time - searched < 1 ? search : ""
+        guard key.count == 1, let char = key.first,
+              char.isLetter || char.isPunctuation || char.isSymbol || char == " " && !kept.isEmpty
+        else { return }
+        (search, searched) = (kept + key.lowercased(), time)
+        let agents = Self.shownAgents
+        let rows = ([.terminal] + (agents.isEmpty ? [] : [.agent]) + agents + Self.plugins)
+            .filter { !Self.missing($0, installed) }
+        let names = rows.map { $0.labels.name.lowercased() }
+        let index = names.firstIndex { $0.hasPrefix(search) }
+            ?? names.firstIndex { $0.split(separator: " ").contains { $0.hasPrefix(search) } }
+        guard let index else { return }
+        if rows[index].agent != nil, !open {
+            open = true
+        }
+        selected = rows[index]
     }
 }
 
@@ -172,11 +195,20 @@ extension HostStore {
         case kVK_Return where rows.contains(chooser.selected),
              kVK_ANSI_KeypadEnter where rows.contains(chooser.selected):
             pick(chooser, chooser.selected, page: page)
-        default:
-            let number = Int(event.charactersIgnoringModifiers ?? "")
-            if let row = rows.first(where: { number != nil && chooser.number($0) == number }) {
+        default: character(event, chooser, rows: rows, page: page)
+        }
+    }
+
+    /// A number key picks its row; other characters type-select one. ⌃ and ⌥ chords do nothing.
+    private func character(_ event: NSEvent, _ chooser: Chooser, rows: [Chooser.Row], page: Page?) {
+        guard event.modifierFlags.isDisjoint(with: [.control, .option]) else { return }
+        let key = event.charactersIgnoringModifiers ?? ""
+        if let number = Int(key) {
+            if let row = rows.first(where: { chooser.number($0) == number }) {
                 pick(chooser, row, page: page)
             }
+        } else {
+            chooser.select(typed: key, at: event.timestamp, installed: page?.terminals.pages?.agents)
         }
     }
 

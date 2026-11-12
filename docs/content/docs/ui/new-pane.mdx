@@ -146,6 +146,14 @@ and Return never reaches the old card's shell.
   type into it.
 - A number key picks the row with that number. While Agent is open, 1 to 4 pick the agents. The
   key of an agent that is not installed does nothing.
+- **Type-select.** Typed characters select the first row whose name starts
+  with them, else the first row with a word that starts with them,
+  case-insensitive:
+  `file` selects File Explorer, `br` Browser, `pi` the Pi agent. Nothing
+  opens; Return picks as usual. An agent's row opens Agent. The typed text
+  shows nowhere, and a key typed more than a second after the last one
+  starts a new word. With no match, the selection stays. Digits stay number
+  keys, and an agent that is not installed is never selected.
 - A held key moves on, but picks only once.
 - **Keys after a pick.** After Terminal or an agent is picked, the card
   keeps the keys typed until the new pane's terminal has the keyboard, and

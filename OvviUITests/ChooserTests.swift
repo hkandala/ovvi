@@ -27,14 +27,15 @@ extension OvviUITests {
         try await waitForPrompt(pane)
         let capsule = element("tab.\(tab)")
         XCTAssertFalse(until(1.5) { capsule.label != "New Tab" }, capsule.label)
-        app.typeText("echo leaked")
+        // Letters type-select: these match no row.
+        app.typeText("zzqq")
         app.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(terminal.vanishes(within: 2))
         // The shell and the folder: "zsh tmp" here, "bash tmp" on CI.
         XCTAssertTrue(until(3) { capsule.label.hasSuffix(" tmp") }, capsule.label)
         try await typeAndRead(pane)
         let text = try await read(pane)
-        XCTAssertFalse(text.contains("leaked"), text)
+        XCTAssertFalse(text.contains("zzqq"), text)
 
         // ⌘T then Return at once, ahead of herdr's pane: the Return is the new card's, not the other shell's, which
         // keeps the first responder meanwhile.
@@ -104,8 +105,7 @@ extension OvviUITests {
         XCTAssertTrue(window.vanishes(within: 3))
     }
 
-    /// CI has no agents: the test defines stand-ins in the pane's shell, which the app's typed commands run.
-    func testPickingAnAgentStartsItBehindTheLoader() async throws {
+    private func launchWithAgentStandIns() async throws {
         let herdr = try URL(filePath: env("OVVI_HERDR")).deletingLastPathComponent().path
         app.launchEnvironment["SHELL"] = "\(Self.agents)/login-shell"
         app.launchEnvironment["PATH"] = "\(Self.agents):\(herdr):/usr/bin:/bin"
@@ -113,18 +113,23 @@ extension OvviUITests {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         element("workspace.w2").click()
         XCTAssertTrue(element("pane.w2:p1").has(\.isHittable, true, within: 2))
-        let before = try await tabIDs()
-        closeNew("tab", besides: before)
-        func newPane(_ name: String, _ body: String) async throws -> String {
-            let tabs = try await tabIDs()
-            app.typeKey("t", modifierFlags: .command)
-            let pane = try await pane(of: newTabID(after: tabs))
-            XCTAssertTrue(element("pane.\(pane).chooser.terminal").exists(within: 3))
-            try await waitForPrompt(pane)
-            try await send("\(name)() { \(body); }\r", to: pane)
-            return pane
-        }
+        try await closeNew("tab", besides: tabIDs())
+    }
 
+    /// A new tab's chooser, with `name` defined as a shell function that the app's typed command runs.
+    private func newPane(_ name: String, _ body: String) async throws -> String {
+        let tabs = try await tabIDs()
+        app.typeKey("t", modifierFlags: .command)
+        let pane = try await pane(of: newTabID(after: tabs))
+        XCTAssertTrue(element("pane.\(pane).chooser.terminal").exists(within: 3))
+        try await waitForPrompt(pane)
+        try await send("\(name)() { \(body); }\r", to: pane)
+        return pane
+    }
+
+    /// CI has no agents: the test defines stand-ins in the pane's shell, which the app's typed commands run.
+    func testPickingAnAgentStartsItBehindTheLoader() async throws {
+        try await launchWithAgentStandIns()
         let report = #""$HERDR_BIN_PATH" --session "$HERDR_SESSION" pane report-agent --source ovvi-e2e "#
             + #"--agent claude --state idle "$HERDR_PANE_ID""#
         let agent = try await newPane("claude", "echo ovvi-stand-in; sleep 2; \(report); sleep 100")
@@ -158,6 +163,20 @@ extension OvviUITests {
         XCTAssertTrue(failed.exists(within: 2))
         XCTAssertTrue(failed.vanishes(within: 8))
         try await waitFor(failing) { $0.contains("\novvi-no-agent") }
+
+        step("Typed letters select a row, and a second's pause starts a new word")
+        let typed = try await newPane("pi", "echo ovvi-typed-$((6*7)); sleep 100")
+        // Key by key, g, i, t would end on Terminal.
+        app.typeText("git")
+        XCTAssertTrue(element("pane.\(typed).chooser.git").has(\.isSelected, true, within: 2))
+        XCTAssertEqual(element("pane.\(typed).chooser.agent").stringValue, "collapsed")
+        try await Task.sleep(for: .seconds(1.1))
+        app.typeText("pi")
+        XCTAssertTrue(element("pane.\(typed).chooser.pi").has(\.isSelected, true, within: 2))
+        keepScreenshot("typed pi")
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(element("pane.\(typed).loader").exists(within: 2))
+        try await waitFor(typed) { $0.contains("\novvi-typed-42") }
     }
 
     func testReplacePaneAndThePaletteFollowThePanesKind() async throws {
