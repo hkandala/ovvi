@@ -52,8 +52,12 @@ final class Chooser {
     }
 
     var rows: [Row] {
-        let agents = Self.shownAgents
-        return [.terminal] + (agents.isEmpty ? [] : [.agent]) + (open ? agents : []) + Self.plugins
+        Self.rows(open: open)
+    }
+
+    static func rows(open: Bool) -> [Row] {
+        let agents = shownAgents
+        return [.terminal] + (agents.isEmpty ? [] : [.agent]) + (open ? agents : []) + plugins
     }
 
     func made(_ pane: HerdrKit.Pane) {
@@ -75,9 +79,7 @@ final class Chooser {
               char.isLetter || char.isPunctuation || char.isSymbol || char == " " && !kept.isEmpty
         else { return }
         (search, searched) = (kept + key.lowercased(), time)
-        let agents = Self.shownAgents
-        let rows = ([.terminal] + (agents.isEmpty ? [] : [.agent]) + agents + Self.plugins)
-            .filter { !Self.missing($0, installed) }
+        let rows = Self.rows(open: true).filter { !Self.missing($0, installed) }
         let names = rows.map { $0.labels.name.lowercased() }
         let index = names.firstIndex { $0.hasPrefix(search) }
             ?? names.firstIndex { $0.split(separator: " ").contains { $0.hasPrefix(search) } }
