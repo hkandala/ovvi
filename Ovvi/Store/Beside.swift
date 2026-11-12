@@ -147,15 +147,20 @@ extension HostStore {
             }
             ahead.moving.append(Ahead.Moving(tabID: tabID, label: label.text))
             do {
-                let pane = try await newTab(client, in: workspaceID, cwd: cwd, label: label)
+                // No read between: the move answers with the pane, and each herdr call is a round trip (over SSH on a
+                // remote machine) ahead of the card.
+                let id = try await labeledTab(client, in: workspaceID, cwd: cwd, label: label)
                 do {
-                    let moved = try await client.move(pane: pane.id, to: .tab(tabID, beside: target, split: direction))
+                    let moved = try await client.move(pane: id, to: .tab(tabID, beside: target, split: direction))
                     for index in ahead.moving.indices where ahead.moving[index].label == label.text {
                         ahead.moving[index].landed = true
                     }
-                    return moved ?? pane
+                    if let moved {
+                        return moved
+                    }
+                    return try await client.pane(id)
                 } catch {
-                    try? await client.close(pane: pane.id)
+                    try? await client.close(pane: id)
                     throw error
                 }
             } catch {
@@ -170,18 +175,22 @@ extension HostStore {
     private func newTab(_ client: any Multiplexer, in workspaceID: String, cwd: String, label: PaneLabel?)
         async throws -> HerdrKit.Pane
     {
-        var pane: HerdrKit.Pane?
-        if let label {
-            // The label's path's folder survives a restart better than the folder it is asked from.
-            if let id = try await client.newTab(workspace: workspaceID, cwd: label.folder ?? cwd, label: label.text,
-                                                command: label.placeholder)
-            {
-                pane = try await client.pane(id)
-            }
+        let pane = if let label {
+            try await client.pane(labeledTab(client, in: workspaceID, cwd: cwd, label: label))
         } else {
-            pane = try await client.newTab(workspace: workspaceID, cwd: cwd)
+            try await client.newTab(workspace: workspaceID, cwd: cwd)
         }
         guard let pane else { throw HerdrError.failed("herdr named no pane") }
         return pane
+    }
+
+    private func labeledTab(_ client: any Multiplexer, in workspaceID: String, cwd: String, label: PaneLabel)
+        async throws -> String
+    {
+        // The label's path's folder survives a restart better than the folder it is asked from.
+        guard let id = try await client.newTab(workspace: workspaceID, cwd: label.folder ?? cwd, label: label.text,
+                                               command: label.placeholder)
+        else { throw HerdrError.failed("herdr named no pane") }
+        return id
     }
 }

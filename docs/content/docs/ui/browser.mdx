@@ -515,6 +515,14 @@ gets the same card.
   process ends, and the GPU and network processes stay for the cards. The
   app never waits for these processes: a card keeps its loader or its
   empty look until its page draws.
+- A new web view starts its page process at its first load, which takes
+  0.1 s to a few seconds on a busy Mac. So the app keeps one spare web view
+  for This Mac's browser cards and one for plugin cards, each with its page
+  process already running (started by a script, so the spare has no
+  history). A new card takes the spare, and the app starts the next one. So
+  a card that opens beside another (a ⌥-click on a link) draws its page
+  with no wait for a process. Both spares start 3 s after launch. A remote
+  machine's browser card starts its own page process.
 - When WebKit's GPU process stops answering (a busy Mac), WebKit gives up on
   it and starts another, but it cannot end the old one, and every page keeps
   drawing through it: each web card, browser and plugin, stays blank, also

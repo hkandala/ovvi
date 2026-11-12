@@ -31,6 +31,23 @@ class BrowserView: WKWebView {
         allowsMagnification = true
     }
 
+    private static var spares: [ObjectIdentifier: BrowserView] = [:]
+
+    /// A web view starts its page process at its first load: 0.1 s to seconds on a busy Mac, 1.4 s on CI, under the
+    /// new card's loader. So a new card takes a spare view whose process already runs, and the next spare starts. A
+    /// script, not a load, starts it: the spare keeps no history, and its next load keeps the process.
+    static func spare<View: BrowserView>(_ make: @escaping @MainActor @Sendable () -> View) -> View {
+        defer { Task { warm(make) } }
+        return spares.removeValue(forKey: ObjectIdentifier(View.self)) as? View ?? make()
+    }
+
+    static func warm<View: BrowserView>(_ make: () -> View) {
+        guard spares[ObjectIdentifier(View.self)] == nil else { return }
+        let view = make()
+        view.evaluateJavaScript("0")
+        spares[ObjectIdentifier(View.self)] = view
+    }
+
     static var focused: BrowserView? {
         // Not a web card (a subclass): there the keys size the terminals' text.
         (NSApp.keyWindow?.firstResponder as? BrowserView).flatMap { type(of: $0) == BrowserView.self ? $0 : nil }

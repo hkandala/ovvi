@@ -59,12 +59,18 @@ extension Browser {
     /// once that card's page process runs, which can take many seconds on a busy Mac. One hidden page starts them
     /// ahead of any card; its own page process ends with it.
     static func prewarm() async {
+        BrowserView.warm(thisMacView)
+        BrowserView.warm(WebCard.newView)
         guard PaneViewRegistry.recentWeb.isEmpty else { return }
         let view = BrowserView(store: dataStore(.thisMac))
         view.loadHTMLString("", baseURL: nil)
         // Answers once its page process runs, which has asked for the network process by then.
         await withCheckedContinuation { done in view.evaluateJavaScript("0") { _, _ in done.resume() } }
         withExtendedLifetime(view) {}
+    }
+
+    static func thisMacView() -> BrowserView {
+        BrowserView(store: dataStore(.thisMac))
     }
 
     /// WebKit keeps a store a window still uses.

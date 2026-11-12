@@ -29,17 +29,12 @@ final class WebCard {
         self.arg = arg
         self.place = place
         self.store = store
-        let configuration = WKWebViewConfiguration()
-        // Show Web Inspector opens nothing without it.
-        configuration.preferences.setValue(true, forKey: "developerExtrasEnabled")
-        configuration.preferences.isElementFullscreenEnabled = true
-        configuration.setURLSchemeHandler(PluginScheme.shared, forURLScheme: PluginScheme.name)
-        view = WebCardView(frame: .zero, configuration: configuration)
+        view = .spare(Self.newView)
         view.underPageBackgroundColor = .clear
         view.setValue(false, forKey: "drawsBackground")
         view.isInspectable = true
         let relay = Relay(card: self)
-        configuration.userContentController.addScriptMessageHandler(relay, contentWorld: .page, name: "ovvi")
+        view.configuration.userContentController.addScriptMessageHandler(relay, contentWorld: .page, name: "ovvi")
         view.navigationDelegate = relay
         titleObservation = view.observe(\.title) { [weak self] view, _ in
             MainActor.assumeIsolated { self?.title = view.title ?? "" }
@@ -49,6 +44,15 @@ final class WebCard {
     isolated deinit {
         // A full-screen video outlives its closed card otherwise: WebKit's window holds the view.
         view.closeAllMediaPresentations {}
+    }
+
+    static func newView() -> WebCardView {
+        let configuration = WKWebViewConfiguration()
+        // Show Web Inspector opens nothing without it.
+        configuration.preferences.setValue(true, forKey: "developerExtrasEnabled")
+        configuration.preferences.isElementFullscreenEnabled = true
+        configuration.setURLSchemeHandler(PluginScheme.shared, forURLScheme: PluginScheme.name)
+        return WebCardView(frame: .zero, configuration: configuration)
     }
 
     /// The user script also starts a page still loading or loaded again with the colors, so every first paint has them.

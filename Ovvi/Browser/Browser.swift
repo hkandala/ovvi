@@ -58,7 +58,8 @@ final class Browser: NSObject {
         remoteAlias = machine.isRemote ? Self.alias(machine.name) : nil
         let viaMac = machine.isRemote && Self.isViaMac(label, store)
         self.viaMac = viaMac
-        view = BrowserView(store: Self.dataStore(viaMac ? .thisMac : machine))
+        // ponytail: a spare for This Mac's store only; a remote machine's browser starts its own page process.
+        view = machine.isRemote && !viaMac ? BrowserView(store: Self.dataStore(machine)) : .spare(Self.thisMacView)
         super.init()
         wire()
         Task { await start() }
