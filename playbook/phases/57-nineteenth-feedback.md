@@ -2563,3 +2563,4 @@ ones".
 - **For the user.** Quit Ovvi, run `scripts/reset-app-data.sh` (no sudo) from a terminal; it now says what it kept.
   Launch: only the welcome, no window, no connect; Skip or Get Started opens one new-window view. ⌘N ▸ Add Machine…
   ▸ Add: the machine connects in that ⌘N window.
+112. "one more minor bug, clicking on pane header doesn't activate the pane, let's fix that please" (Track H2).
