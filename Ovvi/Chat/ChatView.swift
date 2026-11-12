@@ -71,12 +71,14 @@ extension View {
 struct Composer: View {
     @Bindable var chat: Chat
     var composing: FocusState<Bool>.Binding
+    /// The empty chat's, with its greeting.
+    var placeholder: String?
     static let inset: CGFloat = 18
 
     var body: some View {
         let working = chat.phase == .working
         return VStack(alignment: .leading, spacing: 2) {
-            TextField("Ask Anything", text: $chat.draft, axis: .vertical)
+            TextField(placeholder ?? "Ask Anything", text: $chat.draft, axis: .vertical)
                 .textFieldStyle(.plain)
                 .font(.system(size: 14))
                 .lineLimit(1 ... 5)

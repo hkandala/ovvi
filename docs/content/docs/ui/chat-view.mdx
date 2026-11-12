@@ -470,9 +470,18 @@ A run is one quiet line with no card: its summary and a chevron.
   together in the middle of the card, until the first message. The header is
   the agent's program glyph (the one in the tab, 64 pt, at half opacity) with
   a phrase 14 pt under it in 26 pt semibold, picked at random when the chat
-  view is made: "What's on your mind?", "What are we building?", "Where
-  should we start?", "What can I help with?" or "Ready when you are." It
-  stays on one line and shrinks to fit a narrow card. 22 pt stay free between
+  view is made, with the reply box's placeholder that goes with it (after the
+  first message the box says "Ask Anything"):
+
+  | Greeting | Placeholder |
+  |---|---|
+  | What's on your mind? | Ask or tell me anything |
+  | What are we building? | Describe the feature |
+  | Where should we start? | Name a file, a bug or a goal |
+  | What can I help with? | Ask a question or give a task |
+  | Ready when you are. | Type your first message |
+
+  The greeting stays on one line and shrinks to fit a narrow card. 22 pt stay free between
   it and the box.
 - **The first message.** When the user sends it, the header fades, the reply
   box goes down to its place at the bottom, and the message rises from the box

@@ -20,13 +20,17 @@ struct ChatMessages: View, Equatable {
     /// Only asked, never told: a place the scroll view names as a scroll begins or ends, given back to it, snaps that
     /// row to the top.
     @State private var position = ScrollPosition(idType: String.self)
-    @State private var phrase = Self.phrases.randomElement() ?? ""
+    /// A greeting and the reply box's placeholder that goes with it.
+    @State private var phrase = Self.phrases.randomElement() ?? Self.phrases[0]
     /// Not observed: a body run rebuilds the rows, and the height changes at each frame of a resize.
     @State private var height = Height()
     @State private var viewHeight = ViewHeight()
     @Environment(\.look) private var look
-    private static let phrases = ["What's on your mind?", "What are we building?", "Where should we start?",
-                                  "What can I help with?", "Ready when you are."]
+    private static let phrases = [
+        ("What's on your mind?", "Ask or tell me anything"), ("What are we building?", "Describe the feature"),
+        ("Where should we start?", "Name a file, a bug or a goal"),
+        ("What can I help with?", "Ask a question or give a task"), ("Ready when you are.", "Type your first message"),
+    ]
     private static let end = "end"
     fileprivate nonisolated static let space = "chat.messages"
     /// About two views of text, at most `block` rows. Each time the card is made it lays them out: 31 rows of long
@@ -82,7 +86,7 @@ struct ChatMessages: View, Equatable {
                             .disabled(question.answered)
                             .id(question.raw)
                     }
-                    Composer(chat: chat, composing: composing)
+                    Composer(chat: chat, composing: composing, placeholder: welcome ? phrase.1 : nil)
                 }
                 // The box's text on the messages' edges: the box reaches past them by its own padding.
                 .padding(.bottom, 14).padding(.top, 4).readingColumn(margin: 32 - Composer.inset)
@@ -99,9 +103,9 @@ struct ChatMessages: View, Equatable {
             if let pane = page.store.pane(chat.paneID) {
                 ProgramGlyph(icon: pane.iconID, letter: pane.letter, size: 64).opacity(0.5)
             }
-            Text(phrase).font(.system(size: 26, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.6)
+            Text(phrase.0).font(.system(size: 26, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.6)
         }
-        .readableText(phrase)
+        .readableText(phrase.0)
         .accessibilityIdentifier("chat.\(chat.paneID).empty")
     }
 

@@ -13,6 +13,12 @@ extension OvviUITests {
         XCTAssertEqual(empty.frame.midX, composer.frame.midX, accuracy: 2)
         XCTAssertTrue(empty.frame.maxY < composer.frame.minY && card.maxY - composer.frame.maxY > card.height / 4,
                       "\(empty.frame) \(composer.frame) in \(card)")
+        let placeholders = ["What's on your mind?": "Ask or tell me anything",
+                            "What are we building?": "Describe the feature",
+                            "Where should we start?": "Name a file, a bug or a goal",
+                            "What can I help with?": "Ask a question or give a task",
+                            "Ready when you are.": "Type your first message"]
+        XCTAssertEqual(composer.placeholderValue, placeholders[empty.stringValue], empty.stringValue)
 
         let worked = app.descendants(matching: .any).matching(identifier: "chat.\(pane).worked")
         step("A turn of a reply alone")
@@ -21,6 +27,7 @@ extension OvviUITests {
         app.typeText("1")
         XCTAssertTrue(row(pane, "reply", "Allowed.").exists(within: 5))
         XCTAssertTrue(until(3) { worked.count == 1 }, "\(worked.count)")
+        XCTAssertEqual(composer.placeholderValue, "Ask Anything")
         step("Turns with tool calls; the earlier Worked stay")
         try await say("hello", in: pane)
         XCTAssertTrue(row(pane, "reply", "Echo: **hello**").exists(within: 5))
