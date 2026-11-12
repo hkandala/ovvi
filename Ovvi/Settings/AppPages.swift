@@ -216,9 +216,10 @@ struct TerminalPage: View {
         Form {
             Section {
                 Picker(selection: settings.$terminalFont) {
-                    Text("SF Mono").tag("")
+                    Text("JetBrains Mono").tag("")
+                    Text("SF Mono").tag(PaneTerminal.systemFont)
                     Divider()
-                    ForEach(fonts + (fonts.contains(settings.terminalFont) || settings.terminalFont.isEmpty
+                    ForEach(fonts + ((fonts + ["", PaneTerminal.systemFont]).contains(settings.terminalFont)
                             ? [] : [settings.terminalFont]), id: \.self) { Text($0).tag($0) }
                 } label: {
                     Text("Font")

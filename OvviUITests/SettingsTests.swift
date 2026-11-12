@@ -84,13 +84,13 @@ extension OvviUITests {
         let grid = terminal.stringValue
         addTeardownBlock { @MainActor [self] in
             openSettings("terminal")
-            choose("settings.terminal.font", "SF Mono")
+            choose("settings.terminal.font", "JetBrains Mono")
             choose("settings.terminal.option", "Types special characters")
             turn("settings.terminal.copy", false)
         }
         openSettings("terminal")
-        // Monaco's line is taller than SF Mono's: fewer rows.
-        choose("settings.terminal.font", "Monaco")
+        // Menlo's line is shorter than JetBrains Mono's: more rows (Monaco's has JetBrains Mono's height at 1x).
+        choose("settings.terminal.font", "Menlo")
         try await expect("the grid to change from \(grid)") { terminal.stringValue != grid }
         try await expectPTYSize("w1:p1")
         choose("settings.terminal.option", "Acts as Meta")

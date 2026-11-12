@@ -95,12 +95,15 @@ without opening a stream again. So the page has no preview.
 
 | Setting | Control | Key | Default |
 |---|---|---|---|
-| Font | pop-up of the monospaced families on this Mac | `terminalFont` | empty: the system's monospaced font (SF Mono) |
+| Font | pop-up: JetBrains Mono, SF Mono, then the other monospaced families on this Mac | `terminalFont` | empty: JetBrains Mono |
 | Cursor | Block, Bar, Underline | `cursorStyle` | `block` |
 | Blink the cursor | switch | `cursorBlink` | on |
 | Option key | Types special characters, Acts as Meta, Left acts as Meta | `optionKey` | `characters` |
 | Copy text when you select it | switch | `copyOnSelect` | off |
 
+- Font: JetBrains Mono is the font that libghostty carries, so it works on a
+  Mac that does not have it installed, as in Ghostty. SF Mono is the Mac's own
+  monospaced font.
 - Cursor: a program that asks for its own shape gets it, for example vim's bar
   in insert mode. herdr's frames carry the request.
 - Blink the cursor: on, the cursor blinks unless a program asks for a steady

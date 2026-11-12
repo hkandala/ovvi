@@ -26,13 +26,14 @@ extension PaneTerminal {
         $0.withCustom("link-url", "false")
     }
 
+    /// SF Mono by the name CoreText resolves on every Mac, also where SF Mono is not installed.
     static let systemFont = NSFont.monospacedSystemFont(ofSize: 0, weight: .regular).familyName ?? "Menlo"
 
     static var fonts: [String] {
         let names = NSFontManager.shared.availableFontNames(with: .fixedPitchFontMask) ?? []
-        // SF Mono, when installed, is the first choice already.
+        // The default (libghostty's own JetBrains Mono) and SF Mono are the first two choices already.
         return Set(names.compactMap { NSFont(name: $0, size: 0)?.familyName }
-            .filter { !$0.hasPrefix(".") && $0 != "SF Mono" }).sorted()
+            .filter { !$0.hasPrefix(".") && !["JetBrains Mono", "SF Mono"].contains($0) }).sorted()
     }
 
     private static var lastGrid = ""
@@ -50,7 +51,10 @@ extension PaneTerminal {
             lastGrid = grid
         }
         controller.setTerminalConfiguration(TerminalConfiguration {
-            $0.withFontFamily(settings.terminalFont.isEmpty ? systemFont : settings.terminalFont)
+            // Unset: the JetBrains Mono libghostty carries, also on a Mac without it, as in Ghostty.
+            if !settings.terminalFont.isEmpty {
+                $0.withFontFamily(settings.terminalFont)
+            }
             $0.withFontSize(Float(clamped(settings.fontSize)))
             $0.withCursorStyle(settings.cursorStyle)
             // Unset, Ghostty also follows DEC mode 12; false only makes the default still. A program's DECSCUSR wins
