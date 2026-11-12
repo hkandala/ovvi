@@ -45,7 +45,6 @@ extension OvviUITests {
     /// stopped. In both looks.
     func testAKeptTabShownAfterADropNeverSaysStopped() async throws {
         try await skipWithoutSSH()
-        addTeardownBlock { [one] in _ = try? await Self.post("\(one)/resume") }
         for appearance in ["dark", "light"] {
             relaunch(one, Self.onKeyHost + ["-appearance", appearance])
             let stopped = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'pane.' AND identifier "
@@ -68,13 +67,19 @@ extension OvviUITests {
             XCTAssertTrue(ended, "the kept tab's stream outlived the drop")
             XCTAssertFalse(stopped.exists, "a card says its terminal stopped once back")
 
+            // After the tabs' own: their closes call herdr.
+            addTeardownBlock { [one] in _ = try? await Self.post("\(one)/resume") }
             _ = try await Self.post("\(one)/pause")
             app.typeKey("\(index + 1)", modifierFlags: .command)
             XCTAssertTrue(element("tab.\(kept)").has(\.isSelected, true, within: 3))
-            XCTAssertFalse(until(1) { stopped.exists }, "the kept tab says its terminal stopped as it opens")
-            keepScreenshot("kept tab opening \(appearance)")
-            XCTAssertFalse(until(1) { stopped.exists }, "the kept tab says its terminal stopped as it opens")
+            // A strip while herdr holds the stream, about 2 s.
+            var said = false
+            for shot in 1 ... 5 {
+                said = said || stopped.exists
+                keepScreenshot("kept tab opening \(appearance) \(shot)")
+            }
             _ = try await Self.post("\(one)/resume")
+            XCTAssertFalse(said, "the kept tab says its terminal stopped as it opens")
             XCTAssertFalse(until(3) { stopped.exists }, "the kept tab says its terminal stopped")
             XCTAssertTrue(drawn(pane, within: connect), element("pane.\(pane)").stringValue)
             try await expect("the kept tab to stream") { try await streams(one).contains { $0.contains(terminal) } }
