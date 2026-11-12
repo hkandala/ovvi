@@ -134,6 +134,8 @@ private struct TableGrid: View {
                             ChatLinks.text(Inline.text(rows[row][column], size: 14))
                                 .fontWeight(row == 0 ? .semibold : nil)
                                 .multilineTextAlignment(alignment == .trailing ? .trailing : .leading)
+                                // Its whole height: a sideways scroll view offers less.
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                         .padding(.horizontal, 10).padding(.vertical, 6)
                         .frame(maxWidth: .infinity, maxHeight: .infinity,
