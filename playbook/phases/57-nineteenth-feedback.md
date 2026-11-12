@@ -2500,21 +2500,24 @@ ones".
 
 ### Track S2 (item 108)
 
-- **Cause.** `PaneTerminal.show()` took any failed stream for the pane's own as soon as it ran with the page live
-  (`own = true`) and kept `.failed` while it opened the stream again, so "The terminal stopped" and Retry showed for
-  the whole reattach. A tab kept out of view (`PaneViewRegistry.recent`) keeps its stream; a dropped connection ends
-  it, but the registry calls `show()` only for the cards in view, so the old `lost` flag (set by a `show()` while the
-  page did not answer) never got set. Selected once the page was back, the card judged that old failure by the page's
-  state now and said "stopped" until herdr's first frame: one round trip, long on a remote machine.
+- **Cause.** `PaneTerminal.show()` took a failed stream for the pane's own as soon as it ran with the page live
+  (`own = true`), and kept `.failed` while it opened the stream again, so "The terminal stopped" and Retry showed for
+  the whole reattach: one round trip, long on a remote machine. A dropped connection ends every stream, and two ways
+  hit it. A tab kept out of view (`PaneViewRegistry.recent`) keeps its stream, but the registry calls `show()` only for
+  the cards in view, so the old `lost` flag (set by a `show()` while the page did not answer) never got set; selected
+  once the page was back, the card judged the old failure by the page's state now. And a card in view whose page
+  reconnected at once (no Reconnecting: a new ssh master came up) said "stopped" through its reattach too.
 - **Fix.** A failure is the connection's until a try made while the page answers fails too. `show()` turns an
-  unconfirmed failure into a load (`.idle`: the last picture, a spinner after 0.5 s) and opens the stream again;
-  only that try's failure, followed by a snapshot, sets `own`. Leaving view or a pause forgets `own`, so a kept card
-  judges again when it comes back. A confirmed failure's own retries now go from failed to failed (`closed`), so the
-  panel no longer blinks off for a refresh at each 5 s retry. `lost` is gone.
+  unconfirmed failure into a load (`.idle`: the last picture, a spinner after 0.5 s) and opens the stream again; only
+  that try's failure, followed by a snapshot, sets `own`. Leaving view or a pause forgets `own`, so a kept card judges
+  again when it comes back. A confirmed failure's own retries go from failed to failed (`closed`), so the panel no
+  longer blinks off for a refresh at each 5 s retry. `lost` is gone.
 - **Decisions.** A truly stopped pane says so about two round trips later than before (one silent try first).
 - **Runs.** The new test drops Key Host's master while a kept tab is out of view, waits for the shown tab to stream
-  again, freezes herdr's server (as a slow link holds the attach), selects the kept tab and takes a strip: red on the
-  old code (43141931169: "the kept tab says its terminal stopped as it opens").
+  again, freezes herdr's server (as a slow link holds the attach), selects the kept tab and takes a strip. Red on the
+  old code: 43141931169, 43143979785 and 43144753506 (the panel in every frame of the strip; the last two also saw
+  the card in view say "stopped" once back, as did 43143166180). Green on the fix: 43143874306, and 43144916357 with
+  FailureTests' and ReconnectTests' stream tests. Pictures: `~/Downloads/ovvi-research/p57s2/`.
 - **For the user.** On a remote machine, leave a tab out of view, drop the link or sleep the Mac, come back and
   select it: its last picture, then the live terminal, never "The terminal stopped".
 111. The Tart VM plugin (agent tart-take-control; screenshot `.build/fb57/r8-tart-6.50.02.png`): "so i noticed some
