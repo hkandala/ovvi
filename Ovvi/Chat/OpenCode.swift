@@ -169,8 +169,6 @@ struct OpenCode: ChatAdapter {
     @MainActor private func history(_ chat: Chat, _ url: String, _ id: String,
                                     _ exec: any Exec) async -> OpenCodeSession?
     {
-        chat.loading = true
-        defer { chat.loading = false }
         let answer = await exec.openCode(url, "/session/\(id)/message", folder: folder)
         guard !Task.isCancelled else { return nil }
         let session = await Task.detached { [answer] in

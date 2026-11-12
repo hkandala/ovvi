@@ -38,7 +38,7 @@ final class Chat {
     var wantsKeyboard = false
     @ObservationIgnored var marks: [String: FileMark] = [:]
     @ObservationIgnored var backlog = ChatHistory()
-    var loading = false
+    @ObservationIgnored var loading = false
     /// Lines read off the main actor: changes wait in `queued` until they are in.
     @ObservationIgnored var reading = false
     @ObservationIgnored var queued: [(source: String?, body: (inout ChatHistory) -> Void)] = []
