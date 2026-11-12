@@ -2810,3 +2810,25 @@ ones".
   step does. The chat reads a link click's keys from the click, not from the keys held when it runs late.
 - **Runs.** Red: full run 43171070157 (shard 3). The VM green before and after; CI 43181605437 (chosen, executed 1)
   green. Two full runs in a row green prove it.
+
+### Round 8, chat review (items 120–125)
+
+120. "let's keep the logo to the center like before and put text below it, it doesn't look good when beside"
+     (Track C5).
+121. "links are looking weird with grey background, that grey background thing looks good on the terminal view, in
+     chat view why do you need that grey background, show like how links are shown in browser like the default html
+     view and hover" (Track C5).
+122. "in general not just chat view, option+click takes some time before the pane shows up while cmd+click and
+     cmd+option+click, why is that? is there any bug with option+click? check if we can improve that, make
+     option+click as well instant" (Track L4).
+123. "when a chat is resumeed, or used relaunch with chat, while the transcript loads or something, i see the new chat
+     view showing text and input in center and after few seconds then the trnascript loads, can we show loader instead
+     during that time, its confusing seeing new chat view when relaunching existing chat" (Track C5).
+124. "so we show working x seconds and then change to worked x seconds once done right, but this showing worked x
+     seconds its not consistent, it shows sometime, it doesn't show sometime, do we have any logic on when its shown
+     etc? can we keep it consistent? just show it all the time when assistant conversation is ended, and keep that as
+     is even if there are further messages, basically user message -> tool calls + intermediate assistant messages +
+     more tool calls + final assisant message -> worked x s -> new user message -> asssistant messages -> worked y s ->
+     and so on, keep it consistent like this, its bit buggy right now, make sure this flow works well" (Track C5).
+125. "clean up chat view code better and make it simple and clean we shouldn't have too many edge cases handling, it
+     should be clean, simple following ponytail principles, and work reliably" (Track C5).
