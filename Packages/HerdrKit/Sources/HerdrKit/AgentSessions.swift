@@ -246,7 +246,10 @@ enum SessionTitle {
 }
 
 public extension Exec {
-    func sessionTitle(agent: String, session: String, home: String? = nil) async -> String? {
+    /// `timeout` bounds a machine that hangs; the title is a nicety, so a slow one shows none.
+    func sessionTitle(agent: String, session: String, home: String? = nil,
+                      timeout: Duration = .seconds(5)) async -> String?
+    {
         // pi's is a file; the others' ids go into OpenCode's SQL and Claude Code's file name: letters, digits, `-` and
         // `_` only.
         let plain = session.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber || "-_".contains($0)) }
@@ -254,7 +257,7 @@ public extension Exec {
         guard let script = SessionTitle.scripts[agent], agent == "pi" ? session.hasPrefix("/") : id else { return nil }
         let text = try? await output(
             ["sh", "-c", "{ \(ClosedSessions.home(2)); \(script); } 2>/dev/null", "sh", session, home ?? ""],
-            timeout: .seconds(5),
+            timeout: timeout,
         )
         return SessionTitle.parse(agent: agent, text ?? "")
     }

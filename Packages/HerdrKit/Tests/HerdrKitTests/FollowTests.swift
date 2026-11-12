@@ -81,32 +81,44 @@ private func lineByLine(_ path: String, from mark: FileMark,
     #expect(last.offset == 61)
 }
 
-/// Through awk a `head` left behind would hang on the FIFO. Without awk, this Mac's reader drains the pipe ahead of
-/// the kill.
+/// A `head` left behind sends the whole backlog. The reader is a slow one, as a relay over SSH: it reads only as it
+/// takes lines, so the follow waits on full pipes until the kill. `ProcessExec`'s reader drains the pipe at once, so
+/// through it the whole backlog could pass before a starved Mac ran the kill. The package's only `FileHandle.bytes`
+/// reader: they share one blocking reader (see `ProcessExec.chunks`).
 @Test(.timeLimit(.minutes(2))) func `a dropped follow stops its backlog`() async throws {
     let file = FileManager.default.temporaryDirectory.appending(path: "ovvi-drop-\(UUID().uuidString).jsonl")
     defer { try? FileManager.default.removeItem(at: file) }
     let line = String(repeating: "x", count: 999)
     try Data(String(repeating: line + "\n", count: 20000).utf8).write(to: file)
-    let channel = try await localExec.run(["sh", "-c", observeWrapper, "sh", "sh", "-c",
-                                           ProcessExec.followScript, "sh", file.path, "0", "", "/^skip/"])
+    let process = Process(), input = Pipe(), output = Pipe()
+    process.executableURL = URL(filePath: "/bin/sh")
+    process.arguments = ["-c", observeWrapper, "sh", "sh", "-c", ProcessExec.followScript, "sh", file.path, "0", "",
+                         "/^skip/"]
+    process.standardInput = input
+    process.standardOutput = output
+    try process.run()
     var after = 0, closed = false
-    for await text in channel.lines where text == line {
+    for try await text in output.fileHandleForReading.bytes.lines where text == line {
         if !closed {
-            channel.closeInput()
+            try input.fileHandleForWriting.close()
             closed = true
-            // A slow reader, as a relay over SSH: it reads on once the kill landed (no process has the file in its
-            // argv), with the pipes full. A set wait runs out on a starved Mac ahead of the kill.
+            // Reads on once the kill landed: no process has the file in its argv.
             let end = ContinuousClock.now + failureBound
-            while try await !localExec.output(["pgrep", "-f", file.lastPathComponent]).isEmpty {
-                try #require(ContinuousClock.now < end, "the follow's processes outlived the kill")
+            while case let pids = try await localExec.output(["pgrep", "-f", file.lastPathComponent],
+                                                             timeout: failureBound), !pids.isEmpty
+            {
+                guard ContinuousClock.now < end else {
+                    _ = try? await localExec.output(["kill"] + pids.split(separator: "\n").map(String.init))
+                    Issue.record("the follow's processes outlived the kill")
+                    return
+                }
                 try await Task.sleep(for: .milliseconds(50))
             }
         }
         after += 1
     }
-    // The pipes' buffers (32–65 lines), not the 20,000 lines.
-    #expect(after < 10000)
+    // The pipes' buffers, not the 20,000 lines.
+    #expect(after < 1000, "\(after) lines after the drop")
 }
 
 /// macOS's sh can lose the wrapper's one kill (pending in its trap as it goes on to `exec tail`), and `tail` then
@@ -125,7 +137,9 @@ func `a dropped follow leaves no process`(awk: Bool) async throws {
         }
         // A left process lives forever; the wait covers a starved Mac, where a retry's `sleep` takes seconds to start.
         let end = ContinuousClock.now + failureBound
-        while case let pids = try await localExec.output(["pgrep", "-f", file.lastPathComponent]), !pids.isEmpty {
+        while case let pids = try await localExec.output(["pgrep", "-f", file.lastPathComponent],
+                                                         timeout: failureBound), !pids.isEmpty
+        {
             guard ContinuousClock.now < end else {
                 _ = try? await localExec.output(["kill"] + pids.split(separator: "\n").map(String.init))
                 Issue.record("the follow's processes outlived the drop")

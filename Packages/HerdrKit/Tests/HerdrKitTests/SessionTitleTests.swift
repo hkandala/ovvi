@@ -31,7 +31,7 @@ import Testing
     {"type":"session_info","id":"c","parentId":"b","name":"Trip notes"}
 
     """.write(to: file, atomically: true, encoding: .utf8)
-    #expect(await localExec.sessionTitle(agent: "pi", session: file.path) == "Trip notes")
+    #expect(await localExec.sessionTitle(agent: "pi", session: file.path, timeout: failureBound) == "Trip notes")
     // Not a path or a plain id: never reaches the script.
     #expect(await localExec.sessionTitle(agent: "opencode", session: "x' or '1'='1") == nil)
     #expect(await localExec.sessionTitle(agent: "opencode", session: "/x' union select sqlite_version() --") == nil)
@@ -62,12 +62,13 @@ import Testing
     try FileManager.default.createDirectory(at: projects, withIntermediateDirectories: true)
     try #"{"type":"user","message":{"role":"user","content":"fix the flaky test"},"sessionId":"01a2"}"#
         .write(to: projects.appending(path: "01a2.jsonl"), atomically: true, encoding: .utf8)
-    #expect(await localExec.sessionTitle(agent: "claude", session: "01a2", home: home.path) == "fix the flaky test")
+    let claude = await localExec.sessionTitle(agent: "claude", session: "01a2", home: home.path, timeout: failureBound)
+    #expect(claude == "fix the flaky test")
     let file = home.appending(path: "pi.jsonl")
     try """
     {"type":"session","version":3,"id":"01a3","cwd":"/tmp"}
     {"type":"message","message":{"role":"user","content":[{"type":"text","text":"plan the trip"}]}}
 
     """.write(to: file, atomically: true, encoding: .utf8)
-    #expect(await localExec.sessionTitle(agent: "pi", session: file.path) == "plan the trip")
+    #expect(await localExec.sessionTitle(agent: "pi", session: file.path, timeout: failureBound) == "plan the trip")
 }
