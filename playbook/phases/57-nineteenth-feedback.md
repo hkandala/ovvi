@@ -3021,27 +3021,51 @@ ones".
      reload and inspect element, we shouldn't show inspect element, we should show only reload, can we fix that too"
      (Track E4).
 ### Track C5 (items 120, 121, 123–126)
+### Track C5 (items 120, 121, 123–126, 128, 129)
 
 - **Cause, Worked (124).** Rows put "Worked" under a turn only when the turn held a tool call (a reply alone got none),
-  and never under the last turn while the chat's phase was working: herdr's or the agent's working comes before the
-  user's next message is in the transcript, so the last Worked went away for a moment at each send, and stayed away
-  while an idle pi waited on agents. **Fix:** one rule for every agent, live and loaded: the agent's own record of a
-  turn's end is its Worked row, where it was written (Claude Code's `turn_duration`, Codex's `task_complete`,
-  OpenCode's reply that finishes with no more tool calls; pi records none, so its final reply, `stopReason` `stop`,
-  makes one, timed from the user's message). The rows no longer take the phase. An interrupted turn ends with its note.
-- **Cause, the empty chat on a resume (123) and the TUI on the way back (126).** A new `Chat` started "current" (its
+  and never under the last turn while the chat's phase was working: the agent's working comes before the user's next
+  message is in the transcript, so the last Worked went away at each send, and stayed away while an idle pi waited on
+  agents. **Fix:** one rule for every agent, live and loaded: the agent's own record of a turn's end is its Worked row,
+  where it was written (Claude Code's `turn_duration`, Codex's `task_complete`, OpenCode's reply that finishes with no
+  more tool calls; pi records none, so its final reply, `stopReason` `stop`, makes one, timed from the user's message).
+  The rows no longer take the phase. An interrupted turn ends with its note.
+- **Cause, the empty chat on a resume (123) and the TUI on the way back (126).** A new `Chat` started current (its
   history known), so a resumed or relaunched chat showed the new-chat header until the agent's SessionStart hook named
   its transcript (seconds with company hooks). A chat whose view went away (its tab left the 8 kept pages, or the TUI
-  showed) stopped following and became not current, and its card then drew the TUI for up to 2 s while the chat caught
-  up (`catchUp`). **Fix:** a chat is current from its start only when a launch of a new conversation made it; one
-  resumed, found running or shown again is current once its transcript is read to its end, or reported missing (the
-  follow script's new `ovvi-missing`: Claude Code and pi write the file with the first message; OpenCode: no session).
-  Until then the card shows the chat with a loader (after 0.3 s, so a quick catch-up shows no spinner) and the reply
-  box at the bottom, never the TUI or the empty chat. `catchUp`, `pickedChat` and the cards' hooks for them are gone.
-- **The empty chat (120).** The glyph 64 pt at half opacity in the middle (as before C3), the phrase 14 pt under it,
-  the box under them; C3's first-send motion is unchanged.
+  showed) stopped following and became not current, and its card then drew the TUI while the chat caught up
+  (`catchUp`, up to 2 s; 105 TUI commits in the old-code run). **Fix:** a chat is current from its start only when a
+  launch of a new conversation made it; one resumed, found running or shown again is current once its transcript is
+  read to its end or reported missing (the follow script's new `ovvi-missing`: Claude Code and pi write the file with
+  the first message), OpenCode once its history loads or it has no session, Codex also once its side file names no
+  session (it starts one only with the first prompt). Until then the card shows the chat with a loader (after 0.3 s)
+  and the reply box at the bottom, never the TUI or the empty chat; a message sent meanwhile shows at once. `catchUp`,
+  `pickedChat` and the cards' hooks for them are gone. OpenCode acts on a state batch's last line only (its first line
+  has no session and cleared the history).
+- **The empty chat (120, 129).** The glyph 64 pt at half opacity in the middle (as before C3), the greeting 14 pt under
+  it, the box under them; C3's first-send motion is unchanged. Each greeting comes with its own placeholder for the
+  box, picked as one pair ("What are we building?" / "Describe the feature"); after the first message the box says
+  Ask Anything.
 - **Cause, the grey behind links (121).** Not L2's terminal tint and not C4's hover: agents write paths in backticks,
   and inline code draws on a faint fill, so a path link sat on a grey box. **Fix:** a link's characters in inline code
-  drop the code's fill; the rest of the code keeps it.
-- **Cleanup (125).** Ovvi/Chat plus `ChatRow.swift`: 2696 lines before, 2683 after; the turn tracking in
-  `rows`, the time fallback, `catchUp` and its hooks in PaneCard, FloatingPane and the registry are gone.
+  drop the code's fill; the rest of the code keeps it. The hover stays C4's (70 %, the pointing hand).
+- **Cause, no dimmed pending message (128).** Track I swapped the dimming for ticks (1ca4caa2) and item 77 dropped the
+  ticks (719a7d14), so a queued message looked taken. **Fix:** 70 % again until the history has it, 50 % once "Not
+  sent", as before Track I; PiChatTests compares the bubble's pixels while pi holds the message and after.
+- **Cleanup (125).** The turn tracking and time fallback in `rows`, the optional Worked time, `catchUp`, `pickedChat`,
+  their hooks in PaneCard, FloatingPane and the registry, and the empty chat's second spinner are gone; lint split
+  three functions that the new cases pushed over its limits. Ovvi/Chat plus `ChatRow.swift`: 2696 lines before, 2710
+  after, with items 126, 128, 129 and the review's Codex and OpenCode cases in them.
+- **Decisions.** A chat shown again after a time away shows a blank chat (the box at the bottom) until its history is
+  in, a spinner only after 0.3 s: the old rows first would jump to the new ones (Track I), and the TUI was the bug.
+  A resumed Codex chat stays empty until its first prompt (Codex starts the session then). Claude Code's `turn_duration`
+  was on every turn of the user's transcripts (13 of 13); no real agent ran here.
+- **Runs.** Old code with the new tests (tag on d56802b1): CI 43190123850, all three red (126: 105 TUI commits; 123: no
+  loader; 120: a 34 pt header) and the before pictures. New code: CI 43190210872, 29 chosen chat tests (ChatTests,
+  LongChatTests, PiChatTests, SwitchTests, the link, Codex, OpenCode, agent-start, overview, key and flicker tests):
+  green but the 126 test's record (it read the last other tab's record too; it now waits 2 s first, as the flicker
+  tests do). The final run: FINAL_RUN. Pictures: `~/Downloads/ovvi-research/p57c5/`.
+- **For the user.** A new chat: logo, greeting under it, its placeholder. Relaunch with Chat on a long Claude Code
+  chat: a spinner, not the greeting, then the transcript. Open 10 browser tabs, visit each, come back to a chat: no TUI
+  flash. Worked after a reply-only turn and after every turn, still there while the next one works. A path in
+  backticks: underlined, no grey box. Send while pi works: the message dim until pi takes it.
