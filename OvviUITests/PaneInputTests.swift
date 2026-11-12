@@ -41,6 +41,26 @@ extension OvviUITests {
         terminal.rightClick()
         XCTAssertTrue(menu["Copy"].exists(within: 2))
         app.typeKey(.escape, modifierFlags: [])
+
+        // A left click reaches it as a press and a release; a drag selects in the card and sends it nothing, so it
+        // draws no selection beside the card's. The ⌥-right click after the drag bounds the wait. Reports wrap.
+        func reports(_ button: Int, _ text: String) -> Int {
+            text.replacing("\n", with: "").components(separatedBy: "[<\(button);").count - 1
+        }
+        terminal.click()
+        try await waitFor(pane) { reports(0, $0) == 2 }
+        let rights = try await reports(2, read(pane))
+        terminal.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.02))
+            .click(forDuration: 0.2, thenDragTo: terminal.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.02)))
+        NSPasteboard.general.clearContents()
+        app.typeKey("c", modifierFlags: .command)
+        try await expect("⌘C to copy the card's selection") {
+            NSPasteboard.general.string(forType: .string)?.contains("[<") == true
+        }
+        XCUIElement.perform(withKeyModifiers: .option) { terminal.rightClick() }
+        try await waitFor(pane) { reports(2, $0) > rights }
+        let text = try await read(pane)
+        XCTAssertEqual(reports(0, text), 2, text)
     }
 
     /// The drag comes from a window of the helper's: from Finder, at times no drag starts on CI.
