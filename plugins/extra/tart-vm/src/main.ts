@@ -25,7 +25,6 @@ export default async function main(ovvi: Ovvi) {
   // The user and password of Cirrus Labs' images; a VM with others asks once, for this card.
   let credentials = { username: "admin", password: "admin" }
   let rfb: RFB | undefined
-  let lock: WebSocket | undefined
   let shown = ""
 
   async function tart(args: string[], timeout = 30_000) {
@@ -48,9 +47,10 @@ export default async function main(ovvi: Ovvi) {
     notice.hidden = false
   }
 
-  /** The VM's facts in row 2; Back and Open in Tart only on a VM's page. */
+  /** The VM's facts in row 2; Back, Watch Only and Open in Tart only on a VM's page. */
   function header(info?: string, running = false) {
     ovvi.controls.set("back", { hidden: !shown })
+    ovvi.controls.set("watch", { hidden: !shown })
     ovvi.controls.set("info", { value: info ?? "", hidden: info === undefined })
     ovvi.controls.set("tart", { hidden: !running })
   }
@@ -60,22 +60,20 @@ export default async function main(ovvi: Ovvi) {
     const r = rfb
     rfb = undefined
     r?.disconnect()
-    lock?.close()
-    lock = undefined
-    ovvi.controls.set("in-use", { hidden: true })
     screen.replaceChildren()
   }
 
-  ovvi.on("control", async ({ id }) => {
+  ovvi.on("control", async ({ id, value }) => {
     const vm = shown
     if (id === "back") return void home()
+    if (id === "watch") return void (rfb && (rfb.viewOnly = value === true))
     if (id !== "tart" || !vm) return
     const pick = await ovvi.toast(`Open ${vm} in Tart? It pauses for a few seconds and comes back as it was.`, ["Cancel", "Open in Tart"])
     if (pick !== "Open in Tart") return
     drop()
     header("Moving to Tart")
     draw(`Opening ${vm} in Tart…`, "Tart saves the VM and opens it in its own window.")
-    // A refusal (the VM is in use) leaves it running: the card connects again either way.
+    // A failure leaves it running: the card connects again either way.
     await tart(["window", vm], 180_000).catch((error) => void ovvi.toast(`${vm} did not open in Tart: ${(error as Error).message}`))
     if (shown === vm) await show(vm, true)
   })
@@ -107,16 +105,8 @@ export default async function main(ovvi: Ovvi) {
     const r = (rfb = new RFB(screen, `ws://127.0.0.1:57900/vm/${encodeURIComponent(vm)}/rfb`, { credentials }))
     r.scaleViewport = true
     r.background = "transparent"
-    // A pointer move or a key would break what a tool that holds the VM's lock does (a test run): no input while
-    // one holds it, nor until the bridge has said whether one does.
-    r.viewOnly = true
-    lock = new WebSocket(`ws://127.0.0.1:57900/vm/${encodeURIComponent(vm)}/lock`)
-    lock.onmessage = ({ data }) => {
-      const owner = JSON.parse(data) as string | null
-      r.viewOnly = owner !== null
-      ovvi.controls.set("tart", { enabled: owner === null })
-      ovvi.controls.set("in-use", { value: owner ? `In use · ${owner}` : "In use", hidden: owner === null })
-    }
+    // Watch Only sends no pointer or key: a tool that drives the VM (a test run) goes on undisturbed.
+    r.viewOnly = ovvi.controls.get("watch") === true
     let refused = false
     // No focus() here: a page that focuses takes the keyboard from the focused card; a click on the screen gives it.
     r.addEventListener("connect", () => (notice.hidden = true))

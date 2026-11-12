@@ -12,32 +12,14 @@ the card, with its keyboard and pointer, scaled to the card.
   here: **New VM…** makes a copy of it (or of another VM that is off), with a name, and says what it costs (its
   memory and cores; with a VM running, it asks for a second one; macOS runs two at most).
 - A VM's page shows its screen and nothing else. The title is the VM's name; the header shows **‹** (back to the
-  list), its state, macOS version, cores and memory, and **Open in Tart**. Back, or closing the card, only ends the
-  screen's connection: the VM runs on until **Stop**.
+  list), its state, macOS version, cores and memory, **Watch Only** (an eye) and **Open in Tart**. Back, or closing
+  the card, only ends the screen's connection: the VM runs on until **Stop**.
 - **Open in Tart** moves the same VM, with its state, into Tart's own window: Tart saves it (`tart suspend`) and
   restores it there, in about 8 seconds. Closing Tart's window suspends the VM; **Open** in the card resumes it.
-- While a VM is in use (below), its card only watches: it sends no pointer or key to the VM, and the header shows
-  "In use · ‹owner›". Input comes back when the lock frees. **Open in Tart**, **Stop** and **Delete** refuse then.
+- **Watch Only**, on, sends no pointer or key to the VM: watch a tool that drives it (a UI test run) without
+  breaking it. Off (the default), the card's pointer and keys go to the VM. The card keeps the choice.
 - macOS Screen Sharing sends no pointer shape and draws no pointer into a VM's screen: the card shows the system
   arrow over the screen.
-
-## In use
-
-A tool that uses a VM, and that a click, a pointer move or a suspend would break (a UI test run, a script that types
-in the guest), marks the VM in use while it runs:
-
-```sh
-mkdir -p ~/.config/ovvi-tart/locks
-echo "my-tests" > ~/.config/ovvi-tart/locks/<vm>.owner      # optional: the name the card shows
-lockf -k ~/.config/ovvi-tart/locks/<vm>.lock <command>         # or flock(2) on that file
-```
-
-- The lock is the file's exclusive `flock` lock (what `lockf` holds), per VM. The kernel frees it when the holder
-  ends, also when it is killed, so it never goes stale; `-k` keeps the file, so every holder locks the same one.
-- The owner file is read only while the lock is held: a stale one is harmless.
-- `ovvi-tart in-use <vm>` exits 0 and prints the owner while the lock is held. It reads the lock with `F_GETLK` and
-  never takes it, so it never fails a holder's `lockf -t 0`. The bridge asks it every second for each open screen
-  (`/vm/<vm>/lock`).
 
 ## Install
 

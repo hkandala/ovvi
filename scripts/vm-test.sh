@@ -3,8 +3,7 @@
 # Runs UI tests in the one Tart VM, ovvi-test, so they never take this Mac's pointer or keyboard. The VM runs this
 # Mac's build (build-for-testing) and this Mac's Xcode, shared from the Mac: nothing is built or installed in it.
 set -euo pipefail
-# The VM lock: the Tart VM plugin's "in use" lock of ovvi-test (plugins/extra/tart-vm, In use). While it is held, a
-# card on the VM sends it no input, and Stop and Open in Tart refuse.
+# The VM lock: this repo's, for its agents (playbook/workflow.md); the Tart VM plugin knows nothing of it.
 locks=~/.config/ovvi-tart/locks
 lock=$locks/ovvi-test.lock owner=$locks/ovvi-test.owner
 mkdir -p "$locks"

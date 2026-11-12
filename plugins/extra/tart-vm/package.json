@@ -1,7 +1,7 @@
 {
   "name": "ovvi-tart-plugin",
   "license": "AGPL-3.0-only",
-  "version": "0.6.3",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "description": "This Mac's Tart VMs in a card: start, stop, create and delete them, and a VM's screen with its keyboard and pointer.",
@@ -31,7 +31,7 @@
       { "id": "back", "type": "button", "symbol": "chevron.left", "title": "All VMs", "hidden": true },
       { "id": "info", "type": "text", "style": "dim", "hidden": true },
       { "type": "spacer" },
-      { "id": "in-use", "type": "text", "symbol": "lock", "hidden": true },
+      { "id": "watch", "type": "toggle", "symbol": "eye", "title": "Watch Only", "hidden": true },
       { "id": "tart", "type": "button", "style": "bordered", "symbol": "arrow.up.forward.app", "title": "Open in Tart",
         "hidden": true }
     ],

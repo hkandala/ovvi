@@ -2564,3 +2564,14 @@ ones".
   Launch: only the welcome, no window, no connect; Skip or Get Started opens one new-window view. ⌘N ▸ Add Machine…
   ▸ Add: the machine connects in that ⌘N window.
 112. "one more minor bug, clicking on pane header doesn't activate the pane, let's fix that please" (Track H2).
+
+### Track T2 (item 111)
+
+- **Finding.** The lock was generic (an `flock` on `~/.config/ovvi-tart/locks/<vm>.lock`, any tool, any VM), but a
+  convention a tool had to know; the prompt could not be clicked because the card sent no input while
+  `make vm-e2e` held it.
+- **Fix.** The plugin knows no lock: no "In use", no `ovvi-tart in-use`, no bridge lock socket, and Open in Tart,
+  Stop and Delete no longer refuse. One header toggle, **Watch Only** (an eye), on a VM's page: on, the card sends no
+  pointer or key; off (the default), it does. The app keeps its value in the card's state. Plugin 0.7.0. The repo's
+  own VM lock (`scripts/vm-test.sh`, agents' `lockf`) stays as it was, the repo's alone.
+- **Runs.** Host only (round 8): `make lint build test` and the plugin's build. No UI test covers the plugin.

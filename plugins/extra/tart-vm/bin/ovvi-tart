@@ -21,29 +21,12 @@ ovvi-tart window <vm>                   show it in Tart's own window: a running 
 ovvi-tart view <vm>                     start it and the screen bridge; prints its macOS, cores and memory
                                         as JSON, for the card
 ovvi-tart stop <vm>                     shut it down
-ovvi-tart delete <vm>                   delete a stopped VM that is not in use, with its disk
-ovvi-tart in-use <vm>                   exit 0 and print the owner while a tool holds the VM's lock (README, In use)
+ovvi-tart delete <vm>                   delete a stopped VM, with its disk
 EOF
     exit 2
 }
 
 valid='^[A-Za-z0-9][A-Za-z0-9._-]*$'
-# A tool that uses a VM (a test run, a script that clicks in it) holds $state/locks/<vm>.lock, with lockf or flock,
-# and may name itself in <vm>.owner. Read with F_GETLK, without taking the lock: a probe that took it for a moment
-# would fail the holder's own `lockf -t 0`.
-in_use() {
-    perl -MFcntl -e 'open(my $f, "<", $ARGV[0]) or exit 1; my $l = pack("q q l s s", 0, 0, 0, F_WRLCK, 0);
-        fcntl($f, F_GETLK, $l) or exit 1; exit((unpack("q q l s s", $l))[3] == F_UNLCK)' "$state/locks/$1.lock"
-}
-owner() { head -1 "$state/locks/$1.owner" 2>/dev/null || true; }
-# A suspend or a stop would break what the holder does. ponytail: checked, not held, so a tool that starts in these
-# seconds can still lose the VM.
-busy() {
-    in_use "$1" || return 1
-    local o
-    o=$(owner "$1")
-    echo "$1 is in use${o:+ by $o}: try when it is free" >&2
-}
 running() { tart list --source local --format json | jq -e --arg vm "$1" '.[] | select(.Name == $vm and .Running)' >/dev/null; }
 
 case ${1:-} in
@@ -67,7 +50,6 @@ start | window)
     if [[ $1 == window ]]; then
         # Only the process that runs a VM can draw it: save the running VM, then restore it in Tart's own window.
         how=
-        ! busy "$vm" || exit 1
         if running "$vm"; then
             tart suspend "$vm" >/dev/null
             for _ in $(seq 120); do running "$vm" || break; sleep 0.5; done
@@ -138,22 +120,15 @@ EOF
     ;;
 stop)
     [[ ${2:-} =~ $valid ]] || usage
-    ! busy "$2" || exit 1
     tart stop "$2"
     ;;
 delete)
     [[ ${2:-} =~ $valid ]] || usage
-    ! busy "$2" || exit 1
     # A suspended VM keeps its state on disk: only a stopped one goes.
     tart list --source local --format json | jq -e --arg vm "$2" '.[] | select(.Name == $vm and .State == "stopped")' \
         >/dev/null || { echo "$2 is not stopped: stop it first" >&2; exit 1; }
     tart delete "$2"
     rm -f "$state/$2.args" "$state/$2.os" "$state/$2.log"
-    ;;
-in-use)
-    [[ ${2:-} =~ $valid ]] || usage
-    in_use "$2" || exit 1
-    owner "$2"
     ;;
 *) usage ;;
 esac
