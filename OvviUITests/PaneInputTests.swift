@@ -84,6 +84,21 @@ extension OvviUITests {
         try await waitFor(pane) { $0.contains("ovvi-e2e-42") }
     }
 
+    func testAClickOnACardsHeaderGivesItTheKeyboard() async throws {
+        let (tab, first) = try await newTab("header click")
+        let second = try await split(first)
+        element("tab.\(tab)").click()
+        try await waitForPrompt(first)
+        try await waitForPrompt(second)
+        element("terminal.\(second)").click()
+        XCTAssertTrue(hasKeyboard("terminal.\(second)"), "the keyboard is on \(keyboardOwner())")
+        // The title row's middle: the title passes clicks through, and the buttons sit at its end.
+        element("pane.\(first)").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0))
+            .withOffset(CGVector(dx: 0, dy: 17)).click()
+        XCTAssertTrue(hasKeyboard("terminal.\(first)"), "the keyboard is on \(keyboardOwner())")
+        try await typeAndRead(first)
+    }
+
     func testAClickBeforeACardDrewKeepsTheKeyboard() async throws {
         let (tab, first) = try await newTab("early click")
         let second = try await split(first)
