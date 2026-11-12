@@ -2986,3 +2986,30 @@ ones".
 - **For the user.** Play a video in a browser card (YouTube's full-screen button or its F key) and in the File
   Explorer's preview: full screen, Esc back, the card fine; once from a floating pane too. Check that the player's own
   Exit Full Screen button works on your Mac (in the VM it did not always, in Safari too).
+
+### Track L4 (item 122)
+
+- **Cause.** Not the ⌥ key: the click reaches `Links.open` at once on every path. A new web card waits for WebKit to
+  start its page process at its first load (1.4 s on CI; 0.1–2.6 s in a headless probe on this Mac under load). ⌘-click
+  makes a background tab, whose card and web view are made only when it shows, so that wait never shows; ⌥-click shows
+  the new card at once, under its loader. CI probe, from the click: the card in the split at 215–460 ms, its page drawn
+  at 2.0–2.1 s (browser) and 1.7 s (Markdown); ⌘'s tab in the bar at 90–300 ms. The labeled split also read the pane
+  (`pane.get`) between herdr's `layout.apply` and `pane.move`: one more round trip ahead of the card (an SSH one on a
+  remote machine).
+- **Fix.** Two warm web views out of any window, one for This Mac's browser and one for plugin cards, each with its page
+  process started by one script (no history, no URL; its next load keeps the pid). A new card takes the warm view of its
+  kind, and the next one starts; both start 3 s after launch and also start WebKit's GPU and network processes, as
+  the hidden prewarm page did. The split moves the pane by the id `layout.apply` names. After (CI): page drawn at
+  0.42–0.63 s (browser), 0.61–0.93 s (Markdown); the card in the split at 80–390 ms.
+- **Decisions.** No stand-in card ahead of herdr (as ⌘D has): the card already shows within ⌘'s tab time, and a
+  stand-in's evened ratios would move the cards again at herdr's tree. No wall-clock test (lessons): the WebKit test
+  now checks the two warm page processes stay. A remote machine's browser that loads through the machine still starts
+  its own page process (and reads its state and opens its proxy over SSH): `ponytail:` note, key the warm views by
+  store if that shows. This reverses Track W3's "no prewarm of page processes for cards": one warm view a kind,
+  the next started only after a take, is no burst, and its absence is the wait the user saw. The chat's red ⌥-click
+  (final CI, round 8) opened nothing at all: another cause than this delay.
+- **Runs.** Probe before/after: CI 43186585455, 43191607905 (`~/Downloads/ovvi-research/p57l4/timings.md`). Chosen tests
+  on the fix: CI 43194689185.
+- **For the user.** ⌥-click a web link, an `.html` file and a `.md` path in a terminal and in a chat: the page shows
+  about as soon as the split opens, the first time too (after the app's first 3 s). On a remote machine a browser link
+  is still slower than on This Mac.

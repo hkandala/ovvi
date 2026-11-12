@@ -91,7 +91,8 @@ extension OvviUITests {
         var pages = Set<String>()
         try await poll("the app's network process and two page processes", times: 300) { () async throws -> Bool? in
             pages = try await web("web-pids", "")
-            return try await pages.count == 2 && !web("web-pids", "Networking").isEmpty ? true : nil
+            let network = try await web("web-pids", "Networking")
+            return pages.count == 2 && !network.isEmpty ? true : nil
         }
         try await Task.sleep(for: .seconds(1))
         let now = try await web("web-pids", "")
