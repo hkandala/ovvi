@@ -207,8 +207,10 @@ struct ContentView: View {
         }
         // A removed machine's window opens no page: its saved pages are the remote's sessions.
         let removed = machine == nil && !id.isEmpty
-        // A test run (`-defaultSession`) shares saved windows with Debug runs: it restores only throwaway sessions.
-        let saved = argument == nil && !removed ? savedPages.split(separator: " ").map(String.init)
+        // A test run (`-defaultSession`) shares saved windows with Debug runs: it restores only throwaway sessions. A
+        // first launch restores none (the app closes those windows).
+        let restores = argument == nil && !removed && !Welcome.firstLaunch
+        let saved = restores ? savedPages.split(separator: " ").map(String.init)
             .filter { MachineList.defaultSession == nil || $0.hasPrefix("ovvi-e2e-") } : []
         if !saved.isEmpty {
             let client: any Multiplexer = await HerdrClient(session: saved[0], exec: pages.machine.exec())

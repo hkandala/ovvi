@@ -11,6 +11,7 @@ extension OvviUITests {
         "testAFailedStartKeepsThePanelOpenWithRetry",
         "testAFileDroppedOnARemoteCardPastesItsCopysPath",
         "testAFindBarClosedBeforeItsReadLeavesHerdrAtTheBottom",
+        "testAFirstLaunchShowsOnlyTheWelcomeOverSavedWindows",
         "testAFixedPickSkipsTheChooserAndOptionShowsIt",
         "testAFixedPicksMenuItemsAndSetting",
         "testAFixedTerminalTakesTheKeysTypedBeforeItsPane",

@@ -65,6 +65,39 @@ extension OvviUITests {
         showTheWelcomeFromSettings()
     }
 
+    /// A first launch, as after scripts/reset-app-data.sh (macOS keeps saved windows where it needs Full Disk Access),
+    /// shows only the welcome: a window macOS saved neither comes back nor connects. Skip opens the new-window list,
+    /// and the next launch brings that window back, not the old one.
+    func testAFirstLaunchShowsOnlyTheWelcomeOverSavedWindows() async throws {
+        step("Welcome: a window saved with its session")
+        try await forgetWindows()
+        relaunch(windows: .saved)
+        XCTAssertTrue(element("workspace.w1").exists(within: connect))
+        app.typeKey("q", modifierFlags: .command)
+        XCTAssertTrue(app.wait(for: .notRunning, timeout: 5))
+
+        step("Welcome: the first launch shows only the welcome")
+        try await Self.post("\(one)/welcome", Data("forget".utf8))
+        addTeardownBlock { [one] in _ = try? await Self.post("\(one)/welcome", Data("done".utf8)) }
+        relaunch(windows: .restored)
+        XCTAssertTrue(welcomeNext.exists(within: connect), "no welcome on a first launch")
+        try await Task.sleep(for: .seconds(1))
+        XCTAssertEqual(mainWindows.count, 0, "a saved window came back behind the welcome")
+        keepScreenshot("first launch")
+
+        step("Welcome: Skip opens the new-window list; the next launch restores it, not the old window")
+        XCTAssertTrue(element("welcome.intro").vanishes(within: 5), "the intro stays")
+        element("welcome.skip").click()
+        XCTAssertTrue(element("picker.local.\(one)").exists(within: connect), "no new-window list after Skip")
+        XCTAssertEqual(mainWindows.count, 1)
+        app.typeKey("q", modifierFlags: .command)
+        XCTAssertTrue(app.wait(for: .notRunning, timeout: 5))
+        relaunch(windows: .restored)
+        XCTAssertTrue(element("picker.local.\(one)").exists(within: connect))
+        XCTAssertFalse(element("workspace.w1").exists, "the window saved before the first launch came back")
+        XCTAssertEqual(mainWindows.count, 1)
+    }
+
     /// Settings ▸ General ▸ Show Welcome, found by a search, opens it again; Esc closes it from its first page and from
     /// its last.
     private func showTheWelcomeFromSettings() {

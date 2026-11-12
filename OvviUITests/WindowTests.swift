@@ -153,6 +153,29 @@ extension OvviUITests {
         XCTAssertTrue(waiting.vanishes(within: 20))
     }
 
+    /// Add Machine in a new window's list connects the machine in that window: no other window opens.
+    func testAddMachineFromANewWindowConnectsInIt() throws {
+        XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
+        let first = app.windows.firstMatch.identifier
+        app.typeKey("n", modifierFlags: .command)
+        XCTAssertTrue(element("picker.local.\(one)").exists(within: connect))
+        let window = try XCTUnwrap(app.windows.allElementsBoundByIndex.map(\.identifier).first { $0 != first })
+            .map { app.windows[$0] }
+        element("picker.+add-machine", in: window).click()
+        let settings = settingsWindow
+        let name = element("settings.machine.name", in: settings)
+        XCTAssertTrue(name.exists(within: 5))
+        name.click()
+        app.typeText("Nowhere")
+        element("settings.machine.target", in: settings).click()
+        app.typeText("ovvi-e2e-nowhere.invalid")
+        element("settings.machine.save", in: settings).click()
+        XCTAssertTrue(settings.vanishes(within: 3))
+        let machine = element("window.machine", in: window)
+        XCTAssertTrue(machine.has(\.stringValue, "Nowhere", within: connect), machine.stringValue)
+        XCTAssertEqual(mainWindows.count, 2)
+    }
+
     func testNewWindowMakesATypedSession() async throws {
         // Down first: a run cut short may have left it.
         try await Self.post("\(eight)/stress", Data())

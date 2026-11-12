@@ -352,6 +352,22 @@ extension WindowPages {
         takeAsked?()
     }
 
+    /// The new window whose Add Machine opened Settings.
+    weak static var adding: WindowPages?
+
+    /// A machine just added connects in the new window it came from while that one stays open and empty.
+    static func added(_ machine: Machine) {
+        guard let pages = adding, !pages.gone, pages.list.isEmpty else { return open(machine: machine, connect: true) }
+        adding = nil
+        pages.machine = machine
+        pages.open(MachineList.session ?? MachineList.defaultSession ?? Session.defaultName, start: !machine.isRemote)
+        pages.opened()
+        pages.window?.makeKeyAndOrderFront(nil)
+        if let store = pages.current?.store {
+            Task { await store.connect(in: pages) }
+        }
+    }
+
     static func runEarly() {
         guard let early else { return }
         self.early = nil

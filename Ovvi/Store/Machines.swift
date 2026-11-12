@@ -108,7 +108,7 @@ final class MachineList {
             save(machine)
         } else {
             list.append(machine)
-            WindowPages.open(machine: machine, connect: true)
+            WindowPages.added(machine)
         }
         return machine
     }

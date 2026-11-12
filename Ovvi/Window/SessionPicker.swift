@@ -94,6 +94,7 @@ struct SessionPicker: View {
         let sessions = (groups.filter(\.matched) + groups.filter { !$0.matched }).flatMap(\.rows)
         return sessions + [
             FilterList.Item(id: "+add-machine", symbol: "plus.circle", title: "Add Machine…", section: "") {
+                WindowPages.adding = pages
                 SettingsRoute.shared.open(.machines, .machine(MachinePage.new))
             },
             FilterList.Item(id: "+edit-machines", symbol: "gearshape", title: "Edit Machines…", section: "") {
