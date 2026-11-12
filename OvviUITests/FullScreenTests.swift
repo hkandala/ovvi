@@ -29,21 +29,23 @@ extension OvviUITests {
         let back = pageText("ovvi-windowed-2"), card = element("browser.\(browser).card")
         XCTAssertTrue(back.exists(within: 5) && until(3) { card.frame.contains(back.frame) }, "\(card.frame)")
 
-        step("Floating preview: the player's own button, both ways")
+        step("Floating preview: the player's own button, Esc brings it back")
         let preview = try await split(browser)
         try await relabel(preview, "ovvi:explorer#e2efsp /private\(folder)/clip.mp4")
         let window = float(preview), player = window.webViews.firstMatch
         // The first preview card installs the plugin.
         XCTAssertTrue(player.buttons["Play"].exists(within: 30))
         player.buttons["Play"].click()
-        // The bar shows while the pointer is over the video, and again when the clip ends.
+        // The bar hides about when the 4 s clip ends, and stays once it ended.
+        XCTAssertTrue(player.buttons["Pause"].exists(within: 3) && player.buttons["Play"].exists(within: 10))
         let enter = player.buttons["Enter Full Screen"]
-        XCTAssertTrue(enter.exists(within: 8))
+        XCTAssertTrue(enter.exists(within: 3))
         keepScreen("preview video and its full-screen button")
         enter.click()
         XCTAssertTrue(exit.exists(within: 5))
         keepScreen("preview video full screen")
-        exit.click()
+        // Esc: WebKit's own Exit Full Screen ignored clicks at times in the VM, in Safari too.
+        app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(exit.vanishes(within: 5))
         XCTAssertTrue(until(3) { window.frame.contains(player.frame) && player.frame.width > 100 }, "\(player.frame)")
         keepScreen("preview back in its floating window")

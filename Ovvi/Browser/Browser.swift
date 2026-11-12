@@ -253,6 +253,8 @@ final class Browser: NSObject {
     }
 
     isolated deinit {
+        // A full-screen video outlives its closed card otherwise: WebKit's window holds the view.
+        view.closeAllMediaPresentations {}
         if let proxy {
             Task { await proxy.value?.closeProxy() }
         }

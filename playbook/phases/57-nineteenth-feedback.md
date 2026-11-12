@@ -2964,3 +2964,25 @@ ones".
   under the opened Agent after `git`, a pause and `pi`.
 - **For the user.** ⌘T, type `pi`: Agent opens with Pi selected; `file` selects File Explorer, `git` Git; Return opens
   it. Wait a second between words.
+
+### Track V2 (item 127)
+
+- **Cause.** A `WKWebView` has element full screen off by default: WebKit's player hid its full-screen button and a
+  page's `requestFullscreen` failed, in the browser card and in every plugin card (the File Explorer's preview already
+  draws `<video controls>`, so the plugin did not change).
+- **Fix.** `isElementFullscreenEnabled` on the two configurations the app makes (`BrowserView`, `WebCard`; a popup
+  takes its opener's). The video goes full screen in a space of its own and comes back to its card, also from a
+  floating window.
+- **Fix (review).** While full screen, WebKit's window has the web view: `WebHost.adopt` leaves it there (a tab switch
+  in the main window's space took it back and left the full-screen space black), Esc goes to WebKit even with a popup
+  open, and a card closed meanwhile ends the full screen (`closeAllMediaPresentations`) instead of playing on.
+- **Decisions.** A host made during full screen (a pane moved to another tab then) gets the view only at its next
+  show; WebKit puts it back in the old box. Not worth a watcher.
+- **WebKit's Exit Full Screen button.** In the VM it ignored every click on a video that the page's `requestFullscreen`
+  put in full screen, in Safari too (a probe test drove both), and some clicks after the player's own button; Esc always
+  worked. Not the app's: the test leaves full screen with Esc.
+- **Runs.** VM: the new test red on the old code (no "Exit Full Screen"), green with the fix, beside the preview and
+  popup tests. Pictures, dark and light: `~/Downloads/ovvi-research/p57v2/`.
+- **For the user.** Play a video in a browser card (YouTube's full-screen button or its F key) and in the File
+  Explorer's preview: full screen, Esc back, the card fine; once from a floating pane too. Check that the player's own
+  Exit Full Screen button works on your Mac (in the VM it did not always, in Safari too).

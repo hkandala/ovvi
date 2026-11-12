@@ -46,6 +46,11 @@ final class WebCard {
         }
     }
 
+    isolated deinit {
+        // A full-screen video outlives its closed card otherwise: WebKit's window holds the view.
+        view.closeAllMediaPresentations {}
+    }
+
     /// The user script also starts a page still loading or loaded again with the colors, so every first paint has them.
     func theme(_ css: String, _ theme: [String: Any]) {
         self.css = css

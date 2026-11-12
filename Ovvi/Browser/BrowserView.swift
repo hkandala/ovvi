@@ -100,7 +100,8 @@ class BrowserView: WKWebView {
 
     override func keyDown(with event: NSEvent) {
         opens = nil
-        if onKey?(event) != true {
+        // In full screen, Esc is WebKit's.
+        if fullscreenState != .notInFullscreen || onKey?(event) != true {
             super.keyDown(with: event)
         }
     }
@@ -236,8 +237,10 @@ struct WebHost: NSViewRepresentable {
 
     /// As `TerminalHost.adopt`: a shown host takes the web view, a hidden one only a view no host has, and takes it as
     /// its kept page comes into view.
+    /// In full screen, WebKit's window has the view, and puts it back in its box at the end.
     private func adopt(_ box: NSView) {
-        guard view.superview !== box, !hidden || view.superview == nil else { return }
+        guard view.fullscreenState == .notInFullscreen, view.superview !== box, !hidden || view.superview == nil
+        else { return }
         view.removeFromSuperview()
         // The new host's zero size would lay the page out again and draw it blank.
         if box.frame.isEmpty {
