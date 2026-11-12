@@ -2633,3 +2633,43 @@ ones".
   tree. No pictures: nothing looks different.
 - **For the user.** In a split, click the empty part of the other card's title row: it gets the border and takes
   typed keys. Drag the header to move it; double-click the header to zoom it.
+
+### Track E2 (items 102, 103, 107)
+
+- **102, Git.** "Commits in the history" now starts at 100 (was 500), and Show More reads as many again as the
+  setting (100 more by default) instead of 500.
+- **107, Markdown.** The pencil lock is a segmented control with words, **Read** | **Edit**, drawn like the mode's
+  segments beside it (`pane.<card>.lock.read`, `.lock.edit`). ⌘E and the setting work as before.
+- **103, the tree beside a file.** Row 2's old Show in File Explorer button is now **File Tree** (`sidebar.left`,
+  at the left, after Back and Forward). It shows the tree inside the same card, at the left of File, Preview or
+  Markdown. Each card has one tree (`side.ts`), outside the routed pages, so its open folders and its scroll stay
+  while the card shows one file after another. It reuses the tree page's code (`files.ts`) unchanged, through a
+  scoped `ovvi`: the header and ⌘F stay the file's, and a folder or `..` that the tree would open as the card's root
+  roots the sidebar instead. A click selects; a double-click on a file shows it in the card. **Close File** (`xmark`,
+  after the breadcrumbs) moves the card to the tree's page with the file selected. The setting "When a file opens"
+  (Show only the file, Show the file with the tree) is the start; the card keeps the user's choice and the width
+  (drag the edge, 140 pt to 60 %).
+- **Decisions.** The sidebar's root is the root of the tree page the card came from, else the file's folder. Close
+  File goes to the tree page, not to an empty card: "leaving the tree" is the tree page, and a double-click there
+  opens the next file with the sidebar again. Markdown's outline toggle moved to `list.bullet.indent`, so the row does
+  not show two `sidebar.left` icons. Close File sits after the breadcrumbs, as a tab's close button, away from the
+  card's own close button above the row's right end. The hidden sidebar uses `visibility`, as the runtime's pages
+  do, so it keeps its layout and scroll. No UI test sets the setting to "Show the file with the tree": it is one
+  condition, and changing a plugin setting in the tests' shared config folder would reach other tests.
+- **Review.** One blocker (the new test's iid had 7 characters, so its card stayed a terminal) and five shoulds
+  (Close File under the card's close, the hidden tree losing its scroll, keys left on a hidden row, Show Hidden
+  Files not reaching the sidebar, a check that could not fail), all fixed with most nits.
+- **Cause (FileTests).** `testAFileCardEditsSavesAndReloadsItsFile` waited only until the pane did not show
+  `printf`, which is also true before the shell echoes the line. On the slow VM the card opened before `git init`,
+  so its breadcrumbs started at `/`. It now waits for an echoed marker.
+- **Runs.** Tart VM: the new `testFileExplorerShowsTheTreeBesideAFile`, `testFileExplorerBrowsesOpensAndGoesBack`,
+  `testMarkdownCardReadsEditsSavesAndLinks` and `testGitHomeInitializesCommitsAllAndShowsMore` green; there
+  `testAFileCardEditsSavesAndReloadsItsFile` shows breadcrumbs from `/` (no repository found) also with the marker
+  wait, and is green on CI. Chosen-tests CI 43150501629: 6 tests, 0 failures (the five above and the Preview test).
+  `make lint build test`: HerdrKit's "a dropped follow stops its backlog" missed its bound twice at a load over 150,
+  green on the rerun. Pictures: the VM, dark and light, before and after (no before picture of Git: the old card
+  never finished loading in the VM).
+- **For the user.** Open a file from the tree, press File Tree, browse (go up with `..`, open folders with the
+  chevron or →), double-click files, collapse it, drag its edge, and press Close File. Set Settings ▸ Plugins ▸
+  File Explorer ▸ "When a file opens" to "Show the file with the tree" on a new card. Check Markdown's Read | Edit
+  in dark and light, and Git's Show More on a long history.
