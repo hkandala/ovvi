@@ -2607,7 +2607,9 @@ ones".
   is a step brighter than Afterglow's `#D0D0D0`. No change: JetBrains Mono, installed on the user's Mac, is in
   Settings' Font menu.
 - **Runs.** VM: a scratch look scene (not committed) on `4942f142^` and on the fix, Glass and Classic, dark and
-  light: text, ⌘ hover, selection. Ghostty.app in the VM with SF Mono and with its defaults.
+  light: text, ⌘ hover, selection. Ghostty.app in the VM with SF Mono and with its defaults. CI 43147471618 (chosen
+  tests, executed 3: the link test with its new ⌘⌥ steps, selected text, the floating link) green. Pictures:
+  `~/Downloads/ovvi-research/p57l2/`.
 - **For the user.** Select text in a pi or Claude Code pane, dark and light: one text color on the blue. Hold ⌘ over
   a link: a thin grey underline under the text. ⌘⌥-click a web link (default browser), a file (its app) and a folder
   (Finder); on a remote card a file says it is on that machine.
