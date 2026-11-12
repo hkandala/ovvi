@@ -2879,3 +2879,6 @@ ones".
   text looks like Ghostty.app's. A selection in pi now stops at the card's edge. Your own `terminalFont` is
   "JetBrains Mono" (the installed copy), so the menu lists it twice: pick the first, or quit Ovvi and run
   `defaults delete dev.ovvi.app terminalFont`. Read `fonts.html` and pick the font list.
+128. "in chat view one more thing, before when the message is in stil waiting to be sent like its waiting in queue
+     etc, message used to be shown bit less opacity or dimmed, and that changes to correct color once it submits, now i
+     don't see that, let's bring that back too" (Track C5).
