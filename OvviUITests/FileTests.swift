@@ -8,9 +8,9 @@ extension OvviUITests {
         let folder = "/tmp/ovvi-e2e-file", file = "\(folder)/src/main.swift"
         // git names the repository's root `/private/tmp/…`.
         try await send("rm -rf \(folder) && mkdir -p \(folder)/src && git -C \(folder) init -q "
-            + "&& printf 'struct Box {\\n    func open() {\\n        let x = 1\\n    }\\n}\\n' >\(file) && clear\r",
-            to: left)
-        try await waitFor(left) { !$0.contains("printf") }
+            + "&& printf 'struct Box {\\n    func open() {\\n        let x = 1\\n    }\\n}\\n' >\(file) && clear "
+            + "&& echo ready-$((6*7))\r", to: left)
+        try await waitFor(left) { $0.contains("ready-42") }
         sendAfter("rm -rf \(folder)\r", to: left)
         element("tab.\(tab)").click()
         let card = try await split(left)
