@@ -2787,3 +2787,16 @@ ones".
      think there are two sidebar icons showing the state right" (`.build/fb57/r8-sidebar-icon-11.59.07.png`; Track E3).
 118. "word wrap should be disabled by default in file editor" (Track E3).
 119. "for markdown outline icon, let's move it to top right where other markdownbuttons are" (Track E3).
+
+### Final CI, round 8
+
+- **Cause (Recent after the sort menu).** In Recent the sidebar holds the rows' order while the pointer is over the
+  list. The hold was taken whenever the pointer entered the list, also in Manual (herdr's order), and a switch to
+  Recent kept it. The menu's Recent item lies over the list, so the pointer came back within the hold's 1 s clear and
+  the rows kept Manual's order until it left: run 43171081544 picked Recent (teardown read "Recent") and showed alpha
+  above beta for 20 s with the pointer resting on alpha's row. Timing decided it: the same test passed in 43171070157.
+- **Fix.** A change of the sort takes the hold again in the new order, so a pick shows at once and agents' changes
+  still hold still under the pointer. The test hovers a row before it opens the menu, to take the Manual hold.
+- **Runs.** CI 43179476920 on the fix (the Recent test, agents by tab and place, the pointer after pins), green. The
+  old code with the sharper test passed too (43179470745): no cheap repro, as XCUITest opens the menu only by a click
+  that leaves the list.
