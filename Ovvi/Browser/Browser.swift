@@ -58,8 +58,7 @@ final class Browser: NSObject {
         remoteAlias = machine.isRemote ? Self.alias(machine.name) : nil
         let viaMac = machine.isRemote && Self.isViaMac(label, store)
         self.viaMac = viaMac
-        // ponytail: a spare for This Mac's store only; a remote machine's browser starts its own page process.
-        view = machine.isRemote && !viaMac ? BrowserView(store: Self.dataStore(machine)) : .spare(Self.thisMacView)
+        view = Self.view(viaMac ? .thisMac : machine)
         super.init()
         wire()
         Task { await start() }
@@ -308,7 +307,7 @@ extension Browser {
             Task { await proxy.value?.closeProxy() }
         }
         proxy = nil
-        view = BrowserView(store: Self.dataStore(viaMac ? .thisMac : store.machine))
+        view = Self.view(viaMac ? .thisMac : store.machine)
         (view.onKeyboard, view.pictured) = (old.onKeyboard, old.pictured)
         wire()
         closePopup()

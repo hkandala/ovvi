@@ -215,6 +215,8 @@ its page, for its overview tile and for a card made again:
   down to half the bound, and so do the kept terminals. A warning does
   nothing: macOS can send one every 30 minutes while memory is free, and a
   dropped card costs its next show 100–200 ms.
+- The two warm web views ([Other rules](#other-rules)) cost about 10 MB each, their
+  page processes with no page.
 - `spareWebCards` and `spareTerminals` (defaults, or `-spareWebCards N` at
   launch) set the two bounds.
 
@@ -509,20 +511,17 @@ gets the same card.
   network process, which all cards share, and one page process for each
   card. It starts the network process only after the first page process
   runs. On a busy Mac, the first start of these processes can take many
-  seconds. So 3 s after launch, if no web card is open, the app opens one
-  hidden empty page in This Mac's browser store, and WebKit starts its
-  processes for it. When the page answers, the app lets it go: its page
-  process ends, and the GPU and network processes stay for the cards. The
-  app never waits for these processes: a card keeps its loader or its
-  empty look until its page draws.
-- A new web view starts its page process at its first load, which takes
-  0.1 s to a few seconds on a busy Mac. So the app keeps one spare web view
-  for This Mac's browser cards and one for plugin cards, each with its page
-  process already running (started by a script, so the spare has no
-  history). A new card takes the spare, and the app starts the next one. So
-  a card that opens beside another (a ⌥-click on a link) draws its page
-  with no wait for a process. Both spares start 3 s after launch. A remote
-  machine's browser card starts its own page process.
+  seconds, and a new web view's page process takes 0.1 s to a few seconds.
+  So the app keeps two warm web views out of any window: one for This Mac's
+  browser cards and one for plugin cards. Each runs one script with no page,
+  so its page process starts (and with it the GPU and network processes),
+  and it keeps no history. A new card takes the warm view of its kind, and
+  the app starts the next one. So a card that opens beside another (a
+  ⌥-click on a link) draws its page with no wait for a page process. Both
+  start 3 s after launch, after the restored cards. A remote machine's
+  browser card that loads through the machine makes its own web view, with
+  its own page process. The app never waits for these processes: a card
+  keeps its loader or its empty look until its page draws.
 - When WebKit's GPU process stops answering (a busy Mac), WebKit gives up on
   it and starts another, but it cannot end the old one, and every page keeps
   drawing through it: each web card, browser and plugin, stays blank, also

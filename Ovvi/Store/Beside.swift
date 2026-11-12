@@ -151,14 +151,12 @@ extension HostStore {
                 // remote machine) ahead of the card.
                 let id = try await labeledTab(client, in: workspaceID, cwd: cwd, label: label)
                 do {
-                    let moved = try await client.move(pane: id, to: .tab(tabID, beside: target, split: direction))
+                    guard let moved = try await client.move(pane: id, to: .tab(tabID, beside: target, split: direction))
+                    else { throw HerdrError.failed("herdr named no pane") }
                     for index in ahead.moving.indices where ahead.moving[index].label == label.text {
                         ahead.moving[index].landed = true
                     }
-                    if let moved {
-                        return moved
-                    }
-                    return try await client.pane(id)
+                    return moved
                 } catch {
                     try? await client.close(pane: id)
                     throw error

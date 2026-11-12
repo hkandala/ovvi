@@ -28,10 +28,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             .map(ObjectIdentifier.init))
         PluginBuilds.writeTypes()
         Task { await DefaultPlugins.shared.install() }
-        // Usually after restored windows made their cards; if not, it costs one more page process.
+        // After restored windows made their cards and started their processes.
         Task {
             try? await Task.sleep(for: .seconds(3))
-            await Browser.prewarm()
+            Browser.prewarm()
         }
         // A quit with no window open saves none, so macOS opens none. SwiftUI's own first window may not be on
         // screen this early.

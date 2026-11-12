@@ -29,7 +29,7 @@ final class WebCard {
         self.arg = arg
         self.place = place
         self.store = store
-        view = .spare(Self.newView)
+        view = .take(Self.newView)
         view.underPageBackgroundColor = .clear
         view.setValue(false, forKey: "drawsBackground")
         view.isInspectable = true

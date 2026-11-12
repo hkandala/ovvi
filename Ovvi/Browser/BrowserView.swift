@@ -31,21 +31,23 @@ class BrowserView: WKWebView {
         allowsMagnification = true
     }
 
-    private static var spares: [ObjectIdentifier: BrowserView] = [:]
+    private static var warmViews: [ObjectIdentifier: BrowserView] = [:]
 
     /// A web view starts its page process at its first load: 0.1 s to seconds on a busy Mac, 1.4 s on CI, under the
-    /// new card's loader. So a new card takes a spare view whose process already runs, and the next spare starts. A
-    /// script, not a load, starts it: the spare keeps no history, and its next load keeps the process.
-    static func spare<View: BrowserView>(_ make: @escaping @MainActor @Sendable () -> View) -> View {
-        defer { Task { warm(make) } }
-        return spares.removeValue(forKey: ObjectIdentifier(View.self)) as? View ?? make()
+    /// new card's loader. So a new card takes a warm view, whose process already runs, and the next one starts. A
+    /// script, not a load, starts it: the view keeps no history, and its next load keeps the process. Only after a
+    /// warm one was taken: the first ones start with `Browser.prewarm`, after the restored cards' own processes.
+    static func take<View: BrowserView>(_ make: @escaping @MainActor @Sendable () -> View) -> View {
+        guard let view = warmViews.removeValue(forKey: ObjectIdentifier(View.self)) as? View else { return make() }
+        Task { warm(make) }
+        return view
     }
 
     static func warm<View: BrowserView>(_ make: () -> View) {
-        guard spares[ObjectIdentifier(View.self)] == nil else { return }
+        guard warmViews[ObjectIdentifier(View.self)] == nil else { return }
         let view = make()
         view.evaluateJavaScript("0")
-        spares[ObjectIdentifier(View.self)] = view
+        warmViews[ObjectIdentifier(View.self)] = view
     }
 
     static var focused: BrowserView? {

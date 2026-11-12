@@ -56,20 +56,21 @@ extension Browser {
     }
 
     /// WebKit starts the GPU and network processes that all web cards share with the first card, the network one only
-    /// once that card's page process runs, which can take many seconds on a busy Mac. One hidden page starts them
-    /// ahead of any card; its own page process ends with it.
-    static func prewarm() async {
+    /// once that card's page process runs, which can take many seconds on a busy Mac. The warm views' page processes
+    /// start them ahead of any card.
+    static func prewarm() {
         BrowserView.warm(thisMacView)
         BrowserView.warm(WebCard.newView)
-        guard PaneViewRegistry.recentWeb.isEmpty else { return }
-        let view = BrowserView(store: dataStore(.thisMac))
-        view.loadHTMLString("", baseURL: nil)
-        // Answers once its page process runs, which has asked for the network process by then.
-        await withCheckedContinuation { done in view.evaluateJavaScript("0") { _, _ in done.resume() } }
-        withExtendedLifetime(view) {}
     }
 
-    static func thisMacView() -> BrowserView {
+    /// ponytail: a warm view for This Mac's store only; a remote machine's browser that loads through the machine
+    /// starts its own page process (and reads its state and opens its proxy over SSH). Key the warm views by store if
+    /// that shows.
+    static func view(_ machine: Machine) -> BrowserView {
+        machine.isRemote ? BrowserView(store: dataStore(machine)) : .take(thisMacView)
+    }
+
+    private static func thisMacView() -> BrowserView {
         BrowserView(store: dataStore(.thisMac))
     }
 

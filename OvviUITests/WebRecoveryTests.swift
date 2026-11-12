@@ -84,21 +84,18 @@ extension OvviUITests {
 
     /// WebKit starts the GPU and network processes that all web cards share with the first card, the network one only
     /// once that card's page process runs, which can take many seconds on a busy Mac. The app starts them soon after
-    /// launch, with no card open, through one page process, which then ends.
+    /// launch, with no card open, through its two warm web views' page processes, which stay for the next cards.
     func testWebKitStartsAheadOfTheFirstWebCard() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         XCTAssertEqual(app.webViews.count, 0, "a web card is open")
-        var pages = 0
-        try await poll("the app's network process", times: 300) { () async throws -> Bool? in
-            pages = try await max(pages, web("web-pids", "").count)
-            return try await web("web-pids", "Networking").isEmpty ? nil : true
+        var pages = Set<String>()
+        try await poll("the app's network process and two page processes", times: 300) { () async throws -> Bool? in
+            pages = try await web("web-pids", "")
+            return try await pages.count == 2 && !web("web-pids", "Networking").isEmpty ? true : nil
         }
-        XCTAssertLessThanOrEqual(pages, 1, "page processes")
-        try await poll("the hidden page's process to end", times: 100) { () async throws -> Bool? in
-            try await web("web-pids", "").isEmpty ? true : nil
-        }
-        let network = try await web("web-pids", "Networking")
-        XCTAssertFalse(network.isEmpty, "the network process stays")
+        try await Task.sleep(for: .seconds(1))
+        let now = try await web("web-pids", "")
+        XCTAssertEqual(now, pages, "the warm views' page processes stay, and no other starts")
         XCTAssertEqual(app.webViews.count, 0, "a web card is open")
     }
 
