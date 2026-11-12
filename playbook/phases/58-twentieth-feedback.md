@@ -140,7 +140,9 @@ fails; lessons.md's rule makes it 60 s (round 8's final CI, '### Final CI, round
   move out of a tab even once a snapshot shows them, if the tab did not change since (cards move twice there: herdr's
   change shows first). Off: herdr's halves everywhere, as in its own window; ⌥⌘= still works.
 - **Decisions.** The setting also evens panes that other clients (herdr's window, `herdr pane split`, another Mac) open
-  or close in a session Ovvi shows, since the user asked for it "all the time". A replaced pane leaves its place to the
+  or close in a session Ovvi shows, since the user asked for it "all the time"; that includes another client's split
+  made with an explicit ratio. A pane that moves into a tab (its terminal already known) is not evened, so a tab the app
+  rebuilds pane by pane keeps its ratios. A replaced pane leaves its place to the
   new one, unevened. `SplitNode.closing` evens only the run the pane was in: a row that drops to one pane stays one
   unit of its column.
 - **Runs.** VM, the tile test with its new zoom count and the balance test: on the first build the zoom passed and the
