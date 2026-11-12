@@ -89,8 +89,16 @@ extension OvviUITests {
             turn("settings.terminal.copy", false)
         }
         openSettings("terminal")
+        // One alphabetical list, no separator, JetBrains Mono (libghostty's own) once.
+        let font = element("settings.terminal.font", in: settingsWindow)
+        XCTAssertTrue(font.exists(within: 3))
+        font.click()
+        let fonts = font.menuItems.allElementsBoundByIndex.map(\.title)
+        XCTAssertEqual(fonts, fonts.sorted { $0.localizedStandardCompare($1) == .orderedAscending })
+        XCTAssertEqual(fonts.filter { $0 == "JetBrains Mono" }.count, 1, "\(fonts)")
+        XCTAssertTrue(fonts.contains("SF Mono") && !fonts.contains(""), "\(fonts)")
         // Menlo's line is shorter than JetBrains Mono's: more rows (Monaco's has JetBrains Mono's height at 1x).
-        choose("settings.terminal.font", "Menlo")
+        font.menuItems["Menlo"].click()
         try await expect("the grid to change from \(grid)") { terminal.stringValue != grid }
         try await expectPTYSize("w1:p1")
         choose("settings.terminal.option", "Acts as Meta")

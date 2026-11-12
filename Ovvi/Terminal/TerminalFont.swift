@@ -31,7 +31,8 @@ extension PaneTerminal {
 
     static var fonts: [String] {
         let names = NSFontManager.shared.availableFontNames(with: .fixedPitchFontMask) ?? []
-        // The default (libghostty's own JetBrains Mono) and SF Mono are the first two choices already.
+        // The default (libghostty's own JetBrains Mono) and SF Mono are choices of their own: an installed copy would
+        // show twice.
         return Set(names.compactMap { NSFont(name: $0, size: 0)?.familyName }
             .filter { !$0.hasPrefix(".") && !["JetBrains Mono", "SF Mono"].contains($0) }).sorted()
     }

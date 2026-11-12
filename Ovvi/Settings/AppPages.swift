@@ -221,11 +221,7 @@ struct TerminalPage: View {
         Form {
             Section {
                 Picker(selection: settings.$terminalFont) {
-                    Text("JetBrains Mono").tag("")
-                    Text("SF Mono").tag(PaneTerminal.systemFont)
-                    Divider()
-                    ForEach(fonts + ((fonts + ["", PaneTerminal.systemFont]).contains(settings.terminalFont)
-                            ? [] : [settings.terminalFont]), id: \.self) { Text($0).tag($0) }
+                    ForEach(fontChoices, id: \.tag) { Text($0.name).tag($0.tag) }
                 } label: {
                     Text("Font")
                     Text("JetBrains Mono comes with Ovvi; the others are on this Mac.")
@@ -256,6 +252,15 @@ struct TerminalPage: View {
             }
         }
         .task { fonts = PaneTerminal.fonts }
+    }
+
+    /// One list in alphabetical order: libghostty's own JetBrains Mono (unset), SF Mono, this Mac's other monospaced
+    /// families, and a stored family this Mac lacks.
+    private var fontChoices: [(name: String, tag: String)] {
+        let stored = settings.terminalFont
+        let others = fonts + ((fonts + ["", PaneTerminal.systemFont]).contains(stored) ? [] : [stored])
+        return ([("JetBrains Mono", ""), ("SF Mono", PaneTerminal.systemFont)] + others.map { ($0, $0) })
+            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 }
 
