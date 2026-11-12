@@ -2788,6 +2788,48 @@ ones".
 118. "word wrap should be disabled by default in file editor" (Track E3).
 119. "for markdown outline icon, let's move it to top right where other markdownbuttons are" (Track E3).
 
+### Track E3 (items 115–119)
+
+- **Cause (115).** Pierre's tree cuts a long name in the middle: the stem with a "…" marker laid over its end, the
+  extension kept whole. The marker hides the letters under it with the row's own background, and our rows are clear
+  (`--truncate-marker-background-color: transparent`, so Glass's card shows through): the "…" and the letters below it
+  both drew ("AgentCard:swift").
+- **Fix (115).** The name is one line cut at its end, as in VS Code: CSS over Pierre's truncate markup in the trees'
+  shadow roots (its wrappers `display: contents`, its marker and its hidden copy gone), so the text ends in
+  `text-overflow: ellipsis`. A cut name gets its whole name as a tooltip, set on pointer moves only while it is cut. The
+  tree's page, the tree beside a file, the filter's matches and the sticky folders all use the same rows.
+- **Cause (116).** The card had two trees: the tree's page (a routed page per root) and the tree beside a file
+  (side.ts, its own tree). The first File Tree after opening a file drew a new tree and opened the file's folders one
+  by one, and folders opened in one never showed in the other. No page load was involved: the runtime keeps pages.
+- **Fix (116).** side.ts owns the card's trees, outside the routed pages, one per root (the last five, as the runtime
+  keeps pages). The tree's page is now an empty routed page: the same tree lays out over the whole card while it shows
+  (CSS on the shown page), and at the left beside a file. Row 2's controls and ⌘F of the page reach the tree; on the
+  page the tree's moves move the card, beside a file they root the side only. A tree of a new root draws hidden and
+  shows once it has its rows, and only if the card is still there. Hidden trees hold their watch calls, as kept pages
+  do.
+- **Fix (117–119).** A manifest toggle may name an `onSymbol`: that symbol while on, in the buttons' color, with no
+  accent. File Tree is `sidebar.left` hidden and `rectangle.leadingthird.inset.filled` shown (same size, so the button
+  does not move). Word Wrap starts off; its toggle stays. The outline toggle moved to the right group, before Rich Text
+  | Source and Read | Edit. Explorer 1.12.0.
+- **Decisions.** End ellipsis, as VS Code, not Pierre's middle cut (it keeps the extension, but needs an opaque row,
+  which Glass does not have). The tooltip only for a cut name, as the Finder does. Back to an older root shows its kept
+  tree as left, up to five roots. The pair of symbols follows VS Code's on and off layout icons; macOS's own sidebar
+  buttons use one symbol for both states.
+- **Review.** One blocker (a new root's tree switched in as its page started to draw: an empty tree under the old row
+  2) and two shoulds (rooting the side lost the file's selection; the new test's scroll could not tell old code from
+  new). All fixed, with most nits.
+- **Runs.** Chosen-tests CI 43188424253 on the reviewed head: 11 tests, 0 failures (the new
+  `testFileExplorerKeepsOneTreeForItsPageAndItsFiles`, every FilesTests and FinderTests explorer test, Markdown, File,
+  Preview and HTML). On the old code the new test fails twice over: the side is a fresh tree (no `out.o`, a different
+  scroll) and a folder opened beside the file is closed on the page. The Tart VM: the new test, File Tree beside a file,
+  Find and Markdown green; FileTests' crumbs start at `/` there (known, green on CI); a macOS "Dock Tile Extension
+  Added" banner in the VM took one float click (System Settings opened). Pictures from the VM, before and after, dark
+  and light. `make lint build test` green on the rebased tree.
+- **For the user.** Open a file from the tree, then File Tree: the same folders open, at the same scroll, no
+  animation. Open folders beside the file, press Close File: the page shows them open. Hover a cut name for its
+  tooltip. Check File Tree's two icons, Word Wrap off on a new card, and Markdown's outline toggle at the right, in dark
+  and light.
+
 ### Final CI, round 8
 
 - **Cause (Recent after the sort menu).** In Recent the sidebar holds the rows' order while the pointer is over the
