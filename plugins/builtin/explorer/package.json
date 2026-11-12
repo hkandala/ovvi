@@ -1,7 +1,7 @@
 {
   "name": "@ovvi/explorer",
   "license": "AGPL-3.0-only",
-  "version": "1.12.0",
+  "version": "1.13.0",
   "private": true,
   "description": "Files and folders",
   "keywords": ["files", "tree", "folder", "finder"],
@@ -65,7 +65,6 @@
       { "type": "toggle", "id": "tree", "symbol": "sidebar.left", "onSymbol": "rectangle.leadingthird.inset.filled",
         "title": "File Tree", "value": false, "hidden": true },
       { "type": "text", "id": "jump", "style": "path", "hidden": true },
-      { "type": "button", "id": "close-file", "symbol": "xmark", "title": "Close File", "hidden": true },
       { "type": "spacer", "id": "spacer", "hidden": true },
       { "type": "text", "id": "page", "style": "dim", "digits": "mono", "hidden": true },
       { "type": "button", "id": "zoom.fit", "symbol": "arrow.down.right.and.arrow.up.left", "title": "Zoom to Fit",

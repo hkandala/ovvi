@@ -89,7 +89,8 @@ export interface Ovvi {
 
   /** A header control or a command, as the user changed it: a click (no value), a toggle, a segment, a menu item, a
    *  field's text (`submit` on Return). */
-  on(event: "control", fn: (e: { id: string; value?: string | boolean; submit?: boolean }) => void): Off
+  /** `part`: the index of a path text's part that was clicked (`links`). */
+  on(event: "control", fn: (e: { id: string; value?: string | boolean; submit?: boolean; part?: number }) => void): Off
   /** The card moved to another place: after `card.go`, Back, Forward, or a rename from elsewhere. After Back, `at`
    *  is the place it came back from: that place's landing, else its argument. */
   on(event: "place", fn: (place: { arg: string; at?: string }) => void): Off
@@ -283,6 +284,8 @@ export interface Controls {
     /** What VoiceOver reads, when not the title ("Push, 1 ahead"); "" clears. */
     label?: string
     badge?: string | number
+    /** A path text: its first parts are buttons, which send `control` with their `part`. */
+    links?: number
     items?: MenuItem[]
     hidden?: boolean
     enabled?: boolean

@@ -180,10 +180,11 @@ export function sidebar(ovvi: Ovvi) {
       choose(ovvi, { side: on })
       show()
     },
-    /** Where a closed file leaves the card: the tree beside it, else the file's folder. */
+    /** Where a file closed from its path's folder leaves the card: the tree beside it, kept, when it holds the
+     *  folder, else that folder's tree. */
     rootFor(path: string) {
       const root = current?.root
-      return root && path.startsWith(root) ? root : folder(path)
+      return root && path.startsWith(root) ? root : path
     },
   }
 }

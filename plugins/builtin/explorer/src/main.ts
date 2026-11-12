@@ -12,9 +12,9 @@ type Kind = ReturnType<typeof kind>
 
 const CONTROLS: Record<Kind, string[]> = {
   files: ["root", "filter", "collapse", "hidden-files"],
-  file: ["tree", "jump", "close-file", "spacer", "wrap", "open-with"],
-  preview: ["tree", "jump", "close-file", "spacer", "open-with"],
-  markdown: ["tree", "jump", "close-file", "spacer", "mode", "lock", "open-with"],
+  file: ["tree", "jump", "spacer", "wrap", "open-with"],
+  preview: ["tree", "jump", "spacer", "open-with"],
+  markdown: ["tree", "jump", "spacer", "mode", "lock", "open-with"],
 }
 const ALL = manifest.header.map((control) => control.id)
 
@@ -27,8 +27,7 @@ export default async function main(ovvi: Ovvi) {
   const side = sidebar(ovvi)
   ovvi.on("control", ({ id, value }) => {
     const file = ovvi.card.arg, html = htmlPage(ovvi, file)
-    if (id === "close-file") ovvi.card.go(side.rootFor(file), { at: file })
-    else if (id === "tree") side.toggle(value === true)
+    if (id === "tree") side.toggle(value === true)
     else if (id === "browser" && html) open(ovvi, html, "card", "browser")
   })
   await ovvi.pages.route(async (page) => {
@@ -57,7 +56,13 @@ export default async function main(ovvi: Ovvi) {
     const read = place === "file" || place === "markdown" ? ovvi.files.read(arg) : undefined
     read?.catch(() => undefined)
     const [code, crumbs] = await Promise.all([load(place), trail(scoped, arg)])
-    scoped.controls.set("jump", { value: crumbs, symbol: "" })
+    // Each folder in the path closes the file: the card shows the tree, with the file selected.
+    scoped.controls.set("jump", { value: crumbs, symbol: "", links: crumbs.length - 1 })
+    scoped.on("control", ({ id, part }) => {
+      if (id !== "jump" || part === undefined) return
+      const folder = `${arg.split("/").slice(0, part + 1 - crumbs.length).join("/")}/`
+      ovvi.card.go(side.rootFor(folder), { at: arg })
+    })
     const reveal = await code.show(Object.assign(page, { read, trail: crumbs }))
     if (reveal) scoped.on("place", ({ at }) => at && reveal(at))
   })

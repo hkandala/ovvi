@@ -121,6 +121,7 @@ private struct HeaderItem: View {
         .accessibilityLabel(control.label ?? control.title ?? "")
     }
 
+    @ViewBuilder
     private var text: some View {
         let path = control.style == "path"
         let parts: [String] = switch control.value {
@@ -128,9 +129,10 @@ private struct HeaderItem: View {
         case let .text(text): [text]
         default: []
         }
+        let links = path ? min(control.links ?? 0, max(parts.count - 1, 0)) : 0
         let chevron = Text(" › ").foregroundStyle(.tertiary)
         let symbol = control.symbol.map { Text("\(Text(Image(symbol: $0)).foregroundStyle(.secondary)) ") }
-        let shown = parts.indices.reduce(Text("")) { line, index in
+        let shown = parts.indices.dropFirst(links).reduce(Text("")) { line, index in
             var part = Text(parts[index])
             if index == parts.count - 1, let symbol {
                 part = Text("\(symbol)\(part)")
@@ -138,11 +140,31 @@ private struct HeaderItem: View {
             if path ? index == 0 : control.style == "dim" {
                 part = part.foregroundStyle(.secondary)
             }
-            return index == 0 ? part : Text("\(line)\(chevron)\(part)")
+            return index == links ? part : Text("\(line)\(chevron)\(part)")
         }
-        return (control.digits == "mono" ? shown.monospacedDigit() : shown).fontWeight(.regular).lineLimit(1)
+        let rest = (control.digits == "mono" ? shown.monospacedDigit() : shown).fontWeight(.regular).lineLimit(1)
             .truncationMode(.middle)
+        if links == 0 {
+            rest.accessibilityValue(parts.joined(separator: " › "))
+        } else {
+            // A folder's part is a button, with the buttons' hover: 3 pt around its text, so the text sits as before.
+            HStack(spacing: 0) {
+                ForEach(0 ..< links, id: \.self) { index in
+                    Button { plugin.header.click(control.id ?? "", part: index) } label: {
+                        Text(parts[index]).foregroundStyle(index == 0 ? .secondary : .primary).lineLimit(1)
+                            .truncationMode(.middle).padding(.horizontal, 3).padding(.vertical, 2)
+                    }
+                    .buttonStyle(ChromeStyle(radius: 5))
+                    .pointerStyle(.link)
+                    .accessibilityIdentifier("pane.\(plugin.paneID).\(control.id ?? "").\(index)")
+                    Text("›").foregroundStyle(.tertiary)
+                }
+                rest.padding(.leading, 3).layoutPriority(1)
+            }
+            .padding(.leading, -3)
+            .accessibilityElement(children: .contain)
             .accessibilityValue(parts.joined(separator: " › "))
+        }
     }
 
     @ViewBuilder

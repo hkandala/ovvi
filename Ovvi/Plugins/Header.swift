@@ -48,6 +48,7 @@ final class Header {
             let text = (badge as? NSNumber)?.stringValue ?? badge as? String ?? ""
             control.badge = text.isEmpty || text == "0" ? nil : text
         }
+        control.links = change["links"] as? Int ?? control.links
         if let items = change["items"] as? [Any] {
             control.items = items.map { PluginManifest.Item(json: $0) }
         }
@@ -61,6 +62,10 @@ final class Header {
             self[keyPath: path][id, default: 0] += 1
         }
         changed?()
+    }
+
+    func click(_ id: String, part: Int) {
+        send?(["id": id, "part": part])
     }
 
     func pick(_ id: String, _ value: PluginManifest.Value?, submit: Bool = false) {

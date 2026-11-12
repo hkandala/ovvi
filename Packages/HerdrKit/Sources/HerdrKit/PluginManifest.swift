@@ -55,6 +55,8 @@ public struct PluginManifest: Decodable, Sendable, Equatable {
         public var placeholder: String?
         public var style: String?
         public var digits: String?
+        /// A path text's first parts that are buttons.
+        public var links: Int?
         public var gap: Double?
         public var hidden: Bool?
         public var enabled: Bool?

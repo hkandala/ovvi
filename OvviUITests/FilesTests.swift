@@ -39,7 +39,12 @@ extension OvviUITests {
         keepScreenshot("file explorer file")
 
         try await backAndForward(card, tree, file, root)
-        element("pane.\(card).close-file").click()
+        // Each folder in the path is a button; the file's name is not.
+        XCTAssertTrue(element("pane.\(card).jump.2").exists(within: 3))
+        XCTAssertFalse(element("pane.\(card).jump.3").exists)
+        element("pane.\(card).jump.1").hover()
+        keepScreenshot("a folder in the path, under the pointer")
+        element("pane.\(card).jump.1").click()
         try await labelEnds(card, " \(root)/")
         XCTAssertTrue(row("main.swift", in: tree).exists(within: 10))
         XCTAssertTrue(until(3) { hasKeyboard(row("main.swift", in: tree)) })
@@ -144,7 +149,7 @@ extension OvviUITests {
 
         step("Back on the tree's page: the folder opened beside the file is open")
         toggle.click()
-        element("pane.\(card).close-file").click()
+        element("pane.\(card).jump.0").click()
         try await labelEnds(card, " \(root)/")
         XCTAssertTrue(row("f20.txt", in: tree).exists(within: 5))
         tree.scroll(byDeltaX: 0, deltaY: 2000)
@@ -174,7 +179,7 @@ extension OvviUITests {
         app.typeKey("z", modifierFlags: .command)
         toggle.click()
         XCTAssertTrue(row("a.txt", in: file).exists(within: 3))
-        element("pane.\(card).close-file").click()
+        element("pane.\(card).jump.2").click()
         try await labelEnds(card, " \(root)/")
         XCTAssertTrue(row("main.swift", in: tree).exists(within: 10))
         row("a.txt", in: tree).doubleClick()

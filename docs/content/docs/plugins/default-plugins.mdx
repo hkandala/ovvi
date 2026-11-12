@@ -126,7 +126,7 @@ the click.
 | the tree: a folder | double-click, ⌘O, ⌘↓, ⌘-click, ⌥-click, or Open as Root | the tree rooted there |
 | the tree beside a file: a file | double-click, ⌘O or ⌘↓ | the file, with its page; the tree stays |
 | the tree beside a file: a folder | double-click, ⌘O, ⌘↓, or Open as Root | the tree beside the file, rooted there; the card stays |
-| a file's **Close File** | click | the tree, with the file selected ([The tree beside a file](#the-tree-beside-a-file)) |
+| a folder in a file's breadcrumbs | click | the tree, with the file selected ([The tree beside a file](#the-tree-beside-a-file)) |
 | an HTML file's **Open in Browser** | click | the file's page in a browser pane, in a new tab |
 | the Git home: a change | click | the Working Tree diff, scrolled to that file |
 | the Git home: **Working Tree** | click | the Working Tree diff |
@@ -289,9 +289,11 @@ File, Preview and Markdown share one row 2, with the same order, spacing and
 - **On the left:** Back and Forward, **File Tree** (`sidebar.left` while
   [the tree](#the-tree-beside-a-file) is hidden,
   `rectangle.leadingthird.inset.filled` while it shows beside the file, both
-  in the card buttons' color), the breadcrumbs, then **Close File** (`xmark`: it closes the file and leaves the
-  tree, as an editor tab's close button after its name; Back returns to the
-  file).
+  in the card buttons' color), then the breadcrumbs. Each folder in them is a
+  button, with the buttons' hover and the pointing hand: a click closes the
+  file and leaves the tree ([The tree beside a file](#the-tree-beside-a-file));
+  Back returns to the file. The file's own name, and File's scope after it,
+  are text.
 - **On the right:** Preview's page and zoom, Word Wrap (File only),
   **Open in Browser** (`globe`, File on an HTML file on This
   Mac only: the page in a browser pane in a new tab, selected), the outline
@@ -451,10 +453,12 @@ choice follows the setting "When a file opens" (Show only the file).
   in the card, as the tree's page does, and the tree selects it. ⌘ and ⌥ open as
   in [Opening](#opening). A file that the card shows from elsewhere (Back, a
   Markdown link) is selected too, when it is under the root.
-- **Close File** (`xmark`, after the breadcrumbs) moves the card to the tree's
-  page, rooted where the tree beside the file is (else at the file's folder),
-  with the file selected. Unsaved edits ask first. On the tree's page the
-  sidebar does not show.
+- **A folder in the breadcrumbs** closes the file: the card shows the tree's
+  page with the file selected. A folder inside the tree beside the file shows
+  that tree, as it was (its open folders and scroll kept); a folder above it,
+  or any folder while the card has no tree yet, shows a tree rooted at that
+  folder. Unsaved edits ask first. On the tree's page the sidebar does not
+  show.
 
 ### File
 
