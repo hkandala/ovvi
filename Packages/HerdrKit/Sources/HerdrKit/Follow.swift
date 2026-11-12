@@ -15,6 +15,8 @@ public enum FollowedLine: Sendable {
     case opened(FileMark, restarted: Bool)
     case line(String, FileMark)
     case loaded
+    /// The file does not exist yet; it is waited for.
+    case missing
 }
 
 public extension Exec {
@@ -35,6 +37,10 @@ public extension Exec {
             }
             var mark = mark, end = Int.max
             for await line in lines {
+                if line == "ovvi-missing" {
+                    yield(.missing)
+                    continue
+                }
                 if line.hasPrefix("ovvi-follow ") {
                     let parts = line.split(separator: " ")
                     guard parts.count == 4, let offset = Int(parts[2]), let opened = Int(parts[3]) else { continue }
@@ -93,6 +99,7 @@ public extension Exec {
     static var followScript: String {
         #"""
         f=$1; case $f in /*) ;; *) f=$HOME/$f ;; esac
+        [ -f "$f" ] || echo ovvi-missing
         while [ ! -f "$f" ]; do sleep 0.5; done
         n=$(ls -i "$f" | awk '{print $1}'); s=$(wc -c <"$f" | tr -d ' '); o=$2
         [ "$n" = "$3" ] && [ "$s" -ge "$o" ] || o=0

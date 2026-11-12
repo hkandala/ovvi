@@ -129,12 +129,7 @@ extension Chat {
                 guard case let .line(text, mark) = line else {
                     torn = await read(run, torn: torn, source: source, parser: parser)
                     run = []
-                    if case let .opened(_, again) = line {
-                        opened(again: again, parser: parser)
-                    } else {
-                        showBacklog()
-                        current = true
-                    }
+                    take(line, parser: parser)
                     continue
                 }
                 run.append((text, mark))
@@ -149,11 +144,19 @@ extension Chat {
         }
     }
 
-    /// Claude Code and pi write the file with the first message; the empty chat shows its glyph until then.
-    private func opened(again: Bool, parser: Parser<some Any>) {
-        (loading, backlog) = (true, again ? ChatHistory() : history)
-        if again, !history.entries.isEmpty {
-            parser.restarted()
+    private func take(_ line: FollowedLine, parser: Parser<some Any>) {
+        switch line {
+        case let .opened(_, again):
+            (loading, backlog) = (true, again ? ChatHistory() : history)
+            if again, !history.entries.isEmpty {
+                parser.restarted()
+            }
+        case .loaded:
+            showBacklog()
+            current = true
+        // Not written yet: Claude Code and pi write it with the first message, so the chat has no history.
+        case .missing: current = true
+        case .line: break
         }
     }
 

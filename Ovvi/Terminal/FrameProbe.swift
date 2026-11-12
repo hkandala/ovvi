@@ -14,6 +14,8 @@ final class FrameProbe {
     @ObservationIgnored private var start = 0.0
     @ObservationIgnored private var samples: [ObjectIdentifier: [Sample?]] = [:]
     @ObservationIgnored private var inks: [String: [Bool]?] = [:]
+    /// Commits that drew the TUI of a card whose chat is picked.
+    @ObservationIgnored private var tuis = 0
 
     private struct Sample: Equatable {
         let ink: [Bool]?
@@ -48,10 +50,13 @@ final class FrameProbe {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { self.turned() }
         }
         guard now - start < 1.5 else { return finish() }
-        let ids = page.store.panes.filter { $0.tabID == page.selectedTab?.id && !page.floats($0) }
-            .compactMap(\.terminalID)
-        for terminal in pages.terminals.terminals(Set(ids)) {
+        let panes = page.store.panes.filter { $0.tabID == page.selectedTab?.id && !page.floats($0) }
+        for terminalID in Set(panes.compactMap(\.terminalID)) {
+            guard let terminal = pages.terminals.terminals([terminalID]).first else { continue }
             let sample = sample(terminal.view, in: window), id = ObjectIdentifier(terminal)
+            if sample != nil, page.store.chats[terminalID]?.showsChat == true {
+                tuis += 1
+            }
             if samples[id]?.last != .some(sample) {
                 samples[id, default: []].append(sample)
             }
@@ -79,7 +84,7 @@ final class FrameProbe {
 
     private func finish() {
         guard let shown, !samples.isEmpty else { return }
-        var bad = 0, frames = 0, codes = ""
+        var bad = tuis, frames = 0, codes = String(repeating: "t", count: tuis)
         for list in samples.values {
             guard let first = list.first, let last = list.last ?? nil else { continue }
             frames = max(frames, list.count)
@@ -105,6 +110,7 @@ final class FrameProbe {
         recorded += (recorded.isEmpty ? "" : "; ") + "\(shown.tab) \(bad)/\(frames) \(codes)"
         samples = [:]
         inks = [:]
+        tuis = 0
     }
 
     private static func ink(_ surface: IOSurface) -> [Bool]? {

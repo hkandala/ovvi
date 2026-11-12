@@ -80,14 +80,18 @@ private extension ChatHistory {
     var branched: Bool {
         users == ["Run the bash command 'echo hi > a.txt', then edit a.txt replacing hi with bye, then reply with "
             + "just: done", "Reply with just: branched"]
-            && entries.last?.kind == ChatEntry.Kind.reply("branched") && !entries.contains { $0.kind == .reply("done") }
+            && lastReply == .reply("branched") && !entries.contains { $0.kind == .reply("done") }
+    }
+
+    var lastReply: ChatEntry.Kind? {
+        entries.last { $0.row?.kind == "reply" }?.kind
     }
 }
 
 @Test func `the history is the branch from the leaf, also after a tree move`() throws {
     var read = try transcript("pi-tree", upTo: "19d90989")
     #expect(read.history.users.count == 2 && read.history.notes.count == 5)
-    #expect(read.history.entries.last?.kind == ChatEntry.Kind.reply("done"))
+    #expect(read.history.lastReply == .reply("done"))
 
     read.transcript.tree("6636acff", at: read.end, into: &read.history)
     #expect(read.history.movedBack)
@@ -153,4 +157,13 @@ private extension ChatHistory {
     #expect(second.map(\.name) == ["edit", "bash"] && second[0].target == "b.txt" && second[1].target == "echo hi")
     #expect(history.tools.last?.calls.map(\.target) == ["big.md"])
     #expect(ChatTool.summary(history.tools) == "Ran 4 commands, read 1 file, fetched 1 web page, +2 more, 1 failed")
+}
+
+/// pi records no turn's end: its final reply (`stopReason` stop) is one, timed from the turn's message.
+@Test func `each pi turn that ends in a final reply ends in its Worked`() throws {
+    let history = try transcript("pi-session").history
+    #expect(history.turnKinds == [["stack", "reply", "worked", "stack"], ["stack", "note"]])
+    guard case let .worked(_, seconds)? = history.rows().first(where: { $0.kind == "worked" }) else { return }
+    #expect(seconds > 0 && seconds < 600, "\(seconds)")
+    #expect(try transcript("pi-tree").history.turnKinds.last == ["stack", "reply", "worked"])
 }

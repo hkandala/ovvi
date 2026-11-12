@@ -30,6 +30,8 @@ private func lineByLine(_ path: String, from mark: FileMark,
     }
 
     var lines = try await lineByLine(file.path, from: FileMark()).makeAsyncIterator()
+    // A file not written yet says so, then is waited for.
+    guard case .missing? = await lines.next() else { Issue.record("not missing"); return }
     try Data("a\n{\"b\":".utf8).write(to: file)
     guard case let .opened(first, restarted)? = await lines.next() else { Issue.record("not opened"); return }
     #expect(restarted && first.offset == 0)

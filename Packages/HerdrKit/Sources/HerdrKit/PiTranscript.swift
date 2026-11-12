@@ -22,6 +22,8 @@ public struct PiTranscript: Sendable {
         case finish(id: String, result: String, failed: Bool, diff: [ChatTool.DiffLine], output: String,
                     calls: [ChatTool] = [], time: Date?)
         case model(String, effort: String?)
+        /// The turn's final reply: its time from the turn's message, known only on the branch.
+        case end(id: String, time: Date?)
     }
 
     /// The entry becomes the leaf: pi appends to its leaf.
@@ -89,6 +91,10 @@ public struct PiTranscript: Sendable {
             case let .model(model, effort):
                 history.model = model
                 history.effort = effort
+            case let .end(id, time):
+                let start = history.entries.last { $0.user != nil }?.time
+                let seconds = time.flatMap { end in start.map { end.timeIntervalSince($0) } } ?? 0
+                history.append(ChatEntry(id: id, .turnEnd(seconds: seconds), time: time))
             }
         }
     }
@@ -143,17 +149,21 @@ public struct PiTranscript: Sendable {
             default: break
             }
         }
-        // Esc while it streams is `aborted`; Esc during a tool is an error that says so.
+        return steps + [end(message, id: "\(id).end", time: time)].compactMap(\.self)
+    }
+
+    /// The final reply ends the turn; Esc while it streams is `aborted`, Esc during a tool an error that says so.
+    private func end(_ message: [String: Any], id: String, time: Date?) -> Step? {
         let error = message["errorMessage"] as? String ?? ""
         switch message["stopReason"] as? String {
-        case "aborted": steps.append(.add(ChatEntry(id: "\(id).end", .note("Interrupted", failed: false), time: time)))
+        case "stop", "length": return .end(id: id, time: time)
+        case "aborted": return .add(ChatEntry(id: id, .note("Interrupted", failed: false), time: time))
         case "error":
             let note = error.contains("aborted") ? ChatEntry.Kind.note("Interrupted", failed: false)
                 : .note(ChatHistory.firstLine(error.isEmpty ? "Error" : error), failed: true)
-            steps.append(.add(ChatEntry(id: "\(id).end", note, time: time)))
-        default: break
+            return .add(ChatEntry(id: id, note, time: time))
+        default: return nil
         }
-        return steps
     }
 
     private func tool(_ block: [String: Any], id: String, time: Date?) -> ChatTool {

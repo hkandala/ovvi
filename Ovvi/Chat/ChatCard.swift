@@ -11,20 +11,19 @@ extension HostStore {
             }
             return chat
         }
-        let chat = Chat(adapter: adapter, paneID: pane.id, terminalID: terminalID, store: self)
-        chat.showsChat = launches[terminalID].map { $0.opensChat && $0.token == adapter.token } == true
+        let launch = launches[terminalID].flatMap { $0.token == adapter.token ? $0 : nil }
+        // A new conversation only from a launch that resumed nothing.
+        let chat = Chat(adapter: adapter, paneID: pane.id, terminalID: terminalID, store: self,
+                        current: launch?.fresh == true)
+        chat.showsChat = launch?.opensChat == true
         chats[terminalID] = chat
         return chat
     }
 }
 
 extension Page {
+    /// Chat is picked; it shows a loader until its history is current.
     func shownChat(_ pane: HostStore.Pane) -> Chat? {
-        pickedChat(pane).flatMap { $0.current ? $0 : nil }
-    }
-
-    /// Chat is picked: the card shows it once its history is current (`Chat.catchUp`).
-    func pickedChat(_ pane: HostStore.Pane) -> Chat? {
         guard store.chooser(pane.id) == nil, !floats(pane), let chat = store.chat(pane),
               chat.showsChat else { return nil }
         return chat

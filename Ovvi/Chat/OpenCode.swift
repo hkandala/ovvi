@@ -98,6 +98,10 @@ struct OpenCode: ChatAdapter {
                         chat.source = source
                         chat.problem = chat.problem?.hasPrefix(Self.serverProblem) == true ? nil : chat.problem
                     }
+                    // No session yet: a new conversation.
+                    if session == nil {
+                        chat.current = true
+                    }
                     server = session.map { session in
                         Task {
                             while !Task.isCancelled {

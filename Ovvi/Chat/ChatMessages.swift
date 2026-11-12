@@ -43,16 +43,17 @@ struct ChatMessages: View, Equatable {
     }
 
     var body: some View {
-        // The reply box and the header sit in the middle until the first message, also while a history loads: a load
-        // that ends empty moves nothing.
-        let welcome = chat.history.entries.isEmpty && chat.outgoing.isEmpty && chat.problem == nil
+        // A chat that may have a history shows a loader until it is read; a new one, the header and the reply box in
+        // the middle until the first message, also while its empty transcript loads (a new Codex or OpenCode chat).
+        let reading = !chat.current && chat.problem == nil
+        let welcome = !reading && chat.history.entries.isEmpty && chat.outgoing.isEmpty && chat.problem == nil
         return Group {
             // No scroll view until there is something to show: one made empty keeps the top inset that held its empty
             // content at the bottom after a long history loads, a blank above the messages.
             if !drawn {
                 Color.clear.task { drawn = true }
-            } else if chat.history.entries.isEmpty, chat.outgoing.isEmpty, chat.loading || chat.problem == nil {
-                empty(loading: chat.loading && !welcome)
+            } else if reading || welcome {
+                empty(loading: reading)
             } else {
                 // Also while the transcript a sent message starts loads (Claude Code and pi write it with the first
                 // message): a spinner in its place took the message away right after it rose.
@@ -94,15 +95,18 @@ struct ChatMessages: View, Equatable {
     }
 
     private var header: some View {
-        HStack(spacing: 10) {
-            if chat.loading {
-                Loader()
-            } else if let pane = page.store.pane(chat.paneID) {
-                ProgramGlyph(icon: pane.iconID, letter: pane.letter, size: 34)
-                Text(phrase).font(.system(size: 26, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.6)
+        VStack(spacing: 14) {
+            if let pane = page.store.pane(chat.paneID) {
+                ProgramGlyph(icon: pane.iconID, letter: pane.letter, size: 64).opacity(chat.loading ? 0 : 0.5)
+                    .overlay {
+                        if chat.loading {
+                            Loader()
+                        }
+                    }
             }
+            Text(phrase).font(.system(size: 26, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.6)
+                .opacity(chat.loading ? 0 : 1)
         }
-        .frame(height: 34)
         .readableText(chat.loading ? "" : phrase)
         .accessibilityIdentifier("chat.\(chat.paneID).empty")
     }
@@ -110,7 +114,7 @@ struct ChatMessages: View, Equatable {
     private func empty(loading: Bool) -> some View {
         Color.clear.overlay {
             if loading {
-                Loader()
+                Loader(id: "chat.\(chat.paneID).loading", delay: .milliseconds(300))
             }
         }
         .onAppear {
@@ -120,7 +124,7 @@ struct ChatMessages: View, Equatable {
     }
 
     private var messages: some View {
-        let rows = chat.history.rows(working: chat.phase == .working)
+        let rows = chat.history.rows()
         let kept = first.flatMap { id in rows.firstIndex { $0.id == id } }
         let start = kept ?? Self.start(rows[...])
         // ponytail: once pinned, a chat open for hours lays out every row since; cut it again at the exact bottom if a
@@ -147,7 +151,7 @@ struct ChatMessages: View, Equatable {
                             outgoing(message, error: error)
                         }
                         if chat.phase == .working {
-                            WorkingRow(since: chat.outgoing.isEmpty ? chat.history.lastTurnStart : nil)
+                            WorkingRow(since: chat.history.turnStart)
                         }
                         if let problem = chat.problem {
                             problemCard(problem, error: error)
@@ -286,8 +290,10 @@ struct ChatMessages: View, Equatable {
     private var topPadding: CGFloat {
         floats ? 28 : 16
     }
+}
 
-    private func outgoing(_ message: Chat.Outgoing, error: Color) -> some View {
+private extension ChatMessages {
+    func outgoing(_ message: Chat.Outgoing, error: Color) -> some View {
         VStack(alignment: .trailing, spacing: 4) {
             UserBubble(text: message.text, paneID: chat.paneID, sending: true)
             if message.notSent {
@@ -299,7 +305,7 @@ struct ChatMessages: View, Equatable {
         .padding(.vertical, 8)
     }
 
-    private func problemCard(_ problem: String, error: Color) -> some View {
+    func problemCard(_ problem: String, error: Color) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Label("The chat cannot read this session", systemImage: "xmark.circle.fill")
                 .font(.system(size: 13, weight: .semibold)).foregroundStyle(error)

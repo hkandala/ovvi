@@ -154,12 +154,7 @@ private enum Inline {
         markup.children.reduce(into: AttributedString()) { result, child in
             switch child {
             case let text as Markdown::Text: result += ChatLinks.linked(text.string)
-            case let code as InlineCode:
-                // A monospaced face reads larger.
-                var code = ChatLinks.linked(code.code)
-                code.font = .system(size: size * 0.9, design: .monospaced)
-                code.backgroundColor = .primary.opacity(0.08)
-                result += code
+            case let code as InlineCode: result += Self.code(code.code, size: size)
             case is Emphasis: result += styled(child, size, .emphasized)
             case is Strong: result += styled(child, size, .stronglyEmphasized)
             case is Strikethrough: result += styled(child, size, .strikethrough)
@@ -180,6 +175,16 @@ private enum Inline {
             default: result += AttributedString((child as? InlineMarkup)?.plainText ?? "")
             }
         }
+    }
+
+    /// A monospaced face reads larger. A link in it looks as any link does, with no code fill behind it.
+    private static func code(_ text: String, size: CGFloat) -> AttributedString {
+        var code = ChatLinks.linked(text)
+        code.font = .system(size: size * 0.9, design: .monospaced)
+        for run in code.runs where run.link == nil {
+            code[run.range].backgroundColor = .primary.opacity(0.08)
+        }
+        return code
     }
 
     private static func styled(_ markup: any Markup, _ size: CGFloat,

@@ -24,7 +24,7 @@ struct ChatRowView: View, Equatable {
             ToolStack(counts: counts, steps: steps, paneID: paneID, toggle: toggle, opened: opened,
                       toggleTool: toggleTool)
         case let .worked(_, seconds):
-            let text = seconds.map { "Worked " + ChatHistory.duration($0) } ?? "Worked"
+            let text = "Worked " + ChatHistory.duration(seconds)
             Text(text).font(.system(size: 12)).foregroundStyle(.secondary)
                 .readableText(text)
                 .accessibilityIdentifier("chat.\(paneID).worked")

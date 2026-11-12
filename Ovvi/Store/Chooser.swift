@@ -283,13 +283,13 @@ extension HostStore {
                     line = next
                     sent = clock.now
                     chooser.typed = true
-                    launched(id, agent, chooser, line: line)
+                    launched(id, agent, chooser, line: line, fresh: plain)
                     continue
                 }
                 if let pane = try? await client.pane(id), pane.agent != nil,
                    pane.agentStatus.map({ $0 != .unknown }) == true
                 {
-                    launched(id, agent, chooser, line: line)
+                    launched(id, agent, chooser, line: line, fresh: plain)
                     // Its launch marker ahead of the loader's end, so a chat pane shows its chat at once.
                     await askProgram(id, soon: true)
                     return .agent

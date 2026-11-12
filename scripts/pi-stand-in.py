@@ -59,10 +59,13 @@ def play(text, turn):
     entry("user", at=at, content=[{"type": "text", "text": text}])
     line(state, {"type": "working"})
     stand_in.report("working")
-    for step in turn["steps"]:
+    for index, step in enumerate(turn["steps"]):
         started, at = at, at + step.get("secs", 2)
         if "text" in step:
-            assistant([{"type": "text", "text": step["text"]}], "stop", model=turn["model"], at=at)
+            # As pi: only the turn's final reply stops it.
+            final = index == len(turn["steps"]) - 1 and not turn.get("working")
+            assistant([{"type": "text", "text": step["text"]}], "stop" if final else "toolUse", model=turn["model"],
+                      at=at)
             continue
         call = "toolu_" + uuid.uuid4().hex[:12]
         assistant([{"type": "toolCall", "id": call, "name": step["tool"], "arguments": step["arguments"]}], "toolUse",
@@ -151,7 +154,7 @@ def tools():
              ("codemode", {"code": "await tools.read({path: 'c.txt'})"},
               {"calls": [{"id": "c/1", "name": "read", "args": '{"path":"c.txt"}', "status": "ok", "durationMs": 9}]}),
              ("agent_start", {"name": "helper", "message": {"text": "hi"}}, {})]
-    assistant([{"type": "thinking", "thinking": "Plan.", "thinkingSignature": "x"}], "stop")
+    assistant([{"type": "thinking", "thinking": "Plan.", "thinkingSignature": "x"}], "toolUse")
     for name, arguments, details in calls:
         call = "toolu_" + uuid.uuid4().hex[:12]
         assistant([{"type": "toolCall", "id": call, "name": name, "arguments": arguments}], "toolUse")

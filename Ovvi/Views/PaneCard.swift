@@ -92,11 +92,6 @@ struct PaneCard: View {
                             TerminalItems(view: terminal.view)
                             PaneItems(page: page, pane: pane)
                         }
-                        .onChange(of: pane.flatMap(page.pickedChat)?.current == false, initial: true) {
-                            if $1, let pane {
-                                page.pickedChat(pane)?.catchUp()
-                            }
-                        }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity).environment(\.litCard, lit)

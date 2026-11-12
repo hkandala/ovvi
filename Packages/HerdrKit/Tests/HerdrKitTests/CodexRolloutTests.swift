@@ -90,3 +90,10 @@ private func history() throws -> ChatHistory {
         "rm -rf g1 declined true", "sleep 9 failed true", "/t/n.txt declined true",
     ])
 }
+
+@Test func `each codex turn that completes ends in its Worked`() throws {
+    // The third turn was interrupted: its note, then a command that ended after it.
+    #expect(try history().turnKinds == [["reply", "stack", "reply", "worked"],
+                                        ["reply", "reply", "stack", "reply", "worked"],
+                                        ["reply", "note", "stack"], ["note", "reply", "stack", "worked"]])
+}

@@ -73,6 +73,29 @@ extension OvviUITests {
         XCTAssertTrue(blurred.isEmpty, "\(blurred) of \(records)")
     }
 
+    /// A chat card whose tab left the kept pages (8 other tabs shown since) is made again on its first frame in Chat,
+    /// never its TUI (a `t` in the record): the TUI showed while the chat caught up.
+    func testAChatCardMadeAgainNeverShowsItsTUI() async throws {
+        let (tab, pane) = try await startChat(["-recordFrames", "YES"])
+        try await say("hello", in: pane)
+        XCTAssertTrue(row(pane, "reply", "Echo: **hello**").exists(within: 5))
+        var others: [String] = []
+        for index in 1 ... 8 {
+            let made = try await createTab(in: "w2", label: "other \(index)")
+            closeAfter("tab", made.tab)
+            others.append(made.tab)
+        }
+        for other in others {
+            XCTAssertTrue(element("tab.\(other)").exists(within: 5), other)
+            app.typeKey("]", modifierFlags: [.command, .shift])
+            XCTAssertTrue(element("tab.\(other)").has(\.isSelected, true, within: 5), other)
+        }
+        let place = try await order(of: tab) ?? 0
+        let record = try await frames("back to the chat", key("\(place + 1)"))
+        XCTAssertTrue(row(pane, "reply", "Echo: **hello**").exists(within: 5))
+        XCTAssertFalse(record.split(separator: " ").last?.contains("t") == true, record)
+    }
+
     private func expectNoFlicker() async throws {
         var records: [String] = []
         let option: XCUIElement.KeyModifierFlags = [.command, .option]

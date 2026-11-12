@@ -35,7 +35,7 @@ private func history() throws -> ChatHistory {
     #expect(history.entries.contains { $0.kind == .turnEnd(seconds: 8.355) })
 }
 
-private extension ChatRow {
+extension ChatRow {
     var kind: String {
         String(describing: self).prefix { $0 != "(" }.description
     }
@@ -43,8 +43,11 @@ private extension ChatRow {
 
 @Test func `every message shows in order, each run between them as one line of counts, then the time`() throws {
     let history = try history()
-    let rows = history.rows(working: false)
+    let rows = history.rows()
     #expect(rows.count { $0.kind == "user" } == 6 && Set(rows.map(\.id)).count == rows.count)
+    // One Worked per turn end the agent wrote, also for a turn of a reply alone, each where its turn ended.
+    #expect(rows.count { $0.kind == "worked" } == 7)
+    #expect(rows.prefix(4).map(\.kind) == ["user", "reply", "worked", "user"])
     #expect(rows.count { $0.kind == "reply" } == history.entries.count { $0.row?.kind == "reply" })
     let turn = try #require(rows
         .firstIndex {
@@ -56,9 +59,8 @@ private extension ChatRow {
         })
     let next = rows[(turn + 1)...].firstIndex { $0.kind == "user" } ?? rows.endIndex
     #expect(rows[(turn + 1) ..< next].map(\.kind).last == "worked")
-    guard case let .worked(_, seconds?) = rows[next - 1] else { Issue.record("no time"); return }
+    guard case let .worked(_, seconds) = rows[next - 1] else { Issue.record("no time"); return }
     #expect(seconds > 30)
-    #expect(rows.prefix(3).map(\.kind) == ["user", "reply", "user"])
 
     let runs = rows.compactMap { row -> ArraySlice<ChatEntry>? in
         guard case let .stack(_, steps) = row else { return nil }
@@ -90,30 +92,34 @@ private extension ChatRow {
     #expect(ChatTool.summary([tool("explore"), tool("explore")]) == "Ran explore 2 times")
 }
 
-@Test func `the last turn says working while it runs`() {
+@Test func `a turn shows Worked once it ends, and keeps it after the next turns`() {
     var history = ChatHistory()
-    ClaudeTranscript.read(#"{"type":"user","uuid":"u","message":{"content":"go"}}"#, into: &history)
+    ClaudeTranscript.read(
+        #"{"type":"user","uuid":"u","timestamp":"2026-10-29T10:00:00.000Z","message":{"content":"go"}}"#,
+        into: &history,
+    )
     let tool = #"{"type":"tool_use","id":"t","name":"Bash","input":{"command":"npm test\nmore"}}"#
     ClaudeTranscript.read(#"{"type":"assistant","uuid":"a","message":{"content":[\#(tool)]}}"#, into: &history)
-    #expect(history.rows(working: true).map(\.id) == ["u", "a.0"])
-    #expect(history.rows(working: false).map(\.id) == ["u", "a.0", "u.worked"])
-    guard case let .stack(_, steps) = history.rows(working: true).last else {
+    #expect(history.rows().map(\.id) == ["u", "a.0"])
+    #expect(history.turnStart == ChatHistory.date("2026-10-29T10:00:00.000Z"))
+    guard case let .stack(_, steps) = history.rows().last else {
         Issue.record("no run"); return
     }
     #expect(history.entries[steps].first?.tool?.target == "npm test" && history.entries[steps].first?.tool?
         .result == nil)
     #expect(ChatTool.summary(history.entries[steps].compactMap(\.tool)) == "Ran 1 command")
-    history.append(ChatEntry(id: "e", .turnEnd(seconds: 1), time: nil))
-    history.append(ChatEntry(id: "t2", .tool(ChatTool(id: "t2", name: "bash", category: .command, target: "ls",
-                                                      started: nil)), time: nil))
-    #expect(history.rows(working: false).map(\.id) == ["u", "a.0", "t2", "u.worked"])
+    ClaudeTranscript.read(#"{"type":"system","subtype":"turn_duration","uuid":"e","durationMs":1000}"#, into: &history)
+    #expect(history.rows().map(\.id) == ["u", "a.0", "e"])
+    #expect(history.turnStart == nil)
+    ClaudeTranscript.read(#"{"type":"user","uuid":"v","message":{"content":"on"}}"#, into: &history)
+    ClaudeTranscript.read(#"{"type":"assistant","uuid":"b","message":{"content":[{"type":"text","text":"ok"}]}}"#,
+                          into: &history)
+    #expect(history.rows().map(\.id) == ["u", "a.0", "e", "v", "b.0"])
+    ClaudeTranscript.read(#"{"type":"system","subtype":"turn_duration","uuid":"f","durationMs":2000}"#, into: &history)
+    #expect(history.rows().map(\.id) == ["u", "a.0", "e", "v", "b.0", "f"])
+    #expect(history.rows().last == .worked(id: "f", seconds: 2))
     #expect(!ClaudeTranscript.read(#"{"type":"assist"#, into: &history))
     #expect(ChatHistory.duration(108) == "1m 48s")
-    ClaudeTranscript.read(
-        #"{"type":"user","uuid":"v","timestamp":"2026-10-29T10:00:00.000Z","message":{"content":"on"}}"#,
-        into: &history,
-    )
-    #expect(history.lastTurnStart == ChatHistory.date("2026-10-29T10:00:00.000Z"))
 }
 
 @Test func `models read as the agent's picker names them`() {
@@ -131,4 +137,17 @@ private extension ChatRow {
     #expect(history.model == "claude-opus-5-5" && history.effort == "medium")
     ClaudeTranscript.read(#"{"type":"assistant","uuid":"b","message":{"model":"claude-haiku-5-5"}}"#, into: &history)
     #expect(history.model == "claude-haiku-5-5" && history.effort == nil)
+}
+
+extension ChatHistory {
+    /// Each turn's rows after its message, as kinds.
+    var turnKinds: [[String]] {
+        rows().reduce(into: [[String]]()) { turns, row in
+            if row.kind == "user" {
+                turns.append([])
+            } else if !turns.isEmpty {
+                turns[turns.count - 1].append(row.kind)
+            }
+        }
+    }
 }

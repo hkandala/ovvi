@@ -167,9 +167,18 @@ def cleanup():
         pass
 
 
-def main():
+# OVVI_STAND_IN_SLOW_START=<seconds>: a resume runs its SessionStart hooks that long after it shows (company hooks).
+slow = float(os.environ.get("OVVI_STAND_IN_SLOW_START", "0")) if resumed else 0
+
+
+def start():
     hook("SessionStart", {"session_id": token, "transcript_path": transcript, "cwd": os.getcwd(),
                           "hook_event_name": "SessionStart", "source": "resume" if resumed else "startup"})
+
+
+def main():
+    if not slow:
+        start()
     with terminal(cleanup):
         loop()
 
@@ -177,6 +186,9 @@ def main():
 def loop():
     say("Claude Code stand-in " + token)
     stand_in.report("idle")
+    if slow:
+        time.sleep(slow)
+        start()
     # Started by hand, as herdr's integration would: herdr takes a session once the pane has its agent, and takes no
     # state report after it (so not with the flags, whose tests need the states).
     if "--settings" not in args:

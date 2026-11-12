@@ -84,10 +84,12 @@ extension ChatEntry {
 
     var row: ChatRow? {
         switch kind {
+        case let .user(text): .user(id: id, text: text)
         case let .reply(text): .reply(id: id, text: text)
         case let .todos(todos): .todos(id: id, todos)
         case let .note(text, failed): .note(id: id, text: text, failed: failed)
-        case .user, .tool, .thinking, .turnEnd: nil
+        case let .turnEnd(seconds): .worked(id: id, seconds: seconds)
+        case .tool, .thinking: nil
         }
     }
 }

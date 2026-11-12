@@ -61,7 +61,7 @@ struct FloatingWindow: View {
                     FloatingPlugin(plugin: plugin, page: page)
                 } else if let pane, let label = pane.plugin, terminal == nil {
                     MissingPlugin(label: label, pane: pane, page: page)
-                } else if let chat, chat.showsChat, chat.current {
+                } else if let chat, chat.showsChat {
                     ChatView(chat: chat, page: page, terminal: terminal)
                 } else if let terminal {
                     terminalCard(terminal, page, pane, faded: chooser != nil, commands)
@@ -84,7 +84,7 @@ struct FloatingWindow: View {
                 }
             }
             .background(CardSurface(keyboard: terminal?.hasKeyboard == true
-                    || chat.map { $0.showsChat && $0.current } == true))
+                    || chat?.showsChat == true))
             .clipShape(CardSurface.shape)
             .overlay { CardFlash(store: page.store, id: pane?.id ?? "") }
             .accessibilityElement(children: .contain)
@@ -104,13 +104,7 @@ struct FloatingWindow: View {
     private func terminalCard(_ terminal: PaneTerminal, _ page: Page, _ pane: HostStore.Pane?, faded: Bool,
                               _ commands: CommandList) -> some View
     {
-        let chat = faded ? nil : pane.flatMap(page.store.chat)
-        return TerminalCard(terminal: terminal, watched: page.watched, alpha: faded ? 0 : page.watched ? 0.85 : 1)
-            .onChange(of: chat.map { $0.showsChat && !$0.current } == true, initial: true) {
-                if $1 {
-                    chat?.catchUp()
-                }
-            }
+        TerminalCard(terminal: terminal, watched: page.watched, alpha: faded ? 0 : page.watched ? 0.85 : 1)
             // In this window already: a claim made while it is the main window's card would take that window's
             // keyboard.
             .onAppear { terminal.view.takeKeyboard() }

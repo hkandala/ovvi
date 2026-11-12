@@ -26,10 +26,10 @@ final class Chat {
     @ObservationIgnored private var seen = 0
 
     var showsChat = false
-    /// The history holds what the agent wrote while nothing followed it. A card shows the chat only then: old rows
-    /// would show first and then jump to the new ones.
-    var current = true
-    @ObservationIgnored private var catchingUp: Task<Void, Never>?
+    /// The history holds what the agent wrote: the chat shows a loader until then, its empty state only once it knows
+    /// the conversation is new. False for a chat found running or resumed until its transcript is read, and for one
+    /// nothing followed for a while.
+    var current: Bool
     var recorded: Phase?
     var question: ChatQuestion?
     var problem: String?
@@ -46,8 +46,9 @@ final class Chat {
     @ObservationIgnored private var viewers = 0
     @ObservationIgnored private var following: Task<Void, Never>?
 
-    init(adapter: any ChatAdapter, paneID: String, terminalID: String, store: HostStore) {
+    init(adapter: any ChatAdapter, paneID: String, terminalID: String, store: HostStore, current: Bool) {
         self.adapter = adapter
+        self.current = current
         self.paneID = paneID
         self.terminalID = terminalID
         self.store = store
@@ -71,22 +72,6 @@ final class Chat {
 
     var drawer: Bool {
         phase == .waiting && question == nil
-    }
-
-    /// Follows the agent until the history is current, 2 s at most (then the old rows show), while the card still shows
-    /// the TUI. The chat view's own follow overlaps it by a second.
-    func catchUp() {
-        guard catchingUp == nil else { return }
-        catchingUp = Task {
-            let held = Task { await viewed() }
-            for _ in 0 ..< 40 where !current {
-                try? await Task.sleep(for: .milliseconds(50))
-            }
-            current = true
-            try? await Task.sleep(for: .seconds(1))
-            held.cancel()
-            catchingUp = nil
-        }
     }
 
     func viewed() async {

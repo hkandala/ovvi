@@ -192,22 +192,25 @@ and no backslash.
     what it read. The backlog is parsed off the main thread, one run of
     lines at a time, with the parser's state handed over and back, so the
     window stays smooth while a 108 MB session loads (a few seconds on a busy
-    Mac). Meanwhile
-    the empty chat shows a small spinner. It starts when the
-    file opens: Claude Code and pi write the file only with the first
-    message, so a new chat shows its glyph, not the spinner.
+    Mac). Meanwhile the chat shows a loader ([What it looks
+    like](#what-it-looks-like)). Claude Code and pi write the file only with
+    the first message: the follow script says when the file is missing
+    (`ovvi-missing`), and the chat then knows it has no history yet.
     OpenCode's first load and each event's rebuild run off the main thread
     too.
   - The chat keeps a mark (inode and offset) per file in memory, so a card
     shown again goes on from there. Another inode, or a shorter file, starts
     the file again.
-  - **Shown again only when current.** When Chat is picked, or a chat card
-    is made again, while nothing followed the agent, the card keeps its TUI
-    (and the keyboard) and the chat follows the agent from its marks until
-    the backlog is in (OpenCode: until its history loads), 2 s at most. Then
-    the chat shows, whole and at the bottom, in its first frame, not the old
-    rows and then a jump. After 2 s the chat shows what it has, and the rest
-    comes as it is read.
+  - **Current.** A chat knows whether its history holds what the agent
+    wrote. A chat that a launch of a new conversation made is current at
+    once. A chat that resumed a session (Relaunch with Chat, a resume from
+    Archived Sessions), one found running (after the app starts again) and
+    one that nothing followed for a while (its card was out of view, or the
+    TUI showed) are current once their transcript is read to its end, or is
+    missing (OpenCode: once its history loads, or it has no session). Until
+    then the chat shows a loader in Chat from its first frame, never the TUI
+    or the empty chat, and then the chat whole and at the bottom: not the old
+    rows and then a jump.
   - `Exec.watch` prints a rewritten file (Claude Code's session record) whole
     on each change, checked every 0.3 s.
   - OpenCode's are `curl` runs on the pane's machine against
@@ -216,7 +219,7 @@ and no backslash.
     the history again whole (Simpler choice: a long session is megabytes).
 - A new session line (`/clear`, `/new`, a fork, a resume) starts the history
   again.
-- The adapter follows only while a card shows the chat, or catches it up. Off screen, the
+- The adapter follows only while a card shows the chat. Off screen, the
   header's state is herdr's. A dropped stream is followed again after 2 s,
   from the marks.
 - A message shows when it is on disk, 0.1–2 s after the TUI draws it. There
@@ -387,9 +390,16 @@ setting.
   opens it to a row per step, and a click again closes it.
 - Thinking is a step of its run. Thinking with no tool call in its run has
   no row.
-- Once a turn with tool calls ends, "Worked 1m 48s" sits under its last row,
-  in 12 pt secondary text. While the turn runs, the loader under it says
-  "Working" and the time.
+- **Worked.** Each turn the agent ends gets "Worked 1m 48s" under its last
+  row, in 12 pt secondary text: a turn of a reply alone too. It stays there
+  after later turns, while the next turn works and in a history read again.
+  It is the agent's own record of the turn's end: Claude Code's
+  `turn_duration`, Codex's `task_complete`, OpenCode's reply that finishes
+  with no more tool calls (timed from the user's message), and pi's final
+  reply (`stopReason` `stop` or `length`, timed from the user's message), so
+  a live turn and a loaded one look the same. A turn the user interrupts
+  ends with its "Interrupted" note instead. While a turn runs, the loader
+  under it says "Working" and the turn's time.
 - No line has a Working icon: the loader is the chat's last row. While a turn
   streams, a closed line changes only its counts.
 - **Made only when open.** A line holds only where its steps are in the
@@ -451,21 +461,26 @@ A run is one quiet line with no card: its summary and a chevron.
   line, tool rows, Working and Worked stay outside the bubbles.
 - Rows sit 10 pt apart, and a user's bubble has 8 pt more above and under
   it, so each turn reads as one block.
-- **An empty chat** puts a header and the reply box together in the middle of
-  the card, until the first message. The header is the agent's program glyph
-  (the one in the tab, 34 pt and gray) beside a phrase in 26 pt semibold,
-  picked at random when the chat view is made: "What's on your mind?", "What
-  are we building?", "Where should we start?", "What can I help with?" or
-  "Ready when you are." It stays on one line and shrinks to fit a narrow card.
-  22 pt stay free between it and the box.
+- **An empty chat** of a new conversation puts a header and the reply box
+  together in the middle of the card, until the first message. The header is
+  the agent's program glyph (the one in the tab, 64 pt, at half opacity) with
+  a phrase 14 pt under it in 26 pt semibold, picked at random when the chat
+  view is made: "What's on your mind?", "What are we building?", "Where
+  should we start?", "What can I help with?" or "Ready when you are." It
+  stays on one line and shrinks to fit a narrow card. 22 pt stay free between
+  it and the box.
 - **The first message.** When the user sends it, the header fades, the reply
   box goes down to its place at the bottom, and the message rises from the box
   to the top of the messages: one motion of 0.22 s on the app's slide curve
   (none with Reduce Motion). The UI tests run with Reduce Motion: only the
   VM's frame strips check the motion.
-- While a history loads into an empty chat, a small spinner takes the
-  header's place and the box stays in the middle: a load that ends empty moves
-  nothing, and one that brings a history puts the box at the bottom. A sent
+- **A chat that may have a history** (not current: resumed, found running,
+  shown again after a time away) shows a small spinner in the middle and the
+  reply box at the bottom until its history is read. The spinner shows after
+  0.3 s: a chat shown again usually catches up sooner, and its rows then come
+  with no spinner between. A new conversation whose empty transcript loads (a
+  new Codex or OpenCode chat) keeps the empty chat, the spinner in the
+  glyph's place: a load that ends empty moves nothing. A sent
   message stays in view while the transcript it starts loads (Claude Code and
   pi write the transcript with the first message). An empty chat has no
   scroll view: the scroll view is made with the rows, at the bottom (one made
@@ -574,8 +589,9 @@ A run is one quiet line with no card: its summary and a chevron.
     name such as `Ovvi.app`, `example.com` or `www.example.com` is no link.
     An edit's diff has no links.
   - A link is underlined and in the accent color (white in the user's
-    bubble). Under the pointer it turns lighter (70 % opacity) and the
-    pointer is the pointing hand. A link takes the press, as in a browser:
+    bubble), as a browser draws a link, with no fill behind it: a link in
+    inline code drops the code's fill. Under the pointer it turns lighter
+    (70 % opacity) and the pointer is the pointing hand. A link takes the press, as in a browser:
     a drag that starts on it selects nothing. A text with more than 100 links (a tool's
     output that lists paths) shows them without the hover: each link in it
     costs layout.
@@ -618,8 +634,7 @@ A run is one quiet line with no card: its summary and a chevron.
   on the chat. An agent flips it with
   `ovvi view` ([CLI](/docs/agent-control/cli#agent-chat-and-view)). The
   choice is kept in memory per pane, for every window of the session. The card keeps
-  the keyboard across a switch: the reply box or the terminal. The terminal
-  keeps it while the chat catches up after a time away.
+  the keyboard across a switch: the reply box or the terminal.
 - A floated chat pane shows its chat in its floating window, with Chat | TUI
   in the window's title row
   ([Floating pane](/docs/ui/window#floating-pane)).
@@ -666,7 +681,7 @@ UI tests point the reads at a fixture home (`-archivedHome`), as Archived Sessio
   Scroll to Bottom and Show Earlier are named; Show Earlier's value is
   "loading" while its rows come. The state reads as its word.
 - Identifiers, after `chat.‹pane id›`: `.composer`, `.send`, `.stop`,
-  `.model`, `.user`, `.sending`, `.not-sent`, `.reply`, `.worked`, `.empty`, `.stack`, `.tool`, `.tool.input`,
+  `.model`, `.user`, `.sending`, `.not-sent`, `.reply`, `.worked`, `.empty`, `.loading`, `.stack`, `.tool`, `.tool.input`,
   `.tool.output`, `.note`, `.bottom`, `.earlier`, `.question`, `.option.‹option›`,
   `.drawer`, `.open-terminal`, `.problem` and `.show-terminal`. The header has `pane.‹id›.title`,
   `pane.‹id›.state`, `pane.‹id›.view.chat`

@@ -196,7 +196,7 @@ final class PaneViewRegistry {
         // A panel's keys: its close gives them to the keyboard card.
         guard pages?.panelOpen != true || pages?.floats(terminalID) == true else { return }
         dropClaims(but: terminalID)
-        if let chat = pages?.page(of: terminalID)?.store.chats[terminalID], chat.showsChat, chat.current, chat.live,
+        if let chat = pages?.page(of: terminalID)?.store.chats[terminalID], chat.showsChat, chat.live,
            !chat.drawer
         {
             chat.wantsKeyboard = true

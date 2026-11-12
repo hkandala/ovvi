@@ -67,3 +67,11 @@ private let first = "ses_e7d8c818bffeiWemFHC4CGIFNZ"
     #expect(loaded)
     #expect(session.history.model == "muse-spark" && session.history.effort == "low")
 }
+
+@Test func `each opencode turn that completes ends in its Worked`() throws {
+    var session = OpenCodeSession(id: first)
+    _ = try session.load(fixture("opencode-messages", "json"))
+    #expect(session.history.turnKinds == [["reply", "stack", "reply", "worked"], ["stack", "reply", "worked"],
+                                          ["reply", "stack", "reply", "stack", "reply", "worked"], ["reply", "worked"],
+                                          ["stack", "note"]])
+}
