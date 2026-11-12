@@ -2484,3 +2484,8 @@ ones".
      and then shows the terminal content, i am guessing here the content is not yet loaded instead of starting from
      blank and fading in, that error message is coming up, investigate the root cause, and fix it, so it doens't show
      unnecessarily" (Track S2).
+     Item 101's screenshot: "i forgot to provide screenshots for selected text, see its bit weird color, pass on to the
+     agent" (`.build/fb57/r8-6.07.11.png`).
+109. "one more thing when i am in chat view of an agent session i don't see its status in it pane title, like in tui i
+     see working text with its icon, but as soon as i switch to chat, that status goes away, let's keep them
+     consistent" (Track C3).
