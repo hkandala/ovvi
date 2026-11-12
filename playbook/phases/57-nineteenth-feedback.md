@@ -2527,3 +2527,31 @@ ones".
      simplify those locks thing, even though its generic, its some custom locks, new agents will not be aware of it,
      we don't need all such locks, at least from plugin perspective, we can just show one toggle, watch only or not,
      when that button is sleected it wil be watch only, otherwise i can interact with it, lets keep it like that".
+
+### Track R2 (items 104, 105)
+
+- **Cause (104, windows).** Since macOS 15 a non-sandboxed app's saved windows live in talagentd's container,
+  `~/Library/Daemon Containers/<uuid>/Data/Library/Saved Application State/<uuid>.savedState` (the uuid from
+  `ApplicationMapping.plist` by signing identifier), which macOS guards: Full Disk Access only. The reset deleted
+  `~/Library/Saved Application State` and `$TMPDIR` (where only `-ApplePersistenceIgnoreState` launches write), so
+  the "fresh" launch restored the old windows, and a restored window starts and connects its pages.
+- **Cause (104, the script).** Its rm loop ran in a pipe under `set -e`: the first path macOS refused (the WebKit
+  helpers' `…/C/com.apple.WebKit.*+dev.ovvi.app`, "Operation not permitted") ended the loop, so `~/.config/ovvi`,
+  the logs and `~/.local/state/ovvi` stayed (birth times on the user's Mac show it). Under `sudo`, HOME and the temp
+  folders are root's: nothing matched, and it exited without a word.
+- **Fix.** A first launch (no `welcomeDone`) closes the windows macOS restored before they show and restores no
+  pages, so nothing connects and macOS forgets those windows; the welcome's end opens the new-window view. The script
+  goes on past a refused path, lists what it kept with the Full Disk Access fix (exit 1), deletes the talagentd
+  folder when it may (else says the app closes those windows), and refuses root. The stale `dev.ovvi.app.agents.*`
+  domains are read by nothing. The e2e helper's `forget-windows` clears talagentd's folder too: it missed it, the
+  likely cause of A2's "three windows of `one` right after `forget-windows`".
+- **Fix (105).** The new-window view's Add Machine remembers its window; the added machine opens and connects there
+  while that window is still open and empty, else in a new window as before.
+- **Decisions.** No `ApplePersistenceIgnoreState` on a first launch: it writes that run's windows to `$TMPDIR` and
+  leaves the old ones, which the next launch would restore. Notifications, the login item and privacy grants
+  (macOS's own records) are not reset. An Add Machine cancelled in Settings leaves its empty window chosen: a later
+  add from anywhere connects there while it stays empty. A window opened for a folder at a first launch closes too;
+  the folder opens with the first window.
+- **For the user.** Quit Ovvi, run `scripts/reset-app-data.sh` (no sudo) from a terminal; it now says what it kept.
+  Launch: only the welcome, no window, no connect; Skip or Get Started opens one new-window view. ⌘N ▸ Add Machine…
+  ▸ Add: the machine connects in that ⌘N window.

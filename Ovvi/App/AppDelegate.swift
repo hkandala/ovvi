@@ -18,9 +18,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     func applicationDidFinishLaunching(_: Notification) {
         Self.restoring = false
         // A first launch shows the welcome alone. A reset cannot reach the windows macOS saved (its folder needs Full
-        // Disk Access): closed now, they are forgotten.
+        // Disk Access): closed now, they are forgotten. A window opened for a folder at launch goes too; the folder
+        // waits for the first window.
         if Welcome.firstLaunch {
-            NSApp.windows.filter(\.canBecomeMain).forEach { $0.close() }
+            NSApp.windows.filter { $0.identifier?.rawValue.hasPrefix(WindowPages.mainScene + "-") == true }
+                .forEach { $0.close() }
         }
         Self.restoredFullScreen = Set(NSApp.windows.filter { $0.styleMask.contains(.fullScreen) }
             .map(ObjectIdentifier.init))

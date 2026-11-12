@@ -35,8 +35,9 @@ stops them instead (SIGSTOP, as a process that hangs), /<session>/web-resume let
 only lists them.
 POST /<session>/plugin-logs with a time (seconds since 1970) as the body gives back the plugin pages' console lines
 since then, from the plugin logs of every config folder of the tests: a failed test keeps them.
-POST /<session>/forget-windows removes the Debug build's saved windows ($TMPDIR/dev.ovvi.app.debug.savedState): a test
-that restores windows starts from none, not from an earlier test's.
+POST /<session>/forget-windows removes the Debug build's saved windows ($TMPDIR/dev.ovvi.app.debug.savedState, and
+talagentd's folder in ~/Library/Daemon Containers where the helper may read it): a test that restores windows starts
+from none, not from an earlier test's.
 POST /<session>/ssh-hostname with an SSH target and a host name as the body sets that HostName in its ~/.ssh/config
 block, on CI only: `<target>.invalid` fails a new connection at once (no network), 192.0.2.1 after its 10 s
 ConnectTimeout (a link that is down), 127.0.0.1 is CI's sshd again.
@@ -72,6 +73,7 @@ import datetime
 import glob
 import http.server
 import os
+import plistlib
 import re
 import shutil
 import signal
@@ -317,6 +319,17 @@ class Handler(http.server.BaseHTTPRequestHandler):
             status, reply = 200, plugin_logs(int(body))
         elif action == "forget-windows":
             shutil.rmtree(os.path.join(tempfile.gettempdir(), "dev.ovvi.app.debug.savedState"), ignore_errors=True)
+            # Since macOS 15 a normal launch saves them in talagentd's container: [{protected: {signingIdentifier}},
+            # folder name, ...].
+            for mapping in glob.glob(os.path.expanduser(
+                    "~/Library/Daemon Containers/*/Data/Library/Saved Application State/ApplicationMapping.plist")):
+                with contextlib.suppress(OSError, plistlib.InvalidFileException):
+                    with open(mapping, "rb") as file:
+                        items = plistlib.load(file)
+                    for entry, folder in zip(items[::2], items[1::2]):
+                        if entry.get("protected", {}).get("signingIdentifier") == "dev.ovvi.app.debug":
+                            shutil.rmtree(os.path.join(os.path.dirname(mapping), f"{folder}.savedState"),
+                                          ignore_errors=True)
             status, reply = 200, b""
         elif action == "ssh-hostname":
             config, (target, name) = os.path.expanduser("~/.ssh/config"), body.decode().split()

@@ -36,6 +36,7 @@ paths="$L/Caches/$id
 $L/WebKit/$id
 $L/HTTPStorages/$id
 $L/HTTPStorages/$id.binarycookies
+$L/Cookies/$id.binarycookies
 $L/Application Support/$id
 $L/Saved Application State/$id.savedState
 $tmp$id.savedState
@@ -48,8 +49,8 @@ done
 # macOS keeps an app's saved windows in talagentd's container, a folder per app named in ApplicationMapping.plist: an
 # array of {protected: {signingIdentifier}} dictionaries, each followed by its folder's name.
 kept=
-ls "$L/Daemon Containers" >/dev/null 2>&1 || kept="$L/Daemon Containers: the saved windows (Ovvi drops them on its first launch)
-"
+ls "$L/Daemon Containers" >/dev/null 2>&1 || echo "macOS keeps the saved windows in ~/Library/Daemon Containers," \
+    "which needs Full Disk Access; Ovvi closes them on its first launch."
 for map in "$L/Daemon Containers"/*/Data/Library/"Saved Application State"/ApplicationMapping.plist; do
     i=0
     while folder=$(plutil -extract "$((i + 1))" raw -o - "$map" 2>/dev/null); do
@@ -81,7 +82,8 @@ for domain in $domains; do
     echo "defaults delete $domain"
     [ -n "$dry" ] || defaults delete "$domain"
 done
-# Not in a pipe: `kept` must outlive the loop, and one path macOS keeps must not end it.
+# Not in a pipe: `kept` must outlive the loop, and one path macOS keeps must not end it. A path in a folder macOS
+# guards (~/Library/Cookies) fails `-e` without a word: nothing to say about it.
 while IFS= read -r path; do
     [ -e "$path" ] || continue
     echo "rm -rf $path"

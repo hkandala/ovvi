@@ -55,8 +55,13 @@ Problems that came back, and the rule that stops each. How we work is in
   session. An old Debug build on disk keeps its Launch Services registration (and `ovvi://`) until it is deleted
   or unregistered (`lsregister -u`). Tests still share defaults and saved windows with each other and with dev
   runs: pin settings with launch arguments, reset them in teardown, launch with `-ApplePersistenceIgnoreState`
-  (which also saves no windows at ⌘Q). Saved windows live in `$TMPDIR/dev.ovvi.app.debug.savedState`: a restore
-  test clears them first (`forget-windows`).
+  (which also saves no windows at ⌘Q). A restore test clears the saved windows first (`forget-windows`), in both
+  places of the next lesson.
+- **Since macOS 15, saved windows live where a script needs Full Disk Access:** talagentd's container,
+  `~/Library/Daemon Containers/<uuid>/Data/Library/Saved Application State/<uuid>.savedState` (`ApplicationMapping.plist`
+  names the uuid by signing identifier). Only a launch with `-ApplePersistenceIgnoreState` writes to
+  `$TMPDIR/<bundle id>.savedState`, and it leaves the old state for the next launch. A reset that deleted only
+  those two left the windows, and `forget-windows` once missed them (a restore test came up with three windows).
 - **The argument domain drops a value it cannot read as a property list** (`-machines []`, any JSON): read such
   arguments from `ProcessInfo.arguments`. The machine list's guard read the domain, so a test launched without
   `-session` loaded the user's machines, and the new-window view tried their SSH.

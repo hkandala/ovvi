@@ -12,7 +12,7 @@ struct SessionPicker: View {
 
     /// A run against a throwaway session (`-session`, a test's `-defaultSession`) lists only throwaway ones, never the
     /// user's.
-    private static let throwaway = MachineList.session ?? MachineList.defaultSession
+    static let throwaway = MachineList.session ?? MachineList.defaultSession
 
     var body: some View {
         let look = Look(style: settings.style, dark: colorScheme == .dark, contrast: colorSchemeContrast == .increased)

@@ -156,10 +156,10 @@ extension OvviUITests {
     /// Add Machine in a new window's list connects the machine in that window: no other window opens.
     func testAddMachineFromANewWindowConnectsInIt() throws {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
-        let first = app.windows.firstMatch.identifier
+        let first = mainWindows.firstMatch.identifier
         app.typeKey("n", modifierFlags: .command)
         XCTAssertTrue(element("picker.local.\(one)").exists(within: connect))
-        let window = try XCTUnwrap(app.windows.allElementsBoundByIndex.map(\.identifier).first { $0 != first })
+        let window = try XCTUnwrap(mainWindows.allElementsBoundByIndex.map(\.identifier).first { $0 != first })
             .map { app.windows[$0] }
         element("picker.+add-machine", in: window).click()
         let settings = settingsWindow
@@ -174,6 +174,7 @@ extension OvviUITests {
         let machine = element("window.machine", in: window)
         XCTAssertTrue(machine.has(\.stringValue, "Nowhere", within: connect), machine.stringValue)
         XCTAssertEqual(mainWindows.count, 2)
+        keepScreenshot("added machine in its new window")
     }
 
     func testNewWindowMakesATypedSession() async throws {

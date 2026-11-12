@@ -28,11 +28,11 @@ sockets are per app.
 `scripts/reset-app-data.sh [--dry-run] [bundle id]` deletes one build's data on
 This Mac for a fresh start (the installed app's by default), while that build
 is not running. Run it without `sudo`. macOS keeps an app's saved windows in
-`~/Library/Daemon Containers` and some WebKit caches in folders that its privacy
-protection guards: without Full Disk Access for the terminal, the script lists
-what it kept and exits with 1. The first launch after a reset closes the
-saved windows anyway ([Welcome](/docs/ui/welcome)). For a Debug build it also deletes `~/.config/ovvi-dev` and
-`~/Library/Logs/Ovvi Dev`. For the installed app, and only while no Ovvi build
+`~/Library/Daemon Containers`, which needs Full Disk Access for the terminal;
+the first launch after a reset closes them anyway
+([Welcome](/docs/ui/welcome)). When macOS refuses to delete a folder (some
+WebKit caches), the script goes on, lists what it kept and exits with 1. For a
+Debug build it also deletes `~/.config/ovvi-dev` and `~/Library/Logs/Ovvi Dev`. For the installed app, and only while no Ovvi build
 runs, it also deletes `~/.config/ovvi`, `~/Library/Logs/Ovvi`,
 `~/Library/Caches/ovvi`, `~/.cache/ovvi` and `~/.local/state/ovvi`, which other
 builds share. It never touches herdr's sessions or the agents' files.

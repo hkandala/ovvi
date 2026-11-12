@@ -360,7 +360,7 @@ extension WindowPages {
         guard let pages = adding, !pages.gone, pages.list.isEmpty else { return open(machine: machine, connect: true) }
         adding = nil
         pages.machine = machine
-        pages.open(MachineList.session ?? MachineList.defaultSession ?? Session.defaultName, start: !machine.isRemote)
+        pages.open(SessionPicker.throwaway ?? Session.defaultName)
         pages.opened()
         pages.window?.makeKeyAndOrderFront(nil)
         if let store = pages.current?.store {
