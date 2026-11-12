@@ -79,7 +79,7 @@ enum Links {
 }
 
 /// The app finds links in libghostty's text itself (`link-url` is off): libghostty's own pattern took `/compact` and
-/// the words after a path. libghostty still reports OSC 8 links, and draws their underline.
+/// the words after a path. libghostty still reports OSC 8 links, and draws their hover underline.
 extension PaneSurfaceView {
     struct Hovered {
         let link: TerminalLink, places: [TerminalLink.Place]
@@ -152,10 +152,10 @@ extension PaneSurfaceView {
         return Hovered(link: link, places: Array(line.places[link.range]))
     }
 
-    /// Underlines the link under the pointer, one line a row it covers, as Ghostty draws an underline, in the
-    /// secondary text color.
+    /// Tints the link under the pointer, one rounded box a row it covers: a tint leaves the text's own underline,
+    /// colors and selection as they are.
     /// Reads the screen again only on another cell. ponytail: output that changes under a still pointer keeps the old
-    /// underline until the pointer moves or a key changes.
+    /// tint until the pointer moves or a key changes.
     func hover(_ point: NSPoint?) {
         let spot = point.flatMap(cell(at:))
         guard spot == nil || spot != hoveredCell else { return }
@@ -163,40 +163,32 @@ extension PaneSurfaceView {
         let found = point.flatMap(link(at:))
         guard found?.link != hovered?.link || found?.places.first != hovered?.places.first else { return }
         hovered = found
-        underline?.removeFromSuperlayer()
-        underline = nil
+        linkTint?.removeFromSuperlayer()
+        linkTint = nil
         (found == nil && hoveredLink == nil ? NSCursor.arrow : .pointingHand).set()
         guard let found, let metrics, let layer else { return }
         let scale = window?.backingScaleFactor ?? 2
         let cell = CGSize(width: CGFloat(metrics.cellWidthPixels) / scale,
                           height: CGFloat(metrics.cellHeightPixels) / scale)
-        let lines = CALayer()
-        let stroke = Self.underline(cellHeight: CGFloat(metrics.cellHeightPixels), scale: scale)
+        let tint = CALayer()
         var color: CGColor?
-        effectiveAppearance.performAsCurrentDrawingAppearance { color = NSColor.secondaryLabelColor.cgColor }
+        effectiveAppearance
+            .performAsCurrentDrawingAppearance { color = NSColor.labelColor.withAlphaComponent(0.12).cgColor }
         for row in Set(found.places.map(\.row)) {
             let columns = found.places.filter { $0.row == row }.map(\.column)
             let first = columns.min() ?? 0, last = columns.max() ?? 0
-            let line = CALayer()
-            line.backgroundColor = color
-            line.frame = CGRect(x: CGFloat(first) * cell.width,
-                                y: bounds.height - CGFloat(row + 1) * cell.height + stroke.bottom / scale,
-                                width: CGFloat(last - first + 1) * cell.width, height: stroke.height / scale)
-            lines.addSublayer(line)
+            let box = CALayer()
+            box.backgroundColor = color
+            box.cornerRadius = 4
+            box.frame = CGRect(x: CGFloat(first) * cell.width, y: bounds.height - CGFloat(row + 1) * cell.height,
+                               width: CGFloat(last - first + 1) * cell.width, height: cell.height).insetBy(
+                dx: -2,
+                dy: 0,
+            )
+            tint.addSublayer(box)
         }
-        layer.addSublayer(lines)
-        underline = lines
-    }
-
-    /// Ghostty's underline in pixels from a cell's bottom (`font/Metrics.zig`): the font centered in the cell, the
-    /// line's top at the font's underline position under the baseline, at least 1 px thick.
-    private static func underline(cellHeight: CGFloat, scale: CGFloat) -> (bottom: CGFloat, height: CGFloat) {
-        let font = PaneTerminal.font(scale: scale), face = font.ascender - font.descender + font.leading
-        let baseline = (font.leading / 2 - font.descender - (cellHeight - face) / 2).rounded()
-        let height = max(1, font.underlineThickness.rounded(.up))
-        // Rounded from the cell's top, as Ghostty does.
-        let top = cellHeight - (cellHeight - baseline - font.underlinePosition).rounded()
-        return (max(0, top - height), height)
+        layer.addSublayer(tint)
+        linkTint = tint
     }
 
     /// An OSC 8 link libghostty reports: libghostty reports one only while ⌘ is down, so the pointer moves there with

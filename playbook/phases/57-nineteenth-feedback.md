@@ -2578,7 +2578,7 @@ ones".
 
 ### Track L2 (items 100, 101)
 
-- **⌘⌥-click (100).** A new opening, `Opening.mac`: ⌘⌥ alone shows a terminal link (underline, pointing hand, its
+- **⌘⌥-click (100).** A new opening, `Opening.mac`: ⌘⌥ alone shows a terminal link (tint, pointing hand, its
   accessibility title) as ⌘ and ⌥ do, and its click opens the link in the Mac's default app with `NSWorkspace`: a web
   address in the default browser, `mailto:` in Mail, another scheme (`ftp:`) in its app when the Mac has one, a file
   in its app, a folder in the Finder. A path is checked first ("File not found: ‹path›" when gone); a file on a remote
@@ -2594,10 +2594,16 @@ ones".
 - **Fix, selection.** Selected text takes the theme's text color, as Ghostty's own Alabaster (`#000000` on `#BFDBFE`)
   and Afterglow (`#D0D0D0` on `#303030`) themes do. Light takes Ghostty's Alabaster colors; dark keeps the blue
   `#1B3A58` under Afterglow's `#D0D0D0` (7.6 to 1): Ghostty's `#303030` is 1.1 to 1 over a dark card.
-- **Fix, underline (101b).** Before Track L, libghostty drew the link underline: at the font's underline position,
-  in the cell's text color. Track L's own line was 1 pt thick, 1 pt above the cell's bottom, in full text color. Now
-  it is Ghostty's underline (`font/Metrics.zig`): the font centered in the cell, the top at the font's underline
-  position, its thickness rounded up (2 px for SF Mono 13 pt on 2x), in the secondary text color (`secondaryLabelColor`).
+- **Fix, the link's look (101b, and the follow-up).** Before Track L, libghostty drew the hover underline at the
+  font's underline position; Track L's own line sat 2 px higher, so over a TUI's underlined link two lines showed.
+  An underline of any kind fights the text's own formatting, so the hovered link now gets a tint instead: one rounded
+  box a row (the label color at 0.12, 4 pt corners, 2 pt past the ends), only the link under the pointer, with the
+  pointing hand. It leaves a TUI's underline, colors and the selection as they are. Tried in the VM side by side, dark
+  and light, over plain, underlined, colored, OSC 8 and selected text: Ghostty's underline (overlaps an SGR 4
+  underline, so it adds nothing there), a grey tint (picked), an accent tint (gone over the blue selection) and an
+  outline (reads as a button). Ghostty, iTerm2, VS Code's terminal and Warp underline on hover; they draw it as the
+  cell's own underline attribute, which Ovvi's overlay cannot. An OSC 8 link keeps libghostty's hover underline: it
+  gives no cell range to tint.
 - **Text weight (101c).** Ovvi's libghostty config matches Ghostty's defaults for rendering: `font-thicken = false`
   (Ghostty's default; the package's old `true` went away in Track N), `alpha-blending = native`, 13 pt, sRGB. In the
   VM, Ghostty.app 1.4.0 and Ovvi with the same font (`.AppleSystemUIFontMonospaced`, SF Mono) put the same ink on the
@@ -2607,11 +2613,12 @@ ones".
   is a step brighter than Afterglow's `#D0D0D0`. No change: JetBrains Mono, installed on the user's Mac, is in
   Settings' Font menu.
 - **Runs.** VM: a scratch look scene (not committed) on `4942f142^` and on the fix, Glass and Classic, dark and
-  light: text, ⌘ hover, selection. Ghostty.app in the VM with SF Mono and with its defaults. CI 43147471618 (chosen
+  light: text, ⌘ hover, selection; a second one with the four hover looks. Ghostty.app in the VM with SF Mono and
+  with its defaults. CI 43147471618 (chosen
   tests, executed 3: the link test with its new ⌘⌥ steps, selected text, the floating link) green. Pictures:
   `~/Downloads/ovvi-research/p57l2/`.
 - **For the user.** Select text in a pi or Claude Code pane, dark and light: one text color on the blue. Hold ⌘ over
-  a link: a thin grey underline under the text. ⌘⌥-click a web link (default browser), a file (its app) and a folder
+  a link, also one a TUI underlines: a soft grey box behind it, no second line. ⌘⌥-click a web link (default browser), a file (its app) and a folder
   (Finder); on a remote card a file says it is on that machine.
 
 ### Track H2 (item 112)

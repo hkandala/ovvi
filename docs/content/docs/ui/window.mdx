@@ -762,11 +762,13 @@ terminal.
 - **The look.** A link looks the same under the pointer with ⌘ or ⌥ down
   as with neither: in Markdown (locked, and unlocked off the caret's line)
   an underline and the pointing hand, in the browser the page's own look.
-  The terminal, where only ⌘-, ⌥- and ⌘⌥-click open a link, shows an
-  underline and the pointing hand only while ⌘, ⌥ or ⌘⌥ alone is down, the
-  same for each. ⌃, ⇧ or another pair of keys shows none. The underline is
-  the font's own: at its underline position, as thick as its underline, in
-  the secondary text color.
+  The terminal, where only ⌘-, ⌥- and ⌘⌥-click open a link, shows the link
+  under the pointer and the pointing hand only while ⌘, ⌥ or ⌘⌥ alone is
+  down, the same for each. ⌃, ⇧ or another pair of keys shows none. The link
+  gets a tint (the label color at 0.12, 4 pt corners, 2 pt past its
+  ends, one box a row), not an underline: it leaves the text's own
+  underline, colors and selection as they are. Only the hovered link shows.
+  An OSC 8 link shows libghostty's own hover underline instead.
 - **In the background** means that the selected tab and the keyboard stay
   where they are: a ⌘-click on one link after another opens each one. The
   menu's Open in New Tab and Open to the Side open in the background too.

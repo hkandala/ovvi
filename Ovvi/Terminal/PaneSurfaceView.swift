@@ -18,7 +18,7 @@ final class PaneSurfaceView: AppTerminalView {
     /// An OSC 8 link libghostty reports.
     var hoveredLink: String?
     var hovered: Hovered?, hoveredCell: TerminalLink.Place?
-    var underline: CALayer?
+    var linkTint: CALayer?
     var fakesCommand = false
     var openLink: ((TerminalLink, Opening) -> Void)?
     private var scrolled: CGFloat = 0
