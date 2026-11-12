@@ -21,7 +21,7 @@ type Tree = {
  *  the tree's; beside a file the row 2 is the file's, and a folder opened in the tree, or `..`, roots it there and
  *  leaves the card where it is. */
 export function sidebar(ovvi: Ovvi) {
-  const aside = document.body.appendChild(document.createElement("aside"))
+  const aside = document.body.appendChild(document.createElement("div"))
   aside.id = "side"
   const grip = Object.assign(document.createElement("div"), { className: "grip" })
   aside.append(grip)
@@ -45,7 +45,7 @@ export function sidebar(ovvi: Ovvi) {
   const paged = () => Boolean(document.body.querySelector(':scope > .ovvi-page[data-place="files"]:not([inert])'))
   const folder = (path: string) => path.slice(0, path.lastIndexOf("/") + 1)
   /** The last shown last. */
-  let trees: Tree[] = [], current: Tree | undefined, file = ""
+  let trees: Tree[] = [], current: Tree | undefined, file = "", next = ""
   ovvi.on("settings", (changed) => "file-tree" in changed && show())
 
   function draw(root: string, at?: string): Tree {
@@ -54,6 +54,7 @@ export function sidebar(ovvi: Ovvi) {
     const held = (off: Off) => (dropped ? off() : offs.push(off), off)
     const element = aside.insertBefore(document.createElement("div"), grip)
     element.dataset.place = "files"
+    element.inert = true
     const tree: Tree = {
       root, element, reveal: Promise.resolve(undefined), due: new Set(), values: new Map(),
       handlers: { control: new Set(), find: new Set() },
@@ -93,12 +94,15 @@ export function sidebar(ovvi: Ovvi) {
       },
       card: {
         value: Object.create(ovvi.card, {
-          go: { value: (arg: string, options?: { at?: string }) => void (paged() ? ovvi.card.go(arg, options) : rooted(arg)) },
+          go: {
+            value: (arg: string, options?: { at?: string }) =>
+              void (paged() ? ovvi.card.go(arg, options) : rooted(arg, file || undefined)),
+          },
         }),
       },
       open: {
         value: (arg: string, options?: Parameters<Ovvi["open"]>[1]) =>
-          options?.how === "card" && arg.endsWith("/") && !paged() ? Promise.resolve(void rooted(arg)) : ovvi.open(arg, options),
+          options?.how === "card" && arg.endsWith("/") && !paged() ? rooted(arg, file || undefined) : ovvi.open(arg, options),
       },
     })
     const place: Place = {
@@ -114,21 +118,22 @@ export function sidebar(ovvi: Ovvi) {
     return tree
   }
 
-  /** The tree of this root shows, drawn the first time, with `at` selected. */
-  function rooted(root: string, at?: string) {
-    let tree = trees.find((each) => each.root === root)
-    if (!tree) tree = draw(root, at)
-    else if (at) void tree.reveal.then((reveal) => reveal?.(at))
+  /** The tree of this root shows, with `at` selected, once it has its rows: until then the card shows what it showed.
+   *  It shows only if no other root was asked for meanwhile, and `still` holds. */
+  async function rooted(root: string, at?: string, still = () => true) {
+    next = root
+    const found = trees.find((each) => each.root === root)
+    const tree = found ?? draw(root, at)
+    if (found && at) void tree.reveal.then((reveal) => reveal?.(at))
+    else if (!found) trees.push(tree)
+    await tree.reveal
+    if (next !== root || !still() || !trees.includes(tree)) return
     trees = [...trees.filter((each) => each !== tree), tree]
     for (const old of trees.splice(0, Math.max(0, trees.length - 5))) old.drop()
     current = tree
-    for (const each of trees) {
-      each.element.toggleAttribute("data-shown", each === tree)
-      each.element.inert = each !== tree
-    }
+    for (const each of trees) each.element.inert = each !== tree
     for (const fn of tree.due) fn()
     tree.due.clear()
-    return tree
   }
 
   function show() {
@@ -136,7 +141,7 @@ export function sidebar(ovvi: Ovvi) {
     document.body.toggleAttribute("data-side", on)
     if (!file) return
     if (!on) return give()
-    if (!current) rooted(folder(file), file)
+    if (!current) void rooted(folder(file), file)
     else void current.reveal.then((reveal) => reveal?.(file))
   }
 
@@ -161,10 +166,11 @@ export function sidebar(ovvi: Ovvi) {
     /** The card shows the tree's page of this root, with that page's row 2: resolves once the tree has its rows. */
     async page(header: Ovvi, root: string, at?: string) {
       file = ""
-      const tree = rooted(root, at)
-      tree.header = header
-      for (const [id, change] of tree.values) header.controls.set(id, change)
-      await tree.reveal
+      const shown = rooted(root, at, () => ovvi.card.arg === root)
+      const tree = trees.find((each) => each.root === root)
+      if (tree) tree.header = header
+      for (const [id, change] of tree?.values ?? []) header.controls.set(id, change)
+      await shown
     },
     /** Row 2 of the tree's page, and its ⌘F. */
     emit(event: "control" | "find", data?: unknown) {

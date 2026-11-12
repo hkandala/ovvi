@@ -53,7 +53,7 @@ const look = {
   [data-item-path="${UP}"] > [data-item-section="icon"] > svg { visibility: hidden; }
   [data-item-selected="true"] > [data-item-section="icon"] { color: var(--dim); }
   /* A long name on one line, cut at its end, as VS Code's explorer: Pierre cuts it in the middle, under a marker that
-     needs an opaque row to hide the letters below it. */
+     needs an opaque row to hide the letters below it. Pierre's own markup (1.0.0-beta.6): check it on an update. */
   [data-item-section="content"] { white-space: nowrap; }
   [data-item-section="content"] :is([data-truncate-group-container], [data-truncate-segment-priority],
     [data-truncate-container], [data-truncate-grid], [data-truncate-grid] > div) { display: contents; }
@@ -459,11 +459,12 @@ export async function show(place: Place): Promise<Reveal> {
   }
 
   for (const trees of [host, matches]) {
-    // A cut name shows whole in a tooltip, as in the Finder.
-    trees.addEventListener("pointerover", (event) => {
+    // A cut name shows whole in a tooltip, as in the Finder. On each move: the list reuses its rows as it scrolls.
+    trees.addEventListener("pointermove", (event) => {
       const node = event.composedPath().find((n): n is HTMLElement => n instanceof HTMLElement && Boolean(n.dataset.itemPath))
       const text = node?.querySelector<HTMLElement>('[data-item-section="content"]')
-      if (node && text) node.title = text.scrollWidth > text.clientWidth ? name(node.dataset.itemPath!) : ""
+      const title = text && text.scrollWidth > text.clientWidth ? name(node!.dataset.itemPath!) : ""
+      if (node && node.title !== title) node.title = title
     })
     // Captured ahead of the tree's own click: ⌘ adds to its selection, a click toggles a folder.
     trees.addEventListener(

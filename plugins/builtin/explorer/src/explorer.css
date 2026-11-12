@@ -31,7 +31,7 @@
 body[data-side] #side { visibility: visible; }
 body[data-side] .ovvi-page:not([data-place="files"]) { left: calc(min(var(--side-width), 60%) + 1px); }
 #side > [data-place="files"] { position: absolute; inset: 0; }
-#side > [data-place="files"]:not([data-shown]) { visibility: hidden; }
+#side > [inert] { visibility: hidden; }
 #side footer { display: none; }
 #side .grip { position: absolute; z-index: 6; top: 0; bottom: 0; right: -4px; width: 7px; cursor: col-resize; }
 /* The tree's page: the same tree over the whole card, with its status bar. Its routed page stays empty. */
