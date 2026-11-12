@@ -5,7 +5,8 @@ Started by the chooser with Ovvi's flags (`--session-id T --settings <json>`), i
 writes a transcript in Claude Code's format, reports its state to herdr and answers prompts on its terminal: "wait"
 shows a dialog until 1 is typed, "ask" asks a question through the PermissionRequest hook, "slow" works until Esc,
 "mute" drops the next prompt, "long" gets a command with 200 lines of output, "big" writes 330 KB of lines the chat
-skips (as a real session's API records), "table" gets a table wider than any card, "steps" gets a reply, a command, a
+skips (as a real session's API records), "table" gets a table wider than any card, "grid" one as a
+research reply has (bold names, links, a wrapped last row), "steps" gets a reply, a command, a
 reply, two commands and a reply, "many" writes 150 more turns (a long session; "many 25" that many, "many 10 30" 10
 with 30 more paragraphs each), a prompt of OVVI_STAND_IN_SCENE's turns plays that turn (scripts/welcome-scene/scene.py), anything else gets one command and the
 reply "Echo: <prompt>". Ctrl-C clears the line, and on an empty one asks for another;
@@ -149,6 +150,16 @@ def prompt(text, started):
         rows = ["| " + " | ".join(f"Column {n}" for n in range(1, 7)) + " |", "|" + "---|" * 6]
         rows += ["| " + " | ".join(f"Row {r}, {cell}" for _ in range(6)) + " |" for r in range(1, 4)]
         reply("\n".join(rows), started)
+    elif text == "grid":
+        rows = ["| | What it does | How close to your setup | Where |", "|---|---|---|---|",
+                "| **ARC-AGI-3** | Agent plays 3-level games on a grid and learns their rules | Close: same loop of "
+                "observe, act, check | `docs/arc.md` |",
+                "| **BALROG** | Text and pixel games with long horizons and sparse rewards | Partly: no tools, only "
+                "moves | https://example.com/balrog |",
+                "| **NetHack** | One run to the end, saved at checkpoints. | Far: one game, no tasks | `docs/nethack.md` |",
+                "| **Embodied** | First-person **navigation** tasks in MiniWorld and Habitat | Far: a 3D world, "
+                "no text | `docs/embodied.md` |"]
+        reply("Benchmarks:\n\n" + "\n".join(rows) + "\n\nAfter the table.", started)
     elif text == "big":
         for _ in range(40):
             write("api-request-blob", blob="x" * 8192)

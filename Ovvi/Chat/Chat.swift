@@ -9,6 +9,7 @@ final class Chat {
     }
 
     struct Outgoing: Identifiable, Equatable {
+        static let dimmed = 0.7
         let id = UUID()
         let text: String
         var notSent = false
@@ -44,6 +45,8 @@ final class Chat {
     @ObservationIgnored var queued: [(source: String?, body: (inout ChatHistory) -> Void)] = []
     @ObservationIgnored var source: String?
     @ObservationIgnored private var viewers = 0
+    /// A card showed the chat: its TUI follows the agent too, so that a switch back shows the rows at once.
+    @ObservationIgnored private(set) var shown = false
     @ObservationIgnored private var following: Task<Void, Never>?
 
     init(adapter: any ChatAdapter, paneID: String, terminalID: String, store: HostStore, current: Bool) {
@@ -75,6 +78,7 @@ final class Chat {
     }
 
     func viewed() async {
+        shown = true
         viewers += 1
         if viewers == 1, let store {
             let old = following

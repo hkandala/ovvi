@@ -64,7 +64,7 @@ struct FloatingWindow: View {
                 } else if let chat, chat.showsChat {
                     ChatView(chat: chat, page: page, terminal: terminal)
                 } else if let terminal {
-                    terminalCard(terminal, page, pane, faded: chooser != nil, commands)
+                    terminalCard(terminal, page, pane, faded: chooser != nil, commands).follows(chat)
                 } else {
                     Color.clear
                 }

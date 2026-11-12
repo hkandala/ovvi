@@ -92,6 +92,7 @@ struct PaneCard: View {
                             TerminalItems(view: terminal.view)
                             PaneItems(page: page, pane: pane)
                         }
+                        .follows(chat)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity).environment(\.litCard, lit)

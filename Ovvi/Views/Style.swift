@@ -156,6 +156,16 @@ struct Look: Equatable {
         dark ? Color(hex: 0x3B3B3D) : Color(hex: 0xE5E5EA)
     }
 
+    /// The reply box's glass tint: the card's own color, so that text scrolled under the box stays faint.
+    var replyBox: Color {
+        cardSolid().opacity(0.6)
+    }
+
+    /// A browser's default link color (HTML's `#0000EE`; Safari, Chrome and Firefox under `color-scheme: dark`).
+    var link: Color {
+        dark ? Color(hex: 0x9E9EFF) : Color(hex: 0x0000EE)
+    }
+
     private func pick<Value>(_ glassDark: Value, _ glassLight: Value, _ classicDark: Value,
                              _ classicLight: Value) -> Value
     {

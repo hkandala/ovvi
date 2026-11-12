@@ -30,6 +30,18 @@ extension Page {
     }
 }
 
+extension View {
+    /// The TUI of a chat that showed follows its agent as the chat does: a switch back to Chat then shows the rows at
+    /// once, not a blank while the transcript is read again.
+    func follows(_ chat: Chat?) -> some View {
+        task(id: chat.map(ObjectIdentifier.init)) {
+            if let chat, chat.shown {
+                await chat.viewed()
+            }
+        }
+    }
+}
+
 struct ChatSwitch: View {
     @Bindable var chat: Chat
     let page: Page

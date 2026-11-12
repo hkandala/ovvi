@@ -145,23 +145,24 @@ extension OvviUITests {
         XCTAssertTrue(row(pane, "reply", "Echo: **hello**").exists(within: 5))
         element("pane.\(pane).view.tui").click()
         XCTAssertTrue(hasKeyboard("terminal.\(pane)"))
-        // 150 turns: enough lines that reading them takes a while.
-        app.typeText("many\r")
+        // 150 long turns: reading them again would take a while.
+        app.typeText("many 150 20\r")
         try await waitFor(pane) { $0.contains("Last.") }
         element("pane.\(pane).view.chat").click()
-        // Each look is one snapshot: the first that holds the chat must hold the last reply, in view.
-        var seen: [XCUIElementSnapshot] = []
-        XCTAssertTrue(until(5) {
-            seen = (try? nodes(of: mainWindows.firstMatch)) ?? []
-            return seen.contains { $0.identifier == "chat.\(pane)" }
-        })
-        let chat = seen.first { $0.identifier == "chat.\(pane)" }?.frame ?? .zero
-        let last = seen.first { $0.identifier == "chat.\(pane).reply" && $0.value as? String == "Last." }?.frame
-        XCTAssertNotNil(last, "the chat showed the rows from before the turns")
-        XCTAssertTrue(
-            last.map { chat.contains(CGPoint(x: $0.midX, y: $0.midY)) } == true,
-            "\(String(describing: last)) \(chat)",
-        )
+        // Each look is one snapshot: no loader, and once the rows show they stay, until the last reply is in view.
+        var looks: [String] = []
+        XCTAssertTrue(until(10) {
+            let seen = (try? nodes(of: mainWindows.firstMatch)) ?? []
+            let chat = seen.first { $0.identifier == "chat.\(pane)" }?.frame
+            let last = seen.first { $0.identifier == "chat.\(pane).reply" && $0.value as? String == "Last." }?.frame
+            let loader = seen.contains { $0.identifier == "chat.\(pane).loading" }
+            let look = loader ? "loader" : chat == nil ? "blank" : "rows"
+            if looks.last != look {
+                looks.append(look)
+            }
+            return last.map { chat?.contains(CGPoint(x: $0.midX, y: $0.midY)) == true } == true
+        }, "\(looks)")
+        XCTAssertFalse(looks.contains("loader") || looks.drop { $0 != "rows" }.contains("blank"), "\(looks)")
         let window = float(pane)
         XCTAssertTrue(element("chat.\(pane).composer", in: window).exists(within: 5))
     }
@@ -182,15 +183,15 @@ extension OvviUITests {
         let one = composer.frame.height
         var heights: [Int: CGFloat] = [:]
         app.typeText("1")
-        for line in 2 ... 7 {
+        for line in 2 ... 12 {
             app.typeKey(.return, modifierFlags: line.isMultiple(of: 2) ? .shift : .option)
             app.typeText("\(line)")
             XCTAssertTrue(until(2) { composer.stringValue.hasSuffix("\n\(line)") })
             heights[line] = composer.frame.height
         }
         XCTAssertGreaterThan(heights[3] ?? 0, one * 2.5, "\(one) \(heights)")
-        XCTAssertGreaterThan(heights[5] ?? 0, heights[4] ?? 0, "\(heights)")
-        XCTAssertEqual(heights[7], heights[5], "\(heights)")
+        XCTAssertGreaterThan(heights[10] ?? 0, heights[9] ?? 0, "\(heights)")
+        XCTAssertEqual(heights[12], heights[10], "\(heights)")
         app.typeKey("a", modifierFlags: .command)
         app.typeKey(.delete, modifierFlags: [])
 

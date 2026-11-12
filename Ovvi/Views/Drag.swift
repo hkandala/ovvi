@@ -182,6 +182,10 @@ extension Animation {
     static var slide: Animation? {
         reduced ? nil : .timingCurve(.slide, duration: 0.22)
     }
+
+    static var fade: Animation? {
+        reduced ? nil : .easeOut(duration: 0.2)
+    }
 }
 
 extension UnitCurve {

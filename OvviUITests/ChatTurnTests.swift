@@ -11,8 +11,10 @@ extension OvviUITests {
         let card = element("pane.\(pane)").frame
         XCTAssertGreaterThan(empty.frame.height, 90, "the phrase sits beside the glyph: \(empty.frame)")
         XCTAssertEqual(empty.frame.midX, composer.frame.midX, accuracy: 2)
-        XCTAssertTrue(empty.frame.maxY < composer.frame.minY && card.maxY - composer.frame.maxY > card.height / 4,
-                      "\(empty.frame) \(composer.frame) in \(card)")
+        XCTAssertTrue(empty.frame.maxY < composer.frame.minY, "\(empty.frame) \(composer.frame) in \(card)")
+        // The box from its padding (13 pt over the text, 11 under Send), in the card under its two header rows.
+        let box = (composer.frame.minY - 13 + element("chat.\(pane).send").frame.maxY + 11) / 2
+        XCTAssertEqual(box, (card.minY + 68 + card.maxY) / 2, accuracy: 3, "the box is not centered")
         let placeholders = ["What's on your mind?": "Ask or tell me anything",
                             "What are we building?": "Describe the feature",
                             "Where should we start?": "Name a file, a bug or a goal",

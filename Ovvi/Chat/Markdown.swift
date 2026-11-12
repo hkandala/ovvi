@@ -73,7 +73,9 @@ private struct Block: View {
             // As a web page lays one out: wider than the reply, it scrolls sideways in its own box.
             ViewThatFits(in: .horizontal) {
                 TableGrid(table: table)
-                ScrollView(.horizontal) { TableGrid(table: table) }
+                // At its own height: the scroll view offers more, and the rows, which fill their height, took it and
+                // spilled past the box.
+                ScrollView(.horizontal) { TableGrid(table: table).fixedSize(horizontal: false, vertical: true) }
             }
         case is ThematicBreak:
             Divider().padding(.vertical, 4)
@@ -134,19 +136,20 @@ private struct TableGrid: View {
                             ChatLinks.text(Inline.text(rows[row][column], size: 14))
                                 .fontWeight(row == 0 ? .semibold : nil)
                                 .multilineTextAlignment(alignment == .trailing ? .trailing : .leading)
-                                // Its whole height: a sideways scroll view offers less.
-                                .fixedSize(horizontal: false, vertical: true)
                         }
                         .padding(.horizontal, 10).padding(.vertical, 6)
                         .frame(maxWidth: .infinity, maxHeight: .infinity,
                                alignment: Alignment(horizontal: alignment, vertical: .center))
-                        .background(row == 0 ? AnyShapeStyle(.primary.opacity(0.05)) : AnyShapeStyle(.clear))
+                        // The head's outer cells round their own top corner: a clip of the whole grid drew a rounded
+                        // fill in a head cell as it scrolled sideways.
+                        .background(row == 0 ? AnyShapeStyle(.primary.opacity(0.05)) : AnyShapeStyle(.clear),
+                                    in: .rect(topLeadingRadius: column == 0 ? 8 : 0,
+                                              topTrailingRadius: column == rows[row].count - 1 ? 8 : 0))
                         .gridColumnAlignment(alignment)
                     }
                 }
             }
         }
-        .clipShape(.rect(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.quaternary))
     }
 

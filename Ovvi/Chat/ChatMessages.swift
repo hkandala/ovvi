@@ -32,7 +32,7 @@ struct ChatMessages: View, Equatable {
         ("What can I help with?", "Ask a question or give a task"), ("Ready when you are.", "Type your first message"),
     ]
     private static let end = "end"
-    fileprivate nonisolated static let space = "chat.messages"
+    nonisolated static let space = "chat.messages"
     /// About two views of text, at most `block` rows. Each time the card is made it lays them out: 31 rows of long
     /// replies, 383 Markdown blocks, took 394 ms of main thread, and 120 lines (5 rows) 124 ms, against 34 ms for a
     /// terminal tab. A split lays them out once, at its end: 40 rows of long replies took one frame of 40–50 ms, 100
@@ -55,15 +55,17 @@ struct ChatMessages: View, Equatable {
             // No scroll view until there is something to show: one made empty keeps the top inset that held its empty
             // content at the bottom after a long history loads, a blank above the messages.
             if !drawn {
-                Color.clear.task { drawn = true }
+                Color.clear.task { withAnimation(.fade) { drawn = true } }
             } else if reading || welcome {
                 empty(loading: reading)
             } else {
                 // Also while the transcript a sent message starts loads (Claude Code and pi write it with the first
                 // message): a spinner in its place took the message away right after it rose.
-                messages
+                messages.transition(.opacity)
             }
         }
+        // The rows fade in as they first show, in a card just made or once its history is read.
+        .animation(.fade, value: reading)
         // The first message rises from the reply box as the box goes down. Not a transition: an offset transition
         // moves nothing here, only its fade runs.
         .keyframeAnimator(initialValue: 0.0, trigger: Animation.reduced ? false : welcome) { content, rise in
@@ -87,10 +89,12 @@ struct ChatMessages: View, Equatable {
                             .id(question.raw)
                     }
                     Composer(chat: chat, composing: composing, placeholder: welcome ? phrase.placeholder : nil)
+                        .alignmentGuide(.replyBox) { $0[VerticalAlignment.center] }
                 }
                 // The box's text on the messages' edges: the box reaches past them by its own padding.
                 .padding(.bottom, 14).padding(.top, 4).readingColumn(margin: 32 - Composer.inset)
-                .frame(maxHeight: welcome ? .infinity : nil)
+                // The empty chat's middle is the box's, its header above it.
+                .frame(maxHeight: welcome ? .infinity : nil, alignment: .init(horizontal: .center, vertical: .replyBox))
             }
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height.value = $0 }
@@ -295,7 +299,8 @@ private extension ChatMessages {
     func outgoing(_ message: Chat.Outgoing, error: Color) -> some View {
         VStack(alignment: .trailing, spacing: 4) {
             // Dimmed until the agent takes it.
-            UserBubble(text: message.text, paneID: chat.paneID, sending: true).opacity(message.notSent ? 0.5 : 0.7)
+            UserBubble(text: message.text, paneID: chat.paneID, sending: true)
+                .opacity(message.notSent ? 0.5 : Chat.Outgoing.dimmed)
             if message.notSent {
                 Text("Not sent").font(.system(size: 11)).foregroundStyle(error)
                     .accessibilityIdentifier("chat.\(chat.paneID).not-sent")
@@ -320,6 +325,17 @@ private extension ChatMessages {
     }
 }
 
+private extension VerticalAlignment {
+    enum ReplyBox: AlignmentID {
+        static func defaultValue(in context: ViewDimensions) -> CGFloat {
+            context[VerticalAlignment.center]
+        }
+    }
+
+    /// A custom guide, as a stack passes on only those: `center` is the stack's own.
+    static let replyBox = VerticalAlignment(ReplyBox.self)
+}
+
 @MainActor
 private final class Height {
     var value: CGFloat = 0
@@ -336,55 +352,5 @@ private struct Filler: View {
 
     var body: some View {
         Color.clear.frame(height: height.value)
-    }
-}
-
-/// Not observed: it changes at every scroll frame.
-@MainActor
-private final class Tops {
-    var places: [String: CGFloat] = [:]
-    var held: (id: String, by: CGFloat)?
-
-    func hold(at offset: CGFloat, bottom: Bool) {
-        let above = places.lazy.filter { $0.value <= offset }
-        let row = bottom ? nil : above.max { $0.value < $1.value } ?? places.min { $0.value < $1.value }
-        held = row.map { ($0.key, offset - $0.value) }
-    }
-}
-
-private struct Rows: View {
-    let chat: Chat
-    let rows: ArraySlice<ChatRow>
-    let tops: Tops
-    let restore: (CGFloat) -> Void
-    @State private var opened: Set<String> = []
-    @State private var openTools: Set<String> = []
-
-    var body: some View {
-        ForEach(rows) { row in
-            ChatRowView(row: row, paneID: chat.paneID, counts: counts(row), steps: steps(row),
-                        toggle: { opened.formSymmetricDifference([row.id]) }, opened: openTools,
-                        toggleTool: { openTools.formSymmetricDifference([$0]) })
-                .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named(ChatMessages.space)).minY } action: { top in
-                    tops.places[row.id] = top
-                    if let held = tops.held, held.id == row.id {
-                        restore(top + held.by)
-                    }
-                }
-                .onDisappear { tops.places[row.id] = nil }
-        }
-    }
-
-    /// Copied: a slice would hold the history's entries, and each new entry would copy them all.
-    private func steps(_ row: ChatRow) -> [ChatEntry]? {
-        guard case let .stack(id, steps) = row, opened.contains(id) else { return nil }
-        let entries = chat.history.entries
-        return Array(entries[steps.clamped(to: entries.indices)])
-    }
-
-    private func counts(_ row: ChatRow) -> String {
-        guard case let .stack(_, steps) = row else { return "" }
-        let entries = chat.history.entries
-        return ChatTool.summary(entries[steps.clamped(to: entries.indices)].compactMap(\.tool))
     }
 }

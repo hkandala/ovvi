@@ -58,39 +58,35 @@ enum ChatLinks {
 }
 
 extension EnvironmentValues {
-    /// The links' color: the accent, white in the user's bubble.
-    @Entry var chatLink = Color.accentColor
+    /// The links' color: white in the user's bubble, else the look's.
+    @Entry var chatLink: Color?
 }
 
-/// Text whose links look like links in any app: underlined, in the link color, and lighter with the pointing hand
-/// under the pointer. A clear area over each link takes its pointer and click: selectable text shows its I-beam over a
-/// `pointerStyle` of its own, and SwiftUI then sends no hover, so an AppKit tracking area tells the link.
-/// ponytail: past `hovers` links (a tool's output that lists paths) no hover: each link nests the joined `Text` a level
-/// deeper, and 750 levels overflowed the stack. Join in pairs if long lists need it.
+/// Text whose links look as a browser draws them by default: underlined, in the link color, with the pointing hand and
+/// no change under the pointer. A clear area over each link takes its pointer and click: selectable text shows its
+/// I-beam over a `pointerStyle` of its own.
+/// ponytail: past `areas` links (a tool's output that lists paths) no areas, so the I-beam: each link nests the joined
+/// `Text` a level deeper, and 750 levels overflowed the stack. Join in pairs if long lists need it.
 struct LinkedText: View {
     let text: AttributedString
-    @State private var hovered: Int?
     @Environment(\.openURL) private var openURL
-    @Environment(\.chatLink) private var color
-    private static let hovers = 100
+    @Environment(\.chatLink) private var chatLink
+    @Environment(\.look) private var look
+    private static let areas = 100
 
     var body: some View {
         let links = text.runs[\.link].compactMap { url, range in url.map { ($0, range) } }
-        if links.count > Self.hovers {
+        let color = chatLink ?? look.link
+        if links.count > Self.areas {
             Text(links.reduce(into: text) { text, link in
                 text[link.1].underlineStyle = .single
                 text[link.1].foregroundColor = color
             })
         } else {
-            joined(links.map(\.1))
+            joined(links.map(\.1), color: color)
                 .overlayPreferenceValue(Text.LayoutKey.self) { layouts in
                     GeometryReader { geometry in
                         let parts = Self.frames(layouts, geometry)
-                        LinkHover(parts: parts) { link in
-                            if link != hovered {
-                                hovered = link
-                            }
-                        }
                         ForEach(parts.indices, id: \.self) { place in
                             let part = parts[place]
                             Color.clear.contentShape(.rect)
@@ -106,12 +102,11 @@ struct LinkedText: View {
                         }
                     }
                 }
-                .textRenderer(Hover(link: hovered))
         }
     }
 
     /// Each link a `Text` of its own, marked, so that the layout tells where it is.
-    private func joined(_ links: [Range<AttributedString.Index>]) -> Text {
+    private func joined(_ links: [Range<AttributedString.Index>], color: Color) -> Text {
         var parts: [Text] = [], end = text.startIndex
         for (index, range) in links.enumerated() {
             var link = AttributedString(text[range])
@@ -149,65 +144,6 @@ private struct LinkMark: TextAttribute {
 }
 
 /// A line's part of a link.
-private struct LinkPart: Equatable {
+private struct LinkPart {
     let link: Int, rect: CGRect
-}
-
-/// The link under the pointer lighter, drawn without a new layout: a new one clears a selection.
-private struct Hover: TextRenderer {
-    let link: Int?
-
-    func draw(layout: Text.Layout, in context: inout GraphicsContext) {
-        for run in layout.flatMap(\.self) {
-            var context = context
-            if link != nil, run[LinkMark.self]?.index == link {
-                context.opacity = 0.7
-            }
-            context.draw(run)
-        }
-    }
-}
-
-/// Which link the pointer is over, from an AppKit tracking area: SwiftUI sends no hover under the links' click areas.
-private struct LinkHover: NSViewRepresentable {
-    let parts: [LinkPart]
-    let hover: (Int?) -> Void
-
-    func makeNSView(context _: Context) -> Tracker {
-        Tracker()
-    }
-
-    func updateNSView(_ view: Tracker, context _: Context) {
-        view.parts = parts
-        view.hover = hover
-    }
-
-    final class Tracker: NSView {
-        var parts: [LinkPart] = []
-        var hover: (Int?) -> Void = { _ in }
-        override var isFlipped: Bool {
-            true
-        }
-
-        override func hitTest(_: NSPoint) -> NSView? {
-            nil
-        }
-
-        override func updateTrackingAreas() {
-            super.updateTrackingAreas()
-            trackingAreas.forEach(removeTrackingArea)
-            addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseMoved, .mouseEnteredAndExited,
-                                                                  .activeInActiveApp, .inVisibleRect],
-                                           owner: self))
-        }
-
-        override func mouseMoved(with event: NSEvent) {
-            let point = convert(event.locationInWindow, from: nil)
-            hover(parts.first { $0.rect.contains(point) }?.link)
-        }
-
-        override func mouseExited(with _: NSEvent) {
-            hover(nil)
-        }
-    }
 }

@@ -159,3 +159,74 @@ struct QuestionCard: View {
         }
     }
 }
+
+private extension ChatRow {
+    var user: Bool {
+        if case .user = self {
+            true
+        } else {
+            false
+        }
+    }
+}
+
+private struct Dim: ViewModifier {
+    var opacity = Chat.Outgoing.dimmed
+
+    func body(content: Content) -> some View {
+        content.opacity(opacity)
+    }
+}
+
+/// Not observed: it changes at every scroll frame.
+@MainActor
+final class Tops {
+    var places: [String: CGFloat] = [:]
+    var held: (id: String, by: CGFloat)?
+
+    func hold(at offset: CGFloat, bottom: Bool) {
+        let above = places.lazy.filter { $0.value <= offset }
+        let row = bottom ? nil : above.max { $0.value < $1.value } ?? places.min { $0.value < $1.value }
+        held = row.map { ($0.key, offset - $0.value) }
+    }
+}
+
+struct Rows: View {
+    let chat: Chat
+    let rows: ArraySlice<ChatRow>
+    let tops: Tops
+    let restore: (CGFloat) -> Void
+    @State private var opened: Set<String> = []
+    @State private var openTools: Set<String> = []
+
+    var body: some View {
+        ForEach(rows) { row in
+            ChatRowView(row: row, paneID: chat.paneID, counts: counts(row), steps: steps(row),
+                        toggle: { opened.formSymmetricDifference([row.id]) }, opened: openTools,
+                        toggleTool: { openTools.formSymmetricDifference([$0]) })
+                .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named(ChatMessages.space)).minY } action: { top in
+                    tops.places[row.id] = top
+                    if let held = tops.held, held.id == row.id {
+                        restore(top + held.by)
+                    }
+                }
+                .onDisappear { tops.places[row.id] = nil }
+                // A message comes in dimmed, as its bubble showed until the agent took it.
+                .transition(row.user ? .asymmetric(insertion: .modifier(active: Dim(), identity: Dim(opacity: 1)),
+                                                   removal: .identity).animation(.fade) : .identity)
+        }
+    }
+
+    /// Copied: a slice would hold the history's entries, and each new entry would copy them all.
+    private func steps(_ row: ChatRow) -> [ChatEntry]? {
+        guard case let .stack(id, steps) = row, opened.contains(id) else { return nil }
+        let entries = chat.history.entries
+        return Array(entries[steps.clamped(to: entries.indices)])
+    }
+
+    private func counts(_ row: ChatRow) -> String {
+        guard case let .stack(_, steps) = row else { return "" }
+        let entries = chat.history.entries
+        return ChatTool.summary(entries[steps.clamped(to: entries.indices)].compactMap(\.tool))
+    }
+}

@@ -211,8 +211,8 @@ and no backslash.
     wrote. A chat that a launch of a new conversation made is current at
     once. A chat that resumed a session (Relaunch with Chat, a resume from
     Archived Sessions), one found running (after the app starts again) and
-    one that nothing followed for a while (its card was out of view, or the
-    TUI showed) are current once their transcript is read to its end, or is
+    one that nothing followed for a while (its card was out of view) are
+    current once their transcript is read to its end, or is
     missing (OpenCode: once its history loads, or it has no session; Codex:
     also once its side file names no session, as Codex starts a new one only
     with the first prompt). Until
@@ -228,8 +228,10 @@ and no backslash.
     the history again whole (Simpler choice: a long session is megabytes).
 - A new session line (`/clear`, `/new`, a fork, a resume) starts the history
   again.
-- The adapter follows only while a card shows the chat. Off screen, the
-  header's state is herdr's. A dropped stream is followed again after 2 s,
+- The adapter follows while a card shows the chat, and while it shows the
+  TUI of a chat it showed before: a switch back to Chat then shows the rows
+  at once, with no blank while the transcript is read again. Off screen,
+  the header's state is herdr's. A dropped stream is followed again after 2 s,
   from the marks.
 - A message shows when it is on disk, 0.1–2 s after the TUI draws it. There
   is no text word by word. While the agent works, the last row is Working's
@@ -335,7 +337,9 @@ line with the new leaf and `at`, the transcript's size at the move.
 - **Sent** means the user entry showed up in the history, matched by its
   text. Until then the app draws the bubble itself, dimmed (70 % opacity, 50 %
   once "Not sent"), so a message queued or still on its way reads as not yet
-  taken; it shows in full once the agent takes it. After 5 s, and once the
+  taken. Once the agent takes it, it goes from that dim to full over 0.2 s
+  (at once with Reduce Motion); so does any user message that comes into an
+  open chat. After 5 s, and once the
   agent no longer works or waits, "Not sent" shows under it in red, and the
   draft comes back when the reply box is empty. A late entry still clears
   it.
@@ -472,8 +476,9 @@ A run is one quiet line with no card: its summary and a chevron.
   line, tool rows, Working and Worked stay outside the bubbles.
 - Rows sit 10 pt apart, and a user's bubble has 8 pt more above and under
   it, so each turn reads as one block.
-- **An empty chat** of a new conversation puts a header and the reply box
-  together in the middle of the card, until the first message. The header is
+- **An empty chat** of a new conversation puts the reply box in the middle
+  of the card, under its header rows, and a header above the box, until the
+  first message. The header is
   the agent's program glyph (the one in the tab, 64 pt, at half opacity) with
   a phrase 14 pt under it in 26 pt semibold, picked at random when the chat
   view is made, with the reply box's placeholder that goes with it (after the
@@ -503,6 +508,9 @@ A run is one quiet line with no card: its summary and a chevron.
   pi write the transcript with the first message). An empty chat has no
   scroll view: the scroll view is made with the rows, at the bottom (one made
   empty keeps a blank above a long history that comes later).
+- **The rows fade in** over 0.2 s when they first show in a card: a card just
+  made (the rows come on the run loop turn after it), a switch back from the
+  TUI, a history read to its end (at once with Reduce Motion).
 - The messages, the question card and the reply box sit in a 760 pt column,
   centered on any card, 32 pt in from its sides. The messages scroll, newest
   at the bottom, and fade in under the header. A chat shorter than the view
@@ -594,8 +602,8 @@ A run is one quiet line with no card: its summary and a chevron.
     are 12.5 pt monospaced and scroll sideways. Quotes are secondary, behind
     a 3 pt bar. A rule is a divider. Strikethrough is drawn. HTML shows as
     written.
-  - A table sits in a faint frame (radius 8): the head row on a fill, a line
-    between rows, each column aligned as written. Each column is as wide as
+  - A table sits in a faint frame (radius 8): the head row on a fill whose
+    outer cells round their top corner, a line between rows, each column aligned as written. Each column is as wide as
     its text, up to 200 pt, where its text wraps. A table that fits the reply
     stretches to its width; a wider one keeps those widths and scrolls
     sideways in its own box, as a code block does, and a vertical scroll over
@@ -610,20 +618,24 @@ A run is one quiet line with no card: its summary and a chevron.
     it goes, and a transcript could hold `file:` or `ovvi:` links. A bare
     name such as `Ovvi.app`, `example.com` or `www.example.com` is no link.
     An edit's diff has no links.
-  - A link is underlined and in the accent color (white in the user's bubble),
-    as a browser draws a link, with no fill behind it. A link in inline code
-    (a path in backticks) keeps the code's fill. Under the pointer it turns
-    lighter (70 % opacity) and the pointer is the pointing hand. A link takes
+  - A link looks as a browser draws one with no style of the page's own
+    (Safari's, Chrome's and Firefox's default style sheet): underlined, in
+    the web's default link color (`#0000EE` light, `#9E9EFF` dark; white in
+    the user's bubble), with no fill behind it. Under the pointer it does not
+    change, and the pointer is the pointing hand, as in a browser. A link in
+    inline code (a path in backticks) keeps the code's fill. A link takes
     the press, as in a browser: a drag that starts on it selects nothing. A
     text with more than 100 links (a tool's output that lists paths) shows
-    them without the hover: each link in it costs layout.
+    them with the text's I-beam: each link's click area costs layout.
   - An image shows as its description, linked to its address. The chat never
     fetches it: a reply could send what the agent read to any server.
   - Footnotes read as written (`[^1]`): swift-markdown has none.
-- **The reply box.** A glass box (radius 18) with "Ask Anything", 14 pt. Its
+- **The reply box.** A glass box (radius 18), tinted with the card's own
+  color at 60 % so that the messages under it stay faint, with "Ask
+  Anything", 14 pt. Its
   text is 18 pt in from the box's sides, and the box is 14 pt in from the
   column, so the text lines up with the messages' 32 pt edges. It has 13 pt
-  of padding on top and 11 pt at the bottom. It grows up to 5 lines, then
+  of padding on top and 11 pt at the bottom. It grows up to 10 lines, then
   scrolls. Under
   the text, on the left: the model and the effort in 11 pt secondary
   ("Opus 5.5 · high"). Claude's model ids read as the family and version.
