@@ -99,8 +99,7 @@ public extension Exec {
     static var followScript: String {
         #"""
         f=$1; case $f in /*) ;; *) f=$HOME/$f ;; esac
-        [ -f "$f" ] || echo ovvi-missing
-        while [ ! -f "$f" ]; do sleep 0.5; done
+        m=ovvi-missing; while [ ! -f "$f" ]; do [ -z "$m" ] || echo $m; m=; sleep 0.5; done
         n=$(ls -i "$f" | awk '{print $1}'); s=$(wc -c <"$f" | tr -d ' '); o=$2
         [ "$n" = "$3" ] && [ "$s" -ge "$o" ] || o=0
         [ "$s" -eq 0 ] || [ -z "$(tail -c +"$s" "$f" | head -c 1)" ] ||
