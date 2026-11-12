@@ -62,7 +62,7 @@ struct OpenCode: ChatAdapter {
     /// No state line after 15 s (the company build ignores the plugin): the card shows its terminal.
     @MainActor func follow(_ chat: Chat, on exec: any Exec) async {
         let waits = Waits()
-        var server: Task<Void, Never>?, current: String?
+        var server: Task<Void, Never>?, followed: String?
         defer { server?.cancel() }
         let late = Task {
             try? await Task.sleep(for: .seconds(15))
@@ -76,44 +76,48 @@ struct OpenCode: ChatAdapter {
         // From the start each time: the last line holds the server and session.
         guard let lines = try? await exec.follow(folder + "/state.jsonl", from: FileMark()) else { return }
         for await batch in lines {
-            for line in batch where !Task.isCancelled {
-                guard case let .line(text, _) = line,
-                      let state = try? JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any],
-                      let pid = state["pid"] as? Int, pids.contains(pid),
-                      let url = state["url"] as? String, url.wholeMatch(of: /http:\/\/127\.0\.0\.1:[0-9]{1,5}/) != nil
-                else { continue }
-                let session = (state["session"] as? String).flatMap { Self.isID($0) ? $0 : nil }
-                if chat.problem == Self.unreported {
-                    chat.problem = nil
+            // The batch's last state only: a launch's first one has no session yet, which would clear the history.
+            guard !Task.isCancelled, let (state, url) = batch.reversed().lazy.compactMap(state).first else { continue }
+            let session = (state["session"] as? String).flatMap { Self.isID($0) ? $0 : nil }
+            if chat.problem == Self.unreported {
+                chat.problem = nil
+            }
+            waits.dialog = state["dialog"] as? Bool == true
+            let source = url + " " + (session ?? "")
+            if followed != source {
+                followed = source
+                server?.cancel()
+                waits.requests = []
+                waits.busy = nil
+                if chat.source != source {
+                    chat.history = ChatHistory()
+                    chat.source = source
+                    chat.problem = chat.problem?.hasPrefix(Self.serverProblem) == true ? nil : chat.problem
                 }
-                waits.dialog = state["dialog"] as? Bool == true
-                let source = url + " " + (session ?? "")
-                if current != source {
-                    current = source
-                    server?.cancel()
-                    waits.requests = []
-                    waits.busy = nil
-                    if chat.source != source {
-                        chat.history = ChatHistory()
-                        chat.source = source
-                        chat.problem = chat.problem?.hasPrefix(Self.serverProblem) == true ? nil : chat.problem
-                    }
-                    // No session yet: a new conversation.
-                    if session == nil {
-                        chat.current = true
-                    }
-                    server = session.map { session in
-                        Task {
-                            while !Task.isCancelled {
-                                await self.server(chat, url, session, waits, exec)
-                                try? await Task.sleep(for: .seconds(2))
-                            }
+                // No session yet: a new conversation.
+                if session == nil {
+                    chat.current = true
+                }
+                server = session.map { session in
+                    Task {
+                        while !Task.isCancelled {
+                            await self.server(chat, url, session, waits, exec)
+                            try? await Task.sleep(for: .seconds(2))
                         }
                     }
                 }
-                waits.publish(chat)
             }
+            waits.publish(chat)
         }
+    }
+
+    private func state(_ line: FollowedLine) -> ([String: Any], String)? {
+        guard case let .line(text, _) = line,
+              let state = try? JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any],
+              let pid = state["pid"] as? Int, pids.contains(pid),
+              let url = state["url"] as? String, url.wholeMatch(of: /http:\/\/127\.0\.0\.1:[0-9]{1,5}/) != nil
+        else { return nil }
+        return (state, url)
     }
 
     /// The history once the event stream is connected, so that nothing falls between the two.

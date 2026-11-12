@@ -14,7 +14,7 @@ final class FrameProbe {
     @ObservationIgnored private var start = 0.0
     @ObservationIgnored private var samples: [ObjectIdentifier: [Sample?]] = [:]
     @ObservationIgnored private var inks: [String: [Bool]?] = [:]
-    /// Commits that drew the TUI of a card whose chat is picked.
+    /// Commits that drew the TUI of a card whose chat is picked (not in its waiting drawer).
     @ObservationIgnored private var tuis = 0
 
     private struct Sample: Equatable {
@@ -54,7 +54,7 @@ final class FrameProbe {
         for terminalID in Set(panes.compactMap(\.terminalID)) {
             guard let terminal = pages.terminals.terminals([terminalID]).first else { continue }
             let sample = sample(terminal.view, in: window), id = ObjectIdentifier(terminal)
-            if sample != nil, page.store.chats[terminalID]?.showsChat == true {
+            if sample != nil, let chat = page.store.chats[terminalID], chat.showsChat, !chat.drawer {
                 tuis += 1
             }
             if samples[id]?.last != .some(sample) {

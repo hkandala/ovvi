@@ -91,6 +91,8 @@ extension OvviUITests {
             XCTAssertTrue(element("tab.\(other)").has(\.isSelected, true, within: 5), other)
         }
         let place = try await order(of: tab) ?? 0
+        // The last tab's record ends first.
+        try await Task.sleep(for: .seconds(2))
         let record = try await frames("back to the chat", key("\(place + 1)"))
         XCTAssertTrue(row(pane, "reply", "Echo: **hello**").exists(within: 5))
         XCTAssertFalse(record.split(separator: " ").last?.contains("t") == true, record)

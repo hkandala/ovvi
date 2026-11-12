@@ -81,7 +81,13 @@ extension Chat {
         // Lines buffered ahead of a cancel still come: not into the next follow's chat.
         for await batch in lines {
             for entry in batch where !Task.isCancelled {
-                guard case let .line(text, mark) = entry else { continue }
+                guard case let .line(text, mark) = entry else {
+                    // Codex names its session only with the first prompt: none yet is a new conversation.
+                    if !late, source == nil, entry.read {
+                        current = true
+                    }
+                    continue
+                }
                 marks[sideFile] = mark
                 guard let object = try? JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any],
                       let next = await line(object), !Task.isCancelled else { continue }
@@ -235,6 +241,16 @@ extension Chat {
         }
         // Let go of the copy, or the history's next line would copy it whole.
         backlog = ChatHistory()
+    }
+}
+
+private extension FollowedLine {
+    /// The file is read to its end, or not there.
+    var read: Bool {
+        switch self {
+        case .loaded, .missing: true
+        case .opened, .line: false
+        }
     }
 }
 

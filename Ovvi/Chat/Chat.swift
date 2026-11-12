@@ -89,7 +89,7 @@ final class Chat {
                 // Reset once the adapter returns, so that none of its tasks writes after.
                 if viewers == 0 {
                     recorded = nil
-                    current = history.entries.isEmpty
+                    current = current && history.entries.isEmpty
                 }
             }
         }

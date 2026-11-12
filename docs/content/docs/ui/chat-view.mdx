@@ -207,10 +207,13 @@ and no backslash.
     Archived Sessions), one found running (after the app starts again) and
     one that nothing followed for a while (its card was out of view, or the
     TUI showed) are current once their transcript is read to its end, or is
-    missing (OpenCode: once its history loads, or it has no session). Until
+    missing (OpenCode: once its history loads, or it has no session; Codex:
+    also once its side file names no session, as Codex starts one only with
+    the first prompt, so a resumed Codex chat stays empty until then). Until
     then the chat shows a loader in Chat from its first frame, never the TUI
     or the empty chat, and then the chat whole and at the bottom: not the old
-    rows and then a jump.
+    rows and then a jump. A message sent meanwhile shows at once, and the
+    history comes in above it.
   - `Exec.watch` prints a rewritten file (Claude Code's session record) whole
     on each change, checked every 0.3 s.
   - OpenCode's are `curl` runs on the pane's machine against
@@ -480,9 +483,7 @@ A run is one quiet line with no card: its summary and a chevron.
   shown again after a time away) shows a small spinner in the middle and the
   reply box at the bottom until its history is read. The spinner shows after
   0.3 s: a chat shown again usually catches up sooner, and its rows then come
-  with no spinner between. A new conversation whose empty transcript loads (a
-  new Codex or OpenCode chat) keeps the empty chat, the spinner in the
-  glyph's place: a load that ends empty moves nothing. A sent
+  with no spinner between. A sent
   message stays in view while the transcript it starts loads (Claude Code and
   pi write the transcript with the first message). An empty chat has no
   scroll view: the scroll view is made with the rows, at the bottom (one made

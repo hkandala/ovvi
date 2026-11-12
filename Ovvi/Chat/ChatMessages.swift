@@ -43,9 +43,9 @@ struct ChatMessages: View, Equatable {
     }
 
     var body: some View {
-        // A chat that may have a history shows a loader until it is read; a new one, the header and the reply box in
-        // the middle until the first message, also while its empty transcript loads (a new Codex or OpenCode chat).
-        let reading = !chat.current && chat.problem == nil
+        // A chat that may have a history shows a loader until it is read, unless a message is on its way; a new one,
+        // the header and the reply box in the middle until the first message.
+        let reading = !chat.current && chat.problem == nil && chat.outgoing.isEmpty
         let welcome = !reading && chat.history.entries.isEmpty && chat.outgoing.isEmpty && chat.problem == nil
         return Group {
             // No scroll view until there is something to show: one made empty keeps the top inset that held its empty
@@ -97,17 +97,11 @@ struct ChatMessages: View, Equatable {
     private var header: some View {
         VStack(spacing: 14) {
             if let pane = page.store.pane(chat.paneID) {
-                ProgramGlyph(icon: pane.iconID, letter: pane.letter, size: 64).opacity(chat.loading ? 0 : 0.5)
-                    .overlay {
-                        if chat.loading {
-                            Loader()
-                        }
-                    }
+                ProgramGlyph(icon: pane.iconID, letter: pane.letter, size: 64).opacity(0.5)
             }
             Text(phrase).font(.system(size: 26, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.6)
-                .opacity(chat.loading ? 0 : 1)
         }
-        .readableText(chat.loading ? "" : phrase)
+        .readableText(phrase)
         .accessibilityIdentifier("chat.\(chat.paneID).empty")
     }
 
@@ -151,7 +145,8 @@ struct ChatMessages: View, Equatable {
                             outgoing(message, error: error)
                         }
                         if chat.phase == .working {
-                            WorkingRow(since: chat.history.turnStart)
+                            // Not the last turn's, interrupted, while the next message is on its way.
+                            WorkingRow(since: chat.outgoing.isEmpty ? chat.history.turnStart : nil)
                         }
                         if let problem = chat.problem {
                             problemCard(problem, error: error)

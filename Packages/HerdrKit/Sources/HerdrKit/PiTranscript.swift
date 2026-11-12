@@ -23,6 +23,8 @@ public struct PiTranscript: Sendable {
                     calls: [ChatTool] = [], time: Date?)
         case model(String, effort: String?)
         /// The turn's final reply: its time from the turn's message, known only on the branch.
+        /// ponytail: a turn an extension's message starts again counts from the user's message, its idle wait too;
+        /// time from the extension's message if that shows.
         case end(id: String, time: Date?)
     }
 
