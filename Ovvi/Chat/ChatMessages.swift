@@ -26,7 +26,7 @@ struct ChatMessages: View, Equatable {
     @State private var height = Height()
     @State private var viewHeight = ViewHeight()
     @Environment(\.look) private var look
-    private static let phrases = [
+    private static let phrases: [(greeting: String, placeholder: String)] = [
         ("What's on your mind?", "Ask or tell me anything"), ("What are we building?", "Describe the feature"),
         ("Where should we start?", "Name a file, a bug or a goal"),
         ("What can I help with?", "Ask a question or give a task"), ("Ready when you are.", "Type your first message"),
@@ -86,7 +86,7 @@ struct ChatMessages: View, Equatable {
                             .disabled(question.answered)
                             .id(question.raw)
                     }
-                    Composer(chat: chat, composing: composing, placeholder: welcome ? phrase.1 : nil)
+                    Composer(chat: chat, composing: composing, placeholder: welcome ? phrase.placeholder : nil)
                 }
                 // The box's text on the messages' edges: the box reaches past them by its own padding.
                 .padding(.bottom, 14).padding(.top, 4).readingColumn(margin: 32 - Composer.inset)
@@ -103,9 +103,9 @@ struct ChatMessages: View, Equatable {
             if let pane = page.store.pane(chat.paneID) {
                 ProgramGlyph(icon: pane.iconID, letter: pane.letter, size: 64).opacity(0.5)
             }
-            Text(phrase.0).font(.system(size: 26, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.6)
+            Text(phrase.greeting).font(.system(size: 26, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.6)
         }
-        .readableText(phrase.0)
+        .readableText(phrase.greeting)
         .accessibilityIdentifier("chat.\(chat.paneID).empty")
     }
 
