@@ -2613,3 +2613,23 @@ ones".
 - **For the user.** Select text in a pi or Claude Code pane, dark and light: one text color on the blue. Hold ⌘ over
   a link: a thin grey underline under the text. ⌘⌥-click a web link (default browser), a file (its app) and a folder
   (Finder); on a remote card a file says it is on that machine.
+
+### Track H2 (item 112)
+
+- **Findings.** Cause: the background of a card's header (`PaneCard.header`) had only the double-click zoom and the
+  drag source. A single click went nowhere. The content takes the keys by itself: the terminal view, web views and
+  the chat's composer report it through `tookKeyboard`. Fix: a simultaneous `TapGesture` on that background calls
+  `page.go(to:)`, the same path that ⌘] and the sidebar's rows use. It is simultaneous so the click doesn't wait out
+  the double-click interval. This covers terminal, browser, plugin and chat cards, and the empty parts of the
+  second row too (toolbar, plugin header, agent row). Buttons, the address and path fields and the rename field
+  keep their own clicks. A drag starts an AppKit session, which takes the mouse-up, so a drag doesn't fire the tap.
+  A double-click activates the card, then zooms it. A floated pane's placeholder is left alone: its body does
+  nothing either, and only Show Window raises the window. Floating windows need no change: a click on the header
+  makes the window key, and AppKit gives the keys back to that window's pane.
+- **Runs.** New test `testAClickOnACardsHeaderGivesItTheKeyboard`. Red on the old code: CI 43149962436 ("the
+  keyboard is on 'terminal.w2:p3'"). Green on the fix: CI 43149958677, 3 tests, together with
+  `testCommandTOpensInTheKeyboardCardsDirectoryAndCommandWClosesIt` (double-click zoom on the header) and
+  `testDropOnACardsCenterSwapsAndOnItsEdgePlacesBeside` (header drag). `make lint build test` green on the rebased
+  tree. No pictures: nothing looks different.
+- **For the user.** In a split, click the empty part of the other card's title row: it gets the border and takes
+  typed keys. Drag the header to move it; double-click the header to zoom it.
