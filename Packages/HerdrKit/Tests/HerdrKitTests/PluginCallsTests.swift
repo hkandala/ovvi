@@ -185,3 +185,20 @@ private func failure(_ name: String, _ args: [String: Any], _ calls: PluginCalls
     #expect(long["truncated"] as? Bool == true)
     #expect((long["stdout"] as? String)?.utf8.count ?? 0 < 4 << 20)
 }
+
+/// Debian's and Ubuntu's `sh`.
+private struct Dash: Exec {
+    func run(_ argv: [String]) async throws -> Channel {
+        try await localExec.run(argv.first == "sh" ? ["/bin/dash"] + argv.dropFirst() : argv)
+    }
+
+    func herdr() -> String? {
+        nil
+    }
+}
+
+@Test func `a missing folder's listing is notFound under bash and dash`() async {
+    let missing = URL.temporaryDirectory.appending(path: "ovvi-none-\(UUID().uuidString)").path
+    #expect(await failure("files.list", ["path": missing]) == "notFound")
+    #expect(await failure("files.list", ["path": missing], PluginCalls(exec: Dash(), gitRuns: true)) == "notFound")
+}

@@ -16,7 +16,8 @@ public struct PluginError: Error, Equatable {
         case FileError.tooLarge: self.init("tooLarge", "The file is over \(Files.viewLimit >> 20) MB")
         case FileError.changed: self.init("changed", "The file changed on disk")
         case HerdrError.timeout: self.init("timeout", "It took too long")
-        case let HerdrError.failed(text) where text.hasPrefix("Not a file") || text.contains("No such file"):
+        case let HerdrError.failed(text)
+            where ["Not a file", "Not a folder"].contains(where: text.hasPrefix) || text.contains("No such file"):
             self.init("notFound", text)
         case let HerdrError.failed(text): self.init("failed", text)
         default: self.init("failed", error.localizedDescription)

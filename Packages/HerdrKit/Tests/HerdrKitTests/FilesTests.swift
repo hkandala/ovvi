@@ -1,5 +1,6 @@
 import Foundation
 @testable import HerdrKit
+import Synchronization
 import Testing
 
 func scratchFolder() throws -> URL {
@@ -227,4 +228,57 @@ private func yields(_ changes: AsyncStream<Void>, writing file: URL) async throw
     let file = folder.appending(path: "f")
     try Data().write(to: file)
     try await yields(Files.watch(file.path, exec: RelayExec.start()), writing: file)
+}
+
+/// A remote machine whose link drops while `down`: every run fails, as over a dead SSH connection.
+private final class Dropping: Exec {
+    struct Counts {
+        var down = false, answered = 0, failed = 0
+    }
+
+    let relay: RelayExec
+    let counts = Mutex(Counts())
+
+    init(_ relay: RelayExec) {
+        self.relay = relay
+    }
+
+    func run(_ argv: [String]) throws -> Channel {
+        guard !counts.withLock({ $0.down }) else {
+            counts.withLock { $0.failed += 1 }
+            throw HerdrError.failed("The SSH connection closed")
+        }
+        counts.withLock { $0.answered += 1 }
+        return try relay.run(argv)
+    }
+
+    func herdr() -> String? {
+        nil
+    }
+
+    var isRemote: Bool {
+        true
+    }
+}
+
+@Test func `a remote check that fails reports no change, and the first that answers after it reports one`(
+) async throws {
+    let folder = try scratchFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let exec = try await Dropping(RelayExec.start())
+    let (changes, changed) = AsyncStream<Void>.makeStream()
+    let poll = Task { await Files.poll(folder.path, exec: exec, every: .milliseconds(50), changed) }
+    defer { poll.cancel() }
+    let seen = Mutex(0)
+    let counting = Task { for await _ in changes {
+        seen.withLock { $0 += 1 }
+    } }
+    defer { counting.cancel() }
+    #expect(await eventually { exec.counts.withLock { $0.answered >= 3 } })
+    exec.counts.withLock { $0.down = true }
+    #expect(await eventually { exec.counts.withLock { $0.failed >= 3 } })
+    #expect(seen.withLock { $0 } == 0)
+    let answered = exec.counts.withLock { $0.down = false; return $0.answered }
+    #expect(await eventually { exec.counts.withLock { $0.answered >= answered + 3 } })
+    #expect(seen.withLock { $0 } == 1)
 }

@@ -24,9 +24,12 @@ public enum Files {
 
     /// `git check-ignore` asks only about the folder's own names, so a listing never walks the whole repository.
     public static func list(_ folder: String, git: Bool, exec: any Exec) async throws -> [FileEntry] {
-        // Links to folders are folders; a name may hold a line break. The ignored names come after an empty one; none
-        // outside a repository. Each name is asked as `./name`: git reads them as pathspecs, so `:foo` would be `foo`.
+        // A missing folder is `notFound` on every `sh` (dash says only "can't cd"). Links to folders are folders; a
+        // name
+        // may hold a line break. The ignored names come after an empty one; none outside a repository. Each name is
+        // asked as `./name`: git reads them as pathspecs, so `:foo` would be `foo`.
         let script = #"""
+        [ -d "$1" ] || { echo "Not a folder" >&2; exit 1; }
         cd "$1" || exit
         for f in * .[!.]* ..?*; do
           if [ -d "$f" ]; then printf '%s/\0' "$f"; elif [ -e "$f" ] || [ -h "$f" ]; then printf '%s\0' "$f"; fi
@@ -122,24 +125,30 @@ public enum Files {
     /// ponytail: a file's check reads it whole (up to 16 MB) every 2 s, and the caller reads it again to compare
     /// hashes; yield the hash when that costs too much. A folder's check sees its own entries, what `git status` sees
     /// under it and the changed files' text (an edit to a file already changed), not a new file in an ignored folder;
-    /// its git runs without `GitStatus.usable`.
-    private static func poll(_ path: String, exec: any Exec, _ changed: AsyncStream<Void>.Continuation) async {
+    /// its git runs without `GitStatus.usable`. A path that is gone prints nothing: a check that fails (a dropped link,
+    /// the 10 s bound) knows nothing, so it reports no change, and the first check that answers after it reports one,
+    /// for what the caller's own calls may have missed meanwhile.
+    static func poll(_ path: String, exec: any Exec, every interval: Duration = .seconds(2),
+                     _ changed: AsyncStream<Void>.Continuation) async
+    {
         let script = #"""
         if [ -d "$1" ]; then
           { ls -1Ap "$1"; git --no-optional-locks -C "$1" status --porcelain=v1 -z -unormal -- . 2>/dev/null
             git -C "$1" ls-files -z -m -o --exclude-standard -- . 2>/dev/null |
               (cd "$1" && xargs -0 cat 2>/dev/null); } | cksum
-        else cksum <"$1"; fi
+        elif [ -e "$1" ]; then cksum <"$1"; fi
         """#
-        // Nil until the first check; then nil inside while the file is gone.
-        var last: String??
+        var last: String?, missed = false
         while !Task.isCancelled {
-            let now = try? await exec.checkedOutput(["sh", "-c", script, "sh", path])
-            if let last, last != now {
-                changed.yield()
+            if let now = try? await exec.checkedOutput(["sh", "-c", script, "sh", path]) {
+                if missed || last.map({ $0 != now }) == true {
+                    changed.yield()
+                }
+                (last, missed) = (now, false)
+            } else {
+                missed = true
             }
-            last = now
-            try? await Task.sleep(for: .seconds(2))
+            try? await Task.sleep(for: interval)
         }
     }
 }

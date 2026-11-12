@@ -1,6 +1,6 @@
 import { FileTree, type FileTreeBatchOperation, type FileTreeDirectoryHandle, type FileTreeRenameEvent,
   type GitStatus } from "@pierre/trees"
-import type { Change } from "@ovvi/plugin-api"
+import type { Change, OvviError } from "@ovvi/plugin-api"
 import { footer } from "./footer"
 import { stack } from "./stack"
 import { choose, how, menu, name, open, own, type Place, type Reveal, sf, symbols } from "./place"
@@ -176,8 +176,10 @@ export async function show(place: Place): Promise<Reveal> {
     let entries: { name: string; folder: boolean; ignored: boolean }[]
     try {
       entries = await ovvi.files.list(at ? `${base}/${at.slice(0, -1)}` : top)
-    } catch {
-      if (at) return
+    } catch (error) {
+      // Only a missing folder empties the tree. Any other failure (a remote machine's dropped link, its 10 s bound)
+      // keeps the rows: the watch calls again once the machine answers.
+      if (at || (children.has("") && (error as OvviError).code !== "notFound")) return
       children.clear()
       unlisted.clear()
       ignored.clear()
