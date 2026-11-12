@@ -2485,7 +2485,11 @@ ones".
      blank and fading in, that error message is coming up, investigate the root cause, and fix it, so it doens't show
      unnecessarily" (Track S2).
      Item 101's screenshot: "i forgot to provide screenshots for selected text, see its bit weird color, pass on to the
-     agent" (`.build/fb57/r8-6.07.11.png`).
+     agent" (`.build/fb57/r8-6.07.11.png`). Then: "for the terminal url underlines and stuff, i noticed now, if the tui
+     renders a link already with underline, now another underline gets shown when holding cmd or option, figure out
+     better way to show these links overall for cmd and option clicks, it doesn't need to be just underline, just make
+     sure our underline or whatever the way we do it, its ux is good and doesn't interfere with existing formatting of
+     the text".
 109. "one more thing when i am in chat view of an agent session i don't see its status in it pane title, like in tui i
      see working text with its icon, but as soon as i switch to chat, that status goes away, let's keep them
      consistent" (Track C3). Then: "okay i noticed this specifically when pi agent is waiting on agents or background
