@@ -45,16 +45,21 @@ extension OvviUITests {
     /// stopped. In both looks.
     func testAKeptTabShownAfterADropNeverSaysStopped() async throws {
         try await skipWithoutSSH()
+        // Once for both looks: two more a look overflowed CI's tab bar.
+        let (kept, pane) = try await createTab(in: "w2", label: "kept")
+        closeAfter("tab", kept)
+        let (other, shown) = try await createTab(in: "w2", label: "other")
+        closeAfter("tab", other)
+        let found = try await order(of: kept)
+        let index = try XCTUnwrap(found)
         for appearance in ["dark", "light"] {
             relaunch(one, Self.onKeyHost + ["-appearance", appearance])
             let stopped = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'pane.' AND identifier "
                     + "ENDSWITH '.retry'")).firstMatch
-            let (kept, pane) = try await newTab("kept \(appearance)")
-            let (other, shown) = try await newTab("other \(appearance)")
+            XCTAssertTrue(element("workspace.w2").exists(within: connect))
+            element("workspace.w2").click()
             try await show(kept)
             XCTAssertTrue(drawn(pane, within: connect), element("pane.\(pane)").stringValue)
-            let found = try await order(of: kept)
-            let index = try XCTUnwrap(found)
             try await show(other)
             XCTAssertTrue(drawn(shown, within: connect), element("pane.\(shown)").stringValue)
             let (terminal, back) = try await (terminalID(pane), terminalID(shown))
