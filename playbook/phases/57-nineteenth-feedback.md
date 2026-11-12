@@ -3127,6 +3127,12 @@ ones".
   first.
 - **For the user.** Right-click empty space in a File Explorer, Git and Markdown card: only Reload. Right-click a page
   in a browser card: Inspect Element is still there.
+- **132, runs.** Tart VM: the three FilesTests explorer tests and the Markdown test green, and FileTests green
+  with its crumb checks made to allow the VM's crumbs from `/` (no repository found there, known since E2; not
+  kept). Its new step clicks `src` with no tree: the tree rooted at `src/`. The recording shows the pointing hand
+  over a folder. XCUITest's hover drew no button light in any screenshot, Back's included, so the light is
+  unchecked: the crumbs use the row's own button style.
 - **For the user (132).** Hover and click each folder in a file's path, with and without the tree beside it: the
   file closes, the tree shows with the file selected and the folders you opened still open; a folder above the
-  tree's root roots the tree there. A narrow card with a deep path. Back returns to the file. Unsaved edits ask first.
+  tree's root roots the tree there. A folder lights under the pointer, as row 2's buttons do. A narrow card with a
+  deep path. Back returns to the file. Unsaved edits ask first.
