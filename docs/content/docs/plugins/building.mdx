@@ -263,11 +263,10 @@ for every plugin with an open card.
 
 ## Debug it
 
-- **Web Inspector.** **Show Web Inspector** in the card's menu (also View ▸
-  Pane and ⌘K) docks WebKit's inspector at the bottom of the card, as for a
-  browser card ([Web Inspector](/docs/ui/browser#web-inspector)). It has no
-  key: the browser's ⌥⌘I holds it. The source map shows your `.ts` files,
-  with breakpoints. Safari's Develop menu reaches every card too.
+- **No Web Inspector.** A plugin card is not inspectable: its page's menu
+  (a right-click) shows only **Reload**, and Safari's Develop menu does not
+  list it. Only browser cards have the Web Inspector
+  ([Web Inspector](/docs/ui/browser#web-inspector)).
 - **The log.** **Show Log** (the card's menu, its error card, the plugin's
   page in Settings) opens `~/Library/Logs/Ovvi/plugins/<id>.log`. `tail -f` on it shows
   every build, `console` line and uncaught error

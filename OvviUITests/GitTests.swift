@@ -68,6 +68,13 @@ extension OvviUITests {
         let initialize = home.buttons["Initialize Repository"]
         XCTAssertTrue(initialize.has(\.isHittable, true, within: 10))
         XCTAssertTrue(text("Not a Git repository", in: home).exists)
+        home.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.9)).rightClick()
+        let menu = app.windows.menuItems
+        XCTAssertTrue(menu["Reload"].exists(within: 3), "the page's menu on empty space")
+        XCTAssertFalse(menu["Inspect Element"].exists)
+        keepScreenshot("plugin page menu")
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(menu["Reload"].vanishes(within: 2))
         initialize.click()
         XCTAssertTrue(text("No changes", in: home).exists(within: 10))
         XCTAssertFalse(home.textViews["Message"].exists)

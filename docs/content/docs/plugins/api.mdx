@@ -337,7 +337,7 @@ export interface OvviError extends Error {
 | `pick.folder` | Choose Folder…: the folder panel on This Mac, a "Go to Folder" field on a remote machine, which shows "No folder ‹path›" for a folder that is not there | `NSOpenPanel`, or an `NSAlert` with a field |
 | `symbol` | an SF Symbol as a PNG, to use as a mask | `NSImage(systemSymbolName:)` |
 | `clipboard.write` | text on the clipboard | `NSPasteboard` |
-| `console` | logs | each `console` line and every uncaught error go to the Web Inspector and to the plugin's log |
+| `console` | logs | each `console` line and every uncaught error go to the plugin's log |
 
 - **Events** go from the app to the page. `on` returns a function that stops
   the handler. Every handler and watch ends with the page, so a reload needs

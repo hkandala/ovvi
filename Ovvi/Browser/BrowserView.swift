@@ -209,20 +209,6 @@ extension WKWebView {
         return responds(to: selector) ? perform(selector)?.takeUnretainedValue() as? NSObject : nil
     }
 
-    var inspectorShown: Bool {
-        // KVC on a name WebKit dropped would throw.
-        guard let inspector, inspector.responds(to: NSSelectorFromString("isVisible")) else { return false }
-        return inspector.value(forKey: "visible") as? Bool == true
-    }
-
-    func toggleInspector() {
-        if inspectorShown {
-            inspector?.perform(NSSelectorFromString("close"))
-        } else {
-            showInspector()
-        }
-    }
-
     func showInspector() {
         let show = NSSelectorFromString("show")
         guard let inspector, inspector.responds(to: show) else { return }

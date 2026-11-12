@@ -261,8 +261,10 @@ docked at the bottom of the card. Its own control moves it to a window.
   (cmux ships the same). WebKit keeps the last docked or window choice in the
   app's defaults (`__WebInspectorPageGroupLevel1__.WebKit2InspectorStartsAttached`),
   so the app removes that key before each show, and it docks every time.
-- Every card sets `isInspectable`, so Safari's Develop menu (Develop › ‹this
-  Mac› › Ovvi) reaches each page too.
+- Every browser card sets `isInspectable`, so Safari's Develop menu
+  (Develop › ‹this Mac› › Ovvi) reaches each page too, and the page's menu (a
+  right-click) has **Inspect Element**. Plugin cards have neither: their
+  page's menu shows only Reload.
 - The button and ⌥⌘I are disabled until the card has a page.
 
 ## State on the machine

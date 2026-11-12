@@ -4,14 +4,11 @@ import SwiftUI
 extension CommandList {
     static func pluginCard(_ plugin: Plugin?) -> [Command] {
         guard let plugin else { return [] }
-        let id = plugin.manifest.id, view = plugin.web.view
+        let id = plugin.manifest.id
         return [
             Command(section: .pane, title: "Reload Plugin", key: .redraw,
                     group: .plugins, symbol: "arrow.clockwise", keywords: "plugin build refresh",
                     action: { Task { await Plugin.reload(id) } }),
-            Command(section: .pane, title: view.inspectorShown ? "Hide Web Inspector" : "Show Web Inspector",
-                    group: .plugins, symbol: "hammer", keywords: "plugin developer tools devtools console",
-                    action: view.toggleInspector),
             Command(section: .pane, title: "Show Log", group: .plugins, symbol: "doc.text.magnifyingglass",
                     keywords: "plugin build errors console debug") { PluginLog.show(id) },
         ]

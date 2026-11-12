@@ -128,6 +128,7 @@ extension OvviUITests {
         XCTAssertTrue(menu["Open Link to the Side"].exists)
         XCTAssertFalse(menu["Open Link in New Window"].exists)
         XCTAssertFalse(menu["Download Linked File"].exists)
+        XCTAssertTrue(menu["Inspect Element"].exists, "a browser card is inspectable")
         keepScreenshot("page menu")
         menu["Open Link in New Tab"].click()
         try await expectTab("the menu")

@@ -32,7 +32,6 @@ final class WebCard {
         view = .take(Self.newView)
         view.underPageBackgroundColor = .clear
         view.setValue(false, forKey: "drawsBackground")
-        view.isInspectable = true
         let relay = Relay(card: self)
         view.configuration.userContentController.addScriptMessageHandler(relay, contentWorld: .page, name: "ovvi")
         view.navigationDelegate = relay
@@ -48,8 +47,6 @@ final class WebCard {
 
     static func newView() -> WebCardView {
         let configuration = WKWebViewConfiguration()
-        // Show Web Inspector opens nothing without it.
-        configuration.preferences.setValue(true, forKey: "developerExtrasEnabled")
         configuration.preferences.isElementFullscreenEnabled = true
         configuration.setURLSchemeHandler(PluginScheme.shared, forURLScheme: PluginScheme.name)
         return WebCardView(frame: .zero, configuration: configuration)
