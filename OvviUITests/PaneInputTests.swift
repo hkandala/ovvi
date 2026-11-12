@@ -42,8 +42,8 @@ extension OvviUITests {
         XCTAssertTrue(menu["Copy"].exists(within: 2))
         app.typeKey(.escape, modifierFlags: [])
 
-        // A left click reaches it as a press and a release; a drag selects in the card and sends it nothing, so it
-        // draws no selection beside the card's. The ⌥-right click after the drag bounds the wait. Reports wrap.
+        // A left click reaches it as a press and a release, and so does a drag, which also selects in the card. The
+        // ⌥-right click after the drag bounds the wait. Reports wrap.
         func reports(_ button: Int, _ text: String) -> Int {
             text.replacing("\n", with: "").components(separatedBy: "[<\(button);").count - 1
         }
@@ -60,7 +60,51 @@ extension OvviUITests {
         XCUIElement.perform(withKeyModifiers: .option) { terminal.rightClick() }
         try await waitFor(pane) { reports(2, $0) > rights }
         let text = try await read(pane)
-        XCTAssertEqual(reports(0, text), 2, text)
+        XCTAssertEqual(reports(0, text), 4, text)
+    }
+
+    /// A program that reads the mouse (as pi does) gets the drag and selects from the press's cell to the pointer's in
+    /// reverse video, which herdr draws black on white. The card's selection covers it, ends included: no white cell.
+    /// The program's white mark after a release shows that its frame has drawn.
+    func testADragSelectsInTheProgramAndInTheCard() async throws {
+        relaunch(one, ["-appearance", "dark"])
+        let (tab, pane) = try await newTab("select")
+        element("tab.\(tab)").click()
+        let terminal = element("terminal.\(pane)")
+        XCTAssertTrue(terminal.has(\.isHittable, true, within: 3))
+        try await waitForPrompt(pane)
+        try await send("clear; '\(Self.fixtures)/mouse-select'\r", to: pane)
+        try await waitFor(pane, toShow: "drags 0 releases 0")
+        let grid = (terminal.value as? String ?? "").split(separator: " ").compactMap { Int($0) }
+        let rows = try XCTUnwrap(grid.first), columns = try XCTUnwrap(grid.last), card = terminal.frame
+        func spot(_ column: Double) -> String {
+            "\(card.minX + column * card.width / Double(columns)) \(card.minY + 1.5 * card.height / Double(rows))"
+        }
+        // Each end inside its cell on the side where libghostty's own rule leaves the cell out; the second drag goes
+        // forward first, then back past its press.
+        for (releases, drag) in [(1, "\(spot(2.8)) \(spot(8.3)) 0.3"),
+                                 (2, "\(spot(5.3)) \(spot(10.8)) 0.3 \(spot(1.8)) 0.3")]
+        {
+            _ = try await Self.post("\(one)/drag", Data(drag.utf8))
+            try await waitFor(pane) { $0.contains("releases \(releases)") && !$0.contains("drags 0 ") }
+            let image = try await poll("the program's frame after release \(releases)") { () -> NSImage? in
+                let image = terminal.screenshot().image
+                return band(image, row: 0, of: rows).contains { $0.allSatisfy { $0 >= 250 } } ? image : nil
+            }
+            add(XCTAttachment(image: image))
+            let selected = band(image, row: 1, of: rows)
+            XCTAssertFalse(selected.contains { $0.allSatisfy { $0 >= 250 } }, "a white cell beside the selection")
+            XCTAssertTrue(selected.contains { $0[2] > $0[0] + 30 }, "the card's selection")
+        }
+    }
+
+    /// The middle half of a row of cells, as red, green and blue.
+    private func band(_ image: NSImage, row: Int, of rows: Int) -> [[Int]] {
+        guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return [] }
+        let pixels = Self.pixels(image), width = cgImage.width, height = Double(cgImage.height) / Double(rows)
+        return (Int((Double(row) + 0.25) * height) ..< Int((Double(row) + 0.75) * height)).flatMap { line in
+            (0 ..< width).map { across in (0 ..< 3).map { Int(pixels[(line * width + across) * 4 + $0]) } }
+        }
     }
 
     /// The drag comes from a window of the helper's: from Finder, at times no drag starts on CI.

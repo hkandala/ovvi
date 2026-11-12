@@ -678,12 +678,14 @@ How it works: [Layout and sizing](/docs/layout).
   click in a floating window gives its pane the keys when no view there has them.
 - The buttons show on the keyboard card, on a hovered card and on a zoomed card.
 - **Selecting.** A left drag, a double click, a triple click and a ⇧-click
-  select text in the card, also over a program that reads the mouse, as a
-  ⇧-drag does in Ghostty. That program gets a single left click when the
-  button comes up on the cell where it went down, and never a left drag. So a
-  click takes control of a watched card on its release, and a drag does not.
-  herdr does not tell the app which programs read the mouse, and a program
-  that got the drag drew a selection of its own beside the card's.
+  select text in the card. Each left press, drag and release also goes to the
+  program, and a program that reads the mouse (pi, for one) selects and copies
+  on its own. In a plain drag the card's selection takes the press's cell and
+  the pointer's cell whole, as such a program does, so it covers the
+  program's selection. herdr draws a program's reverse video black on white,
+  so a cell that only the program took would show white beside the card's
+  blue. A ⌥-drag selects a rectangle.
+  A press on a watched card takes control.
 - **Context menu** on the header, and on the terminal, where it starts with
   Copy, Paste and Select All. As in herdr, a right click in the terminal opens
   the menu even when the program reads the mouse. ⌥-right click sends the

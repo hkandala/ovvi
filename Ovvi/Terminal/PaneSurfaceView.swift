@@ -13,7 +13,7 @@ final class PaneSurfaceView: AppTerminalView {
     private(set) var metrics: TerminalGridMetrics?
     private var dragged: (column: Int, row: Int)?
     private var commandClick = false
-    private var linkClick = false
+    var linkClick = false
     weak var linkSurface: TerminalSurface?
     /// An OSC 8 link libghostty reports.
     var hoveredLink: String?
@@ -23,12 +23,8 @@ final class PaneSurfaceView: AppTerminalView {
     var openLink: ((TerminalLink, Opening) -> Void)?
     private var scrolled: CGFloat = 0
 
-    /// A left drag and a double or triple click select in the card, as a ⇧-drag does in Ghostty; a mouse program
-    /// gets a single click, on its release, so that it draws no selection of its own beside the card's (pi's showed
-    /// as white cells where its ends and libghostty's differ). ponytail: no left drags reach a mouse program (vim's
-    /// visual drag, a scroll bar's thumb); follow Ghostty (a plain drag to a mouse program) once herdr reports the
-    /// program's mouse mode.
-    private var press: NSEvent?
+    /// A plain left drag's start (`Selection.swift`).
+    var anchor: Anchor?
 
     var wantsKeyboard = false
     var onKeyboard: (() -> Void)?
@@ -216,8 +212,8 @@ final class PaneSurfaceView: AppTerminalView {
         }
     }
 
-    private func mouse(_ action: TerminalStream.MouseAction, _ button: TerminalStream.MouseButton,
-                       _ event: NSEvent)
+    func mouse(_ action: TerminalStream.MouseAction, _ button: TerminalStream.MouseButton,
+               _ event: NSEvent)
     {
         // Back and forward buttons are other buttons too, not middle clicks.
         guard button != .middle || event.buttonNumber == 2, let cell = cell(event) else { return }
@@ -235,11 +231,11 @@ final class PaneSurfaceView: AppTerminalView {
                         modifiers: modifiers(event) & ~(button == .right ? 4 : 0))
     }
 
-    private var scale: CGFloat {
+    var scale: CGFloat {
         window?.backingScaleFactor ?? 2
     }
 
-    private func cell(_ event: NSEvent) -> (column: Int, row: Int)? {
+    func cell(_ event: NSEvent) -> (column: Int, row: Int)? {
         guard let metrics, metrics.cellWidthPixels > 0, metrics.cellHeightPixels > 0 else { return nil }
         let point = convert(event.locationInWindow, from: nil)
         let column = Int(point.x * scale) / Int(metrics.cellWidthPixels)
@@ -317,41 +313,6 @@ final class PaneSurfaceView: AppTerminalView {
 }
 
 extension PaneSurfaceView {
-    override func mouseDown(with event: NSEvent) {
-        // ⌘-click on a link: in a new tab, ⌥-click: to the side, ⌘⌥-click: in the Mac's app for it. Elsewhere a
-        // ⌥-click is the program's (a shell moves its cursor), a ⌘-click libghostty's (an OSC 8 link).
-        let how = Self.linkKey(event.modifierFlags)
-        let link = how.flatMap { how in
-            link(at: convert(event.locationInWindow, from: nil))?.link ?? (how == .tab ? nil : reported(at: event))
-        }
-        linkClick = link != nil
-        if let link, let how {
-            openLink?(link, how)
-            return
-        }
-        super.mouseDown(with: event)
-        // A ⇧-click extends the card's selection, as in Ghostty.
-        press = event.clickCount == 1 && !event.modifierFlags.contains(.shift) ? event : nil
-    }
-
-    override func mouseDragged(with event: NSEvent) {
-        guard !linkClick else { return }
-        super.mouseDragged(with: event)
-        if let press, let from = cell(press), let here = cell(event), from != here {
-            self.press = nil
-        }
-    }
-
-    override func mouseUp(with event: NSEvent) {
-        guard !linkClick else { return }
-        super.mouseUp(with: event)
-        if let press {
-            mouse(.down, .left, press)
-            mouse(.up, .left, press)
-        }
-        press = nil
-    }
-
     override func viewDidUnhide() {
         super.viewDidUnhide()
         if wantsKeyboard, window != nil {
