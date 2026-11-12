@@ -143,7 +143,7 @@ extension HostStore {
                 guard let pane = try await client.split(target, direction, cwd: cwd) else {
                     throw HerdrError.failed("herdr named no pane")
                 }
-                try await opened(pane, client)
+                await opened(pane, client)
                 return pane
             }
             ahead.moving.append(Ahead.Moving(tabID: tabID, label: label.text))
@@ -151,21 +151,19 @@ extension HostStore {
                 // No read between: the move answers with the pane, and each herdr call is a round trip (over SSH on a
                 // remote machine) ahead of the card.
                 let id = try await labeledTab(client, in: workspaceID, cwd: cwd, label: label)
-                let moved: HerdrKit.Pane
                 do {
-                    guard let pane = try await client.move(pane: id, to: .tab(tabID, beside: target, split: direction))
+                    guard let moved = try await client.move(pane: id, to: .tab(tabID, beside: target, split: direction))
                     else { throw HerdrError.failed("herdr named no pane") }
-                    moved = pane
+                    // Hidden until evened: one motion.
+                    await opened(moved, client)
+                    for index in ahead.moving.indices where ahead.moving[index].label == label.text {
+                        ahead.moving[index].landed = true
+                    }
+                    return moved
                 } catch {
                     try? await client.close(pane: id)
                     throw error
                 }
-                // Hidden until evened: one motion.
-                try await opened(moved, client)
-                for index in ahead.moving.indices where ahead.moving[index].label == label.text {
-                    ahead.moving[index].landed = true
-                }
-                return moved
             } catch {
                 // Shown as herdr has it: a pane that did not close stays reachable.
                 ahead.moving.removeAll { $0.label == label.text }

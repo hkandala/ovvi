@@ -36,13 +36,15 @@ struct Overview: View {
                 .shielded(zoom != nil)
                 .overlay(alignment: .topLeading) {
                     if let zoom {
-                        Miniature(tab: zoom.tab, page: page, size: tabPage.size, live: pages.overviewLive)
+                        // Pictures only: a live terminal stays in its tile until the page takes it.
+                        Miniature(tab: zoom.tab, page: page, size: tabPage.size, live: [])
+                            .accessibilityHidden(true)
                             .modifier(Grow(progress: grown ? 1 : 0, from: zoom.from, page: tabPage))
                     }
                 }
-                .onChange(of: pages.leaving) {
+                .onChange(of: pages.leaving, initial: true) {
                     if pages.leaving, zoom == nil {
-                        leave(page, in: CGRect(origin: .zero, size: proxy.size))
+                        leave(page)
                     }
                 }
             }
@@ -72,9 +74,9 @@ struct Overview: View {
     }
 
     /// At once when the tab's tile is out of view.
-    private func leave(_ page: Page, in view: CGRect) {
-        guard let tab = page.selectedTab, let from = pages.tileFrames["\(page.id) \(tab.id)"], from.intersects(view)
-        else { return pages.closeOverview() }
+    private func leave(_ page: Page) {
+        guard let tab = page.selectedTab, pages.overviewTabs[page.id]?.contains(tab.id) == true,
+              let from = pages.tileFrames["\(page.id) \(tab.id)"] else { return pages.closeOverview() }
         zoom = (tab, from)
         // Next turn: a view inserted in the same update as the change starts at its end, with no motion.
         Task {

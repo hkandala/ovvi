@@ -211,6 +211,8 @@ struct SettingsSearch: Identifiable {
         SettingsSearch(id: "general.new-pane", title: "New panes open", page: .general,
                        words: "default split tab terminal agent browser explorer git plugin chooser"),
         SettingsSearch(id: "general.follow-mouse", title: "Focus follows mouse", page: .general, words: "pane hover"),
+        SettingsSearch(id: "general.balance-splits", title: "Balance splits automatically", page: .general,
+                       words: "pane split resize equal even size"),
         SettingsSearch(id: "general.shortcuts", title: "Keyboard shortcuts", page: .general, words: "keys help"),
         SettingsSearch(id: "general.welcome", title: "Welcome to Ovvi", page: .general,
                        words: "onboarding intro tour help getting started herdr install"),

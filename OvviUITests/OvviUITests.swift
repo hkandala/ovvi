@@ -200,7 +200,8 @@ extension OvviUITests {
                        "terminalFont": "", "cursorStyle": "block", "cursorBlink": "YES", "optionKey": "characters",
                        "copyOnSelect": "NO", "agentView": "terminal", "agentArguments.claude": "",
                        "agentArguments.codex": "", "agentArguments.pi": "", "agentArguments.opencode": "",
-                       "showArchivedSessions": "YES", "newPaneOpens": "", "spaceOrder": "manual"]
+                       "showArchivedSessions": "YES", "newPaneOpens": "", "spaceOrder": "manual",
+                       "balanceSplits": "YES"]
         let pinned = pin ? shipped.sorted { $0.key < $1.key }.filter { !args.contains("-\($0.key)") }
             .flatMap { ["-\($0.key)", $0.value] } : []
         let start = switch windows {

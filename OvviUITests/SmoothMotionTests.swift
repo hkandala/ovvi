@@ -92,8 +92,10 @@ extension OvviUITests {
                 try await expect("\(what): the third card") { try await order(tab).count == 3 }
             }
             let third = try await order(tab).first { $0 != cards.0 && $0 != cards.1 } ?? ""
+            // In the app: the two left even out as the third goes, in one motion (Balance splits automatically).
+            hoverHeader(third)
             try await problems += moves("\(what) thirds close", in: tab, seen: &seen) {
-                _ = try await Self.call(one, "pane.close", ["pane_id": third])
+                element("pane.\(third).close").click()
                 try await expect("\(what): the close") { try await order(tab).count == 2 }
             }
         }

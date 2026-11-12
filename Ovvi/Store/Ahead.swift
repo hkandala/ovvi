@@ -263,8 +263,9 @@ extension HostStore {
         switch close {
         case let .pane(id):
             let state = pane(id)?.plugin?.statePath(session: session), machine = machine
+            let split = pane(id).flatMap { tab($0.tabID)?.tree?.closing(id) } != nil
             return { client in
-                try await self.close(pane: id, client)
+                try await self.close(pane: id, inSplit: split, client)
                 if let state {
                     await machine.exec().remove(home: state)
                 }

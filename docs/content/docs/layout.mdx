@@ -77,9 +77,12 @@ build(path) = split at path exists ? Split(dir, ratio, build(path+0), build(path
   - A pane closes in the app: in the same write, the app reads herdr's tree,
     closes the pane, and evens the run the pane was in. The page shows the
     evened run as the card goes, so the cards move once.
-  - A pane closes by itself (its shell exits), from another client, or moves
-    to another tab: the app evens its run once a snapshot shows it gone, if
-    the tab did not change meanwhile.
+  - Another client opens a pane (herdr's own window, `herdr pane split`), or a
+    pane closes by itself (its shell exits), from another client, or moves to
+    another tab: the app evens its run once a snapshot shows it, if the tab did
+    not change meanwhile. Here the cards move twice: herdr's change shows
+    first. Every Ovvi with the setting on does this, for every client's panes.
+  - A balance herdr refuses never fails the open or the close.
   - A child split in the other direction counts as one unit.
   - Each split gets "units on its first side ÷ units under it".
   - One `layout.set_split_ratio` per split whose ratio changes, then the app

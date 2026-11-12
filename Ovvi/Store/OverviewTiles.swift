@@ -18,7 +18,8 @@ extension WindowPages {
     }
 
     func leaveOverview() {
-        if Animation.reduced || current == nil {
+        // A second leave skips the zoom.
+        if Animation.reduced || current == nil || leaving {
             closeOverview()
         } else {
             leaving = true
@@ -82,7 +83,7 @@ extension WindowPages {
     /// 150 ms after the last change: each live tile is a new surface and stream on the main thread, so none turns live
     /// while tiles keep coming (a scroll).
     func settleOverview() {
-        guard overview else { return }
+        guard overview, !leaving else { return }
         overviewSettling?.cancel()
         // Not while the grid scrolls: its end settles (a surface made or freed mid-scroll drops frames).
         guard !overviewScrolling else { return }

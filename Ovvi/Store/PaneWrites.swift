@@ -50,7 +50,7 @@ extension HostStore {
             if before {
                 try await client.swap(paneID, direction == .right ? .right : .down)
             }
-            try await opened(new, client)
+            await opened(new, client)
         }
         // With no pane, the stand-in goes at once: an idle session may never send two more snapshots.
         if made == nil {
@@ -115,7 +115,7 @@ extension HostStore {
                     try await client.swap(moved.id, with: targetID)
                 }
                 done = nil
-                try await opened(moved, client)
+                await opened(moved, client)
             } catch {
                 throw done.map { HerdrError.failed("\($0): herdr refused the next step") } ?? error
             }
