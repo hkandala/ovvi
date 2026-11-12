@@ -23,6 +23,8 @@ class BrowserView: WKWebView {
         configuration.applicationNameForUserAgent = "Version/\(version) Safari/605.1.15"
         // `_inspector show` opens nothing without it.
         configuration.preferences.setValue(true, forKey: "developerExtrasEnabled")
+        // A video's full-screen button and the page's `requestFullscreen`.
+        configuration.preferences.isElementFullscreenEnabled = true
         self.init(frame: .zero, configuration: configuration)
         isInspectable = true
         allowsBackForwardNavigationGestures = true

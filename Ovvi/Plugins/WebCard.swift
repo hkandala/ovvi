@@ -32,6 +32,7 @@ final class WebCard {
         let configuration = WKWebViewConfiguration()
         // Show Web Inspector opens nothing without it.
         configuration.preferences.setValue(true, forKey: "developerExtrasEnabled")
+        configuration.preferences.isElementFullscreenEnabled = true
         configuration.setURLSchemeHandler(PluginScheme.shared, forURLScheme: PluginScheme.name)
         view = WebCardView(frame: .zero, configuration: configuration)
         view.underPageBackgroundColor = .clear
