@@ -3022,6 +3022,7 @@ ones".
      (Track E4).
 ### Track C5 (items 120, 121, 123–126)
 ### Track C5 (items 120, 121, 123–126, 128, 129)
+### Track C5 (items 120, 121, 123–126, 128, 129, 131)
 
 - **Cause, Worked (124).** Rows put "Worked" under a turn only when the turn held a tool call (a reply alone got none),
   and never under the last turn while the chat's phase was working: the agent's working comes before the user's next
@@ -3056,16 +3057,27 @@ ones".
   their hooks in PaneCard, FloatingPane and the registry, and the empty chat's second spinner are gone; lint split
   three functions that the new cases pushed over its limits. Ovvi/Chat plus `ChatRow.swift`: 2696 lines before, 2710
   after, with items 126, 128, 129 and the review's Codex and OpenCode cases in them.
+- **Wide tables (131).** Each column is as wide as its text up to 200 pt (the shared `Capped` layout, now its own
+  file); a table that fits stretches to the reply as before, a wider one keeps those widths in a sideways scroll view,
+  as code blocks do (`ViewThatFits`), and a vertical scroll over it still scrolls the chat.
 - **Decisions.** A chat shown again after a time away shows a blank chat (the box at the bottom) until its history is
   in, a spinner only after 0.3 s: the old rows first would jump to the new ones (Track I), and the TUI was the bug.
+  The VM's recording of the 10-tab repro showed that blank for 13 frames (about 0.2 s at 60 fps) before the rows; its
+  transcript's follow now starts ahead of the side file's (one process start, not two in a row).
   A resumed Codex chat stays empty until its first prompt (Codex starts the session then). Claude Code's `turn_duration`
   was on every turn of the user's transcripts (13 of 13); no real agent ran here.
 - **Runs.** Old code with the new tests (tag on d56802b1): CI 43190123850, all three red (126: 105 TUI commits; 123: no
   loader; 120: a 34 pt header) and the before pictures. New code: CI 43190210872, 29 chosen chat tests (ChatTests,
   LongChatTests, PiChatTests, SwitchTests, the link, Codex, OpenCode, agent-start, overview, key and flicker tests):
   green but the 126 test's record (it read the last other tab's record too; it now waits 2 s first, as the flicker
-  tests do). The final run: FINAL_RUN. Pictures: `~/Downloads/ovvi-research/p57c5/`.
+  tests do). VM: the 126 test and the pictures, green. `make test`'s "a dropped follow stops its backlog" failed three
+  times in a row with `ovvi-missing` echoed ahead of the wait loop and passed 3 of 3 with it inside the loop (main 4 of
+  4): a timing test that a busy Mac tips; the line now runs only while the file is missing. CI 43197593699 (30 chosen tests on the head): 29 green;
+  the resume test missed its loader, up less than a second as CI's chooser took most of the 3 s hook delay (now 6 s).
+  VM: the wide-table and resume tests green on the final code (a wide table's cells were cut to two lines in a
+  sideways scroll view until they took their whole height). The final round's CI covers the rest. Pictures: `~/Downloads/ovvi-research/p57c5/`.
 - **For the user.** A new chat: logo, greeting under it, its placeholder. Relaunch with Chat on a long Claude Code
   chat: a spinner, not the greeting, then the transcript. Open 10 browser tabs, visit each, come back to a chat: no TUI
   flash. Worked after a reply-only turn and after every turn, still there while the next one works. A path in
-  backticks: underlined, no grey box. Send while pi works: the message dim until pi takes it.
+  backticks: underlined, no grey box. Send while pi works: the message dim until pi takes it. A reply with a wide
+  table scrolls sideways; a narrow one fills the reply.
