@@ -123,7 +123,8 @@ private struct ToolDetail: View {
             Text(title).font(.system(size: 10, weight: .medium)).foregroundStyle(.tertiary)
             ScrollView([.vertical, .horizontal]) {
                 // The id on the text, which moves as it scrolls.
-                Text(text).font(.system(size: 11, design: .monospaced)).lineSpacing(2).textSelection(.enabled)
+                LinkedText(text: ChatLinks.linked(text)).font(.system(size: 11, design: .monospaced)).lineSpacing(2)
+                    .textSelection(.enabled)
                     .fixedSize().accessibilityIdentifier(id).padding(8)
             }
             .defaultScrollAnchor(.topLeading)

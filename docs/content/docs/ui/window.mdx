@@ -744,7 +744,7 @@ terminal.
 | ⌘-click | in a new tab, in the background |
 | ⌥-click | in a pane to the side of the card, in the background |
 | a right click | a menu of **Open**, **Open in New Tab** and **Open to the Side**, which do what the three gestures do |
-| ⌘⌥-click | a terminal's link only: in the Mac's default app for it, outside Ovvi |
+| ⌘⌥-click | a link in the terminal or the chat: in the Mac's default app for it, outside Ovvi |
 
 - **What a card shows itself.** File Explorer shows files and folders (a
   file from its tree, a relative link in Markdown). Git shows its home and
@@ -789,8 +789,13 @@ terminal.
   Link in New Tab** and **Open Link to the Side**. A `target=_blank` link
   opens a new tab in the background ([Popups, links and
   dialogs](/docs/ui/browser#popups-links-and-dialogs)).
-- A link in a chat reply has no menu of its own: SwiftUI's text has none, so
-  the right click shows the text's menu.
+- **The chat's links** are what the terminal finds, in every message and
+  tool call ([Markdown](/docs/ui/chat-view#what-it-looks-like)), and they
+  open as the terminal's do: ⌘-click in a new tab and ⌥-click to the side,
+  both in the background, and ⌘⌥-click in the Mac's default app. A plain click opens as a browser's link does, in
+  a new tab, selected: chat text is no program's, so the click is free. A
+  link has no menu of its own: SwiftUI's text has none, so the right click
+  shows the text's menu.
 - A web page opened from Markdown or the chat follows the browser's load
   rule ([When a page loads by
   itself](/docs/ui/browser#when-a-page-loads-by-itself)). One opened from
@@ -843,8 +848,9 @@ terminal.
     libghostty ⌘ in place of ⌥ and ⌘⌥: with the pointer's moves while they
     are down, and when they go down or up with the pointer still (first off the
     view: libghostty looks again only on a new cell).
-- A `mailto:` or an app's link in a page opens its app. In a chat reply only a
-  `mailto:` does; other schemes open nothing.
+- A `mailto:` or an app's link in a page opens its app. In the chat, an email
+  or `mailto:` opens the Mac's mail app; another scheme shows the notice
+  "Ovvi can't open ‹address›", as in the terminal.
 - **A file that is gone.** A click, ⌘-click, ⌥-click or menu item on a file
   or folder that is gone (a terminal link, a Markdown link, a Git
   diff's file, a row of File Explorer's tree, ⌘K's Open File, `ovvi open`

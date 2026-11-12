@@ -69,7 +69,7 @@ struct UserBubble: View {
             .accessibilityValue(text)
             .accessibilityIdentifier("chat.\(paneID).\(sending ? "sending" : "user")")
             .foregroundStyle(Look.onAccent)
-            .tint(Look.onAccent)
+            .environment(\.chatLink, Look.onAccent)
             .bubble(look.sentBubble)
             .padding(.trailing, -Bubble.inset)
             .padding(.leading, ChatView.gutter)

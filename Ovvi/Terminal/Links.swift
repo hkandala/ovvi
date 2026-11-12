@@ -5,7 +5,8 @@ import HerdrKit
 import SwiftUI
 
 enum Links {
-    /// Never silent: a path with nothing there, or an address nothing in Ovvi opens, shows a notice.
+    /// Never silent: a path with nothing there, or an address nothing in Ovvi opens, shows a notice. A plain click
+    /// (`.here`, the chat's) selects the tab it opens.
     static func open(_ link: TerminalLink, how: Opening, from terminalID: String, page: Page?) {
         guard let page else { return }
         let store = page.store
@@ -15,7 +16,7 @@ enum Links {
         switch link.kind {
         case .web:
             guard let browser = Registry.openers(for: link.target).first else { return cannot(link, store) }
-            Task { await page.open(browser, arg: link.target, from: terminalID, how: how, background: true) }
+            Task { await page.open(browser, arg: link.target, from: terminalID, how: how, background: how != .here) }
         case .mail:
             onMac(link, store)
         case .other:
@@ -42,7 +43,7 @@ enum Links {
         }
         if !store.machine.isRemote, !found.hasSuffix("/"), ["html", "htm"].contains(url.pathExtension.lowercased()) {
             return await page.open(Registry.browser, arg: url.absoluteString, from: terminalID, how: how,
-                                   background: true)
+                                   background: how != .here)
         }
         guard let plugin = Registry.openers(for: found).first else { return cannot(link, store) }
         await page.open(
@@ -51,7 +52,7 @@ enum Links {
             at: link.line.map(String.init),
             from: terminalID,
             how: how,
-            background: true,
+            background: how != .here,
         )
     }
 

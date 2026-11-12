@@ -10,9 +10,8 @@ struct Markdown: View {
     var body: some View {
         Blocks(container: Document(parsing: text))
             .font(.system(size: 14))
-            // Messages' rhythm: 13 pt text on 16 pt lines (1.23), a blank line between blocks, list items as lines. 14
-            // pt's own line is 17 pt.
-            .lineSpacing(14 * 16 / 13 - 17)
+            // 14 pt text on 20 pt lines (1.43, between Messages' 1.23 and a web page's 1.5); 14 pt's own line is 17 pt.
+            .lineSpacing(3)
             .textSelection(.enabled)
             .fixedSize(horizontal: false, vertical: true)
             .readableText(text)
@@ -53,13 +52,13 @@ private struct Block: View {
         case let heading as Heading:
             let size: CGFloat = [22, 18, 16][min(max(heading.level, 1), 3) - 1]
             let weight: Font.Weight = heading.level < 3 ? .bold : .semibold
-            Text(Inline.text(heading, size: size)).font(.system(size: size, weight: weight))
+            LinkedText(text: Inline.text(heading, size: size)).font(.system(size: size, weight: weight))
         case let paragraph as Paragraph:
-            Text(Inline.text(paragraph, size: 14))
+            LinkedText(text: Inline.text(paragraph, size: 14))
         case let code as CodeBlock:
             ScrollView(.horizontal) {
                 // A code block's last newline is no line of its own.
-                Text(code.code.hasSuffix("\n") ? String(code.code.dropLast()) : code.code)
+                LinkedText(text: ChatLinks.linked(code.code.hasSuffix("\n") ? String(code.code.dropLast()) : code.code))
                     .font(.system(size: 12.5, design: .monospaced)).lineSpacing(2).fixedSize()
                     .padding(.horizontal, 12).padding(.vertical, 10)
             }
@@ -125,7 +124,8 @@ private struct TableGrid: View {
                 GridRow {
                     ForEach(rows[row].indices, id: \.self) { column in
                         let alignment = alignment(column)
-                        Text(Inline.text(rows[row][column], size: 14)).fontWeight(row == 0 ? .semibold : nil)
+                        LinkedText(text: Inline.text(rows[row][column], size: 14))
+                            .fontWeight(row == 0 ? .semibold : nil)
                             .multilineTextAlignment(alignment == .trailing ? .trailing : .leading)
                             .padding(.horizontal, 10).padding(.vertical, 6)
                             .frame(maxWidth: .infinity, maxHeight: .infinity,
@@ -153,10 +153,10 @@ private enum Inline {
     static func text(_ markup: any Markup, size: CGFloat) -> AttributedString {
         markup.children.reduce(into: AttributedString()) { result, child in
             switch child {
-            case let text as Markdown::Text: result += linked(text.string)
+            case let text as Markdown::Text: result += ChatLinks.linked(text.string)
             case let code as InlineCode:
                 // A monospaced face reads larger.
-                var code = AttributedString(code.code)
+                var code = ChatLinks.linked(code.code)
                 code.font = .system(size: size * 0.9, design: .monospaced)
                 code.backgroundColor = .primary.opacity(0.08)
                 result += code
@@ -165,13 +165,17 @@ private enum Inline {
             case is Strikethrough: result += styled(child, size, .strikethrough)
             case let link as Markdown::Link:
                 var label = Self.text(link, size: size)
-                label.link = link.destination.flatMap(URL.init(string:))
+                if let url = ChatLinks.markdown(link.destination) {
+                    label.link = url
+                }
                 result += label
             case let image as Markdown::Image:
                 // Its description, a link to it: loaded on its own, a reply could send what the agent read to any
                 // server.
                 var label = Self.text(image, size: size)
-                label.link = image.source.flatMap(URL.init(string:))
+                if let url = ChatLinks.markdown(image.source) {
+                    label.link = url
+                }
                 result += label
             default: result += AttributedString((child as? InlineMarkup)?.plainText ?? "")
             }
@@ -184,24 +188,6 @@ private enum Inline {
         var text = text(markup, size: size)
         for run in text.runs {
             text[run.range].inlinePresentationIntent = (run.inlinePresentationIntent ?? []).union(intent)
-        }
-        return text
-    }
-
-    private static let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
-
-    /// GFM's autolinks, which swift-markdown leaves as text; not a bare name such as `Ovvi.app`.
-    private static func linked(_ string: String) -> AttributedString {
-        var text = AttributedString(string)
-        // Every link starts so: most text has none, and the detector shows in a long chat's scroll.
-        guard ["http", "www."].contains(where: { string.range(of: $0, options: .caseInsensitive) != nil })
-        else { return text }
-        for match in detector?.matches(in: string, range: NSRange(string.startIndex..., in: string)) ?? [] {
-            guard let range = Range(match.range, in: string), let url = match.url,
-                  ["http://", "https://", "www."].contains(where: string[range].lowercased().hasPrefix),
-                  let start = AttributedString.Index(range.lowerBound, within: text),
-                  let end = AttributedString.Index(range.upperBound, within: text) else { continue }
-            text[start ..< end].link = url
         }
         return text
     }

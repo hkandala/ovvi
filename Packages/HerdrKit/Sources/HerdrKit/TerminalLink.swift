@@ -1,6 +1,6 @@
 /// A link in a terminal's text: a web address, an email, another `scheme://` address, or a file path.
-public struct TerminalLink: Equatable, Sendable {
-    public enum Kind: Equatable, Sendable {
+public struct TerminalLink: Codable, Equatable, Sendable {
+    public enum Kind: Codable, Equatable, Sendable {
         case web, mail, file, other
     }
 

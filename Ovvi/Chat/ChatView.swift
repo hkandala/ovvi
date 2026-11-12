@@ -160,20 +160,12 @@ private struct WaitingDrawer: View {
 }
 
 extension ChatMessages {
-    /// Web pages and mail addresses only: a transcript (or a page the agent quotes) could hold `file:` or `ovvi:`
-    /// links.
+    /// As in the terminal, with a plain click too: chat text is no program's, so a click opens as a browser's link
+    /// does, in a new tab, selected.
     func openLink(_ url: URL) -> OpenURLAction.Result {
-        let scheme = url.scheme?.lowercased() ?? ""
-        if scheme == "mailto" {
-            return .systemAction
-        }
-        guard url.isWebAddress else {
-            return .discarded
-        }
-        let flags = NSEvent.modifierFlags
-        let how: Opening = flags.contains(.command) ? .tab : flags.contains(.option) ? .side : .here
-        Task { await page.open(Registry.browser, arg: url.absoluteString, from: chat.terminalID, how: how,
-                               background: how != .here) }
+        guard let link = ChatLinks.link(url) else { return .discarded }
+        Links.open(link, how: PaneSurfaceView.linkKey(NSEvent.modifierFlags) ?? .here, from: chat.terminalID,
+                   page: page)
         return .handled
     }
 }

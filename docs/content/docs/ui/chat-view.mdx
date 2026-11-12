@@ -542,9 +542,10 @@ A run is one quiet line with no card: its summary and a chevron.
   something sits over pane content. The live
   terminal keeps its own row under the messages. Simpler choice: a wheel
   over the reply box does not scroll the messages under it.
-- **Markdown.** `swift-markdown` (cmark-gfm) parses it. 14 pt text with
-  lines 17.2 pt apart, Messages' rhythm (its 13 pt text on 16 pt lines,
-  1.23): a blank line separates paragraphs, and list items follow as lines.
+- **Markdown.** `swift-markdown` (cmark-gfm) parses it. 14 pt text on
+  20 pt lines (1.43: more room than Messages' 1.23, a little less than a
+  web page's 1.5): a blank line separates paragraphs, and list items follow
+  as lines.
   Headings are 22, 18 and 16 pt (bold for the first two levels), with 26 or
   17 pt above them and 8 pt under them. 17 pt (a line) between other blocks;
   no gap between list items or before a nested list, 6 pt before an item's
@@ -558,12 +559,18 @@ A run is one quiet line with no card: its summary and a chevron.
     written.
   - A table sits in a faint frame (radius 8): the head row on a fill, a line
     between rows, each column aligned as written.
-  - Links open only for `http`, `https` and `mailto`: a web page in a
-    browser pane, as every link opens ([Opening links and
-    files](/docs/ui/window#opening-links-and-files)), a mail address in its
-    app. Bare `http://`,
-    `https://` and `www.` addresses are links too (`NSDataDetector`:
-    swift-markdown has no autolinks), names such as `Ovvi.app` are not.
+  - **Links.** The chat finds links in its text as the terminal does
+    (`TerminalLink`, [Opening links and
+    files](/docs/ui/window#opening-links-and-files)): addresses, emails and
+    paths, with `:line`. It looks in the user's messages, the replies, inline
+    code, code blocks and a tool call's Input and Output, one line at a time.
+    A path opens from the card's folder. A Markdown link (`[label](…)`)
+    opens only an `http`, `https` or `mailto` address: its label hides where
+    it goes, and a transcript could hold `file:` or `ovvi:` links. A bare
+    name such as `Ovvi.app` or `example.com` is no link.
+  - A link is underlined and in the accent color (white in the user's
+    bubble). Under the pointer it turns lighter (70 % opacity) and the
+    pointer is the pointing hand.
   - An image shows as its description, linked to its address. The chat never
     fetches it: a reply could send what the agent read to any server.
   - Footnotes read as written (`[^1]`): swift-markdown has none.
