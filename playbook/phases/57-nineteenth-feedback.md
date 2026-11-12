@@ -2948,3 +2948,19 @@ ones".
 131. "another improvement to chat view, can we make markdown tables horizontally scrollable if they are not fitting
      fine? like right now in our markdown viewer in file plugin, we do something like that"
      (`.build/fb57/r8-table-1.45.36.png`; Track C5).
+
+### Track N3 (item 130)
+
+- **Fix.** Type-select in the chooser, as in Finder: characters typed less than a second apart make one hidden word
+  (one string and the last key's `NSEvent.timestamp`, no timer). The first row whose name starts with the word wins,
+  else the first row with a word that starts with it, case-insensitive. Agent's rows count while it is closed: `pi`
+  opens Agent with Pi selected. Nothing opens; Return picks. No match keeps the selection.
+- **Decisions.** Digits stay number keys and never join the word. A space joins only a word already begun. An agent
+  that is not installed is never selected. A match outside Agent leaves it open, as ↓ out of it does. ⌃ and ⌥ chords
+  do nothing, digits included (⌥2 picked row 2 before, against the design).
+- **Tests.** The agent test types `git` (key by key it would end on Terminal), waits over a second, types `pi` (without
+  the reset it would match nothing), and Return starts the stand-in. The new-tab test's typed text matches no row now.
+- **Runs.** CI 43194324566 (chosen: the agent and new-tab chooser tests, executed 2) green. The picture: Pi selected
+  under the opened Agent after `git`, a pause and `pi`.
+- **For the user.** ⌘T, type `pi`: Agent opens with Pi selected; `file` selects File Explorer, `git` Git; Return opens
+  it. Wait a second between words.
