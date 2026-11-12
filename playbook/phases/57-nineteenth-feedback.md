@@ -3009,7 +3009,8 @@ ones".
   the next started only after a take, is no burst, and its absence is the wait the user saw. The chat's red ⌥-click
   (final CI, round 8) opened nothing at all: another cause than this delay.
 - **Runs.** Probe before/after: CI 43186585455, 43191607905 (`~/Downloads/ovvi-research/p57l4/timings.md`). Chosen tests
-  on the fix: CI 43194689185.
+  on the fix: CI 43195482537 (executed 13: the WebKit start, the terminal, chat, floating, HTML, plugin, Markdown and
+  browser link and card tests), green.
 - **For the user.** ⌥-click a web link, an `.html` file and a `.md` path in a terminal and in a chat: the page shows
   about as soon as the split opens, the first time too (after the app's first 3 s). On a remote machine a browser link
   is still slower than on This Mac.
