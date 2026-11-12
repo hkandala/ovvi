@@ -2808,4 +2808,5 @@ ones".
   split). Best guess: the re-show's focus and redraw ate the tap.
 - **Fix.** The step waits for the shown page's reply box to take the keys, then hovers the link before ⌥, as the ⌘
   step does. The chat reads a link click's keys from the click, not from the keys held when it runs late.
-- **Runs.** The VM green before and after.
+- **Runs.** Red: full run 43171070157 (shard 3). The VM green before and after; CI 43181605437 (chosen, executed 1)
+  green. Two full runs in a row green prove it.
