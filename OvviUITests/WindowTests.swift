@@ -134,6 +134,24 @@ extension OvviUITests {
         // 679 in 674 on CI, the second window only (the first comes out at 674), from one run to the next.
         XCTAssertTrue((screen.height - 2 ... screen.height + 8).contains(frame.height), "\(frame) in \(screen)")
         XCTAssertEqual(frame.minX, screen.minX, accuracy: 2, "\(frame) in \(screen)")
+
+        step("New window: the next one takes the front window's size and place, once the user changed them")
+        let front = try XCTUnwrap(window)
+        let edge = front.coordinate(withNormalizedOffset: CGVector(dx: 1, dy: 0.5)).withOffset(CGVector(dx: -1, dy: 0))
+        edge.click(forDuration: 0.3, thenDragTo: edge.withOffset(CGVector(dx: -frame.width / 3, dy: 0)))
+        XCTAssertTrue(until(3) { front.frame.width < frame.width - 100 }, "\(front.frame)")
+        let resized = front.frame, ids = app.windows.allElementsBoundByIndex.map(\.identifier)
+        app.typeKey("n", modifierFlags: .command)
+        XCTAssertTrue(until(3) { app.windows.count == ids.count + 1 }, "no new window")
+        let third = try XCTUnwrap(app.windows.allElementsBoundByIndex.first { !ids.contains($0.identifier) })
+        XCTAssertEqual(third.frame.width, resized.width, accuracy: 2, "\(third.frame) after \(resized)")
+        XCTAssertEqual(third.frame.height, resized.height, accuracy: 8, "\(third.frame) after \(resized)")
+        // AppKit cascades a window over one of its group at the same place.
+        XCTAssertTrue(
+            (resized.minX ... resized.minX + 40).contains(third.frame.minX),
+            "\(third.frame) after \(resized)",
+        )
+        third.buttons[XCUIIdentifierCloseWindow].click()
     }
 
     func testNewWindowRowsResolveWhileAnotherConnectAsks() async throws {

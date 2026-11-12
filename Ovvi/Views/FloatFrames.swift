@@ -44,11 +44,15 @@ enum FloatFrames {
         }
     }
 
-    /// `WindowPlacement` takes the screen's top-left based points.
     static func placement() -> WindowPlacement {
         defer { next = nil }
-        guard let frame = next, let screen = NSScreen.screens.first(where: { $0.frame.intersects(frame) })
-            ?? NSScreen.main else { return WindowPlacement() }
+        return next.map(placement) ?? WindowPlacement()
+    }
+
+    /// `WindowPlacement` takes the screen's top-left based points.
+    static func placement(_ frame: NSRect) -> WindowPlacement {
+        guard let screen = NSScreen.screens.first(where: { $0.frame.intersects(frame) }) ?? NSScreen.main
+        else { return WindowPlacement() }
         return WindowPlacement(CGPoint(x: frame.minX - screen.frame.minX, y: screen.frame.maxY - frame.maxY),
                                size: frame.size)
     }

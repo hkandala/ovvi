@@ -24,9 +24,11 @@ description: "Windows, the title row, tab bar, sidebar pages with spaces and the
   (96 pt) shows in the middle meanwhile, until a window of the launch has its
   content.
   The content then fades in over 0.2 s (at once with Reduce Motion).
-- A new window fills the screen's visible frame (the screen without the menu
-  bar and the Dock), as a zoom does; it is not full screen. A window macOS
-  restores keeps its frame.
+- A new window takes the size and place of the front window (not one in full
+  screen), and AppKit moves it down and right a little when it would cover a
+  window exactly. With no such window it fills the screen's visible frame
+  (the screen without the menu bar and the Dock), as a zoom does; it is not
+  full screen. A window macOS restores keeps its frame.
 
 ## New window
 

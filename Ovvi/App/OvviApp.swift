@@ -27,8 +27,13 @@ struct OvviApp: App {
             ContentView()
         }
         .windowToolbarStyle(.unifiedCompact)
+        // The front window's frame, which AppKit cascades; with none, the screen's visible frame.
         .defaultWindowPlacement { _, context in
-            WindowPlacement(.center, size: context.defaultDisplay.visibleRect.size)
+            NSApp.orderedWindows.first {
+                $0.identifier?.rawValue.hasPrefix(WindowPages.mainScene + "-") == true && $0.isVisible
+                    && !$0.styleMask.contains(.fullScreen)
+            }.map { FloatFrames.placement($0.frame) }
+                ?? WindowPlacement(.center, size: context.defaultDisplay.visibleRect.size)
         }
         .windowIdealSize(.maximum)
         // The first launch shows the welcome alone; its end opens the first window.
