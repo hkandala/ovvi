@@ -112,11 +112,11 @@ private struct HeaderItem: View {
     }
 
     private func toggle(_ id: String) -> some View {
-        let isOn = control.value == .bool(true)
-        return IconButton(symbol: control.symbol ?? "questionmark", help: control.title ?? "", size: 22) {
+        let isOn = control.value == .bool(true), onSymbol = isOn ? control.onSymbol : nil
+        return IconButton(symbol: onSymbol ?? control.symbol ?? "questionmark", help: control.title ?? "", size: 22) {
             plugin.header.pick(id, .bool(!isOn))
         }
-        .foregroundStyle(isOn ? AnyShapeStyle(.tint) : AnyShapeStyle(look.paneButton))
+        .foregroundStyle(isOn && control.onSymbol == nil ? AnyShapeStyle(.tint) : AnyShapeStyle(look.paneButton))
         .accessibilityAddTraits(isOn ? .isSelected : [])
         .accessibilityLabel(control.label ?? control.title ?? "")
     }

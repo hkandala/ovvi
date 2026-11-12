@@ -45,6 +45,8 @@ public struct PluginManifest: Decodable, Sendable, Equatable {
         public let type: String
         public let id: String?
         public var symbol: String?
+        /// A toggle's symbol while on, in place of the accent.
+        public var onSymbol: String?
         public var title: String?
         public var label: String?
         public var value: Value?
