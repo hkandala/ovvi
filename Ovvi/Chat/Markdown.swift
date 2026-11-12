@@ -187,13 +187,11 @@ private enum Inline {
         }
     }
 
-    /// A monospaced face reads larger. A link in it looks as any link does, with no code fill behind it.
+    /// A monospaced face reads larger. The fill covers the whole span, a link in it too: the agent wrote it as code.
     private static func code(_ text: String, size: CGFloat) -> AttributedString {
         var code = ChatLinks.linked(text)
         code.font = .system(size: size * 0.9, design: .monospaced)
-        for run in code.runs where run.link == nil {
-            code[run.range].backgroundColor = .primary.opacity(0.08)
-        }
+        code.backgroundColor = .primary.opacity(0.08)
         return code
     }
 

@@ -3052,6 +3052,11 @@ ones".
 - **Cause, the grey behind links (121).** Not L2's terminal tint and not C4's hover: agents write paths in backticks,
   and inline code draws on a faint fill, so a path link sat on a grey box. **Fix:** a link's characters in inline code
   drop the code's fill; the rest of the code keeps it. The hover stays C4's (70 %, the pointing hand).
+- **Undone, 121's code fill.** The user: "wait on link grey, are you saying there was already some code span and i saw
+  that or we are explicitly adding code span for all links? if its former, we shouldn't do custom styling of removing
+  code span for links? that might lead to some edge cases where you would want to shwo a acode span for linsk". It was
+  the former, so an inline code span keeps its fill over its whole text, links in it included (still underlined and
+  clickable); links outside code have no fill, as before.
 - **Cause, no dimmed pending message (128).** Track I swapped the dimming for ticks (1ca4caa2) and item 77 dropped the
   ticks (719a7d14), so a queued message looked taken. **Fix:** 70 % again until the history has it, 50 % once "Not
   sent", as before Track I; PiChatTests compares the bubble's pixels while pi holds the message and after.
@@ -3079,7 +3084,7 @@ ones".
   VM: the wide-table and resume tests green on the final code (a wide table's cells were cut to two lines in a
   sideways scroll view until they took their whole height). The final round's CI covers the rest. Pictures: `~/Downloads/ovvi-research/p57c5/`.
 - **For the user.** A new chat: logo, greeting under it, its placeholder. Relaunch with Chat on a long Claude Code
-  chat: a spinner, not the greeting, then the transcript. Open 10 browser tabs, visit each, come back to a chat: no TUI
-  flash. Worked after a reply-only turn and after every turn, still there while the next one works. A path in
-  backticks: underlined, no grey box. Send while pi works: the message dim until pi takes it. A reply with a wide
-  table scrolls sideways; a narrow one fills the reply.
+  chat: a spinner, not the greeting, then the transcript. Open 10 browser tabs, visit each, come back to a chat: no
+  TUI flash. Worked after a reply-only turn and after every turn, still there while the next one works. A path in
+  backticks: underlined on the code's grey fill; a bare path: underlined, no fill. Send while pi works: the message
+  dim until pi takes it. A reply with a wide table scrolls sideways; a narrow one fills the reply.
