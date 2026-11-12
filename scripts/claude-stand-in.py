@@ -5,9 +5,9 @@ Started by the chooser with Ovvi's flags (`--session-id T --settings <json>`), i
 writes a transcript in Claude Code's format, reports its state to herdr and answers prompts on its terminal: "wait"
 shows a dialog until 1 is typed, "ask" asks a question through the PermissionRequest hook, "slow" works until Esc,
 "mute" drops the next prompt, "long" gets a command with 200 lines of output, "big" writes 330 KB of lines the chat
-skips (as a real session's API records), "steps" gets a reply, a command, a reply, two commands and a reply, "many"
-writes 150 more turns (a long session; "many 25" that many, "many 10 30" 10 with 30 more paragraphs each), a prompt of
-OVVI_STAND_IN_SCENE's turns plays that turn (scripts/welcome-scene/scene.py), anything else gets one command and the
+skips (as a real session's API records), "table" gets a table wider than any card, "steps" gets a reply, a command, a
+reply, two commands and a reply, "many" writes 150 more turns (a long session; "many 25" that many, "many 10 30" 10
+with 30 more paragraphs each), a prompt of OVVI_STAND_IN_SCENE's turns plays that turn (scripts/welcome-scene/scene.py), anything else gets one command and the
 reply "Echo: <prompt>". Ctrl-C clears the line, and on an empty one asks for another;
 "/exit" quits, after OVVI_STAND_IN_EXIT_HOOKS seconds when set (as Claude Code runs its SessionEnd hooks). Started
 without flags it reports its session to herdr (as herdr's Claude Code integration does) and keeps its transcript, which
@@ -144,6 +144,11 @@ def prompt(text, started):
                 {"type": "text", "text": f"Reply {turn}.\n\n" + "\n\n".join(paragraphs)}]})
             write("system", subtype="turn_duration", durationMs=1000)
         reply("Last.", started)
+    elif text == "table":
+        cell = "a cell with enough words to wrap in a narrow column"
+        rows = ["| " + " | ".join(f"Column {n}" for n in range(1, 7)) + " |", "|" + "---|" * 6]
+        rows += ["| " + " | ".join(f"Row {r}, {cell}" for _ in range(6)) + " |" for r in range(1, 4)]
+        reply("\n".join(rows), started)
     elif text == "big":
         for _ in range(40):
             write("api-request-blob", blob="x" * 8192)

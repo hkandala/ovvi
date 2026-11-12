@@ -589,7 +589,11 @@ A run is one quiet line with no card: its summary and a chevron.
     a 3 pt bar. A rule is a divider. Strikethrough is drawn. HTML shows as
     written.
   - A table sits in a faint frame (radius 8): the head row on a fill, a line
-    between rows, each column aligned as written.
+    between rows, each column aligned as written. Each column is as wide as
+    its text, up to 200 pt, where its text wraps. A table that fits the reply
+    stretches to its width; a wider one keeps those widths and scrolls
+    sideways in its own box, as a code block does, and a vertical scroll over
+    it still scrolls the chat.
   - **Links.** The chat finds links in its text as the terminal does
     (`TerminalLink`, [Opening links and
     files](/docs/ui/window#opening-links-and-files)): addresses, emails and

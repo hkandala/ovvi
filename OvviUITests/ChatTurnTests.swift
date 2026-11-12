@@ -72,6 +72,28 @@ extension OvviUITests {
         XCTAssertTrue(element("chat.\(pane).worked").exists)
     }
 
+    /// A table wider than the reply scrolls sideways in its own box, and the chat still scrolls up and down over it.
+    func testAWideTableScrollsSideways() async throws {
+        let pane = try await startChat().pane
+        try await say("many 6", in: pane)
+        XCTAssertTrue(row(pane, "reply", "Last.").exists(within: 8))
+        try await say("table", in: pane)
+        let table = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier == %@ AND value BEGINSWITH '| Column 1'", "chat.\(pane).reply"))
+            .firstMatch
+        XCTAssertTrue(table.exists(within: 5))
+        XCTAssertTrue(element("chat.\(pane).worked").exists(within: 3))
+        keepScreenshot("wide table")
+        let before = table.screenshot().pngRepresentation
+        XCTAssertTrue([-300.0, 300].contains { step in
+            table.scroll(byDeltaX: step, deltaY: 0)
+            return until(2) { table.screenshot().pngRepresentation != before }
+        }, "the table did not scroll sideways")
+        let top = table.frame.minY
+        table.scroll(byDeltaX: 0, deltaY: 300)
+        XCTAssertTrue(until(2) { table.frame.minY > top + 50 }, "the chat did not scroll over the table: \(top)")
+    }
+
     /// Each look is one snapshot: none until `shown` holds the empty chat's header.
     private func expectNoEmptyChat(_ pane: String, until shown: XCUIElement) throws {
         let window = mainWindows.firstMatch

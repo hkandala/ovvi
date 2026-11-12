@@ -70,7 +70,11 @@ private struct Block: View {
         case let list as ListItemContainer:
             ListBlock(list: list)
         case let table as Markdown::Table:
-            TableGrid(table: table)
+            // As a web page lays one out: wider than the reply, it scrolls sideways in its own box.
+            ViewThatFits(in: .horizontal) {
+                TableGrid(table: table)
+                ScrollView(.horizontal) { TableGrid(table: table) }
+            }
         case is ThematicBreak:
             Divider().padding(.vertical, 4)
         case let html as HTMLBlock:
@@ -113,6 +117,7 @@ private struct ListBlock: View {
 
 private struct TableGrid: View {
     let table: Markdown::Table
+    static let cell: CGFloat = 200
 
     var body: some View {
         let rows = [Array(table.head.cells)] + table.body.rows.map { Array($0.cells) }
@@ -124,14 +129,17 @@ private struct TableGrid: View {
                 GridRow {
                     ForEach(rows[row].indices, id: \.self) { column in
                         let alignment = alignment(column)
-                        ChatLinks.text(Inline.text(rows[row][column], size: 14))
-                            .fontWeight(row == 0 ? .semibold : nil)
-                            .multilineTextAlignment(alignment == .trailing ? .trailing : .leading)
-                            .padding(.horizontal, 10).padding(.vertical, 6)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity,
-                                   alignment: Alignment(horizontal: alignment, vertical: .center))
-                            .background(row == 0 ? AnyShapeStyle(.primary.opacity(0.05)) : AnyShapeStyle(.clear))
-                            .gridColumnAlignment(alignment)
+                        // Each column as wide as its text, up to `cell`.
+                        Capped(width: Self.cell) {
+                            ChatLinks.text(Inline.text(rows[row][column], size: 14))
+                                .fontWeight(row == 0 ? .semibold : nil)
+                                .multilineTextAlignment(alignment == .trailing ? .trailing : .leading)
+                        }
+                        .padding(.horizontal, 10).padding(.vertical, 6)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity,
+                               alignment: Alignment(horizontal: alignment, vertical: .center))
+                        .background(row == 0 ? AnyShapeStyle(.primary.opacity(0.05)) : AnyShapeStyle(.clear))
+                        .gridColumnAlignment(alignment)
                     }
                 }
             }
