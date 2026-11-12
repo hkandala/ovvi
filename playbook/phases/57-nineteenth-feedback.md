@@ -2763,3 +2763,27 @@ ones".
 - **For the user.** Hover a link and a path in a reply and in a tool's Output (the hand, the lighter link); ⌘-, ⌥-,
   ⌘⌥- and plain click on a path with `:line`; select text, then hover a link; the new line height in long replies,
   lists and code blocks.
+
+### Round 8, second batch (items 113–119)
+
+113. "sometimes i see white cursor block kinda thing when selecting, why is that? can we fix that"
+     (`.build/fb57/r8-cursor-11.33.22.png`; Track L3).
+114. "can we make jetbrains mono as the default font? curious why sf mono was chosen as default? also check these 3
+     screenshots ... in each one the left most has ovvi with font set as shown in setting window, then you have one
+     ghostty window with pi logo being visible and then you see browser pane with pi logo, check which fonts come close
+     to original pi logo, i think fira code, jetbrains mono seems slightly taller, make jetbrains mono as default for
+     now, just give me your analysis on all these fonts though. and also search internet on some of the popular fonts
+     people use in terminals, modern, good quality and popular ones which are open source, from these analysis we can
+     take a call what to keep the default one and what other fonts to support in our settings etc"
+     (`.build/fb57/r8-11.39.08.png`, `r8-11.39.18.png`, `r8-11.39.26.png`; Track L3).
+115. "in file tree sidebar, text is getting clipped, can we do some ellipsis kinda thing or what vscode does"
+     (`.build/fb57/r8-11.49.57.png`; Track E3).
+116. "also from file explorer when i open certain file with sidebar disabled by default, the file opens and when i open
+     the tree, the file tree rerenders and opens up the folder, even when you normally open, keep the file tree state as
+     is and open the file within that, probably we are doing a fresh page load, basically keep the entire file explorer
+     like a single page app, with all state present, so file tree stuff doesn't seem liek rerendering and stuff"
+     (Track E3).
+117. "instead of showing blue colored icon when sidebar is opened, can we use sidebar open and close icons, like i
+     think there are two sidebar icons showing the state right" (`.build/fb57/r8-sidebar-icon-11.59.07.png`; Track E3).
+118. "word wrap should be disabled by default in file editor" (Track E3).
+119. "for markdown outline icon, let's move it to top right where other markdownbuttons are" (Track E3).
