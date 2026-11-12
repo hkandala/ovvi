@@ -6,6 +6,16 @@ extension OvviUITests {
         try await say("hello", in: pane)
         XCTAssertTrue(row(pane, "reply", "Echo: **hello**").exists(within: 5))
 
+        step("Idle at its prompt while herdr hears working: the header says Working, as in the TUI")
+        try await say("agents", in: pane)
+        XCTAssertTrue(row(pane, "reply", "Waiting on agents.").exists(within: 5))
+        let state = element("pane.\(pane).state")
+        XCTAssertTrue(state.has(\.stringValue, "Working", within: 2))
+        XCTAssertFalse(state.vanishes(within: 2), "pi's idle hid herdr's Working")
+        XCTAssertTrue(element("chat.\(pane).send").exists)
+        try await send("1", to: pane)
+        XCTAssertTrue(until(5) { !state.exists || state.stringValue != "Working" })
+
         try await say("wait", in: pane)
         let drawer = element("chat.\(pane).drawer")
         XCTAssertTrue(drawer.exists(within: 5))

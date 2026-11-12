@@ -67,7 +67,9 @@ struct CardState: View {
         switch chat.phase {
         case .working: return AgentState.working.label(look)
         case .waiting: return AgentState.needsYou.label(look)
-        case .ready, .starting: return state == .finishedUnseen ? AgentState.finishedUnseen.label(look) : nil
+        // herdr's, as the TUI's header: pi idles at its prompt while it waits on agents or background jobs, which
+        // herdr hears as working.
+        case .ready, .starting: return state?.label(look)
         }
     }
 }

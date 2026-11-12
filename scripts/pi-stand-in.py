@@ -5,8 +5,9 @@ Started by the chooser with Ovvi's flags (`-e <pi-ovvi-<sha8>.ts> --ovvi <state 
 file whole (its sha256 starts with the name's sha8), writes the state lines pi-ovvi writes and a session file in pi's
 format, reports its state to herdr and answers prompts on its terminal: "wait" opens a dialog until 1 is typed, "slow"
 works until Esc and takes a message sent meanwhile after its tool, as pi steers, "/tree" moves the leaf back before
-the last user message, "tools" runs every kind of tool, a prompt of OVVI_STAND_IN_SCENE's turns plays that turn
-(scripts/welcome-scene/scene.py), anything else gets one command and the reply "Echo: <prompt>".
+the last user message, "tools" runs every kind of tool, "agents" ends its turn while herdr hears working until 1 is
+typed, a prompt of OVVI_STAND_IN_SCENE's turns plays that turn (scripts/welcome-scene/scene.py), anything else gets one
+command and the reply "Echo: <prompt>".
 """
 import hashlib
 import json
@@ -106,6 +107,13 @@ def prompt(text):
         assistant([{"type": "text", "text": "Allowed."}], "stop")
     elif text == "tools":
         tools()
+    elif text == "agents":
+        # pi-herd's wait on agents: the turn ends (idle in the state file) while herdr hears working, until 1 is typed.
+        assistant([{"type": "text", "text": "Waiting on agents."}], "stop")
+        say("Waiting on agents.")
+        line(state, {"type": "idle"})
+        while "1" not in key():
+            pass
     elif text == "slow":
         call = "toolu_" + uuid.uuid4().hex[:12]
         assistant([{"type": "toolCall", "id": call, "name": "bash", "arguments": {"command": "sleep 30"}}], "toolUse")
