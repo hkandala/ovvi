@@ -2776,6 +2776,8 @@ ones".
      people use in terminals, modern, good quality and popular ones which are open source, from these analysis we can
      take a call what to keep the default one and what other fonts to support in our settings etc"
      (`.build/fb57/r8-11.39.08.png`, `r8-11.39.18.png`, `r8-11.39.26.png`; Track L3).
+     After the report (`~/Downloads/ovvi-research/p57l3/fonts.html`): "on the terminal fonts report, makes sense,
+     let's make jetbrains mono as default and leave existing list of font options". So no fonts are bundled.
 115. "in file tree sidebar, text is getting clipped, can we do some ellipsis kinda thing or what vscode does"
      (`.build/fb57/r8-11.49.57.png`; Track E3).
 116. "also from file explorer when i open certain file with sidebar disabled by default, the file opens and when i open
