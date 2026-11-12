@@ -57,10 +57,6 @@ struct BrowserCard: View {
             .overlay {
                 if !shows {
                     cover.frame(maxWidth: .infinity, maxHeight: .infinity).contentShape(.rect)
-                        .simultaneousGesture(TapGesture().onEnded {
-                            page.tookKeyboard(browser.terminalID)
-                            browser.takeKeyboard()
-                        })
                 }
             }
             .overlay {

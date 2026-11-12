@@ -38,13 +38,6 @@ struct NewPane: View {
             }
             .frame(width: size.width, height: size.height)
         }
-        .background {
-            Color.clear.contentShape(.rect).onTapGesture {
-                if let pane = page.store.pane(cardID) {
-                    page.go(to: pane)
-                }
-            }
-        }
         .animation(fade, value: chooser.starting)
         .animation(fade, value: chooser.open)
         .animation(fade, value: chooser.opening)

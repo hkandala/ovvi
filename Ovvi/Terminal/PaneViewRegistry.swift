@@ -205,6 +205,12 @@ final class PaneViewRegistry {
         terminals[terminalID]?.view.takeKeyboard()
         browsers[terminalID]?.takeKeyboard()
         plugins[terminalID]?.web.view.takeKeyboard()
+        // A card with no view for the keys (a missing plugin): they leave the old card, or it would keep getting them.
+        if terminals[terminalID] == nil, browsers[terminalID] == nil, plugins[terminalID] == nil,
+           pages?.floats(terminalID) != true
+        {
+            pages?.window?.makeFirstResponder(nil)
+        }
     }
 
     func dropClaims(but terminalID: String? = nil) {

@@ -666,6 +666,13 @@ How it works: [Layout and sizing](/docs/layout).
   dark and 22 % in light. A tab with one card, a zoomed card, a floating
   window and the overview have none. The border moves with the keyboard at
   once, with no fade.
+- **A click anywhere on a card** makes it the keyboard card: on its terminal,
+  its page, its header, a button, an error, a loader or an empty state. A view
+  that takes the click's keys (a text field, a web page) keeps them; else the
+  card's own view takes them (its terminal, its page or the chat's reply box).
+  A card with no such view (a missing plugin) takes them from the other card.
+  A floated pane's placeholder is left alone: Show Window raises its window. A
+  click in a floating window gives its pane the keys when no view there has them.
 - The buttons show on the keyboard card, on a hovered card and on a zoomed card.
 - **Selecting.** A left drag, a double click, a triple click and a ⇧-click
   select text in the card, also over a program that reads the mouse, as a

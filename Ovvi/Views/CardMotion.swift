@@ -15,6 +15,7 @@ struct CardMotion<Content: View>: NSViewRepresentable {
 
     func makeNSView(context _: Context) -> MovingCard {
         let card = MovingCard(move: move, rect: start ?? rect)
+        card.id = id
         card.host.rootView = AnyView(content.environment(\.chromeLink, card.link))
         if SettlingHost.record {
             card.setAccessibilityElement(true)
@@ -29,6 +30,7 @@ struct CardMotion<Content: View>: NSViewRepresentable {
     func updateNSView(_ card: MovingCard, context _: Context) {
         card.host.rootView = AnyView(content.environment(\.chromeLink, card.link))
         card.look = look
+        card.id = id
         card.hide(hidden)
         if SettlingHost.record {
             card.setAccessibilityIdentifier("motion.\(id)")
@@ -45,6 +47,7 @@ final class MovingCard: NSView {
     /// Every card's motion: ease-out, no overshoot. 0.2 s felt slow.
     static let slide = 0.13
     let host = NSHostingView(rootView: AnyView(EmptyView()))
+    var id = ""
     private let chrome = CardChrome()
     private(set) lazy var link = ChromeLink(self)
     private(set) var move: Int
@@ -242,5 +245,55 @@ final class MovingCard: NSView {
         (animation.fromValue, animation.toValue, animation.duration) = (from, end, duration)
         animation.timingFunction = CAMediaTimingFunction(name: .easeOut)
         return animation
+    }
+}
+
+extension MovingCard {
+    /// Any left click on a card makes it the keyboard's card, whatever it lands on: a terminal, a web page, a plugin's
+    /// error, a loader, a button, the header. AppKit's own first responder change reaches only views that take keys.
+    static func activateOnClick() {
+        NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { event in
+            MainActor.assumeIsolated { clicked(event) }
+            return event
+        }
+    }
+
+    private static func clicked(_ event: NSEvent) {
+        guard let window = event.window, window.attachedSheet == nil, let content = window.contentView,
+              let hit = content.hitTest(content.superview?.convert(event.locationInWindow, from: nil)
+                  ?? event.locationInWindow)
+        else { return }
+        let card = sequence(first: hit, next: \.superview).lazy.compactMap { $0 as? MovingCard }.first
+        // After AppKit's mouse-down: a view that takes keys (a field, the page, the terminal) became first responder
+        // there, ahead of its own mouseDown.
+        DispatchQueue.main.async {
+            if let card {
+                activate(card, in: window)
+            } else if window.firstResponder === window, let id = floated(in: window),
+                      let pages = WindowPages.windows.first(where: { $0.floats(id) })
+            {
+                // A floating window whose view lost the keys (a reload, a new web view) gets them back.
+                pages.terminals.focus(id)
+            }
+        }
+    }
+
+    private static func floated(in window: NSWindow) -> String? {
+        FloatFrames.windows.keyEnumerator().allObjects.compactMap { $0 as? String }
+            .first { FloatFrames.windows.object(forKey: $0 as NSString) === window }
+    }
+
+    private static func activate(_ card: MovingCard, in window: NSWindow) {
+        guard let pages = WindowPages.windows.first(where: { $0.window === window }), !pages.panelOpen,
+              let page = pages.current, let pane = page.store.pane(card.id), pane.tabID == page.selectedTab?.id,
+              !page.floats(pane)
+        else { return }
+        if let responder = window.firstResponder as? NSView, responder.isDescendant(of: card),
+           let terminalID = pane.terminalID
+        {
+            page.tookKeyboard(terminalID)
+        } else {
+            page.go(to: pane)
+        }
     }
 }

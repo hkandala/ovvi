@@ -217,14 +217,7 @@ struct PaneCard: View {
         .padding(.leading, 11).padding(.trailing, 8)
         .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         .background {
-            // Simultaneous: a single tap beside the double one would wait out the double-click interval.
             Color.clear.contentShape(.rect).onTapGesture(count: 2) { page.zoom(id) }
-                .simultaneousGesture(TapGesture().onEnded {
-                    // A floated pane's placeholder raises its window by its button only, as its body does.
-                    if let pane = page.store.pane(id), !page.floats(pane) {
-                        page.go(to: pane)
-                    }
-                })
                 .dragSource(.pane(id), page: page, previewSize: size)
         }
         .contextMenu { PaneItems(page: page, pane: pane) }
