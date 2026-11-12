@@ -20,7 +20,12 @@ struct ChatMessages: View, Equatable {
     /// Only asked, never told: a place the scroll view names as a scroll begins or ends, given back to it, snaps that
     /// row to the top.
     @State private var position = ScrollPosition(idType: String.self)
+    @State private var phrase = Self.phrases.randomElement() ?? ""
+    /// Not observed: a body run rebuilds the rows, and the height changes at each frame of a resize.
+    @State private var height = Height()
     @Environment(\.look) private var look
+    private static let phrases = ["What's on your mind?", "What are we building?", "Where should we start?",
+                                  "What can I help with?", "Ready when you are."]
     private static let end = "end"
     fileprivate nonisolated static let space = "chat.messages"
     /// About two views of text, at most `block` rows. Each time the card is made it lays them out: 31 rows of long
@@ -37,22 +42,39 @@ struct ChatMessages: View, Equatable {
     }
 
     var body: some View {
-        Group {
+        // The reply box and the header sit in the middle until the first message, also while a history loads: a load
+        // that ends empty moves nothing.
+        let welcome = chat.history.entries.isEmpty && chat.outgoing.isEmpty && chat.problem == nil
+        return Group {
             // No scroll view until there is something to show: one made empty keeps the top inset that held its empty
             // content at the bottom after a long history loads, a blank above the messages.
             if !drawn {
                 Color.clear.task { drawn = true }
-            } else if chat.history.entries.isEmpty, chat.loading || (chat.outgoing.isEmpty && chat.problem == nil) {
-                empty
+            } else if chat.history.entries.isEmpty, chat.outgoing.isEmpty, chat.loading || chat.problem == nil {
+                empty(loading: chat.loading && !welcome)
             } else {
+                // Also while the transcript a sent message starts loads (Claude Code and pi write it with the first
+                // message): a spinner in its place took the message away right after it rose.
                 messages
             }
+        }
+        // The first message rises from the reply box as the box goes down. Not a transition: an offset transition
+        // moves nothing here, only its fade runs.
+        .keyframeAnimator(initialValue: 0.0, trigger: Animation.reduced ? false : welcome) { content, rise in
+            content.offset(y: rise)
+        } keyframes: { _ in
+            // From the middle, where the box was.
+            MoveKeyframe(welcome ? 0 : max(0, height.value / 2 - topPadding))
+            LinearKeyframe(0, duration: 0.22, timingCurve: .slide)
         }
         // Here, not on ChatView: its body runs at each resize frame, and a new action redraws every link.
         .environment(\.openURL, OpenURLAction(handler: openLink))
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if !chat.drawer {
                 VStack(spacing: 8) {
+                    if welcome {
+                        header.padding(.bottom, 14).transition(.opacity)
+                    }
                     if let question = chat.question, chat.phase == .waiting {
                         QuestionCard(question: question, paneID: chat.paneID) { chat.answer($0) }
                             .disabled(question.answered)
@@ -62,24 +84,34 @@ struct ChatMessages: View, Equatable {
                 }
                 // The box's text on the messages' edges: the box reaches past them by its own padding.
                 .padding(.bottom, 14).padding(.top, 4).readingColumn(margin: 32 - Composer.inset)
+                .frame(maxHeight: welcome ? .infinity : nil)
             }
         }
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height.value = $0 }
+        .animation(.slide, value: welcome)
         .fadeEdges(.vertical, start: 12, end: 0)
     }
 
-    private var empty: some View {
-        ZStack {
+    private var header: some View {
+        HStack(spacing: 10) {
             if chat.loading {
                 Loader()
             } else if let pane = page.store.pane(chat.paneID) {
-                ProgramGlyph(icon: pane.iconID, letter: pane.letter, size: 64).opacity(0.5)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityAddTraits(.isImage)
-                    .accessibilityLabel(chat.adapter.name)
-                    .accessibilityIdentifier("chat.\(chat.paneID).empty")
+                ProgramGlyph(icon: pane.iconID, letter: pane.letter, size: 34)
+                Text(phrase).font(.system(size: 26, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.6)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(height: 34)
+        .readableText(chat.loading ? "" : phrase)
+        .accessibilityIdentifier("chat.\(chat.paneID).empty")
+    }
+
+    private func empty(loading: Bool) -> some View {
+        Color.clear.overlay {
+            if loading {
+                Loader()
+            }
+        }
         .onAppear {
             (tops, atBottom, away, first, earlier) = (Tops(), true, false, nil, false)
             position = ScrollPosition(idType: String.self)
@@ -127,7 +159,10 @@ struct ChatMessages: View, Equatable {
             }
             // At the exact bottom the chat stays there as rows come and the card resizes; scrolled up, even by a
             // point, it keeps its offset.
-            .defaultScrollAnchor(.bottom)
+            .defaultScrollAnchor(.bottom, for: .initialOffset)
+            .defaultScrollAnchor(.bottom, for: .sizeChanges)
+            // A short chat reads from the top, where its first message went.
+            .defaultScrollAnchor(.top, for: .alignment)
             // At a new width or Show Earlier this runs ahead of the rows' new places. x: how far the bottom is out of
             // view; at 0 the anchor holds the bottom instead.
             .onScrollGeometryChange(for: CGRect.self) { geometry in
@@ -269,6 +304,11 @@ struct ChatMessages: View, Equatable {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(error.opacity(0.1), in: .rect(cornerRadius: 10))
     }
+}
+
+@MainActor
+private final class Height {
+    var value: CGFloat = 0
 }
 
 /// Not observed: it changes at every scroll frame.

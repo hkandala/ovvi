@@ -64,13 +64,19 @@ extension OvviUITests {
 
     func testAToolOutputScrollsInsideItsBox() async throws {
         let pane = try await startChat().pane
-        let empty = element("chat.\(pane).empty")
-        XCTAssertTrue(empty.exists(within: 3))
+        let empty = element("chat.\(pane).empty"), composer = element("chat.\(pane).composer")
+        let card = element("pane.\(pane)").frame
+        XCTAssertTrue(empty.exists(within: 3) && !empty.stringValue.isEmpty, empty.stringValue)
+        XCTAssertTrue(empty.frame.maxY < composer.frame.minY && card.maxY - composer.frame.maxY > card.height / 4,
+                      "\(empty.frame) \(composer.frame) in \(card)")
         keepScreenshot("empty chat")
         try await say("long", in: pane)
-        XCTAssertTrue(empty.vanishes(within: 2))
-        XCTAssertTrue(row(pane, "reply", "Counted.").exists(within: 5))
         let user = row(pane, "user", "long"), stack = element("chat.\(pane).stack")
+        XCTAssertTrue(
+            until(2) { !empty.exists && card.maxY - composer.frame.maxY < 60 && user.frame.minY < card.minY + 120 },
+            "\(user.frame) \(composer.frame) in \(card)",
+        )
+        XCTAssertTrue(row(pane, "reply", "Counted.").exists(within: 5))
         XCTAssertGreaterThanOrEqual(stack.frame.minY - user.frame.maxY, 16, "\(user.frame) \(stack.frame)")
         stack.click()
         let tool = element("chat.\(pane).tool")

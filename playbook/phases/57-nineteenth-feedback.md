@@ -2673,3 +2673,33 @@ ones".
   chevron or →), double-click files, collapse it, drag its edge, and press Close File. Set Settings ▸ Plugins ▸
   File Explorer ▸ "When a file opens" to "Show the file with the tree" on a new card. Check Markdown's Read | Edit
   in dark and light, and Git's Show More on a long history.
+
+### Track C3 (items 106, 109)
+
+- **106, the look.** An empty chat puts the agent's glyph (34 pt, gray) beside a phrase (26 pt semibold, one line,
+  shrinks to fit a narrow card) and the reply box together in the middle of the card. The phrase is one of five, picked
+  when the chat view is made: "What's on your mind?", "What are we building?", "Where should we start?", "What can I
+  help with?", "Ready when you are."
+- **106, the motion.** On the first send the header fades, the box goes down to the bottom and the message rises from
+  the middle to the top: one 0.22 s motion (`Animation.slide`), none with Reduce Motion. The box keeps one identity (a
+  `maxHeight` frame centers it), so it keeps the keyboard. An offset transition on the new scroll view moved nothing
+  (only its fade ran): the rise is a keyframe offset on the content, keyed to the empty state. The card's height is
+  kept unobserved, so a resize builds no rows. CI runs with Reduce Motion: only the VM strips check the motion.
+- **Decisions.** A chat shorter than the view now sits at the top (`defaultScrollAnchor(.top, for: .alignment)`; the
+  first offset and size changes keep `.bottom`), so the first message goes up, as the user described. While a history
+  loads into an empty chat, a spinner takes the header's place and the box stays in the middle: a load that ends empty
+  (a new Codex or OpenCode chat) moves nothing. A sent message stays while the transcript it starts loads: the old
+  spinner took the risen message away for a moment (seen in the CI strips of 43149628284). The first switch to Chat on
+  an existing session can show the header for the one follow before its load starts; gating it on `current` would hold
+  an agent started in its TUI (a Claude Code with no transcript before its first message) on the TUI for 2 s.
+- **109, cause.** The header's state label took the chat's phase: pi writes `idle` when its turn settles, but while it
+  waits on agents or background jobs herdr hears working, which the TUI's header shows. While the chat is ready, the
+  label now shows herdr's state, as the TUI does; Send, Stop and Esc still go by the chat's phase (an idle pi gets no
+  Esc). Floating panes use the same label.
+- **VM.** `scripts/vm-test.sh` puts the agents' stand-ins on the guest's login shell PATH, as ci.yml does: the chooser
+  showed every agent as "Not installed" in the VM, so no chat test could start there.
+- **Runs.** Exploration on CI while the VM was busy (43143732838: the offset transition did not move; 43145170453:
+  the keyframe rise works, pi's Working holds). VM: the look and the first send, wide, narrow and floating, dark and
+  light, green. Pictures: `~/Downloads/ovvi-research/p57c3/`.
+- **For the user.** The first send in a new chat, wide, narrow and floating, dark and light; a pi that waits on agents
+  shows Working in Chat as in the TUI.
