@@ -2893,7 +2893,8 @@ ones".
      see it happens only some time, make it reliable, i think we rerender or something and that's causing this
      transient bug, figure it out and fix it" (Track C5). Then: "yeah i see the pattern, just open like 10 browser
      panes, go to each of its tab and make it active, then come back to the chat view you see the tui for a breif
-     milliseconds".
+     milliseconds". After C5 (a 0.2 s blank before the rows; the loader waits 0.3 s), asked whether to show the loader
+     at once: "keep it as is".
 127. "okay one more thing, in browser or in file explorer, i don't see option to make vidoes full screen, can we
      enable that? so i can easily open and watch videos in full screen" (Track V2).
 
