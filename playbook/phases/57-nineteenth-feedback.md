@@ -3090,3 +3090,21 @@ ones".
   TUI flash. Worked after a reply-only turn and after every turn, still there while the next one works. A path in
   backticks: underlined on the code's grey fill; a bare path: underlined, no fill. Send while pi works: the message
   dim until pi takes it. A reply with a wide table scrolls sideways; a narrow one fills the reply.
+
+### Track E4 (items 132, 133)
+
+- **133, cause.** Every plugin card set `isInspectable` and WebKit's `developerExtrasEnabled` (for the card menu's
+  Show Web Inspector), and developer extras add Inspect Element to the page's own menu.
+- **133, fix.** As the user chose ("just disable for all, only show in browser panes"): plugin cards set neither, so
+  a right-click on empty space shows only Reload, and Safari's Develop menu does not list them. Show Web Inspector left
+  the plugin card's menu. Browser cards keep the button, ⌥⌘I, Inspect Element and the Develop menu: they show pages in
+  development, which is what Inspect Element is for.
+- **133, runs.** Tart VM: `testGitHomeInitializesCommitsAllAndShowsMore` (right-click on the Git card's empty page:
+  Reload, no Inspect Element) and `testLinksOpenInNewTabsAndPopupsClose` (Inspect Element in the browser's link menu,
+  so the query sees the item) both green. In the VM the first Git card took 37 s to leave its spinner (a cold
+  plugin install), beyond the test's 10 s wait, on the old code too; green with a longer wait, which was not kept, as
+  CI passes the 10 s. There was no red run on the old code: it stopped at that wait. Pictures:
+  `~/Downloads/ovvi-research/p57e4/`.
+- **132.** The options went to the user as text (the user asked for no pictures). The pick is still open.
+- **For the user.** Right-click empty space in a File Explorer, Git and Markdown card: only Reload. Right-click a page
+  in a browser card: Inspect Element is still there.

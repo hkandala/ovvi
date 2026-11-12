@@ -263,8 +263,8 @@ docked at the bottom of the card. Its own control moves it to a window.
   so the app removes that key before each show, and it docks every time.
 - Every browser card sets `isInspectable`, so Safari's Develop menu
   (Develop › ‹this Mac› › Ovvi) reaches each page too, and the page's menu (a
-  right-click) has **Inspect Element**. Plugin cards have neither: their
-  page's menu shows only Reload.
+  right-click) has **Inspect Element**. Plugin cards have neither: a
+  right-click on empty space in their page shows only Reload.
 - The button and ⌥⌘I are disabled until the card has a page.
 
 ## State on the machine
@@ -542,7 +542,7 @@ gets the same card.
 | A hostile machine serves a page on its own `localhost` (safe list) | that page loads by itself, and its links, redirects and requests go anywhere | accepted: the rule stops a label or state file alone from opening an unapproved origin, not a page the machine serves; a link it leads to approves nothing |
 | The SOCKS port is open to other accounts on the Mac | another account can reach the machine's network | accepted for a single-user Mac; a random port, open only while a card needs it |
 | A server with `AllowTcpForwarding no` | remote pages cannot load | the card says "cannot reach"; Tailscale or LAN addresses still load |
-| `_WKInspector` is private | the Web Inspector button can break on a macOS update | Safari's Develop menu still reaches every card |
+| `_WKInspector` is private | the Web Inspector button can break on a macOS update | Safari's Develop menu still reaches every browser card |
 | Web view memory | memory grows with many browser cards | at most 25 web cards kept out of view, half on critical memory pressure ([What stays in memory](#what-stays-in-memory)) |
 
 ## Choices
