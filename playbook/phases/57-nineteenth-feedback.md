@@ -2575,3 +2575,39 @@ ones".
   pointer or key; off (the default), it does. The app keeps its value in the card's state. Plugin 0.7.0. The repo's
   own VM lock (`scripts/vm-test.sh`, agents' `lockf`) stays as it was, the repo's alone.
 - **Runs.** Host only (round 8): `make lint build test` and the plugin's build. No UI test covers the plugin.
+
+### Track L2 (items 100, 101)
+
+- **⌘⌥-click (100).** A new opening, `Opening.mac`: ⌘⌥ alone shows a terminal link (underline, pointing hand, its
+  accessibility title) as ⌘ and ⌥ do, and its click opens the link in the Mac's default app with `NSWorkspace`: a web
+  address in the default browser, `mailto:` in Mail, another scheme (`ftp:`) in its app when the Mac has one, a file
+  in its app, a folder in the Finder. A path is checked first ("File not found: ‹path›" when gone); a file on a remote
+  machine, or a remote machine's own address (`localhost`), shows "‹path› is on ‹machine›, not on this Mac". An OSC 8
+  link takes ⌘⌥ as it takes ⌥ (libghostty gets ⌘). `Links.open` stays the one router, for Track C4's chat links too.
+  The link test now ⌘⌥-clicks a folder and finds its Finder window.
+- **Cause, selection (101a).** Not Track L: `link-url = false` and the app's underline touch no color, and a pre-L
+  build (`4942f142^`) selects as the current one does in the VM (sheets). Selections kept each cell's own text color
+  (`selection-foreground = cell-foreground`), so a program's colors decided whether selected text shows. In the
+  user's screenshot the selected text drew `#000000` on the dark blue, while pi's text around it was light; a shell's
+  default, ANSI, 256-color, truecolor, bold, faint and reverse text did not repeat that in the VM, but a light truecolor
+  text (a TUI's dark-theme color) vanished under the light blue.
+- **Fix, selection.** Selected text takes the theme's text color, as Ghostty's own Alabaster (`#000000` on `#BFDBFE`)
+  and Afterglow (`#D0D0D0` on `#303030`) themes do. Light takes Ghostty's Alabaster colors; dark keeps the blue
+  `#1B3A58` under Afterglow's `#D0D0D0` (7.6 to 1): Ghostty's `#303030` is 1.1 to 1 over a dark card.
+- **Fix, underline (101b).** Before Track L, libghostty drew the link underline: at the font's underline position,
+  in the cell's text color. Track L's own line was 1 pt thick, 1 pt above the cell's bottom, in full text color. Now
+  it is Ghostty's underline (`font/Metrics.zig`): the font centered in the cell, the top at the font's underline
+  position, its thickness rounded up (2 px for SF Mono 13 pt on 2x), in the secondary text color (`secondaryLabelColor`).
+- **Text weight (101c).** Ovvi's libghostty config matches Ghostty's defaults for rendering: `font-thicken = false`
+  (Ghostty's default; the package's old `true` went away in Track N), `alpha-blending = native`, 13 pt, sRGB. In the
+  VM, Ghostty.app 1.4.0 and Ovvi with the same font (`.AppleSystemUIFontMonospaced`, SF Mono) put the same ink on the
+  same line (12.6 % and 12.6 % of a cell row's area). The difference is the font: Ghostty's default font is the JetBrains
+  Mono it carries (`ghostty +show-face`: "JetBrains Mono"), a heavier face (13.6 % on that line); Ovvi's default is SF
+  Mono (Settings, Terminal, Font; design page Settings). The user's Ghostty also uses Nord Wave, whose text `#D8DEE9`
+  is a step brighter than Afterglow's `#D0D0D0`. No change: JetBrains Mono, installed on the user's Mac, is in
+  Settings' Font menu.
+- **Runs.** VM: a scratch look scene (not committed) on `4942f142^` and on the fix, Glass and Classic, dark and
+  light: text, ⌘ hover, selection. Ghostty.app in the VM with SF Mono and with its defaults.
+- **For the user.** Select text in a pi or Claude Code pane, dark and light: one text color on the blue. Hold ⌘ over
+  a link: a thin grey underline under the text. ⌘⌥-click a web link (default browser), a file (its app) and a folder
+  (Finder); on a remote card a file says it is on that machine.
