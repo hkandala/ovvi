@@ -2875,6 +2875,16 @@ ones".
   Under `taskpolicy -c background` the count held in 7 of 7 runs; one run ran out the 2 and 3 minute time limits.
   Same kinds of bounds the reviewer listed, not yet seen to flake: `Relay.start` (10 s), `Git.root`/`commit`/`status`
   (5 s), tests' direct `output` calls and `HerdrClient` (10 s), the burst test's 2 s sleep.
+- **Last round (p57-r8-final3, 84f8b109, every round-8 track in).** Full runs 43211051285 (42 min) and 43211038031
+  (62 min, it waited for runners) green on the first try. On-demand 43211065175: shard 1 red, then its one rerun
+  green (13 min). The red was a starved runner: `testHundredsOfPanesStayQuick` ran out its 10 minutes as every helper
+  tool crawled (usage 102 s and 140 s, sample 60 s, heap over 95 s; 13.5, 14.6, 6.4 and 11.5 s in the green run of
+  final1), and the spindump shows `heap` runnable for all 212 samples with 0.016 s of CPU on a runner 21 minutes from
+  boot, busy with BackgroundShortcutRunner, siriactionsd and linkd, not Ovvi. The next test,
+  `testSessionSwipeIntoManyTabsDrawsThemWithTheSidebar`, failed on "herdr session … did not stop": the same session's
+  400 panes were still going down after the killed test's teardown, and `scripts/herdr-session.sh down` waits only
+  5 s (50 × 0.1 s). That wait is a failure bound and should be `failureBound`'s 60 s; not changed in this round, as
+  every test's sessions go through that script. Test times not refreshed: 288 tests, about 5470 s (12 not listed).
 
 ### Round 8, chat review (items 120–125)
 
