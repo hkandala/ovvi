@@ -2440,3 +2440,47 @@ ones".
 - **Found on the way.** An error thrown in a page's handler of an app event reached no log (the app calls the page with
   no answer); the runtime now logs it. A failed UI test keeps the plugin pages' console as an attachment.
 - **The title row** saying notes.md while the page showed other.md was herdr's rename arriving 0.5 s later, not a bug.
+
+## Round 8 (items 100–108)
+
+100. "we have cmd+click and option+click, can we also have cmd+option+click to open the link in default external app
+     on their device" (Track L2).
+101. "so after the update to links you did recently, when i select text on terminal, the colors are bit weird, make
+     sure we have good highlight colors on both dark and light mode, also the underline right now is very bright and
+     kinda very close to the text of the underline, idk its slightly different before ig, improve the underline so it
+     looks good, and you also mentioned before when we did some ghostty changes, that the text is less bold overall, i
+     am okay with it, but is it the default, coz in ghossty app i see text is bit more bold than what i see here"
+     (Track L2).
+102. "can we reduce number of commits loaded in git plugin by default to 100" (Track E2).
+103. "and one more improvement to file explorer plugin, right now when we open a file we have one button to go to file
+     tree, instead that button should open the file tree in sidebar beside the editor, not a separate pane, within the
+     same pane like a file tree sidebar in regular text editor apps, and double clicking on any file from the tree
+     should update the file same like before, and you should be able to navigate up the tree like in regular file
+     explorer tree, basically think of it like this, when file explorer is opened, we have only tree, and one the file
+     is opened it will show only file, now we can have a config option to show only file or open file and show file
+     tree along the sidebar, and everything else in terms of navigation and everything stay same, whatever shown in
+     file editor is updated only on double clicking and user can navigate the tree from the sidebar, they should be
+     able to collapse that sidebar, and also close the file editor or markdown editor or image or video one that is
+     currently being shown, hope that makes sense" (Track E2).
+104. "so the reset script you gave has some issues, i ran the reset, most of the settings were gone, but when i open
+     the app with fresh install, it still opened two windows with one window automatically connecting to default
+     session, are these re missed by any chance? also i remember when i ran the script for the last one it showed
+     operation not permitted, i tried rerunning with sudo but that didn't do anything, it just exited immediately.
+     figure out if this is reset script issue or something else and make sure when we do reset, it should show only
+     onboarding pane and once onboarding flow done then open the windows" (Track R2).
+105. "and one more thing i noticed when i click add machine form cmd+n window that opened settings and i updated, then
+     after that it opened another new window where it started connecting, why not the same new window that is already
+     open?" (Track R2).
+106. "let's improve agent chat ui empty placeholder, right now we just show the logo, instead can we improve it such
+     that we show logo to the side or something and say what's on your mind? or some other phrases like that, where
+     one will be chosen randomly, and the input will be shown in the center, basically center input and center header
+     text and logo, as soon as user types a propmt and press enter, that input moved down and user submitted message
+     goes up with animation and show our regular chat view, basically improve the empty chat view better and make it
+     look more modern and beautfiul" (Track C3).
+107. "in the markdown plugin, we currenly show pencil icon right can we update that to show read edit toggle buttons
+     with text read and edit, that pencil doesn't look good" (Track E2).
+108. "one more weird thing i am noticing mostly in remote machines, when i leave the tab for a while or i reconnected or
+     something, and i select some tab or workspace, that pane very briefly shows terminal stopped with retry button,
+     and then shows the terminal content, i am guessing here the content is not yet loaded instead of starting from
+     blank and fading in, that error message is coming up, investigate the root cause, and fix it, so it doens't show
+     unnecessarily" (Track S2).
