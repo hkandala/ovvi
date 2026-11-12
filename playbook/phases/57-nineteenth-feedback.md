@@ -2836,4 +2836,6 @@ ones".
      other tabs, idk when exactly may be open amny panes or soemthing, then come back to this chat pane, for a very
      brief second you see tui and then it shifts to chat view, it doesn't happen for recentyl viewed chat view, like i
      see it happens only some time, make it reliable, i think we rerender or something and that's causing this
-     transient bug, figure it out and fix it" (Track C5).
+     transient bug, figure it out and fix it" (Track C5). Then: "yeah i see the pattern, just open like 10 browser
+     panes, go to each of its tab and make it active, then come back to the chat view you see the tui for a breif
+     milliseconds".
