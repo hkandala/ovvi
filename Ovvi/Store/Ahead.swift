@@ -7,7 +7,8 @@ struct Ahead {
     var closing: Set<String> = []
     /// In the order asked.
     var tabs: [NewTab] = []
-    var split: NewSplit?
+    /// A split or a close in one tab, shown ahead of herdr, its run evened as the write will even it.
+    var layout: NewLayout?
     var splitPanes: [String: String] = [:]
     var arrived: [String: String] = [:]
     /// Not every starting pane: one another client made may run a program already.
@@ -28,8 +29,9 @@ struct Ahead {
         var made: String?
     }
 
-    struct NewSplit {
-        let tabID: String, standIn: String, tree: SplitNode
+    struct NewLayout {
+        /// The split's stand-in, or the closed pane.
+        let tabID: String, pane: String, tree: SplitNode
         var after: Int?
     }
 
@@ -84,23 +86,23 @@ struct Ahead {
             made(id, tab.id)
         }
         var trees = snapshot.trees.compactMapValues { $0.removing(hidden) }
-        if let split {
-            let now = snapshot.trees[split.tabID]
-            let shown = split.tree.removing(closing.union(splitPanes.filter { closing.contains($0.value) }.keys))
+        if let layout {
+            let now = snapshot.trees[layout.tabID]
+            let shown = layout.tree.removing(closing.union(splitPanes.filter { closing.contains($0.value) }.keys))
             // After the write, herdr's tree takes over once it places the panes where the split shows them: one read
             // ahead of the swap or the balance would move the cards a second time. Else the second snapshot after the
             // write (reads are serial: at most one began before the write's end): herdr may keep a ratio its own way,
             // or another client changed the tab. Not during the write: a stand-in closed meanwhile stays in `closing`
             // only while the split lives.
-            let same = trees[split.tabID].flatMap { now in shown?.places(like: now, renaming: splitPanes) } == true
-            if now == nil || split.after.map({ $0 > 0 || same }) == true {
-                self.split = nil
+            let same = trees[layout.tabID].flatMap { now in shown?.places(like: now, renaming: splitPanes) } == true
+            if now == nil || layout.after.map({ $0 > 0 || same }) == true {
+                self.layout = nil
             } else {
-                trees[split.tabID] = shown
-                self.split?.after = split.after.map { $0 + 1 }
+                trees[layout.tabID] = shown
+                self.layout?.after = layout.after.map { $0 + 1 }
             }
         }
-        if split == nil {
+        if layout == nil {
             splitPanes = [:]
         }
         // herdr closes a tab with its last pane, and a workspace with its last tab.
@@ -135,7 +137,7 @@ struct Ahead {
     /// A pane closed as herdr makes it is in no snapshot read ahead of the split.
     private mutating func forget(_ ids: Set<String>) {
         let made = Set(splitPanes.values)
-        closing = closing.filter { ids.contains($0) || split != nil && (Self.isStandIn($0) || made.contains($0)) }
+        closing = closing.filter { ids.contains($0) || layout != nil && (Self.isStandIn($0) || made.contains($0)) }
         fresh.formIntersection(ids)
         fresh.formUnion(made.filter(ids.contains))
     }
@@ -251,6 +253,8 @@ extension HostStore {
         hide(close)
         if await !write(action) {
             unhide(close)
+        } else if let id = close.paneID, ahead.layout?.pane == id {
+            ahead.layout?.after = 0
         }
     }
 
@@ -260,7 +264,7 @@ extension HostStore {
         case let .pane(id):
             let state = pane(id)?.plugin?.statePath(session: session), machine = machine
             return { client in
-                try await client.close(pane: id)
+                try await self.close(pane: id, client)
                 if let state {
                     await machine.exec().remove(home: state)
                 }
@@ -286,11 +290,15 @@ extension HostStore {
 
     func hide(_ close: Close) {
         ahead.closing.formUnion(closeIDs(close))
+        holdBalanced(close)
         redraw()
     }
 
     func unhide(_ close: Close) {
         ahead.closing.subtract(closeIDs(close))
+        if let id = close.paneID, ahead.layout?.pane == id {
+            ahead.layout = nil
+        }
         redraw()
     }
 

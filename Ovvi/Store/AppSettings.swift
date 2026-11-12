@@ -6,6 +6,8 @@ struct AppSettings: DynamicProperty {
     @AppStorage("interfaceStyle") var style = InterfaceStyle.glass
     @AppStorage("fontSize") var fontSize = PaneTerminal.fontSize
     @AppStorage("focusFollowsMouse") var followMouse = false
+    /// Read by `HostStore.balances`.
+    @AppStorage("balanceSplits") var balanceSplits = true
     @AppStorage("newPaneOpens") var newPaneOpens = ""
     @AppStorage("notifyNeedsYou") var notifyNeedsYou = true
     @AppStorage("notifyFinished") var notifyFinished = true

@@ -177,6 +177,7 @@ final class HostStore {
             switch update {
             case let .snapshot(snapshot):
                 let start = Latency.threadTime
+                balanceLeft(last, snapshot)
                 let changes = apply(snapshot)
                 state = .live
                 startProblem = nil

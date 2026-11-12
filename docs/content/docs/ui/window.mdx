@@ -178,7 +178,7 @@ One capsule per herdr tab of the selected space (D42).
 - **Selection.** One marker sits on the selected tab. It is 30 pt tall and
   fully round, 2 pt inside the track, as in Rex. Every switch (a click, +,
   ⌘T, ⌘1…⌘9, ⇧⌘[ and ⇧⌘], ⌃⇥, the palette, a close, an open from a card, the
-  overview) shows the tab's page at once, and the marker jumps with it: no
+  overview after its zoom) shows the tab's page at once, and the marker jumps with it: no
   slide, no fade. A new tab or a closed tab changes the bar at once too: no
   pill grows, shrinks or glides. A sideways swipe never changes the tab
   ([Swiping](/docs/ui/swiping)). Glass draws the marker as a Liquid Glass
@@ -608,8 +608,9 @@ tab at once.
 - Inside a page, pane cards follow herdr's split tree, with an 8 pt gap
   between them. The gap is the divider: drag it to resize (a grip shows on
   hover and while dragged), double-click it to reset it to 0.5, and ⌥⌘=
-  balances the tab. A split made in the app gives the panes in its row equal
-  shares.
+  balances the tab. With Balance splits automatically on (Settings ▸ General,
+  the default), a pane that opens or closes leaves the panes in its row or
+  column equal shares ([Layout](/docs/layout#dividers)).
 - Layout changes animate over 0.13 s: a new card slides in from its side, a
   closed one fades away, a zoom grows the card to the page and back. A
   divider drag follows the pointer.
@@ -951,11 +952,14 @@ agents at once.
   shows × at its end (Close Tab, as the tab bar's ×: it asks only when a
   program runs).
 - **Click.** A click on a tile selects its space and tab and leaves the
-  overview: the tab's page shows at once. The sidebar and the title row stay
-  laid out under the overview, hidden, and show with it, so they come at
-  once in a big session too. Esc, the title row's × and ⌃⌘O leave the same
-  way, on the selected tab. A notification or Dock click leaves it and shows
-  its pane. Other keys
+  overview: the tile's miniature grows to the tab's page over 0.18 s (ease
+  out) while the other tiles fade out, and the sidebar and the title row fade
+  in over 0.12 s; then the page shows. The sidebar and the title row stay
+  laid out under the overview, hidden, so they come at once in a big session
+  too. Esc, the title row's × and ⌃⌘O leave the same way, on the selected
+  tab. The overview leaves at once under Reduce Motion, or when the selected
+  tab's tile is scrolled out of view. It opens at once. A notification or
+  Dock click leaves it at once and shows its pane. Other keys
   and the palette act as usual and the overview stays: ⌘T adds a tile, a tab
   key moves the selected tile.
 - **Keyboard.** While the overview is open no terminal has the keyboard (a

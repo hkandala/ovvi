@@ -52,6 +52,7 @@ Settings that are not on this page do not exist.
 | Open at login | switch | none: the system's login item (`SMAppService.mainApp`) | off |
 | New panes open | pop-up: New Pane; Terminal; Claude Code, Codex, Pi, OpenCode; Browser, File Explorer, Git and each plugin with a New Pane row | `newPaneOpens` | empty: New Pane |
 | Focus follows mouse | switch | `focusFollowsMouse` | off |
+| Balance splits automatically | switch | `balanceSplits` | on |
 | Keyboard shortcuts | Show Shortcuts, which opens the panel in the front window | | |
 | Welcome to Ovvi | Show Welcome, which opens the [welcome panel](/docs/ui/welcome) again | | |
 
@@ -74,6 +75,13 @@ and the pop-up shows New Pane.
 Focus follows mouse: a card gets the keyboard when the pointer rests on it for
 0.15 s, only in the key window
 ([Moving the keyboard](/docs/layout#moving-the-keyboard)).
+
+Balance splits automatically: its line under the title says "Panes side by
+side or stacked keep equal sizes as panes open and close." On, each pane that
+opens or closes evens out the panes in its row or column. Off, the app never
+evens them by itself: a split halves the pane, and a closed pane's neighbor
+takes its place, as in herdr's own window. Balance Splits (⌥⌘=) works either
+way ([Layout](/docs/layout#dividers)).
 
 ## Appearance
 
@@ -228,6 +236,7 @@ with a title that says what a pick does (D48).
 | Interface style | View ▸ Interface Style |
 | Text size | View ▸ Increase Font Size (⌘+ or ⌘=), Decrease Font Size (⌘-), Reset Font Size (⌘0) |
 | Focus follows mouse | View ▸ Pane ▸ Focus Follows Mouse |
+| Balance splits automatically | View ▸ Pane ▸ Balance Splits Automatically |
 
 ## Fixed values
 

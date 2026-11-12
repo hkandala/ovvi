@@ -75,11 +75,16 @@ public extension SplitNode {
     }
 
     /// As herdr splits a pane: the pane and the new one share its place.
-    func split(_ paneID: String, _ direction: Direction, new newID: String, before: Bool) -> SplitNode {
+    /// `even`: its run evened after, as `evened(around:)`.
+    func split(_ paneID: String, _ direction: Direction, new newID: String, before: Bool, even: Bool) -> SplitNode {
         let pair: (SplitNode, SplitNode) = before ? (.leaf(paneID: newID), .leaf(paneID: paneID))
             : (.leaf(paneID: paneID), .leaf(paneID: newID))
         let split = replacing(paneID, with: .split(direction, ratio: 0.5, first: pair.0, second: pair.1))
-        return split.evened(around: newID).reduce(split) { tree, change in tree.setting(change.ratio, at: change.path) }
+        return even ? split.applying(split.evened(around: newID)) : split
+    }
+
+    func applying(_ changes: [(path: [Bool], ratio: Double)]) -> SplitNode {
+        changes.reduce(self) { tree, change in tree.setting(change.ratio, at: change.path) }
     }
 
     private func replacing(_ paneID: String, with node: SplitNode) -> SplitNode {
@@ -117,12 +122,28 @@ public extension SplitNode {
     func evened(around paneID: String? = nil) -> [(path: [Bool], ratio: Double)] {
         guard let paneID else { return run([], whole: true) }
         guard let path = path(to: paneID), !path.isEmpty else { return [] }
+        let top = top(of: path)
+        return node(at: top)?.run(top, whole: false) ?? []
+    }
+
+    /// The tree without the pane, as herdr closes it, and what evens the run the pane was in, as `evened(around:)`
+    /// evens a new pane's. Nil for a pane not in the tree, or its last.
+    func closing(_ paneID: String) -> (tree: SplitNode, evened: [(path: [Bool], ratio: Double)])? {
+        guard let path = path(to: paneID), let tree = removing([paneID]) else { return nil }
+        // The run's top keeps its path: only the pane's split goes, replaced by its other side.
+        let top = top(of: path), direction = node(at: Array(path.dropLast()))?.direction
+        guard let run = tree.node(at: top), run.direction == direction else { return (tree, []) }
+        return (tree, run.run(top, whole: false))
+    }
+
+    /// The highest split of the run the pane at `path` is in: its parent and the parents above it in its direction.
+    private func top(of path: [Bool]) -> [Bool] {
         var top = Array(path.dropLast())
         let direction = node(at: top)?.direction
         while !top.isEmpty, node(at: Array(top.dropLast()))?.direction == direction {
             top.removeLast()
         }
-        return node(at: top)?.run(top, whole: false) ?? []
+        return top
     }
 
     private var direction: Direction? {

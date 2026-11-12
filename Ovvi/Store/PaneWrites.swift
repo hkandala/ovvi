@@ -3,7 +3,7 @@ import HerdrKit
 
 extension HostStore {
     /// herdr splits only right and down, so a swap puts the new pane first, and halves the split pane, 50 / 25 / 25:
-    /// the run is evened after, 33 / 33 / 33.
+    /// with Balance splits on, the run is evened after, 33 / 33 / 33.
     /// The pane may be an earlier split's stand-in: its write, ahead of this one, makes herdr's.
     func split(_ paneID: String, _ direction: SplitNode.Direction, before: Bool,
                standIn: String) async -> HerdrKit.Pane?
@@ -12,8 +12,9 @@ extension HostStore {
         let shown = ahead.splitPanes.first { $0.value == paneID }?.key ?? paneID
         let tab = workspaces.flatMap(\.tabs).first { $0.tree?.paneIDs.contains(shown) == true }
         if let tab, let tree = tab.tree {
-            ahead.split = Ahead.NewSplit(tabID: tab.id, standIn: standIn,
-                                         tree: tree.split(shown, direction, new: standIn, before: before))
+            ahead.layout = Ahead.NewLayout(tabID: tab.id, pane: standIn, tree: tree.split(
+                shown, direction, new: standIn, before: before, even: Self.balances,
+            ))
             redraw()
         }
         // herdr's `handle_pane_split` (src/app/api/panes.rs) starts it in the split pane's folder; an earlier split's
@@ -49,16 +50,16 @@ extension HostStore {
             if before {
                 try await client.swap(paneID, direction == .right ? .right : .down)
             }
-            try await balance(new.tabID, client, around: new.id)
+            try await opened(new, client)
         }
         // With no pane, the stand-in goes at once: an idle session may never send two more snapshots.
         if made == nil {
             drop(chooser)
         }
-        if ahead.split?.standIn == standIn {
-            ahead.split?.after = closedLate ? 1 : 0
+        if ahead.layout?.pane == standIn {
+            ahead.layout?.after = closedLate ? 1 : 0
             if !done || made == nil && !closedLate {
-                ahead.split = nil
+                ahead.layout = nil
                 redraw()
             }
         }
@@ -114,7 +115,7 @@ extension HostStore {
                     try await client.swap(moved.id, with: targetID)
                 }
                 done = nil
-                try await balance(tabID, client, around: moved.id)
+                try await opened(moved, client)
             } catch {
                 throw done.map { HerdrError.failed("\($0): herdr refused the next step") } ?? error
             }

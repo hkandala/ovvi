@@ -340,7 +340,10 @@ extension CommandList {
             }
             + [Command(section: .paneSetting, title: "Focus Follows Mouse", symbol: "cursorarrow.motionlines",
                        keywords: "hover pane", checked: settings.followMouse, setting: true,
-                       action: { settings.followMouse.toggle() })]
+                       action: { settings.followMouse.toggle() }),
+               Command(section: .paneSetting, title: "Balance Splits Automatically", symbol: "equal.square",
+                       keywords: "pane even resize", checked: settings.balanceSplits, setting: true,
+                       action: { settings.balanceSplits.toggle() })]
     }
 
     /// Each finds its place when the key is pressed: the menu can lag a switch.

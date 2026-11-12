@@ -31,6 +31,11 @@ struct GeneralPage: View {
                     Text("A pane gets the keyboard when the pointer rests on it.")
                 }
                 .settingsRow("general.follow-mouse")
+                Toggle(isOn: settings.$balanceSplits) {
+                    Text("Balance splits automatically")
+                    Text("Panes side by side or stacked keep equal sizes as panes open and close.")
+                }
+                .settingsRow("general.balance-splits")
             }
             Section("Help") {
                 LabeledContent("Keyboard shortcuts") {

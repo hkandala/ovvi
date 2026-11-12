@@ -57,16 +57,49 @@ private func changes(_ list: [(path: [Bool], ratio: Double)]) -> [String: Double
     #expect(tree.removing([]) == tree)
 }
 
-@Test func `a split is drawn as herdr makes it, evened`() {
-    #expect(leaf("p1").split("p1", .right, new: "n", before: false) == right(0.5, leaf("p1"), leaf("n")))
-    #expect(leaf("p1").split("p1", .down, new: "n", before: true) == down(0.5, leaf("n"), leaf("p1")))
-    let thirds = right(0.5, leaf("p1"), leaf("p2")).split("p2", .right, new: "n", before: false)
+@Test func `a split is drawn as herdr makes it, evened when asked`() {
+    #expect(leaf("p1").split("p1", .right, new: "n", before: false, even: true) == right(0.5, leaf("p1"), leaf("n")))
+    #expect(leaf("p1").split("p1", .down, new: "n", before: true, even: true) == down(0.5, leaf("n"), leaf("p1")))
+    let halves = right(0.5, leaf("p1"), leaf("p2"))
+    let thirds = halves.split("p2", .right, new: "n", before: false, even: true)
     #expect(thirds.paneIDs == ["p1", "p2", "n"])
     #expect(changes(thirds.evened()).isEmpty)
     guard case let .split(_, ratio, _, _) = thirds else { return }
     #expect((ratio * 1000).rounded() == 333)
-    #expect(right(0.6, leaf("p1"), leaf("p2")).split("p1", .down, new: "n", before: false)
+    #expect(right(0.6, leaf("p1"), leaf("p2")).split("p1", .down, new: "n", before: false, even: true)
         == right(0.6, down(0.5, leaf("p1"), leaf("n")), leaf("p2")))
+    #expect(halves.split("p2", .right, new: "n", before: false, even: false)
+        == right(0.5, leaf("p1"), right(0.5, leaf("p2"), leaf("n"))))
+}
+
+private func closed(_ tree: SplitNode, _ paneID: String) -> [String: Double] {
+    changes(tree.closing(paneID)?.evened ?? [])
+}
+
+@Test func `a closed pane's run is evened, other runs are left alone`() {
+    let thirds = right(0.333, leaf("p1"), right(0.5, leaf("p2"), leaf("p3")))
+    for (id, tree) in [("p1", right(0.5, leaf("p2"), leaf("p3"))), ("p2", right(0.333, leaf("p1"), leaf("p3"))),
+                       ("p3", right(0.333, leaf("p1"), leaf("p2")))]
+    {
+        let closing = thirds.closing(id)
+        #expect(closing?.tree == tree)
+        let evened = closing.map { changes($0.tree.applying($0.evened).evened()) }
+        #expect(evened == [:], "\(id)")
+    }
+    // The column beside it keeps its 70 / 30; the row loses a unit.
+    let mixed = right(0.25, leaf("p1"),
+                      right(0.333, down(0.7, leaf("p2"), leaf("p4")), right(0.5, leaf("p3"), leaf("p5"))))
+    #expect(closed(mixed, "p5") == ["": 0.333, "1": 0.5])
+    #expect(closed(mixed, "p4").isEmpty)
+    // A pane alone in its run beside a column: the column takes the row's place, nothing to even.
+    #expect(closed(right(0.3, leaf("p1"), down(0.6, leaf("p2"), leaf("p3"))), "p1").isEmpty)
+    // A row in a column that loses its second pane is still one unit of the column.
+    let column = down(0.25, leaf("p1"), down(0.5, leaf("p2"), right(0.5, leaf("p3"), leaf("p4"))))
+    #expect(closed(column, "p4").isEmpty)
+    #expect(closed(column, "p1").isEmpty)
+    #expect(closed(column, "p2") == ["": 0.5])
+    #expect(leaf("p1").closing("p1") == nil)
+    #expect(thirds.closing("gone") == nil)
 }
 
 @Test func `the rebuild moves give the tree back from its first pane`() {

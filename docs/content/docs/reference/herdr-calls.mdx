@@ -26,7 +26,7 @@ description: "Every herdr call and command the app uses, and the ones it never u
 | `pane.report_metadata` | the `ovvi-shown` mark on each pane in view, for `ovvi status`, pi-herd and pi's copy; the `ovvi-chat` mark on a chat pane once its launch is bound to its processes ([Which panes have it](/docs/ui/chat-view#which-panes-have-it)) | [Agent requests](/docs/talking-to-herdr#agent-requests) |
 | `workspace.report_metadata` | the `ovvi-open` mark on each space of a session a window has open, for `ovvi status` | [Agent requests](/docs/talking-to-herdr#agent-requests) |
 | `pane.scroll` | find in a pane: scroll herdr's viewport to a match, and back to the bottom | [Find bar](/docs/ui/window#find-bar) |
-| `layout.set_split_ratio` | divider drag, double-click, balance (⌥⌘=), equal splits after a split or move, divider accessibility | [Layout](/docs/layout) |
+| `layout.set_split_ratio` | divider drag, double-click, balance (⌥⌘=), equal splits as a pane opens or closes (Balance splits automatically), divider accessibility | [Layout](/docs/layout) |
 | `layout.export` | fallback when the leaf count is wrong | [Rebuilding the tree](/docs/layout#rebuilding-the-tree) |
 
 Two `pane.report_metadata` calls are not the app's: the `ovvi` command's

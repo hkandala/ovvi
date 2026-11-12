@@ -65,17 +65,30 @@ build(path) = split at path exists ? Split(dir, ratio, build(path+0), build(path
   0.1–0.9. Terminals keep their grid until the drag rests for 150 ms, so a
   drag does not flood herdr with PTY resizes or reflow at every step.
 - **Double-click** a divider: ratio 0.5.
-- **Equal splits.** herdr halves the pane it splits (50 / 25 / 25). After
-  every split the app makes (the header buttons, the menus, ⌘D, ⇧⌘D), the app
-  reads a fresh snapshot and evens out the run of same-direction splits that
-  holds the new pane, so three panes in a row get a third each, as in Rex:
+- **Equal splits.** herdr halves the pane it splits (50 / 25 / 25), and a
+  closed pane's neighbor takes its place. With Settings ▸ General ▸ Balance
+  splits automatically on (the default), the app evens out the run of
+  same-direction splits that holds a pane it opens or closes, so three panes
+  in a row get a third each, as in Rex:
+  - A pane opens: a split (the header buttons, the menus, ⌘D, ⇧⌘D), a drop or
+    Move Pane to Tab, and a card opened beside another (a link, a file, a
+    plugin, `ovvi open`, `ovvi agent`). In the same write, the app reads a
+    fresh snapshot and evens the new pane's run.
+  - A pane closes in the app: in the same write, the app reads herdr's tree,
+    closes the pane, and evens the run the pane was in. The page shows the
+    evened run as the card goes, so the cards move once.
+  - A pane closes by itself (its shell exits), from another client, or moves
+    to another tab: the app evens its run once a snapshot shows it gone, if
+    the tab did not change meanwhile.
   - A child split in the other direction counts as one unit.
   - Each split gets "units on its first side ÷ units under it".
   - One `layout.set_split_ratio` per split whose ratio changes, then the app
     reads the snapshot.
-  - Closing a pane does not rebalance.
+  - With the setting off, the app never evens a run by itself: splits halve
+    and closes leave herdr's layout, as in herdr's own window.
 - **Balance** (⌥⌘=, View ▸ Pane ▸ Balance Splits) applies the same rule to
-  every split of the selected tab; an even tab sends nothing.
+  every split of the selected tab, with the setting on or off; an even tab
+  sends nothing.
 - **Resize Pane** (View ▸ Pane and the palette; no key) sends
   `pane.resize {pane_id, direction, amount: 0.05}` for the keyboard card.
   herdr moves the nearest divider that way: right and down raise its ratio,
