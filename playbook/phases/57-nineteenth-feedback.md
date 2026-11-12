@@ -3019,7 +3019,8 @@ ones".
      cross icon sitting near file path and its not intuitive enough what it means" (Track E4, options first).
 133. "and another one i noticed, in any of our plugin panes if we right click on empty space, it shows two options
      reload and inspect element, we shouldn't show inspect element, we should show only reload, can we fix that too"
-     (Track E4).
+     (Track E4). Then: "what do you mean keep plugins inspectable for authors only? how can you do that? let's keep it
+     simple? just disable for all, only show in browser panes".
 ### Track C5 (items 120, 121, 123–126)
 ### Track C5 (items 120, 121, 123–126, 128, 129)
 ### Track C5 (items 120, 121, 123–126, 128, 129, 131)
