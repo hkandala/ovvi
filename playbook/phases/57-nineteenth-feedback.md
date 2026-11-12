@@ -2552,6 +2552,10 @@ ones".
   (macOS's own records) are not reset. An Add Machine cancelled in Settings leaves its empty window chosen: a later
   add from anywhere connects there while it stays empty. A window opened for a folder at a first launch closes too;
   the folder opens with the first window.
+- **Runs.** CI 43144112186: both new tests' checks held (the welcome test then failed on a window screenshot of the
+  panel, which XCUITest sees as no window), with the restore and welcome tests green. CI 43146598006: both green. No
+  red run on the old code (the Mac's load); the reviewer traced both tests failing there: the restored window
+  connects `one`, and Add opens a third window. Pictures: `~/Downloads/ovvi-research/p57r2/`.
 - **For the user.** Quit Ovvi, run `scripts/reset-app-data.sh` (no sudo) from a terminal; it now says what it kept.
   Launch: only the welcome, no window, no connect; Skip or Get Started opens one new-window view. ⌘N ▸ Add Machine…
   ▸ Add: the machine connects in that ⌘N window.
