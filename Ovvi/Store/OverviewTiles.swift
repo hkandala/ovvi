@@ -3,9 +3,13 @@ import HerdrKit
 import SwiftUI
 
 extension WindowPages {
+    static let tile: CGFloat = 0.35
+    /// e2e (`-recordMotion YES`): the zooms' frames drawn between their start and end.
+    static var zoomSteps = 0
+
     func toggleOverview() {
         if overview {
-            closeOverview()
+            leaveOverview()
         } else {
             overview = true
             terminals.takePictures(of: current?.shownTerminals.keys.map(\.self) ?? [])
@@ -13,9 +17,19 @@ extension WindowPages {
         }
     }
 
+    func leaveOverview() {
+        if Animation.reduced || current == nil {
+            closeOverview()
+        } else {
+            leaving = true
+        }
+    }
+
     func closeOverview() {
         guard overview else { return }
         overview = false
+        leaving = false
+        tileFrames = [:]
         overviewTabs = [:]
         overviewScrolling = false
         overviewSettling?.cancel()

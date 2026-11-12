@@ -287,6 +287,8 @@ private struct WindowContent: View {
                     // Not `accessibilityHidden(false)`, which overrides the hidden ones inside.
                     .accessibilityElement(children: pages.overview ? .ignore : .contain)
             }
+            .testValue("overview.zoom", "Overview Zoom", "\(WindowPages.zoomSteps)",
+                       shown: SettlingHost.record)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .overlay {
                 if pages.overview {

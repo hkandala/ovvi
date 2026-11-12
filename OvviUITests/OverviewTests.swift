@@ -80,8 +80,9 @@ extension OvviUITests {
         XCTAssertTrue(tabs.allSatisfy { record.contains("loader \($0)") }, record)
     }
 
+    /// The tile zooms to the page as the overview closes.
     func testOverviewTileIntoAnUnshownTabShowsItSteadily() async throws {
-        relaunch(one, ["-recordMotion", "YES"])
+        relaunch(one, ["-recordMotion", "YES", "-forceMotion", "YES"])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("unshown", in: "w1")
         try await send("seq 1 40\r", to: pane)
@@ -89,8 +90,11 @@ extension OvviUITests {
             app.typeKey("o", modifierFlags: [.command, .control])
             let overview = element("overview"), tile = element("overview.tab.\(tab)")
             XCTAssertTrue(tile.has(\.isHittable, true, within: 3))
+            let steps = Int(element("overview.zoom").stringValue) ?? 0
             tile.click()
             XCTAssertTrue(overview.vanishes(within: 2))
+            let zoomed = (Int(element("overview.zoom").stringValue) ?? 0) - steps
+            XCTAssertGreaterThanOrEqual(zoomed, 2, "\(round): frames of the zoom")
             let card = element("pane.\(pane)")
             var values: [String] = []
             let end = Date.now + 1.5

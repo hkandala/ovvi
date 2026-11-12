@@ -16,11 +16,14 @@ final class WindowPages {
     var agents: Set<String>?
     var visible = false
     var overview = false
+    /// The selected tab's tile zooms to its page (`Overview`); the overview closes as it lands.
+    var leaving = false
+    /// Each tile's miniature in the overview, by page and tab.
+    @ObservationIgnored var tileFrames: [String: CGRect] = [:]
     @ObservationIgnored var overviewTabs: [String: [String]] = [:]
     @ObservationIgnored var overviewSettling: Task<Void, Never>?
     private(set) var overviewLive: Set<String> = []
     @ObservationIgnored var tileScale = tile
-    static let tile: CGFloat = 0.35
     @ObservationIgnored var overviewScrolling = false
     @ObservationIgnored var panelOpen = false
     @ObservationIgnored private var key = false
@@ -33,7 +36,6 @@ final class WindowPages {
     private static var folders: [URL] = []
     /// From the menu bar's commands: they exist with no window.
     static var openWindow: OpenWindowAction?
-    static let mainScene = "main", floatScene = "float", aboutScene = "about", settingsScene = "settings"
 
     init() {
         terminals.pages = self
@@ -380,4 +382,8 @@ extension NSWindow {
     var panelOpen: Bool {
         WindowPages.windows.first { $0.window === self }?.panelOpen == true
     }
+}
+
+extension WindowPages {
+    static let mainScene = "main", floatScene = "float", aboutScene = "about", settingsScene = "settings"
 }

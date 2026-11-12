@@ -123,7 +123,10 @@ private struct Tile: View, Equatable {
                 }
                 .onChange(of: loading) { pages.settleOverview() }
                 .aspectRatio(size, contentMode: .fit)
-                .onGeometryChange(for: CGFloat.self, of: \.size.width) { pages.tileScale = $0 / size.width }
+                .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(Overview.space)) } action: {
+                    pages.tileFrames["\(page.id) \(tab.id)"] = $0
+                    pages.tileScale = $0.width / size.width
+                }
                 .padding([.horizontal, .bottom], gap)
         }
         .frame(maxWidth: .infinity)
