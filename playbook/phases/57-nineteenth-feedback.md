@@ -2865,6 +2865,16 @@ ones".
   "Critical process DTServiceHub crashed" (Xcode's service, in teardown): infra, its shard rerun once, green (20 min).
   On-demand not run again: no fix touched what it measures. Test times not refreshed: 282 tests, about 5000 s, as
   before.
+- **HerdrKit load flake, cause.** "a dropped follow stops its backlog" read through `ProcessExec`, whose reader drains
+  stdout into an unbounded stream whether the test takes lines or not, so the follow copied at full speed until the
+  wrapper's kill landed; a late test task or a slow kill let the whole backlog pass (a 1 s delay before the drop: 20000
+  of 20000 lines). C5's early `ovvi-missing` echo shifted that timing. And `sessionTitle` bounded its script at 5 s.
+- **Fix.** The test pulls through `FileHandle.bytes`, as a slow relay does, so the follow waits on full pipes: 77 lines
+  with the same delay, 20000 again without the trap's `kill $!`, 3 of 3 green with C5's early echo; bound 1000 (was
+  10000). Its pgrep polls take `failureBound`; `sessionTitle` takes a `timeout:` that the tests set to it.
+  Under `taskpolicy -c background` the count held in 7 of 7 runs; one run ran out the 2 and 3 minute time limits.
+  Same kinds of bounds the reviewer listed, not yet seen to flake: `Relay.start` (10 s), `Git.root`/`commit`/`status`
+  (5 s), tests' direct `output` calls and `HerdrClient` (10 s), the burst test's 2 s sleep.
 
 ### Round 8, chat review (items 120–125)
 

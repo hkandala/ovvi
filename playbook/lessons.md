@@ -110,6 +110,8 @@ Problems that came back, and the rule that stops each. How we work is in
 - **A starved Mac stalls HerdrKit's tests for seconds.** With many agents building, starting a process took 20 s
   or more. A wait that only bounds a failure uses `failureBound` (60 s), never a few seconds, and a speed check
   compares against a reference timed in turns with it. A HerdrKit timeout is a bug in the test: fix it.
+  That holds for the bound inside the code under test too (pass it a `timeout:`). A test of a full pipe reads through
+  `FileHandle.bytes`, which pulls: `ProcessExec` drains a pipe at once, so its producer never waits.
   (`taskpolicy -c background` is no stand-in: it slowed the suite 30–200 times, and every bound ran out.)
 - **Automated rewrites change meaning.** Formatter rules and scripted replaces have flipped logic or matched
   nothing. Read the diff; make every scripted edit fail loudly when it matches nothing.
