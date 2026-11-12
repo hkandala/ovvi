@@ -196,7 +196,9 @@ export async function make(place: Page, root: string) {
     const node = element("div", "row"), button = element("button", "open")
     button.ariaLabel = label
     node.append(button)
-    node.onclick = (event) => open(arg, { how: how(event), at, plugin: "git" })
+    // ⌘⌥ opens the file itself in the Mac's app.
+    node.onclick = (event) => how(event) === "mac" ? open(`${home(root)}${at}`, { how: "mac" })
+      : open(arg, { how: how(event), at, plugin: "git" })
     node.oncontextmenu = (event) => void menu(event, arg, { at, plugin: "git" })
     return { node, open: button }
   }
@@ -280,7 +282,7 @@ export async function make(place: Page, root: string) {
   }
 
   function openCommit(event: MouseEvent | KeyboardEvent, node: HTMLElement) {
-    open(`${home(root)} ${node.id.slice("commit.".length)}`, { how: how(event), plugin: "git" })
+    open(`${home(root)} ${node.id.slice("commit.".length)}`, { how: how(event, false), plugin: "git" })
   }
 
   page.addEventListener("click", (event) => {

@@ -17,8 +17,10 @@ export function parse(arg: string) {
 
 export const home = (root: string) => (root.endsWith("/") ? root : `${root}/`)
 
-export type How = "card" | "tab" | "side"
-export const how = (event: MouseEvent | KeyboardEvent): How => (event.metaKey ? "tab" : event.altKey ? "side" : "card")
+export type How = "card" | "tab" | "side" | "mac"
+/** ⌘⌥: the Mac's default app, as a terminal's links. A commit, which no app opens, takes `files: false`: ⌘ wins. */
+export const how = (event: MouseEvent | KeyboardEvent, files = true): How =>
+  files && event.metaKey && event.altKey ? "mac" : event.metaKey ? "tab" : event.altKey ? "side" : "card"
 
 export const open = (arg: string, options: { how: How; at?: string; plugin?: string }) =>
   void ovvi.open(arg, { ...options, background: options.how !== "card" }).catch((error) => console.error(error))

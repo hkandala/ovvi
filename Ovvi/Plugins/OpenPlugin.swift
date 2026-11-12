@@ -43,6 +43,16 @@ extension Page {
     func openFromPlugin(_ plugin: PluginManifest, arg: String, at place: String? = nil, from source: String,
                         how: Opening, background: Bool = false) async
     {
+        // As a terminal's link: a path, or an address the Mac has an app for.
+        if how == .mac {
+            let kind: TerminalLink.Kind = arg.hasPrefix("/") || arg.hasPrefix("file:") ? .file : .web
+            return Links.open(
+                TerminalLink(range: 0 ..< 0, kind: kind, target: arg),
+                how: .mac,
+                from: source,
+                page: self,
+            )
+        }
         let file = arg.hasPrefix("file:"), path = file ? URL(string: arg)?.path ?? "" : arg
         if file || plugin.opens.folders || !plugin.opens.files.isEmpty, path.hasPrefix("/"),
            await store.there(path, from: "/") == nil

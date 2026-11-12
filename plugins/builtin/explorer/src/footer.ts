@@ -19,7 +19,7 @@ export function footer(ovvi: Ovvi, bar: HTMLElement, again: () => void) {
   where.textContent = machine.name
   let repo: string | null = null
   open.onclick = (event) => {
-    if (repo) opening(ovvi, `${repo}/`, how(event), "git")
+    if (repo) opening(ovvi, `${repo}/`, how(event, false), "git")
   }
   open.oncontextmenu = (event) => {
     if (repo) void menu(ovvi, event, `${repo}/`, { plugin: "git" })

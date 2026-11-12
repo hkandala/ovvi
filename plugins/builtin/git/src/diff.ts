@@ -273,7 +273,7 @@ export async function make(place: Page, root: string, source: string) {
       fact(facts.parents.length > 1 ? "Parents" : "Parent", ...facts.parents.map((parent) => {
         const button = element("button", "hash", parent.slice(0, 10))
         button.ariaLabel = `Parent ${parent}`
-        button.onclick = (event) => open(`${home(root)} ${parent}`, { how: how(event), plugin: "git" })
+        button.onclick = (event) => open(`${home(root)} ${parent}`, { how: how(event, false), plugin: "git" })
         button.oncontextmenu = (event) => void menu(event, `${home(root)} ${parent}`, { plugin: "git" })
         return button
       }))

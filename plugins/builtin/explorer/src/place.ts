@@ -38,8 +38,10 @@ export function kind(arg: string): "files" | "file" | "preview" | "markdown" {
 
 export type Reveal = ((at: string) => void) | undefined
 
-type How = "card" | "tab" | "side"
-export const how = (event: MouseEvent | KeyboardEvent): How => (event.metaKey ? "tab" : event.altKey ? "side" : "card")
+type How = "card" | "tab" | "side" | "mac"
+/** ⌘⌥: the Mac's default app, as a terminal's links. A Git card, which no app opens, takes `files: false`: ⌘ wins. */
+export const how = (event: MouseEvent | KeyboardEvent, files = true): How =>
+  files && event.metaKey && event.altKey ? "mac" : event.metaKey ? "tab" : event.altKey ? "side" : "card"
 
 export const open = (ovvi: Ovvi, arg: string, how: How, plugin?: string) =>
   void ovvi.open(arg, { plugin, how, background: how !== "card" }).catch((error) => console.error(error))

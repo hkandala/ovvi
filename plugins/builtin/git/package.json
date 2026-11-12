@@ -1,7 +1,7 @@
 {
   "name": "@ovvi/git",
   "license": "AGPL-3.0-only",
-  "version": "1.10.8",
+  "version": "1.10.9",
   "private": true,
   "description": "Changes and history",
   "keywords": ["diff", "changes", "commit", "uncommitted", "history"],

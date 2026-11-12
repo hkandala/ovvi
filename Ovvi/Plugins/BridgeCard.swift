@@ -49,6 +49,7 @@ extension Bridge {
         let how: Opening = switch args["how"] as? String {
         case "card": .here
         case "side": .side
+        case "mac": .mac
         default: .tab
         }
         try plugin.web.open?(opener(arg, args["plugin"] as? String), arg, args["at"] as? String, how,
