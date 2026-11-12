@@ -3146,9 +3146,9 @@ ones".
   `current`), so it is now only the follow's own flag, unobserved. The chooser's rows and type-select build one list
   (`Chooser.rows(open:)`). Two UI test comments that named old runs now
   say why.
-- **Decisions.** The plugin API stays at version 3. The number goes up only for a breaking change. A new event,
-  manifest key or control field keeps it: the manifest decodes leniently, and an older app ignores what it does not
-  know (api.mdx, Versions). A new call would break on an older app, so it raises the version.
+- **Decisions.** The plugin API stays at version 3. The number goes up when a plugin written for it would fail on
+  an older app, as with a new call. A new event, manifest key or control field keeps it: the manifest decodes
+  leniently, and an older app ignores what it does not know (api.mdx, Versions).
   The version check itself stays: it serves plugins from other sources.
 - **Kept.** `FollowedLine.read` (inlining it puts `follow` over lint's complexity limit). The generic warm-view pool
   in `BrowserView` (two kinds keyed by type; two explicit pairs of statics would be longer). The first launch's two

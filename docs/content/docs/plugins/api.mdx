@@ -447,10 +447,9 @@ every device must see belongs in files on the machine.
 
 - The manifest's `api` is the version the plugin was written for, an
   integer. This page is version 3, and the app gives version 3.
-- The number goes up only for a change that breaks a plugin written for
-  the version before. A new event, manifest key or control field keeps it:
-  an app without it ignores what it does not know. A new call raises it: an
-  older app has no such call.
+- The number goes up when a plugin written for it would fail on an older
+  app, as with a new call. A new event, manifest key or control field keeps
+  it: an older app ignores what it does not know.
 - The app runs a plugin whose `api` is at most its own.
 - A plugin whose `api` is newer than the app's shows "‹name› needs a newer
   Ovvi" in its card.
