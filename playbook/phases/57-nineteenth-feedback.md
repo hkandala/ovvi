@@ -3014,3 +3014,9 @@ ones".
 - **For the user.** ⌥-click a web link, an `.html` file and a `.md` path in a terminal and in a chat: the page shows
   about as soon as the split opens, the first time too (after the app's first 3 s). On a remote machine a browser link
   is still slower than on This Mac.
+132. "okay for file explorer one more improvement, can we not show that cross icon to close current file that is being
+     previewed, show some different icon but in different locaiton, give me some options first, i just don't like that
+     cross icon sitting near file path and its not intuitive enough what it means" (Track E4, options first).
+133. "and another one i noticed, in any of our plugin panes if we right click on empty space, it shows two options
+     reload and inspect element, we shouldn't show inspect element, we should show only reload, can we fix that too"
+     (Track E4).
