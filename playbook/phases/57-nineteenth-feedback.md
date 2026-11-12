@@ -2929,3 +2929,8 @@ ones".
 129. "yo one more improvement to chat view new chat state, i konw we do show now random greeting, but the placeholder
      remains same ask anything, can we change the placeholder as well dynamically relevant to the greeeting message, so
      essentially we have tuples of greeting and its placeholder and we show that accoridngly" (Track C5).
+130. "one more improvement in new pane, when new pane is opened we can select by numbers, but also can we change
+     selection based on what i type for example, i type pi then pi will be selected, we don't ened to show what i type
+     anywhere, and we reset whatever typed with a short timer, like 1s or something, if i type file then fle explorer
+     should be selected, essentially you highlight on the relevant ones based on what i type yk, it won't open it will
+     just select it, does that makes sense" (Track N3).
