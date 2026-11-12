@@ -78,4 +78,20 @@ extension OvviUITests {
         chat.click()
         XCTAssertTrue(row(pane, "reply", "All tools.").exists(within: 5))
     }
+
+    /// A user bubble's fill, 6 pt left of its text: a dimmed one shows the card through it.
+    func bubbleFill(_ text: XCUIElement) -> [CGFloat] {
+        let window = mainWindows.firstMatch
+        guard let image = window.screenshot().image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+            return []
+        }
+        let scale = CGFloat(image.width) / window.frame.width, bitmap = NSBitmapImageRep(cgImage: image)
+        let color = bitmap.colorAt(x: Int((text.frame.minX - 6 - window.frame.minX) * scale),
+                                   y: Int((text.frame.midY - window.frame.minY) * scale))?.usingColorSpace(.sRGB)
+        return color.map { [$0.redComponent, $0.greenComponent, $0.blueComponent] } ?? []
+    }
+
+    func apart(_ one: [CGFloat], _ two: [CGFloat]) -> CGFloat {
+        one.isEmpty || two.isEmpty ? 0 : zip(one, two).map { abs($0 - $1) }.reduce(0, +)
+    }
 }

@@ -77,7 +77,7 @@ struct OpenCode: ChatAdapter {
         guard let lines = try? await exec.follow(folder + "/state.jsonl", from: FileMark()) else { return }
         for await batch in lines {
             // The batch's last state only: a launch's first one has no session yet, which would clear the history.
-            guard !Task.isCancelled, let (state, url) = batch.reversed().lazy.compactMap(state).first else { continue }
+            guard !Task.isCancelled, let (state, url) = batch.reversed().lazy.compactMap(parsed).first else { continue }
             let session = (state["session"] as? String).flatMap { Self.isID($0) ? $0 : nil }
             if chat.problem == Self.unreported {
                 chat.problem = nil
@@ -111,7 +111,7 @@ struct OpenCode: ChatAdapter {
         }
     }
 
-    private func state(_ line: FollowedLine) -> ([String: Any], String)? {
+    private func parsed(_ line: FollowedLine) -> ([String: Any], String)? {
         guard case let .line(text, _) = line,
               let state = try? JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any],
               let pid = state["pid"] as? Int, pids.contains(pid),

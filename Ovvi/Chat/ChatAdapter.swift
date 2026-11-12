@@ -82,7 +82,7 @@ extension Chat {
         for await batch in lines {
             for entry in batch where !Task.isCancelled {
                 guard case let .line(text, mark) = entry else {
-                    // Codex names its session only with the first prompt: none yet is a new conversation.
+                    // Codex names its session only with the first prompt: none in the whole file is a new conversation.
                     if !late, source == nil, entry.read {
                         current = true
                     }
