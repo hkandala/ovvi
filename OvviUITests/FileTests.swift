@@ -169,6 +169,14 @@ extension OvviUITests {
         try await send("grep -q over \(file) && ! grep -q 'v = 5' \(file) && echo overwrote-$((6*7))\r", to: shell)
         try await waitFor(shell) { $0.contains("\noverwrote-42") }
 
+        // A folder of the path, with no tree yet: the tree rooted at that folder (the crumbs start at the repository).
+        let crumb = "identifier BEGINSWITH %@ AND label == 'src'"
+        app.windows.buttons.matching(NSPredicate(format: crumb, "pane.\(card).jump.")).firstMatch.click()
+        try await labelEnds(card, " \((file as NSString).deletingLastPathComponent)/")
+        element("pane.\(card).go-back").click()
+        try await labelEnds(card, " \(file)")
+        XCTAssertTrue(editor.exists(within: 10))
+
         app.typeText("again")
         XCTAssertTrue(dirty.exists(within: 3))
         try await send("printf 'let w = 4\\n' >\(file)\r", to: shell)

@@ -39,11 +39,6 @@ extension OvviUITests {
         keepScreenshot("file explorer file")
 
         try await backAndForward(card, tree, file, root)
-        // Each folder in the path is a button; the file's name is not.
-        XCTAssertTrue(element("pane.\(card).jump.2").exists(within: 3))
-        XCTAssertFalse(element("pane.\(card).jump.3").exists)
-        element("pane.\(card).jump.1").hover()
-        keepScreenshot("a folder in the path, under the pointer")
         element("pane.\(card).jump.1").click()
         try await labelEnds(card, " \(root)/")
         XCTAssertTrue(row("main.swift", in: tree).exists(within: 10))
@@ -211,6 +206,9 @@ extension OvviUITests {
         file.textViews.firstMatch.click()
         app.typeKey(.leftArrow, modifierFlags: .command)
         XCTAssertFalse(until(1) { element("pane.\(card).go-forward").isEnabled }, "⌘← in the text went Back")
+        // Each folder in the path is a button; the file's name is not.
+        XCTAssertTrue(element("pane.\(card).jump.2").exists(within: 3))
+        XCTAssertFalse(element("pane.\(card).jump.3").exists)
     }
 
     private func backToTheKeptTree(_ card: String, _ tree: XCUIElement, _ root: String) async throws {

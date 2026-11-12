@@ -88,8 +88,7 @@ export interface Ovvi {
   symbol(name: string, size?: number): Promise<string>
 
   /** A header control or a command, as the user changed it: a click (no value), a toggle, a segment, a menu item, a
-   *  field's text (`submit` on Return). */
-  /** `part`: the index of a path text's part that was clicked (`links`). */
+   *  field's text (`submit` on Return), a path text's linked part (`part`, its index). */
   on(event: "control", fn: (e: { id: string; value?: string | boolean; submit?: boolean; part?: number }) => void): Off
   /** The card moved to another place: after `card.go`, Back, Forward, or a rename from elsewhere. After Back, `at`
    *  is the place it came back from: that place's landing, else its argument. */

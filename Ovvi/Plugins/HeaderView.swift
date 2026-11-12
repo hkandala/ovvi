@@ -70,7 +70,7 @@ private struct HeaderItem: View {
                         text: Binding { control.value?.text ?? "" } set: { plugin.header.pick(id, .text($0)) },
                         identifier: identifier, focus: plugin.header.focus[id] ?? 0)
                 .onSubmit { plugin.header.pick(id, nil, submit: true) }
-        case "text": text.accessibilityIdentifier(identifier)
+        case "text": text(identifier)
         case "openWith": openWith.accessibilityIdentifier(identifier)
         default: Spacer(minLength: 0)
         }
@@ -122,14 +122,14 @@ private struct HeaderItem: View {
     }
 
     @ViewBuilder
-    private var text: some View {
+    private func text(_ identifier: String) -> some View {
         let path = control.style == "path"
         let parts: [String] = switch control.value {
         case let .list(list): path ? list : [list.joined(separator: " ")]
         case let .text(text): [text]
         default: []
         }
-        let links = path ? min(control.links ?? 0, max(parts.count - 1, 0)) : 0
+        let links = path ? max(0, min(control.links ?? 0, parts.count - 1)) : 0
         let chevron = Text(" › ").foregroundStyle(.tertiary)
         let symbol = control.symbol.map { Text("\(Text(Image(symbol: $0)).foregroundStyle(.secondary)) ") }
         let shown = parts.indices.dropFirst(links).reduce(Text("")) { line, index in
@@ -144,8 +144,10 @@ private struct HeaderItem: View {
         }
         let rest = (control.digits == "mono" ? shown.monospacedDigit() : shown).fontWeight(.regular).lineLimit(1)
             .truncationMode(.middle)
+            // On the text, not on a group: XCUITest reads no group's value, and a group's id reaches its buttons.
+            .accessibilityValue(parts.joined(separator: " › ")).accessibilityIdentifier(identifier)
         if links == 0 {
-            rest.accessibilityValue(parts.joined(separator: " › "))
+            rest
         } else {
             // A folder's part is a button, with the buttons' hover: 3 pt around its text, so the text sits as before.
             HStack(spacing: 0) {
@@ -156,14 +158,15 @@ private struct HeaderItem: View {
                     }
                     .buttonStyle(ChromeStyle(radius: 5))
                     .pointerStyle(.link)
-                    .accessibilityIdentifier("pane.\(plugin.paneID).\(control.id ?? "").\(index)")
+                    // A long path cuts its middle folders first, as the plain text cuts its middle.
+                    .layoutPriority(index == 0 ? 0 : -1)
+                    .accessibilityIdentifier("\(identifier).\(index)")
                     Text("›").foregroundStyle(.tertiary)
                 }
                 rest.padding(.leading, 3).layoutPriority(1)
             }
+            .fontWeight(.regular)
             .padding(.leading, -3)
-            .accessibilityElement(children: .contain)
-            .accessibilityValue(parts.joined(separator: " › "))
         }
     }
 

@@ -3115,6 +3115,18 @@ ones".
   plugin install), beyond the test's 10 s wait, on the old code too; green with a longer wait, which was not kept, as
   CI passes the 10 s. There was no red run on the old code: it stopped at that wait. Pictures:
   `~/Downloads/ovvi-research/p57e4/`.
-- **132.** The options went to the user as text (the user asked for no pictures). The pick is still open.
+- **132, fix.** The user's pick: no Close File button. Each folder in a file's breadcrumbs (File, Preview, Markdown) is
+  a button with the buttons' hover and the pointing hand; a click closes the file to the tree's page with the file
+  selected. The file's name and File's scope after it stay text. A path `text` control takes `links` (its first
+  parts are buttons, which send `control` with `part`), so the row stays native. Explorer 1.13.0.
+- **132, decisions.** A folder inside the kept tree (E3's one tree) shows that tree as it was, with the file
+  selected, not a tree rooted at the folder: the user's open folders and scroll stay, as 116 asked. A folder above
+  it, or any folder while the card has no tree, shows a tree rooted at that folder. The API stays version 3,
+  although api.mdx says each addition raises it: E3's `onSymbol` did not raise it either, and an app without
+  `links` shows the path as text. The orchestrator may want version 4 for both. A long path cuts its middle folders
+  first.
 - **For the user.** Right-click empty space in a File Explorer, Git and Markdown card: only Reload. Right-click a page
   in a browser card: Inspect Element is still there.
+- **For the user (132).** Hover and click each folder in a file's path, with and without the tree beside it: the
+  file closes, the tree shows with the file selected and the folders you opened still open; a folder above the
+  tree's root roots the tree there. A narrow card with a deep path. Back returns to the file. Unsaved edits ask first.
