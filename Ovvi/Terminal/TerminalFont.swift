@@ -28,11 +28,17 @@ extension PaneTerminal {
 
     static let systemFont = NSFont.monospacedSystemFont(ofSize: 0, weight: .regular).familyName ?? "Menlo"
 
-    /// The terminal's font in pixels, as libghostty finds it by its family.
+    static var family: String {
+        let chosen = AppSettings().terminalFont
+        return chosen.isEmpty ? systemFont : chosen
+    }
+
+    /// The terminal's font in pixels, as libghostty finds it by its family. ponytail: a chosen family no longer
+    /// installed measures as SF Mono here and draws as libghostty's JetBrains Mono, so the underline can be a pixel
+    /// off.
     static func font(scale: CGFloat) -> NSFont {
-        let settings = AppSettings(), size = CGFloat(clamped(settings.fontSize)) * scale
-        return (settings.terminalFont.isEmpty ? nil
-            : NSFontManager.shared.font(withFamily: settings.terminalFont, traits: [], weight: 5, size: size))
+        let size = CGFloat(clamped(AppSettings().fontSize)) * scale
+        return NSFontManager.shared.font(withFamily: family, traits: [], weight: 5, size: size)
             ?? .monospacedSystemFont(ofSize: size, weight: .regular)
     }
 
@@ -58,7 +64,7 @@ extension PaneTerminal {
             lastGrid = grid
         }
         controller.setTerminalConfiguration(TerminalConfiguration {
-            $0.withFontFamily(settings.terminalFont.isEmpty ? systemFont : settings.terminalFont)
+            $0.withFontFamily(family)
             $0.withFontSize(Float(clamped(settings.fontSize)))
             $0.withCursorStyle(settings.cursorStyle)
             // Unset, Ghostty also follows DEC mode 12; false only makes the default still. A program's DECSCUSR wins

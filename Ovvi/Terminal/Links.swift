@@ -36,8 +36,7 @@ enum Links {
         let url = URL(filePath: found)
         if how == .mac {
             guard !store.machine.isRemote else {
-                let shown = MachinePath.short(found, remote: true)
-                return store.show(Notice(text: "\(shown) is on \(store.machine.name), not on this Mac", tone: .warning))
+                return notOnThisMac(MachinePath.short(found, remote: true), store)
             }
             return NSWorkspace.shared.open(url) ? () : cannot(link, store)
         }
@@ -56,13 +55,22 @@ enum Links {
         )
     }
 
-    /// The Mac's default app for the address: the browser for a web page, Mail for `mailto:`.
+    /// The Mac's default app for the address: the browser for a web page, Mail for `mailto:`. A remote machine's own
+    /// address (`localhost`) is not the Mac's.
     private static func onMac(_ link: TerminalLink, _ store: HostStore) {
-        if let url = URL(string: link.target), NSWorkspace.shared.urlForApplication(toOpen: url) != nil {
+        let url = URL(string: link.target)
+        if store.machine.isRemote, link.kind == .web, let host = url?.host(), Browser.isLoopback(host) {
+            return notOnThisMac(link.target, store)
+        }
+        if let url, NSWorkspace.shared.urlForApplication(toOpen: url) != nil {
             NSWorkspace.shared.open(url)
         } else {
             cannot(link, store)
         }
+    }
+
+    private static func notOnThisMac(_ shown: String, _ store: HostStore) {
+        store.show(Notice(text: "\(shown) is on \(store.machine.name), not on this Mac", tone: .warning))
     }
 
     private static func cannot(_ link: TerminalLink, _ store: HostStore) {
@@ -186,7 +194,9 @@ extension PaneSurfaceView {
         let font = PaneTerminal.font(scale: scale), face = font.ascender - font.descender + font.leading
         let baseline = (font.leading / 2 - font.descender - (cellHeight - face) / 2).rounded()
         let height = max(1, font.underlineThickness.rounded(.up))
-        return (max(0, (baseline + font.underlinePosition).rounded() - height), height)
+        // Rounded from the cell's top, as Ghostty does.
+        let top = cellHeight - (cellHeight - baseline - font.underlinePosition).rounded()
+        return (max(0, top - height), height)
     }
 
     /// An OSC 8 link libghostty reports: libghostty reports one only while ⌘ is down, so the pointer moves there with
@@ -207,7 +217,7 @@ extension PaneSurfaceView {
         let point = convert(event.locationInWindow, from: nil), moved = event.type == .mouseMoved
         let how = moved ? Self.linkKey(event.modifierFlags) : nil
         hover(how == nil ? nil : point)
-        guard how == .side || how == .mac else { return super.mouseMoved(with: event) }
+        guard [.side, .mac].contains(how) else { return super.mouseMoved(with: event) }
         linkSurface?.sendMousePos(x: point.x, y: bounds.height - point.y, modifiers: .super_)
     }
 
@@ -241,15 +251,16 @@ extension PaneSurfaceView {
         return window.contentView?.hitTest(window.mouseLocationOutsideOfEventStream) as? PaneSurfaceView
     }
 
-    /// libghostty reports a link again only on another cell, so the pointer leaves the view first. Only on a change to
-    /// or from ⌥ or ⌘⌥: made-up moves on every ⇧ or ⌃ would reach a program that tracks the mouse.
+    /// libghostty reports a link again only on another cell, so the pointer leaves the view first. Only when ⌥ or ⌘⌥
+    /// (libghostty's made-up ⌘) starts or ends: made-up moves on every ⇧ or ⌃ would reach a program that tracks the
+    /// mouse. ponytail: a ⌘⌥ shortcut over the card sends two such moves too; skip them if a program minds.
     override func flagsChanged(with event: NSEvent) {
         super.flagsChanged(with: event)
-        let side = [.side, .mac].contains(Self.linkKey(event.modifierFlags))
-        defer { sideHeld = side }
-        guard side != sideHeld, NSEvent.pressedMouseButtons == 0, let window, Self.under() === self else { return }
+        let faked = [.side, .mac].contains(Self.linkKey(event.modifierFlags))
+        defer { fakesCommand = faked }
+        guard faked != fakesCommand, NSEvent.pressedMouseButtons == 0, let window, Self.under() === self else { return }
         let point = convert(window.mouseLocationOutsideOfEventStream, from: nil)
-        let modifiers: TerminalInputModifiers = side ? .super_ : .init(from: event.modifierFlags)
+        let modifiers: TerminalInputModifiers = faked ? .super_ : .init(from: event.modifierFlags)
         linkSurface?.sendMousePos(x: -1, y: -1, modifiers: modifiers)
         linkSurface?.sendMousePos(x: point.x, y: bounds.height - point.y, modifiers: modifiers)
     }

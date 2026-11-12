@@ -19,7 +19,7 @@ final class PaneSurfaceView: AppTerminalView {
     var hoveredLink: String?
     var hovered: Hovered?, hoveredCell: TerminalLink.Place?
     var underline: CALayer?
-    var sideHeld = false
+    var fakesCommand = false
     var openLink: ((TerminalLink, Opening) -> Void)?
     private var scrolled: CGFloat = 0
 

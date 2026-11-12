@@ -171,7 +171,7 @@ extension OvviUITests {
             "rm -rf \(folder) && mkdir -p \(folder) && touch \(folder)/notes.md \(folder)/page.html && clear; "
                 + "echo ftp://example.com/x; echo \(address).; echo /reload your open pi; echo \(folder)/notes.md.; "
                 + "echo \(folder)/page.html; echo /compact now; echo \(folder)/notes.md then more.; "
-                + "echo \(folder)/gone; echo \(folder)/gone-too\r",
+                + "echo \(folder)/gone; echo \(folder)/gone-too; echo \(folder)/\r",
             to: pane,
         )
         try await waitFor(pane) { $0.hasPrefix("ftp://example.com/x\n\(address).\n") }
@@ -237,6 +237,13 @@ extension OvviUITests {
             link(8).click()
         }
         XCTAssertTrue(notice("File not found: \(folder)/gone-too").exists(within: 3))
+
+        step("A ⌘⌥-click on a folder shows it in the Finder, outside Ovvi")
+        XCUIElement.perform(withKeyModifiers: [.command, .option]) { link(9).click() }
+        let finder = XCUIApplication(bundleIdentifier: "com.apple.finder").windows["ovvi-e2e-links"]
+        XCTAssertTrue(finder.exists(within: 5))
+        finder.buttons[XCUIIdentifierCloseWindow].click()
+        app.activate()
         let now = try await tabIDs()
         XCTAssertEqual(now.count, tabs, "\(now)")
     }
