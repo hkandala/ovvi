@@ -2517,3 +2517,10 @@ ones".
   old code (43141931169: "the kept tab says its terminal stopped as it opens").
 - **For the user.** On a remote machine, leave a tab out of view, drop the link or sleep the Mac, come back and
   select it: its last picture, then the live terminal, never "The terminal stopped".
+111. The Tart VM plugin (agent tart-take-control; screenshot `.build/fb57/r8-tart-6.50.02.png`): "so i noticed some
+     permission prompt in tart vm, but i cannot click anything, and also i see in use lock on top, how this in use lock
+     works? is it specific to our ovvi use case where we acuire lock or soemthing generic? just make sure its generic
+     one and not specific to ovvi locks, also how can i accept such permission dialogs when we lock it". Then: "can we
+     simplify those locks thing, even though its generic, its some custom locks, new agents will not be aware of it,
+     we don't need all such locks, at least from plugin perspective, we can just show one toggle, watch only or not,
+     when that button is sleected it wil be watch only, otherwise i can interact with it, lets keep it like that".
