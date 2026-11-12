@@ -21,7 +21,7 @@ Tracks run in parallel and push straight to main after their review, `make lint 
 touch in the Tart VM (no per-track CI, no host GUI; `~/Downloads/ovvi-research/p58-common.md`). The phase ends with
 two full runs and on-demand on the final head.
 
-## Track A: onboarding, windows, settings (items 1, 2, 4, 5, 6)
+## Track A: onboarding, windows, settings (items 1, 2, 4, 5, 6, 21)
 
 1. "during onboaridng if herdr is installed don't show the herdr slide at all, i see it worked fine before, but this
    time i saw the herdr slide where as soon as i moved to it, it showed herdr is installed? just make sure no
@@ -33,6 +33,9 @@ two full runs and on-demand on the final head.
 5. "for font selection why there is a line separator? just list all fonts in alphabetic order and choose jetbrains
    mono as default"
 6. "when installing new plugins, show in new pane should be unchecked by default"
+21. "also one more thing i noticed, can we open floating panes in the same monitor as where it si coming from, like i
+    connected to multiple monitors and i see when ovvi is on monitor 1 and from pi agent i opened a subagent in
+    floating pane, it opened in the macbook, it should open in the monitor 1 where ovvi is"
 
 Also: `scripts/herdr-session.sh` `down` and `up` wait 5 s (50 × 0.1 s), a bound that only matters when something
 fails; lessons.md's rule makes it 60 s (round 8's final CI, '### Final CI, round 8' in phase 57).
