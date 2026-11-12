@@ -70,7 +70,8 @@ extension OvviUITests {
             }
             let ended = try await streams(one).allSatisfy { !$0.contains(terminal) }
             XCTAssertTrue(ended, "the kept tab's stream outlived the drop")
-            XCTAssertFalse(stopped.exists, "a card says its terminal stopped once back")
+            // Checked after the strip: the old code's panel shows in it.
+            let early = stopped.exists
 
             // After the tabs' own: their closes call herdr.
             addTeardownBlock { [one] in _ = try? await Self.post("\(one)/resume") }
@@ -84,6 +85,7 @@ extension OvviUITests {
                 keepScreenshot("kept tab opening \(appearance) \(shot)")
             }
             _ = try await Self.post("\(one)/resume")
+            XCTAssertFalse(early, "a card says its terminal stopped once back")
             XCTAssertFalse(said, "the kept tab says its terminal stopped as it opens")
             XCTAssertFalse(until(3) { stopped.exists }, "the kept tab says its terminal stopped")
             XCTAssertTrue(drawn(pane, within: connect), element("pane.\(pane)").stringValue)
