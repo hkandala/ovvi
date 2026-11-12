@@ -4,6 +4,7 @@
 /** @param {import("@ovvi/plugin-api").Ovvi} ovvi */
 export default async function main(ovvi) {
   if (ovvi.card.arg.endsWith("/fail/")) throw new Error("asked to fail")
+  if (ovvi.card.arg.endsWith("/plain/")) return void (document.body.textContent = "ovvi-plain-page")
   const root = ovvi.card.arg.replace(/\/$/, "")
   const list = document.body.appendChild(document.createElement("div"))
   const line = (part, text) => {
