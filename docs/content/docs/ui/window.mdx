@@ -666,12 +666,13 @@ How it works: [Layout and sizing](/docs/layout).
   window and the overview have none. The border moves with the keyboard at
   once, with no fade.
 - The buttons show on the keyboard card, on a hovered card and on a zoomed card.
-- **Selecting.** A left drag, a double click and a triple click select text in
-  the card, also over a program that reads the mouse, as a ⇧-drag does in
-  Ghostty. That program gets a single left click when the button comes up on
-  the cell where it went down, and never a left drag. herdr does not tell the
-  app which programs read the mouse, and a program that got the drag drew a
-  selection of its own beside the card's.
+- **Selecting.** A left drag, a double click, a triple click and a ⇧-click
+  select text in the card, also over a program that reads the mouse, as a
+  ⇧-drag does in Ghostty. That program gets a single left click when the
+  button comes up on the cell where it went down, and never a left drag. So a
+  click takes control of a watched card on its release, and a drag does not.
+  herdr does not tell the app which programs read the mouse, and a program
+  that got the drag drew a selection of its own beside the card's.
 - **Context menu** on the header, and on the terminal, where it starts with
   Copy, Paste and Select All. As in herdr, a right click in the terminal opens
   the menu even when the program reads the mouse. ⌥-right click sends the

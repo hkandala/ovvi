@@ -2841,3 +2841,41 @@ ones".
      milliseconds".
 127. "okay one more thing, in browser or in file explorer, i don't see option to make vidoes full screen, can we
      enable that? so i can easily open and watch videos in full screen" (Track V2).
+
+### Track L3 (items 113, 114)
+
+- **Cause, the white block (113).** Not the cursor: pi's own text selection. pi's full-screen mode reads the mouse and
+  draws a selection in reverse video, covering both end cells. Ovvi sent every left drag to libghostty (the card's
+  selection) and through herdr's `terminal.mouse` to the program, so two selections drew. herdr flattens reverse video
+  of default colors to `#000000` on `#FFFFFF` (spiked), so where pi's ends and libghostty's (a cell counts past 60 % of
+  its width, Ghostty's rule) differ by a cell, a pure white cell showed beside the blue. pi's editor caret is the same
+  reverse video, so it is white too where Ghostty draws it in the theme's text color: herdr's flattening, left as is.
+- **Fix.** Ghostty sends a drag to a program that reads the mouse and selects locally on ⇧-drag; herdr 0.9.5 reports no
+  mouse mode (not in frames, the schema or the snapshot), so Ovvi cannot follow that rule. A left drag, a double and a
+  triple click are the card's; a program gets a single left click when the button comes up on the cell where it went
+  down. A program gets no left drags now (vim's mouse selection, a scroll bar's thumb): `ponytail:` note, upgrade once
+  herdr reports the mode. The right and middle buttons are unchanged.
+- **Why SF Mono (114).** The first design ("Terminal text is SF Mono / Menlo", the reference app's native look); phase 11
+  set `monospacedSystemFont` as the default over libghostty's own JetBrains Mono, and no decision revisited it.
+- **Fix, the default.** An unset `font-family`: libghostty carries JetBrains Mono 2.304 (Ghostty's `font/embedded.zig`,
+  its name strings are in `libghostty.a`). In the VM, with no font installed, an unset font and `font-family =
+  JetBrains Mono` both draw it. The menu lists JetBrains Mono, SF Mono (by the name CoreText resolves on every Mac),
+  then the installed families. Acknowledgements list the font (OFL). Symbols Nerd Font, also inside libghostty, is
+  still not listed.
+- **The logo.** pi's logo is 4 cells by 2 rows of half blocks, which libghostty draws itself to fill the cell, so only the
+  cell's shape matters: square when the height is twice the width. Measured in the user's shots: Fira Code 64 × 64 px
+  (square), SF Mono 64 × 62 (3 % flat), JetBrains Mono and Ghostty.app 64 × 68 (6 % tall). The height is ascent +
+  descent + line gap (OS/2 typo metrics with USE_TYPO_METRICS, else hhea). Report with 17 fonts, popularity (GitHub
+  stars, Homebrew installs) and VM renders: `~/Downloads/ovvi-research/p57l3/fonts.html`.
+- **Decisions.** pi no longer gets drags, so its own selection's scroll past the card's rows and its limit to one
+  scroll box are gone: a long selection ends at the card's edge. Two quick single clicks that pi counts as a double
+  click can still make it select a word (rare, accepted). The settings test picks Menlo, not Monaco: Monaco and JetBrains Mono have the same 8 × 17 cell at 1x
+  on CI. CI's grids change with the font (17 px rows instead of 15 at 1x).
+- **Runs.** CI 43184328997 (chosen: the ⌥-right/left click and drag steps, the font and Option key test, selected
+  text). On the old code (reasoned, not run) the new steps fail: the drag's press and release reach `cat -v` before
+  the ⌥-right click.
+- **For the user.** In a pi pane, drag over text and double-click a word: only the blue selection, no white cell. Click
+  a link and a tool block in pi: they still open. Settings ▸ Terminal ▸ Font: JetBrains Mono first, SF Mono second; the
+  text looks like Ghostty.app's. A selection in pi now stops at the card's edge. Your own `terminalFont` is
+  "JetBrains Mono" (the installed copy), so the menu lists it twice: pick the first, or quit Ovvi and run
+  `defaults delete dev.ovvi.app terminalFont`. Read `fonts.html` and pick the font list.

@@ -330,7 +330,8 @@ extension PaneSurfaceView {
             return
         }
         super.mouseDown(with: event)
-        press = event.clickCount == 1 ? event : nil
+        // A ⇧-click extends the card's selection, as in Ghostty.
+        press = event.clickCount == 1 && !event.modifierFlags.contains(.shift) ? event : nil
     }
 
     override func mouseDragged(with event: NSEvent) {

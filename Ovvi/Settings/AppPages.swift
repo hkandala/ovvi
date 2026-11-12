@@ -223,7 +223,7 @@ struct TerminalPage: View {
                             ? [] : [settings.terminalFont]), id: \.self) { Text($0).tag($0) }
                 } label: {
                     Text("Font")
-                    Text("Monospaced fonts on this Mac.")
+                    Text("JetBrains Mono comes with Ovvi; the others are on this Mac.")
                 }
                 .identifiedSettingsRow("terminal.font")
                 Picker("Cursor", selection: settings.$cursorStyle) {
