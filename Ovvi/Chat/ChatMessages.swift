@@ -23,6 +23,7 @@ struct ChatMessages: View, Equatable {
     @State private var phrase = Self.phrases.randomElement() ?? ""
     /// Not observed: a body run rebuilds the rows, and the height changes at each frame of a resize.
     @State private var height = Height()
+    @State private var viewHeight = ViewHeight()
     @Environment(\.look) private var look
     private static let phrases = ["What's on your mind?", "What are we building?", "Where should we start?",
                                   "What can I help with?", "Ready when you are."]
@@ -130,27 +131,34 @@ struct ChatMessages: View, Equatable {
         let (scrolledUp, loading, laidOut, error, place) = (!atBottom, earlier, width, look.error, position)
         return ScrollViewReader { proxy in
             ScrollView {
-                // Not lazy: a lazy stack guesses the height of the rows it has not built, by up to four times, and
-                // after a split shows a blank where it guesses wrong. `start` keeps the layout short.
-                VStack(alignment: .leading, spacing: 10) {
-                    if start > 0 {
-                        earlierButton(loading: loading) { showEarlier(rows, before: start) }
+                // As tall as the view at least, its rows at the top: a short chat is then at its exact bottom, and the
+                // bottom anchor follows it as its rows pass the view. A shorter stack, held at the top by the `.top`
+                // alignment, kept its top.
+                ZStack(alignment: .top) {
+                    Filler(height: viewHeight)
+                    // Not lazy: a lazy stack guesses the height of the rows it has not built, by up to four times,
+                    // and after a split shows a blank where it guesses wrong. `start` keeps the layout short.
+                    VStack(alignment: .leading, spacing: 10) {
+                        if start > 0 {
+                            earlierButton(loading: loading) { showEarlier(rows, before: start) }
+                        }
+                        Rows(chat: chat, rows: rows[start...], tops: tops) { position.scrollTo(y: $0) }
+                        ForEach(chat.outgoing) { message in
+                            outgoing(message, error: error)
+                        }
+                        if chat.phase == .working {
+                            WorkingRow(since: chat.outgoing.isEmpty ? chat.history.lastTurnStart : nil)
+                        }
+                        if let problem = chat.problem {
+                            problemCard(problem, error: error)
+                        }
+                        Color.clear.frame(height: 22).id(Self.end)
                     }
-                    Rows(chat: chat, rows: rows[start...], tops: tops) { position.scrollTo(y: $0) }
-                    ForEach(chat.outgoing) { message in
-                        outgoing(message, error: error)
-                    }
-                    if chat.phase == .working {
-                        WorkingRow(since: chat.outgoing.isEmpty ? chat.history.lastTurnStart : nil)
-                    }
-                    if let problem = chat.problem {
-                        problemCard(problem, error: error)
-                    }
-                    Color.clear.frame(height: 22).id(Self.end)
+                    .padding(.top, start > 0 ? 0 : topPadding).readingColumn()
+                    .coordinateSpace(.named(Self.space))
                 }
-                .padding(.top, start > 0 ? 0 : topPadding).readingColumn()
-                .coordinateSpace(.named(Self.space))
             }
+            .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { viewHeight.value = $1 }
             .scrollPosition(.constant(place))
             .task(id: pin) {
                 if pin {
@@ -177,7 +185,7 @@ struct ChatMessages: View, Equatable {
                 if old.height == new.height, away != (new.minX > 0.5) {
                     away = new.minX > 0.5
                 }
-                if old.height != new.height {
+                if old.height != new.height, earlier {
                     earlier = false
                 }
             }
@@ -309,6 +317,20 @@ struct ChatMessages: View, Equatable {
 @MainActor
 private final class Height {
     var value: CGFloat = 0
+}
+
+/// Observed by `Filler` alone: a resize lays out the stack again, and builds no rows.
+@MainActor @Observable
+private final class ViewHeight {
+    var value: CGFloat = 0
+}
+
+private struct Filler: View {
+    let height: ViewHeight
+
+    var body: some View {
+        Color.clear.frame(height: height.value)
+    }
 }
 
 /// Not observed: it changes at every scroll frame.

@@ -77,6 +77,12 @@ extension OvviUITests {
             "\(user.frame) \(composer.frame) in \(card)",
         )
         XCTAssertTrue(row(pane, "reply", "Counted.").exists(within: 5))
+        // A short chat rests at its exact bottom, its rows at the top: no scroll room, no Scroll to Bottom.
+        let chat = element("chat.\(pane)"), top = user.frame.minY
+        XCTAssertGreaterThanOrEqual(top, chat.frame.minY, "\(user.frame) \(chat.frame)")
+        chat.scroll(byDeltaX: 0, deltaY: -300)
+        XCTAssertFalse(element("chat.\(pane).bottom").exists)
+        XCTAssertEqual(user.frame.minY, top, accuracy: 1)
         XCTAssertGreaterThanOrEqual(stack.frame.minY - user.frame.maxY, 16, "\(user.frame) \(stack.frame)")
         stack.click()
         let tool = element("chat.\(pane).tool")

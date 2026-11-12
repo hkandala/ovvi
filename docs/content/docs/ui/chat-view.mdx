@@ -494,7 +494,11 @@ A run is one quiet line with no card: its summary and a chevron.
   nothing.
 - **The bottom.** One rule holds the bottom: the scroll view's bottom anchor
   (SwiftUI's `defaultScrollAnchor(.bottom)` for the first offset and for size
-  changes; `.top` for the alignment of a chat shorter than the view). The chat
+  changes; `.top` for the alignment of a chat shorter than the view). Under
+  its rows the stack has a blank that makes it as tall as the view, so a short
+  chat's rows sit at the top and the chat is still at its bottom: as its rows
+  pass the view (the first message's transcript, a stream of turns) or the view
+  shrinks under them, the anchor follows. The chat
   opens at the bottom. Exactly at the bottom, it stays there as messages come
   and as the card resizes. Scrolled up, even by one point, it keeps its
   offset: new messages come below without moving what is in view. Nothing else

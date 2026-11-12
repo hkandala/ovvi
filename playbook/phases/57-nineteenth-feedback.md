@@ -2710,7 +2710,30 @@ ones".
   the keyframe rise works, pi's Working holds). VM: the look and the first send, wide, narrow and floating, dark and
   light, green. Pictures: `~/Downloads/ovvi-research/p57c3/`.
 - **For the user.** The first send in a new chat, wide, narrow and floating, dark and light; a pi that waits on agents
-  shows Working in Chat as in the TUI.
+  shows Working in Chat as in the TUI; a long reply or a history coming into a new chat ends on its last row; a split
+  down under a short chat whose rows then pass the card shows its top with no Scroll to Bottom until the next message
+  (open).
+- **Follow-up, cause.** The `.top` alignment anchor sets a short chat at the top, and the bottom anchor holds only a
+  chat at its exact bottom: a chat that passed the view from short (the sent message, then a 25-turn transcript; any
+  chat whose turns pass the view) stayed at its top, not on "Last.". Every test that sends `many` into an empty chat
+  failed on CI (4 of 4); in the VM 1 run in 2, as its transcript came in parts there.
+- **Follow-up, fix.** Under the rows the stack has a blank as tall as the scroll view's container (its height from
+  the scroll geometry, observed only by the blank, so a resize builds no rows). A short chat's rows still sit at the
+  top, and the chat is at its exact bottom, so SwiftUI's bottom anchor follows its rows as they pass the view, and a
+  reply box that grows or a card that shrinks under them. The anchors and the first-send rise are as C3 made them:
+  the container's height holds still while the reply box goes down, so the offset stays 0 (VM log and strip).
+- **Follow-up, tried.** A blank of `containerRelativeFrame`'s height: it switched between the view's height and that
+  less the reply box's inset at each frame of the rise, and the scroll bar showed. One scroll to the end from the
+  scroll-geometry action when the end left the view: a `ScrollViewReader` scroll asked for in the update where the
+  rows grew used the end's old place and moved nothing when a whole history came in one read (CI's log), and on the
+  next turn it was still racy (CI and the VM each failed one test).
+- **Follow-up, open.** A split down under a short chat that then passes the view: the geometry reports the bottom, but
+  the card shows the top until the next message, which follows. C3's code showed the top there too.
+- **Follow-up, runs.** Red on main 559fce8c: CI 43160568640 (`testALongChatShowsEarlierRowsInPlace`,
+  `testSwitchesKeepHeavyCardsAsTheyWere`, `testALongChatKeepsItsPlaceAndScrollsToTheBottom`,
+  `testTheChatsEndMovesWithTheFingers`; the other 12 chosen chat tests green). Red on the two scroll-to-end tries:
+  43163314751, 43165274094, 43166901269. Green: the VM (those four, the question, reply-box, floating and tool tests,
+  probes for the first send, a box grown and a split) and CI 43168893975. Pictures: `~/Downloads/ovvi-research/p57c3b/`.
 
 ### Track C4 (item 110)
 
