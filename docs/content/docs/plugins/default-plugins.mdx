@@ -31,8 +31,8 @@ the card shows, and it picks the card's page. A relaunch, a cold restart of
 herdr or another device makes the card at that place. The instance state
 file on the pane's machine keeps the rest: Git's commit message, the diff's
 Side by Side, Word Wrap and its file list, and File Explorer's Show Hidden
-Files, the tree beside a file and its width, File's Word Wrap and Markdown's mode, lock and fold once the user
-changed them in the card
+Files, the tree beside a file and its width, File's Word Wrap and Markdown's
+mode, lock and fold once the user changed them in the card
 ([State](/docs/plugins/api#state)).
 
 ## Settings
@@ -280,8 +280,6 @@ its icon (`NSWorkspace`), then the other plugins that open the file. A pick
 of a plugin turns the card into that plugin's card. A file with no default
 app shows a plain "Open With" menu. The Mac's apps show on This Mac only: on
 a remote machine, Open With shows only when another plugin opens the file.
-After it, **Close File** (`xmark`) closes the file and leaves the tree
-([The tree beside a file](#the-tree-beside-a-file)). Back returns to the file.
 
 ## A file's row 2
 
@@ -290,12 +288,14 @@ File, Preview and Markdown share one row 2, with the same order, spacing and
 
 - **On the left:** Back and Forward, **File Tree** (`sidebar.left`, in the
   accent while [the tree](#the-tree-beside-a-file) shows beside the file), the
-  outline toggle (Markdown only, and only while the file has a heading), then
-  the breadcrumbs.
+  outline toggle (Markdown only, and only while the file has a heading), the
+  breadcrumbs, then **Close File** (`xmark`: it closes the file and leaves the
+  tree, as an editor tab's close button after its name; Back returns to the
+  file).
 - **On the right:** Preview's page and zoom, Word Wrap (File only),
   **Open in Browser** (`globe`, File on an HTML file on This
   Mac only: the page in a browser pane in a new tab, selected), the mode
-  and the lock (Markdown only), Open With, then Close File.
+  and the lock (Markdown only), then Open With.
 - **The breadcrumbs** are the file's path, its parts with `›` between them
   and the first part in secondary text. Inside a Git repository the path
   starts at the repository's root, with the root's name first
@@ -446,7 +446,7 @@ choice follows the setting "When a file opens" (Show only the file).
   in the card, as the tree's page does, and the tree selects it. ⌘ and ⌥ open as
   in [Opening](#opening). A file that the card shows from elsewhere (Back, a
   Markdown link) is selected too, when it is under the root.
-- **Close File** (`xmark`, at the right of row 2) moves the card to the tree's
+- **Close File** (`xmark`, after the breadcrumbs) moves the card to the tree's
   page, rooted where the tree beside the file is (else at the file's folder),
   with the file selected. Unsaved edits ask first. On the tree's page the
   sidebar does not show.

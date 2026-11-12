@@ -18,17 +18,19 @@
   overflow-wrap: anywhere;
   padding: 0 16px;
 }
-/* The tree beside a file (side.ts): over the card's left, with the file's page moved right of it. */
+/* The tree beside a file (side.ts): over the card's left, with the file's page moved right of it. Hidden, as the
+   runtime hides a page, it keeps its layout: its scroll, and a reveal while it is hidden. */
 #side {
-  display: none;
+  display: flex;
+  visibility: hidden;
   position: absolute;
   inset: 0 auto 0 0;
-  width: var(--side-width);
+  width: min(var(--side-width), 60%);
   border-right: 1px solid var(--divider);
 }
-body[data-side] #side { display: flex; }
-body[data-side] .ovvi-page:not([data-place="files"]) { left: calc(var(--side-width) + 1px); }
-body:has(> .ovvi-page[data-place="files"]:not([inert])) #side { display: none; }
+body[data-side] #side { visibility: visible; }
+body[data-side] .ovvi-page:not([data-place="files"]) { left: calc(min(var(--side-width), 60%) + 1px); }
+body:has(> .ovvi-page[data-place="files"]:not([inert])) #side { visibility: hidden; }
 #side > [data-place="files"] { position: relative; flex: 1; min-width: 0; }
 #side footer { display: none !important; }
 #side .grip { position: absolute; z-index: 6; top: 0; bottom: 0; right: -4px; width: 7px; cursor: col-resize; }

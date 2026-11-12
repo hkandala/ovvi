@@ -66,6 +66,7 @@
       { "type": "toggle", "id": "outline", "symbol": "list.bullet.indent", "title": "Outline", "value": false,
         "hidden": true },
       { "type": "text", "id": "jump", "style": "path", "hidden": true },
+      { "type": "button", "id": "close-file", "symbol": "xmark", "title": "Close File", "hidden": true },
       { "type": "spacer", "id": "spacer", "hidden": true },
       { "type": "text", "id": "page", "style": "dim", "digits": "mono", "hidden": true },
       { "type": "button", "id": "zoom.fit", "symbol": "arrow.down.right.and.arrow.up.left", "title": "Zoom to Fit",
@@ -83,8 +84,7 @@
           { "value": "source", "title": "Source", "symbol": "chevron.left.forwardslash.chevron.right" }] },
       { "type": "segmented", "id": "lock", "value": "read", "hidden": true,
         "options": [{ "value": "read", "title": "Read" }, { "value": "edit", "title": "Edit" }] },
-      { "type": "openWith", "id": "open-with", "hidden": true },
-      { "type": "button", "id": "close-file", "symbol": "xmark", "title": "Close File", "hidden": true }
+      { "type": "openWith", "id": "open-with", "hidden": true }
     ],
     "settings": [
       { "id": "hidden-files", "type": "toggle", "title": "Show hidden files",

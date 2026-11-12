@@ -12,9 +12,9 @@ type Kind = ReturnType<typeof kind>
 
 const CONTROLS: Record<Kind, string[]> = {
   files: ["root", "filter", "collapse", "hidden-files"],
-  file: ["tree", "jump", "spacer", "wrap", "open-with", "close-file"],
-  preview: ["tree", "jump", "spacer", "open-with", "close-file"],
-  markdown: ["tree", "jump", "spacer", "mode", "lock", "open-with", "close-file"],
+  file: ["tree", "jump", "close-file", "spacer", "wrap", "open-with"],
+  preview: ["tree", "jump", "close-file", "spacer", "open-with"],
+  markdown: ["tree", "jump", "close-file", "spacer", "mode", "lock", "open-with"],
 }
 const ALL = manifest.header.map((control) => control.id)
 
@@ -26,9 +26,10 @@ const load = (kind: Kind): Promise<{ show(place: Place): Promise<Reveal> }> =>
 
 export default async function main(ovvi: Ovvi) {
   const side = sidebar(ovvi)
-  ovvi.on("control", ({ id }) => {
+  ovvi.on("control", ({ id, value }) => {
     const file = ovvi.card.arg, html = htmlPage(ovvi, file)
     if (id === "close-file") ovvi.card.go(side.rootFor(file), { at: file })
+    else if (id === "tree") side.toggle(value === true)
     else if (id === "browser" && html) open(ovvi, html, "card", "browser")
   })
   await ovvi.pages.route(async (page) => {
@@ -41,17 +42,12 @@ export default async function main(ovvi: Ovvi) {
     scoped.controls.set("browser", { hidden: place !== "file" || !htmlPage(scoped, arg) })
     if (place !== "markdown") scoped.controls.set("lock-editing", { enabled: false, checked: false })
     root.dataset.place = place
-    // Each page keeps its own row 2: each follows the card's sidebar.
+    // Each page keeps its own row 2: a page shown again, or a setting, follows the card's sidebar.
     const sync = () => place !== "files" && scoped.controls.set("tree", { value: side.open })
     const shows = () => (place === "files" ? side.root(arg) : (sync(), side.file(arg)))
     shows()
     scoped.on("place", shows)
     scoped.on("settings", sync)
-    scoped.on("control", ({ id, value }) => {
-      if (id !== "tree") return
-      side.toggle(value === true)
-      sync()
-    })
     const read = place === "file" || place === "markdown" ? ovvi.files.read(arg) : undefined
     read?.catch(() => undefined)
     const [code, crumbs] = await Promise.all([load(place), place === "files" ? [] : trail(scoped, arg)])

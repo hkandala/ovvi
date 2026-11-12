@@ -9,28 +9,34 @@ export function sidebar(ovvi: Ovvi) {
   aside.id = "side"
   const grip = Object.assign(document.createElement("div"), { className: "grip" })
   aside.append(grip)
-  const width = (px: number) => document.body.style.setProperty("--side-width", `${px}px`)
-  width(own(ovvi).sideWidth ?? 220)
+  let px = own(ovvi).sideWidth ?? 220
+  const width = () => document.body.style.setProperty("--side-width", `${px}px`)
+  width()
   grip.onpointerdown = (event) => {
     grip.setPointerCapture(event.pointerId)
-    grip.onpointermove = (move) => width(Math.round(Math.min(Math.max(move.clientX, 140), innerWidth * 0.6)))
+    grip.onpointermove = (move) => {
+      px = Math.round(Math.min(Math.max(move.clientX, 140), innerWidth * 0.6))
+      width()
+    }
     grip.onpointerup = () => {
       grip.onpointermove = grip.onpointerup = null
-      choose(ovvi, { sideWidth: parseInt(document.body.style.getPropertyValue("--side-width")) })
+      choose(ovvi, { sideWidth: px })
     }
   }
 
   const chosen = () => own(ovvi).side ?? ovvi.settings.get<string>("file-tree") === "tree"
   /** The root the card's tree last showed: the sidebar starts there. */
-  let wanted = "", file = "", drawn = "", reveal: Reveal, drop: Off | undefined
+  let wanted = "", file = "", drawn = "", dots: boolean | undefined, reveal: Reveal, drop: Off | undefined
   ovvi.on("settings", (changed) => "file-tree" in changed && show())
 
   function draw(root: string) {
     drop?.()
     drawn = root
+    dots = own(ovvi).hiddenFiles
     reveal = undefined
-    const offs: Off[] = [], held = (off: Off) => (offs.push(off), off)
+    const offs: Off[] = []
     let dropped = false
+    const held = (off: Off) => (dropped ? off() : offs.push(off), off)
     drop = () => {
       dropped = true
       for (const off of offs.splice(0)) off()
@@ -38,7 +44,8 @@ export function sidebar(ovvi: Ovvi) {
     }
     const element = aside.insertBefore(document.createElement("div"), grip)
     element.dataset.place = "files"
-    // The header and ⌘F are the file's.
+    // The header and ⌘F are the file's. ponytail: its own watch of the root and the hidden status bar's git reads, beside
+    // a kept tree page of the same root; share the runtime's watch if remote cards get slow.
     const scoped: Ovvi = Object.create(ovvi, {
       on: { value: (event: string, fn: never) => (["control", "find"].includes(event) ? () => {} : held(ovvi.on(event as "settings", fn))) },
       controls: { value: { get: () => undefined, set: () => {} } },
@@ -56,17 +63,32 @@ export function sidebar(ovvi: Ovvi) {
       },
     }
     void import("./files").then(({ show }) => show(place)).then((found) => {
-      if (!dropped) reveal = found
+      if (dropped) return
+      reveal = found
+      if (file !== place.at) found?.(file)
     }, console.error)
   }
 
   function show() {
     const on = chosen()
     document.body.toggleAttribute("data-side", on)
-    if (!on || !file) return
-    if (!drawn || (wanted && wanted !== drawn)) draw(wanted || file.slice(0, file.lastIndexOf("/") + 1))
-    else reveal?.(file)
+    if (!on) return give()
+    if (!file) return
+    if (!drawn || (wanted && wanted !== drawn) || own(ovvi).hiddenFiles !== dots) {
+      draw(wanted || drawn || file.slice(0, file.lastIndexOf("/") + 1))
+    } else {
+      reveal?.(file)
+    }
     wanted = ""
+  }
+
+  /** A hidden tree gives the keys to the page, as the runtime's `present` does. */
+  function give() {
+    let at = document.activeElement
+    if (!at || !aside.contains(at)) return
+    while (at.shadowRoot?.activeElement) at = at.shadowRoot.activeElement
+    if (at instanceof HTMLElement) at.blur()
+    dispatchEvent(new Event("focus"))
   }
 
   return {

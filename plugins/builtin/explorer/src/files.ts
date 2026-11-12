@@ -317,7 +317,8 @@ export async function show(place: Place): Promise<Reveal> {
   }
 
   async function reveal(path: string, offset?: "nearest") {
-    if (!path.startsWith(`${base}/`)) return
+    // The tree beside a file shows no row of a file outside its root.
+    if (!path.startsWith(`${base}/`)) return clear()
     const relative = path.slice(base.length + 1)
     if (!dotfiles && dotted(relative)) {
       dotfiles = true
