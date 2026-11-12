@@ -52,13 +52,13 @@ private struct Block: View {
         case let heading as Heading:
             let size: CGFloat = [22, 18, 16][min(max(heading.level, 1), 3) - 1]
             let weight: Font.Weight = heading.level < 3 ? .bold : .semibold
-            LinkedText(text: Inline.text(heading, size: size)).font(.system(size: size, weight: weight))
+            ChatLinks.text(Inline.text(heading, size: size)).font(.system(size: size, weight: weight))
         case let paragraph as Paragraph:
-            LinkedText(text: Inline.text(paragraph, size: 14))
+            ChatLinks.text(Inline.text(paragraph, size: 14))
         case let code as CodeBlock:
             ScrollView(.horizontal) {
                 // A code block's last newline is no line of its own.
-                LinkedText(text: ChatLinks.linked(code.code.hasSuffix("\n") ? String(code.code.dropLast()) : code.code))
+                ChatLinks.text(ChatLinks.linked(code.code.hasSuffix("\n") ? String(code.code.dropLast()) : code.code))
                     .font(.system(size: 12.5, design: .monospaced)).lineSpacing(2).fixedSize()
                     .padding(.horizontal, 12).padding(.vertical, 10)
             }
@@ -124,7 +124,7 @@ private struct TableGrid: View {
                 GridRow {
                     ForEach(rows[row].indices, id: \.self) { column in
                         let alignment = alignment(column)
-                        LinkedText(text: Inline.text(rows[row][column], size: 14))
+                        ChatLinks.text(Inline.text(rows[row][column], size: 14))
                             .fontWeight(row == 0 ? .semibold : nil)
                             .multilineTextAlignment(alignment == .trailing ? .trailing : .leading)
                             .padding(.horizontal, 10).padding(.vertical, 6)

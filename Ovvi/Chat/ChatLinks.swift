@@ -37,6 +37,15 @@ enum ChatLinks {
         return url
     }
 
+    /// A text without links stays a plain `Text`: no layout reads, hover tracking or `openURL` for most paragraphs.
+    @ViewBuilder static func text(_ text: AttributedString) -> some View {
+        if text.runs[\.link].contains(where: { $0.0 != nil }) {
+            LinkedText(text: text)
+        } else {
+            Text(text)
+        }
+    }
+
     static func link(_ url: URL) -> TerminalLink? {
         if url.scheme == scheme {
             let json = url.absoluteString.dropFirst(scheme.count + 1).removingPercentEncoding ?? ""
@@ -67,9 +76,7 @@ struct LinkedText: View {
 
     var body: some View {
         let links = text.runs[\.link].compactMap { url, range in url.map { ($0, range) } }
-        if links.isEmpty {
-            Text(text)
-        } else if links.count > Self.hovers {
+        if links.count > Self.hovers {
             Text(links.reduce(into: text) { text, link in
                 text[link.1].underlineStyle = .single
                 text[link.1].foregroundColor = color

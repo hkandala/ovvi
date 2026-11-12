@@ -2732,8 +2732,11 @@ ones".
   attribute lays the text out again and cleared a selection. Checked in the VM, frame by frame (hand cursor, the
   lighter link, the selection kept).
 - **Runs.** Chosen tests on CI: 43151059879 (before pictures), 43151068571 (after; the link test failed on its own
-  prompt: a message that starts with `/` is a command, for the TUI). VM: `testALinkInAChatOpensAsInTheTerminal` green,
-  the pictures. Pictures: `~/Downloads/ovvi-research/p57c4/`.
+  prompt: a message that starts with `/` is a command, for the TUI), 43157037400 (the chat, long-chat and switch tests:
+  13 of 15 green). Its two reds, `testALongChatShowsEarlierRowsInPlace` and `testSwitchesKeepHeavyCardsAsTheyWere`,
+  fail on main 3a547d91 in the VM too (1 of 2 runs): after the first send into an empty chat, a 25-turn history stays
+  at the top (C3's `.top` alignment anchor), not on "Last.". VM: the link test green on the final code, the pictures.
+  Pictures: `~/Downloads/ovvi-research/p57c4/`.
 - **For the user.** Hover a link and a path in a reply and in a tool's Output (the hand, the lighter link); ⌘-, ⌥-,
   ⌘⌥- and plain click on a path with `:line`; select text, then hover a link; the new line height in long replies,
   lists and code blocks.
