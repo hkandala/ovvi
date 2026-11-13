@@ -22,11 +22,7 @@ struct Detail: View {
                 let tab = kept.selectedWorkspace.flatMap { $0.tabs.isEmpty ? nil : $0.tabs[kept.selectedIndex(in: $0)] }
                 TabPages(tab: tab, page: kept, current: shown, overview: pages.overview)
             }
-            if special {
-                state(store)
-            } else {
-                noTabs()
-            }
+            state(store)
         }
         // Before the overlay: the page's own Loader still draws.
         .environment(\.pageReconnecting, reconnecting)
@@ -47,7 +43,7 @@ struct Detail: View {
         }
     }
 
-    /// The page shows its state in place of its tabs: the states `state` draws.
+    /// The page shows its state in place of its tabs.
     private func shows(_ store: HostStore) -> Bool {
         switch store.state {
         case .live: false
@@ -78,14 +74,14 @@ struct Detail: View {
             EmptyState(symbol: "arrow.up.circle", title: "herdr is too old", text: text + ".", id: "detail")
         case .failed where store.starting:
             Loader(symbol: "rectangle.stack", text: "Starting \(store.session)…", id: "detail.starting")
-        case .failed:
+        case .failed where !store.isRunning:
             let title = "\(store.session) is not running"
             EmptyState(symbol: "rectangle.stack", title: title, text: store.startProblem, id: "detail") {
                 Button("Start \(store.session)") { Task { await store.start() } }.buttonStyle(.glassProminent)
                     .accessibilityIdentifier("detail.start")
             }
-        case .live:
-            EmptyView()
+        case .live, .failed:
+            noTabs()
         }
     }
 
@@ -217,13 +213,8 @@ private struct TabPages: View {
                     .environment(\.pageHidden, !shows)
             }
         }
-        .onChange(of: tab?.id, initial: true) { shown = Array(recent) }
-        // Back to the shown page, only its tab is made, as for a page made again.
-        .onChange(of: current) {
-            if !current {
-                shown = []
-            }
-        }
+        // Away from the window's page, only kept chats' tabs stay; back on it, its tab, as for a page made again.
+        .onChange(of: current ? tab?.id : nil, initial: true) { shown = current ? Array(recent) : [] }
     }
 }
 
