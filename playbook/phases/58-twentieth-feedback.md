@@ -952,6 +952,26 @@ The user's files: `.build/fb57/r11-fontkeys-11.20.52.png`, `r11-tabslide-11.23.5
 43. "tab slide effect on tab bar is very laggy, and makes it look delayed when opening tabs which used to be snappy
     before [r11-tabslide]"
 
+#### Track T2: Findings
+
+- **Cause.** Measured in the VM with a probe that logged each commit's scroll offset, the selected capsule's place
+  and the key's time. Track T slid every new tab into view, ⌘T's too, from a `Task` a turn later. That turn waited
+  45–90 ms behind the main actor's work on the new tab's page, and the slide to ⌘T's stand-in capsule mostly moved
+  nothing: the bar scrolled only with herdr's answer (the real id), 340–790 ms after ⌘T with the bar full, partly
+  animated through a blocked main thread. Meanwhile the selected tab sat out of view. The user's recording shows the
+  same: the pill gone for 60–90 ms, then a slide. A tab already in view never moved, and the bar's width never
+  animated.
+- **Fix.** A new tab that opens selected (⌘T, New Tab) jumps into view as before Track T: a scroll in the same
+  update, again a turn later. With the bar full, ⌘T's tab was in view 160–270 ms after the key in the VM (mostly the
+  app's work before the bar sees the tab), one commit after it showed. Only a tab that opens in the background
+  (⌘-click, an agent, another client) still slides (item 27): the main thread is free then, and it drew a commit
+  every 15–20 ms. A swap of a stand-in for herdr's id (same count) never slides, so a fast ⌘T ⌘T stays on the
+  selected tab. The slide's guard against a later jump went: its completion came 3–65 ms after it began.
+- **Decisions.** No new test: one that fails on the old code would time the ⌘T step, and tests never assert
+  wall-clock time. TitleRowTests' ⌘T step checks only that the tab ends in view.
+- **For the user.** ⌘T with the bar full and not full: the new tab shows at once, with no slide. ⌘-click a link with
+  the bar full: the new tab slides in.
+
 ### Track E6: Git commit list, Explorer's tree width (items 45, 46)
 
 45. "so for the git commit tree, can we show author name as well in the list, also make the commit times relative

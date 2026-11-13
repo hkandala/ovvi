@@ -18,7 +18,6 @@ struct TabBar: View {
     @State private var hovered: String?
     @State private var landing: Landing?
     @State private var clicked: String?
-    @State private var opened: String?
     @State private var visible: ClosedRange<CGFloat> = 0 ... .infinity
     @State private var made = 0
     @Environment(\.look) private var look
@@ -122,24 +121,21 @@ struct TabBar: View {
                     .padding(.leading, min(content, space))
             }
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { space = $0 }
-            // One change for both: a tab that opens, in the background too, slides into view, and its selection during
-            // the slide scrolls nothing more; a tab selected another way comes into view at once.
+            // One change for both: a tab that opens in the background slides into view; a tab selected any other way, a
+            // new one too, comes into view at once. A slide to a new selected tab would start behind the main actor's
+            // work on its page and miss the stand-in's capsule. A stand-in's swap for herdr's id keeps the count.
             .onChange(of: [workspace.id, page.selectedTabIDs[workspace.id] ?? ""] + ids, initial: true) { old, new in
                 let known = Set(old.dropFirst(2)), fresh = new.dropFirst(2).filter { !known.contains($0) }
                 let shown = new[1], switched = old[0] != new[0]
-                if !switched, let id = fresh.contains(shown) ? shown : fresh.last {
-                    opened = id
+                if !switched, old[1] == shown, new.count > old.count, let id = fresh.last {
                     // A new tab's capsule lays out in this same update, and a scroll to it can miss: once it has.
-                    Task { withAnimation(.slide) { proxy.scrollTo(id) } completion: { opened = nil } }
-                } else if old == new || switched || old[1] != shown, !shown.isEmpty, shown != clicked,
-                          shown != opened
-                {
+                    Task { withAnimation(.slide) { proxy.scrollTo(id) } }
+                } else if old == new || switched || old[1] != shown, !shown.isEmpty, shown != clicked {
                     withTransaction(\.animation, nil) { proxy.scrollTo(shown) }
                     Task { proxy.scrollTo(shown) }
                 }
                 if old[1] != shown {
                     clicked = nil
-                    opened = nil
                 }
             }
         }
