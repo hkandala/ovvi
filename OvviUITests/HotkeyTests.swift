@@ -4,6 +4,13 @@ import XCTest
 extension OvviUITests {
     func testARecordedKeyShowsEverywhereAndASwapMovesTheOther() async throws {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
+        openSettings("keys")
+        addTeardownBlock { @MainActor [self] in
+            openSettings("keys")
+            element("keys.reset-all", in: settingsWindow).click()
+            XCTAssertTrue(element("keys.tab.new", in: settingsWindow).has(\.stringValue, "⌘T", within: 2))
+        }
+        escapeDeleteAndPlugins()
         recordAndSwap()
 
         // The menu bar, the palette, the ⌘/ panel and a tooltip read the new keys.
@@ -31,15 +38,8 @@ extension OvviUITests {
 
     /// New Tab gets ⌥⌘Y, then gives it to New Space for New Space's ⌃⌘T.
     private func recordAndSwap() {
-        openSettings("keys")
-        addTeardownBlock { @MainActor [self] in
-            openSettings("keys")
-            element("keys.reset-all", in: settingsWindow).click()
-            XCTAssertTrue(element("keys.tab.new", in: settingsWindow).has(\.stringValue, "⌘T", within: 2))
-        }
         let newTab = element("keys.tab.new", in: settingsWindow)
         let newSpace = element("keys.space.new", in: settingsWindow)
-        XCTAssertTrue(newTab.has(\.stringValue, "⌘T", within: 3))
         newTab.click()
         XCTAssertTrue(newTab.has(\.stringValue, "Type Shortcut", within: 2))
         // ⌘W records: it closes no window.
@@ -67,5 +67,30 @@ extension OvviUITests {
         XCTAssertTrue(newSpace.exists)
         settingsWindow.typeKey("w", modifierFlags: .command)
         XCTAssertTrue(settingsWindow.vanishes(within: 2))
+    }
+
+    /// Esc keeps the keys, Delete clears them and Reset gives the default back; a plugin's commands are a group.
+    private func escapeDeleteAndPlugins() {
+        let newTab = element("keys.tab.new", in: settingsWindow)
+        XCTAssertTrue(newTab.has(\.stringValue, "⌘T", within: 3))
+        newTab.click()
+        XCTAssertTrue(newTab.has(\.stringValue, "Type Shortcut", within: 2))
+        settingsWindow.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(newTab.has(\.stringValue, "⌘T", within: 2))
+        let split = element("keys.pane.split-right", in: settingsWindow)
+        split.click()
+        settingsWindow.typeKey(.delete, modifierFlags: [])
+        XCTAssertTrue(split.has(\.stringValue, "None", within: 2))
+        element("keys.pane.split-right.reset", in: settingsWindow).click()
+        XCTAssertTrue(split.has(\.stringValue, "⌘D", within: 2))
+        // A Form builds only the rows in view: File Explorer's group is at the end.
+        let search = element("keys.search", in: settingsWindow)
+        search.click()
+        search.typeText("lock editing")
+        XCTAssertTrue(element("keys.plugin.explorer.lock-editing", in: settingsWindow).has(\.stringValue, "⌘E",
+                                                                                           within: 2))
+        search.typeKey("a", modifierFlags: .command)
+        search.typeKey(.delete, modifierFlags: [])
+        XCTAssertTrue(newTab.exists(within: 2))
     }
 }

@@ -51,7 +51,8 @@ export interface Ovvi {
   /** The card moved to another place: after `card.go`, Back, Forward, or a rename from elsewhere. After Back, `at`
    *  is the place it came back from: that place's landing, else its argument. */
   on(event: "place", fn: (place: { arg: string; at?: string }) => void): Off
-  /** ⌘S, ⌘F, ⌘G, ⇧⌘G over the card, with `handles` in the manifest. */
+  /** The app's Save, Find, Find Next and Find Previous keys (⌘S, ⌘F, ⌘G, ⇧⌘G by default) over the card, with
+   *  `handles` in the manifest. */
   on(event: "save" | "find" | "findNext" | "findPrevious", fn: () => void): Off
   on(event: "visible" | "keyboard", fn: (yes: boolean) => void): Off
   on(event: "theme", fn: (theme: Theme) => void): Off
@@ -80,9 +81,9 @@ export type Off = () => void
 export interface Pages {
   /** Draws the card's places from this call on, starting with its current place: resolves once that page shows. A
    *  move to a place with a kept page shows that page at once; to another place, `draw` fills a new page, which shows
-   *  when its promise ends, and the shown page stays until then. A page left with unsaved edits is dropped. From this
-   *  call on ⌘← and ⌘→ go Back and Forward (manifest `history`), ahead of the page's own keys, unless a text field has
-   *  the keyboard. */
+   *  when its promise ends, and the shown page stays until then. A page left with unsaved edits is dropped. With
+   *  manifest `history`, the app's Back and Forward keys (⌃- ⌃⇧-, ⌘← ⌘→ by default, set in Settings) go Back and
+   *  Forward ahead of the page's own keys; an arrow key in a text field moves its caret instead. */
   route(draw: (page: Page) => Promise<void>): Promise<void>
 }
 
@@ -272,7 +273,7 @@ export type MenuItem = { value: string; title: string; symbol?: string } | { tit
 export interface Theme {
   dark: boolean
   style: "glass" | "classic"
-  /** The app's text size in points (⌘+ ⌘− ⌘0). */
+  /** The app's text size in points (the app's Increase, Decrease and Reset Font Size keys). */
   textSize: number
   /** The app's tokens as CSS colors; also CSS variables on the root (`--text`, …), with `--app-text-size`. The app
    *  sets the root's inline style anew with each theme: put the page's own variables in a style sheet. `card` is an

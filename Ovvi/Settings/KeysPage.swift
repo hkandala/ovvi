@@ -29,9 +29,7 @@ struct KeysPage: View {
         Form {
             Section {
                 HStack(spacing: 8) {
-                    TextField("Search", text: $search, prompt: Text("Search shortcuts"))
-                        .labelsHidden().textFieldStyle(.roundedBorder)
-                        .accessibilityIdentifier("keys.search")
+                    FilterField(prompt: "Search", text: $search, identifier: "keys.search", symbol: "magnifyingglass")
                     Button("Reset All") { hotkeys.resetAll() }.disabled(hotkeys.saved.isEmpty)
                         .accessibilityIdentifier("keys.reset-all")
                 }
@@ -75,7 +73,7 @@ struct KeysPage: View {
                 Spacer(minLength: 12)
                 KeyField(keys: keys, recording: recording == hotkey.id) {
                     clash = nil
-                    recording = recording == hotkey.id ? nil : hotkey.id
+                    recording = hotkey.id
                 }
                 .accessibilityIdentifier("keys.\(hotkey.id)")
                 Button("Reset", systemImage: "arrow.uturn.backward") { hotkeys.set(hotkey, hotkey.keys) }
@@ -89,8 +87,10 @@ struct KeysPage: View {
                         .accessibilityIdentifier("keys.\(hotkey.id).question")
                     Spacer()
                     Button("Cancel") { self.clash = nil }
-                    Button("Swap") { swap(clash) }.buttonStyle(.borderedProminent)
-                        .accessibilityIdentifier("keys.\(hotkey.id).swap")
+                    if !Hotkeys.fixed.contains(where: { $0.id == clash.other.id }) {
+                        Button("Swap") { swap(clash) }.buttonStyle(.borderedProminent)
+                            .accessibilityIdentifier("keys.\(hotkey.id).swap")
+                    }
                 }
                 .controlSize(.small)
             }
@@ -105,24 +105,26 @@ struct KeysPage: View {
         self.clash = nil
     }
 
-    /// A monitor sees a key ahead of the menu bar, so ⌘W records instead of closing the window.
+    /// A monitor sees a key ahead of the menu bar, so ⌘W records instead of closing the window. A click ends the
+    /// recording and does nothing else, so a click on the field stops it too.
     private func listen() {
         monitor.map(NSEvent.removeMonitor)
         monitor = nil
-        guard let id = recording else { return }
+        guard let id = recording, let window = NSApp.keyWindow else { return }
         monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .leftMouseDown]) { event in
-            MainActor.assumeIsolated { record(event, id) } ? nil : event
+            MainActor.assumeIsolated { record(event, id, in: window) } ? nil : event
         }
     }
 
     /// True when it took the event.
-    private func record(_ event: NSEvent, _ id: String) -> Bool {
+    private func record(_ event: NSEvent, _ id: String, in window: NSWindow) -> Bool {
         let hotkeys = Hotkeys.shared, plain = event.modifierFlags.isDisjoint(with: [.command, .control, .option])
-        guard event.type == .keyDown else {
+        guard event.window === window, event.type == .keyDown,
+              let hotkey = hotkeys.all.first(where: { $0.id == id })
+        else {
             recording = nil
-            return false
+            return event.window === window
         }
-        guard let hotkey = hotkeys.all.first(where: { $0.id == id }) else { return true }
         if plain, event.specialKey == .delete || event.specialKey == .deleteForward {
             hotkeys.set(hotkey, [])
         } else if plain, event.charactersIgnoringModifiers == "\u{1B}" {

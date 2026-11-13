@@ -206,8 +206,6 @@ const ovvi: Ovvi = {
   pages: {
     async route(fn) {
       draw = fn
-      addEventListener("focusin", typing, true)
-      addEventListener("focusout", typing, true)
       await fill(context.arg, context.at)
     },
   },
@@ -416,6 +414,8 @@ for (const level of ["log", "info", "warn", "error", "debug"] as const) {
 }
 addEventListener("error", (event) => console.error(event.error ?? event.message))
 addEventListener("unhandledrejection", (event) => console.error(event.reason))
+addEventListener("focusin", typing, true)
+addEventListener("focusout", typing, true)
 
 // WebKit makes the web view the window's first responder on any `focus()` while its page has none, which takes the
 // keyboard from the pane in use. A page takes the keyboard on its window's `focus` event.

@@ -40,13 +40,11 @@ extension KeyboardShortcut {
     }
 
     /// Takes the key even when the command is disabled, and in a text field too: else ⌃⇥ goes on to AppKit's key
-    /// view loop, which steps the panes.
-    /// Only a command's keys: Back's ⌘← stays the page's.
+    /// view loop, which steps the panes. Only a command's keys: Back's ⌘← stays the page's.
     @MainActor static func second(_ event: NSEvent) -> Bool {
-        guard let commands = CommandList.keyWindow,
-              let first = Hotkeys.app.lazy.map(Hotkeys.shared.keys)
-                  .first(where: { $0.dropFirst().contains { $0.matches(event) } })?.first,
-              commands.contains(where: { $0.key == first }) else { return false }
+        guard let first = Hotkeys.app.lazy.map(Hotkeys.shared.keys)
+            .first(where: { $0.dropFirst().contains { $0.matches(event) } })?.first,
+            let commands = CommandList.keyWindow, commands.contains(where: { $0.key == first }) else { return false }
         commands.run { $0 == first }
         return true
     }

@@ -183,13 +183,18 @@ the tooltips and the text that names a key.
   action's title and its keys as keycaps, or None.
 - **Recording.** A click on the keys asks for new ones: the field says Type
   Shortcut. The next key with ⌘, ⌃ or ⌥ becomes the action's only key. ⎋
-  cancels, ⌫ clears the key, a click elsewhere cancels, and a key with no ⌘,
-  ⌃ or ⌥ beeps and waits. Keys the app uses (⌘W, ⌘,) record too.
+  cancels, ⌫ clears the key, a click anywhere (the field too) only cancels,
+  and a key with no ⌘, ⌃ or ⌥ beeps and waits. Keys the app uses (⌘W, ⌘,)
+  record too.
 - **Conflicts.** A key another action already has where this one works asks
   under the row: "⌥⌘Y is New Space's key." with Cancel and Swap. Swap gives the
   other action this one's old key. Two actions only conflict where both work:
   a browser's ⌘R and a terminal's ⌥⌘R never meet, and neither do two plugins'
-  keys. A row whose key another action holds (a plugin's key that the app
+  keys. So each such action has its key only where it works: Reload Page only
+  over a browser card, Insert Path only over a terminal, as Save and Find
+  Previous only over an editor. macOS's own keys (⌘Q, ⌘H, ⌥⌘H, ⌘M, ⌘Z, ⇧⌘Z,
+  ⌘X, ⌘C, ⌘V, ⌘A, ⌃⌘F) are never an action's: the question has Cancel
+  only. A row whose key another action holds (a plugin's key that the app
   uses) shows a warning symbol that names the other action; the app's action
   keeps the key.
 - **Reset.** A changed row shows a reset button that gives back its default
@@ -198,6 +203,9 @@ the tooltips and the text that names a key.
   example `"keys": { "tab.new": ["option+cmd+y"] }`; an empty list is no key.
   An action with no entry has its default keys
   ([Keyboard shortcuts](/docs/ui/theme-and-accessibility#keyboard-shortcuts)).
+- With no main window in front (Settings, About), Close Pane's key closes the
+  window. Back and Forward work over a plugin card with `history`; elsewhere
+  the page keeps the keys.
 - Keys that belong to a control are not in the list and stay fixed: ↩, ⎋, ⇥,
   arrows and typing in a list, a field, the chooser or a dialog; Return and
   ⇧Return in a chat's composer, Esc to stop the agent; Esc to leave the

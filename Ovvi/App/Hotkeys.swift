@@ -17,16 +17,15 @@ struct Hotkey: Identifiable {
     var family: (title: String, keys: String)?
 
     init(_ id: String, _ title: String, _ group: String, keys chords: [String], scope: String? = nil,
-         top: Bool = false, family: (String, String)? = nil)
+         top: Bool = false, family: (title: String, keys: String)? = nil)
     {
-        (self.id, self.title, self.group, self.scope, self.top) = (id, title, group, scope, top)
+        (self.id, self.title, self.group, self.scope, self.top, self.family) = (id, title, group, scope, top, family)
         keys = chords.compactMap(KeyboardShortcut.init(chord:))
-        self.family = family.map { (title: $0.0, keys: $0.1) }
         assert(keys.count == chords.count, "\(id): a default key that does not read")
     }
 
     init(_ id: String, _ title: String, _ group: String, _ chords: String..., scope: String? = nil, top: Bool = false,
-         family: (String, String)? = nil)
+         family: (title: String, keys: String)? = nil)
     {
         self.init(id, title, group, keys: chords, scope: scope, top: top, family: family)
     }
@@ -47,6 +46,17 @@ final class Hotkeys {
     private(set) var saved = (PluginPackages.value("keys", in: Registry.settings) as? [String: Any])?
         .compactMapValues { $0 as? [String] } ?? [:]
 
+    /// macOS's and AppKit's own keys, ahead of the app's in the menu bar: no action can take them.
+    static let fixed = [
+        Hotkey("macos.quit", "Quit Ovvi", "macOS", "cmd+q"), Hotkey("macos.hide", "Hide Ovvi", "macOS", "cmd+h"),
+        Hotkey("macos.hide-others", "Hide Others", "macOS", "option+cmd+h"),
+        Hotkey("macos.minimize", "Minimize", "macOS", "cmd+m"), Hotkey("macos.undo", "Undo", "macOS", "cmd+z"),
+        Hotkey("macos.redo", "Redo", "macOS", "shift+cmd+z"), Hotkey("macos.cut", "Cut", "macOS", "cmd+x"),
+        Hotkey("macos.copy", "Copy", "macOS", "cmd+c"), Hotkey("macos.paste", "Paste", "macOS", "cmd+v"),
+        Hotkey("macos.select-all", "Select All", "macOS", "cmd+a"),
+        Hotkey("macos.full-screen", "Enter Full Screen", "macOS", "ctrl+cmd+f"),
+    ]
+
     static let groups = ["App", "Sessions", "Spaces", "Tabs", "Panes", "Terminal", "Edit", "Browser", "Plugins"]
 
     var all: [Hotkey] {
@@ -63,7 +73,8 @@ final class Hotkeys {
 
     /// The action, other than `hotkey`, that `key` already runs where `hotkey` works.
     func clash(_ key: KeyboardShortcut, for hotkey: Hotkey, in list: [Hotkey]? = nil) -> Hotkey? {
-        (list ?? all).first { $0.id != hotkey.id && Self.overlap($0.scope, hotkey.scope) && keys($0).contains(key) }
+        ((list ?? all) + Self.fixed)
+            .first { $0.id != hotkey.id && Self.overlap($0.scope, hotkey.scope) && keys($0).contains(key) }
     }
 
     private static func overlap(_ one: String?, _ other: String?) -> Bool {
@@ -89,18 +100,14 @@ final class Hotkeys {
         }
     }
 
-    /// The first key of one of the app's actions, as the user set it.
-    static subscript(_ id: String) -> KeyboardShortcut? {
-        byID[id].flatMap { shared.keys($0).first }
-    }
-
     static func keys(_ id: String) -> [KeyboardShortcut] {
-        byID[id].map(shared.keys) ?? []
+        assert(byID[id] != nil, "no action \(id)")
+        return byID[id].map(shared.keys) ?? []
     }
 
     /// For text that names a key: its glyphs, or the action's title when it has none.
     static func named(_ id: String) -> String {
-        self[id]?.glyphs ?? byID[id]?.title ?? id
+        keys(id).first?.glyphs ?? byID[id]?.title ?? id
     }
 
     private static let byID = Dictionary(app.map { ($0.id, $0) }) { first, _ in first }
@@ -116,7 +123,6 @@ extension Hotkeys {
         Hotkey("app.new-window", "New Window", "App", "cmd+n", top: true),
         Hotkey("app.sidebar", "Toggle Sidebar", "App", "ctrl+cmd+s", top: true),
         Hotkey("app.overview", "Show Overview", "App", "ctrl+cmd+o", top: true),
-        Hotkey("app.full-screen", "Enter Full Screen", "App", "ctrl+cmd+f"),
         Hotkey("app.bigger", "Increase Font Size", "App", "cmd++", "cmd+=", top: true),
         Hotkey("app.smaller", "Decrease Font Size", "App", "cmd+-", top: true),
         Hotkey("app.actual-size", "Reset Font Size", "App", "cmd+0", top: true),
@@ -197,7 +203,7 @@ extension Hotkeys {
     private static func jumps(_ id: String, _ level: String, _ group: String, _ modifiers: String) -> [Hotkey] {
         (1 ... 9).map {
             Hotkey("\(id).\($0)", "Show \(level) \($0)", group, "\(modifiers)\($0)", top: true,
-                   family: ("Show \(level) 1–9", "1–9"))
+                   family: (title: "Show \(level) 1–9", keys: "1–9"))
         }
     }
 
@@ -206,7 +212,7 @@ extension Hotkeys {
             let chords = modifiers.map { [$0 + side] } ?? []
             return Hotkey("pane.\(id)-\(side)", "\(title) \(side.capitalized)", "Panes", keys: chords,
                           top: modifiers != nil,
-                          family: (title, "←→↑↓"))
+                          family: (title: title, keys: "←→↑↓"))
         }
     }
 }
@@ -216,24 +222,22 @@ extension KeyboardShortcut {
         "left": .leftArrow, "right": .rightArrow, "up": .upArrow, "down": .downArrow, "return": .return, "tab": .tab,
         "space": .space, "escape": .escape, "delete": .delete, "plus": "+",
     ]
+    private static let modifierNames: [(String, EventModifiers)] = [
+        ("ctrl", .control), ("option", .option), ("shift", .shift), ("cmd", .command),
+    ]
 
     init?(chord text: String) {
         guard let chord = Chord(text) else { return nil }
-        let pairs: [(String, EventModifiers)] = [("ctrl", .control), ("option", .option), ("shift", .shift),
-                                                 ("cmd", .command)]
         self.init(Self.named[chord.key] ?? KeyEquivalent(Character(chord.key)),
-                  modifiers: EventModifiers(pairs.filter { chord.modifiers.contains($0.0) }.map(\.1)))
+                  modifiers: EventModifiers(Self.modifierNames.filter { chord.modifiers.contains($0.0) }.map(\.1)))
     }
 
     var chord: String {
-        let pairs: [(String, EventModifiers)] = [("ctrl", .control), ("option", .option), ("shift", .shift),
-                                                 ("cmd", .command)]
         let name = Self.named.first { $0.value == key }?.key ?? String(key.character)
-        return Chord(modifiers: Set(pairs.filter { modifiers.contains($0.1) }.map(\.0)), key: name)?.description ?? ""
+        let names = Self.modifierNames.filter { modifiers.contains($0.1) }.map(\.0)
+        return Chord(modifiers: Set(names), key: name)?.description ?? ""
     }
-}
 
-extension KeyboardShortcut {
     /// The key as the user typed it, with its unshifted character (⇧⌘[ is `[`, not `{`); nil for a key no chord
     /// names (F1, or one with no ⌘, ⌃ or ⌥).
     init?(event: NSEvent) {
@@ -242,21 +246,16 @@ extension KeyboardShortcut {
             .enter: "return", .tab: "tab", .backTab: "tab", .delete: "delete",
         ]
         let typed = event.characters(byApplyingModifiers: [])?.lowercased() ?? ""
-        let flags = event.modifierFlags
-        let pairs: [(NSEvent.ModifierFlags, String)] = [(.control, "ctrl"), (.option, "option"), (.shift, "shift"),
-                                                        (.command, "cmd")]
         let key = event.specialKey.flatMap { specials[$0] } ?? [" ": "space", "\u{1B}": "escape"][typed] ?? typed
+        let names = Self.modifierNames.filter { event.modifierFlags.contains(Self("a", modifiers: $0.1).modifierFlags) }
+            .map(\.0)
         guard key.unicodeScalars.allSatisfy({ !(0xF700 ... 0xF8FF).contains($0.value) }),
-              let chord = Chord(modifiers: Set(pairs.filter { flags.contains($0.0) }.map(\.1)), key: key)
-        else { return nil }
+              let chord = Chord(modifiers: Set(names), key: key) else { return nil }
         self.init(chord: chord.description)
     }
-}
 
-@MainActor
-extension KeyboardShortcut {
     /// `key: .hotkey("tab.new")`: the first key of one of the app's actions, as the user set it.
-    static func hotkey(_ id: String) -> KeyboardShortcut? {
-        Hotkeys[id]
+    @MainActor static func hotkey(_ id: String) -> KeyboardShortcut? {
+        Hotkeys.keys(id).first
     }
 }

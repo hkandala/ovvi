@@ -20,11 +20,11 @@ struct BrowserToolbar: View {
                 IconButton(symbol: "chevron.right", help: "Forward", size: 22) { browser.view.goForward() }
                     .disabled(!browser.canGoForward)
                 let loading = browser.loading
-                IconButton(symbol: loading ? "xmark" : "arrow.clockwise", help: loading ? "Stop" : "Reload", size: 22) {
-                    browser.loading ? browser.view.stopLoading() : browser.reload()
-                }
-                .disabled(!loading && !browser.canReload)
-                .accessibilityIdentifier("\(id).reload")
+                IconButton(symbol: loading ? "xmark" : "arrow.clockwise", help: loading ? "Stop" : "Reload",
+                           key: loading ? nil : .hotkey("browser.reload"), size: 22,
+                           action: { browser.loading ? browser.view.stopLoading() : browser.reload() })
+                    .disabled(!loading && !browser.canReload)
+                    .accessibilityIdentifier("\(id).reload")
             }
             .foregroundStyle(look.paneButton)
             address(id)

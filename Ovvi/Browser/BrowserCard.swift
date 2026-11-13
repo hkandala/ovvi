@@ -20,17 +20,34 @@ extension Page {
 extension CommandList {
     static func browser(_ browser: Browser?, chooser: Chooser?) -> [Command] {
         [
-            Command(section: .view, title: "Reload Page", key: .hotkey("browser.reload"), symbol: "arrow.clockwise",
-                    keywords: "refresh browser", enabled: browser?.canReload == true) { browser?.reload() },
-            Command(section: .edit, title: "Open Location", key: .hotkey("browser.location"), symbol: "link",
-                    keywords: "address url browser folder", enabled: browser != nil || chooser != nil,
-                    action: {
-                        browser?.wantsAddress = true
-                        chooser?.editing = true
-                    }),
-            Command(section: .edit, title: "Show Web Inspector", key: .hotkey("browser.inspector"),
-                    symbol: "hammer", keywords: "developer tools devtools browser",
-                    enabled: browser?.loaded == true) { browser?.view.showInspector() },
+            Command(
+                section: .view,
+                title: "Reload Page",
+                key: browser == nil ? nil : .hotkey("browser.reload"),
+                symbol: "arrow.clockwise",
+                keywords: "refresh browser",
+                enabled: browser?.canReload == true,
+            ) { browser?.reload() },
+            Command(
+                section: .edit,
+                title: "Open Location",
+                key: browser == nil && chooser == nil ? nil : .hotkey("browser.location"),
+                symbol: "link",
+                keywords: "address url browser folder",
+                enabled: browser != nil || chooser != nil,
+                action: {
+                    browser?.wantsAddress = true
+                    chooser?.editing = true
+                },
+            ),
+            Command(
+                section: .edit,
+                title: "Show Web Inspector",
+                key: browser == nil ? nil : .hotkey("browser.inspector"),
+                symbol: "hammer",
+                keywords: "developer tools devtools browser",
+                enabled: browser?.loaded == true,
+            ) { browser?.view.showInspector() },
         ]
     }
 }

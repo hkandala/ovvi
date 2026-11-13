@@ -31,7 +31,9 @@ struct CommandList {
             return floatingCommands(floating)
         }
         let page = pages?.current, pages = pages, workspace = page?.selectedWorkspace, tab = page?.selectedTab
-        let live = page?.store.state == .live, editor = page?.editor
+        let live = page?.store.state == .live
+        // A key only where its action works (Settings ▸ Keyboard Shortcuts' scopes): a disabled item swallows it.
+        let terminal = page?.keyboardPane.map { $0.plugin == nil } == true
         let file = [
             Command(section: .app, title: "Plugins…", group: .plugins, symbol: SettingsPage.plugins.symbol,
                     keywords: "install update remove packages npm git settings",
@@ -49,7 +51,7 @@ struct CommandList {
                     keywords: "create start switch", enabled: openSession != nil, action: {
                         openSession?.wrappedValue = true
                     }),
-            Command(section: .file, title: "Go to Directory…", key: editor == nil ? .hotkey("terminal.directory") : nil,
+            Command(section: .file, title: "Go to Directory…", key: terminal ? .hotkey("terminal.directory") : nil,
                     group: .edit, symbol: "folder", keywords: "cd folder path navigate",
                     enabled: page?.store.machine.isRemote == false
                         && page?.keyboardPane.map { $0.program?.isShell == true && $0.plugin == nil } == true,
@@ -93,11 +95,10 @@ struct CommandList {
                     }),
             Command(section: .close, title: "Close Window", symbol: "xmark") { NSApp.keyWindow?.performClose(nil) },
         ]
-        let terminal = page?.keyboardPane.map { $0.plugin == nil } == true
         let browser = page?.keyboardPane.flatMap { page?.browser($0) }
         let chat = page?.keyboardPane.flatMap { page?.shownChat($0) } != nil
         let edit = [
-            Command(section: .edit, title: "Insert Path…", key: .hotkey("terminal.insert-path"),
+            Command(section: .edit, title: "Insert Path…", key: terminal ? .hotkey("terminal.insert-path") : nil,
                     symbol: "text.insert", keywords: "file folder path",
                     enabled: terminal) { Task { await page?.choosePath(directory: false) } },
         ] + Self.editorCommands(page: page, pane: nil, terminal: live && terminal && !chat) { [page] in page?.editor }
@@ -214,7 +215,7 @@ struct CommandList {
             ),
             // AppKit's View menu has its own item and key.
             Command(section: .palette, title: fullScreen ? "Exit Full Screen" : "Enter Full Screen",
-                    key: .hotkey("app.full-screen"),
+                    key: .init("f", modifiers: [.command, .control]),
                     symbol: "arrow.up.left.and.arrow.down.right") { NSApp.keyWindow?.toggleFullScreen(nil) },
             Self.reloadPlugins,
             Command(section: .palette, title: "Settings…", symbol: "gearshape", keywords: "preferences options",
@@ -285,6 +286,8 @@ extension CommandList {
                            let event = NSApp.currentEvent
                            let arrow = event?.type == .keyDown && [kVK_LeftArrow, kVK_RightArrow]
                                .contains(event.map { Int($0.keyCode) })
+                               && event?.modifierFlags.intersection([.command, .shift, .option, .control])
+                               == [.command, .shift]
                            let select = offset < 0 ? #selector(NSResponder.moveToBeginningOfLineAndModifySelection)
                                : #selector(NSResponder.moveToEndOfLineAndModifySelection)
                            let responder = NSApp.keyWindow?.firstResponder

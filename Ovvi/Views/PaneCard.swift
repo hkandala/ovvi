@@ -261,7 +261,7 @@ private extension PaneCard {
         let store = page.store
         return HStack(spacing: 2) {
             if !zoomed {
-                IconButton(symbol: "pip.enter", help: "Float Pane", size: 22,
+                IconButton(symbol: "pip.enter", help: "Float Pane", key: .hotkey("pane.float"), size: 22,
                            accent: store.pane(id).map(page.floats) == true, action: {
                                if let pane = store.pane(id) {
                                    page.float(pane)

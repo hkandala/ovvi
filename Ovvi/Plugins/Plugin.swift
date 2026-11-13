@@ -102,7 +102,8 @@ final class Plugin {
         header = Header(manifest: manifest)
         name()
         web.bridge = Bridge(plugin: self)
-        web.view.step = { [weak self] back in
+        // Without history the keys stay the page's.
+        web.view.step = !manifest.history ? nil : { [weak self] back in
             guard let self, back ? canGoBack : canGoForward else { return }
             if back {
                 goBack()

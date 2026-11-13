@@ -46,7 +46,8 @@ struct WorkspaceMenu: View {
                             drop: MenuRowDrop.Target(page: page, destination: .newWorkspace(), shown: open),
                             act: { Task { await page.newWorkspace() } }),
             FilterList.Item(id: "open-session", symbol: "plus.square.on.square", title: "Open Session…",
-                            detail: Hotkeys.named("session.open"), section: "", act: openSession),
+                            detail: KeyboardShortcut.hotkey("session.open")?.glyphs ?? "", section: "",
+                            act: openSession),
         ]
     }
 }
