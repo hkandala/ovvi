@@ -571,6 +571,23 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
     button, and relaunch with chat works fine now, and relaunched chat has transcript and works as expected, we need to
     make sure to show relaunch with chat even on resumeed codex conversation with no prompt yet"
 
+#### Findings (Track X2)
+
+- **Cause.** Relaunch with Chat shows only when the app knows the pane's session, and that was herdr's
+  `agent_session` alone. herdr's Codex integration reports it from Codex's SessionStart hook, which Codex runs at the
+  first turn, a resumed session's too (Track X). Spiked: herdr clears `agent_session` when the agent exits, and
+  `pane.process_info` lists the resumed agent's argv with the id.
+- **Fix.** A pane's session is herdr's report, else the UUID after `resume` in its foreground processes' argv
+  (`codex resume <id>`). One rule for every agent and machine; herdr's report wins once it comes. Not any UUID there:
+  the foreground group holds Codex's MCP servers too, and `codex fork <id>` names the parent. Archived Sessions'
+  "live" sessions read the same value, so a resumed Codex with no prompt counts as open there too.
+- **Decisions.** `codex resume`'s picker and `--last` put no id in argv: that pane shows the button from its first
+  prompt, as before. Finding the rollout the process holds open (`lsof`, `/proc`) would cover them, at one more run
+  per pane and two ways for two systems; not done. A session switched to inside Codex (`/new`, `/resume`) before a
+  prompt relaunches as the command line's until then (it has no turns yet).
+- **For the user.** With a real Codex: `codex resume <id>` in a pane, no prompt: the button shows; Relaunch with Chat
+  shows the history.
+
 ### Track B: recently closed browser pages (item 34)
 
 34. "for browser, can we show history icon left to the developer tools icon, and clicking on it we should show a drop

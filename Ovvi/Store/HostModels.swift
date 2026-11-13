@@ -110,10 +110,12 @@ extension HostStore {
             return [name, folder].plainTitle
         }
 
-        /// herdr's report, else the session the agent's command line names (`codex resume <id>`): Codex runs the
-        /// hook that reports it to herdr only at its first prompt.
+        /// herdr's report, else the id after `resume` in the agent's command line (`codex resume <id>`): Codex runs
+        /// the hook that reports it to herdr only at its first prompt. Not any id there: an MCP server's, `fork`'s.
         var session: String? {
-            reportedSession ?? program?.foreground.lazy.flatMap(\.argv).compactMap(ChatAdapters.uuid).first
+            reportedSession ?? program?.foreground.lazy.compactMap {
+                $0.argv.drop { $0 != "resume" }.lazy.compactMap(ChatAdapters.uuid).first
+            }.first
         }
 
         var programName: String? {

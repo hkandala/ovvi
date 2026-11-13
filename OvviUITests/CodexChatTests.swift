@@ -49,6 +49,7 @@ extension OvviUITests {
     /// in its command line, and the chat shows the session's history.
     func testRelaunchWithChatShowsACodexSessionsHistory() async throws {
         let home = Self.archivedHome + "/.codex"
+        try? FileManager.default.removeItem(atPath: home)
         defer { try? FileManager.default.removeItem(atPath: home) }
         let pane = try await startChat(agent: 1, environment: "CODEX_HOME=\(home) ", chat: false, plain: true).pane
         try await waitFor(pane) { $0.contains("Ask Codex") }

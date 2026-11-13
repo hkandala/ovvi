@@ -279,7 +279,9 @@ below. Everything else goes to the agent's own files, on its machine.
   The app writes only the `ovvi-chat` token (above) for a chat.
 - **The session.** Each pane's `agent_session` in the snapshot names its
   agent's session, for [Session titles](/docs/ui/chat-view#session-titles)
-  and [Relaunch with Chat](/docs/ui/chat-view#relaunch-with-chat).
+  and [Relaunch with Chat](/docs/ui/chat-view#relaunch-with-chat). Until
+  herdr reports one, the UUID after `resume` in the foreground argv is the
+  session for Relaunch with Chat (`codex resume <id>`).
 - **Send** is `agent.prompt {target, text}`. herdr refuses it ("no longer the
   pane foreground process") unless a foreground process has the agent's
   name, and while herdr reports the agent blocked (pi-ovvi reports pi's
