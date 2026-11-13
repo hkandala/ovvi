@@ -311,8 +311,9 @@ Esc go by the chat's phase.
 ### Codex's screen check
 
 herdr reports a Codex picker or dialog as idle. So while herdr says idle or
-working and the card's terminal is in view (a kept chat out of view reads
-nothing and keeps its last state), the adapter reads the pane's last 8 lines
+working and Ovvi shows the card, as `ovvi-shown` counts it (the shown tab of a
+visible window, the zoomed card when there is one, or a floating card; a kept
+chat out of view reads nothing and keeps its last state), the adapter reads the pane's last 8 lines
 every 0.5 s
 (`pane.read {source:"recent"}`), one request over herdr's socket with no
 process ([Requests](/docs/talking-to-herdr#requests)).
