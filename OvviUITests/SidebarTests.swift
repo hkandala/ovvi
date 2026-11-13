@@ -61,13 +61,14 @@ extension OvviUITests {
         keepScreenshot("open session lit by the pointer")
         app.typeKey(.escape, modifierFlags: [])
         app.typeKey("k", modifierFlags: .command)
-        let tab = element("palette.tab.w1:t1"), workspace = element("palette.workspace.\(one).w2")
-        XCTAssertTrue(workspace.exists(within: 2))
-        workspace.hover()
-        XCTAssertTrue(workspace.has(\.isSelected, true, within: 2))
+        // The first rows: on CI's short screen the Spaces rows start below the list's fold.
+        let tab = element("palette.tab.w1:t1"), other = element("palette.tab.w1:t2")
+        XCTAssertTrue(other.exists(within: 2))
+        other.hover()
+        XCTAssertTrue(other.has(\.isSelected, true, within: 2))
         tab.hover()
         XCTAssertTrue(tab.has(\.isSelected, true, within: 2))
-        XCTAssertFalse(workspace.isSelected)
+        XCTAssertFalse(other.isSelected)
     }
 
     func testOptionSwipesMoveBetweenSessionsAndWorkspaces() async throws {

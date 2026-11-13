@@ -40,6 +40,8 @@ extension OvviUITests {
 
     /// Settings ▸ Shortcuts and the ⌘/ panel in both looks: the page, a search, recording, a conflict.
     func testKeyboardShortcutsScenes() {
+        // Two looks of about 85 s each on CI.
+        executionTimeAllowance = 300
         for appearance in ["dark", "light"] {
             relaunch(one, ["-appearance", appearance])
             XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
