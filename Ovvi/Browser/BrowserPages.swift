@@ -207,6 +207,8 @@ extension Browser {
             // Not over a newer page's.
             guard view.url == page, let href = found?.first as? String, href != icon?.href else { return }
             icon = (href, (found?.last as? String).flatMap { Data(base64Encoded: $0) }.flatMap(NSImage.init(data:)))
+            iconPNG = icon?.image.flatMap(ClosedPages.png)
+            save()
         }
     }
 

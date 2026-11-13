@@ -271,10 +271,11 @@ docked at the bottom of the card. Its own control moves it to a window.
 ## Recently closed pages
 
 The Recently Closed button drops a menu down from under it: "Recently
-Closed", then the pages closed on the card's machine, newest first, each
-with its title and its host under it, else its host or file name alone (cut
-at 60 characters). The menu shows at most 20, and says "No Recently Closed
-Pages" when there are none.
+Closed", then the pages closed on the card's machine, newest first, at most
+20. Each row is one line: the page's icon at 16 pt (the `globe` when it had
+none), then its title, else its host or file name, cut at 320 pt with an
+ellipsis. The row's tooltip has the whole title and the address. The menu says
+"No Recently Closed Pages" when there are none.
 - **What counts.** A browser card that Ovvi closes: its pane (Close Pane,
   ⌘W), its tab, Close Other Tabs, or its space. A page left by a navigation,
   a Replace Pane, or a pane that a process closes through herdr does not count.
@@ -286,17 +287,17 @@ Pages" when there are none.
   ([When a page loads by itself](#when-a-page-loads-by-itself)).
 - **Kept on the machine**, one list for every session and device there:
   `$HOME/.local/state/ovvi/closed-pages.json`, a JSON list of
-  `{"url": …, "title": …}`, the newest 20. A close adds its pages at the top
+  `{"url": …, "title": …, "icon": …}`, the newest 20. A close adds its pages at the top
   and drops an older entry with the same address, and the 21st goes. The
-  address and title come from each card's state file, read before the close
-  (else the label's address, with no title). The app reads the file each time
+  address, title and icon come from each card's state file, read before the
+  close (else the label's address alone). The app reads the file each time
   the menu opens, and writes it as it writes a state file: in the app on This
   Mac, through the machine's shell on a remote machine. One app changes it one write at a time per machine; two devices that
   close pages on one machine at the same moment keep one device's change.
 - The file holds addresses as the machine sees them. A process on the machine
   can write it, so the app skips any entry a browser card there could not show
-  (another scheme, a `file:` page on a remote machine), and a pick loads only by
-  the load rule.
+  (another scheme, a `file:` page on a remote machine) and any icon over 16 KiB,
+  and a pick loads only by the load rule.
 
 ## State on the machine
 
@@ -304,13 +305,13 @@ The page and its back and forward list are saved on the pane's machine, in
 the instance state file
 ([State](/docs/plugins/api#state)):
 `$HOME/.local/state/ovvi/<session>/browser/<iid>.json`.
-- It holds `{"url": …, "title": …, "history": …}`. `url` is as the machine
-  sees it. `title` is the page's title, for
-  [Recently closed pages](#recently-closed-pages).
+- It holds `{"url": …, "title": …, "icon": …, "history": …}`. `url` is as the
+  machine sees it. `title` is the page's title and `icon` its icon (a 32 px
+  PNG in base64), for [Recently closed pages](#recently-closed-pages).
   `history` is WebKit's `interactionState` (the back and forward list) in
   base64, left out at 128 KiB and over.
 - Written 500 ms after a navigation ends, the address changes (a
-  single-page app's route) or the title changes. Last writer wins. Nothing is written after the
+  single-page app's route), the title changes, or the icon loads. Last writer wins. Nothing is written after the
   pane closed.
 - Read when the card is built: a relaunch, a session restart, another
   device. The card opens the saved page with its history, else the label's

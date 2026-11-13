@@ -3,7 +3,7 @@ import Network
 import WebKit
 
 extension URL {
-    var isWebAddress: Bool {
+    nonisolated var isWebAddress: Bool {
         scheme.map { ["http", "https"].contains($0.lowercased()) } ?? false
     }
 }
@@ -23,7 +23,7 @@ extension Browser {
         ("\(url.scheme ?? "")://\(url.host ?? "")" + (url.port.map { ":\($0)" } ?? "")).lowercased()
     }
 
-    static func url(_ text: String, local: Bool) -> URL? {
+    nonisolated static func url(_ text: String, local: Bool) -> URL? {
         let text = text.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty, text.count <= PaneLabel.argLimit else { return nil }
         let full = text.contains("://") ? text : "http://\(text)"

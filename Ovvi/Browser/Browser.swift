@@ -14,6 +14,8 @@ final class Browser: NSObject {
     var address = ""
     private(set) var title = ""
     var icon: (href: String, image: NSImage?)?
+    /// The icon in the state file, for the closed pages' list.
+    @ObservationIgnored var iconPNG: String?
     private(set) var loading = false
     private(set) var progress = 0.0
     private(set) var canGoBack = false
@@ -276,6 +278,7 @@ final class Browser: NSObject {
         guard let store, let url = view.url.map({ Self.shown($0, alias).absoluteString }), url != "about:blank"
         else { return }
         var state = ["url": url, "title": title]
+        state["icon"] = iconPNG
         if let history = view.interactionState as? Data, history.count < 128 << 10 {
             state["history"] = history.base64EncodedString()
         }

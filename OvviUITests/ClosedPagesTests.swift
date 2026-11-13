@@ -22,16 +22,18 @@ extension OvviUITests {
         element("pane.\(gone).close").click()
         XCTAssertTrue(element("pane.\(gone)").vanishes(within: 3))
 
-        // Newest first, 20 at most: the oldest two went. A title reads with its host, a file page has none.
+        // Newest first, 20 at most: the oldest two went. A title too long ends in an ellipsis.
         func expectMenu(_ titles: [String], _ count: Int) {
             element("browser.\(kept).closed").click()
             XCTAssertTrue(closedItem(0).exists(within: 5))
-            XCTAssertEqual(titles, titles.indices.map { closedItem($0).title })
+            XCTAssertEqual(titles, titles.indices.map(closedTitle))
             XCTAssertTrue(closedItem(count - 1).exists)
             XCTAssertFalse(closedItem(count).exists)
         }
-        expectMenu(["Two", "One", "Old 0, old0.invalid"], 20)
-        XCTAssertEqual(closedItem(19).title, "Old 17, old17.invalid")
+        expectMenu(["Two", "One", "Old 0"], 20)
+        XCTAssertEqual(closedTitle(19), "Old 17")
+        let long = closedTitle(7)
+        XCTAssertTrue(long.hasPrefix("Old 5 xxx") && long.hasSuffix("…") && long.count < 80, long)
         keepScreenshot("recently closed, dark")
         var tabs = try await tabIDs()
         closedItem(0).click()
@@ -47,7 +49,7 @@ extension OvviUITests {
         element("workspace.w2").click()
         try await show(tab)
         XCTAssertTrue(pageText("ovvi-page-one").exists(within: connect))
-        expectMenu(["One", "Old 0, old0.invalid"], 19)
+        expectMenu(["One", "Old 0"], 19)
         keepScreenshot("recently closed, light")
         XCUIElement.perform(withKeyModifiers: .option) { closedItem(0).click() }
         let side = try await sidePane(in: tab, besides: [shell, kept])
@@ -57,7 +59,10 @@ extension OvviUITests {
     /// 20 older pages, newest first: the cap drops the oldest.
     private func writeOldClosedPages(from shell: String) async throws {
         let file = "~/.local/state/ovvi/closed-pages.json"
-        let old = (0 ..< 20).map { #"{"url":"https://old\#($0).invalid/","title":"Old \#($0)"}"# }
+        let old = (0 ..< 20).map { index in
+            let title = "Old \(index)" + (index == 5 ? " " + String(repeating: "x", count: 120) : "")
+            return #"{"url":"https://old\#(index).invalid/","title":"\#(title)"}"#
+        }
         sendAfter("mv -f \(file).e2e \(file) 2>/dev/null || rm -f \(file)\r", to: shell)
         try await send("mkdir -p ~/.local/state/ovvi && mv -n \(file) \(file).e2e 2>/dev/null; "
             + "printf '%s' '[\(old.joined(separator: ","))]' >\(file) && clear\r", to: shell)
@@ -71,10 +76,17 @@ extension OvviUITests {
         try await show(tab)
         XCTAssertTrue(pageText("ovvi-page-one").exists(within: 5))
         try await expectSaved("One", iid: "e2ec03", shell: shell)
+        // Its icon, a PNG.
+        try await expectSaved("iVBORw0KGgo", iid: "e2ec03", shell: shell)
         let row = element("tab.\(tab)")
         row.hover()
         element("tab.\(tab).close").click()
         XCTAssertTrue(row.vanishes(within: 3))
+    }
+
+    /// The row's text after its icon.
+    private func closedTitle(_ index: Int) -> String {
+        closedItem(index).title.trimmingCharacters(in: CharacterSet.whitespaces.union(["\u{FFFC}"]))
     }
 
     private func closedItem(_ index: Int) -> XCUIElement {

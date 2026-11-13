@@ -725,6 +725,18 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
   red twice on the test's own order and titles, then green (1 test, 0 failures) before the rebase. It goes in the
   final CI round. Pictures: `~/Downloads/ovvi-research/p58b/after-dark.png`, `after-light.png`. The only change to
   the old look is the new button left of the hammer.
+- **Item 36 (rows as Chrome's).** Each row is the page's icon at 16 pt and its title on one line, cut at 320 pt
+  (measured in the menu's font) with an ellipsis, with the title and address in the tooltip. The icon is a 32 px PNG
+  the card keeps in its state file once the icon loads, so the closed entry takes it from there with the title;
+  none gives the `globe`. macOS 27 draws no `NSMenuItem.image` in an app's menu (seen in the VM, as phase 13 found), so
+  the icon is a text attachment in the row's title. Pictures: `before36-*.png` and `after36-*.png` in
+  `~/Downloads/ovvi-research/p58b/`.
+- **The plugin API's `menu.show` and the install question's `runModal` fallback** had the same blocking menu: both
+  now go through one helper, `outsideMainQueue` (`MenuAction.swift`), in the default run-loop mode, so a second menu
+  waits out the first. A lint rule (`nested_run_loops`) rejects the plain calls elsewhere.
+- **Runs.** The closed-pages test, green in the VM with the rows (vm9). `testAPluginPageCallsEveryPartOfTheAPI`
+  failed twice in the VM at its first wait ("ready: yes"): the page stopped at `files.list`, before any menu call,
+  so not this change; it goes to the final round.
 - **For the user.** ⌘⌥-click on an entry opens the Mac's default browser (no UI test, since it leaves the app). On a
   remote machine, close a browser card and open the menu from another card there.
 
