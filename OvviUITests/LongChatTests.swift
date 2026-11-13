@@ -59,6 +59,8 @@ extension OvviUITests {
     /// view stay where they are: each swipe up (with its momentum) moves them as far as the first did, or less at the
     /// top, never a block more.
     func testALongChatLoadsEarlierRowsAsItScrollsUp() async throws {
+        // A swipe and a look take about 3 s in the VM, and the chat is about 15 long swipes tall.
+        executionTimeAllowance = 300
         let pane = try await startChat().pane
         app.typeText("many 25\r")
         let last = row(pane, "reply", "Last.")
@@ -78,7 +80,7 @@ extension OvviUITests {
             _ = try await Self.post("\(one)/swipe", Data("\(point) \(step) 20 0 1".utf8))
         }
         var upward = 0
-        for step in [10, -10] where upward == 0 {
+        for step in [25, -25] where upward == 0 {
             try await swipe(step)
             if bottom.exists(within: 2) {
                 upward = step
