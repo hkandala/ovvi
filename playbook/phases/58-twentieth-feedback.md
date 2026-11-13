@@ -844,3 +844,8 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
 - **Fix (decided).** Commands are found by `Command.id`, never by title; `Hotkeys.glyphs` for text that shows a key.
 - **Runs.** VM green: the long-chat place test (its recording has no banner), notify, recorded keys, floating windows'
   commands, the palette, ⌘/, Dock folder drops, second keys, shown panes and float, pinch zoom.
+
+### Track S3: space steps follow the sidebar's order (item 40)
+
+40. "one last thing when recent sorting is used, and we use ctrl cmd [ to move around workspaces it goes in manual
+    order instead of what ew see in the sidebar"
