@@ -727,3 +727,12 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
   the old look is the new button left of the hammer.
 - **For the user.** ⌘⌥-click on an entry opens the Mac's default browser (no UI test, since it leaves the app). On a
   remote machine, close a browser card and open the menu from another card there.
+
+### Track H2: the Shortcuts page, done properly (item 37)
+
+37. "for the hotkey ones, can we make the keys smaller like they are touching th input border also that or thing when
+    multiple hotkeys are there, how does it work, is it like you can add multiple hotkeys for any item? we can use
+    comman separated instead of using or, improve the hotkey input and how we display overall, it looks off and weird
+    now, don't show customise button in cmd+/ panel, not needed, and lets simply say shortcuts in setting section, and
+    move it fully bottom in the list, when conflict is there, the buttons and hotkey input not aligned well, very shoddy
+    job man, improve the ui"
