@@ -663,16 +663,28 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
 ### Track B: Findings
 
 - **Decisions.** A page counts as closed when Ovvi closes its browser card: Close Pane (⌘W), Close Tab, Close Other
-  Tabs, Close Space. Navigations, Replace Pane and a pane a process closes through herdr do not count: the close
-  path (`closing` in `Ahead.swift`) is the one place every Ovvi close goes through, and herdr sends no reason with a
-  pane that leaves the snapshot (a disconnect or a session stop looks the same).
-- **Decisions.** One list per machine, every session and device there: `~/.local/state/ovvi/closed-pages.json`,
-  newest first, 20 at most, written through `Exec.write` like the cards' state files (one rule for This Mac and
-  remote machines). The address and title come from each card's state file, read before the close (the state file
-  now holds the title too); a card that never saved gives its label's address. A close drops an older entry with
-  the same address; a pick removes its entry, as Safari does.
-- **Decisions.** The menu is an `NSMenu` read from the file each time it opens and dropped down from under the
-  `clock.arrow.circlepath` button (a click: a new tab, selected; ⌘ background; ⌥ to the side; ⌘⌥ the Mac's
-  browser, as links). A SwiftUI `Menu` builds its items ahead and cannot wait for a remote read.
-- **For the user.** ⌘⌥-click on an entry opens the Mac's default browser (no UI test: it leaves the app). On a remote
-  machine, close a browser card and open the menu from another card there.
+  Tabs, Close Space. Navigations, Replace Pane and a pane that a process closes through herdr do not count. Every
+  Ovvi close goes through one place (`closing` in `Ahead.swift`). A pane that just leaves the snapshot carries no
+  reason: a disconnect or a session stop looks the same.
+- **Decisions.** One list per machine, for every session and device there: `~/.local/state/ovvi/closed-pages.json`,
+  newest first, 20 at most, read and written through `Exec` like the cards' state files, so This Mac and remote
+  machines follow one rule. The address and title come from each card's state file, read before the close. The
+  state file now holds the title. A card that never saved gives its label's address. A close drops an older entry
+  with the same address, and a pick removes its entry, as Safari does. Entries pass the browser's own address
+  check on read and on add: a process on the machine writes the file.
+- **Decisions.** The menu is an `NSMenu`, read from the file each time it opens, and dropped down from under the
+  `clock.arrow.circlepath` button. Gestures as for links: a click opens a new tab, selected; ⌘ in the background;
+  ⌥ to the side; ⌘⌥ in the Mac's browser (`openFromPlugin`, which turns a `file:` page on a remote machine away).
+  A SwiftUI `Menu` builds its items ahead and cannot wait for a remote read.
+- **Cause (found by the VM run).** Only the save at `didFinish` held a title, and in the VM the title came after it,
+  so the state file had none. The title mirror now saves too, debounced by `saveState`.
+- **Cause (review).** `NSMenu.popUp` inside a main-actor `Task` blocks every other main-actor job while the menu is
+  open: libdispatch does not drain the main queue inside one of its own jobs. The menu now opens from a run-loop
+  block (`CFRunLoopPerformBlock`). The plugin API's `menu.show` (`BridgeCard.swift`) still has the same problem;
+  it is left for its owner.
+- **Runs.** The VM, `testClosedBrowserPagesReopenFromTheMenuAndStayAfterARelaunch`: red on the missing title, then
+  red twice on the test's own order and titles, then green (1 test, 0 failures) before the rebase. It goes in the
+  final CI round. Pictures: `~/Downloads/ovvi-research/p58b/after-dark.png`, `after-light.png`. The only change to
+  the old look is the new button left of the hammer.
+- **For the user.** ⌘⌥-click on an entry opens the Mac's default browser (no UI test, since it leaves the app). On a
+  remote machine, close a browser card and open the menu from another card there.

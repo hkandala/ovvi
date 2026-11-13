@@ -59,7 +59,7 @@ extension OvviUITests {
         let file = "~/.local/state/ovvi/closed-pages.json"
         let old = (0 ..< 20).map { #"{"url":"https://old\#($0).invalid/","title":"Old \#($0)"}"# }
         sendAfter("mv -f \(file).e2e \(file) 2>/dev/null || rm -f \(file)\r", to: shell)
-        try await send("mkdir -p ~/.local/state/ovvi && mv -f \(file) \(file).e2e 2>/dev/null; "
+        try await send("mkdir -p ~/.local/state/ovvi && mv -n \(file) \(file).e2e 2>/dev/null; "
             + "printf '%s' '[\(old.joined(separator: ","))]' >\(file) && clear\r", to: shell)
         try await waitFor(shell) { !$0.contains("printf") }
     }

@@ -237,6 +237,9 @@ Problems that came back, and the rule that stops each. How we work is in
 - **A Swift `async` WebKit delegate method takes its calls out of order.** WebKit starts each call as a task off the
   main actor, so a page's messages reached the main actor reordered (21 to 33 in 3000, on an idle Mac): a page's
   older `controls.set` won on CI. Take the `replyHandler` form and make the task on the main actor.
+- **Never run a nested run loop inside a main-actor job** (`NSMenu.popUp`, `runModal` in a `Task`): libdispatch does not
+  drain the main queue inside one of its own jobs, so every other main-actor job waits until the menu closes. Start
+  it from a run-loop block (`CFRunLoopPerformBlock` on the main run loop) and await its end.
 - **Don't block Swift's cooperative pool** (`Process.waitUntilExit` in async code): await the exit through
   `terminationHandler`.
 
