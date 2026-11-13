@@ -31,7 +31,7 @@ public extension GitStatus {
         self.behind = behind
     }
 
-    /// No optional locks: a run every 10 s must not leave `index.lock` in the user's way.
+    /// No optional locks: a run in the background must not leave `index.lock` in the user's way.
     static func of(_ root: String, exec: any Exec) async -> GitStatus? {
         let argv = ["git", "--no-optional-locks", "-C", root, "status", "--porcelain=v2", "--branch",
                     "--untracked-files=no"]
@@ -57,7 +57,7 @@ public extension GitStatus {
     }
 
     /// `watch`, tried again each 60 s while the root is no repository (a `git init` comes later) or after a watch
-    /// ended (a dropped link), as the sidebar's; a later one yields once, for what came meanwhile. None without `git`.
+    /// ended (a dropped link); a later one yields once, for what came meanwhile. None without `git`.
     static func follow(_ root: String, git: Bool, exec: any Exec) -> AsyncStream<Void> {
         let (stream, continuation) = AsyncStream<Void>.makeStream(bufferingPolicy: .bufferingNewest(1))
         let task = Task {

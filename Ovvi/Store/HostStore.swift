@@ -105,7 +105,6 @@ final class HostStore {
     /// By root, while a window follows the session's git (`followGit`).
     @ObservationIgnored var gitWatches: [String: Task<Void, Never>] = [:]
     @ObservationIgnored var gitFollowers = 0
-    @ObservationIgnored var gitEnded: Set<String> = []
     /// 8 at most: a 600-pane session's first snapshot makes 600 herdr runs.
     @ObservationIgnored let asks = Gate(8)
     @ObservationIgnored private var seen: Seen
