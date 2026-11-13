@@ -158,7 +158,7 @@ struct Look: Equatable {
 
     /// The reply box's glass tint: the card's own color, so that text scrolled under the box stays faint.
     var replyBox: Color {
-        cardSolid().opacity(0.6)
+        cardSolid().opacity(0.45)
     }
 
     /// A browser's default link color (HTML's `#0000EE`; Safari, Chrome and Firefox under `color-scheme: dark`).

@@ -150,6 +150,47 @@ fails; lessons.md's rule makes it 60 s (round 8's final CI, '### Final CI, round
     we should fix that input and chat moving at different times, both should adjust at once, so it doesn't feel like
     too much motion" (`.build/fb57/r9-split-5.08.57.mov`, 12.5 s at 240 fps: a chat card while a pane opens beside it)
 
+### Track C findings
+
+- **Cause, the flicker on a Chat ↔ TUI switch (11).** A switch to the TUI ended the chat's follow (its last viewer
+  went) and so made the chat not current; the switch back showed a blank, then the loader, until the transcript was
+  read again. **Fix:** the TUI of a chat that has shown follows its agent too (`follows(_:)`, on the card's and the
+  floating window's terminal), so the chat stays current and the rows show at once. A chat never shown follows
+  nothing, as before.
+- **Fades (11).** The rows fade in over 0.2 s when they first show in a card (a card just made, a switch back, a
+  history read to its end); the agent's copy of a sent message comes in at the sent bubble's 70 % and goes full over
+  0.2 s, but not for rows that come with a history or Show Earlier. Both are off with Reduce Motion, as the app's
+  other fades (`Animation.fade`).
+- **The empty chat (10).** The reply box sits in the middle of the card under its header rows, the glyph and greeting
+  above it, through a custom alignment guide (a stack passes on only custom guides; a probe showed `.center` does
+  not). A short card keeps the header in view: the stack's top goes no higher than the card's.
+- **The reply box (12, 16).** Its glass is tinted with the card's own color at 45 %; it grows to 10 lines.
+- **Links (13).** Browsers' default style sheet (`a:any-link { color: -webkit-link; text-decoration: underline;
+  cursor: pointer }`, no hover rule; checked in Safari in the VM, light): `#0000EE` light, `#9E9EFF` dark (WebKit
+  267847, as Chrome and Firefox), underlined, the pointing hand, no change under the pointer. The hover renderer and
+  its AppKit tracker are gone. A browser's red while pressed (`:active`) is left out.
+- **Cause, the table (15).** In the sideways scroll view the scroll view offered the grid more height than it
+  measured, and the cells, which fill their row's height, took it: the rows spilled 16 pt past the box (the head row
+  taller, the last row cut). The grid's rounded clip, drawn over the scrolled cells, showed as a rounded fill in a head
+  cell. **Fix:** the scrolled grid keeps its own height (`fixedSize` vertical; the per-cell one C5 added is gone), and
+  no clip: the head's two outer cells round their own top corner. A headless probe (an `NSHostingView` laid out off
+  screen, the grid's cells' frames printed) showed the spill and its fix; no UI test sees it, as a reply is one
+  accessibility element.
+- **Cause, the box and the rows at different times (22).** A narrow card waited 150 ms for its width to settle before
+  it wrapped the rows, while the reply box followed at once; a split gives the card its final size once, so the wait
+  only delayed the rows (the user's recording: the rows clipped at the old width for 18 frames at 30 fps while the box
+  was narrow). **Fix:** a lone new width wraps the rows at once, with the box; one within 150 ms of the last (a drag, a
+  window resize) waits for the run's end as before. The lag: the rows' one wrap at the new width (up to the newest
+  block, 34 rows) is the chat's whole work in a split: the moving card lays its content out once, at its final size.
+- **Runs.** Red on the old code in the VM: the box 59 pt below the middle, the loader on the switch back
+  (`[loader, rows]`), the box stopping at 5 lines, the messages at the old width after the split (`["354 716", "354
+  354"]`). Green on the new code in the VM: those four tests and the wide-table test; the picture run's three quick
+  switches each showed the rows in every snapshot. The VM's frame strips: before, the rows clipped at the old width for
+  about 0.3 s after the box went narrow; after, both in the same frame. The stand-in's `grid` scene is the repro for 15.
+  Pictures: `~/Downloads/ovvi-research/p58c/`.
+- **For the user.** Switch Chat → TUI → Chat on a long chat; send while the agent works and watch the bubble go full;
+  hover a link; scroll a wide table sideways; open a pane beside a chat; a new chat's box in the middle.
+
 ## Track X: Codex chats from the transcript (item 14)
 
 14. "that codex limitation for resumed chats is weird? why is that? are we relying on codex app server? or relying on
