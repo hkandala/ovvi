@@ -94,8 +94,8 @@ final class WindowPages {
     }
 
     func step(_ offset: Int) {
-        if let page = list.firstIndex(where: { $0 === current }).flatMap({ list.step(from: $0, by: offset) }) {
-            show(page)
+        if let index = list.firstIndex(where: { $0 === current }) {
+            show(list.step(from: index, by: offset))
         }
     }
 

@@ -88,7 +88,7 @@ extension OvviUITests {
         let newTab = element("keys.tab.new", in: settingsWindow)
         XCTAssertTrue(newTab.has(\.stringValue, "⌘T", within: 3))
         // One key: ⌘= runs ⌘+ without showing (testSecondShortcuts).
-        XCTAssertEqual(element("keys.app.bigger", in: settingsWindow).stringValue, "⌘+")
+        XCTAssertTrue(element("keys.app.bigger", in: settingsWindow).has(\.stringValue, "⌘+", within: 2))
         newTab.click()
         XCTAssertTrue(newTab.has(\.stringValue, "Type shortcut…", within: 2))
         settingsWindow.typeKey(.escape, modifierFlags: [])

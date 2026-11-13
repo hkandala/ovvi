@@ -253,16 +253,18 @@ extension KeyboardShortcut {
         return Chord(modifiers: Set(names), key: name)?.description ?? ""
     }
 
-    /// The key as the user typed it, with its unshifted character (⇧⌘[ is `[`, not `{`); nil for a key no chord
-    /// names (F1, or one with no ⌘, ⌃ or ⌥).
+    /// The key as the user typed it, with its unshifted character (⇧⌘[ is `[`, not `{`), except ⌘+ (`twin`); nil for
+    /// a key no chord names (F1, or one with no ⌘, ⌃ or ⌥).
     init?(event: NSEvent) {
         let specials: [NSEvent.SpecialKey: String] = [
             .leftArrow: "left", .rightArrow: "right", .upArrow: "up", .downArrow: "down", .carriageReturn: "return",
             .enter: "return", .tab: "tab", .backTab: "tab", .delete: "delete",
         ]
-        let typed = event.characters(byApplyingModifiers: [])?.lowercased() ?? ""
+        let plus = event.charactersIgnoringModifiers == "+"
+        let typed = plus ? "plus" : event.characters(byApplyingModifiers: [])?.lowercased() ?? ""
         let key = event.specialKey.flatMap { specials[$0] } ?? [" ": "space", "\u{1B}": "escape"][typed] ?? typed
-        let names = Self.modifierKeys.filter { event.modifierFlags.contains($0.flag) }.map(\.name)
+        let names = Self.modifierKeys.filter { event.modifierFlags.contains($0.flag) && !(plus && $0.flag == .shift) }
+            .map(\.name)
         guard key.unicodeScalars.allSatisfy({ !(0xF700 ... 0xF8FF).contains($0.value) }),
               let chord = Chord(modifiers: Set(names), key: key) else { return nil }
         self.init(chord: chord.description)
@@ -273,8 +275,9 @@ extension KeyboardShortcut {
         key == "+" ? KeyboardShortcut("=", modifiers: modifiers) : nil
     }
 
+    /// One key, or ⌘+ and ⌘=, either way round.
     func runs(_ other: KeyboardShortcut) -> Bool {
-        other == self || other == twin
+        other == self || other == twin || self == other.twin
     }
 
     /// `key: .hotkey("tab.new")`: the first key of one of the app's actions, as the user set it.

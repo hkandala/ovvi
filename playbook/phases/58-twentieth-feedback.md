@@ -947,6 +947,25 @@ The user's files: `.build/fb57/r11-fontkeys-11.20.52.png`, `r11-tabslide-11.23.5
     same behavior for cmd+shift+[] as well but for sessions which is cmd+opt+[] it doesn't cycle, once it reaches end
     you can only go back"
 
+#### Track H3: Findings
+
+- **Cause (42).** Increase Font Size had ⌘= as a second default key, so Settings and ⌘/ showed "⌘+, ⌘=". On a US
+  layout ⌘+ is ⇧⌘=: the menu takes it as ⌘+, and plain ⌘= reached the action only as the second key.
+- **Fix (42).** One key, ⌘+. `KeyboardShortcut.twin` makes the key monitor run ⌘+'s action for ⌘= too, as Safari and
+  Terminal do, with only ⌘+ shown. A recorded key replaces both (only a `+` key has a twin). A clash and Swap count the
+  twin: ⌘= recorded for another action asks first. Recording ⇧⌘= (⌘+ on a US layout) saves `cmd+plus`. No other
+  default pair is one physical key: ⌘K and ⇧⌘P, ⇧⌘[ and ⌃⇧⇥, ⇧⌘] and ⌃⇥, and a plugin card's ⌃- and ⌘← stay two keys.
+- **Fix (44).** Go Back and Go Forward are ⌃⇧[ and ⌃⇧]. They clash with nothing in the registry, the plugins or
+  macOS's defaults, and the menu takes them before a terminal, a web card or a text field. A herdr spike (`pane
+  send-keys` into `od -c`): `ctrl+shift+[` reaches a program as `CSI 91;6u` (the kitty-protocol form, which few
+  programs bind) and `ctrl+shift+]` as 0x1D, the same byte as ⌃] (pi's Jump Forward), which stays typed as ⌃].
+- **Cause (51).** Session steps used `WindowPages.neighbor`, which stopped at the first and last page, while tabs,
+  spaces and panes each wrapped with their own copy of the same sum.
+- **Fix (51).** One rule, `Array.step(from:by:)`, for panes, tabs, spaces and sessions. Sessions step in the window's
+  order (the sidebar's page dots). The ⌥ + swipe and a step in the overview go through `WindowPages.step`, so they
+  wrap too. The sidebar's finger slide still stops at the ends. Previous Session and Next Session are disabled only
+  with one page.
+
 ### Track T2: the tab slide is laggy (item 43)
 
 43. "tab slide effect on tab bar is very laggy, and makes it look delayed when opening tabs which used to be snappy
