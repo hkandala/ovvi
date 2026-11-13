@@ -61,17 +61,17 @@ public extension GitStatus {
     static func follow(_ root: String, git: Bool, exec: any Exec) -> AsyncStream<Void> {
         let (stream, continuation) = AsyncStream<Void>.makeStream(bufferingPolicy: .bufferingNewest(1))
         let task = Task {
-            var started = false
+            var tried = false
             while git, !Task.isCancelled {
                 if let changes = await watch(root, exec: exec) {
-                    if started {
+                    if tried {
                         continuation.yield()
                     }
-                    started = true
                     for await _ in changes {
                         continuation.yield()
                     }
                 }
+                tried = true
                 try? await Task.sleep(for: .seconds(60))
             }
             continuation.finish()
