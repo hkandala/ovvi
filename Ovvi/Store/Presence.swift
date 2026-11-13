@@ -24,8 +24,7 @@ extension HostStore {
     var inView: Set<String> {
         floatingPanes
             .union(windows.filter(\.visible).compactMap(\.current).filter { $0.store === self }.flatMap { page in
-                let zoomed = page.zoomedPaneID.flatMap { pane($0)?.tabID == page.selectedTab?.id ? $0 : nil }
-                return zoomed.map { [$0] } ?? Array(page.shownTerminals.values)
+                page.zoomedPaneID.map { [$0] } ?? Array(page.shownTerminals.values)
             })
     }
 

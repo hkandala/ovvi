@@ -166,7 +166,7 @@ final class Page: Identifiable {
     }
 
     var keyboardPane: HostStore.Pane? {
-        if let zoomed = zoomedPaneID.flatMap(store.pane), zoomed.tabID == selectedTab?.id {
+        if let zoomed = zoomedPaneID.flatMap(store.pane) {
             return zoomed
         }
         if let pane = newest.flatMap({ store.pane($0.id) }), pane.tabID == selectedTab?.id {
@@ -334,6 +334,10 @@ extension Page {
         }
         movedTerminal = terminalID
         arriving = select ? moved.tabID : arriving
+        // Not hidden under the zoom of the tab it came to.
+        if select, zoomedPanes[moved.tabID].map({ $0 != moved.id }) == true {
+            zoomedPanes[moved.tabID] = nil
+        }
         settle() // The snapshot after the move may have come in during the await.
         keyboardTabID = nil
         if moved.tabID == selectedTab?.id {

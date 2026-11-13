@@ -184,10 +184,15 @@ extension OvviUITests {
         }
         for (tab, pane, hidden) in [(first, one, oneHidden), (second, two, twoHidden)] {
             element("tab.\(tab)").click()
+            XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, true, within: 3), tab)
             XCTAssertTrue(element("pane.\(pane).zoom").has(\.label, "Restore Pane ⇧⌘↩", within: 3), tab)
             XCTAssertFalse(element("pane.\(hidden)").exists, tab)
             XCTAssertTrue(hasKeyboard("terminal.\(pane)"), tab)
         }
+        // A card that comes into a zoomed tab is not hidden under its zoom.
+        paneMenu(two, "Move Pane to Tab", "zoom-one")
+        XCTAssertTrue(element("pane.\(oneHidden)").has(\.isHittable, true, within: 3))
+        XCTAssertTrue(hasKeyboard("terminal.\(two)"))
     }
 
     func testPaletteFiltersAndJumps() {

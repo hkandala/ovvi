@@ -240,11 +240,10 @@ extension PaneViewRegistry {
         else { return }
         let area = TabPage.area(pageSize)
         for tab in workspace.tabs where tab.id != page.selectedTab?.id {
-            let cards = tab.tree.map { Parts($0, in: area, held: [:]).cards } ?? []
+            let cards = tab.tree.map { Parts($0, in: area, held: [:]).cards } ?? [], zoomed = page.zoomedPanes[tab.id]
             for (terminalID, paneID) in pages.tileCards(page, tab.id) {
                 guard let view = terminals[terminalID]?.view, view.window == nil,
-                      let card = page.zoomedPanes[tab.id] == paneID ? area : cards.first(where: { $0.id == paneID })?
-                          .rect
+                      let card = zoomed == paneID ? area : cards.first(where: { $0.id == paneID })?.rect
                 else { continue }
                 let size = PaneCard.terminalSize(card.size, header: page.headerHeight(page.store.pane(paneID)))
                 if view.frame.size != size {
