@@ -585,6 +585,9 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
   prompt, as before. Finding the rollout the process holds open (`lsof`, `/proc`) would cover them, at one more run
   per pane and two ways for two systems; not done. A session switched to inside Codex (`/new`, `/resume`) before a
   prompt relaunches as the command line's until then (it has no turns yet).
+- **Runs.** `make lint build test` green on the rebased tree; `testRelaunchWithChatShowsACodexSessionsHistory` green
+  in the VM. The red run on the old code found the VM busy; the spike shows why it fails there: no `agent_session`
+  until the first prompt, and the stand-in reports it only then, as herdr's Codex hook does.
 - **For the user.** With a real Codex: `codex resume <id>` in a pane, no prompt: the button shows; Relaunch with Chat
   shows the history.
 
