@@ -147,6 +147,31 @@ extension OvviUITests {
         XCTAssertEqual(user.frame.minY, place, accuracy: 1)
     }
 
+    /// A split gives the card its final size once: the messages take it in the same frame as the reply box, which
+    /// follows the card at once.
+    func testASplitMovesTheMessagesWithTheReplyBox() async throws {
+        let (tab, pane) = try await startChat()
+        try await say("many 6", in: pane)
+        XCTAssertTrue(row(pane, "reply", "Last.").exists(within: 10))
+        let wide = element("pane.\(pane)").frame.width, inset = Int(wide - element("chat.\(pane)").frame.width)
+        hoverHeader(pane)
+        element("pane.\(pane).split-right").click()
+        // Each look is one snapshot: the card's width and the messages'.
+        var looks: [String] = []
+        XCTAssertTrue(until(5) {
+            let seen = (try? nodes(of: mainWindows.firstMatch)) ?? []
+            let card = seen.first { $0.identifier == "pane.\(pane)" }?.frame.width ?? 0
+            let messages = seen.first { $0.identifier == "chat.\(pane)" }?.frame.width ?? 0
+            looks.append("\(Int(card)) \(Int(messages))")
+            return card < wide - 100 && abs(card - messages - CGFloat(inset)) < 2
+        }, "\(looks)")
+        XCTAssertFalse(looks.contains { look in
+            let widths = look.split(separator: " ").compactMap { Int($0) }
+            return widths[0] < Int(wide) - 100 && abs(widths[0] - widths[1] - inset) > 1
+        }, "the messages kept their old width after the card's changed: \(looks)")
+        _ = try await poll("a pane beside the chat") { try await order(tab).first { $0 != pane } }
+    }
+
     private func keepsTop(_ top: Set<String>, of chat: XCUIElement, _ pane: String, narrow: Bool) {
         XCTAssertTrue(until(3) { (chat.frame.width < 600) == narrow && !atTop(of: chat, pane).isDisjoint(with: top) },
                       "\(top) \(atTop(of: chat, pane))")

@@ -570,11 +570,15 @@ A run is one quiet line with no card: its summary and a chevron.
   where they are (the place on the top row). The rows it adds stay when the
   chat scrolls back to the bottom.
 - **Resizing.** A narrow card (under 824 pt, where the column narrows too)
-  lays its messages out at its new width once the width stops changing for
-  150 ms, as a terminal does: a split's motion or a drag wraps the text once,
-  not at every frame. Meanwhile the card clips the messages, or its fill
-  shows beside them. The reply box and the Scroll to Bottom button follow the
-  card at once. Scrolled up, the view keeps its place on the top row.
+  lays its messages out at a lone new width at once, with the reply box: a
+  split's motion gives the card its final size once, so the messages and the
+  box take it in the same frame and move with the card. A width that comes
+  within 150 ms of the last one (a divider drag, a window resize) waits until
+  the width stops changing for 150 ms, so a drag wraps the text once more at
+  its end, not at every frame. Meanwhile the card clips the messages, or its
+  fill shows beside them, and the reply box and the Scroll to Bottom button
+  follow the card at once. Scrolled up, the view keeps its place on the top
+  row.
 - **The end.** 32 pt stay free between the last row and the reply box (an
   empty last row, 22 pt, plus the rows' spacing).
 - **Scroll to Bottom.** While the bottom of the messages is more than 40 pt

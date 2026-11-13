@@ -203,17 +203,22 @@ struct ChatMessages: View, Equatable {
             }
             .focusEffectDisabled()
             .accessibilityIdentifier("chat.\(chat.paneID)")
-            // The rows wrap again once the width settles, not at every frame; at once while the reading column keeps
-            // its width.
+            // A lone new width (a split's motion gives the card its final size once) wraps the rows at once, with the
+            // reply box; one in a run of them (a drag) waits for the run's end, so the rows wrap once, not at every
+            // frame. At once while the reading column keeps its width.
             .frame(width: laidOut)
             .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { new in
-                settling?.cancel()
-                guard let old = width, min(old, new) < ChatView.column + 64 else {
+                let run = settling != nil
+                guard run, let old = width, min(old, new) < ChatView.column + 64 else {
                     width = new
+                    SettlingHost.settle(&settling) { settling = nil }
                     return
                 }
-                SettlingHost.settle(&settling) { width = new }
+                SettlingHost.settle(&settling) {
+                    width = new
+                    settling = nil
+                }
             }
             // After the messages' id, which would replace its own.
             .overlay(alignment: .bottom) {
