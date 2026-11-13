@@ -82,9 +82,10 @@ server's terminal.
   Then the card buttons, on the keyboard card and on a hovered card. Row 2
   (32 pt) is the toolbar: Back, Forward and Reload (Stop while a page
   loads), 22 × 22 pt buttons with 11 pt glyphs, then the address field,
-  which takes the free width, then the Web Inspector button (`hammer`). Back,
-  Forward and Reload touch; 6 pt between them, the address field and the Web
-  Inspector button. The toolbar's buttons have the card buttons' color and dim
+  which takes the free width, then Recently Closed (`clock.arrow.circlepath`,
+  [Recently closed pages](#recently-closed-pages)) and the Web Inspector
+  button (`hammer`). Back, Forward and Reload touch; 6 pt between them, the
+  address field and the last two buttons. The toolbar's buttons have the card buttons' color and dim
   as any disabled card button when they cannot act. Row 2 ends where row 1
   does, 8 pt in.
 - **Swipes.** A two-finger sideways swipe over the page goes back or forward,
@@ -267,13 +268,43 @@ docked at the bottom of the card. Its own control moves it to a window.
   right-click on empty space in their page shows only Reload.
 - The button and ⌥⌘I are disabled until the card has a page.
 
+## Recently closed pages
+
+The Recently Closed button drops a menu down from under it: "Recently
+Closed", then the pages closed on the card's machine, newest first, each
+with its title (else its host, else its file name; cut at 60 characters) and
+its host under it. The menu says "No Recently Closed Pages" when there are
+none.
+- **What counts.** A browser card that Ovvi closes: its pane (Close Pane,
+  ⌘W), its tab, Close Other Tabs, or its space. A page left by a navigation,
+  a Replace Pane, or a pane that a process closes through herdr does not count.
+- **A pick** opens the page as a link does ([Opening links and
+  files](/docs/ui/window#opening-links-and-files)): a click in a new tab,
+  selected; ⌘-click in a new tab in the background; ⌥-click in a pane to the
+  side of the card; ⌘⌥-click in the Mac's default browser. The page leaves
+  the list. It loads by the load rule
+  ([When a page loads by itself](#when-a-page-loads-by-itself)).
+- **Kept on the machine**, one list for every session and device there:
+  `$HOME/.local/state/ovvi/closed-pages.json`, a JSON list of
+  `{"url": …, "title": …}`, the newest 20. A close adds its pages at the top
+  and drops an older entry with the same address, and the 21st goes. The
+  address and title come from each card's state file, read before the close
+  (else the label's address, with no title). The app reads the file each time
+  the menu opens, and writes it through the machine's shell as it does a state
+  file. One app changes it one write at a time per machine; two devices that
+  close pages on one machine at the same moment keep one device's change.
+- The file holds addresses as the machine sees them. A process on the machine
+  can write it, so a pick loads only by the load rule.
+
 ## State on the machine
 
 The page and its back and forward list are saved on the pane's machine, in
 the instance state file
 ([State](/docs/plugins/api#state)):
 `$HOME/.local/state/ovvi/<session>/browser/<iid>.json`.
-- It holds `{"url": …, "history": …}`. `url` is as the machine sees it.
+- It holds `{"url": …, "title": …, "history": …}`. `url` is as the machine
+  sees it. `title` is the page's title, for
+  [Recently closed pages](#recently-closed-pages).
   `history` is WebKit's `interactionState` (the back and forward list) in
   base64, left out at 128 KiB and over.
 - Written 500 ms after a navigation ends or the address changes (a

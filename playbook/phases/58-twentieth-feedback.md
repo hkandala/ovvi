@@ -659,3 +659,20 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
     some state file or something, but we have to limit the max number of pages, may be like 20 pages or something and
     drop the old ones, it should be simple, and fetch from state file, so for any machine it comes from that state file
     or something."
+
+### Track B: Findings
+
+- **Decisions.** A page counts as closed when Ovvi closes its browser card: Close Pane (⌘W), Close Tab, Close Other
+  Tabs, Close Space. Navigations, Replace Pane and a pane a process closes through herdr do not count: the close
+  path (`closing` in `Ahead.swift`) is the one place every Ovvi close goes through, and herdr sends no reason with a
+  pane that leaves the snapshot (a disconnect or a session stop looks the same).
+- **Decisions.** One list per machine, every session and device there: `~/.local/state/ovvi/closed-pages.json`,
+  newest first, 20 at most, written through `Exec.write` like the cards' state files (one rule for This Mac and
+  remote machines). The address and title come from each card's state file, read before the close (the state file
+  now holds the title too); a card that never saved gives its label's address. A close drops an older entry with
+  the same address; a pick removes its entry, as Safari does.
+- **Decisions.** The menu is an `NSMenu` read from the file each time it opens and dropped down from under the
+  `clock.arrow.circlepath` button (a click: a new tab, selected; ⌘ background; ⌥ to the side; ⌘⌥ the Mac's
+  browser, as links). A SwiftUI `Menu` builds its items ahead and cannot wait for a remote read.
+- **For the user.** ⌘⌥-click on an entry opens the Mac's default browser (no UI test: it leaves the app). On a remote
+  machine, close a browser card and open the menu from another card there.

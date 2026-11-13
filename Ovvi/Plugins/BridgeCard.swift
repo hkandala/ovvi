@@ -124,19 +124,6 @@ extension Bridge {
     }
 }
 
-/// A menu item's target is weak: the item keeps this as `representedObject`.
-private final class MenuAction: NSObject {
-    private let run: () -> Void
-
-    init(_ run: @escaping () -> Void) {
-        self.run = run
-    }
-
-    @objc func fire() {
-        run()
-    }
-}
-
 extension CommandList {
     /// None while the keyboard is elsewhere, so they swallow no key.
     static func plugin(_ plugin: Plugin?, besides list: [Command]) -> [Command] {

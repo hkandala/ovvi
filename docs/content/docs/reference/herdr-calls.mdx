@@ -87,6 +87,7 @@ A browser or plugin card's ([Browser](/docs/ui/browser), [State](/docs/plugins/a
 sh -c 'cat "$HOME/$1"' sh .local/state/ovvi/<S>/<browser or plugin id>/<iid>.json    # a remote machine: read the state file when the card is built (This Mac reads it in the app)
 sh -c 'umask 077; f="$HOME/$1"; mkdir -p "${f%/*}" && cat >"$f.$$" && mv "$f.$$" "$f"' sh <path>   # a remote machine: write it, 500 ms after a navigation or a plugin's last change (This Mac writes it in the app)
 sh -c 'rm -f "$HOME/$1"' sh <path>                  # a remote machine: a typed address, a close (This Mac removes it in the app)
+sh -c 'cat "$HOME/$1"' sh .local/state/ovvi/closed-pages.json     # a remote machine: Recently Closed opens; then the write above, after a close or a pick
 find "$HOME/.local/state/ovvi/<S>" -type f -mtime +30 -delete       # once on connect
 sh -c 'kill -WINCH "$@"' sh <pid>…                 # a placeholder redraws its new label
 ssh -F /dev/null -S <ctl> -O forward -D 127.0.0.1:<P> <target>   # a remote machine: its first browser card's proxy

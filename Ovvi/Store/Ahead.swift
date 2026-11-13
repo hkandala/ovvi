@@ -260,6 +260,10 @@ extension HostStore {
 
     /// Reads what shows, so it runs ahead of `hide`.
     private func closing(_ close: Close) -> (any Multiplexer) async throws -> Void {
+        keepingClosedPages(close, closer(close))
+    }
+
+    private func closer(_ close: Close) -> (any Multiplexer) async throws -> Void {
         switch close {
         case let .pane(id):
             let state = pane(id)?.plugin?.statePath(session: session), machine = machine

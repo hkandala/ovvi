@@ -264,11 +264,11 @@ final class Browser: NSObject {
         store.flatMap { Self.url(text, local: !$0.machine.isRemote) }
     }
 
-    /// The state file holds at most 256 KiB.
+    /// The state file holds at most 256 KiB. The title is for the machine's recently closed pages.
     func save() {
         guard let store, let url = view.url.map({ Self.shown($0, alias).absoluteString }), url != "about:blank"
         else { return }
-        var state = ["url": url]
+        var state = ["url": url, "title": title]
         if let history = view.interactionState as? Data, history.count < 128 << 10 {
             state["history"] = history.base64EncodedString()
         }
