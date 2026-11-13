@@ -283,12 +283,13 @@ private final class Dropping: Exec {
     #expect(seen.withLock { $0 } == 1)
 }
 
-/// A build's output and git's objects wake no card; a file of the work tree does, and so does a new rule.
+/// A build's output and git's objects wake no card; a file of the work tree does, an ignored name at the top (the
+/// Explorer lists it) does, and so does a new rule.
 @Test func `a folder's watch skips what git ignores and git's objects`() async throws {
     let folder = try scratchFolder()
     defer { try? FileManager.default.removeItem(at: folder) }
     _ = try await localExec.checkedOutput(["sh", "-c", """
-    cd "$1" && git init -q && printf 'build/\\n' >.gitignore && mkdir -p build/deep src && echo a >src/a
+    cd "$1" && git init -q && printf 'build/\\n*.log\\n' >.gitignore && mkdir -p build/deep src && echo a >src/a
     """, "sh", folder.path])
     let count = Mutex(0)
     let watch = Task {
@@ -316,15 +317,17 @@ private final class Dropping: Exec {
     }
     try await Task.sleep(for: .seconds(2.5))
     #expect(count.withLock { $0 } == 0)
-    try write("src/a")
-    #expect(await eventually { count.withLock { $0 } == 1 })
-    try await Task.sleep(for: .seconds(2.5))
+    for (index, path) in ["err.log", "src/a"].enumerated() {
+        try write(path)
+        #expect(await eventually { count.withLock { $0 } == index + 1 }, "\(path)")
+        try await Task.sleep(for: .seconds(2.5))
+    }
     try Data("other/\n".utf8).write(to: folder.appending(path: ".gitignore"))
-    #expect(await eventually { count.withLock { $0 } == 2 })
+    #expect(await eventually { count.withLock { $0 } == 3 })
     try await Task.sleep(for: .seconds(2.5))
     // build/ counts again now.
     try write("build/deep/out9.o")
-    #expect(await eventually { count.withLock { $0 } == 3 })
+    #expect(await eventually { count.withLock { $0 } == 4 })
 }
 
 @Test func `a watch of an ignored folder sees what is in it`() async throws {

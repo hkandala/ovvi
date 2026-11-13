@@ -120,9 +120,7 @@ final class Bridge {
         watching[id]?.cancel()
         watching[id] = Task { [weak self] in
             let exec = await store.machine.exec(), runs = await store.gitRuns()
-            let changes = git ? runs ? await GitStatus.watch(path, exec: exec) : nil
-                : Files.watch(path, git: runs, exec: exec)
-            guard let changes else { return }
+            let changes = git ? GitStatus.follow(path, git: runs, exec: exec) : Files.watch(path, git: runs, exec: exec)
             for await _ in changes {
                 self?.event("watch", id)
             }

@@ -11,7 +11,9 @@ public extension GitStatus {
     /// and `# branch.ab +A -B` (absent without an upstream). Nil without a head line.
     init?(porcelain: String) {
         var head: String?, oid = "", ahead = 0, behind = 0
-        for line in porcelain.split(whereSeparator: { $0 == "\n" || $0 == "\0" }) {
+        // With `-z` a name may hold a line break: only NULs end a line then.
+        let end: Character = porcelain.contains("\0") ? "\0" : "\n"
+        for line in porcelain.split(separator: end) {
             let words = line.split(separator: " ")
             guard words.count >= 3, words[0] == "#" else { continue }
             switch words[1] {
@@ -52,6 +54,30 @@ public extension GitStatus {
     static func watch(_ root: String, exec: any Exec) async -> AsyncStream<Void>? {
         guard let files = await files(root, exec: exec) else { return nil }
         return Files.watch(paths: files, exec: exec)
+    }
+
+    /// `watch`, tried again each 60 s while the root is no repository (a `git init` comes later) or after a watch
+    /// ended (a dropped link), as the sidebar's; a later one yields once, for what came meanwhile. None without `git`.
+    static func follow(_ root: String, git: Bool, exec: any Exec) -> AsyncStream<Void> {
+        let (stream, continuation) = AsyncStream<Void>.makeStream(bufferingPolicy: .bufferingNewest(1))
+        let task = Task {
+            var started = false
+            while git, !Task.isCancelled {
+                if let changes = await watch(root, exec: exec) {
+                    if started {
+                        continuation.yield()
+                    }
+                    started = true
+                    for await _ in changes {
+                        continuation.yield()
+                    }
+                }
+                try? await Task.sleep(for: .seconds(60))
+            }
+            continuation.finish()
+        }
+        continuation.onTermination = { _ in task.cancel() }
+        return stream
     }
 
     /// On a Mac `/usr/bin/git` is a stub that opens the developer tools' install dialog when `xcode-select -p` finds

@@ -316,6 +316,8 @@ extension Exec {
 
 /// What git ignores under a watched folder. A folder git ignores is kept: git never looks inside one, so nothing under
 /// it counts, until a `.gitignore` or `info/exclude` changes. A build asks git once per new output folder, then never.
+/// ponytail: a change of the global excludes, a parent folder's `.gitignore` or a forced `git add` under an ignored
+/// folder keeps the old folders until the card shows again; watch those too if it matters.
 struct Ignored {
     let root: String
     /// As the events name paths.
@@ -339,19 +341,21 @@ struct Ignored {
                 && !Self.folders(of: path).contains(where: folders.contains)
         }
         guard !left.isEmpty else { return false }
-        // The root and git's own files (the index, refs) always count; git asks nothing about them.
-        guard git, !left.contains(where: { $0.isEmpty || $0 == ".git" || $0.hasPrefix(".git/") }) else { return true }
+        // The root, git's own files (the index, refs) and anything at the top always count: an ignored name the
+        // Explorer lists (`.env`, `node_modules`) comes and goes there. Only what is under an ignored folder is
+        // dropped.
+        guard git, !left.contains(where: { $0.isEmpty || $0 == ".git" || $0.hasPrefix(".git/") || !$0.contains("/") })
+        else { return true }
         // The root too, once: a card on an ignored folder (`node_modules`) watches what is in it.
-        let asked = Set(left.flatMap { [$0] + Self.folders(of: $0) } + (rootAsked ? [] : ["."]))
+        let asked = Set(left.flatMap(Self.folders(of:)) + (rootAsked ? [] : ["."]))
         rootAsked = true
         guard let ignored = await ignored(asked, exec: exec) else { return true }
         if ignored.contains(".") {
             git = false
             return true
         }
-        let parents = Set(left.flatMap(Self.folders(of:)))
-        folders.formUnion(ignored.intersection(parents))
-        return left.contains { path in !([path] + Self.folders(of: path)).contains(where: ignored.contains) }
+        folders.formUnion(ignored)
+        return left.contains { !Self.folders(of: $0).contains(where: ignored.contains) }
     }
 
     /// `a/b/c` → `a/b`, `a`.

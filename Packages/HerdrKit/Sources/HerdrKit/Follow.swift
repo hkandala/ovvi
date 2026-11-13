@@ -70,26 +70,21 @@ public extension Exec {
     }
 
     /// The first of the files that exists, its line breaks taken out, at once and after each change, checked every
-    /// 0.3 s in one long-lived Perl run on every machine (the relay's Perl): no process per check. It ends when its
+    /// 0.3 s in one long-lived run of the machine's `perl` (the relay's): no process per check. It ends when its
     /// stdin closes.
     func watch(_ paths: [String]) async throws -> AsyncStream<String> {
-        let channel = try await run(["perl", "-e", Self.watchScript] + paths)
-        let (stream, continuation) = AsyncStream<String>.makeStream()
-        Task {
-            for await line in channel.lines {
-                continuation.yield(line)
-            }
-            continuation.finish()
-        }
-        continuation.onTermination = { _ in channel.closeInput() }
-        return stream
+        try await lines(["perl", "-e", Self.watchScript] + paths)
     }
 
     /// Closing stdin makes the wrapper end the script (neither the script nor `tail` reads stdin). No kill: one that
     /// comes ahead of the wrapper's watcher leaves the script running.
     internal func lines(_ script: String, _ arguments: [String]) async throws -> AsyncStream<String> {
-        let channel = try await run(["sh", "-c", observeWrapper, "sh", "sh", "-c", script, "sh"]
-            + arguments)
+        try await lines(["sh", "-c", observeWrapper, "sh", "sh", "-c", script, "sh"] + arguments)
+    }
+
+    /// The stream ends the run by closing its stdin.
+    private func lines(_ argv: [String]) async throws -> AsyncStream<String> {
+        let channel = try await run(argv)
         let (stream, continuation) = AsyncStream<String>.makeStream()
         Task {
             for await line in channel.lines {

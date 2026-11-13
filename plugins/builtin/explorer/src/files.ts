@@ -289,8 +289,8 @@ export async function show(place: Place): Promise<Reveal> {
     const [now, numstat] = at ? await Promise.all([ovvi.git.changes(at).catch(() => undefined),
       ovvi.run(["git", "--no-optional-locks", "diff-index", "--numstat", "HEAD"], { cwd: at }).catch(() => null)])
       : [{ status: [], head: null }, null]
-    // A failed read is no head, as `git.head`'s answer outside a repository.
-    const head = now ? now.head : null
+    // A failed read keeps the bar, as it keeps the letters.
+    const head = now?.head
     changes = now?.status ?? changes
     showStatus()
     const lines = { added: 0, removed: 0 }

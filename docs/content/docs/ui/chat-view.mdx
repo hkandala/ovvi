@@ -222,7 +222,7 @@ and no backslash.
     history comes in above it.
   - `Exec.watch` prints a rewritten file (Claude Code's session record) whole
     on each change, checked every 0.3 s by one long-lived Perl run on the
-    pane's machine (the relay's Perl, also on This Mac), which starts no
+    pane's machine (`perl` from its `PATH`, as the relay's), which starts no
     process per check and ends when its stdin closes.
   - OpenCode's are `curl` runs on the pane's machine against
     `http://127.0.0.1:<port>`. The history loads after the event stream says

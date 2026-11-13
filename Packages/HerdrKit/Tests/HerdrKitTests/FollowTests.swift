@@ -267,8 +267,8 @@ while :; do
 done
 """#
 
-/// The same lines as the shell loop, here and through the relay, and no later: both watch at once, and each change
-/// shows at most one check after the shell loop's.
+/// The same lines as the shell loop, here and through the relay, and no later: both watch at once (a reference timed
+/// with it, lessons.md), and in all the new one is at most one 0.3 s check per change behind.
 @Test func `watch shows each state as the shell loop did, as soon`() async throws {
     let file = FileManager.default.temporaryDirectory.appending(path: "ovvi-watch-\(UUID().uuidString).json")
     defer { try? FileManager.default.removeItem(at: file) }
@@ -289,14 +289,12 @@ done
         let count = { (name: String) in seen.withLock { $0[name]?.count ?? 0 } }
         #expect(await eventually { count("new") == 1 && count("old") == 1 })
         for (index, state) in states.enumerated() {
-            try Data("{\"status\":\n\"\(state)\"}".utf8).write(to: file)
+            try Data("{\"status\":\n\"\(state)\"}".utf8).write(to: file, options: .atomic)
             #expect(await eventually { count("new") == index + 2 && count("old") == index + 2 })
         }
         let (new, old) = seen.withLock { ($0["new"] ?? [], $0["old"] ?? []) }
         #expect(new.map(\.0) == old.map(\.0) && new.map(\.0) == [""] + states.map { "{\"status\":\"\($0)\"}" })
-        // Each check of either comes at its own moment in its 0.3 s: at most one check apart, and a bit for the turn.
-        for (new, old) in zip(new, old).dropFirst() {
-            #expect(new.1 - old.1 <= .milliseconds(450), "\(new.0) \(new.1 - old.1) after the shell loop")
-        }
+        let behind = zip(new, old).dropFirst().reduce(Duration.zero) { $0 + ($1.0.1 - $1.1.1) }
+        #expect(behind <= .milliseconds(300) * states.count, "\(behind) behind the shell loop")
     }
 }
