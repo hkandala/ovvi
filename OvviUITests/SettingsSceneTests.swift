@@ -45,7 +45,8 @@ extension OvviUITests {
             XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
             app.typeKey("/", modifierFlags: .command)
             XCTAssertTrue(element("shortcuts").exists(within: 2))
-            scene("\(appearance) 1 shortcuts panel", app.windows.firstMatch)
+            scene("\(appearance) 1 shortcuts panel",
+                  app.windows.matching(NSPredicate(format: "identifier BEGINSWITH 'main-'")).firstMatch)
             app.typeKey(.escape, modifierFlags: [])
             openSettings("keys")
             let window = settingsWindow, field = element("keys.tab.new", in: window)

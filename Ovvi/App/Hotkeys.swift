@@ -55,6 +55,8 @@ final class Hotkeys {
         Hotkey("macos.copy", "Copy", "macOS", "cmd+c"), Hotkey("macos.paste", "Paste", "macOS", "cmd+v"),
         Hotkey("macos.select-all", "Select All", "macOS", "cmd+a"),
         Hotkey("macos.full-screen", "Enter Full Screen", "macOS", "ctrl+cmd+f"),
+        Hotkey("macos.windows", "Move Focus to Next Window", "macOS", "cmd+`"),
+        Hotkey("macos.emoji", "Emoji & Symbols", "macOS", "ctrl+cmd+space"),
     ]
 
     static let groups = ["App", "Sessions", "Spaces", "Tabs", "Panes", "Terminal", "Edit", "Browser", "Plugins"]
