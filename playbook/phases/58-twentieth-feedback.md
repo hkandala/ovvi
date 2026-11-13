@@ -1014,6 +1014,38 @@ The user's files: `.build/fb57/r11-fontkeys-11.20.52.png`, `r11-tabslide-11.23.5
 
 52. "can we enable cmd+shift+. shortcut to toggle show/hide hidden files in file explorer like in finder in macos"
 
+#### Track E6: Findings
+
+- **Fix (45).** Each commit row shows the author (secondary, 120 pt at most), then the short hash and the age.
+  The age is "now" under a minute (and up to a minute ahead, for a skewed clock), then `5m`, `3h`, `2d` up to 5
+  days, then `Nov 10`, and `Nov 20, 2024` in another year. It changes once a minute in place: the rows are not drawn
+  again, as a draw under a click loses the click. The age's help is the full local time
+  (`Fri, Nov 13, 2026 at 11:20:52 AM`), and the row's VoiceOver label carries the author and that same time. The short
+  hash is a button beside the row's button (a button in a button is no button to VoiceOver): a click copies the full
+  hash and shows "Copied" for 1.2 s, the diff's own copy button, now one `copyButton` for both. The rest of the row
+  selects and opens as before. The age column is 68 pt, so another year's day keeps the hashes in line.
+- **Fix (45, branch).** A header `menu` takes `"style": "bordered"`: the bordered small bezel of Fetch, Pull and Push,
+  with their 11 pt symbol. Git's branch uses it. It was a borderless menu, 18 pt high; it is now 20 pt, as the four
+  buttons. API stays 3: an older app draws it borderless.
+- **Fix (46).** The tree beside a file opens 280 pt wide (was 220). Measured in the VM on Ovvi's own tree: a name
+  starts at 49 + 24 pt per level, and about 7.6 pt per character. At 220 pt 46 % of Ovvi's names fit, at 280 pt 85 %
+  (a JS app's tree, flowrite: 35 % to 65 %); 300 pt would add little more and take room from the file. Folders at
+  depth 3 and most names under them show whole now; depth-4 names still cut, and a drag still widens the tree.
+- **Fix (52).** File Explorer's command **Show Hidden Files** (View menu and ⌘K, ⇧⌘. as in Finder, checked while on)
+  flips the tree's eye. It is enabled only on the tree's page: beside a file row 2 is the file's, and the eye is not
+  there. Nothing else uses ⇧⌘.: no app key, and CodeMirror binds none.
+- **Decisions.** The bare compact age (`5m`, not `5m ago`): the column stays narrow beside the author and hash, and the
+  help says the full time. The branch menu keeps its chevron, as a pull-down button does.
+- **Runs.** `rowFacts` (author, ages, branch height = Fetch's, hash click copies and leaves the row unselected) fails
+  on the old code: branch 18 pt, Fetch 20 pt in the old pictures' frames. VM green: both GitTests, GitDiffTests,
+  ExplorerKeysTests, the five FilesTests, HeaderTests (11 tests); then FilesTests' browse test with the ⇧⌘. step
+  (its first check, no `.gitignore` row, is a real absence: it fails without the command). `make test`: HerdrKit's SSHForwardTests and "a
+  started server shares the CLI's paths" fail on this Mac at its load (sshd sandbox, launchctl I/O error), also alone;
+  nothing here touches HerdrKit. Pictures, dark and light, before and after: `~/Downloads/ovvi-research/p58e6/`.
+- **For the user.** Hover a commit's age: the full time. Click a hash: "Copied", and the hash is on the clipboard.
+  The branch button beside Working Tree. A file with the tree beside it: wider. On the tree's page, ⇧⌘. twice, and
+  View ▸ Show Hidden Files' checkmark.
+
 ### Track B2: the Recently Closed menu's glass and empty state (item 47)
 
 47. "so on recently closed, that glass window is too transparent, let's add some tint to it, also have some empty
