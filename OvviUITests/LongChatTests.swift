@@ -108,7 +108,7 @@ extension OvviUITests {
         for _ in 0 ..< 5 where !until(2, { shown() > opened }) {
             chat.scroll(byDeltaX: 0, deltaY: 5000)
         }
-        XCTAssertGreaterThan(shown(), opened)
+        XCTAssertTrue(until(2) { shown() > opened }, "\(shown()) \(opened)")
         try await dropsToOneBlock(pane, opened, at: place) {
             for _ in 0 ..< 30 where !last.isHittable {
                 try await swipe(-upward)

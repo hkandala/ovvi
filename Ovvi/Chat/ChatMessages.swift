@@ -27,6 +27,7 @@ struct ChatMessages: View, Equatable {
     /// Not observed: a body run rebuilds the rows, and the height changes at each frame of a resize.
     @State private var height = Height()
     @State private var viewHeight = ViewHeight()
+    @State private var viewTop = Height()
     @Environment(\.look) private var look
     private static let phrases: [(greeting: String, placeholder: String)] = [
         ("What's on your mind?", "Ask or tell me anything"), ("What are we building?", "Describe the feature"),
@@ -224,11 +225,14 @@ struct ChatMessages: View, Equatable {
             // A short chat reads from the top, where its first message went.
             .defaultScrollAnchor(.top, for: .alignment)
             // At a new width or earlier rows this runs ahead of the rows' new places. x: how far the bottom is out of
-            // view; at 0 the anchor holds the bottom instead.
+            // view; at 0 the anchor holds the bottom instead. width: the view's top, as `nearTop` reads it, never
+            // negative (that would move minX).
             .onScrollGeometryChange(for: CGRect.self) { geometry in
                 CGRect(x: geometry.contentSize.height + geometry.contentInsets.bottom - geometry.visibleRect.maxY,
-                       y: geometry.contentOffset.y, width: 0, height: geometry.contentSize.height)
+                       y: geometry.contentOffset.y, width: max(0, geometry.visibleRect.minY),
+                       height: geometry.contentSize.height)
             } action: { old, new in
+                viewTop.value = new.width
                 // Only a scroll moves them. The rows' new height can move the offset in the same update (a wider card's
                 // shorter content, clamped at the end), and the rows' new tops can come ahead of it, so the place held
                 // is the one from before. During a load an update can report the grown rows ahead of the anchor.
@@ -260,11 +264,17 @@ struct ChatMessages: View, Equatable {
     }
 
     /// Back at the exact bottom, once the scroll rests, the stack is the newest block again, as at the open: the rows
-    /// that go are above the view, and the bottom anchor holds the bottom. Not while a load's rows are on their way.
+    /// that go are above the view, and the bottom anchor holds the bottom. Not while a load's rows are on their way,
+    /// and not when the view's top would then be near the stack's (as `nearTop`): the block it dropped would load
+    /// again, and a stack shorter than the view would move its rows up to the top.
     private func drop() {
-        if !away, !scrolling, !earlier, first != nil {
-            first = nil
-        }
+        guard !away, !scrolling, !earlier, first != nil else { return }
+        let rows = chat.history.rows(), start = Self.start(rows[...])
+        // Held at the bottom, the view's top moves up by what goes above the block's first row; that row then sits
+        // under the top padding, the earlier rows' row and the gap.
+        guard rows.indices.contains(start), let top = tops.places[rows[start].id],
+              viewTop.value - top + topPadding + 28 + 10 >= viewHeight.value / 2 else { return }
+        first = nil
     }
 
     private static func start(_ rows: ArraySlice<ChatRow>) -> Int {
