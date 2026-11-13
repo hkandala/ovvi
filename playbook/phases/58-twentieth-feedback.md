@@ -995,7 +995,7 @@ The user's files: `.build/fb57/r11-fontkeys-11.20.52.png`, `r11-tabslide-11.23.5
   build` green on the rebased tree; `make test` red twice in HerdrKit only, on the host's launchd and sshd
   (`launchctl bootstrap` I/O error, an sshd that never listened), which this change does not touch.
 
-### Track E6: Git commit list, Explorer's tree width (items 45, 46)
+### Track E6: Git commit list, Explorer's tree width, hidden files key (items 45, 46, 52)
 
 45. "so for the git commit tree, can we show author name as well in the list, also make the commit times relative
     showing like 1m, 1h, 5h, 1d, 2d ago etc, show relative times up to 5d, after that show dates nov 10, only if its
@@ -1004,6 +1004,8 @@ The user's files: `.build/fb57/r11-fontkeys-11.20.52.png`, `r11-tabslide-11.23.5
     branch dropdown can we make it look like button so all header buttons in the git view looks consistent, right now
     the dropdown looks slightly off"
 46. "in file explorer, can we increase the default width of sidebar bit more where we show file tree"
+
+52. "can we enable cmd+shift+. shortcut to toggle show/hide hidden files in file explorer like in finder in macos"
 
 ### Track B2: the Recently Closed menu's glass and empty state (item 47)
 
@@ -1027,3 +1029,9 @@ The user's files: `.build/fb57/r11-fontkeys-11.20.52.png`, `r11-tabslide-11.23.5
     chat view, after visting few panes, and coming back to other old chat pane, it fades in, i mean its okay, but i
     prefer it to be in memory and be more snappy, like i konw we have like 20 or 25 for regular terminal panes and
     browser panes, figure out if there's a limt for chat view as well, and see how to improve it"
+
+### Track A2: Add Machine's Return takes the whole name (item 53)
+
+53. "and there is one weird bug, open add machine, type the host name, and press enter, then it takes up only first
+    letter as host name, so let's say i type vps and press enter, i see connecting to v.., and fails of course, but
+    when i press add machine button, it takes the correct full name, fix tihs"
