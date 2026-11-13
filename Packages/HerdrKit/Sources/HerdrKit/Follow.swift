@@ -69,8 +69,20 @@ public extension Exec {
         return ready.map { pending.withLock { lines in defer { lines = [] }; return lines } }.filter { !$0.isEmpty }
     }
 
+    /// The first of the files that exists, its line breaks taken out, at once and after each change, checked every
+    /// 0.3 s in one long-lived Perl run on every machine (the relay's Perl): no process per check. It ends when its
+    /// stdin closes.
     func watch(_ paths: [String]) async throws -> AsyncStream<String> {
-        try await lines(Self.watchScript, paths)
+        let channel = try await run(["perl", "-e", Self.watchScript] + paths)
+        let (stream, continuation) = AsyncStream<String>.makeStream()
+        Task {
+            for await line in channel.lines {
+                continuation.yield(line)
+            }
+            continuation.finish()
+        }
+        continuation.onTermination = { _ in channel.closeInput() }
+        return stream
     }
 
     /// Closing stdin makes the wrapper end the script (neither the script nor `tail` reads stdin). No kill: one that
@@ -117,17 +129,28 @@ public extension Exec {
         """#
     }
 
+    /// A path may be relative to the home folder. An unreadable file is passed over, as a missing one.
     static var watchScript: String {
         #"""
-        o=x
-        while :; do
-          n=; for f; do
-            case $f in /*) ;; *) f=$HOME/$f ;; esac
-            [ -f "$f" ] && n=$(tr -d '\n' <"$f") && break
-          done
-          [ "$n" != "$o" ] && printf '%s\n' "$n" && o=$n
-          sleep 0.3
-        done
+        use strict; use warnings;
+        $| = 1;
+        my $last;
+        while (1) {
+            my $now = '';
+            for (@ARGV) {
+                my $file = m{^/} ? $_ : "$ENV{HOME}/$_";
+                next unless -f $file;
+            open(my $in, '<', $file) or next;
+                local $/;
+                $now = <$in> // '';
+                $now =~ tr/\n//d;
+                last;
+            }
+            print "$now\n" if !defined $last || $now ne $last;
+            $last = $now;
+            my $wait = ''; vec($wait, 0, 1) = 1;
+            exit 0 if select($wait, undef, undef, 0.3) > 0 && !sysread(STDIN, my $byte, 1);
+        }
         """#
     }
 }

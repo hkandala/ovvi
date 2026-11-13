@@ -149,7 +149,7 @@ A chat's, on the pane's machine ([Chat view](/docs/ui/chat-view)):
 ```sh
 sh -c '<prepare>' sh <token or file>                # before a Pi or OpenCode launch: write the extension or plugin, the password, the 30-day sweep
 sh -c 'f=…; while [ ! -f "$f" ]; do sleep 0.5; done; …; awk "$4"… <fifo & exec tail -c +N -F "$f" >fifo' sh <path> <offset> <inode> <skip>   # follow a side file or a transcript, dropping the lines its parser skips
-sh -c 'while :; do …; sleep 0.3; done' sh .claude/sessions/<pid>.json   # watch Claude Code's session record
+perl -e '<watch, 0.3 s>' .claude/sessions/<pid>.json   # watch Claude Code's session record, one long-lived run
 sh -c 'test -f "$HOME/$1/ask"' sh .cache/ovvi/chat/T    # Claude Code: does the question's hook still wait
 sh -c 'rm -f "$HOME/$1/ask"' sh .cache/ovvi/chat/T      # the question was answered in the terminal: its hook ends
 sh -c 'd="$HOME/$1"; [ -f "$d/ask" ] && cat >"$d/answer.tmp" && mv "$d/answer.tmp" "$d/answer"' sh <folder>   # its answer

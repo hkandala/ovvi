@@ -221,7 +221,9 @@ and no backslash.
     rows and then a jump. A message sent meanwhile shows at once, and the
     history comes in above it.
   - `Exec.watch` prints a rewritten file (Claude Code's session record) whole
-    on each change, checked every 0.3 s.
+    on each change, checked every 0.3 s by one long-lived Perl run on the
+    pane's machine (the relay's Perl, also on This Mac), which starts no
+    process per check and ends when its stdin closes.
   - OpenCode's are `curl` runs on the pane's machine against
     `http://127.0.0.1:<port>`. The history loads after the event stream says
     `server.connected`, so no event falls between the two. Each event builds
@@ -303,7 +305,8 @@ Esc go by the chat's phase.
 
 herdr reports a Codex picker or dialog as idle. So while herdr says idle or
 working, the adapter reads the pane's last 8 lines every 0.5 s
-(`pane.read {source:"recent"}`).
+(`pane.read {source:"recent"}`), one request over herdr's socket with no
+process ([Requests](/docs/talking-to-herdr#requests)).
 
 - Codex is ready when its input box (`› …`, not a numbered picker row
   `› 1. …`) sits directly above its status row (`… · …`), among the last 4
