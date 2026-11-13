@@ -9,6 +9,54 @@ extension OvviUITests {
         try await keptCardsCost(40)
     }
 
+    /// What kept chats cost on top of their kept terminals (their views, transcripts and follows): four Claude Code
+    /// chats of 150 turns and four Codex chats, against the same chats shown as their TUI, and the cost of a return to
+    /// a long chat after a session switch (one `main` line of `-recordLatency` each).
+    func testKeptChatsCost() async throws {
+        executionTimeAllowance = 1200
+        var chats: [(chat: (tab: String, pane: String), last: String)] = []
+        for agent in [0, 0, 0, 0, 1, 1, 1, 1] {
+            let chat = try await startChat(agent: agent)
+            let (prompt, last) = agent == 0 ? ("many", "Last.") : ("hello", "Echo: **hello**")
+            app.typeText(prompt + "\r")
+            XCTAssertTrue(row(chat.pane, "reply", last).exists(within: 20))
+            chats.append((chat, last))
+        }
+        relaunch(one, ["-recordLatency", "YES"])
+        addTeardownBlock { @MainActor in self.keep(self.element("app.latency").stringValue, as: "latency") }
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        element("workspace.w2").click()
+        for (chat, _) in chats {
+            try await select(chat.tab)
+            XCTAssertTrue(element("pane.\(chat.pane).view.tui").has(\.isSelected, true, within: 10))
+        }
+        try await Task.sleep(for: .seconds(10))
+        _ = try await measure("8 chats as their TUI")
+        for (chat, last) in chats {
+            try await select(chat.tab)
+            element("pane.\(chat.pane).view.chat").click()
+            let last = row(chat.pane, "reply", last)
+            XCTAssertTrue(until(20) { last.exists && last.isHittable })
+        }
+        try await Task.sleep(for: .seconds(10))
+        _ = try await measure("8 chats kept, one shown")
+        addTeardownBlock { @MainActor in
+            if self.pageList().contains(self.two) {
+                self.closePage(self.two)
+            }
+        }
+        try await select(chats[0].chat.tab)
+        openPage(two)
+        let last = row(chats[0].chat.pane, "reply", "Last.")
+        for _ in 0 ..< 3 {
+            try await Task.sleep(for: .seconds(6))
+            showPage(one)
+            XCTAssertTrue(until(5) { last.exists && last.isHittable })
+            try await Task.sleep(for: .seconds(6))
+            showPage(two)
+        }
+    }
+
     private func keptCardsCost(_ kept: Int) async throws {
         executionTimeAllowance = 1200
         // Made in herdr ahead of the launch, so the app's first snapshot has them: a workspace made right after a

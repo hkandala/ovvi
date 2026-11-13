@@ -75,8 +75,16 @@ struct Codex: ChatAdapter {
     @MainActor private func screens(_ chat: Chat) async {
         var misses = 1
         while !Task.isCancelled {
+            // A kept chat out of view reads nothing and keeps its last state.
+            guard chat.store?.windows
+                .contains(where: { $0.terminals.terminals[chat.terminalID]?.inView == true }) == true
+            else {
+                try? await Task.sleep(for: .seconds(0.5))
+                continue
+            }
             var ready = true
-            if let state = chat.store?.pane(chat.paneID)?.state, state != .needsYou, let client = chat.store?.client,
+            if let state = chat.store?.pane(chat.paneID)?.state, state != .needsYou,
+               let client = chat.store?.client,
                let screen = try? await client.recent(chat.paneID, lines: 8)
             {
                 ready = CodexRollout.ready(screen)

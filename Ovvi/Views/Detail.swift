@@ -7,7 +7,56 @@ struct Detail: View {
     let page: Page
 
     var body: some View {
-        let store = page.store
+        let store = page.store, special = shows(store), reconnecting = !special && store.reconnecting
+        let why = if case let .failed(error) = store.state {
+            error.localizedDescription
+        } else {
+            ""
+        }
+        let cards = page.selectedWorkspace.map { !$0.tabs.isEmpty } ?? false
+        ZStack {
+            // Every session's tab pages in one place, whatever the shown page's state: a page that moved would be made
+            // again. Another session's keeps only its kept chat cards' tabs, hidden.
+            ForEach(pages.list.filter { $0 === page || $0.store.panes.contains(where: $0.keepsChat) }) { kept in
+                let shown = kept === page && !special
+                let tab = kept.selectedWorkspace.flatMap { $0.tabs.isEmpty ? nil : $0.tabs[kept.selectedIndex(in: $0)] }
+                TabPages(tab: tab, page: kept, current: shown, overview: pages.overview)
+            }
+            if special {
+                state(store)
+            } else {
+                noTabs()
+            }
+        }
+        // Before the overlay: the page's own Loader still draws.
+        .environment(\.pageReconnecting, reconnecting)
+        .opacity(reconnecting ? 0.5 : 1)
+        .allowsHitTesting(!reconnecting)
+        // Reconnecting in one branch, so the page keeps its state through it.
+        .overlay {
+            // With no cards, the page reads as Connecting does.
+            if reconnecting, !cards {
+                Loader(symbol: store.machine.icon, text: "Reconnecting to \(store.name)…", detail: why,
+                       id: "detail.reconnecting")
+            }
+        }
+        .overlay(alignment: .bottom) {
+            if !special {
+                notices(store, reconnecting: reconnecting && cards ? why : nil)
+            }
+        }
+    }
+
+    /// The page shows its state in place of its tabs: the states `state` draws.
+    private func shows(_ store: HostStore) -> Bool {
+        switch store.state {
+        case .live: false
+        case .connecting, .failed(.notFound), .failed(.disconnected), .failed(.unsupported): true
+        case .failed: store.starting || !store.isRunning
+        }
+    }
+
+    @ViewBuilder private func state(_ store: HostStore) -> some View {
         let machine = store.name
         switch store.state {
         case .connecting:
@@ -29,38 +78,18 @@ struct Detail: View {
             EmptyState(symbol: "arrow.up.circle", title: "herdr is too old", text: text + ".", id: "detail")
         case .failed where store.starting:
             Loader(symbol: "rectangle.stack", text: "Starting \(store.session)…", id: "detail.starting")
-        case .failed where !store.isRunning:
+        case .failed:
             let title = "\(store.session) is not running"
             EmptyState(symbol: "rectangle.stack", title: title, text: store.startProblem, id: "detail") {
                 Button("Start \(store.session)") { Task { await store.start() } }.buttonStyle(.glassProminent)
                     .accessibilityIdentifier("detail.start")
             }
-        case .live, .failed:
-            // Reconnecting in one branch, so the page keeps its state through it.
-            let reconnecting = store.reconnecting
-            let why = if case let .failed(error) = store.state {
-                error.localizedDescription
-            } else {
-                ""
-            }
-            let cards = page.selectedWorkspace.map { !$0.tabs.isEmpty } ?? false
-            tabs()
-                // Before the overlay: the page's own Loader still draws.
-                .environment(\.pageReconnecting, reconnecting)
-                .opacity(reconnecting ? 0.5 : 1)
-                .allowsHitTesting(!reconnecting)
-                .overlay {
-                    // With no cards, the page reads as Connecting does.
-                    if reconnecting, !cards {
-                        Loader(symbol: store.machine.icon, text: "Reconnecting to \(machine)…", detail: why,
-                               id: "detail.reconnecting")
-                    }
-                }
-                .overlay(alignment: .bottom) { notices(store, reconnecting: reconnecting && cards ? why : nil) }
+        case .live:
+            EmptyView()
         }
     }
 
-    @ViewBuilder private func tabs() -> some View {
+    @ViewBuilder private func noTabs() -> some View {
         if let workspace = page.selectedWorkspace {
             if workspace.tabs.isEmpty {
                 EmptyState(symbol: "macwindow", title: "No tabs in \(workspace.label)") {
@@ -71,9 +100,6 @@ struct Detail: View {
                     .buttonStyle(.glassProminent)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                TabPages(tab: workspace.tabs[page.selectedIndex(in: workspace)], page: page, overview: pages.overview)
-                    .id(page.id)
             }
         } else if page.store.state == .live {
             EmptySession(page: page)
@@ -160,8 +186,10 @@ struct Detail: View {
 
 /// A view of its own per tab: a shared one would carry its cards' places into the next tab's.
 private struct TabPages: View {
-    let tab: HostStore.Tab
+    let tab: HostStore.Tab?
     let page: Page
+    /// The window's page: another's keeps only its kept chats' tabs, all hidden.
+    let current: Bool
     let overview: Bool
     @State private var shown: [String] = []
     /// ponytail: a constant count; a kept page costs its cards' updates while hidden. Bound by the cards' cost if a
@@ -170,18 +198,32 @@ private struct TabPages: View {
 
     var body: some View {
         let all = page.store.workspaces.flatMap(\.tabs)
-        let recent = (shown.filter { id in id != tab.id && all.contains { $0.id == id } } + [tab.id]).suffix(Self.kept)
+        let recent = (shown.filter { id in
+            id != tab?.id && all.contains { $0.id == id }
+        } + [tab?.id].compactMap(\.self))
+            .suffix(Self.kept)
+        // A chat card's page stays while the app keeps the card's terminal (D46): a chat's view lives in its page, and
+        // one made again builds its rows and fades them in, at the bottom.
+        let made = { (tab: HostStore.Tab) in
+            current && recent.contains(tab.id) || page.store.panes(in: tab.id).contains(where: page.keepsChat)
+        }
         // In an order no switch, drop or move changes: a moved page would host its cards' views again.
         ZStack {
-            ForEach(all.filter { recent.contains($0.id) }.sorted { $0.id < $1.id }) { kept in
-                let shows = kept === tab && !overview
+            ForEach(all.filter(made).sorted { $0.id < $1.id }) { kept in
+                let shows = current && kept === tab && !overview
                 TabPage(tab: kept, page: page)
                     .opacity(shows ? 1 : 0)
                     .allowsHitTesting(shows)
                     .environment(\.pageHidden, !shows)
             }
         }
-        .onChange(of: tab.id, initial: true) { shown = Array(recent) }
+        .onChange(of: tab?.id, initial: true) { shown = Array(recent) }
+        // Back to the shown page, only its tab is made, as for a page made again.
+        .onChange(of: current) {
+            if !current {
+                shown = []
+            }
+        }
     }
 }
 

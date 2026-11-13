@@ -606,7 +606,13 @@ tab at once.
   hover reaches them, and they give up the keyboard, as do the cards' text
   fields. A hidden page's cards take no drops, so a file or a pane dropped on
   the shown page reaches its card. The overview keeps them too, all hidden. A
-  tab past the 8 or a session switch makes its page again. A chat's view, each
+  tab past the 8 or a session switch makes its page again, unless it holds a
+  card that shows its chat while the app keeps the card's terminal (one of the
+  25 most recently shown, D46) and its session answers: that page stays made,
+  hidden, past the 8 and across a session switch (another session's page keeps
+  only those tabs; back to it, only its shown tab is made again). So a
+  chat comes back as a terminal does: at once, with its rows, its scroll place
+  and what came meanwhile, with no loader and no fade. A chat's view, each
   time it is made (its tab's first show, the flip from the TUI, a floating
   window), draws its rows on the next run loop turn, so the switch draws the
   tab and the card frames in the click's own turn.

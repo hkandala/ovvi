@@ -226,6 +226,11 @@ extension OvviUITests {
         XCTAssertEqual(state.stringValue, "Needs you")
         XCTAssertGreaterThanOrEqual(state.frame.minY, element("pane.\(pane).title").frame.maxY)
         XCTAssertTrue(hasKeyboard("terminal.\(pane)"))
+        // The TUI and back: the kept chat's drawer takes the terminal again.
+        element("chat.\(pane).open-terminal").click()
+        element("pane.\(pane).view.chat").click()
+        XCTAssertTrue(until(3) { drawer.exists && self.element("terminal.\(pane)").isHittable })
+        XCTAssertTrue(hasKeyboard("terminal.\(pane)"))
         app.typeText("1")
         XCTAssertTrue(drawer.vanishes(within: 5))
         XCTAssertTrue(row(pane, "reply", "Allowed.").exists(within: 5))
@@ -389,10 +394,5 @@ extension OvviUITests {
     func say(_ text: String, in pane: String) async throws {
         app.typeText(text + "\r")
         XCTAssertTrue(row(pane, "user", text).exists(within: 5))
-    }
-
-    func row(_ pane: String, _ kind: String, _ value: String) -> XCUIElement {
-        app.descendants(matching: .any)
-            .matching(NSPredicate(format: "identifier == %@ AND value == %@", "chat.\(pane).\(kind)", value)).firstMatch
     }
 }

@@ -300,6 +300,11 @@ extension OvviUITests {
         return try await poll("a pane beside the chat") { try await order(tab).first { $0 != pane } }
     }
 
+    func row(_ pane: String, _ kind: String, _ value: String) -> XCUIElement {
+        app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier == %@ AND value == %@", "chat.\(pane).\(kind)", value)).firstMatch
+    }
+
     func atTop(of chat: XCUIElement, _ pane: String) -> Set<String> {
         guard let found = try? nodes(of: chat) else { return [] }
         let kinds = ["chat.\(pane).reply", "chat.\(pane).user"], top = found[0].frame.minY

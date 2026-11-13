@@ -187,6 +187,11 @@ final class PaneViewRegistry {
         showWeb(web)
     }
 
+    /// In view or one of the `spare` kept out of view.
+    func keeps(_ terminalID: String) -> Bool {
+        terminals[terminalID].map { terminal in terminal.inView || Self.recent.contains { $0 === terminal } } ?? false
+    }
+
     func terminals(_ ids: Set<String>) -> [PaneTerminal] {
         ids.compactMap { terminals[$0] }
     }

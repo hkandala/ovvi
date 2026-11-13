@@ -235,7 +235,9 @@ and no backslash.
     the history again whole (Simpler choice: a long session is megabytes).
 - A new session line (`/clear`, `/new`, a fork, a resume) starts the history
   again.
-- The adapter follows while a card shows the chat, and while it shows the
+- The adapter follows while a card shows the chat (also a card in a kept
+  tab page out of view: a chat card's page stays as long as the app keeps its
+  terminal, [Tab page](/docs/ui/window#tab-page)), and while it shows the
   TUI of a chat it showed before: a switch back to Chat then shows the rows
   at once, with no blank while the transcript is read again. Off screen,
   the header's state is herdr's. A dropped stream is followed again after 2 s,
@@ -309,7 +311,9 @@ Esc go by the chat's phase.
 ### Codex's screen check
 
 herdr reports a Codex picker or dialog as idle. So while herdr says idle or
-working, the adapter reads the pane's last 8 lines every 0.5 s
+working and the card's terminal is in view (a kept chat out of view reads
+nothing and keeps its last state), the adapter reads the pane's last 8 lines
+every 0.5 s
 (`pane.read {source:"recent"}`), one request over herdr's socket with no
 process ([Requests](/docs/talking-to-herdr#requests)).
 
@@ -539,8 +543,8 @@ A run is one quiet line with no card: its summary and a chevron.
   text. A run of tool calls, Worked or a note counts as 2 lines,
   and a plan as its items plus 1.
   120 lines are about two views of text, so the block fills a usual view.
-  When the card is made (its tab first shows, or shows again after its
-  page left the [kept tab pages](/docs/ui/window#tab-page)), the app builds the
+  When the card is made (its tab first shows, or shows again after the app
+  let go of its terminal or the chat showed its TUI), the app builds the
   block and lays it out, so the block's size is the cost of that show.
   (31 rows of long replies take 394 ms of the main thread; 120 lines take
   about 124 ms, and a terminal tab 34 ms.) A switch to a kept tab page builds
@@ -566,9 +570,9 @@ A run is one quiet line with no card: its summary and a chevron.
   rest at the bottom starts it again, so the scroll bar does not change size
   each time a scroll reaches the bottom. Not while earlier rows are on their way.
   So a split lays out one block, however far up the chat went. A switch to
-  another tab or space and back keeps the rows and the scroll place (its page
-  is kept), and while its page is kept the chat goes on following its
-  transcript. When the card is made again, it shows the newest block at the
+  another tab, space or session and back keeps the rows and the scroll place
+  (its page is kept while its terminal is), and while its page is kept the chat
+  goes on following its transcript. When the card is made again, it shows the newest block at the
   bottom, once its history is current.
 - **The place on the top row.** Scrolled up, the app knows the row at the
   top of the view and how far the view's top is into it. When the rows

@@ -59,6 +59,85 @@ extension OvviUITests {
         try await scrolls(tabs[0])
     }
 
+    /// A chat card is kept as its terminal is (one of the 25 most recently shown), not as its tab's page (the 8 shown
+    /// last): past those and a session switch it shows again as it was, scrolled up, and past the terminals' bound it
+    /// is made again, at the bottom.
+    func testAChatStaysPastTheKeptPages() async throws {
+        let (chatTab, pane) = try await startChat()
+        app.typeText("many 25\r")
+        let last = row(pane, "reply", "Last.")
+        XCTAssertTrue(until(10) { last.exists && last.isHittable })
+        let chat = element("chat.\(pane)"), bottom = element("chat.\(pane).bottom")
+        for _ in 0 ..< 10 where !bottom.exists {
+            chat.scroll(byDeltaX: 0, deltaY: 400)
+        }
+        XCTAssertTrue(bottom.exists(within: 2))
+        let top = try XCTUnwrap(steady(3) {
+            let seen = atTop(of: chat, pane)
+            return seen.isEmpty ? nil : seen
+        })
+        let composer = element("chat.\(pane).composer")
+        composer.click()
+        XCTAssertTrue(hasKeyboard(composer))
+
+        // Nine tabs: one more than the kept pages.
+        let (first, _) = try await createWorkspace("kept chat")
+        var tabs = [first]
+        for _ in 1 ..< 9 {
+            try await tabs.append(createTab(in: workspace(of: first)).tab)
+        }
+        element("workspace.\(workspace(of: first))").click()
+        XCTAssertTrue(element("tabs.count").has(\.stringValue, "9", within: 10))
+        for (index, tab) in tabs.enumerated() {
+            app.typeKey("\(index + 1)", modifierFlags: .command)
+            XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, true, within: 3), tab)
+        }
+        // Another session's page, and back as it goes. Meanwhile the agent answers: the kept chat follows it.
+        addTeardownBlock { @MainActor in
+            if self.pageList().contains(self.two) {
+                self.closePage(self.two)
+            }
+        }
+        openPage(two)
+        try await send("hello\r", to: pane)
+        let reply = row(pane, "reply", "Echo: **hello**")
+        closePage(two)
+        element("workspace.w2").click()
+        XCTAssertTrue(element("tab.\(chatTab)").has(\.isSelected, true, within: 3))
+        XCTAssertTrue(chat.exists(within: 3))
+        XCTAssertTrue(reply.exists)
+        XCTAssertTrue(bottom.exists)
+        XCTAssertEqual(atTop(of: chat, pane), top)
+        XCTAssertTrue(hasKeyboard(composer))
+        madeAgainPastTheBound(pane, in: chatTab, tabs: tabs)
+    }
+
+    /// Past the terminals' bound and the kept pages: nine tabs leave the chat's terminal out of the one kept.
+    private func madeAgainPastTheBound(_ pane: String, in chatTab: String, tabs: [String]) {
+        let last = row(pane, "reply", "Last.")
+        let chat = element("chat.\(pane)"), bottom = element("chat.\(pane).bottom")
+        relaunch(one, ["-spareTerminals", "1"])
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        element("workspace.w2").click()
+        XCTAssertTrue(element("tab.\(chatTab)").exists(within: 3))
+        element("tab.\(chatTab)").click()
+        XCTAssertTrue(element("pane.\(pane).view.chat").exists(within: 10))
+        element("pane.\(pane).view.chat").click()
+        XCTAssertTrue(until(10) { last.exists && last.isHittable })
+        for _ in 0 ..< 10 where !bottom.exists {
+            chat.scroll(byDeltaX: 0, deltaY: 400)
+        }
+        XCTAssertTrue(bottom.exists(within: 2))
+        element("workspace.\(workspace(of: tabs[0]))").click()
+        for (index, tab) in tabs.enumerated() {
+            app.typeKey("\(index + 1)", modifierFlags: .command)
+            XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, true, within: 3), tab)
+        }
+        element("workspace.w2").click()
+        XCTAssertTrue(until(10) { last.exists && last.isHittable })
+        XCTAssertFalse(bottom.exists)
+    }
+
     private func replyBoxLetsGo(_ pane: String, in chatTab: String) async throws {
         let (floatTab, floated) = try await createTab(in: "w2", label: "float")
         closeAfter("tab", floatTab)
@@ -78,7 +157,7 @@ extension OvviUITests {
         XCTAssertFalse(composer.stringValue.contains("blur"), composer.stringValue)
     }
 
-    private func select(_ tab: String) async throws {
+    func select(_ tab: String) async throws {
         let tabs = try await (Self.call(one, "tab.list", ["workspace_id": "w2"])["tabs"] as? [[String: Any]] ?? [])
             .compactMap { $0["tab_id"] as? String }
         let index = try XCTUnwrap(tabs.firstIndex(of: tab))

@@ -1119,6 +1119,41 @@ The user's files: `.build/fb57/r11-fontkeys-11.20.52.png`, `r11-tabslide-11.23.5
     prefer it to be in memory and be more snappy, like i konw we have like 20 or 25 for regular terminal panes and
     browser panes, figure out if there's a limt for chat view as well, and see how to improve it"
 
+#### Track C12 findings
+
+- **Cause, the numbers.** Terminals and web cards live in the registry: 25 of each out of view (D46). A chat's view
+  lived only in its tab's page, and the app kept the pages of the **8 tabs** shown last in the session, and **none of
+  another session's** (`TabPages.kept`, `.id(page.id)`). The `Chat` and its history stay until the pane closes, but
+  the follow ended with the view (`current` false). So past 8 tabs, or after any session switch, a return read the
+  transcript again behind a loader, built the newest block (124–394 ms of main thread), faded it in (0.2 s, `drawn`)
+  and opened at the bottom, without the earlier rows it had loaded.
+- **Fix.** A tab page also stays made, hidden, while it holds a card that shows its chat and the app keeps the card's
+  terminal (in view or one of the 25, `PaneViewRegistry.keeps`) and its session answers. Detail keeps every session's
+  tab pages in one `ForEach`, outside the state switch, so another session's kept chat tabs (only those) survive a
+  switch, and a page keeps its identity when it becomes the shown one again (then only its shown tab is made). A kept
+  Codex chat out of view no longer reads its screen every 0.5 s.
+- **Tried and dropped.** The registry owning a hosting view per chat, as it owns terminal and web views. An
+  `NSHostingView` fires disappear and appear (tasks cancelled and started again) on every superview change, also
+  within one window, and in the VM a view moved into a new card faded its content in again and went to the bottom
+  (frame strip, scroll geometry log), as phase 53 found. D12 and D95 say so now.
+- **Memory (VM, a Debug build).** 8 kept chats (4 Claude Code of 150 turns, 4 Codex) against the same 8 shown as
+  their TUI: the app 213 → 244 MB (about 4 MB a chat, view and transcript), all processes 290 → 411 MB: the follows,
+  about 9 processes a chat (each follow is an `sh` wrapper, `sh` and `tail`, Claude Code has three) at about 1.6 MB
+  each; CPU at rest 1.9 % both, wake-ups 6 → 34 a second. At 25 kept chats that is about 100 MB in the app and 400 MB
+  of follow processes, inside D46's 2.3 GB bound, and macOS's critical pressure halves the 25. A return to a long chat
+  after a session switch took about the same main-thread time as before (550–1000 ms windows under XCUITest, both),
+  but shows the rows in the switch's frame with no loader and no fade.
+- **Runs.** `testAChatStaysPastTheKeptPages` (one scrolled-up chat, nine other tabs, a session switch while the agent
+  answers): red on main (opens at the bottom), green here; with `-spareTerminals 1` and nine tabs the chat is made
+  again at the bottom. Green in the VM: the switch, chat, long-chat and session-state tests. Fail the same on main in
+  the VM, so not this track: `testInstallingHerdrOnThisMacShowsItsProgressAndConnects` ("herdr has no session"), and
+  since C11's 360 pt minimum width `testASplitMovesTheMessagesWithTheReplyBox`,
+  `testADividerDragMovesTheMessagesWithTheReplyBox`, `testAFloatingWindowShowsTheChat` and
+  `testAToolOutputScrollsInsideItsBox`. `testAFailedStreamRetriesSlowlyAndWaitsOutAReconnect` failed once after those
+  (its new tab never showed) and passed alone after the chat test.
+- **For the user.** Open a long chat, scroll up, visit ten other tabs and another session, come back: same rows, same
+  place, no fade. Leave a Codex chat out of view: its pane gets no reads.
+
 ### Track A2: Add Machine's Return takes the whole name (item 53)
 
 53. "and there is one weird bug, open add machine, type the host name, and press enter, then it takes up only first
