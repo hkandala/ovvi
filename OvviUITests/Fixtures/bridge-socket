@@ -1,0 +1,19 @@
+#!/usr/bin/perl
+# A Unix socket at $1 that serves each connection with `$2 --session $3 remote-api-bridge` (a fixture's herdr), so the
+# fixture's changes to herdr's answers reach the app, which connects to herdr's socket. It ends with the app ($4).
+use strict; use warnings; use IO::Socket::UNIX; use IO::Select;
+my ($path, $herdr, $session, $app) = @ARGV;
+unlink $path;
+my $server = IO::Socket::UNIX->new(Local => $path, Listen => 16) or exit 1;
+$SIG{CHLD} = 'IGNORE';
+my $select = IO::Select->new($server);
+while (kill 0, $app) {
+    next unless $select->can_read(1);
+    my $client = $server->accept or next;
+    if (!fork) {
+        open(STDIN, '<&', $client); open(STDOUT, '>&', $client);
+        exec $herdr, '--session', $session, 'remote-api-bridge';
+    }
+    close $client;
+}
+unlink $path;

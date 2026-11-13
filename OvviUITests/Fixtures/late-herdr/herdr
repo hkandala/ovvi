@@ -2,6 +2,16 @@
 # The real herdr ($OVVI_E2E_HERDR), whose `session list` answers 2 s late, as over a slow link; the find bar's read of
 # a pane's recent text answers 3 s late (keys come sorted) and, just before, touches $OVVI_E2E_LATE_MARK if it is set.
 case "$*" in *"session list"*) sleep 2 ;; esac
+HERDR=$OVVI_E2E_HERDR
+# The app connects to herdr's socket: `session list` names one of `bridge-socket`'s instead, whose connections run this.
+case "$*" in "--session $2 session list"*)
+    s=/tmp/ovvi-e2e-bridge-$PPID-$2.sock
+    [ -S "$s" ] || { nohup "${0%/*}/../bridge-socket" "$s" "$0" "$2" $PPID >/dev/null 2>&1 &
+        i=0; while [ ! -S "$s" ] && [ $i -lt 100 ]; do sleep 0.05; i=$((i + 1)); done; }
+    set -o pipefail
+    "$HERDR" "$@" | sed "s#\"socket_path\":\"[^\"]*/sessions/$2/herdr.sock\"#\"socket_path\":\"$s\"#"
+    exit
+esac
 case "$*" in *remote-api-bridge*)
     IFS= read -r line
     case "$line" in *'"source":"recent"'*) sleep 3; [ -n "$OVVI_E2E_LATE_MARK" ] && touch "$OVVI_E2E_LATE_MARK" ;; esac

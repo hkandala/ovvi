@@ -7,7 +7,7 @@ POST /<session>/control with a terminal id as the body opens `terminal session c
 without takeover, closes its stdin at once (which lets go), and gives back what the stream printed
 (a frame, or the reason for a refusal); /<session>/takeover does the same with --takeover.
 POST /<session>/children lists the session's `terminal session` and `remote-api-bridge` runs, one
-command line each.
+command line each (the app runs no `remote-api-bridge`: it connects to herdr's socket).
 POST /<session>/stop stops the session; /<session>/start starts its server again, as a user would in a
 terminal.
 POST /<session>/open-folder with the built app's path as the body makes a folder in /tmp and opens it with the

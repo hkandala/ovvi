@@ -28,17 +28,22 @@ extension Exec {
 /// A connection to a Unix socket in the app, as a `Channel`: herdr's API socket, or the local socket ssh forwards to a
 /// remote machine's. herdr answers one request per connection and then closes it; `events.subscribe` keeps it open.
 enum UnixSocket {
-    static func connect(_ path: String) throws -> Channel {
+    /// `name`: what the errors call it.
+    static func connect(_ path: String, as name: String? = nil) throws -> Channel {
+        let name = name ?? "herdr's socket \(path)"
         let handle = socket(AF_UNIX, SOCK_STREAM, 0)
-        guard handle >= 0 else { throw failure(path, errno) }
+        guard handle >= 0 else { throw failure(name, errno) }
         var address = sockaddr_un()
         address.sun_family = sa_family_t(AF_UNIX)
         let bytes = Array(path.utf8)
         guard bytes.count < MemoryLayout.size(ofValue: address.sun_path) else {
             close(handle)
-            throw HerdrError.failed("herdr's socket path is too long: \(path)")
+            throw HerdrError.failed("\(name): its path is too long")
         }
         withUnsafeMutableBytes(of: &address.sun_path) { $0.copyBytes(from: bytes) }
+        // A write to a closed connection fails, also in an app that does not ignore SIGPIPE.
+        var yes: Int32 = 1
+        setsockopt(handle, SOL_SOCKET, SO_NOSIGPIPE, &yes, socklen_t(MemoryLayout<Int32>.size))
         let connected = withUnsafePointer(to: &address) {
             $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
                 Darwin.connect(handle, $0, socklen_t(MemoryLayout<sockaddr_un>.size))
@@ -47,13 +52,13 @@ enum UnixSocket {
         guard connected == 0 else {
             let error = errno
             close(handle)
-            throw failure(path, error)
+            throw failure(name, error)
         }
         return channel(handle)
     }
 
-    private static func failure(_ path: String, _ error: Int32) -> HerdrError {
-        .failed("herdr's socket \(path): \(String(cString: strerror(error)))")
+    private static func failure(_ name: String, _ error: Int32) -> HerdrError {
+        .failed("\(name): \(String(cString: strerror(error)))")
     }
 
     /// One queue per connection reads and writes, and closes the socket once, when the reading ends: at its end, when
@@ -64,31 +69,17 @@ enum UnixSocket {
         let (lines, continuation) = AsyncStream<String>.makeStream()
         let ended = Mutex<String?>(nil)
         let (exits, exited) = AsyncStream<Void>.makeStream()
-        let buffer = Mutex(LineBuffer())
         let end: @Sendable (String) -> Void = { reason in
             ended.withLock { $0 = $0 ?? reason }
             source.cancel()
         }
-        source.setEventHandler {
-            var chunk = [UInt8](repeating: 0, count: 65536)
-            let count = read(handle, &chunk, chunk.count)
-            guard count > 0 else {
-                if let rest = buffer.withLock(\.rest) {
-                    continuation.yield(rest)
-                }
-                return end(count == 0 ? "" : String(cString: strerror(errno)))
-            }
-            for line in buffer.withLock({ $0.take(Data(chunk[..<count])) }) {
-                continuation.yield(line)
+        read(handle, source, continuation, end: end) { exited.finish() }
+        // A reader that stops is no answer from herdr's end.
+        continuation.onTermination = { reason in
+            if case .cancelled = reason {
+                queue.async { end("dropped") }
             }
         }
-        source.setCancelHandler {
-            close(handle)
-            continuation.finish()
-            exited.finish()
-        }
-        source.resume()
-        continuation.onTermination = { _ in queue.async { end("") } }
         return Channel(
             lines: lines,
             write: { line in
@@ -106,6 +97,38 @@ enum UnixSocket {
                 return reason.isEmpty ? (0, "") : (1, reason)
             },
         )
+    }
+
+    /// Lines until the end, then the socket closes in the cancel handler, its one place.
+    private static func read(_ handle: Int32, _ source: any DispatchSourceRead,
+                             _ continuation: AsyncStream<String>.Continuation,
+                             end: @escaping @Sendable (String) -> Void, closed: @escaping @Sendable () -> Void)
+    {
+        let buffer = Mutex(LineBuffer())
+        // Only the connection's queue reads into it, and its cancel handler frees it.
+        nonisolated(unsafe) let chunk = UnsafeMutableRawBufferPointer.allocate(byteCount: 65536, alignment: 1)
+        source.setEventHandler {
+            let count = Darwin.read(handle, chunk.baseAddress, chunk.count)
+            if count < 0, errno == EINTR {
+                return
+            }
+            guard count > 0 else {
+                if let rest = buffer.withLock(\.rest) {
+                    continuation.yield(rest)
+                }
+                return end(count == 0 ? "" : String(cString: strerror(errno)))
+            }
+            for line in buffer.withLock({ $0.take(Data(chunk[..<count])) }) {
+                continuation.yield(line)
+            }
+        }
+        source.setCancelHandler {
+            close(handle)
+            chunk.deallocate()
+            continuation.finish()
+            closed()
+        }
+        source.resume()
     }
 
     /// Nil once all is sent, else why not.

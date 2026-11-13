@@ -80,6 +80,12 @@ func `a remote machine's requests go over a forwarded socket, after a server res
     // The app's pid in the name: another Ovvi on the Mac has its own.
     #expect(local.hasPrefix(exec.socket + "-") && exec.socket.hasSuffix("-\(getpid())"))
 
+    // The forward's file goes while its master lives (a cache cleaner): the next request forwards it again. ssh
+    // answers a second forward of a path it still holds with success and binds nothing.
+    unlink(local)
+    _ = try await client.snapshot()
+    #expect(FileManager.default.fileExists(atPath: local))
+
     // herdr's server ends and starts again: the same forward reaches the new one.
     try await client.stopSession()
     await #expect(throws: HerdrError.self) { try await client.snapshot() }

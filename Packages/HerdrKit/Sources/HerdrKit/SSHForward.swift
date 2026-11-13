@@ -3,35 +3,41 @@ import Foundation
 
 extension SSHExec {
     struct Forward {
-        let local: String, remote: String, pid: pid_t
+        let local: String, remote: String
+        /// The master's; 0 when it must be forwarded again.
+        var pid: pid_t
     }
 
     /// The same client as This Mac's, on a local socket that the master forwards to herdr's on the machine
     /// (`ssh -O forward -L`): no process per request, one channel on the connection each.
     public func api(_ session: String) async throws -> Channel {
-        let local = try await forwarded(session)
+        let name = "The forward of herdr's socket on \(target)"
         let channel: Channel
-        do {
-            channel = try UnixSocket.connect(local)
-        } catch {
-            // No listener: the master ended. The next request forwards again, on a new one if need be.
-            herdrForwards[session] = nil
-            throw error
+        if let first = try? await UnixSocket.connect(forwarded(session), as: name) {
+            channel = first
+        } else {
+            // No listener (the master ended, or its file went): forwarded again, once.
+            herdrForwards[session]?.pid = 0
+            channel = try await UnixSocket.connect(forwarded(session), as: name)
         }
+        let pid = connection
         return Channel(lines: channel.lines, write: channel.write, closeInput: channel.closeInput,
                        terminate: channel.terminate,
                        exit: { [self] in
                            let result = await channel.exit()
-                           return await result.status == 0 ? unanswered(session) ?? result : result
+                           return await result.status == 0 ? unanswered(session, on: pid) ?? result : result
                        })
     }
 
     /// ssh takes a forwarded connection and closes it when the machine's end fails: herdr is not running (the
-    /// caller's session list tells), its socket moved (forwarded again next time), or sshd refuses to forward it.
-    private func unanswered(_ session: String) async -> (status: Int32, stderr: String)? {
-        guard let listed = try? await herdrSession(session), listed.running else { return nil }
-        guard let forward = herdrForwards[session], forward.remote == listed.socketPath else {
-            herdrForwards[session] = nil
+    /// caller's session list tells), its socket moved (forwarded again next time), or sshd refuses to forward it. A
+    /// master that went meanwhile (a dropped link) closed it too: that is no refusal.
+    private func unanswered(_ session: String, on pid: pid_t?) async -> (status: Int32, stderr: String)? {
+        guard let pid, pid == connection, herdrForwards[session]?.pid == pid,
+              let listed = try? await herdrSession(session), listed.running, pid == connection,
+              let forward = herdrForwards[session], forward.pid == pid else { return nil }
+        guard forward.remote == listed.socketPath else {
+            herdrForwards[session]?.pid = 0
             return nil
         }
         return (1, "\(target) refuses to forward herdr's socket: Ovvi needs sshd's AllowStreamLocalForwarding")
@@ -64,7 +70,9 @@ extension SSHExec {
         // ssh reads `-L` as `local:remote`.
         guard !remote.contains(":") else { throw HerdrError.failed("herdr's socket path has a colon: \(remote)") }
         guard let pid = connection else { throw HerdrError.failed("The SSH connection to \(target) closed") }
-        if let old = herdrForwards[session], old.pid == pid {
+        // ssh answers a forward it has already with success and binds nothing: a file removed meanwhile would stay
+        // gone. A master without it refuses the cancel, harmlessly.
+        if let old = herdrForwards[session] {
             _ = await control(["-O", "cancel", "-L", "\(old.local):\(old.remote)"])
         }
         let hash = SHA256.hash(data: Data(session.utf8)).prefix(4).map { String(format: "%02x", $0) }.joined()
