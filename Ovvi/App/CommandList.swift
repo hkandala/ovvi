@@ -93,7 +93,9 @@ struct CommandList {
                             pages.close(page)
                         }
                     }),
-            Command(section: .close, title: "Close Window", symbol: "xmark") { NSApp.keyWindow?.performClose(nil) },
+            // With no main window's list, ⌘W closes the key window: a disabled Close Pane would swallow it.
+            Command(section: .close, title: "Close Window", key: pages == nil ? .hotkey("pane.close") : nil,
+                    symbol: "xmark") { NSApp.keyWindow?.performClose(nil) },
         ]
         let browser = page?.keyboardPane.flatMap { page?.browser($0) }
         let chat = page?.keyboardPane.flatMap { page?.shownChat($0) } != nil
@@ -108,12 +110,9 @@ struct CommandList {
             + palette(page) + Self.opens(page) + window(page, pages)
         let all = list + Self.plugin(page?.keyboardPane?.terminalID.flatMap { page?.terminals.plugins[$0] },
                                      besides: list)
-        guard pages == nil else { return all }
-        // With no main window's list, ⌘W closes the key window: a disabled Close Pane would swallow it.
-        return all.map { command in
+        return pages != nil ? all : all.map { command in
             var command = command
-            command.key = command.title == "Close Window" ? .hotkey("pane.close")
-                : command.title == "Close Pane" ? nil : command.key
+            command.key = command.id == "pane.close" ? nil : command.key
             return command
         }
     }
@@ -133,10 +132,11 @@ struct CommandList {
             }
         }
         return [
-            Command(section: .view, title: "Command Palette", key: .hotkey("app.palette"), symbol: "command",
-                    enabled: palette != nil) { palette?.wrappedValue.toggle() },
-            Command(section: .help, title: "Keyboard Shortcuts", key: .hotkey("app.shortcuts"), symbol: "keyboard",
-                    keywords: "keys help", enabled: shortcuts != nil) { shortcuts?.wrappedValue.toggle() },
+            Command(section: .view, title: "Command Palette", id: "app.palette", key: .hotkey("app.palette"),
+                    symbol: "command", enabled: palette != nil) { palette?.wrappedValue.toggle() },
+            Command(section: .help, title: "Keyboard Shortcuts", id: "app.shortcuts", key: .hotkey("app.shortcuts"),
+                    symbol: "keyboard", keywords: "keys help", enabled: shortcuts != nil,
+                    action: { shortcuts?.wrappedValue.toggle() }),
             Command(section: .view, title: "Toggle Sidebar", key: .hotkey("app.sidebar"), symbol: "sidebar.left",
                     enabled: sidebar != nil && pages?.overview != true) { sidebar?.wrappedValue.toggle() },
             Command(section: .view, title: "Show Overview", key: .hotkey("app.overview"), symbol: "square.grid.2x2",
@@ -205,6 +205,7 @@ struct CommandList {
             Command(
                 section: .palette,
                 title: "Font Size",
+                id: "app.font-size",
                 symbol: "textformat.size",
                 keywords: "text bigger smaller",
                 menu: PaneTerminal.fontSizes.map { size in

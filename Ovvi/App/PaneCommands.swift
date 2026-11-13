@@ -109,7 +109,7 @@ extension CommandList {
                                 }
                             })
         return redraw + [replace] + terminal + [agent] + plugins + [
-            Command(section: .close, title: "Close Pane", key: .hotkey("pane.close"), group: .panes,
+            Command(section: .close, title: "Close Pane", id: "pane.close", key: .hotkey("pane.close"), group: .panes,
                     symbol: "xmark.square", keywords: "pane", enabled: pane != nil || page?.standIn != nil,
                     action: { page?.closePane(target()) }),
         ]
@@ -126,7 +126,7 @@ extension CommandList {
         main.floating = nil
         let browser = pane.flatMap(page.browser)
         let steps = ["Increase Font Size": 1, "Decrease Font Size": -1, "Reset Font Size": 0]
-        let sizes = main.all.filter { $0.section == .size || $0.title == "Font Size" }.map { size in
+        let sizes = main.all.filter { $0.section == .size || $0.id == "app.font-size" }.map { size in
             guard let browser, let step = steps[size.title] else { return size }
             var zoom = size
             zoom.enabled = true
@@ -143,8 +143,8 @@ extension CommandList {
         let list = [
             Command(section: .close, title: "Detach Pane", key: .hotkey("pane.close"), group: .panes,
                     symbol: "pip.exit", action: { page.floating[terminalID] = nil }),
-            Command(section: .view, title: "Command Palette", key: .hotkey("app.palette"), symbol: "command",
-                    enabled: palette != nil) { palette?.wrappedValue.toggle() },
+            Command(section: .view, title: "Command Palette", id: "app.palette", key: .hotkey("app.palette"),
+                    symbol: "command", enabled: palette != nil) { palette?.wrappedValue.toggle() },
             Command(section: .view, title: "Stay on Top", symbol: "pin", checked: page.floating[terminalID] == true,
                     setting: true) { page.floating[terminalID]?.toggle() },
         ] + Self.editorCommands(page: page, pane: pane, terminal: pane.map {
@@ -155,7 +155,7 @@ extension CommandList {
                 edit("Paste", #selector(NSText.paste(_:)), "doc.on.clipboard"),
             ] + Self.pane(page, tabs: false) { pane }.filter { $0.section == .close }.map {
                 var command = $0
-                command.key = command.title == "Close Pane" ? .hotkey("tab.close") : command.key
+                command.key = command.id == "pane.close" ? .hotkey("tab.close") : command.key
                 return command
             } + sizes + Self.browser(browser, chooser: pane.flatMap { page.store.chooser($0.id) })
         return list + Self.plugin(pane?.terminalID.flatMap { page.terminals.plugins[$0] }, besides: list)

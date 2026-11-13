@@ -91,12 +91,12 @@ extension CommandList {
         KeyWindowList.Holder.all.allObjects.first { $0.window?.isKeyWindow == true }?.commands?.menuBarList
     }
 
-    static func runInMainWindow(_ title: String) {
+    static func runInMainWindow(_ id: String) {
         let holders = KeyWindowList.Holder.all.allObjects.filter { $0.commands?.floating == nil }
         guard let holder = NSApp.orderedWindows.lazy.compactMap({ window in holders.first { $0.window === window } })
             .first else { return }
         holder.window?.makeKeyAndOrderFront(nil)
-        holder.commands?.menuBarList.first { $0.title == title }?.action()
+        holder.commands?.menuBarList.first { $0.id == id }?.action()
     }
 }
 
@@ -159,6 +159,7 @@ struct Command {
 
     let section: Section
     let title: String
+    /// For code that finds it (its titles and keys change), and a choice's row (`Palette.choiceID`).
     var id: String?
     var key: KeyboardShortcut?
     var group: Group?
