@@ -15,7 +15,7 @@ extension Bridge {
                 id: args["id"] as? Int ?? 0,
                 destructive: (args["options"] as? [String: Any])?["destructive"] as? Bool ?? false,
             )
-        case "menu.show": return menu(args["items"] as? [Any] ?? [], in: plugin.web.view)
+        case "menu.show": return await menu(args["items"] as? [Any] ?? [], in: plugin.web.view)
         case "pick.folder": return await folder(from: args["from"] as? String ?? plugin.web.arg, plugin)
         case "symbol":
             let name = args["name"] as? String ?? ""
@@ -85,7 +85,7 @@ extension Bridge {
         return found
     }
 
-    private func menu(_ items: [Any], in view: NSView) -> String? {
+    private func menu(_ items: [Any], in view: NSView) async -> String? {
         guard let window = view.window else { return nil }
         let menu = NSMenu()
         menu.autoenablesItems = false
@@ -105,8 +105,7 @@ extension Bridge {
             entry.representedObject = action
             entry.image = (item["symbol"] as? String).flatMap(NSImage.symbol)
         }
-        // AppKit returns once the menu closed, after the picked item's action.
-        menu.popUp(positioning: nil, at: view.convert(window.mouseLocationOutsideOfEventStream, from: nil), in: view)
+        await menu.popUp(at: view.convert(window.mouseLocationOutsideOfEventStream, from: nil), in: view)
         return picked
     }
 

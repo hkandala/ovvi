@@ -235,7 +235,7 @@ final class PluginInstalls {
             NSApp.requestUserAttention(.informationalRequest)
         }
         guard let window = agent?.window ?? NSApp.keyWindow else {
-            return alert.runModal() == .alertFirstButtonReturn
+            return await outsideMainQueue { alert.runModal() } == .alertFirstButtonReturn
         }
         return await alert.beginSheetModal(for: window) == .alertFirstButtonReturn
     }

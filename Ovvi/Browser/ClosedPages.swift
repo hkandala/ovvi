@@ -82,15 +82,7 @@ enum ClosedPages {
         }
         // Not for a card that closed during a remote read.
         guard view.window != nil else { return }
-        // Off the main actor's queue: a menu tracks in a run loop of its own, and no other main actor job runs inside
-        // a job. AppKit returns once the menu closed, after the picked item's action.
-        await withCheckedContinuation { done in
-            CFRunLoopPerformBlock(CFRunLoopGetMain(), CFRunLoopMode.commonModes.rawValue) {
-                menu.popUp(positioning: nil, at: NSPoint(x: 0, y: -4), in: view)
-                done.resume()
-            }
-            CFRunLoopWakeUp(CFRunLoopGetMain())
-        }
+        await menu.popUp(at: NSPoint(x: 0, y: -4), in: view)
         guard let picked else { return }
         change(machine) { $0.filter { $0.url != picked.page.url } }
         await page.openFromPlugin(Registry.browser, arg: picked.page.url, from: browser.terminalID, how: picked.how,

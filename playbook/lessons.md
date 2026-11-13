@@ -245,7 +245,8 @@ Problems that came back, and the rule that stops each. How we work is in
   older `controls.set` won on CI. Take the `replyHandler` form and make the task on the main actor.
 - **Never run a nested run loop inside a main-actor job** (`NSMenu.popUp`, `runModal` in a `Task`): libdispatch does not
   drain the main queue inside one of its own jobs, so every other main-actor job waits until the menu closes. Start
-  it from a run-loop block (`CFRunLoopPerformBlock` on the main run loop) and await its end.
+  them through `outsideMainQueue` or `NSMenu.popUp(at:in:)` (`MenuAction.swift`): a run-loop block, awaited. `make
+  lint` rejects the plain calls elsewhere.
 - **Don't block Swift's cooperative pool** (`Process.waitUntilExit` in async code): await the exit through
   `terminationHandler`.
 
