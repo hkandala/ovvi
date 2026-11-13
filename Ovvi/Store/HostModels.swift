@@ -69,7 +69,8 @@ extension HostStore {
         /// herdr's `state_change_seq`: one counter for the session's agents.
         var changeSeq: Int?
         var agentName: String?
-        var session: String?
+        /// herdr's `agent_session` of the pane's agent.
+        var reportedSession: String?
         var sessionTitle: String?
         @ObservationIgnored var titleKey: String?
         var program: Program?
@@ -107,6 +108,12 @@ extension HostStore {
         var cardTitle: String {
             let (name, folder) = header
             return [name, folder].plainTitle
+        }
+
+        /// herdr's report, else the session the agent's command line names (`codex resume <id>`): Codex runs the
+        /// hook that reports it to herdr only at its first prompt.
+        var session: String? {
+            reportedSession ?? program?.foreground.lazy.flatMap(\.argv).compactMap(ChatAdapters.uuid).first
         }
 
         var programName: String? {

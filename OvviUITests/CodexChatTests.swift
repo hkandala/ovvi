@@ -45,7 +45,8 @@ extension OvviUITests {
         XCTAssertFalse(row(pane, "reply", "Allowed.").exists)
     }
 
-    /// Codex names a resumed session only at its first prompt: the chat shows the session's history before that.
+    /// Codex names a resumed session only at its first prompt: Relaunch with Chat shows before that, from the session
+    /// in its command line, and the chat shows the session's history.
     func testRelaunchWithChatShowsACodexSessionsHistory() async throws {
         let home = Self.archivedHome + "/.codex"
         defer { try? FileManager.default.removeItem(atPath: home) }
@@ -54,6 +55,11 @@ extension OvviUITests {
         try await send("hello\r", to: pane)
         try await waitFor(pane) { $0.contains("• done") }
         let enable = element("pane.\(pane).enable-chat")
+        XCTAssertTrue(enable.exists(within: 10))
+        try await Self.call(one, "pane.send_keys", ["pane_id": pane, "keys": ["ctrl+d"]])
+        XCTAssertTrue(enable.vanishes(within: 10))
+        let rollout = try XCTUnwrap(FileManager.default.subpaths(atPath: home)?.first { $0.hasSuffix(".jsonl") })
+        try await send("codex resume \(rollout.dropLast(6).suffix(36))\r", to: pane)
         XCTAssertTrue(enable.exists(within: 10))
         XCTAssertEqual(enable.label, "Relaunch with Chat")
         enable.click()

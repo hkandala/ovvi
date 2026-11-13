@@ -81,8 +81,8 @@ extension HostStore {
     /// session's first snapshot has every agent at once.
     func watchTitle(_ pane: Pane, _ new: HerdrKit.Pane) {
         let session = new.agentSession.flatMap { $0.agent == new.agent ? $0.value : nil }
-        if pane.session != session {
-            pane.session = session
+        if pane.reportedSession != session {
+            pane.reportedSession = session
         }
         let key = session.map { "\($0) \(new.title ?? "") \(new.agentStatus?.rawValue ?? "")" }
         guard key != pane.titleKey else { return }

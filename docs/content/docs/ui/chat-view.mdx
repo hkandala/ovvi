@@ -42,7 +42,7 @@ and
 - Every other pane shows only its terminal and no switch: plain terminals,
   agents started by hand or from herdr's TUI, and agents that herdr restores
   after a cold restart (herdr runs them again without the flags). An agent
-  among them whose session herdr knows shows Relaunch with Chat in place of
+  among them whose session the app knows shows Relaunch with Chat in place of
   the switch.
 - **The bare-command fallback.** If the shell is in front again at once after
   the launch line (two checks in a row, from 1 s on), the chooser types the
@@ -62,9 +62,13 @@ and
 An agent that runs without Ovvi's flags can start again with them, in the
 same session. The **Relaunch with Chat** button sits where Chat | TUI sits,
 with the help tag "Restart ‹Agent› with chat, in the same session". It
-shows when herdr reports the agent and its session (`agent_session`, of the
-same agent), the pane's processes carry no marker, and the agent takes that
-session value. An agent in another pane runs it with `ovvi chat <pane>`,
+shows when herdr reports the agent, the app knows its session, the pane's
+processes carry no marker, and the agent takes that session value. The
+session is herdr's `agent_session` of the same agent, else a UUID in the
+agent's command line (`codex resume <id>`): Codex runs the hook that reports
+its session to herdr only at its first prompt, a resumed session's too. A
+session picked in `codex resume`'s picker shows the button from its first
+prompt. An agent in another pane runs it with `ovvi chat <pane>`,
 which never asks: it refuses a working or waiting agent with `busy`
 ([CLI](/docs/agent-control/cli#agent-chat-and-view)).
 
@@ -801,7 +805,7 @@ on This Mac and on a remote machine, in light mode and in Classic.
 - **An OpenCode build that ignores plugins:** the card falls back to its terminal after 15 s.
 - **Relaunch with Chat:** each agent started by hand, idle and working (the alert),
   comes back in the same session with its chat. Codex keeps its hook after
-  `resume`.
+  `resume`. `codex resume <id>` with no prompt yet shows the button.
 - **Titles:** real sessions' titles in the tab and the sidebar's agent rows, after
   `/rename` (Claude Code) and `/name` (Pi).
 - Managed launchers can rewrite `~/.claude/settings.json` and reinstall a
