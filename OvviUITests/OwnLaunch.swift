@@ -29,6 +29,7 @@ extension OvviUITests {
         "testAddingAKeyHostOpensItInANewWindowWithoutAsking",
         "testAnEvictedCardComesBackWithItsPicture",
         "testAnUnreachableMachineShowsConnectingThenReconnecting",
+        "testBalanceSplitsEvensOpensAndClosesUnlessOff",
         "testDraggingTheThirdCapsuleFirstReordersHerdrsTabs",
         "testEditingARemoteHostRenamesItAndRemoveTakesItOff",
         "testEmptySessionScenes",
