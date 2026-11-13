@@ -651,7 +651,7 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
 - **For the user.** With a real Codex: `codex resume <id>` in a pane, no prompt: the button shows; Relaunch with Chat
   shows the history.
 
-### Track B: recently closed browser pages (item 34)
+### Track B: recently closed browser pages (items 34, 36)
 
 34. "for browser, can we show history icon left to the developer tools icon, and clicking on it we should show a drop
     down showing recently closed tabs, and clicking on any one should open that in new tab, and along with option+click,
@@ -659,6 +659,9 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
     some state file or something, but we have to limit the max number of pages, may be like 20 pages or something and
     drop the old ones, it should be simple, and fetch from state file, so for any machine it comes from that state file
     or something."
+36. "i don't like the way recent tabs are shown ,can we change it to somehting like this, basically favicon, website
+    title, with some max width and with ellipsis" (`.build/fb57/r10-recent-12.34.51.png`: Chrome's history menu, one
+    line per page: the site's favicon, then its title)
 
 ### Track B: Findings
 
