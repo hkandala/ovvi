@@ -28,6 +28,8 @@ struct ChatMessages: View, Equatable {
     @State private var height = Height()
     @State private var viewHeight = ViewHeight()
     @State private var viewTop = Height()
+    /// At the last scroll geometry action: SwiftUI can skip one for a change (a one-row load), and `old` has it.
+    @State private var contentHeight = Height()
     @Environment(\.look) private var look
     private static let phrases: [(greeting: String, placeholder: String)] = [
         ("What's on your mind?", "Ask or tell me anything"), ("What are we building?", "Describe the feature"),
@@ -243,7 +245,9 @@ struct ChatMessages: View, Equatable {
                         drop()
                     }
                 }
-                if old.height != new.height, earlier {
+                let grew = contentHeight.value != new.height
+                contentHeight.value = new.height
+                if grew, earlier {
                     earlier = false
                 }
             }
@@ -270,8 +274,8 @@ struct ChatMessages: View, Equatable {
     private func drop() {
         guard !away, !scrolling, !earlier, first != nil else { return }
         let rows = chat.history.rows(), start = Self.start(rows[...])
-        // Held at the bottom, the view's top moves up by what goes above the block's first row; that row then sits
-        // under the top padding, the earlier rows' row and the gap.
+        // Held at the bottom, the view's top moves up by what goes above the block's first row, which then sits under
+        // the top padding, the earlier rows' row and the gap.
         guard rows.indices.contains(start), let top = tops.places[rows[start].id],
               viewTop.value - top + topPadding + 28 + 10 >= viewHeight.value / 2 else { return }
         first = nil
@@ -341,38 +345,6 @@ private extension ChatMessages {
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(error.opacity(0.1), in: .rect(cornerRadius: 10))
-    }
-}
-
-extension VerticalAlignment {
-    nonisolated enum ReplyBox: AlignmentID {
-        static func defaultValue(in context: ViewDimensions) -> CGFloat {
-            context[VerticalAlignment.center]
-        }
-    }
-
-    /// A custom guide, as a stack passes on only those: `center` is the stack's own.
-    nonisolated static let replyBox = VerticalAlignment(ReplyBox.self)
-}
-
-/// The empty chat's: the reply box's middle at one line in the card's, its header above it, and the stack's top no
-/// higher than the card's (a short card keeps the header). Otherwise the stack at its own height.
-private struct BoxInMiddle: Layout {
-    let fills: Bool
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) -> CGSize {
-        let size = subviews.first?.sizeThatFits(ProposedViewSize(width: proposal.width, height: nil)) ?? .zero
-        return fills ? CGSize(width: size.width, height: max(size.height, proposal.height ?? 0)) : size
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
-        guard let stack = subviews.first else { return }
-        let offer = ProposedViewSize(width: bounds.width, height: nil)
-        let height = stack.sizeThatFits(offer).height
-        let top = fills ? max(bounds.minY, bounds.midY - stack.dimensions(in: offer)[.replyBox]) : bounds.maxY - height
-        // The offer it was measured with: offered its height, the stack shares it out its own way, and the greeting
-        // shrinks as the reply box grows.
-        stack.place(at: CGPoint(x: bounds.minX, y: top), proposal: offer)
     }
 }
 
