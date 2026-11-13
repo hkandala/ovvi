@@ -907,3 +907,58 @@ Round 2's tracks, S3 included (main up to 5614a7b4), then this round's fixes.
   with no motion fault; every step of that part ran 5–15 % slower than on final2's runner, the same test was green in
   both earlier on-demand runs on round 2's code and in the VM on this head. One rerun of that shard green (14:41–14:54).
   Test times not refreshed: about 6000 and 5450 s, shards within 20 %.
+
+## Round 3
+
+The user's files: `.build/fb57/r11-fontkeys-11.20.52.png`, `r11-tabslide-11.23.52.mov`, `r11-chat-input-11.45.07.png`
+(JPEG copies in `~/Downloads/ovvi-research/fb/`).
+
+### Track M3: the selection workaround comes back (item 41)
+
+41. "so on the pi selection one, you said we removed the previous workaround, now i see the white blocks are much
+    more worse, how big of a change it is, if its small workaround, let's bring that back, at least the issue was less
+    evident with that workaround"
+
+### Track H3: font size keys, tab history keys (items 42, 44)
+
+42. "[r11-fontkeys] why font size has two hotkeys? can't we just keep cmd++?"
+44. "let's change the hotkey for step back and forward, i use ctrl command arrows for other global hotkeys, how about
+    ctrl + shift arrows? or ctrl+ shift + [] so its consistent with other [ ] hotkeys we have"
+
+### Track T2: the tab slide is laggy (item 43)
+
+43. "tab slide effect on tab bar is very laggy, and makes it look delayed when opening tabs which used to be snappy
+    before [r11-tabslide]"
+
+### Track E6: Git commit list, Explorer's tree width (items 45, 46)
+
+45. "so for the git commit tree, can we show author name as well in the list, also make the commit times relative
+    showing like 1m, 1h, 5h, 1d, 2d ago etc, show relative times up to 5d, after that show dates nov 10, only if its
+    different year, show year as well, nov 20, 2024 something like that, and on hovering the time, we should see
+    tooltip with full timestamp. also from the list, clicking on commit id should copy the commit id, and for the
+    branch dropdown can we make it look like button so all header buttons in the git view looks consistent, right now
+    the dropdown looks slightly off"
+46. "in file explorer, can we increase the default width of sidebar bit more where we show file tree"
+
+### Track B2: the Recently Closed menu's glass and empty state (item 47)
+
+47. "so on recently closed, that glass window is too transparent, let's add some tint to it, also have some empty
+    placeholder better, like we just show text now, show some icon or something showing empty state better"
+
+### Track C11: the chat's block reset waits, the input's padding and a minimum width (items 48, 49)
+
+48. "so on resetting blocks in chat, don't do it immediately, leave for some time after user reached bottom, any
+    scroll up should reset that timer, and reset the block, let's say after 1m stucking to bottom, this would prevent
+    unncessary scrollbar size changes as soon as we reach bottom etc"
+49. "[r11-chat-input] can we ahve bit more right and left padding to chat input, its bit too close to border when i
+    reduce the pane width, also have a min width for the chat view till where the layout doesn't get meseed up, and if
+    the pane is smaller than that, horizontal scrolll should be enabled with the min width, check what's the correct
+    min width for good experience, without garbled layout"
+
+### Track C12: chat cards stay in memory (item 50)
+
+50. "and for the chat, how many panes do we preserve in memeory, i mean before how many panes do i see fade in effect
+    for chat view, like its loading again? can we increase that or something, right now even with very few panes in
+    chat view, after visting few panes, and coming back to other old chat pane, it fades in, i mean its okay, but i
+    prefer it to be in memory and be more snappy, like i konw we have like 20 or 25 for regular terminal panes and
+    browser panes, figure out if there's a limt for chat view as well, and see how to improve it"
