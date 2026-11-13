@@ -30,6 +30,7 @@ struct KeysPage: View {
             Section {
                 HStack(spacing: 8) {
                     FilterField(prompt: "Search", text: $search, identifier: "keys.search", symbol: "magnifyingglass")
+                        .labelsHidden()
                     Button("Reset All") { hotkeys.resetAll() }.disabled(hotkeys.saved.isEmpty)
                         .accessibilityIdentifier("keys.reset-all")
                 }

@@ -7,8 +7,9 @@ extension OvviUITests {
         openSettings("keys")
         addTeardownBlock { @MainActor [self] in
             openSettings("keys")
-            element("keys.reset-all", in: settingsWindow).click()
-            XCTAssertTrue(element("keys.tab.new", in: settingsWindow).has(\.stringValue, "⌘T", within: 2))
+            let reset = element("keys.reset-all", in: settingsWindow)
+            reset.click()
+            XCTAssertTrue(reset.has(\.isEnabled, false, within: 2))
         }
         escapeDeleteAndPlugins()
         recordAndSwap()
@@ -65,6 +66,9 @@ extension OvviUITests {
         search.typeText("new space")
         XCTAssertTrue(element("keys.tab.new", in: settingsWindow).vanishes(within: 2))
         XCTAssertTrue(newSpace.exists)
+        // The page keeps its search while the window is closed.
+        search.typeKey("a", modifierFlags: .command)
+        search.typeKey(.delete, modifierFlags: [])
         settingsWindow.typeKey("w", modifierFlags: .command)
         XCTAssertTrue(settingsWindow.vanishes(within: 2))
     }
