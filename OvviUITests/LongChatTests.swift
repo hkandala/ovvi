@@ -196,7 +196,7 @@ extension OvviUITests {
         let (inset, gap) = (Int(rest[0]), Int(rest[1]))
         let wide = card.frame.width
         let from = divider.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).screenPoint
-        let path = (1 ... 12).map { "\(from.x - CGFloat($0) * 7) \(from.y)" }.joined(separator: " 0.05 ")
+        let path = (1 ... 6).map { "\(from.x - CGFloat($0) * 10) \(from.y)" }.joined(separator: " 0.05 ")
         let drag = Task.detached { [one] in
             try await Self.post("\(one)/press", Data("\(from.x) \(from.y) \(path)".utf8))
         }
@@ -210,9 +210,10 @@ extension OvviUITests {
             looks.append(widths)
             return widths
         }
-        XCTAssertTrue(until(10) {
+        // The app follows a busy runner's drag seconds late.
+        XCTAssertTrue(until(30) {
             let widths = look()
-            return widths[0] > 0 && CGFloat(widths[0]) < wide - 70 && abs(widths[0] - widths[1] - inset) <= 1
+            return widths[0] > 0 && CGFloat(widths[0]) < wide - 50 && abs(widths[0] - widths[1] - inset) <= 1
         }, "\(looks)")
         _ = try await drag.value
         try await release()

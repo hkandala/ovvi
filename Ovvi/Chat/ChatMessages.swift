@@ -206,7 +206,9 @@ struct ChatMessages: View, Equatable {
                 nearTop = $1
             }
             .task(id: more) {
-                if let more {
+                // Read again: rows that come in one update with the place still near the top from before them (a
+                // history read to its end) left it near only until their layout.
+                if let more, nearTop {
                     // Together: the rows that come are no message the agent just took, so they do not fade.
                     (earlier, first) = (true, rows[Self.start(rows[..<more])].id)
                 }
