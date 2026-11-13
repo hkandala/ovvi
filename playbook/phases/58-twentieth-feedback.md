@@ -746,6 +746,27 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
 38. Asked whether a long chat should keep every loaded block (each split then lays out all the rows, about 110–160 ms
     per 100 rows): "yeah let's do drop the blocks to one block once we reach bottom in chat view".
 
+#### Track C10 findings
+
+- **Fix (38).** When a scroll brings the chat back to the exact bottom (the bottom anchor's, `away` false) and rests,
+  `first` goes back to nil: the stack is the newest block, as at the open. The rows that go are above the view, and the
+  bottom anchor holds the bottom, so nothing in view moves. Two places call it: the `away` flip (Scroll to Bottom, the
+  wheel, which has no phases) and the scroll's rest (a swipe, after its momentum). Scrolling up loads blocks as before.
+- **Decisions.** No drop while a load's rows are on their way (`earlier`), and none when the view's top would then be
+  within half a view of the stack's (the `nearTop` rule): in a tall card the newest block would load again at once, and
+  a block shorter than the view would move its rows up. Streaming at the bottom is unchanged: there `first` is nil
+  already.
+- **Cause, a drop that never came.** A one-row load (the chat's first row) changed the content's height, but SwiftUI
+  skipped the scroll geometry action for that change, and the next action's `old` already had the new height. So
+  `earlier` stayed on for good (also keeping new messages from fading in), and no drop could come. **Fix:** the action
+  compares against the height it last saw. Found with a log in the VM.
+- **Runs.** In the VM: the loads test red without the fix of the cause (52 rows stayed at the bottom, one block is
+  17); green on the head, with the other six chat tests (keeps its place, the end moves with the fingers, split,
+  divider drag, switches, shown again). The test now scrolls to the top, takes Scroll to Bottom, wheels up a block and
+  swipes down, and checks one block each time with the bottom row where it was at the open.
+- **For the user.** Scroll a long chat to the top, then back to the bottom (a swipe, and Scroll to Bottom): nothing
+  should move as the rows go. Then split the card: it should be as quick as at the open.
+
 ### Track H2: the Shortcuts page, done properly (item 37)
 
 37. "for the hotkey ones, can we make the keys smaller like they are touching th input border also that or thing when
