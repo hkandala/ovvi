@@ -971,6 +971,10 @@ The user's files: `.build/fb57/r11-fontkeys-11.20.52.png`, `r11-tabslide-11.23.5
   wall-clock time. TitleRowTests' ⌘T step checks only that the tab ends in view.
 - **For the user.** ⌘T with the bar full and not full: the new tab shows at once, with no slide. ⌘-click a link with
   the bar full: the new tab slides in.
+- **Runs.** VM: TabTests (12) and TitleRowTests/testTabsKeepTheirWidthAndTheRowScrolls green on the head. Films and
+  probe logs, before and after (Glass dark; the look does not change): `~/Downloads/ovvi-research/p58t2/`. `make lint
+  build` green on the rebased tree; `make test` red twice in HerdrKit only, on the host's launchd and sshd
+  (`launchctl bootstrap` I/O error, an sshd that never listened), which this change does not touch.
 
 ### Track E6: Git commit list, Explorer's tree width (items 45, 46)
 
