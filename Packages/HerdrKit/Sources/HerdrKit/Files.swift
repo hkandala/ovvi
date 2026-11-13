@@ -148,7 +148,9 @@ public enum Files {
     }
 
     /// A line each time a sweep differs from the one before. The wait is a `select` on stdin, so the run ends when its
-    /// stdin closes. A path in the home folder may be relative to it.
+    /// stdin closes. ponytail: every file of a folder each sweep, whole-second mtimes (Time::HiRes is not in Debian's
+    /// perl-base) need the inodes: 10,000 loose refs take 30 ms; sweep only folders with HiRes where it is there, if
+    /// that matters.
     static let statScript = #"""
     use strict; use warnings;
     my ($every, @paths) = @ARGV;
@@ -164,7 +166,7 @@ public enum Files {
     }
     my $last;
     while (1) {
-        my $now = join '', map { sweep(m{^/} ? $_ : "$ENV{HOME}/$_") } @paths;
+        my $now = join '', map { sweep($_) } @paths;
         print "changed\n" if defined $last && $now ne $last;
         $last = $now;
         my $in = ''; vec($in, 0, 1) = 1;
@@ -231,11 +233,17 @@ private final class Events: Sendable {
         self.changed = changed
         var context = FSEventStreamContext(version: 0, info: Unmanaged.passUnretained(self).toOpaque(), retain: nil,
                                            release: nil, copyDescription: nil)
-        let callback: FSEventStreamCallback = { _, info, _, paths, _, _ in
+        let callback: FSEventStreamCallback = { _, info, count, paths, flags, _ in
             guard let info else { return }
             let events = Unmanaged<Events>.fromOpaque(info).takeUnretainedValue()
             let changed = Unmanaged<CFArray>.fromOpaque(paths).takeUnretainedValue() as? [String] ?? []
-            if changed.contains(where: { path in events.targets.contains { path == $0 || path.hasPrefix($0 + "/") } }) {
+            // Events the system dropped: anything may have changed.
+            let dropped = (0 ..< count).contains {
+                flags[$0] & FSEventStreamEventFlags(kFSEventStreamEventFlagMustScanSubDirs) != 0
+            }
+            if dropped || changed.contains(where: { path in
+                events.targets.contains { path == $0 || path.hasPrefix($0 + "/") }
+            }) {
                 events.changed.yield()
             }
         }

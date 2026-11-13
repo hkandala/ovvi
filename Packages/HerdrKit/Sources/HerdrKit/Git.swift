@@ -43,12 +43,9 @@ public extension GitStatus {
         let lines = await (try? exec.output(["git", "-C", root, "rev-parse", "--absolute-git-dir", "--git-common-dir"],
                                             timeout: .seconds(5)))?.split(separator: "\n").map(String.init) ?? []
         guard lines.count == 2, lines[0].hasPrefix("/") else { return nil }
-        // Relative to the `-C` folder.
-        let common = URL(filePath: lines[1], relativeTo: URL(filePath: root, directoryHint: .isDirectory))
-            .absoluteURL.standardized
-        return [lines[0] + "/HEAD"] + ["refs", "packed-refs", "reftable", "config"].map {
-            common.appending(path: $0).path
-        }
+        // Relative only when it is the git folder itself (from the physical folder, so not to be joined to `root`).
+        let common = lines[1].hasPrefix("/") ? lines[1] : lines[0]
+        return [lines[0] + "/HEAD"] + ["refs", "packed-refs", "reftable", "config"].map { common + "/" + $0 }
     }
 
     /// Follows `files`: a change to one makes the head and counts read again.

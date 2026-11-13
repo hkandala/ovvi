@@ -70,7 +70,7 @@ extension HostStore {
         return try result.get()
     }
 
-    /// The 10 s refresh skips the workspace meanwhile (`gitReads`), so no stale read lands after this one.
+    /// Other reads skip or wait for the workspace meanwhile (`gitReads`), so no stale read lands after this one.
     func sync(_ workspace: Workspace, _ sync: Git.Sync) async {
         guard let root = workspace.gitRoot else { return }
         gitReads.insert(workspace.id)

@@ -30,7 +30,7 @@ extension OvviUITests {
         XCTAssertEqual(treeRow.frame.minX - repoRow.frame.minX, 14, accuracy: 1)
         keepScreenshot("git rows")
 
-        // A new commit shows within the 10 s refresh.
+        // A new commit shows by the watch of git's files, long before the 60 s read.
         try await send("(cd \(root)/repo && \(git) commit -q --allow-empty -m 3) && echo committed-$((6*7))\r",
                        to: "w2:p1")
         try await waitFor("w2:p1") { $0.contains("\ncommitted-42") }

@@ -144,13 +144,17 @@ private func git(_ script: String, in folder: URL) async throws {
 ) async throws {
     let folder = try scratchFolder()
     defer { try? FileManager.default.removeItem(at: folder) }
-    try await git("git init -q -b main r; cd r; git commit -q --allow-empty -m a; mkdir sub; git worktree add -q ../w",
-                  in: folder)
+    try await git("""
+    git init -q -b main r; cd r; git commit -q --allow-empty -m a; mkdir -p sub/in; git worktree add -q ../w
+    ln -s r/sub ../link
+    """, in: folder)
     let repo = folder.path + "/r/.git/"
     let refs = ["refs", "packed-refs", "reftable", "config"].map { repo + $0 }
     for exec in try await [localExec as any Exec, RelayExec.start()] {
         #expect(await GitStatus.files(folder.path + "/r", exec: exec) == [repo + "HEAD"] + refs)
         #expect(await GitStatus.files(folder.path + "/r/sub", exec: exec) == [repo + "HEAD"] + refs)
+        // git prints the common folder from the physical folder, `../../.git` here.
+        #expect(await GitStatus.files(folder.path + "/link/in", exec: exec) == [repo + "HEAD"] + refs)
         #expect(await GitStatus.files(folder.path + "/w", exec: exec) == [repo + "worktrees/w/HEAD"] + refs)
         #expect(await GitStatus.files(folder.path, exec: exec) == nil)
     }
@@ -171,8 +175,17 @@ private func git(_ script: String, in folder: URL) async throws {
             }
         }
         defer { watch.cancel() }
-        // Several sweeps, and past FSEvents' 1 s latency: a change would show by then.
-        try await Task.sleep(for: .seconds(1))
+        // Live once it sees a change: one made ahead of its first sweep is not one.
+        var ready = 0
+        #expect(await eventually {
+            ready += 1
+            try? await git("git config t.t \(ready)", in: folder)
+            try? await Task.sleep(for: .milliseconds(500))
+            return count.withLock { $0 } > 0
+        })
+        // Past FSEvents' 1 s latency and several sweeps: the last change's events have all come.
+        try await Task.sleep(for: .seconds(1.5))
+        count.withLock { $0 = 0 }
         try await git("echo x >f; git add f", in: folder)
         try await Task.sleep(for: .seconds(3))
         #expect(count.withLock { $0 } == 0)
