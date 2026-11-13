@@ -8,8 +8,9 @@ struct WindowReader: NSViewRepresentable {
     @Binding var fullScreen: Bool
     @Binding var lightsOff: Int
     static let recordLights = UserDefaults.standard.bool(forKey: "recordLights")
-    /// The last main window's frame as it closed, out of full screen: where a new window opens when none shows.
-    static var closedFrame: NSRect?
+    /// The frame a main window last moved, resized or closed with, out of full screen: where a new window opens.
+    /// Kept from its own notifications: SwiftUI's placement cannot tell the window it places from the others.
+    static var lastFrame: NSRect?
 
     func makeNSView(context _: Context) -> Reader {
         let reader = Reader()
@@ -36,14 +37,17 @@ struct WindowReader: NSViewRepresentable {
             let close = NSWindow.willCloseNotification
             observers.append(center.addObserver(forName: close, object: window, queue: .main) { [weak self] _ in
                 MainActor.assumeIsolated {
-                    if let window = self?.window, !window.styleMask.contains(.fullScreen) {
-                        WindowReader.closedFrame = window.frame
-                    }
+                    self?.keepFrame()
                     self?.pages?.closed()
                     // The view may go away without leaving its window first.
                     self?.stop()
                 }
             })
+            for name in [NSWindow.didMoveNotification, NSWindow.didResizeNotification] {
+                observers.append(center.addObserver(forName: name, object: window, queue: .main) { [weak self] _ in
+                    MainActor.assumeIsolated { self?.keepFrame() }
+                })
+            }
             // The did ones too: a reader that comes during the change sees no will.
             let notifications = [NSWindow.willEnterFullScreenNotification: true,
                                  NSWindow.willExitFullScreenNotification: false,
@@ -65,6 +69,12 @@ struct WindowReader: NSViewRepresentable {
                 if restored {
                     window.toggleFullScreen(nil)
                 }
+            }
+        }
+
+        private func keepFrame() {
+            if let window, !window.styleMask.contains(.fullScreen) {
+                WindowReader.lastFrame = window.frame
             }
         }
 

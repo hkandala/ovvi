@@ -135,7 +135,7 @@ extension OvviUITests {
         XCTAssertTrue((screen.height - 2 ... screen.height + 8).contains(frame.height), "\(frame) in \(screen)")
         XCTAssertEqual(frame.minX, screen.minX, accuracy: 2, "\(frame) in \(screen)")
 
-        step("New window: the next one takes the front window's size and place, once the user changed them")
+        step("New window: the next one takes the size and place of the window last resized")
         // The left half of the screen, with no hit test on an edge.
         let front = try XCTUnwrap(window)
         app.menuBars.menuBarItems["Window"].click()

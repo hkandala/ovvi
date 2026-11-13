@@ -23,7 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         if Welcome.firstLaunch {
             NSApp.windows.filter { $0.identifier?.rawValue.hasPrefix(WindowPages.mainScene + "-") == true }
                 .forEach { $0.close() }
-            WindowReader.closedFrame = nil
+            WindowReader.lastFrame = nil
         }
         Self.restoredFullScreen = Set(NSApp.windows.filter { $0.styleMask.contains(.fullScreen) }
             .map(ObjectIdentifier.init))
