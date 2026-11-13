@@ -362,7 +362,7 @@ fails; lessons.md's rule makes it 60 s (round 8's final CI, '### Final CI, round
   pixel in from the cells' edges, so it takes both end cells. A press on the wrong side of the 60 % point for the
   drag's way is made again at the cell's other edge. Before that press, libghostty gets a click at the card's far
   corner: a press within one cell width of the last one, inside the double-click interval, counts as a double click
-  (a word). The restart sends nothing to herdr.
+  (a word). The restart sends nothing to herdr. Track M2 dropped this; round 3 (Track M3) restored it.
 - **Decisions.** A ⇧, ⌥ or ⌃ drag and a double or triple click stay in the card, as in L3: pi treats them as plain
   drags (`button & 3`) or finds other words (`Intl.Segmenter`) and lines (from column 0), so its cells differ from the
   card's. The program gets such a single click on its release when the pointer stayed in its cell. Option A's Ovvi
@@ -487,7 +487,8 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
   synthetic clicks are the hacks the user ruled out. So Track M's cell-edge points, redone press and far-corner click
   are gone; plain drags still go to the program (pi copies) and select in the card with libghostty's own rule. White
   cells are a documented known limit (Window ▸ Selecting): an end cell libghostty leaves out (its 60 % rule), a frame
-  after each move or click, and pi's text scrolling under its selection.
+  after each move or click, and pi's text scrolling under its selection. Round 3 (Track M3) restored Track M's
+  workaround: without it the white end cells showed on every drag.
 - **Tests.** The right-click test's program now reads drags too (`?1002h`) and checks that a plain drag's moves reach
   it, beside its press, release and the card's ⌘C copy; that fails on L3's code (no drags). Track M's own drag test,
   its pixel checks for white and end cells, and its stand-in are gone: nothing they checked still holds.
@@ -918,6 +919,23 @@ The user's files: `.build/fb57/r11-fontkeys-11.20.52.png`, `r11-tabslide-11.23.5
 41. "so on the pi selection one, you said we removed the previous workaround, now i see the white blocks are much
     more worse, how big of a change it is, if its small workaround, let's bring that back, at least the issue was less
     evident with that workaround"
+
+#### Track M3: Findings
+
+- **Size.** Track M's workaround is about 80 lines in `Terminal/Selection.swift` (cell-edge points, the redone press,
+  the far-corner click) plus 3 in `PaneSurfaceView.swift`; with its stand-in (`Fixtures/mouse-select`, 36) and its
+  drag test (85) the restore is 219 lines added, 40 removed. It applied on today's code unchanged.
+- **Cause.** M2's drop left libghostty's 60 % rule for the end cells, and pi takes both end cells whole: one or two
+  white cells beside the card's blue on every frame of every drag, not only a frame after a move.
+- **Fix.** Track M's code back as it was; plain drags still reach the program (M2's right-click drag check kept). The
+  docs' known limit keeps only the one-frame lag (a move or a click) and pi's text scrolling under its selection.
+- **Runs.** VM, the drag test on today's code: red ("a white cell beside the selection", the white `c` and `a`). With
+  the fix: the drag test and the right-click test green, and the rest of PaneInputTests green. Films, the words row
+  per frame: before, white cells in all 30 frames of the first drag; after, none in the first drag and 2 single
+  frames in the second (the press that clears pi's old selection, one shrink).
+- **For the user.** In pi, drag over text slowly, forward and back past the press: no white cell at the ends while
+  the selection rests; a white flash for one frame can still show as you shrink it or click to clear it. Pictures and
+  films (dark): `~/Downloads/ovvi-research/p58m3/`. Light skipped: the white is herdr's black-on-white either way.
 
 ### Track H3: font size keys, tab history keys, session steps wrap (items 42, 44, 51)
 
