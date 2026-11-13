@@ -538,6 +538,9 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
   the history is no observed state, and a disabled item would swallow the key. One history per page (a session in a
   window), as each window has its own selection.
 - **For the user.** ⌘-click a link with the bar full: the new tab slides in. ⌃⌘← and ⌃⌘→ across two spaces.
+- **Runs.** `make lint build test` green on the rebased tree. The VM was busy (other tracks): the final round runs
+  TabTests (the two new tests and the rest: `select` order), TitleRowTests/testTabsKeepTheirWidthAndTheRowScrolls,
+  KeyTests/testKeyboardShortcutsPanelListsTheCommandsKeys and PaneTests/testKeysMoveTheKeyboardSwapAndResize (⌃⌘→).
 
 ### Track E5: explorer and Git sidebars (items 26, 28)
 
