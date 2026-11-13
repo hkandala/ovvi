@@ -836,3 +836,11 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
 - **Runs.** `make lint build test` green. VM: the recorded-key, ⌘/ panel, ⌃⇥, per-tab zoom and long-chat loads tests
   green; testALongChatKeepsItsPlaceAndScrollsToTheBottom failed when macOS's "Ovvi Notifications" banner over the
   card's header took the Split Right click (it opened System Settings); for the final CI round.
+- **Cause, the banner.** macOS's notification ask ("“Ovvi” Notifications"), from the app's `requestAuthorization` at
+  every launch: no one answers it in the VM, so it came back at each launch over the window's top right, and
+  vm-alerts.py's usernoted entry for the tests' app did not keep it away. **Fix:** the tests launch with
+  `-askNotifications NO` (relaunch and the e2e helper's cold launches); no test needs notifications. vm-alerts.py
+  keeps only "App Running in Background".
+- **Fix (decided).** Commands are found by `Command.id`, never by title; `Hotkeys.glyphs` for text that shows a key.
+- **Runs.** VM green: the long-chat place test (its recording has no banner), notify, recorded keys, floating windows'
+  commands, the palette, ⌘/, Dock folder drops, second keys, shown panes and float, pinch zoom.
