@@ -75,6 +75,7 @@ extension OvviUITests {
         let opened = shown()
         XCTAssertFalse(until(1) { shown() != opened }, "\(opened) \(shown())")
         XCTAssertLessThan(opened, 40)
+        let place = try XCTUnwrap(steady(3) { last.frame.minY })
         let point = "\(chat.frame.midX) \(chat.frame.midY)"
         func swipe(_ step: Int) async throws {
             _ = try await Self.post("\(one)/swipe", Data("\(point) \(step) 20 0 1".utf8))
@@ -99,16 +100,20 @@ extension OvviUITests {
         }
         // A block is hundreds of points; a swipe's momentum varies by tens.
         XCTAssertFalse(moves.contains { $0 > moves[0] + 100 || $0 < -40 }, "a jump: \(moves) at \(counts)")
-        XCTAssertTrue(first.isHittable, "\(counts)")
-        XCTAssertFalse(loader.exists)
-        staysAtTheBottom(pane, first) { element("chat.\(pane).bottom").click() }
-        for _ in 0 ..< 5 where !first.isHittable {
+        XCTAssertTrue(first.isHittable && !loader.exists, "\(counts) \(loader.exists)")
+        // Back at the exact bottom, the stack is the newest block again, and the bottom row stays where it was.
+        try await dropsToOneBlock(pane, opened, at: place) { bottom.click() }
+        // Up with the wheel, which has no phases, until a block comes; down with swipes, whose momentum ends at the
+        // bottom.
+        for _ in 0 ..< 5 where !until(2, { shown() > opened }) {
             chat.scroll(byDeltaX: 0, deltaY: 5000)
         }
-        staysAtTheBottom(pane, first) {
-            for _ in 0 ..< 5 where !last.isHittable {
-                chat.scroll(byDeltaX: 0, deltaY: -5000)
+        XCTAssertGreaterThan(shown(), opened)
+        try await dropsToOneBlock(pane, opened, at: place) {
+            for _ in 0 ..< 30 where !last.isHittable {
+                try await swipe(-upward)
             }
+            try await swipe(-upward)
         }
     }
 
@@ -233,19 +238,33 @@ extension OvviUITests {
         XCTAssertFalse(last.exists && last.isHittable)
     }
 
+    private func dropsToOneBlock(_ pane: String, _ opened: Int, at place: CGFloat, _ scroll: () async throws -> Void)
+        async throws
+    {
+        let chat = element("chat.\(pane)"), last = row(pane, "reply", "Last.")
+        let kinds = ["user", "reply"].map { "chat.\(pane).\($0)" }
+        let shown = { (try? self.nodes(of: chat).count { kinds.contains($0.identifier) }) ?? 0 }
+        try await scroll()
+        XCTAssertTrue(element("chat.\(pane).bottom").vanishes(within: 3))
+        var looks: [CGFloat] = []
+        XCTAssertTrue(until(5) {
+            looks.append(last.frame.minY)
+            return shown() == opened
+        }, "\(shown()) \(opened)")
+        XCTAssertFalse(until(1) {
+            looks.append(last.frame.minY)
+            return shown() != opened
+        }, "\(shown()) \(opened)")
+        // From its first look there: a swipe's bounce at the end settles first.
+        let settled = looks.drop { abs($0 - place) > 1 }
+        XCTAssertFalse(settled.isEmpty || settled.contains { abs($0 - place) > 1 }, "\(place): \(looks)")
+        XCTAssertFalse(row(pane, "user", "many 25").exists)
+    }
+
     private func splitByButton(_ pane: String, in tab: String) async throws -> String {
         hoverHeader(pane)
         element("pane.\(pane).split-right").click()
         return try await poll("a pane beside the chat") { try await order(tab).first { $0 != pane } }
-    }
-
-    private func staysAtTheBottom(_ pane: String, _ first: XCUIElement, _ scroll: () -> Void) {
-        let bottom = element("chat.\(pane).bottom"), last = row(pane, "reply", "Last.")
-        scroll()
-        XCTAssertTrue(bottom.vanishes(within: 3))
-        XCTAssertTrue(until(3) { last.isHittable })
-        XCTAssertFalse(bottom.exists)
-        XCTAssertTrue(first.exists)
     }
 
     func atTop(of chat: XCUIElement, _ pane: String) -> Set<String> {

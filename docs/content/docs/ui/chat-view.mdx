@@ -554,14 +554,17 @@ A run is one quiet line with no card: its summary and a chevron.
   offset: new messages come below without moving what is in view. Nothing else
   moves the scroll as it nears or leaves the bottom, so a slow trackpad scroll
   moves the messages exactly as far as the fingers.
-- **Rows stay.** At the bottom the stack shows the newest block. Once the
-  chat leaves the exact bottom, the oldest row shown is fixed: new rows do
-  not take rows off the top. The rows stay shown until the card closes
-  or shows its TUI, or a new chat starts. A switch to another tab or
-  space and back keeps them and the scroll place (its page is kept),
-  and while its page is kept the chat goes on following its transcript.
-  When the card is made again, it shows the newest block at the bottom,
-  once its history is current.
+- **Rows stay until the bottom.** At the bottom the stack shows the newest
+  block. Once the chat leaves the exact bottom, the oldest row shown is fixed:
+  new rows do not take rows off the top. When a scroll brings the chat back to
+  the exact bottom and rests, the stack is the newest block again, as at the
+  open: the rows that go are above the view, and the bottom anchor holds the
+  bottom, so nothing in view moves. Not while earlier rows are on their way.
+  So a split lays out one block, however far up the chat went. A switch to
+  another tab or space and back keeps the rows and the scroll place (its page
+  is kept), and while its page is kept the chat goes on following its
+  transcript. When the card is made again, it shows the newest block at the
+  bottom, once its history is current.
 - **The place on the top row.** Scrolled up, the app knows the row at the
   top of the view and how far the view's top is into it. When the rows
   above that row change height (a new width) or come (earlier rows), the
@@ -579,7 +582,7 @@ A run is one quiet line with no card: its summary and a chevron.
   scrolling up goes on through the whole chat. Not during a scroll: its
   momentum keeps its own place and would jump by the block. The rows in view stay where they are (the place on the top
   row). The row goes once the chat's first row is in the stack. The rows
-  that come stay when the chat scrolls back to the bottom.
+  that come go again at the bottom (Rows stay until the bottom).
 - **Resizing.** A narrow card (under 824 pt, where the column narrows too)
   lays its messages and its reply box out at a lone new width at once: a
   split's motion gives the card its final size once, so the messages and the

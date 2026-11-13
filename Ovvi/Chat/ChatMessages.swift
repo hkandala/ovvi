@@ -148,8 +148,6 @@ struct ChatMessages: View, Equatable {
         let rows = chat.history.rows()
         let kept = first.flatMap { id in rows.firstIndex { $0.id == id } }
         let start = kept ?? Self.start(rows[...])
-        // ponytail: once pinned, a chat open for hours lays out every row since; cut it again at the exact bottom if a
-        // split's layout gets slow.
         let pin = kept == nil && rows.indices.contains(start) && away
         // Read here: a change of the view's state or environment read inside the reader's content does not build it
         // again, only a change of what its closure holds. The chat's observed values are tracked inside.
@@ -207,7 +205,10 @@ struct ChatMessages: View, Equatable {
             .onScrollGeometryChange(for: Bool.self) { $0.visibleRect.minY < $0.containerSize.height / 2 } action: {
                 nearTop = $1
             }
-            .onScrollPhaseChange { scrolling = $1.isScrolling }
+            .onScrollPhaseChange {
+                scrolling = $1.isScrolling
+                drop()
+            }
             .task(id: more) {
                 // Read again: rows that come in one update with the place still near the top from before them (a
                 // history read to its end) left it near only until their layout.
@@ -235,6 +236,7 @@ struct ChatMessages: View, Equatable {
                     tops.hold(at: new.minY, bottom: new.minX <= 0.5)
                     if away != (new.minX > 0.5) {
                         away = new.minX > 0.5
+                        drop()
                     }
                 }
                 if old.height != new.height, earlier {
@@ -254,6 +256,14 @@ struct ChatMessages: View, Equatable {
                     bottomButton { proxy.scrollTo(Self.end, anchor: .bottom) }
                 }
             }
+        }
+    }
+
+    /// Back at the exact bottom, once the scroll rests, the stack is the newest block again, as at the open: the rows
+    /// that go are above the view, and the bottom anchor holds the bottom. Not while a load's rows are on their way.
+    private func drop() {
+        if !away, !scrolling, !earlier, first != nil {
+            first = nil
         }
     }
 
