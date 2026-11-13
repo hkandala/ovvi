@@ -1054,5 +1054,8 @@ The user's files: `.build/fb57/r11-fontkeys-11.20.52.png`, `r11-tabslide-11.23.5
   checked, because a test of it from this pane runs inside the same sandbox.
 - **Fix.** The two SSHForwardTests and "a started server shares the CLI's paths" skip in a sandbox
   (`unsandboxed`, `sandbox_check` on the test process). They still run on CI and from a plain shell.
+- **Cause (sshd listeners left running).** A test sshd that never let a login in stayed up after its test, since it
+  outlives the test process: 13 were listening, 11 to 56 minutes old. **Fix:** the failed start stops it and deletes
+  its folder. Checked with the sandbox check forced off: the test failed and no sshd was left.
 - **For the user.** To run these tests from an agent's pane, find what makes the launcher add its sandbox for
   pi-herd's agents (start `pi` from zsh with and without `CI=1` and check its `pi.real`).

@@ -41,13 +41,17 @@ private struct TestSSHD {
         """, "sh", path, String(port), extra])
         let server = try ProcessExec.spawn(["/usr/sbin/sshd", "-D", "-f", path + "/sshd_config", "-E", path + "/log"],
                                            localExec.environment)
-        let options = ["-F", path + "/ssh_config"]
+        let sshd = TestSSHD(alias: alias, folder: folder, options: ["-F", path + "/ssh_config"], server: server)
         let listening = await eventually {
             try? await Task.sleep(for: .milliseconds(200))
-            return await localExec.succeeds(#"exec ssh -o BatchMode=yes "$@" true"#, options + [alias])
+            return await localExec.succeeds(#"exec ssh -o BatchMode=yes "$@" true"#, sshd.options + [alias])
+        }
+        // sshd outlives the test process: one that never let a login in would listen on.
+        if !listening {
+            sshd.stop()
         }
         try #require(listening)
-        return TestSSHD(alias: alias, folder: folder, options: options, server: server)
+        return sshd
     }
 
     func stop() {
