@@ -474,7 +474,7 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
     right hand side, let's move that to left side, befdore home icon and also change the icon based on its state similar
     to what we did in file explorer"
 
-### Track C9: chat glass, divider drags, endless history (items 29, 30, 31)
+### Track C9: chat glass, divider drags, endless history, the empty chat's box (items 29, 30, 31, 35)
 
 29. "actually in chat view revert the tinted glass, i like the previous version better" (item 12's tint)
 30. "now in the chat when id do cmd+d they move together, but if i drag using resize handler there is still weird
@@ -482,6 +482,11 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
     (`r10-chat-drag-9.48.49.mov`)
 31. "in chat view, can we do auto scroll, instead of shwoing show earlier, as soon as user reaches to the end show the
     loader animation and load and keep loading automatically as user scrolls"
+35. "what's going on here? when i enter multiple lines the text size is changing? also we shouldn't move the logo or
+    text position when more lines are added, just expand the input down, so more lines get added to the bottom, without
+    movement of logo or the title text" (`.build/fb57/r10-empty-input-10.55.31.mov`, 13.4 s: typing new lines in the
+    empty chat's reply box; the greeting grows from small to large, the logo and greeting move up as the box grows, and
+    the typed text vanishes from the box in some frames)
 
 ### Track X2: Relaunch with Chat on a resumed Codex (item 32)
 
