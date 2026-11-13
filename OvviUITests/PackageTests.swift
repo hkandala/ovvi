@@ -96,7 +96,7 @@ extension OvviUITests {
         try await send(
             "rm -rf \(repo) && cp -R \(fixture) \(repo) && sed -i '' "
                 + "'s/\"ovvi-e2e-csv-table\"/\"ovvi-e2e-csv-git\"/; "
-                + "s/\"CSV Table\"/\"CSV Git\", \"chooser\": \"CSV Git\"/' "
+                + "s/\"CSV Table\"/\"CSV Git\", \"chooser\": \"CSV Git\"/; s/\"opens\": {/&\"folders\": true, /' "
                 + "\(repo)/package.json && git init -q \(repo) && \(git) add . && "
                 + "\(git) commit -qm one && \(git) tag v1 && sed -i '' 's/0.1.0/0.2.0/' \(repo)/package.json && "
                 + "\(git) commit -qam two && clear && echo repo-$((6*7))\r",

@@ -174,7 +174,7 @@ extension OvviUITests {
             XCTAssertTrue(until(3) { welcomePage != page }, "Next stayed on \(page)")
         }
         XCTAssertFalse(element("welcome.herdr.install").exists, "a herdr step with herdr installed")
-        element("welcome.skip").click()
+        welcomeNext.click()
         XCTAssertTrue(welcomeNext.vanishes(within: 3))
     }
 
