@@ -207,7 +207,7 @@ extension OvviUITests {
     }
 
     func testATabThatOpensOutOfViewSlidesIntoView() async throws {
-        let tabs = try await newWorkspace("opens", tabs: 8).tabs
+        let (tabs, pane) = try await newWorkspace("opens", tabs: 8)
         let first = element("tab.\(tabs[0])"), rowEnd = element("titlebar.overview").frame.minX - 8
         XCTAssertTrue(first.has(\.isSelected, true, within: 3))
         XCTAssertTrue(element("tabs.fades").has(\.stringValue, "trailing", within: 2))
@@ -215,7 +215,7 @@ extension OvviUITests {
         let tab = try await createTab(in: workspace(of: tabs[0])).tab
         let capsule = element("tab.\(tab)")
         XCTAssertTrue(until(3) { capsule.exists && capsule.frame.maxX <= rowEnd + 1 }, "\(capsule.frame) to \(rowEnd)")
-        XCTAssertTrue(first.isSelected)
+        XCTAssertTrue(element("pane.\(pane)").isHittable, "the first tab's page left")
     }
 
     func testGoBackAndForwardStepThroughTheTabsShownAcrossSpaces() async throws {
