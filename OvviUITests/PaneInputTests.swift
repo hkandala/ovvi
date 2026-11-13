@@ -63,88 +63,25 @@ extension OvviUITests {
         XCTAssertEqual(reports(0, text), 4, text)
     }
 
-    /// A program that reads the mouse (as pi does) gets the drag and selects from the press's cell to the pointer's in
-    /// reverse video, which herdr draws black on white. The card selects the same cells: no white cell shows, and the
-    /// cells past the ends stay unselected (a word selection would reach them). The program's white mark moves with
-    /// each release: its frame has drawn.
+    /// A program that reads the mouse with drags (as pi does) gets a plain left drag, which selects in the card too.
     func testADragSelectsInTheProgramAndInTheCard() async throws {
-        relaunch(one, ["-appearance", "dark"])
         let (tab, pane) = try await newTab("select")
         element("tab.\(tab)").click()
         let terminal = element("terminal.\(pane)")
         XCTAssertTrue(terminal.has(\.isHittable, true, within: 3))
-        // Off the tab: its hover card would cover the program's mark in the screenshots.
-        terminal.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9)).hover()
         try await waitForPrompt(pane)
         try await send("clear; '\(Self.fixtures)/mouse-select'\r", to: pane)
         try await waitFor(pane, toShow: "drags 0 releases 0")
-        let grid = (terminal.value as? String ?? "").split(separator: " ").compactMap { Int($0) }
-        let rows = try XCTUnwrap(grid.first)
-        // The second mark ends at column 52.
-        XCTAssertGreaterThanOrEqual(grid.last ?? 0, 52)
-        // The cells in the screenshot's pixels, from the first mark: 6 cells from column 30.
-        let first = try await poll("the program's mark") { () -> Shot? in
-            Shot(terminal.screenshot().image, rows: rows).flatMap { $0.whites(row: 0).isEmpty ? nil : $0 }
-        }
-        let marked = first.whites(row: 0), width = try Double(XCTUnwrap(marked.max()) - XCTUnwrap(marked.min()) + 1) / 6
-        let origin = try Double(XCTUnwrap(marked.min())) - 30 * width, card = terminal.frame,
-            scale = Double(first.width) / card.width
-        func spot(_ column: Double) -> String {
-            "\(card.minX + (origin + column * width) / scale) \(card.minY + 1.5 * first.height / scale)"
-        }
-        // Each end inside its cell on the side where libghostty's own rule leaves the cell out; the second drag goes
-        // forward first, then back past its press. The program selects 2...8, then 1...5.
-        for (releases, drag, ends) in [(1, "\(spot(2.8)) \(spot(8.2)) 0.3", (2, 8)),
-                                       (2, "\(spot(5.3)) \(spot(10.8)) 0.3 \(spot(1.8)) 0.3", (1, 5))]
-        {
-            _ = try await Self.post("\(one)/drag", Data(drag.utf8))
-            try await waitFor(pane) { $0.contains("releases \(releases)") && !$0.contains("drags 0 ") }
-            let mark = Int(origin + (30 + 8 * Double(releases) + 3) * width)
-            let shot = try await poll("the program's frame after release \(releases)") { () -> Shot? in
-                Shot(terminal.screenshot().image, rows: rows).flatMap { $0.whites(row: 0).contains(mark) ? $0 : nil }
-            }
-            let attachment = XCTAttachment(image: shot.image)
-            (attachment.name, attachment.lifetime) = ("selection \(releases)", .keepAlways)
-            add(attachment)
-            func blue(_ column: Int) -> Int {
-                shot.blue(Int(origin + Double(column) * width), Int(width), row: 1)
-            }
-            XCTAssertTrue(shot.whites(row: 1).isEmpty, "a white cell beside the selection")
-            for (end, past) in [(ends.0, ends.0 - 1), (ends.1, ends.1 + 1)] {
-                XCTAssertGreaterThan(blue(end), blue(past) + 20, "cell \(end) selected, cell \(past) not")
-                XCTAssertLessThan(blue(past), blue(40) + 10, "cell \(past) not selected")
-            }
-        }
-    }
-
-    /// A terminal's screenshot: rows of `height` pixels.
-    @MainActor private struct Shot {
-        let image: NSImage, pixels: [UInt8], width: Int, height: Double
-
-        init?(_ image: NSImage, rows: Int) {
-            guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
-            (self.image, pixels, width) = (image, OvviUITests.pixels(image), cgImage.width)
-            height = Double(cgImage.height) / Double(rows)
-        }
-
-        /// The middle half of a row's lines.
-        private func lines(_ row: Int) -> Range<Int> {
-            Int((Double(row) + 0.25) * height) ..< Int((Double(row) + 0.75) * height)
-        }
-
-        private func rgb(_ across: Int, _ line: Int) -> [Int] {
-            (0 ..< 3).map { Int(pixels[(line * width + across) * 4 + $0]) }
-        }
-
-        /// The columns of pure white pixels in a row.
-        func whites(row: Int) -> Set<Int> {
-            Set(lines(row).flatMap { line in (0 ..< width).filter { rgb($0, line).allSatisfy { $0 >= 250 } } })
-        }
-
-        /// Blue over red, on average, in the middle half of a cell `wide` pixels from `left`.
-        func blue(_ left: Int, _ wide: Int, row: Int) -> Int {
-            let cells = lines(row).flatMap { line in (left + wide / 4 ..< left + wide * 3 / 4).map { rgb($0, line) } }
-            return cells.reduce(0) { $0 + $1[2] - $1[0] } / max(cells.count, 1)
+        // The middle of the second row, where the program's words are.
+        let rows = try XCTUnwrap((terminal.value as? String ?? "").split(separator: " ").compactMap { Int($0) }.first)
+        let row = 1.5 / Double(rows)
+        terminal.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: row))
+            .click(forDuration: 0.2, thenDragTo: terminal.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: row)))
+        try await waitFor(pane) { $0.contains("releases 1") && !$0.contains("drags 0 ") }
+        NSPasteboard.general.clearContents()
+        app.typeKey("c", modifierFlags: .command)
+        try await expect("⌘C to copy the card's selection") {
+            NSPasteboard.general.string(forType: .string)?.contains("abc abc") == true
         }
     }
 

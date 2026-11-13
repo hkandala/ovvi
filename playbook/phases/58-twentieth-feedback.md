@@ -441,6 +441,33 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
     also identify what actually introduced this issue, if its too complicated let's drop entire fix, and leave it,
     let's apply fix if its simple one" (`r10-select-9.32.48.mov`)
 
+### Findings (Track M2)
+
+- **Cause, the white block.** b0acf21a (the first live cards) sent every left press, drag and release both to
+  libghostty, which draws the card's blue selection, and to the program; bb1615b0 noted the double highlight as a
+  ponytail. pi selects on its own in reverse video, and herdr writes reverse video as black on white
+  (`38;2;0;0;0;48;2;255;255;255`), so any cell pi took and the card did not was pure white. L3 (c6960e8e) kept drags
+  from the program (no white, but pi never copied); Track M (9683a565) sent them again and lined up only the end cells.
+- **Cause, the flicker.** Read frame by frame (387 frames, about 52 a second): every white frame is one where the card's
+  selection has already changed and pi's has not. The card's moves on the mouse event itself; pi's comes back a round
+  trip later (Ovvi → herdr → pi → herdr → the card's stream), one frame here. So any shrink shows pi's old cells white
+  for that frame: the pointer moving back (frames 245, 252), crossing the press (247, 287: "ee mac" white beside the
+  new blue "hi"), and the click that clears a selection (214: the whole old selection white). Not the redone press and
+  not herdr's frame timing: Track M's edge points fixed only where the two selections rest, never their timing.
+- **Decision: dropped.** No simple fix exists: it needs the card to draw no selection over a program that selects on its
+  own, which needs the program's mouse mode, which herdr does not report (the patch:
+  `~/Downloads/ovvi-research/p58m/herdr-mouse-mode.patch`). Delaying the card's selection, recoloring herdr's white or
+  synthetic clicks are the hacks the user ruled out. So Track M's cell-edge points, redone press and far-corner click
+  are gone; plain drags still go to the program (pi copies) and select in the card with libghostty's own rule. White
+  cells are a documented known limit (Window ▸ Selecting): an end cell libghostty leaves out (its 60 % rule), a frame
+  after each move or click, and pi's text scrolling under its selection.
+- **Tests.** The drag test keeps what still holds: a plain drag reaches a program with drag mode (the stand-in counts
+  drags and its release) and selects in the card (⌘C copies its words). It fails on L3's code (no drags). Its pixel
+  checks for white and end cells are gone, with the stand-in's white mark and its dark relaunch.
+- **For the user.** In pi, drag over text: pi says "Copied!" and ⌘C copies the card's selection. White cells can show
+  at an end, for a frame as you drag back, and on the click that clears it (known limit until herdr reports the mouse
+  mode).
+
 ### Track H: every hotkey in one place, rebindable (item 25)
 
 25. "we have so many hotkeys and shortcuts right, including in plugins and stuff, i know we have cmd+/ one to see

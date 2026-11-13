@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 # A stand-in for a program that reads the mouse and selects on its own, as pi does: SGR mouse mode with drags, a row
 # of words, and its selection from the press's cell to the pointer's, both taken, in reverse video. Its first row
-# counts the drags and releases. Each frame ends with a reverse-video mark (herdr draws it white), 6 cells from column
-# 30 + 8 x releases.
+# counts the drags and releases.
 import os, re, sys, tty
 
 tty.setraw(0)
@@ -16,8 +15,7 @@ def draw():
     if anchor is not None and anchor != focus:
         start, end = sorted((anchor, focus))
         row = words[:start] + "\x1b[7m" + words[start:end + 1] + "\x1b[0m" + words[end + 1:]
-    mark = f"\x1b[1;{31 + 8 * releases}H\x1b[7m      \x1b[0m"
-    sys.stdout.write(f"\x1b[H\x1b[2Jdrags {drags} releases {releases}\r\n{row}{mark}")
+    sys.stdout.write(f"\x1b[H\x1b[2Jdrags {drags} releases {releases}\r\n{row}")
     sys.stdout.flush()
 
 

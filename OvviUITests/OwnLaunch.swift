@@ -6,7 +6,6 @@ extension OvviUITests {
         "testACardWhoseFolderWentComesBackWithItsPlaceholder",
         "testAChatOnARemoteMachine",
         "testACodexChatOnARemoteMachine",
-        "testADragSelectsInTheProgramAndInTheCard",
         "testADroppedBrowserKeepsItsPictureAndComesBack",
         "testAFailedInstallOnARemoteMachineSaysWhy",
         "testAFailedStartKeepsThePanelOpenWithRetry",
