@@ -73,6 +73,8 @@ extension OvviUITests {
         element("tab.\(tab)").click()
         let terminal = element("terminal.\(pane)")
         XCTAssertTrue(terminal.has(\.isHittable, true, within: 3))
+        // Off the tab: its hover card would cover the program's mark in the screenshots.
+        terminal.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9)).hover()
         try await waitForPrompt(pane)
         try await send("clear; '\(Self.fixtures)/mouse-select'\r", to: pane)
         try await waitFor(pane, toShow: "drags 0 releases 0")
