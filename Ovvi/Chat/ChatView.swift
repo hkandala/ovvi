@@ -7,11 +7,22 @@ struct ChatView: View {
     let terminal: PaneTerminal?
     static let column: CGFloat = 760
     static let gutter: CGFloat = 48
+    /// Narrower, the chat keeps this width and scrolls sideways: under it the bubbles, tool rows and reply box crowd.
+    static let minWidth: CGFloat = 360
     @State private var height: CGFloat = 0
     @FocusState private var composing: Bool
     @Environment(\.pageHidden) private var hidden
 
     var body: some View {
+        GeometryReader { card in
+            ScrollView(.horizontal) {
+                content.frame(width: max(card.size.width, Self.minWidth), height: card.size.height)
+            }
+            .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
+        }
+    }
+
+    private var content: some View {
         VStack(spacing: 0) {
             ChatMessages(chat: chat, page: page, floats: page.store.pane(chat.paneID).map(page.floats) == true,
                          composing: $composing).equatable()

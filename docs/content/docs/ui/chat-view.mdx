@@ -521,7 +521,8 @@ A run is one quiet line with no card: its summary and a chevron.
   made (the rows come on the run loop turn after it), a switch back from the
   TUI, a history read to its end (at once with Reduce Motion).
 - The messages, the question card and the reply box sit in a 760 pt column,
-  centered on any card, 32 pt in from its sides. The messages scroll, newest
+  centered on any card, 32 pt in from its sides. The chat is 360 pt wide at
+  least: in a narrower card it keeps that width and scrolls sideways. The messages scroll, newest
   at the bottom, and fade in under the header. A chat shorter than the view
   sits at its top. In a floating window they
   start 28 pt under the title row, not 16 pt, because the card has no header
@@ -652,8 +653,8 @@ A run is one quiet line with no card: its summary and a chevron.
     fetches it: a reply could send what the agent read to any server.
   - Footnotes read as written (`[^1]`): swift-markdown has none.
 - **The reply box.** A glass box (radius 18) with "Ask Anything", 14 pt. Its
-  text is 18 pt in from the box's sides, and the box is 14 pt in from the
-  column, so the text lines up with the messages' 32 pt edges. It has 13 pt
+  text is 18 pt in from the box's sides, and the box is 24 pt in from the
+  column, 8 pt past the messages' 32 pt edges. It has 13 pt
   of padding on top and 11 pt at the bottom. It grows up to 10 lines, then
   scrolls. Under
   the text, on the left: the model and the effort in 11 pt secondary

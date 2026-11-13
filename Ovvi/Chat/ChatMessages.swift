@@ -102,8 +102,8 @@ struct ChatMessages: View, Equatable {
                         }
                         Composer(chat: chat, composing: composing, placeholder: welcome ? phrase.placeholder : nil)
                     }
-                    // The box's text on the messages' edges: the box reaches past them by its own padding.
-                    .padding(.bottom, 14).padding(.top, 4).readingColumn(margin: 32 - Composer.inset)
+                    // The box reaches 8 pt past the messages' edges, its text 10 pt inside them.
+                    .padding(.bottom, 14).padding(.top, 4).readingColumn(margin: 24)
                 }
             }
         }
