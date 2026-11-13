@@ -160,9 +160,10 @@ another login session, with its own pointer, keyboard and screen.
 - **Permissions.** None to grant: `automationmodetool` says the image needs no authentication for Automation
   Mode. Two asks of macOS would sit over the tests and take their clicks: whether a program that captures the screen
   may go on (a `screencapture` through `tart exec` or ssh, a UserNotificationCenter alert, again after a month) and
-  whether the tests' app may send notifications (a banner over the window's top right). Before each run,
-  `scripts/vm-alerts.py` answers both in the guest (the screen: approved; notifications: off, and off for "App Running
-  in Background" too, an alert that the open-at-login test brings) and the script closes an alert still open.
+  "App Running in Background", an alert that the open-at-login test brings. Before each run, `scripts/vm-alerts.py`
+  answers both in the guest (the screen: approved; that alert's notifications: off) and the script closes an alert
+  still open. The tests' app asks for no notifications (`-askNotifications NO`): macOS's ask, a banner over the
+  window's top right, came at every launch while no one answered it.
 - **Cost.** 4 cores and 8 GB (about 4.6 GB resident while tests run). A boot takes about 40 s to a working
   `tart exec`. On a running VM, a run of two short tests takes about 30 s (11 s of tests). The first run on a new
   clone adds about 30 s of setup. Idle, the VM takes about a quarter of a core.
