@@ -28,6 +28,10 @@ struct MachinePage: View {
         return confirm == .clear ? "Clear the website data of \(name)?" : "Remove \(name)?"
     }
 
+    private var target: String {
+        draft.target.trimmingCharacters(in: .whitespaces)
+    }
+
     private var confirming: Binding<Bool> {
         Binding { confirm != nil } set: {
             if !$0 {
@@ -43,7 +47,7 @@ struct MachinePage: View {
     }
 
     var body: some View {
-        let saved = MachineList.shared.machine(id), target = draft.target.trimmingCharacters(in: .whitespaces)
+        let saved = MachineList.shared.machine(id)
         let name = draft.name.isEmpty ? target : draft.name
         Form {
             Section {
@@ -53,7 +57,7 @@ struct MachinePage: View {
                 }
             }
             if draft.isRemote || saved == nil {
-                connection(saved, target: target)
+                connection(saved)
             }
             if let saved {
                 Section("Browser") {
@@ -97,7 +101,7 @@ struct MachinePage: View {
         }
     }
 
-    private func connection(_ saved: Machine?, target: String) -> some View {
+    private func connection(_ saved: Machine?) -> some View {
         Section {
             // A set width: a form's text field asks for all the room and narrows the sidebar.
             LabeledContent("Name") {
@@ -130,18 +134,24 @@ struct MachinePage: View {
                 if saved == nil {
                     Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
                 }
-                Button(saved == nil ? "Add" : "Save") {
-                    draft = MachineList.shared.keep(draft, target: target)
-                    // The new machine's window comes forward, where ssh asks what it asks.
-                    if saved == nil {
-                        dismiss()
-                        dismissWindow(id: WindowPages.settingsScene)
-                    }
-                }
-                .buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
-                .disabled(!SSHExec.isValidTarget(target) || saved == draft)
-                .accessibilityIdentifier("settings.machine.save")
+                Button(saved == nil ? "Add" : "Save", action: save)
+                    .buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
+                    .disabled(!SSHExec.isValidTarget(target) || saved == draft)
+                    .accessibilityIdentifier("settings.machine.save")
             }
+        }
+    }
+
+    /// Reads the page as it is now, never the body's values: Return runs the action SwiftUI kept when the button
+    /// turned on, at the first letter typed.
+    private func save() {
+        let added = MachineList.shared.machine(id) == nil
+        guard SSHExec.isValidTarget(target) else { return }
+        draft = MachineList.shared.keep(draft, target: target)
+        // The new machine's window comes forward, where ssh asks what it asks.
+        if added {
+            dismiss()
+            dismissWindow(id: WindowPages.settingsScene)
         }
     }
 }

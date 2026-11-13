@@ -182,7 +182,8 @@ extension OvviUITests {
         XCTAssertTrue(waiting.vanishes(within: 20))
     }
 
-    /// Add Machine in a new window's list connects the machine in that window: no other window opens.
+    /// Add Machine in a new window's list connects the machine in that window: no other window opens. Return adds
+    /// the whole target typed, as the Add button does: it once added the first letter only.
     func testAddMachineFromANewWindowConnectsInIt() throws {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         let first = mainWindows.firstMatch.identifier
@@ -192,16 +193,14 @@ extension OvviUITests {
             .map { app.windows[$0] }
         element("picker.+add-machine", in: window).click()
         let settings = settingsWindow
-        let name = element("settings.machine.name", in: settings)
-        XCTAssertTrue(name.exists(within: 5))
-        name.click()
-        app.typeText("Nowhere")
-        element("settings.machine.target", in: settings).click()
-        app.typeText("ovvi-e2e-nowhere.invalid")
-        element("settings.machine.save", in: settings).click()
+        let target = element("settings.machine.target", in: settings)
+        XCTAssertTrue(target.exists(within: 5))
+        target.click()
+        // No name: the machine is named for its target.
+        app.typeText("ovvi-e2e-nowhere.invalid\r")
         XCTAssertTrue(settings.vanishes(within: 3))
         let machine = element("window.machine", in: window)
-        XCTAssertTrue(machine.has(\.stringValue, "Nowhere", within: connect), machine.stringValue)
+        XCTAssertTrue(machine.has(\.stringValue, "ovvi-e2e-nowhere.invalid", within: connect), machine.stringValue)
         XCTAssertEqual(mainWindows.count, 2)
         keepScreenshot("added machine in its new window")
     }
