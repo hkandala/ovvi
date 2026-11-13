@@ -38,7 +38,7 @@ extension OvviUITests {
         }
     }
 
-    /// Settings ▸ Keyboard Shortcuts and the ⌘/ panel in both looks: the page, a search, recording, a conflict.
+    /// Settings ▸ Shortcuts and the ⌘/ panel in both looks: the page, a search, recording, a conflict.
     func testKeyboardShortcutsScenes() {
         for appearance in ["dark", "light"] {
             relaunch(one, ["-appearance", appearance])
@@ -48,7 +48,7 @@ extension OvviUITests {
             scene("\(appearance) 1 shortcuts panel",
                   app.windows.matching(NSPredicate(format: "identifier BEGINSWITH 'main-'")).firstMatch)
             app.typeKey(.escape, modifierFlags: [])
-            openSettings("keys")
+            openSettings("shortcuts")
             let window = settingsWindow, field = element("keys.tab.new", in: window)
             XCTAssertTrue(field.exists(within: 3))
             scene("\(appearance) 2 keys", window)
@@ -57,8 +57,12 @@ extension OvviUITests {
             window.typeKey("w", modifierFlags: .command)
             XCTAssertTrue(element("keys.tab.new.question", in: window).exists(within: 2))
             scene("\(appearance) 4 keys conflict", window)
-            element("keys.tab.new", in: window).click()
-            window.typeKey(.escape, modifierFlags: [])
+            field.click()
+            window.typeKey("y", modifierFlags: [.command, .option])
+            XCTAssertTrue(field.has(\.stringValue, "⌥⌘Y", within: 2))
+            scene("\(appearance) 4b keys changed", window)
+            element("keys.tab.new.reset", in: window).click()
+            XCTAssertTrue(field.has(\.stringValue, "⌘T", within: 2))
             let search = element("keys.search", in: window)
             search.click()
             search.typeText("find")

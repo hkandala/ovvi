@@ -158,9 +158,9 @@ extension OvviUITests {
         XCTAssertFalse(element("shortcuts.section.Plugins").exists)
         let rows = [
             "Split Right": "⌘D", "Select Pane": "⌥⌘←→↑↓", "Show Tab 1–9": "⌘1–9", "New Space": "⌃⌘T",
-            "Show Space 1–9": "⌃⌘1–9", "Show Session 1–9": "⌥⌘1–9", "Show Previous Tab": "⇧⌘[ or ⌃⇧⇥",
-            "Show Next Tab": "⇧⌘] or ⌃⇥",
-            "Command Palette": "⌘K or ⇧⌘P", "Find": "⌘F", "Open Session": "⌥⌘T", "Close Tab": "⇧⌘W",
+            "Show Space 1–9": "⌃⌘1–9", "Show Session 1–9": "⌥⌘1–9", "Show Previous Tab": "⇧⌘[, ⌃⇧⇥",
+            "Show Next Tab": "⇧⌘], ⌃⇥",
+            "Command Palette": "⌘K, ⇧⌘P", "Find": "⌘F", "Open Session": "⌥⌘T", "Close Tab": "⇧⌘W",
             "Close Space": "⌃⌘W", "Zoom Pane": "⇧⌘↩", "Go Back": "⌃⌘←",
         ]
         for (title, keys) in rows {
@@ -171,7 +171,6 @@ extension OvviUITests {
         // Only the important keys: Settings has the rest.
         XCTAssertFalse(element("shortcuts.Insert Path").exists)
         XCTAssertFalse(element("shortcuts.Reset Font Size").exists)
-        XCTAssertTrue(element("shortcuts.customize").exists)
         XCTAssertGreaterThan(element("shortcuts.section.Sessions").frame.minX,
                              element("shortcuts.section.Panes").frame.maxX)
         keepScreenshot("keyboard shortcuts")

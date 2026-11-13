@@ -32,7 +32,7 @@ struct CommandList {
         }
         let page = pages?.current, pages = pages, workspace = page?.selectedWorkspace, tab = page?.selectedTab
         let live = page?.store.state == .live
-        // A key only where its action works (Settings ▸ Keyboard Shortcuts' scopes): a disabled item swallows it.
+        // A key only where its action works (Settings ▸ Shortcuts' scopes): a disabled item swallows it.
         let terminal = page?.keyboardPane.map { $0.plugin == nil } == true
         let file = [
             Command(section: .app, title: "Plugins…", group: .plugins, symbol: SettingsPage.plugins.symbol,

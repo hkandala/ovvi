@@ -1,12 +1,12 @@
 import XCTest
 
-/// Settings ▸ Keyboard Shortcuts saves to the tests' config folder: each test resets what it records.
+/// Settings ▸ Shortcuts saves to the tests' config folder: each test resets what it records.
 extension OvviUITests {
     func testARecordedKeyShowsEverywhereAndASwapMovesTheOther() async throws {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
-        openSettings("keys")
+        openSettings("shortcuts")
         addTeardownBlock { @MainActor [self] in
-            openSettings("keys")
+            openSettings("shortcuts")
             let reset = element("keys.reset-all", in: settingsWindow)
             reset.click()
             XCTAssertTrue(reset.has(\.isEnabled, false, within: 2))
@@ -42,7 +42,7 @@ extension OvviUITests {
         let newTab = element("keys.tab.new", in: settingsWindow)
         let newSpace = element("keys.space.new", in: settingsWindow)
         newTab.click()
-        XCTAssertTrue(newTab.has(\.stringValue, "Type Shortcut", within: 2))
+        XCTAssertTrue(newTab.has(\.stringValue, "Type shortcut…", within: 2))
         // ⌘W records: it closes no window.
         settingsWindow.typeKey("w", modifierFlags: .command)
         XCTAssertTrue(element("keys.tab.new.question", in: settingsWindow).exists(within: 2))
@@ -56,7 +56,9 @@ extension OvviUITests {
         settingsWindow.typeKey("y", modifierFlags: [.command, .option])
         let swap = element("keys.space.new.swap", in: settingsWindow)
         XCTAssertTrue(swap.exists(within: 2))
-        XCTAssertEqual(newSpace.stringValue, "⌃⌘T")
+        // The field shows the key it asks about; nothing changes before Swap.
+        XCTAssertEqual(newSpace.stringValue, "⌥⌘Y")
+        XCTAssertEqual(newTab.stringValue, "⌥⌘Y")
         swap.click()
         XCTAssertTrue(newSpace.has(\.stringValue, "⌥⌘Y", within: 2))
         XCTAssertTrue(newTab.has(\.stringValue, "⌃⌘T", within: 2))
@@ -78,7 +80,7 @@ extension OvviUITests {
         let newTab = element("keys.tab.new", in: settingsWindow)
         XCTAssertTrue(newTab.has(\.stringValue, "⌘T", within: 3))
         newTab.click()
-        XCTAssertTrue(newTab.has(\.stringValue, "Type Shortcut", within: 2))
+        XCTAssertTrue(newTab.has(\.stringValue, "Type shortcut…", within: 2))
         settingsWindow.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(newTab.has(\.stringValue, "⌘T", within: 2))
         let split = element("keys.pane.split-right", in: settingsWindow)

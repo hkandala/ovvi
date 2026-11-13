@@ -1,18 +1,14 @@
 import SwiftUI
 
-/// The important keys; Settings ▸ Keyboard Shortcuts has them all.
+/// The important keys; Settings ▸ Shortcuts has them all.
 struct Shortcuts: View {
     @FocusState private var focused: Bool
 
     var body: some View {
         let rows = Self.rows(), first = ["Panes", "Tabs"]
-        let panel = VStack(spacing: 18) {
-            HStack(alignment: .top, spacing: 48) {
-                column(first, rows)
-                column(Hotkeys.groups.filter { !first.contains($0) }, rows)
-            }
-            Button("Customize…") { SettingsRoute.shared.open(.keys) }
-                .buttonStyle(.glass).accessibilityIdentifier("shortcuts.customize")
+        let panel = HStack(alignment: .top, spacing: 48) {
+            column(first, rows)
+            column(Hotkeys.groups.filter { !first.contains($0) }, rows)
         }
         .padding(.horizontal, 28).padding(.vertical, 24)
         // ponytail: a window under about 870 pt wide clips its sides; a scroll view on both axes fills the whole
@@ -45,14 +41,14 @@ struct Shortcuts: View {
                         Spacer(minLength: 24)
                         ForEach(Array(row.keys.enumerated()), id: \.offset) { index, caps in
                             if index > 0 {
-                                Text("or").foregroundStyle(.secondary).padding(.horizontal, 4)
+                                Text(",").foregroundStyle(.secondary).padding(.trailing, 4)
                             }
                             ForEach(caps, id: \.self, content: Keycap.init)
                         }
                     }
                     .font(.system(size: 13))
                     .frame(height: 30)
-                    .readableText(row.keys.map { $0.joined() }.joined(separator: " or "))
+                    .readableText(row.keys.map { $0.joined() }.joined(separator: ", "))
                     .accessibilityLabel(row.title)
                     .accessibilityIdentifier("shortcuts.\(row.title)")
                 }

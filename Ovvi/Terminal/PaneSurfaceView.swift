@@ -272,7 +272,7 @@ final class PaneSurfaceView: AppTerminalView {
         return keys
     }()
 
-    /// The Terminal keys of Settings ▸ Keyboard Shortcuts, as the keys a shell and readline take.
+    /// The Terminal keys of Settings ▸ Shortcuts, as the keys a shell and readline take.
     private static let edits = [("terminal.line-start", "ctrl+a"), ("terminal.line-end", "ctrl+e"),
                                 ("terminal.delete-line", "ctrl+u"), ("terminal.word-back", "alt+b"),
                                 ("terminal.word-forward", "alt+f")]

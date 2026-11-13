@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Settings ▸ Keyboard Shortcuts: every action's keys, the app's and each plugin's. A click on the keys records new
+/// Settings ▸ Shortcuts: every action's keys, the app's and each plugin's. A click on the keys records new
 /// ones: ⎋ cancels, ⌫ clears, a key another action has asks first.
 struct KeysPage: View {
     @State private var search = ""
@@ -62,6 +62,7 @@ struct KeysPage: View {
     private func row(_ hotkey: Hotkey, _ all: [Hotkey]) -> some View {
         let hotkeys = Hotkeys.shared, keys = hotkeys.keys(hotkey)
         let taken = keys.lazy.compactMap { hotkeys.clash($0, for: hotkey, in: all) }.first
+        let asking = clash.flatMap { $0.hotkey.id == hotkey.id ? $0 : nil }
         return VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Text(hotkey.title)
@@ -72,31 +73,39 @@ struct KeysPage: View {
                         .accessibilityIdentifier("keys.\(hotkey.id).clash")
                 }
                 Spacer(minLength: 12)
-                KeyField(keys: keys, recording: recording == hotkey.id) {
+                KeyField(keys: keys, recording: recording == hotkey.id, asking: asking?.key) {
                     clash = nil
                     recording = hotkey.id
                 }
                 .accessibilityIdentifier("keys.\(hotkey.id)")
                 Button("Reset", systemImage: "arrow.uturn.backward") { hotkeys.set(hotkey, hotkey.keys) }
-                    .labelStyle(.iconOnly).buttonStyle(.borderless).help("Reset")
+                    .labelStyle(.iconOnly).buttonStyle(.borderless).help("Reset").frame(width: Self.reset)
                     .opacity(hotkeys.changed(hotkey) ? 1 : 0).disabled(!hotkeys.changed(hotkey))
                     .accessibilityIdentifier("keys.\(hotkey.id).reset")
             }
-            if let clash, clash.hotkey.id == hotkey.id {
-                HStack(spacing: 8) {
-                    Text("\(clash.key.glyphs) is \(clash.other.title)’s key.").foregroundStyle(.secondary)
-                        .accessibilityIdentifier("keys.\(hotkey.id).question")
-                    Spacer()
-                    Button("Cancel") { self.clash = nil }
-                    if !Hotkeys.fixed.contains(where: { $0.id == clash.other.id }) {
-                        Button("Swap") { swap(clash) }.buttonStyle(.borderedProminent)
+            if let asking {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(look.needsYou)
+                        Text("\(asking.key.glyphs) is \(asking.other.title)’s key.").foregroundStyle(.secondary)
+                    }
+                    .font(.system(size: 11))
+                    .accessibilityIdentifier("keys.\(hotkey.id).question")
+                    Spacer(minLength: 8)
+                    Button("Cancel") { clash = nil }
+                    if !Hotkeys.fixed.contains(where: { $0.id == asking.other.id }) {
+                        Button("Swap") { swap(asking) }.buttonStyle(.borderedProminent)
                             .accessibilityIdentifier("keys.\(hotkey.id).swap")
                     }
                 }
                 .controlSize(.small)
+                // The buttons end where the key field ends, left of the reset button.
+                .padding(.trailing, Self.reset + 8)
             }
         }
     }
+
+    private static let reset: CGFloat = 16
 
     /// The other action takes this one's first key in place of the one it gives up.
     private func swap(_ clash: Clash) {
@@ -145,37 +154,35 @@ struct KeysPage: View {
     }
 }
 
-/// The action's keys as keycaps, or a prompt while it records.
+/// The action's keys, comma separated, in a field of one size for every row: accent ringed while it records, ringed
+/// as a warning with the key it asks about.
 private struct KeyField: View {
     let keys: [KeyboardShortcut]
     let recording: Bool
+    let asking: KeyboardShortcut?
     let action: () -> Void
+    @Environment(\.look) private var look
 
     var body: some View {
-        let text = recording ? "Type Shortcut" : keys.isEmpty ? "None" : keys.map(\.glyphs).joined(separator: " or ")
+        let shown = asking.map { [$0] } ?? keys, plain = recording || shown.isEmpty
+        let text = recording ? "Type shortcut…" : shown.isEmpty ? "None" : shown.map(\.glyphs).joined(separator: ", ")
+        let ring = recording ? Color.accentColor : asking == nil ? nil : look.needsYou
+        let shape = RoundedRectangle(cornerRadius: 6, style: .continuous)
         Button(action: action) {
-            HStack(spacing: 4) {
-                if recording {
-                    Text("Type Shortcut").foregroundStyle(.tint)
-                } else if keys.isEmpty {
-                    Text("None").foregroundStyle(.secondary)
-                } else {
-                    ForEach(Array(keys.enumerated()), id: \.offset) { index, key in
-                        if index > 0 {
-                            Text("or").foregroundStyle(.secondary)
-                        }
-                        ForEach(key.caps, id: \.self, content: Keycap.init)
+            Text(text).tracking(plain ? 0 : 1)
+                .foregroundStyle(plain ? .secondary : .primary)
+                .lineLimit(1).minimumScaleFactor(0.8)
+                .padding(.horizontal, 8)
+                .frame(width: 128, height: 24)
+                .background(.quaternary.opacity(0.5), in: shape)
+                .overlay {
+                    if let ring {
+                        shape.strokeBorder(ring, lineWidth: 2)
+                    } else {
+                        shape.strokeBorder(.separator)
                     }
                 }
-            }
-            .font(.system(size: 12, weight: .medium))
-            .padding(.horizontal, 4).frame(minWidth: 96, minHeight: 26)
-            .background(.quaternary.opacity(recording ? 0.5 : 0), in: .rect(cornerRadius: 7))
-            .overlay {
-                RoundedRectangle(cornerRadius: 7).strokeBorder(recording ? AnyShapeStyle(.tint)
-                    : AnyShapeStyle(.quaternary), lineWidth: recording ? 2 : 1)
-            }
-            .contentShape(.rect)
+                .contentShape(shape)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(text)
