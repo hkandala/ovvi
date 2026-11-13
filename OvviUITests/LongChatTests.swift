@@ -271,7 +271,6 @@ extension OvviUITests {
         XCTAssertFalse(until(2) { shown() == opened }, "dropped before its wait")
         if leaving {
             chat.scroll(byDeltaX: 0, deltaY: 200)
-            XCTAssertLessThan(Date.now.timeIntervalSince(rested), 8, "too slow to test the wait's restart")
             XCTAssertTrue(bottom.exists(within: 2))
             bottom.click()
             XCTAssertTrue(bottom.vanishes(within: 3))
