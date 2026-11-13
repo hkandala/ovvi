@@ -27,6 +27,10 @@ extension OvviUITests {
         try await show(tab)
         let error = element("pane.\(failing).failure")
         XCTAssertTrue(error.has(\.stringValue, "Plugin API stopped", within: 10))
+        // A card too short for its error shows it compact under its two header rows (70 pt), never over them: at
+        // least the compact error's padding (12) and symbol (20) above its title stay below the header.
+        let header = element("pane.\(failing)").frame.minY + 70
+        XCTAssertGreaterThan(error.frame.minY, header + 12 + 20, "\(error.frame) under a header to \(header)")
         let page = pageText("ovvi-click-page"), plain = text("ovvi-plain-page")
         XCTAssertTrue(page.exists(within: 10) && plain.exists(within: 10))
         let gone = element("pane.\(missing).missing")
