@@ -38,6 +38,38 @@ extension OvviUITests {
         }
     }
 
+    /// Settings ▸ Keyboard Shortcuts and the ⌘/ panel in both looks: the page, a search, recording, a conflict.
+    func testKeyboardShortcutsScenes() {
+        for appearance in ["dark", "light"] {
+            relaunch(one, ["-appearance", appearance])
+            XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
+            app.typeKey("/", modifierFlags: .command)
+            XCTAssertTrue(element("shortcuts").exists(within: 2))
+            scene("\(appearance) 1 shortcuts panel", app.windows.firstMatch)
+            app.typeKey(.escape, modifierFlags: [])
+            openSettings("keys")
+            let window = settingsWindow, field = element("keys.tab.new", in: window)
+            XCTAssertTrue(field.exists(within: 3))
+            scene("\(appearance) 2 keys", window)
+            field.click()
+            scene("\(appearance) 3 keys recording", window)
+            window.typeKey("w", modifierFlags: .command)
+            XCTAssertTrue(element("keys.tab.new.question", in: window).exists(within: 2))
+            scene("\(appearance) 4 keys conflict", window)
+            element("keys.tab.new", in: window).click()
+            window.typeKey(.escape, modifierFlags: [])
+            let search = element("keys.search", in: window)
+            search.click()
+            search.typeText("find")
+            scene("\(appearance) 5 keys search", window)
+            search.typeKey("a", modifierFlags: .command)
+            search.typeKey(.delete, modifierFlags: [])
+            window.scrollViews.allElementsBoundByIndex.last?.scroll(byDeltaX: 0, deltaY: -20000)
+            scene("\(appearance) 6 keys plugins", window)
+            window.typeKey("w", modifierFlags: .command)
+        }
+    }
+
     fileprivate func scene(_ name: String, _ window: XCUIElement) {
         window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1.3)).hover()
         Thread.sleep(forTimeInterval: 0.4)

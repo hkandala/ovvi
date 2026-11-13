@@ -67,7 +67,6 @@ extension OvviUITests {
         app.typeKey("]", modifierFlags: .command)
         XCTAssertTrue(hasKeyboard("terminal.\(first)"))
 
-        app.typeKey(.rightArrow, modifierFlags: [.command, .control])
         pick("Pane", "Resize Pane Right")
         try await expectRatio(tab, 0.55)
 
