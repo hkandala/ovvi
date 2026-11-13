@@ -346,3 +346,37 @@ fails; lessons.md's rule makes it 60 s (round 8's final CI, '### Final CI, round
     `pane.read` check gets cheaper, with no change in what shows or when; (5) card state files are written without
     `sh`/`mkdir`/`cat`/`mv` and programs start without the `/usr/bin/env` step (the program found on PATH at each run);
     the presence marks stay as they are (cheap once (2) lands). Memory: no change.
+
+### Track M
+
+- **Cause (9).** Phase 57 L3 (c6960e8e) kept left drags from the program, so pi never selected and never copied. pi
+  copies on This Mac with its own clipboard helper; OSC 52 only over SSH or with `PI_CLIPBOARD_OSC52=1`. herdr knows a
+  program's mouse mode and sends it to `terminal session control` clients (`MouseCapture`), but its CLI bridge drops
+  it, and it sends an OSC 52 write only to its own TUI client: neither reaches Ovvi. The upstream patch for the mode
+  is in `~/Downloads/ovvi-research/p58m/herdr-mouse-mode.patch` (kept for later, unused).
+- **Cause, the white block.** pi selects from the press's cell to the pointer's, both taken (`getSelectionBounds`), in
+  reverse video, which herdr writes as `38;2;0;0;0;48;2;255;255;255`. Ghostty's `dragSelection` takes the press's cell
+  going forward only when pressed before its 60 % point (`round(0.6 × width)` px), going back only past it, and the
+  pointer's cell the other way round. Where pi took a cell and libghostty did not, the cell was pure white.
+- **Fix.** A plain left drag goes to the program again and selects in the card, and libghostty gets points half a
+  pixel in from the cells' edges, so it takes both end cells. A press on the wrong side of the 60 % point for the
+  drag's way is made again at the cell's other edge. Before that press, libghostty gets a click at the card's far
+  corner: a press within one cell width of the last one, inside the double-click interval, counts as a double click
+  (a word). The restart sends nothing to herdr.
+- **Decisions.** A ⇧, ⌥ or ⌃ drag and a double or triple click stay in the card, as in L3: pi treats them as plain
+  drags (`button & 3`) or finds other words (`Intl.Segmenter`) and lines (from column 0), so its cells differ from the
+  card's. The program gets such a single click on its release when the pointer stayed in its cell. Option A's Ovvi
+  side (Ghostty's rule once herdr reports the mode) is not built.
+- **Limits.** pi keeps its selection on its text when the text scrolls (its own scroll at the box's edge, new output,
+  the wheel); the card's stays on the screen's rows, so white cells can show then. libghostty-spm has no call to set
+  or clear a selection. A press within 1 px of the last move keeps libghostty's older point: rarely one cell off.
+- **Tests.** A stand-in (`Fixtures/mouse-select`) turns on SGR mouse mode with drags, selects pi's way in reverse
+  video and draws a white mark that moves with each release. The UI test (dark) drags forward and then forward-and-back
+  with each end on the side libghostty's own rule leaves out, then checks: the drags reached the program, no pure white
+  pixel in the row, both end cells blue, the cells past them not (a word selection reaches them). The cell geometry
+  comes from the mark's pixels. For Track K: `mouseDown` now lives in `Terminal/Selection.swift`.
+- **Runs.** VM: green on the fix (both tests); red with the old cell rule (no edge points: "a white cell beside the
+  selection", the white `c` and `a` at the ends in the picture).
+- **For the user.** In pi, drag over text: only the blue selection, no white cell, and pi says "Copied!" with its
+  formatted text on the clipboard. Drag forward and then back past where you pressed: still no white cell. A ⇧-drag or
+  a double click selects in the card only. Pictures: `~/Downloads/ovvi-research/p58m/`.

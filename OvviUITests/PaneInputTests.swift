@@ -98,7 +98,9 @@ extension OvviUITests {
             let shot = try await poll("the program's frame after release \(releases)") { () -> Shot? in
                 Shot(terminal.screenshot().image, rows: rows).flatMap { $0.whites(row: 0).contains(mark) ? $0 : nil }
             }
-            add(XCTAttachment(image: shot.image))
+            let attachment = XCTAttachment(image: shot.image)
+            (attachment.name, attachment.lifetime) = ("selection \(releases)", .keepAlways)
+            add(attachment)
             func blue(_ column: Int) -> Int {
                 shot.blue(Int(origin + Double(column) * width), Int(width), row: 1)
             }
@@ -111,7 +113,7 @@ extension OvviUITests {
     }
 
     /// A terminal's screenshot: rows of `height` pixels.
-    private struct Shot {
+    @MainActor private struct Shot {
         let image: NSImage, pixels: [UInt8], width: Int, height: Double
 
         init?(_ image: NSImage, rows: Int) {
