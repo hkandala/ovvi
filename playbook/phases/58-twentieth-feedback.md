@@ -783,3 +783,22 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
 39. "one more bug i just noticed, take two tabs, and have two panes in each tab, make one pane in one tab in zoom mode,
     and go to other tab and make one pane there zoom as well, now come back to old tab that zoom in the first tab is
     gone, zoom panes are tab specific, making one pane zoom in other tab shouldn't affect previous tabs"
+
+#### Findings (Track Z)
+
+- **Cause.** `Page` kept one `zoomedPaneID` for the whole page, as the design said from the start ("one zoomed card
+  per page", D11). A zoom in tab 2 replaced tab 1's, so tab 1 came back unzoomed. The same id also sized hidden
+  tabs' terminals (`fitHidden`) and drew the overview's tiles from the wrong tab's zoom.
+- **Fix.** `zoomedPanes`, tab id to pane id; `zoomedPaneID` is now the selected tab's. Every reader takes its own
+  tab's entry: the tab page, its miniature and overview tile, the card's buttons and the Zoom/Restore menu item,
+  `fitHidden`, the find bar, `split`, `go(to:)`, floating and replace. `settle` drops an entry whose card closed, is
+  alone, or left the tab. Presence (`ovvi` shown panes) and the keyboard read the selected tab's zoom.
+- **Decisions.** herdr keeps a zoom per tab too (`pane.zoom`, spiked), but it moves herdr's focus and refuses pane
+  moves into or out of the zoomed tab (`zoomed_tab`), so the zoom stays the app's own, in memory, as before (no
+  zoom persists over a relaunch, then or now). A card moved or opened into a zoomed tab (Move Pane to Tab, a drag,
+  `ovvi open … side`) restores that tab's zoom, so the keys never go to a hidden card (review). A tab moved to
+  another space gets new ids and loses its zoom (written in the design).
+- **Runs.** `testEachTabKeepsItsOwnZoom` (the user's steps, then a move into a zoomed tab) failed on the parent in
+  the VM ("Zoom Pane" on the first tab's card); green on the fix with the zoom, move and replace tests.
+- **For the user.** Zoom a card in two tabs and switch between them; open the overview and hover the tabs: each tab
+  shows its own zoomed card.
