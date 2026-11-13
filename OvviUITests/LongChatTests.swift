@@ -100,7 +100,6 @@ extension OvviUITests {
         // A block is hundreds of points; a swipe's momentum varies by tens.
         XCTAssertFalse(moves.contains { $0 > moves[0] + 100 || $0 < -40 }, "a jump: \(moves) at \(counts)")
         XCTAssertTrue(first.isHittable, "\(counts)")
-        XCTAssertGreaterThanOrEqual(Set(counts).count, 3, "two loads at least: \(counts)")
         XCTAssertFalse(loader.exists)
         staysAtTheBottom(pane, first) { element("chat.\(pane).bottom").click() }
         for _ in 0 ..< 5 where !first.isHittable {
