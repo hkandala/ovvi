@@ -741,3 +741,9 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
     now, don't show customise button in cmd+/ panel, not needed, and lets simply say shortcuts in setting section, and
     move it fully bottom in the list, when conflict is there, the buttons and hotkey input not aligned well, very shoddy
     job man, improve the ui"
+
+### Track Z: zoom kept per tab (item 39)
+
+39. "one more bug i just noticed, take two tabs, and have two panes in each tab, make one pane in one tab in zoom mode,
+    and go to other tab and make one pane there zoom as well, now come back to old tab that zoom in the first tab is
+    gone, zoom panes are tab specific, making one pane zoom in other tab shouldn't affect previous tabs"
