@@ -919,11 +919,15 @@ The user's files: `.build/fb57/r11-fontkeys-11.20.52.png`, `r11-tabslide-11.23.5
     more worse, how big of a change it is, if its small workaround, let's bring that back, at least the issue was less
     evident with that workaround"
 
-### Track H3: font size keys, tab history keys (items 42, 44)
+### Track H3: font size keys, tab history keys, session steps wrap (items 42, 44, 51)
 
 42. "[r11-fontkeys] why font size has two hotkeys? can't we just keep cmd++?"
 44. "let's change the hotkey for step back and forward, i use ctrl command arrows for other global hotkeys, how about
     ctrl + shift arrows? or ctrl+ shift + [] so its consistent with other [ ] hotkeys we have"
+
+51. "one more minor thing, ctrl command [ ] moves to next/previous workspace and it cycles once it reaches end right,
+    same behavior for cmd+shift+[] as well but for sessions which is cmd+opt+[] it doesn't cycle, once it reaches end
+    you can only go back"
 
 ### Track T2: the tab slide is laggy (item 43)
 
