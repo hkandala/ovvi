@@ -8,7 +8,7 @@ struct BrowserToolbar: View {
     @State private var text = ""
     @FocusState private var editing: Bool
     @State private var hovering = false
-    @State private var closed: ClosedPagesMenu.Shown?
+    @State private var closed: ClosedPagesPopover.Shown?
     @Environment(\.look) private var look
 
     var body: some View {
@@ -30,13 +30,13 @@ struct BrowserToolbar: View {
             .foregroundStyle(look.paneButton)
             address(id)
             IconButton(symbol: "clock.arrow.circlepath", help: "Recently Closed", size: 22) {
-                Task { closed = await ClosedPagesMenu.Shown(pages: ClosedPages.pages(on: page.store.machine)) }
+                Task { closed = await ClosedPagesPopover.Shown(pages: ClosedPages.pages(on: page.store.machine)) }
             }
             .accessibilityIdentifier("\(id).closed")
             .foregroundStyle(look.paneButton)
             // By item: a first popover's content with `isPresented` had the list from before the read.
             .popover(item: $closed, arrowEdge: .bottom) { shown in
-                ClosedPagesMenu(pages: shown.pages) { picked, how in
+                ClosedPagesPopover(pages: shown.pages) { picked, how in
                     closed = nil
                     Task { await ClosedPages.reopen(picked, how: how, from: browser, page: page) }
                 }
