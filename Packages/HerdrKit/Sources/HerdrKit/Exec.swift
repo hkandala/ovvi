@@ -112,14 +112,18 @@ public final class ProcessExec: Exec {
     private struct Lookup {
         var path: String?
         var asked: ContinuousClock.Instant
+        /// The last shell ran out of its bound (a busy Mac, slow rc files): that is no answer.
+        var late = false
+        /// The ask in flight: every caller waits for its answer.
+        var asking: Task<String?, Never>?
     }
 
     public convenience init() async {
         Self.prepare()
         var env = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("HERDR_") }
-        let (found, herdr) = await Self.loginShell(env)
-        env.merge(found.filter { Self.isUserKey($0.key) }) { $1 }
-        self.init(env, herdr: herdr, asked: .now)
+        let found = await Self.loginShell(env)
+        env.merge((found?.vars ?? [:]).filter { Self.isUserKey($0.key) }) { $1 }
+        self.init(env, herdr: found?.herdr, asked: .now, late: found == nil)
     }
 
     static func prepare() {
@@ -133,12 +137,12 @@ public final class ProcessExec: Exec {
         }
     }
 
-    init(_ environment: [String: String], herdr: String?, asked: ContinuousClock.Instant,
+    init(_ environment: [String: String], herdr: String?, asked: ContinuousClock.Instant, late: Bool = false,
          shellLimit: Duration = shellLimit)
     {
         self.environment = environment
         self.shellLimit = shellLimit
-        lookup = Mutex(Lookup(path: herdr, asked: asked))
+        lookup = Mutex(Lookup(path: herdr, asked: asked, late: late))
     }
 
     public func run(_ argv: [String]) async throws -> Channel {
@@ -161,46 +165,43 @@ public final class ProcessExec: Exec {
         if let path = lookup.withLock({ $0.path }), FileManager.default.isExecutableFile(atPath: path) {
             return path
         }
-        // Missing or gone since: ask again at most every 30 s (it runs the user's rc files); nil in between.
-        // `asked` is set as the run starts, and the shell's bound (under 30 s) keeps the run inside the window, so
-        // one runs at a time.
-        let ask = lookup.withLock {
-            guard ContinuousClock.now - $0.asked >= .seconds(30) else { return false }
-            $0.asked = .now
-            return true
+        // Missing or gone since: ask again at most every 30 s (it runs the user's rc files), nil in between; at once
+        // after a shell that ran out of its bound, with 25 s, a bound for a hung rc file only. One ask runs at a time.
+        let asking = lookup.withLock { lookup -> Task<String?, Never>? in
+            if let asking = lookup.asking {
+                return asking
+            }
+            guard lookup.late || ContinuousClock.now - lookup.asked >= .seconds(30) else { return nil }
+            let limit = lookup.late ? max(shellLimit, .seconds(25)) : shellLimit
+            lookup.asked = .now
+            let task = Task { await self.lookUp(within: limit) }
+            lookup.asking = task
+            return task
         }
-        guard ask else { return nil }
-        return await lookUp(within: shellLimit)
-    }
-
-    /// herdr's path from a login shell that answered, for what must not change once shown (the welcome's pages): a
-    /// nil from `herdr()` may be a shell that ran out of its 3 s on a busy Mac, kept for 30 s. This bound is only for a
-    /// hung rc file.
-    public func answeredHerdr(within limit: Duration = .seconds(30)) async -> String? {
-        if let path = await herdr() {
-            return path
-        }
-        return await lookUp(within: limit)
+        return await asking?.value
     }
 
     private func lookUp(within limit: Duration) async -> String? {
-        let path = await Self.loginShell(environment, within: limit).herdr
+        let found = await Self.loginShell(environment, within: limit)
         // An ask that ended late never drops a path found meanwhile (an install's ask); a stale one is checked above.
-        lookup.withLock { $0 = Lookup(path: path ?? $0.path, asked: .now) }
-        return path
+        // A long ask that ran out goes back to asking every 30 s.
+        lookup.withLock {
+            $0 = Lookup(path: found?.herdr ?? $0.path, asked: .now, late: found == nil && limit == shellLimit)
+        }
+        return found?.herdr
     }
 
     /// A GUI app does not get the shell's environment, so ask the login shell, in one run, for its
-    /// variables and for herdr.
+    /// variables and for herdr. Nil when it did not answer in time.
     static func loginShell(_ env: [String: String], within limit: Duration = shellLimit) async
-        -> (vars: [String: String], herdr: String?)
+        -> (vars: [String: String], herdr: String?)?
     {
         let marker = "ovvi-env-\(UUID().uuidString)"
         guard let channel = try? spawn(
             [env["SHELL"] ?? "/bin/zsh", "-lic",
              "echo \(marker); /usr/bin/env; echo \(marker); \(Self.herdrLookup); echo \(marker)"],
             env,
-        ) else { return ([:], nil) }
+        ) else { return nil }
         // Closed stdin reads like /dev/null.
         channel.closeInput()
         return await (try? withTimeout(limit, onTimeout: channel.terminate) {
@@ -222,7 +223,7 @@ public final class ProcessExec: Exec {
                 }
             }
             return (vars, herdr)
-        }) ?? ([:], nil)
+        })
     }
 
     /// herdr's path in a login shell: on its PATH, else where herdr's installer puts it (`$HOME/.local/bin`), which a

@@ -50,10 +50,10 @@ enum FloatFrames {
         return next.map(placement) ?? WindowPlacement()
     }
 
-    /// On the screen of the frame, also when it is not the focused one.
+    /// On the screen of the frame, also when another screen has the key window.
     static func placement(_ frame: NSRect) -> WindowPlacement {
-        guard let primary = NSScreen.screens.first?.frame else { return WindowPlacement() }
-        return WindowPlacement(frame.windowPosition(primary: primary), size: frame.size)
+        guard let main = NSScreen.main ?? NSScreen.screens.first else { return WindowPlacement() }
+        return WindowPlacement(frame.windowPosition(mainHeight: main.frame.height), size: frame.size)
     }
 
     static func frame(over main: NSWindow) -> NSRect {

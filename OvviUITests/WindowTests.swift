@@ -136,9 +136,11 @@ extension OvviUITests {
         XCTAssertEqual(frame.minX, screen.minX, accuracy: 2, "\(frame) in \(screen)")
 
         step("New window: the next one takes the front window's size and place, once the user changed them")
+        // The left half of the screen, with no hit test on an edge.
         let front = try XCTUnwrap(window)
-        let edge = front.coordinate(withNormalizedOffset: CGVector(dx: 1, dy: 0.5)).withOffset(CGVector(dx: -1, dy: 0))
-        edge.click(forDuration: 0.3, thenDragTo: edge.withOffset(CGVector(dx: -frame.width / 3, dy: 0)))
+        app.menuBars.menuBarItems["Window"].click()
+        app.menuBars.menuItems["Move & Resize"].click()
+        app.menuBars.menuItems["Left"].click()
         XCTAssertTrue(until(3) { front.frame.width < frame.width - 100 }, "\(front.frame)")
         let resized = front.frame, ids = app.windows.allElementsBoundByIndex.map(\.identifier)
         app.typeKey("n", modifierFlags: .command)

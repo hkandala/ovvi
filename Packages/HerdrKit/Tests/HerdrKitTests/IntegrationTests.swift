@@ -188,8 +188,9 @@ private func talk(_ client: HerdrClient, _ exec: SubscribeCounter) async throws 
     }
     let found = await ProcessExec.loginShell(["SHELL": shell, "PATH": "\(dir.path)/bin:/usr/bin:/bin", "XDG_X": "1"],
                                              within: failureBound)
-    #expect(found.herdr == herdr && found.vars["XDG_X"] == "1")
-    #expect(await ProcessExec.loginShell(["SHELL": shell, "PATH": "/usr/bin:/bin"], within: failureBound).herdr == nil)
+    #expect(found?.herdr == herdr && found?.vars["XDG_X"] == "1")
+    let none = await ProcessExec.loginShell(["SHELL": shell, "PATH": "/usr/bin:/bin"], within: failureBound)
+    #expect(none != nil && none?.herdr == nil)
 
     try FileManager.default.removeItem(atPath: shell + ".count")
     // Inside the 30 s between asks, so a second ask never starts.
@@ -200,12 +201,14 @@ private func talk(_ client: HerdrClient, _ exec: SubscribeCounter) async throws 
     #expect(await exec.herdr() == nil)
     #expect(try String(contentsOfFile: shell + ".count", encoding: .utf8) == "\n")
 
-    // A nil kept from a lookup that ran out of time is no answer: the welcome asks the shell itself, and keeps its
-    // path.
-    let late = ProcessExec(["SHELL": shell, "PATH": "\(dir.path)/bin:/usr/bin:/bin"], herdr: nil, asked: .now)
-    #expect(await late.herdr() == nil)
-    #expect(await late.answeredHerdr(within: failureBound) == herdr)
-    #expect(await late.herdr() == herdr)
+    // A shell that ran out of its bound is no answer: the next call asks at once, inside the 30 s, and every caller
+    // waits for that one ask.
+    try FileManager.default.removeItem(atPath: shell + ".count")
+    let late = ProcessExec(["SHELL": shell, "PATH": "\(dir.path)/bin:/usr/bin:/bin"], herdr: nil, asked: .now,
+                           late: true, shellLimit: failureBound)
+    async let one = late.herdr(), two = late.herdr()
+    #expect(await [one, two] == [herdr, herdr])
+    #expect(try String(contentsOfFile: shell + ".count", encoding: .utf8) == "\n")
 }
 
 private func closedReason(_ events: inout AsyncStream<TerminalStream.Event>.Iterator) async -> TerminalStream.Closed? {

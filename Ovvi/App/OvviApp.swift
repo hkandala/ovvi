@@ -27,12 +27,13 @@ struct OvviApp: App {
             ContentView()
         }
         .windowToolbarStyle(.unifiedCompact)
-        // The front window's frame, which AppKit cascades; with none, the screen's visible frame.
+        // The front window's frame, which AppKit cascades, else the last one closed's; with neither, the screen's
+        // visible frame.
         .defaultWindowPlacement { _, context in
-            NSApp.orderedWindows.first {
+            (NSApp.orderedWindows.first {
                 $0.identifier?.rawValue.hasPrefix(WindowPages.mainScene + "-") == true && $0.isVisible
                     && !$0.styleMask.contains(.fullScreen)
-            }.map { FloatFrames.placement($0.frame) }
+            }?.frame ?? WindowReader.closedFrame).map(FloatFrames.placement)
                 ?? WindowPlacement(.center, size: context.defaultDisplay.visibleRect.size)
         }
         .windowIdealSize(.maximum)

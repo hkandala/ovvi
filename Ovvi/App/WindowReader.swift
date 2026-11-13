@@ -8,6 +8,8 @@ struct WindowReader: NSViewRepresentable {
     @Binding var fullScreen: Bool
     @Binding var lightsOff: Int
     static let recordLights = UserDefaults.standard.bool(forKey: "recordLights")
+    /// The last main window's frame as it closed, out of full screen: where a new window opens when none shows.
+    static var closedFrame: NSRect?
 
     func makeNSView(context _: Context) -> Reader {
         let reader = Reader()
@@ -34,6 +36,9 @@ struct WindowReader: NSViewRepresentable {
             let close = NSWindow.willCloseNotification
             observers.append(center.addObserver(forName: close, object: window, queue: .main) { [weak self] _ in
                 MainActor.assumeIsolated {
+                    if let window = self?.window, !window.styleMask.contains(.fullScreen) {
+                        WindowReader.closedFrame = window.frame
+                    }
                     self?.pages?.closed()
                     // The view may go away without leaving its window first.
                     self?.stop()

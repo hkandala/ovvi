@@ -66,6 +66,8 @@ struct TrustPrompt: View {
     let page: Page
     @Environment(\.look) private var look
     @Environment(\.litCard) private var lit
+    /// Off: a plugin joins New Pane only when the user checks it, as at an install from a source.
+    @State private var inNewPane = false
 
     var body: some View {
         let manifest = plugin.manifest, id = "pane.\(plugin.paneID).trust"
@@ -93,14 +95,19 @@ struct TrustPrompt: View {
             .multilineTextAlignment(.center)
             .frame(maxWidth: 360)
             if manifest.chooser != nil {
-                NewPaneSwitch(manifest: manifest).toggleStyle(.checkbox).font(.system(size: 11))
+                Toggle("Show in New Pane", isOn: $inNewPane).toggleStyle(.checkbox).font(.system(size: 11))
                     .foregroundStyle(.secondary).accessibilityIdentifier("\(id).new-pane")
             }
             HStack(spacing: 8) {
                 Button("Cancel") { page.closePane(page.store.pane(plugin.paneID)) }
                     .buttonStyle(.glass).accessibilityIdentifier("\(id).cancel")
-                Button("Install") { PluginTrust.shared.allow(manifest) }
-                    .buttonStyle(.glassProminent).accessibilityIdentifier("\(id).install")
+                Button("Install") {
+                    if manifest.chooser != nil {
+                        Registry.show(manifest.id, inNewPane: inNewPane)
+                    }
+                    PluginTrust.shared.allow(manifest)
+                }
+                .buttonStyle(.glassProminent).accessibilityIdentifier("\(id).install")
             }
             .controlSize(.small)
             .padding(.top, 4)

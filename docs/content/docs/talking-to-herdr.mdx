@@ -81,7 +81,10 @@ and watch files and run git the same way
   shell run reads the environment, at launch
   ([Running commands](#running-commands)). On a remote machine it is one run over SSH
   on connect, and the path goes inside the envelope.
-- No path (herdr missing, or This Mac's shell failed or took over 3 s): the
+- This Mac's shell gets 3 s. One that takes longer (a busy Mac, slow startup
+  files) is no answer: the next need for herdr asks again at once, with 25 s,
+  and every caller waits for that run.
+- No path (herdr missing, or This Mac's shell failed or took over 25 s): the
   app shows the install command with **Install herdr**
   ([Install herdr](#install-herdr)) and asks the shell again, at most every
   30 s while missing and one run at a time, so it finds a herdr that the user

@@ -74,6 +74,6 @@ struct HerdrStep: View {
     }
 
     static func missing() async -> Bool {
-        await localExec.value.answeredHerdr() == nil
+        await (try? Machine.thisMac.exec().herdr()) == nil
     }
 }
