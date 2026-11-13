@@ -464,7 +464,9 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
 - **Tests.** The right-click test's program now reads drags too (`?1002h`) and checks that a plain drag's moves reach
   it, beside its press, release and the card's ⌘C copy; that fails on L3's code (no drags). Track M's own drag test,
   its pixel checks for white and end cells, and its stand-in are gone: nothing they checked still holds.
-- **Runs.** See the Runs line below.
+- **Runs.** `make lint build test` green on the rebased tree; the right-click test green in the VM. On L3's code (c6960e8e)
+  its new drag check fails by reading (no `[<32;` reaches the program; not run). Recording strips:
+  `~/Downloads/ovvi-research/p58m2/`; the steady end cell as it looks now: `p58m/before-old-rule-selection1.png`.
 - **For the user.** In pi, drag over text: pi says "Copied!" and ⌘C copies the card's selection. White cells can show
   at an end, for a frame as you drag back, and on the click that clears it (known limit until herdr reports the mouse
   mode).
