@@ -35,11 +35,13 @@ extension KeyboardShortcut {
             && keys.lowercased().contains(key.character)
     }
 
-    /// Takes the key even when the command is disabled, and in a text field too: else ⌃⇥ goes on to AppKit's key
-    /// view loop, which steps the panes. Only a command's keys: Back's ⌘← stays the page's.
+    /// An action's second key, and ⌘= for ⌘+ (`twin`). Takes the key even when the command is disabled, and in a
+    /// text field too: else ⌃⇥ goes on to AppKit's key view loop, which steps the panes. Only a command's keys: Back's
+    /// ⌘← stays the page's.
     @MainActor static func second(_ event: NSEvent) -> Bool {
         guard let first = Hotkeys.app.lazy.map(Hotkeys.shared.keys)
-            .first(where: { $0.dropFirst().contains { $0.matches(event) } })?.first,
+            .first(where: { $0.dropFirst().contains { $0.matches(event) } || $0.first?.twin?.matches(event) == true })?
+            .first,
             let commands = CommandList.keyWindow, commands.contains(where: { $0.key == first }) else { return false }
         commands.run { $0 == first }
         return true

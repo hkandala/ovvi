@@ -76,7 +76,7 @@ final class Hotkeys {
     /// The action, other than `hotkey`, that `key` already runs where `hotkey` works.
     func clash(_ key: KeyboardShortcut, for hotkey: Hotkey, in list: [Hotkey]? = nil) -> Hotkey? {
         ((list ?? all) + Self.fixed)
-            .first { $0.id != hotkey.id && Self.overlap($0.scope, hotkey.scope) && keys($0).contains(key) }
+            .first { $0.id != hotkey.id && Self.overlap($0.scope, hotkey.scope) && keys($0).contains { $0.runs(key) } }
     }
 
     private static func overlap(_ one: String?, _ other: String?) -> Bool {
@@ -130,7 +130,7 @@ extension Hotkeys {
         Hotkey("app.new-window", "New Window", "App", "cmd+n"),
         Hotkey("app.sidebar", "Toggle Sidebar", "App", "ctrl+cmd+s", top: true),
         Hotkey("app.overview", "Show Overview", "App", "ctrl+cmd+o", top: true),
-        Hotkey("app.bigger", "Increase Font Size", "App", "cmd++", "cmd+="),
+        Hotkey("app.bigger", "Increase Font Size", "App", "cmd++"),
         Hotkey("app.smaller", "Decrease Font Size", "App", "cmd+-"),
         Hotkey("app.actual-size", "Reset Font Size", "App", "cmd+0"),
     ]
@@ -156,8 +156,8 @@ extension Hotkeys {
         Hotkey("tab.close-right", "Close Tabs to the Right", "Tabs"),
         Hotkey("tab.previous", "Show Previous Tab", "Tabs", "shift+cmd+[", "ctrl+shift+tab", top: true),
         Hotkey("tab.next", "Show Next Tab", "Tabs", "shift+cmd+]", "ctrl+tab", top: true),
-        Hotkey("tab.back", "Go Back", "Tabs", "ctrl+cmd+left", top: true),
-        Hotkey("tab.forward", "Go Forward", "Tabs", "ctrl+cmd+right", top: true),
+        Hotkey("tab.back", "Go Back", "Tabs", "ctrl+shift+[", top: true),
+        Hotkey("tab.forward", "Go Forward", "Tabs", "ctrl+shift+]", top: true),
         Hotkey("tab.move-left", "Move Tab Left", "Tabs", "shift+cmd+left"),
         Hotkey("tab.move-right", "Move Tab Right", "Tabs", "shift+cmd+right"),
     ] + jumps("tab", "Tab", "Tabs", "cmd+")
@@ -266,6 +266,15 @@ extension KeyboardShortcut {
         guard key.unicodeScalars.allSatisfy({ !(0xF700 ... 0xF8FF).contains($0.value) }),
               let chord = Chord(modifiers: Set(names), key: key) else { return nil }
         self.init(chord: chord.description)
+    }
+
+    /// ⌘+ is ⇧⌘= on a US layout: ⌘= runs it too, as in Safari and Terminal, with only ⌘+ shown.
+    var twin: KeyboardShortcut? {
+        key == "+" ? KeyboardShortcut("=", modifiers: modifiers) : nil
+    }
+
+    func runs(_ other: KeyboardShortcut) -> Bool {
+        other == self || other == twin
     }
 
     /// `key: .hotkey("tab.new")`: the first key of one of the app's actions, as the user set it.

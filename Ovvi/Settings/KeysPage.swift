@@ -114,7 +114,7 @@ struct KeysPage: View {
     /// The other action takes this one's first key in place of the one it gives up.
     private func swap(_ clash: Clash) {
         let hotkeys = Hotkeys.shared, old = hotkeys.keys(clash.hotkey).first
-        hotkeys.set(clash.other, hotkeys.keys(clash.other).compactMap { $0 == clash.key ? old : $0 })
+        hotkeys.set(clash.other, hotkeys.keys(clash.other).compactMap { $0.runs(clash.key) ? old : $0 })
         hotkeys.set(clash.hotkey, [clash.key])
         self.clash = nil
     }

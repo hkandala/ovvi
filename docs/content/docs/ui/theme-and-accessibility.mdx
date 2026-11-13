@@ -148,16 +148,21 @@ defaults.
 
 The palette and the menu bar come from one command list. A command with two
 default keys shows the first in the menu; a key monitor runs the first's
-command for the second (⇧⌘P, ⌃⇥, ⌃⇧⇥, ⌘=), always on the key window's own
+command for the second (⇧⌘P, ⌃⇥, ⌃⇧⇥), always on the key window's own
 command list. It takes ⌃⇥ and ⌃⇧⇥ in every card and text field (a chat's
 composer, a browser's address), so they never move the keyboard to the next
 terminal instead. A key the user records is the action's only key.
 
+⌘+ is one key, shown as ⌘+ only: on a US layout it is ⇧⌘=, and plain ⌘=
+runs it too, as in Safari and Terminal. A key recorded for Increase Font Size
+replaces both.
+
 One pattern for every level: the key says the action, the modifier says the
 level. `T` makes, `W` closes, `[` and `]` step, `1` to `9` jump. ⌘ is the pane
 (and the tab for New Tab and the jumps), ⇧⌘ the tab, ⌃⌘ the space, ⌥⌘ the
-session. Arrows mean panes, except ⇧⌘← and ⇧⌘→ (Move Tab) and ⌃⌘← and ⌃⌘→
-(Go Back and Go Forward through the tabs shown, Xcode's keys).
+session. Arrows mean panes, except ⇧⌘← and ⇧⌘→ (Move Tab). ⌃⇧[ and ⌃⇧] step
+through the tabs shown before (Go Back and Go Forward), as the other `[` and
+`]` keys step.
 
 | | Pane | Tab | Space | Session |
 |---|---|---|---|---|
@@ -216,12 +221,12 @@ on its own row. Esc, ⌘/ or a click outside closes it.
 | ⌃- and ⌃⇧-, ⌘← and ⌘→ | over a plugin card, Back and Forward (VS Code's Go Back and Go Forward), ahead of the page's own keys; an arrow key in a text field still moves the caret | |
 | ⌘← ⌘→, ⌘⌫, ⌥← ⌥→ | in a terminal: to the line's start and end, delete to the line's start, back and forward a word (⌃A, ⌃E, ⌃U, ⌥B, ⌥F to the program) | |
 | ⌥⇧⌘ + arrow | Move Pane: swap the keyboard card with the card that way | View ▸ Pane |
-| ⌘+ (and ⌘=), ⌘-, ⌘0 | Increase, Decrease, Reset Font Size: the text size; on a browser card that has the keyboard, the page's zoom (⌘0 also undoes a pinch) | View |
+| ⌘+, ⌘-, ⌘0 | Increase, Decrease, Reset Font Size: the text size; on a browser card that has the keyboard, the page's zoom (⌘0 also undoes a pinch) | View |
 | ⌃⌘F | full screen (the macOS key) | View |
 | ⌘/ | Keyboard Shortcuts (the panel) | Help |
 | ⌘1 … ⌘9 | switch tabs | Window |
 | ⇧⌘[ and ⌃⇧⇥, ⇧⌘] and ⌃⇥ | previous and next tab | Window |
-| ⌃⌘← and ⌃⌘→ | Go Back and Go Forward through the tabs shown before, across spaces ([History](/docs/ui/window#tab-bar)). Xcode's keys: VS Code's ⌃- and ⌃⇧- are a plugin card's Back and Forward, a browser's ⌘[ ⌘] the pane steps | Window |
+| ⌃⇧[ and ⌃⇧] | Go Back and Go Forward through the tabs shown before, across spaces ([History](/docs/ui/window#tab-bar)). Brackets as the other steps; ⌃⌘← ⌃⌘→ are often global keys, VS Code's ⌃- and ⌃⇧- a plugin card's Back and Forward. A terminal program does not get them: herdr sends ⌃⇧] as ⌃] (type ⌃] itself) and ⌃⇧[ as a kitty-protocol key few programs bind | Window |
 | ⇧⌘←, ⇧⌘→ | move the tab left, right (as iTerm2; in a text field they still select to the line's start or end) | Window |
 | ⌃⌘[ and ⌃⌘] | previous and next space | Window |
 | ⌃⌘1 … ⌃⌘9 | switch spaces, in the sidebar's order | Window |

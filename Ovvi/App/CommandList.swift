@@ -256,8 +256,7 @@ struct CommandList {
                     symbol: "chevron.backward", enabled: tabs.count > 1) { page?.step(-1) },
             Command(section: .tabSteps, title: "Show Next Tab", key: .hotkey("tab.next"), symbol: "chevron.forward",
                     enabled: tabs.count > 1) { page?.step(1) },
-            // Xcode's keys: VS Code's ⌃- is a plugin card's Back, ⌘[ a pane step. Enabled with nothing to go to: the
-            // history is no observed state, and a disabled item swallows its key.
+            // Enabled with nothing to go to: the history is no observed state, and a disabled item swallows its key.
             Command(section: .tabSteps, title: "Go Back", key: .hotkey("tab.back"),
                     symbol: "arrow.uturn.backward", keywords: "tab history previous last recent",
                     enabled: page != nil) { page?.goInHistory(-1) },

@@ -225,9 +225,9 @@ extension OvviUITests {
         try await expectShown(tabs[0], "back on the first space")
         app.typeKey("3", modifierFlags: .command)
         try await expectShown(tabs[2], "its third tab")
-        for (key, tab) in [(XCUIKeyboardKey.leftArrow, tabs[0]), (.leftArrow, other), (.rightArrow, tabs[0])] {
-            app.typeKey(key, modifierFlags: [.control, .command])
-            try await expectShown(tab, "\(key == .leftArrow ? "back" : "forward") to \(tab)")
+        for (key, tab) in [("[", tabs[0]), ("[", other), ("]", tabs[0])] {
+            app.typeKey(key, modifierFlags: [.control, .shift])
+            try await expectShown(tab, "\(key == "[" ? "back" : "forward") to \(tab)")
         }
         openPalette()
         app.typeText("go forward")
@@ -235,7 +235,7 @@ extension OvviUITests {
         try await expectShown(tabs[2], "forward from the palette")
         try await Self.call(one, "tab.close", ["tab_id": tabs[0]])
         XCTAssertTrue(element("tab.\(tabs[0])").vanishes(within: 3))
-        app.typeKey(.leftArrow, modifierFlags: [.control, .command])
+        app.typeKey("[", modifierFlags: [.control, .shift])
         try await expectShown(other, "back past the closed tab")
     }
 
