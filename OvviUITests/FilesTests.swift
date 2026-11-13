@@ -354,6 +354,7 @@ extension OvviUITests {
         \(commit) -m first && echo two >>a.txt && \(commit) -am second-commit && echo three >>a.txt && \
         touch build/out.o && clear && echo ready-$((6*7))\r
         """, to: shell)
-        try await waitFor(shell) { $0.contains("ready-42") }
+        // A bound for a failure only: a VM's first git after its boot runs xcrun's lookup, seen at over 10 s.
+        try await waitFor(shell, times: 600) { $0.contains("ready-42") }
     }
 }
