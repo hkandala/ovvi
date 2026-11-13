@@ -130,8 +130,9 @@ extension Page {
     }
 
     func zoomReplaced() {
-        if let new = zoomedPaneID.flatMap({ store.ahead.replaced[$0]?.made?.id }) {
-            zoomedPaneID = new
+        let zoomed = zoomedPanes.mapValues { store.ahead.replaced[$0]?.made?.id ?? $0 }
+        if zoomed != zoomedPanes {
+            zoomedPanes = zoomed
         }
     }
 

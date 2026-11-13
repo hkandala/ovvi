@@ -169,6 +169,27 @@ extension OvviUITests {
         try await expectPTYSize("w1:p2")
     }
 
+    /// The user's steps: a zoom in one tab, then in another, leaves the first tab zoomed.
+    func testEachTabKeepsItsOwnZoom() async throws {
+        let (first, one) = try await newTab("zoom-one")
+        let oneHidden = try await split(one)
+        let (second, two) = try await newTab("zoom-two")
+        let twoHidden = try await split(two)
+        for (tab, pane, hidden) in [(first, one, oneHidden), (second, two, twoHidden)] {
+            element("tab.\(tab)").click()
+            XCTAssertTrue(element("pane.\(hidden)").has(\.isHittable, true, within: 3))
+            hoverHeader(pane)
+            element("pane.\(pane).zoom").click()
+            XCTAssertTrue(element("pane.\(hidden)").vanishes(within: 2))
+        }
+        for (tab, pane, hidden) in [(first, one, oneHidden), (second, two, twoHidden)] {
+            element("tab.\(tab)").click()
+            XCTAssertTrue(element("pane.\(pane).zoom").has(\.label, "Restore Pane ⇧⌘↩", within: 3), tab)
+            XCTAssertFalse(element("pane.\(hidden)").exists, tab)
+            XCTAssertTrue(hasKeyboard("terminal.\(pane)"), tab)
+        }
+    }
+
     func testPaletteFiltersAndJumps() {
         step("Palette: keys typed right after ⌘K from a terminal reach the filter")
         XCTAssertTrue(element("tab.w1:t2").exists(within: connect))

@@ -27,7 +27,7 @@ struct PaneCard: View {
     var body: some View {
         let store = page.store
         let pane = store.pane(id)
-        let zoomed = page.zoomedPaneID == id
+        let zoomed = page.zoomed(id)
         let terminal = pane.flatMap(page.terminal)
         // Not read in a kept page out of view: each split changes them (the shown tab's tree, its newest card, the
         // keyboard), which would run every kept card's body again at each change.

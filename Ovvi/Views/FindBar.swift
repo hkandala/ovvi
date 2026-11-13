@@ -98,8 +98,7 @@ extension Page {
     var findHidden: Bool {
         guard let find, store.pane(find.paneID).map(floats) != true else { return false }
         let tabID = store.pane(find.paneID)?.tabID
-        return tabID != selectedTab?.id || zoomedPaneID.map { $0 != find.paneID && store.pane($0)?.tabID == tabID }
-            == true
+        return tabID != selectedTab?.id || tabID.flatMap { zoomedPanes[$0] }.map { $0 != find.paneID } == true
     }
 
     func dropFind() {

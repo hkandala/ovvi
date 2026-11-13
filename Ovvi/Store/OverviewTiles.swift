@@ -69,7 +69,7 @@ extension WindowPages {
 
     func tileCards(_ page: Page, _ tab: String) -> [(String, String)] {
         let panes = (page.store.tabPanes[tab] ?? []).filter { !page.floats($0) }
-        let zoomed = panes.filter { $0.id == page.zoomedPaneID }
+        let zoomed = panes.filter { $0.id == page.zoomedPanes[tab] }
         return (zoomed.isEmpty ? panes : zoomed).compactMap { pane in
             (pane.plugin == nil || pane.placeholder) && page.shownChat(pane) == nil ? pane.terminalID
                 .map { ($0, pane.id) } : nil

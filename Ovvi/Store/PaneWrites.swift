@@ -279,7 +279,9 @@ extension Page {
 
     func split(_ paneID: String, _ direction: SplitNode.Direction, before: Bool = false) async {
         Latency.shared.split()
-        zoomedPaneID = nil
+        if let tab = store.pane(paneID)?.tabID, zoomedPanes[tab] != nil {
+            zoomedPanes[tab] = nil
+        }
         // ⌘D can read the keyboard card ahead of the snapshot that makes the prior split's pane it.
         let target = newest.flatMap { newest in
             let old = store.pane(paneID)?.terminalID.map { $0 == newest.from } == true

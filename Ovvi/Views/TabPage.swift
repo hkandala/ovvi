@@ -11,7 +11,7 @@ struct TabPage: View {
     var body: some View {
         Group {
             if let tree = tab.tree {
-                let zoomed = page.zoomedPaneID.flatMap { tree.paneIDs.contains($0) ? $0 : nil }
+                let zoomed = page.zoomedPanes[tab.id].flatMap { tree.paneIDs.contains($0) ? $0 : nil }
                 SplitLayout(tree: tree, zoomed: zoomed, page: page, tabID: tab.id)
                     .padding(Self.inset)
             } else {

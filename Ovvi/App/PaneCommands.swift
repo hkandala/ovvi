@@ -6,7 +6,7 @@ extension CommandList {
     static func pane(_ page: Page?, tabs: Bool = true, _ target: @escaping @MainActor () -> HostStore.Pane?)
         -> [Command]
     {
-        let pane = target(), zoomed = pane.map { page?.zoomedPaneID == $0.id } ?? false, fixed = Chooser.fixed != nil
+        let pane = target(), zoomed = pane.map { page?.zoomed($0.id) == true } ?? false, fixed = Chooser.fixed != nil
         func act(_ title: String, _ hotkey: String? = nil, _ section: Command.Section = .pane,
                  symbol: String? = nil, enabled: Bool = true, id: String? = nil, heading: String? = nil,
                  _ run: @escaping (Page, HostStore.Pane) async -> Void) -> Command

@@ -232,7 +232,8 @@ herdr's focus methods (D13):
 
 ## Zoom is the app's own
 
-- One zoomed card per page in each window, in memory.
+- One zoomed card per tab in each window, in memory. Each tab keeps its own
+  zoom: a zoom in another tab leaves it as it is.
 - The zoomed card takes the whole page; the other cards keep their
   rectangles, hidden under it. The same views stay in place, so no
   terminal view moves between hosts and no other PTY resizes. (Drawing the

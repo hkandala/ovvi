@@ -36,11 +36,13 @@ final class Page: Identifiable {
     @ObservationIgnored private var history: [String] = []
     @ObservationIgnored private var place = -1
     @ObservationIgnored private var tabOrder: [String: [String]] = [:]
+    /// Each tab's zoomed card: tab id to pane id.
+    var zoomedPanes: [String: String] = [:]
+    /// The selected tab's zoomed card.
     var zoomedPaneID: String? {
-        didSet { zoomedTabID = zoomedPaneID.flatMap(store.pane)?.tabID }
+        selectedTab.flatMap { zoomedPanes[$0.id] }
     }
 
-    @ObservationIgnored private var zoomedTabID: String?
     var dragging: Dragged?
     var lifted: Dragged?
     var closing: HostStore.Closing?
@@ -149,8 +151,10 @@ final class Page: Identifiable {
             self.find = nil
         }
         zoomReplaced()
-        if let id = zoomedPaneID, alone(id) || store.pane(id)?.tabID != zoomedTabID {
-            zoomedPaneID = nil
+        // Gone, alone in its tab, or moved to another tab, by any window or client.
+        let zoomed = zoomedPanes.filter { tab, id in !alone(id) && store.pane(id)?.tabID == tab }
+        if zoomed != zoomedPanes {
+            zoomedPanes = zoomed
         }
         if let id = arriving, let workspace = store.workspace(of: id) {
             select(workspace, tab: id)
@@ -248,8 +252,8 @@ final class Page: Identifiable {
         guard let workspace = store.workspace(of: pane.tabID) else { return }
         newest = nil
         select(workspace, tab: pane.tabID)
-        if zoomedPaneID != pane.id, store.pane(zoomedPaneID ?? "")?.tabID == pane.tabID {
-            zoomedPaneID = nil
+        if zoomedPanes[pane.tabID].map({ $0 != pane.id }) == true {
+            zoomedPanes[pane.tabID] = nil
         }
         if let terminalID = pane.terminalID {
             use(terminalID)
@@ -282,18 +286,19 @@ final class Page: Identifiable {
     }
 
     func zoom(_ paneID: String) {
-        guard canZoom(paneID) else { return }
-        zoomedPaneID = zoomedPaneID == paneID ? nil : paneID
+        guard canZoom(paneID), let pane = store.pane(paneID) else { return }
+        let zoomed = zoomedPanes[pane.tabID] != paneID
+        zoomedPanes[pane.tabID] = zoomed ? paneID : nil
         if findHidden {
             dropFind()
         }
-        if zoomedPaneID != nil, let terminalID = store.pane(paneID)?.terminalID {
+        if zoomed, let terminalID = pane.terminalID {
             terminals.focus(terminalID)
         }
     }
 
     func canZoom(_ paneID: String) -> Bool {
-        zoomedPaneID == paneID || !alone(paneID)
+        zoomed(paneID) || !alone(paneID)
     }
 
     private func alone(_ paneID: String) -> Bool {
@@ -305,6 +310,10 @@ final class Page: Identifiable {
 }
 
 extension Page {
+    func zoomed(_ paneID: String) -> Bool {
+        zoomedPanes.values.contains(paneID)
+    }
+
     /// From the tree: herdr's `pane.neighbor` waits on herdr and picks another.
     func moveKeyboard(_ heading: Heading) {
         let used = usedTerminals.compactMap { store.terminalPane($0)?.id }

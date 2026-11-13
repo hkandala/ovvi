@@ -34,8 +34,8 @@ extension Page {
             }
         } else if !WindowPages.windows.contains(where: { $0.floats(terminalID) }) {
             floating[terminalID] = false
-            if zoomedPaneID == pane.id {
-                zoomedPaneID = nil
+            if zoomedPanes[pane.tabID] == pane.id {
+                zoomedPanes[pane.tabID] = nil
             }
             focusKeyboardCard()
         }

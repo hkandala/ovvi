@@ -12,7 +12,7 @@ struct Miniature: View {
         GeometryReader { proxy in
             let scale = proxy.size.width / size.width, area = CGRect(origin: .zero, size: size)
             if let tree = tab.tree {
-                let zoomed = page.zoomedPaneID.flatMap { tree.paneIDs.contains($0) ? $0 : nil }
+                let zoomed = page.zoomedPanes[tab.id].flatMap { tree.paneIDs.contains($0) ? $0 : nil }
                 let cards = Parts(tree, in: area, held: [:]).cards.filter { zoomed == nil || $0.id == zoomed }
                 ZStack(alignment: .topLeading) {
                     ForEach(cards, id: \.id) { card in
