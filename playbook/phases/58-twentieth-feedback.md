@@ -391,13 +391,13 @@ fails; lessons.md's rule makes it 60 s (round 8's final CI, '### Final CI, round
   0.3 s, and Git and File Explorer cards refreshed (4 git runs, about 40 processes here) on any change under the root,
   ignored build output and `.git/objects` included, up to once a second.
 - **Fix, one way for both machines.** Every herdr request and the events stream go to herdr's API socket in the app
-  (`Exec.api`): This Mac connects to herdr's `socket_path` (from `session list --json`, kept until a connect fails);
+  (`Exec.api`): This Mac connects to herdr's `socket_path` (from `session list --json`; a failed connect finds it again and retries once, on both machines);
   a remote machine to a local socket its ControlMaster forwards there (`ssh -O forward -L`, once per session and
   master; a stale file removed, an old forward cancelled first, `StreamLocalBindMask=0177`, the app's pid in the
   name, files removed at quit). A host whose sshd refuses stream-local forwarding shows "‹target› refuses to forward
   herdr's socket: Ovvi needs sshd's AllowStreamLocalForwarding", no fallback. The sidebar's branch follows git's own
-  files (`HEAD`, refs, `packed-refs`, `reftable/`, `config`; a worktree's own `HEAD`): FSEvents here, one long-lived
-  Perl `lstat` loop over the relay there, plus a 60 s read. Claude's state watch is one long-lived Perl run on both
+  files (`HEAD`, refs, `packed-refs`, `reftable/`, `config`; a worktree's own `HEAD`): one long-lived Perl `lstat` loop
+  on both machines (simplicity review, ec49d8cd), plus a 60 s read. Claude's state watch is one long-lived Perl run on both
   machines. Folder watches drop changes under an ignored folder and in `.git/objects` (one `check-ignore` per new
   output folder, then cached) and come at most every 2 s; the Git home and the Explorer take changes and head from
   one `git status --porcelain=v2 --branch` (`git.changes`), and the Git home reads branches and history only on
