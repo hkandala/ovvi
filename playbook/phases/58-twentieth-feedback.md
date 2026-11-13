@@ -863,3 +863,47 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
   gamma). The fix's VM run found the VM busy with the final CI round: the touched tests go to that round.
 - **For the user.** Sort Spaces ▸ Recent, then ⌃⌘[ ], ⌃⌘] and ⌃⌘1–9: they walk the rows top to bottom as shown,
   also with the pointer resting on the list after an agent finished.
+
+### Final CI, round 2
+
+Round 2's tracks, S3 included (main up to 5614a7b4), then this round's fixes.
+- **Cause (SSHForwardTests, the refusal read "Broken pipe").** ssh closes a forwarded connection that the machine
+  refused. On a loaded Mac the request's write came after that close, failed with EPIPE, and its reason won over the
+  close's, so `unanswered` never ran. **Fix:** a send to a closed other end leaves the reason to the reading, which then
+  ends with that end's own (`Socket.swift`).
+- **Cause (PaneLabelTests' shell read, GitTests' git files, a forward test's "relay did not start").** Bounds inside the
+  code under test: a state file's read through a shell (5 s), a work tree's git files (5 s), the relay's greeting (10
+  s). A starved Mac took longer to start the process. **Fix:** each takes a `timeout:` (the relay's through
+  `SSHExec(relayTimeout:)`); the tests pass `failureBound`. `GitStatus.of`, `Git.root` and `Git.commit` keep 5 s bounds
+  too, not seen failing.
+- **Cause (FollowTests "a big backlog loads fast").** It timed the follow, bound by the test process's own pool (shared
+  with 190 parallel tests), against `tail`, another process, so a busy pool failed it at any load. **Fix:** "a big
+  backlog goes out through head, never tail" counts the work: a `tail` on the run's PATH logs its calls, and only the
+  last byte's check and the follow read the file through it, from the backlog's end.
+- **Cause (the VM: a file card's crumbs from `/`, the plugin-API page stopped at `files.list`).** The VM's setup, not
+  the app: `/usr/bin/git` finds the shared Xcode's git through `xcrun`, about 9 s over the share until `xcrun` caches it
+  in the guest's temporary folder, which a boot empties; the app's git root waits 5 s. **Fix:** `vm-test.sh` runs `git
+  --version` in the guest before the tests (ci.md, The VM). VM, with the cache cleared first: both tests green.
+- **Cause (testMenuLightFollowsThePointer).** Go Back and Go Forward (Track T) added two rows to the palette's Tabs, so
+  on CI's 674 pt screen the Spaces rows start below the list's fold and the hover landed under the palette. The test
+  lights two tab rows. **Cause (testKeyboardShortcutsScenes, on demand).** Two looks of about 85 s each on CI, over the
+  120 s allowance: it gets 300 s, as the other scene tests get theirs.
+- **Cause (testAClickAnywhereOnACardGivesItTheKeyboard).** The registry keeps a pane's terminal until the pane ends,
+  also after a relabel to a plugin. A click on a missing plugin's card asked that terminal, out of the window, to take
+  the keys, which skipped Track K's clear of the first responder: the keys stayed on the card before. Only when the card
+  drew as a terminal before its relabel. **Fix:** `focus` uses a pane's terminal only when its card shows one
+  (`Page.terminal`'s rule). The test draws the card as a terminal first: red on the old code in the VM, green with the
+  fix.
+- **Runs.** Under `taskpolicy -c background` (the test process only), the fixed state-file, git-files, relay and backlog
+  tests passed 5 of 5 runs. The two SSHForwardTests there time out first on other bounds (the API's 10 s default) at a
+  30–200× slowdown, so the refusal fix rests on the cause and the review; under `nice -n 20` the whole HerdrKit suite
+  passed. p58r2-final1 (fbb176ba): full 43412053803 (65 min) and 43412069021 (41 min), 300 of 301 each,
+  testMenuLightFollowsThePointer red in both; on-demand 43412084133 (21 min), testKeyboardShortcutsScenes out of time.
+  Chosen 43421958006 (executed 2) green. p58r2-final2 (617046a3): full 43423020373 (30 min, the card click red) and
+  43423024208 (57 min) green; on-demand 43423028546 (38 min) green. Chosen 43432913442 (executed 6) green. p58r2-final3
+  (6504635f): full 43434176140 (50 min) and 43434180874 (32 min) green on the first try, 301 tests each, the watch list
+  and S3's tests in. On-demand 43434186262 (61 min): testSplitsMoveEachCardOnceToItsPlace stopped on its own guard,
+  "glass dark explorer: only 9 of 21 motions sampled" (a main thread too late to see the motion, so it tests nothing),
+  with no motion fault; every step of that part ran 5–15 % slower than on final2's runner, the same test was green in
+  both earlier on-demand runs on round 2's code and in the VM on this head. One rerun of that shard green (14:41–14:54).
+  Test times not refreshed: about 6000 and 5450 s, shards within 20 %.

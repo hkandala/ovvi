@@ -156,7 +156,9 @@ another login session, with its own pointer, keyboard and screen.
   products, `scripts/`, the tests' fixtures and the Mac's herdr. The tests find their fixtures and scripts by the
   checkout's path (`#filePath`), so in the guest that path links to the run's copies. In the guest,
   `scripts/e2e.sh xcodebuild test-without-building` runs the `.xctestrun`, and the xcresult lands in the share, then in
-  `$DERIVED_DATA/vm.xcresult`.
+  `$DERIVED_DATA/vm.xcresult`. The guest's `/usr/bin/git` finds that Xcode's git through `xcrun`, about 9 s over the
+  share until `xcrun` caches it in the guest's temporary folder, which a boot empties; the script runs `git --version`
+  once before the tests, or the app's first git calls (5 s each) come back empty.
 - **Permissions.** None to grant: `automationmodetool` says the image needs no authentication for Automation
   Mode. Two alerts of macOS would sit over the tests and take their clicks: whether a program that captures the screen
   may go on (a `screencapture` through `tart exec` or ssh, a UserNotificationCenter alert, again after a month) and
