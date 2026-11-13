@@ -71,7 +71,8 @@ struct CardState: View {
 
     private var label: StateLabel? {
         guard let chat else { return state?.label(look) }
-        // Only while the chat shows: nothing follows the agent behind its terminal, so nothing would clear it.
+        // Only while the chat shows: the error is the chat view's, and a chat never shown follows nothing that would
+        // clear it.
         if chat.problem != nil, chat.showsChat {
             return StateLabel(text: "Error", icon: .needsYou, color: look.error)
         }

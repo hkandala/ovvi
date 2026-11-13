@@ -55,17 +55,17 @@ struct ChatMessages: View, Equatable {
             // No scroll view until there is something to show: one made empty keeps the top inset that held its empty
             // content at the bottom after a long history loads, a blank above the messages.
             if !drawn {
-                Color.clear.task { withAnimation(.fade) { drawn = true } }
+                Color.clear.task { drawn = true }
             } else if reading || welcome {
                 empty(loading: reading)
             } else {
                 // Also while the transcript a sent message starts loads (Claude Code and pi write it with the first
                 // message): a spinner in its place took the message away right after it rose.
-                messages.transition(.opacity)
+                messages
             }
         }
         // The rows fade in as they first show, in a card just made or once its history is read.
-        .animation(.fade, value: reading)
+        .animation(.fade, value: drawn && !reading)
         // The first message rises from the reply box as the box goes down. Not a transition: an offset transition
         // moves nothing here, only its fade runs.
         .keyframeAnimator(initialValue: 0.0, trigger: Animation.reduced ? false : welcome) { content, rise in
@@ -79,22 +79,22 @@ struct ChatMessages: View, Equatable {
         .environment(\.openURL, OpenURLAction(handler: openLink))
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if !chat.drawer {
-                VStack(spacing: 8) {
-                    if welcome {
-                        header.padding(.bottom, 14).transition(.opacity)
+                BoxInMiddle(fills: welcome) {
+                    VStack(spacing: 8) {
+                        if welcome {
+                            header.padding(.bottom, 14).transition(.opacity)
+                        }
+                        if let question = chat.question, chat.phase == .waiting {
+                            QuestionCard(question: question, paneID: chat.paneID) { chat.answer($0) }
+                                .disabled(question.answered)
+                                .id(question.raw)
+                        }
+                        Composer(chat: chat, composing: composing, placeholder: welcome ? phrase.placeholder : nil)
+                            .alignmentGuide(.replyBox) { $0[VerticalAlignment.center] }
                     }
-                    if let question = chat.question, chat.phase == .waiting {
-                        QuestionCard(question: question, paneID: chat.paneID) { chat.answer($0) }
-                            .disabled(question.answered)
-                            .id(question.raw)
-                    }
-                    Composer(chat: chat, composing: composing, placeholder: welcome ? phrase.placeholder : nil)
-                        .alignmentGuide(.replyBox) { $0[VerticalAlignment.center] }
+                    // The box's text on the messages' edges: the box reaches past them by its own padding.
+                    .padding(.bottom, 14).padding(.top, 4).readingColumn(margin: 32 - Composer.inset)
                 }
-                // The box's text on the messages' edges: the box reaches past them by its own padding.
-                .padding(.bottom, 14).padding(.top, 4).readingColumn(margin: 32 - Composer.inset)
-                // The empty chat's middle is the box's, its header above it.
-                .frame(maxHeight: welcome ? .infinity : nil, alignment: .init(horizontal: .center, vertical: .replyBox))
             }
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height.value = $0 }
@@ -148,7 +148,9 @@ struct ChatMessages: View, Equatable {
                         if start > 0 {
                             earlierButton(loading: loading) { showEarlier(rows, before: start) }
                         }
-                        Rows(chat: chat, rows: rows[start...], tops: tops) { position.scrollTo(y: $0) }
+                        Rows(chat: chat, rows: rows[start...], tops: tops, fades: chat.current && !loading) {
+                            position.scrollTo(y: $0)
+                        }
                         ForEach(chat.outgoing) { message in
                             outgoing(message, error: error)
                         }
@@ -331,14 +333,36 @@ private extension ChatMessages {
 }
 
 private extension VerticalAlignment {
-    enum ReplyBox: AlignmentID {
+    nonisolated enum ReplyBox: AlignmentID {
         static func defaultValue(in context: ViewDimensions) -> CGFloat {
             context[VerticalAlignment.center]
         }
     }
 
     /// A custom guide, as a stack passes on only those: `center` is the stack's own.
-    static let replyBox = VerticalAlignment(ReplyBox.self)
+    nonisolated static let replyBox = VerticalAlignment(ReplyBox.self)
+}
+
+/// The empty chat's: the reply box's middle in the card's, its header above it, and the stack's top no higher than the
+/// card's (a short card keeps the header). Otherwise the stack at its own height.
+private struct BoxInMiddle: Layout {
+    let fills: Bool
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) -> CGSize {
+        let size = subviews.first?.sizeThatFits(ProposedViewSize(width: proposal.width, height: nil)) ?? .zero
+        return fills ? CGSize(width: size.width, height: max(size.height, proposal.height ?? 0)) : size
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
+        guard let stack = subviews.first else { return }
+        let offer = ProposedViewSize(width: bounds.width, height: nil)
+        let height = stack.sizeThatFits(offer).height
+        let top = fills ? max(bounds.minY, bounds.midY - stack.dimensions(in: offer)[.replyBox]) : bounds.maxY - height
+        stack.place(
+            at: CGPoint(x: bounds.minX, y: top),
+            proposal: ProposedViewSize(width: bounds.width, height: height),
+        )
+    }
 }
 
 @MainActor

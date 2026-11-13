@@ -195,6 +195,8 @@ struct Rows: View {
     let chat: Chat
     let rows: ArraySlice<ChatRow>
     let tops: Tops
+    /// Not for rows that come with a history or Show Earlier: dim means not taken yet.
+    let fades: Bool
     let restore: (CGFloat) -> Void
     @State private var opened: Set<String> = []
     @State private var openTools: Set<String> = []
@@ -211,10 +213,14 @@ struct Rows: View {
                     }
                 }
                 .onDisappear { tops.places[row.id] = nil }
-                // A message comes in dimmed, as its bubble showed until the agent took it.
-                .transition(row.user ? .asymmetric(insertion: .modifier(active: Dim(), identity: Dim(opacity: 1)),
-                                                   removal: .identity).animation(.fade) : .identity)
+                .transition(fades && row.user ? Self.taken : .identity)
         }
+    }
+
+    /// A message comes in dimmed, as its bubble showed until the agent took it.
+    private static var taken: AnyTransition {
+        .asymmetric(insertion: .modifier(active: Dim(), identity: Dim(opacity: 1)), removal: .identity)
+            .animation(.fade)
     }
 
     /// Copied: a slice would hold the history's entries, and each new entry would copy them all.
