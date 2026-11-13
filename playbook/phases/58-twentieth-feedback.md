@@ -1193,3 +1193,16 @@ The user's files: `.build/fb57/r11-fontkeys-11.20.52.png`, `r11-tabslide-11.23.5
   its folder. Checked with the sandbox check forced off: the test failed and no sshd was left.
 - **For the user.** To run these tests from an agent's pane, find what makes the launcher add its sandbox for
   pi-herd's agents (start `pi` from zsh with and without `CI=1` and check its `pi.real`).
+
+### Track S3: ponytail review of round 3
+
+- **Fix.** A page that came back into the window kept no record of its tab (C12 cleared its kept tabs on the way out
+  only), so the first tab switch after a session switch dropped the tab the user came back to: one `onChange` on the
+  shown tab, nil away from the window. Detail's state switch lost its dead `.live` case; the Codex screen loop has one
+  sleep; the Recently Closed view is `ClosedPagesPopover`; history notes left a test comment and D12.
+- **Decisions left.** The chat's 360 pt minimum against the floating window's 320 pt one (one number would keep a
+  floating chat from scrolling); the Codex gate could read `HostStore.inView` (visible windows) instead of every
+  window's terminals; LongChatTests asserts the wait's restart began within 8 s of wall-clock time.
+- **Runs.** VM green: testAChatStaysPastTheKeptPages, testSwitchesKeepHeavyCardsAsTheyWere,
+  testACodexChatSendsStopsAndShowsTheTerminalWhileItWaits, testStoppedSessionSaysSoAndComesBackWhenStartedAgain,
+  testClosedBrowserPagesReopenFromTheMenuAndStayAfterARelaunch (testAReconnectingPageShowsItsStateOnce skips there).
