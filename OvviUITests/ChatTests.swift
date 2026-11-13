@@ -111,7 +111,8 @@ extension OvviUITests {
         let reply = row(pane, "reply", "Echo: **hello**")
         XCTAssertTrue(reply.exists(within: 5))
         XCTAssertEqual(composer.placeholderValue, "Ask Anything")
-        XCTAssertEqual(composer.frame.minX, reply.frame.minX, accuracy: 1)
+        // The box's text about 10 pt inside the messages' edge (9 pt from the reply's frame).
+        XCTAssertEqual(composer.frame.minX - reply.frame.minX, 9, accuracy: 1, "\(composer.frame) \(reply.frame)")
         for _ in 1 ... 4 {
             app.typeKey(.return, modifierFlags: .shift)
         }

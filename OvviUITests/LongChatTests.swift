@@ -163,12 +163,13 @@ extension OvviUITests {
     }
 
     /// A split gives the card its final size once: the messages take it in the same frame as the reply box, which
-    /// follows the card at once.
+    /// follows the card at once. Narrower than the chat's minimum, the messages keep the minimum.
     func testASplitMovesTheMessagesWithTheReplyBox() async throws {
         let (tab, pane) = try await startChat()
         try await say("many 6", in: pane)
         XCTAssertTrue(row(pane, "reply", "Last.").exists(within: 10))
         let wide = element("pane.\(pane)").frame.width, inset = Int(wide - element("chat.\(pane)").frame.width)
+        let expected = { (card: CGFloat) in max(Int(card) - inset, 360) }
         hoverHeader(pane)
         element("pane.\(pane).split-right").click()
         // Each look is one snapshot: the card's width and the messages'.
@@ -178,32 +179,31 @@ extension OvviUITests {
             let card = seen.first { $0.identifier == "pane.\(pane)" }?.frame.width ?? 0
             let messages = seen.first { $0.identifier == "chat.\(pane)" }?.frame.width ?? 0
             looks.append("\(Int(card)) \(Int(messages))")
-            return card < wide - 100 && abs(card - messages - CGFloat(inset)) < 2
+            return card < wide - 100 && abs(expected(card) - Int(messages)) < 2
         }, "\(looks)")
         XCTAssertFalse(looks.contains { look in
             let widths = look.split(separator: " ").compactMap { Int($0) }
-            return widths[0] < Int(wide) - 100 && abs(widths[0] - widths[1] - inset) > 1
+            return widths[0] < Int(wide) - 100 && abs(expected(CGFloat(widths[0])) - widths[1]) > 1
         }, "the messages kept their old width after the card's changed: \(looks)")
         _ = try await poll("a pane beside the chat") { try await order(tab).first { $0 != pane } }
     }
 
     /// A divider drag holds the messages' width until the drag ends, and the reply box's with it: both take the new one
-    /// in the same frame.
+    /// in the same frame. The drag widens the chat: a split leaves it near its minimum, which the messages keep.
     func testADividerDragMovesTheMessagesWithTheReplyBox() async throws {
         let (tab, pane) = try await startChat()
         try await say("many 6", in: pane)
         XCTAssertTrue(row(pane, "reply", "Last.").exists(within: 10))
-        _ = try await splitByButton(pane, in: tab)
         let card = element("pane.\(pane)"), chat = element("chat.\(pane)"), box = element("chat.\(pane).composer")
+        let inset = Int(card.frame.width - chat.frame.width)
+        let expected = { (card: Int) in max(card - inset, 360) }
+        _ = try await splitByButton(pane, in: tab)
         let divider = element("divider.\(tab).root")
         XCTAssertTrue(divider.exists(within: 3))
-        let rest = try XCTUnwrap(steady(3) {
-            [card.frame.width - chat.frame.width, chat.frame.width - box.frame.width]
-        })
-        let (inset, gap) = (Int(rest[0]), Int(rest[1]))
-        let wide = card.frame.width
+        let rest = try XCTUnwrap(steady(3) { [card.frame.width, chat.frame.width - box.frame.width] })
+        let (narrow, gap) = (Int(rest[0]), Int(rest[1]))
         let from = divider.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).screenPoint
-        let path = (1 ... 6).map { "\(from.x - CGFloat($0) * 10) \(from.y)" }.joined(separator: " 0.05 ")
+        let path = (1 ... 6).map { "\(from.x + CGFloat($0) * 10) \(from.y)" }.joined(separator: " 0.05 ")
         let drag = Task.detached { [one] in
             try await Self.post("\(one)/press", Data("\(from.x) \(from.y) \(path)".utf8))
         }
@@ -220,16 +220,16 @@ extension OvviUITests {
         // The app follows a busy runner's drag seconds late.
         XCTAssertTrue(until(30) {
             let widths = look()
-            return widths[0] > 0 && CGFloat(widths[0]) < wide - 50 && abs(widths[0] - widths[1] - inset) <= 1
+            return widths[0] > narrow + 50 && abs(expected(widths[0]) - widths[1]) <= 1
         }, "\(looks)")
         _ = try await drag.value
         try await release()
         XCTAssertNotNil(steady(3) { look() }, "\(looks)")
-        XCTAssertTrue(looks.contains { abs($0[0] - $0[1] - inset) > 1 }, "the messages followed the drag: \(looks)")
+        XCTAssertTrue(looks.contains { abs(expected($0[0]) - $0[1]) > 1 }, "the messages followed the drag: \(looks)")
         // One at most: a snapshot is many reads, and a frame can come between two.
         let apart = looks.count { abs($0[1] - $0[2] - gap) > 1 }
         XCTAssertLessThanOrEqual(apart, 1, "the box and the messages apart: \(looks)")
-        XCTAssertEqual(looks.last.map { $0[0] - $0[1] } ?? 0, inset, accuracy: 1, "\(looks)")
+        XCTAssertEqual(looks.last.map { expected($0[0]) - $0[1] } ?? 1, 0, accuracy: 1, "\(looks)")
     }
 
     /// Narrower than its minimum width, the chat keeps that width and scrolls sideways to its reply box's Send.
