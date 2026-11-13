@@ -111,10 +111,11 @@ extension PaneSurfaceView {
                           y: anchor.press.y < bounds.height / 2 ? bounds.height - 1 : 0)
         surface.sendMousePos(x: anchor.press.x, y: anchor.press.y)
         surface.sendMouseButton(state: GHOSTTY_MOUSE_RELEASE, button: GHOSTTY_MOUSE_LEFT)
-        for (spot, states) in [(far, [GHOSTTY_MOUSE_PRESS, GHOSTTY_MOUSE_RELEASE]), (point, [GHOSTTY_MOUSE_PRESS])] {
-            surface.sendMousePos(x: spot.x, y: spot.y)
-            states.forEach { surface.sendMouseButton(state: $0, button: GHOSTTY_MOUSE_LEFT) }
-        }
+        surface.sendMousePos(x: far.x, y: far.y)
+        surface.sendMouseButton(state: GHOSTTY_MOUSE_PRESS, button: GHOSTTY_MOUSE_LEFT)
+        surface.sendMouseButton(state: GHOSTTY_MOUSE_RELEASE, button: GHOSTTY_MOUSE_LEFT)
+        surface.sendMousePos(x: point.x, y: point.y)
+        surface.sendMouseButton(state: GHOSTTY_MOUSE_PRESS, button: GHOSTTY_MOUSE_LEFT)
         self.anchor?.press = point
     }
 }

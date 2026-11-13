@@ -135,7 +135,7 @@ public extension Exec {
             for (@ARGV) {
                 my $file = m{^/} ? $_ : "$ENV{HOME}/$_";
                 next unless -f $file;
-            open(my $in, '<', $file) or next;
+                open(my $in, '<', $file) or next;
                 local $/;
                 $now = <$in> // '';
                 $now =~ tr/\n//d;
