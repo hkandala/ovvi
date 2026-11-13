@@ -206,6 +206,39 @@ extension OvviUITests {
         try await expectShown(shown[0].tab, "back from the other session")
     }
 
+    func testATabThatOpensOutOfViewSlidesIntoView() async throws {
+        let tabs = try await newWorkspace("opens", tabs: 8).tabs
+        let first = element("tab.\(tabs[0])"), rowEnd = element("titlebar.overview").frame.minX - 8
+        XCTAssertTrue(first.has(\.isSelected, true, within: 3))
+        XCTAssertTrue(element("tabs.fades").has(\.stringValue, "trailing", within: 2))
+        // Another client's tab: last, in the background.
+        let tab = try await createTab(in: workspace(of: tabs[0])).tab
+        let capsule = element("tab.\(tab)")
+        XCTAssertTrue(until(3) { capsule.exists && capsule.frame.maxX <= rowEnd + 1 }, "\(capsule.frame) to \(rowEnd)")
+        XCTAssertTrue(first.isSelected)
+    }
+
+    func testGoBackAndForwardStepThroughTheTabsShownAcrossSpaces() async throws {
+        let tabs = try await newWorkspace("history", tabs: 3).tabs
+        let other = try await newWorkspace("elsewhere").tabs[0]
+        element("workspace.\(workspace(of: tabs[0]))").click()
+        try await expectShown(tabs[0], "back on the first space")
+        app.typeKey("3", modifierFlags: .command)
+        try await expectShown(tabs[2], "its third tab")
+        for (key, tab) in [(XCUIKeyboardKey.leftArrow, tabs[0]), (.leftArrow, other), (.rightArrow, tabs[0])] {
+            app.typeKey(key, modifierFlags: [.control, .command])
+            try await expectShown(tab, "\(key == .leftArrow ? "back" : "forward") to \(tab)")
+        }
+        openPalette()
+        app.typeText("go forward")
+        app.typeKey(.return, modifierFlags: [])
+        try await expectShown(tabs[2], "forward from the palette")
+        try await Self.call(one, "tab.close", ["tab_id": tabs[0]])
+        XCTAssertTrue(element("tab.\(tabs[0])").vanishes(within: 3))
+        app.typeKey(.leftArrow, modifierFlags: [.control, .command])
+        try await expectShown(other, "back past the closed tab")
+    }
+
     private func expectShown(_ tab: String, _ step: String) async throws {
         let pane = try await pane(of: tab)
         let selected = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'tab.' AND selected == true"))

@@ -18,6 +18,7 @@ struct TabBar: View {
     @State private var hovered: String?
     @State private var landing: Landing?
     @State private var clicked: String?
+    @State private var opened: String?
     @State private var visible: ClosedRange<CGFloat> = 0 ... .infinity
     @State private var made = 0
     @Environment(\.look) private var look
@@ -27,6 +28,7 @@ struct TabBar: View {
         let content = count * width + count - 1
         let hidden = (leading: visible.lowerBound > 0.5, trailing: visible.upperBound < content - 0.5)
         let selected = page.selectedIndex(in: workspace)
+        let ids = tabs.map(\.id)
         ScrollViewReader { proxy in
             ScrollView(.horizontal) {
                 // Lazy: a workspace switch makes only the capsules in and near the row's view (SwiftUI makes about a
@@ -120,13 +122,25 @@ struct TabBar: View {
                     .padding(.leading, min(content, space))
             }
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { space = $0 }
-            .onChange(of: page.selectedTabIDs[workspace.id], initial: true) { _, new in
-                if let new, new != clicked {
-                    withTransaction(\.animation, nil) { proxy.scrollTo(new) }
-                    // A new tab's capsule lays out in this same update, and a scroll to it can miss: again once it has.
-                    Task { proxy.scrollTo(new) }
+            // One change for both: a tab that opens, in the background too, slides into view, and its selection, in
+            // this update or a later one, scrolls nothing more; a tab selected another way comes into view at once.
+            .onChange(of: [workspace.id, page.selectedTabIDs[workspace.id] ?? ""] + ids, initial: true) { old, new in
+                let known = Set(old.dropFirst(2)), fresh = new.dropFirst(2).filter { !known.contains($0) }
+                let shown = new[1], switched = old[0] != new[0]
+                if !switched, let id = fresh.contains(shown) ? shown : fresh.last {
+                    opened = id
+                    // A new tab's capsule lays out in this same update, and a scroll to it can miss: once it has.
+                    Task { withAnimation(.slide) { proxy.scrollTo(id) } }
+                } else if old == new || switched || old[1] != shown, !shown.isEmpty, shown != clicked,
+                          shown != opened
+                {
+                    withTransaction(\.animation, nil) { proxy.scrollTo(shown) }
+                    Task { proxy.scrollTo(shown) }
                 }
-                clicked = nil
+                if old[1] != shown {
+                    clicked = nil
+                    opened = nil
+                }
             }
         }
         .frame(height: Self.height + 10)

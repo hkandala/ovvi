@@ -121,8 +121,8 @@ the agent rows, the hover card, notifications):
 - The terminal font size is the app's text size
   ([Settings](/docs/ui/settings#appearance)).
 - Reduce Motion makes the sidebar's session pages jump, and turns off the icon
-  bounce, the layout motion, the reorder slides, the
-  spring-load pulse, the sidebar's slide, the plugins' sidebar slide, a plugin
+  bounce, the layout motion, the reorder slides, the tab bar's slide to a new
+  tab, the spring-load pulse, the sidebar's slide, the plugins' sidebar slide, a plugin
   card's toast slide, the panels' scale-in, the chat's first-message
   motion and its fades (the rows as they show, a message the agent takes).
 - Reduce Transparency is handled by the system: its blurs and glass turn
@@ -147,7 +147,8 @@ keyboard to the next terminal instead.
 One pattern for every level: the key says the action, the modifier says the
 level. `T` makes, `W` closes, `[` and `]` step, `1` to `9` jump. ⌘ is the pane
 (and the tab for New Tab and the jumps), ⇧⌘ the tab, ⌃⌘ the space, ⌥⌘ the
-session. Arrows always mean panes.
+session. Arrows mean panes, except ⌃⌘← and ⌃⌘→ (Go Back and Go Forward
+through the tabs shown, Xcode's keys).
 
 | | Pane | Tab | Space | Session |
 |---|---|---|---|---|
@@ -211,6 +212,7 @@ one row with one keycap for the keys: "Select Pane ⌥ ⌘ ←→↑↓", "Show 
 | ⌘/ | Keyboard Shortcuts (the panel) | Help |
 | ⌘1 … ⌘9 | switch tabs | Window |
 | ⇧⌘[ and ⌃⇧⇥, ⇧⌘] and ⌃⇥ | previous and next tab | Window |
+| ⌃⌘← and ⌃⌘→ | Go Back and Go Forward through the tabs shown before, across spaces ([History](/docs/ui/window#tab-bar)). Xcode's keys: VS Code's ⌃- and ⌃⇧- are a plugin card's Back and Forward, a browser's ⌘[ ⌘] the pane steps | Window |
 | ⇧⌘←, ⇧⌘→ | move the tab left, right (as iTerm2; in a text field they still select to the line's start or end) | Window |
 | ⌃⌘[ and ⌃⌘] | previous and next space | Window |
 | ⌃⌘1 … ⌃⌘9 | switch spaces, in herdr's order, pinned ones first, less the hidden ones (the sidebar's in Manual) | Window |

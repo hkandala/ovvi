@@ -158,8 +158,11 @@ One capsule per herdr tab of the selected space (D42).
 - **Width.** Every tab is 220 pt wide and never shrinks. When the tabs do not
   fit, the bar scrolls sideways (a scroll gesture over it), and a 24 pt fade
   shows on each end that has tabs out of view. A click selects a tab where it
-  is, with no scroll; a tab selected another way (keys, the palette, a new tab)
-  comes into view at once, without motion. A tab or a pane dragged and held
+  is, with no scroll; a tab selected another way (keys, the palette, Go Back)
+  comes into view at once, without motion. A tab that opens in the space in
+  view, however it opens (⌘T, a ⌘-click in the background, an agent, a plugin,
+  another herdr client), slides into view over 0.22 s when it is out of view
+  (at once with Reduce Motion). A tab or a pane dragged and held
   near either end of the bar scrolls it (the scroll view's own drop scroll).
   The bar makes only the capsules in and near its view, so a space with
   many tabs shows as fast as one with a few.
@@ -187,6 +190,11 @@ One capsule per herdr tab of the selected space (D42).
   ([Swiping](/docs/ui/swiping)). Glass draws the marker as a Liquid Glass
   capsule, Classic as a plain pill with a hairline edge (raised, with a shadow,
   in light).
+- **History.** Go Back (⌃⌘←) and Go Forward (⌃⌘→), in the Window menu and
+  the palette, step through the tabs shown before in the window's session, as
+  a browser's Back and Forward step through pages: across spaces, past the
+  tabs closed since. Showing a tab another way after Go Back drops the tabs
+  ahead. The window keeps the last 100.
 - **Close.** When the selected tab closes, the window selects the tab used
   before it (the latest one still open), else the tab on its left, else the
   new first tab.

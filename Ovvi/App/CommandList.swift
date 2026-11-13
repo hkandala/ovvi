@@ -252,6 +252,14 @@ struct CommandList {
                     enabled: tabs.count > 1) { page?.step(-1) },
             Command(section: .tabSteps, title: "Show Next Tab", key: .nextTab, symbol: "chevron.forward",
                     enabled: tabs.count > 1) { page?.step(1) },
+            // Xcode's keys: VS Code's ⌃- is a plugin card's Back, ⌘[ a pane step. Enabled with nothing to go to: the
+            // history is no observed state, and a disabled item swallows its key.
+            Command(section: .tabSteps, title: "Go Back", key: .init(.leftArrow, modifiers: [.command, .control]),
+                    symbol: "arrow.uturn.backward", keywords: "tab history previous last recent",
+                    enabled: page != nil) { page?.goInHistory(-1) },
+            Command(section: .tabSteps, title: "Go Forward", key: .init(.rightArrow, modifiers: [.command, .control]),
+                    symbol: "arrow.uturn.forward", keywords: "tab history next recent",
+                    enabled: page != nil) { page?.goInHistory(1) },
             Self.moveTab(page, -1, enabled: tab != nil && tabs.first?.id != tab?.id),
             Self.moveTab(page, 1, enabled: tab != nil && tabs.last?.id != tab?.id),
             stepWorkspace("Show Previous Space", "chevron.up", -1),
