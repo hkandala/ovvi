@@ -52,11 +52,15 @@ fails; lessons.md's rule makes it 60 s (round 8's final CI, '### Final CI, round
   position relative to the frame's own screen, so a float over a window on another monitor opened on the primary
   screen. Now x is AppKit's and y is flipped by `NSScreen.main`'s height; new windows (item 4) use the same.
 - **Decisions.** Item 2: `rectangle.stack`, the app's session symbol, on both the stopped page and the Starting loader
-  (alternatives: `play.circle`, `bolt.circle`, `terminal`). Item 4: a new window takes the frame a window was last moved,
-  resized or closed with (macOS cascades it), else it fills the screen; nothing is saved across launches (restored
-  windows keep theirs). Not the front window's frame: SwiftUI's placement sees the window it places among the others. Item 5: JetBrains Mono, SF Mono and the Mac's families in one
-  alphabetical list. Item 6: both install confirmations (the sheet and a card's) start with Show in New Pane off.
-  `herdr-session.sh` waits up to 60 s.
+  (alternatives: `play.circle`, `bolt.circle`, `terminal`). Item 4: a new window takes the frame a window was last
+  moved, resized or closed with (macOS cascades it), else it fills the screen; nothing is saved across launches. Not
+  the front window's frame: SwiftUI's placement sees the window it places among the others, at AppKit's saved frame.
+  Item 5: JetBrains Mono, SF Mono and the Mac's families in one alphabetical list. Item 6: both install confirmations
+  (the sheet and a card's) start with Show in New Pane off. `herdr-session.sh` waits up to 60 s.
+- **Runs.** VM, first build: a window test that resized left AppKit's saved main window frame behind, and the front
+  window rule opened later tests' windows at it (512 pt, tabs hidden); `forget-windows` now deletes those frames too.
+  Final head: the ten touched UI tests green in the VM (welcome ×3, new window, terminal font, both plugin installs,
+  stopped session, float, settings scenes). Pictures: `~/Downloads/ovvi-research/p58a/`.
 - **For the user.** With two monitors of different heights, put Ovvi on the external one and float a pane (also from
   an agent's `ovvi` float) and press ⌘N: both should open on that monitor. Resize a window, press ⌘N: the new one
   takes its size and place.
