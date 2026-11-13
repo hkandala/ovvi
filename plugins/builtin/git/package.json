@@ -1,7 +1,7 @@
 {
   "name": "@ovvi/git",
   "license": "AGPL-3.0-only",
-  "version": "1.10.11",
+  "version": "1.10.12",
   "private": true,
   "description": "Changes and history",
   "keywords": ["diff", "changes", "commit", "uncommitted", "history"],
@@ -44,7 +44,7 @@
     ],
     "header": [
       { "type": "menu", "id": "git.branch", "symbol": "source.branch", "title": "—", "label": "Branch",
-        "enabled": false, "hidden": true },
+        "style": "bordered", "enabled": false, "hidden": true },
       { "type": "toggle", "id": "diff.file-list", "symbol": "sidebar.left",
         "onSymbol": "rectangle.leadingthird.inset.filled", "title": "File List", "value": false, "hidden": true },
       { "type": "button", "id": "diff.home", "symbol": "house", "title": "Git Home", "hidden": true },

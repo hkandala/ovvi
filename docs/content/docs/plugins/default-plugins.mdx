@@ -451,7 +451,7 @@ file to its row in the tree, showing the tree first when it is hidden, and from 
   the same rows, not a copy: its open folders, selection, scroll and filter
   stay as the card goes from the tree's page to a file and back, shows or
   hides the tree, and shows one file after another. Nothing draws again. It
-  is 220 pt wide beside a file (drag its right edge for 140 pt up to 60 % of
+  is 280 pt wide beside a file (drag its right edge for 140 pt up to 60 % of
   the card; the card keeps the width), with no status bar and no row 2 of its
   own: row 2 is the file's. The card keeps the trees of its last five roots,
   as it keeps pages.
@@ -663,9 +663,9 @@ app's fonts and `Look` colors. From the top:
   read the repository. Working Tree is disabled only when git cannot read
   it.
 - **The branch** is a menu button with `source.branch` and the
-  checked-out branch. Its menu lists the local branches, the current one
-  checked, then under "Remote" the remote branches that have no local
-  branch. A pick runs `git switch <branch>`, or `git switch --track` for a
+  checked-out branch, a small bordered button as the four. Its menu lists
+  the local branches, the current one checked, then under "Remote" the
+  remote branches that have no local branch. A pick runs `git switch <branch>`, or `git switch --track` for a
   remote one.
 - **The commit message** field ("Message") grows to 5 lines, then scrolls.
   **Commit** beside it is on the accent when there is a message and a
@@ -689,9 +689,14 @@ app's fonts and `Look` colors. From the top:
   and HEAD, as a graph, newest first (`git log --branches --remotes --tags
   HEAD --topo-order`, not `--all`, which adds the stash and notes). Each row
   has its lanes and dot, its branch, remote branch (`cloud`) and tag (`tag`)
-  capsules, the subject, the short hash and the date (a time today, else the
-  day). The checked-out branch's capsule is on the accent, and HEAD's dot is
-  a ring. The first parent stays in its child's lane, as in `git log
+  capsules, the subject, the author in secondary, the short hash and the
+  commit's age: "now" under a minute (and up to a minute ahead), then `5m`, `3h` and `2d` up to 5 days,
+  then the day (`Nov 10`), with its year when that is not this year (`Nov 20,
+  2024`). The age moves on each minute. Under the pointer, the age shows the
+  full time as its help (`Fri, Nov 13, 2026 at 11:20:52 AM`). A click on the
+  short hash copies the full one and says "Copied" for a moment, as the
+  diff's Commit does; the rest of the row selects and opens as below. The
+  checked-out branch's capsule is on the accent, and HEAD's dot is a ring. The first parent stays in its child's lane, as in `git log
   --graph`. Lane colors cycle through the accent, finished, working,
   needs-you and error colors. "No commits yet" before the first commit. A
   full page ends with **Show More**, a plain gray button in the middle,

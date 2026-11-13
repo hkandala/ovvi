@@ -204,8 +204,8 @@ private struct HeaderMenu: View {
         let items = control.items ?? [], value = control.value?.text
         let picked = items.first { $0.value != nil && $0.value == value }
         let shown = picked?.title ?? control.title ?? "", symbol = picked?.symbol ?? control.symbol
-        let sections = sections(items)
-        Menu {
+        let sections = sections(items), bordered = control.style == "bordered"
+        let menu = Menu {
             ForEach(sections.indices, id: \.self) { index in
                 let (heading, items) = sections[index]
                 if let heading {
@@ -217,18 +217,25 @@ private struct HeaderMenu: View {
         } label: {
             HStack(spacing: 4) {
                 if control.busy == true {
-                    ProgressView().controlSize(.mini)
+                    ProgressView().controlSize(.mini).frame(width: bordered ? 14 : nil)
                 } else if let symbol {
-                    Image(symbol: symbol)
+                    // As a bordered button's symbol.
+                    Image(symbol: symbol).font(bordered ? .system(size: 11) : nil).frame(width: bordered ? 14 : nil)
                 }
                 if control.style != "icon" {
                     Text(shown).lineLimit(1).truncationMode(.middle)
                 }
             }
         }
-        .help(control.style == "icon" ? shown : "")
         .menuStyle(.button)
-        .buttonStyle(.borderless)
+        Group {
+            if bordered {
+                menu.buttonStyle(.bordered).controlSize(.small)
+            } else {
+                menu.buttonStyle(.borderless)
+            }
+        }
+        .help(control.style == "icon" ? shown : "")
         .fixedSize()
         .accessibilityLabel(control.label ?? control.title ?? "")
         .accessibilityValue(shown)

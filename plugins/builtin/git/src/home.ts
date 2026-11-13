@@ -1,5 +1,5 @@
 import type { Change, Commit, Page } from "@ovvi/plugin-api"
-import { coalesce, element, failed, fileIcon, home, how, keep, kept, menu, nameAndFolder, open, ovvi, symbol } from "./lib"
+import { coalesce, copyButton, element, failed, fileIcon, home, how, keep, kept, menu, nameAndFolder, open, ovvi, symbol } from "./lib"
 
 const WORDS: Record<string, string> = {
   M: "Modified", T: "Type changed", A: "Added", D: "Deleted", R: "Renamed", U: "Untracked", C: "Conflict",
@@ -10,11 +10,25 @@ const COLORS = ["var(--accent)", "var(--finished)", "var(--working)", "var(--nee
 const color = (lane: number) => COLORS[lane % COLORS.length]
 const x = (lane: number) => 9 + lane * LANE
 
+/** A commit's age: now, 5m, 3h, 2d up to 5 days, then the day, with its year when that is not this one. */
 function when(ms: number) {
-  const date = new Date(ms), now = new Date()
-  if (date.toDateString() === now.toDateString()) return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
-  const year = date.getFullYear() === now.getFullYear() ? undefined : "numeric"
+  const minutes = Math.floor((Date.now() - ms) / 60_000), date = new Date(ms)
+  // A clock a minute ahead still reads now; further ahead, the day.
+  if (minutes >= -1) {
+    if (minutes < 1) return "now"
+    if (minutes < 60) return `${minutes}m`
+    if (minutes < 24 * 60) return `${Math.floor(minutes / 60)}h`
+    if (minutes < 6 * 24 * 60) return `${Math.floor(minutes / (24 * 60))}d`
+  }
+  const year = date.getFullYear() === new Date().getFullYear() ? undefined : "numeric"
   return date.toLocaleDateString(undefined, { year, month: "short", day: "numeric" })
+}
+
+/** Fri, Nov 13, 2026 at 11:20:52 AM */
+function stamp(ms: number) {
+  const date = new Date(ms)
+  const day = date.toLocaleDateString(undefined, { weekday: "short", year: "numeric", month: "short", day: "numeric" })
+  return `${day} at ${date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", second: "2-digit" })}`
 }
 
 export async function make(place: Page, root: string) {
@@ -272,20 +286,24 @@ export async function make(place: Page, root: string) {
       ? `<circle cx="${x(lane)}" cy="${mid}" r="4.5" fill="var(--card)" stroke="${color(lane)}" stroke-width="2"/>`
       : `<circle cx="${x(lane)}" cy="${mid}" r="4" fill="${color(lane)}"/>`
     const names = refs.flatMap(badge)
-    const label = [subject, ...names.map((name) => name.textContent), when(date)].join(", ")
+    const label = [subject, ...names.map((name) => name.textContent), commit.author, stamp(date)].join(", ")
     const { node, open } = row(label, `${home(root)} ${hash}`)
     node.id = `commit.${hash}`
     node.classList.add("commit")
     // VoiceOver's press counts no clicks.
     node.onclick = (event) => (how(event) === "card" && event.detail === 1 ? select(node) : openCommit(event, node))
-    node.title = `${subject}\n${commit.author} · ${hash.slice(0, 10)}`
+    node.title = subject
     open.insertAdjacentHTML("afterbegin", `<svg width="${width}" height="${HEIGHT}" fill="none" stroke-width="1.5">${[
       ...through.map((at) => line(at, 0, at, HEIGHT)),
       ...children.map((at) => line(at, 0, lane, mid)),
       ...parents.map((at) => line(lane, mid, at, HEIGHT)),
     ].join("")}${dot}</svg>`)
-    open.append(...names, element("span", "name", subject), element("span", "hash", hash.slice(0, 7)),
-      element("span", "when", when(date)))
+    open.append(...names, element("span", "name", subject), element("span", "author", commit.author))
+    // Beside the row's button, not in it: a button in a button is no button to VoiceOver.
+    const age = element("span", "when", when(date))
+    age.title = stamp(date)
+    age.dataset.date = String(date)
+    node.append(copyButton(hash, 7), age)
     return node
   }
 
@@ -313,8 +331,9 @@ export async function make(place: Page, root: string) {
     if (!place.shown || content.hidden || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey
       || target.closest("textarea, input")) return
     const rows = [...page.querySelectorAll<HTMLElement>(".commit")], at = rows.findIndex((row) => row.id === `commit.${selected}`)
-    if (event.key === "Enter" && at >= 0 && (target === document.body || target.closest(".commit.selected"))) openCommit(event, rows[at])
-    else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+    if (event.key === "Enter" && at >= 0 && (target === document.body || target.closest(".commit.selected .open"))) {
+      openCommit(event, rows[at])
+    } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       const down = event.key === "ArrowDown"
       const next = at < 0 ? (down ? 0 : rows.length - 1) : Math.min(Math.max(at + (down ? 1 : -1), 0), rows.length - 1)
       if (!rows[next]) return
@@ -324,7 +343,17 @@ export async function make(place: Page, root: string) {
     event.preventDefault()
   }
   document.addEventListener("keydown", keys)
-  place.keep(() => document.removeEventListener("keydown", keys))
+  // The ages move on with no draw of the rows: a draw under a click loses the click.
+  const ages = setInterval(() => {
+    for (const node of page.querySelectorAll<HTMLElement>(".commit .when")) {
+      const text = when(Number(node.dataset.date))
+      if (node.textContent !== text) node.textContent = text
+    }
+  }, 60_000)
+  place.keep(() => {
+    document.removeEventListener("keydown", keys)
+    clearInterval(ages)
+  })
 
   function badge(ref: string) {
     const head = ref.startsWith("HEAD -> "), full = head ? ref.slice(8) : ref

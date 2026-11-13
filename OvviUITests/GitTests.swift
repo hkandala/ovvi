@@ -16,6 +16,7 @@ extension OvviUITests {
         XCTAssertTrue(commit("second", in: home).exists)
         XCTAssertTrue(home.buttons["Untracked: b.md"].exists)
         keepScreenshot("git home")
+        try await rowFacts(home, card: card, root: root, hash: hash)
         try await commitAndPush(home, card: card, shell: left, repo: repo)
 
         commit("second", in: home).click()
@@ -99,7 +100,29 @@ extension OvviUITests {
         more.click()
         XCTAssertTrue(first.exists(within: 10))
         XCTAssertFalse(more.exists)
+        // Another year's commit: its day with its year, and its full time in the label as in the age's help.
+        XCTAssertTrue(first.label.contains(", e2e, ") && first.label.contains(", 2001 at "), first.label)
+        XCTAssertTrue(home.staticTexts.matching(NSPredicate(format: "value ENDSWITH ', 2001'")).firstMatch.exists)
         try await send("cd / && rm -rf \(folder)\r", to: left)
+    }
+
+    /// Each row's author and age; a click on its short hash copies the full one and leaves the row as it was.
+    private func rowFacts(_ home: XCUIElement, card: String, root: String, hash: String) async throws {
+        let second = commit("second", in: home)
+        XCTAssertTrue(second.label.contains(", e2e, "), second.label)
+        let ages = home.staticTexts.matching(NSPredicate(format: "value MATCHES '^(now|[0-9]+m)$'"))
+        XCTAssertEqual(ages.count, 3)
+        let branch = element("pane.\(card).git.branch"), fetch = element("pane.\(card).git.fetch")
+        XCTAssertEqual(branch.frame.height, fetch.frame.height, accuracy: 0.5, "\(branch.frame), \(fetch.frame)")
+        NSPasteboard.general.clearContents()
+        home.buttons["Copy \(hash)"].click()
+        XCTAssertTrue(until(3) { NSPasteboard.general.string(forType: .string) == hash })
+        // With nothing selected, ↑ selects the last row; from a selected second, never.
+        app.typeKey(.upArrow, modifierFlags: [])
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(element("pane.\(card).title").has(\.stringValue, "first", within: 10))
+        element("pane.\(card).go-back").click()
+        try await expect("back home") { try await paneLabel(card).hasSuffix("e2egit \(root)/") }
     }
 
     private func workingTree(_ home: XCUIElement, _ page: XCUIElement, card: String, root: String,

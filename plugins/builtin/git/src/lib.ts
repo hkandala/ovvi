@@ -94,6 +94,21 @@ export function coalesce(work: () => Promise<void>) {
   }
 }
 
+/** The short hash as a button: a click copies the whole one and says Copied for a moment. */
+export function copyButton(hash: string, length: number) {
+  const short = hash.slice(0, length), node = element("button", "hash", short)
+  node.title = "Copy"
+  node.ariaLabel = `Copy ${hash}`
+  node.onclick = (event) => {
+    event.stopPropagation()
+    ovvi.clipboard.write(hash).then(() => {
+      node.textContent = "Copied"
+      setTimeout(() => (node.textContent = short), 1200)
+    }, failed)
+  }
+  return node
+}
+
 export async function failed(error: Error) {
   const text = error.message.split("\n").map((line) => line.trim()).join(" ")
   if ((await ovvi.toast(text, ["Copy", "OK"])) === "Copy") ovvi.clipboard.write(error.message).catch(console.error)

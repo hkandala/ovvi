@@ -8,7 +8,7 @@ import {
   Virtualizer,
 } from "@pierre/diffs"
 import {
-  coalesce, element, failed as toast, fileIcon, home, type How, how, keep, kept, menu, nameAndFolder, open, ovvi, sf,
+  coalesce, copyButton, element, fileIcon, home, type How, how, keep, kept, menu, nameAndFolder, open, ovvi, sf,
 } from "./lib"
 
 const MARGIN = 1500
@@ -261,14 +261,7 @@ export async function make(place: Page, root: string, source: string) {
     }
     fact("Author", facts.author, element("span", "dim", ` <${facts.email}>`))
     fact("Date", ago(date), element("span", "dim", ` · ${date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}`))
-    const copy = element("button", "hash", facts.hash.slice(0, 10))
-    copy.title = "Copy"
-    copy.ariaLabel = `Copy ${facts.hash}`
-    copy.onclick = () => ovvi.clipboard.write(facts.hash).then(() => {
-      copy.textContent = "Copied"
-      setTimeout(() => (copy.textContent = facts.hash.slice(0, 10)), 1200)
-    }, toast)
-    fact("Commit", copy)
+    fact("Commit", copyButton(facts.hash, 10))
     if (facts.parents.length) {
       fact(facts.parents.length > 1 ? "Parents" : "Parent", ...facts.parents.map((parent) => {
         const button = element("button", "hash", parent.slice(0, 10))

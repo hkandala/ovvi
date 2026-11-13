@@ -27,7 +27,7 @@ export function sidebar(ovvi: Ovvi) {
   aside.append(grip)
   aside.addEventListener("transitionend", (event) =>
     event.target === aside && event.propertyName === "translate" && document.body.removeAttribute("data-slide"))
-  let px = own(ovvi).sideWidth ?? 220
+  let px = own(ovvi).sideWidth ?? 280
   const width = () => document.body.style.setProperty("--side-width", `${px}px`)
   width()
   grip.onpointerdown = (event) => {
