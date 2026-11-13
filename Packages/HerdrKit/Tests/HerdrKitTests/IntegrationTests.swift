@@ -4,12 +4,12 @@ import Synchronization
 import Testing
 
 let repoRoot = URL(filePath: #filePath).appending(path: "../../../../..").standardized
-private let script = repoRoot.appending(path: "scripts/herdr-session.sh").path
+let sessionScript = repoRoot.appending(path: "scripts/herdr-session.sh").path
 
 /// Awaits the command's exit instead of blocking a thread: tests run in parallel on Swift's cooperative pool, which
 /// has one thread per core, and a session start blocking one for seconds delays the timing tests.
 @discardableResult
-private func shell(_ argv: String...) async -> Int32 {
+func shell(_ argv: String...) async -> Int32 {
     await withCheckedContinuation { continuation in
         let process = Process()
         process.executableURL = URL(filePath: "/usr/bin/env")
@@ -31,7 +31,7 @@ let localExec: ProcessExec = {
 }()
 
 /// On CI, which installs herdr, they run even without it, and fail.
-private let herdrInstalled: @Sendable () async -> Bool = {
+let herdrInstalled: @Sendable () async -> Bool = {
     if ProcessInfo.processInfo.environment["CI"] != nil {
         return true
     }
@@ -40,8 +40,8 @@ private let herdrInstalled: @Sendable () async -> Bool = {
 
 private func withSession(_ exec: any Exec, _ body: (HerdrClient) async throws -> Void) async throws {
     let session = "ovvi-e2e-\(UUID().uuidString.prefix(6).lowercased())"
-    try #require(await shell(script, "up", session) == 0)
-    defer { await shell(script, "down", session) }
+    try #require(await shell(sessionScript, "up", session) == 0)
+    defer { await shell(sessionScript, "down", session) }
     try await body(HerdrClient(session: session, exec: exec))
 }
 
@@ -58,7 +58,11 @@ private final class SubscribeCounter: Exec {
     }
 
     func run(_ argv: [String]) async throws -> Channel {
-        let channel = try await base.run(argv)
+        try await base.run(argv)
+    }
+
+    func api(_ session: String) async throws -> Channel {
+        let channel = try await base.api(session)
         return Channel(
             lines: channel.lines,
             write: { line in

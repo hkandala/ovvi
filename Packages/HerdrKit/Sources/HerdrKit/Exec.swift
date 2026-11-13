@@ -9,6 +9,9 @@ public protocol Exec: Sendable {
     /// Each writer goes through its own temporary file, then a rename; last writer wins. Only the user can read it.
     func write(home path: String, _ line: String) async
     func remove(home path: String) async
+    /// A connection to the session's herdr API socket: the machine's own on This Mac, a local one that ssh forwards
+    /// to it on a remote machine. Every herdr request and the events stream go through one.
+    func api(_ session: String) async throws -> Channel
     var isRemote: Bool { get }
 }
 
@@ -67,32 +70,6 @@ extension Exec {
         channel.closeInput()
         return await channel.exit().status == 0
     }
-
-    /// ponytail: the whole file is queued on the machine's one relay at once, ahead of its panes' streams and keys, so
-    /// files over 16 MB (herdr's limit for a dropped image) are refused; stream it with backpressure if bigger files
-    /// are needed.
-    public func upload(_ file: URL) async throws -> String {
-        let name = file.lastPathComponent
-        let values = try file.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey])
-        guard values.isRegularFile == true else { throw HerdrError.failed("\(name) is not a file") }
-        guard values.fileSize ?? 0 <= 16 << 20 else { throw HerdrError.failed("\(name) is over 16 MB") }
-        // ponytail: ten minutes for 16 MB; a progress bar when slow links need longer.
-        let folder = try await checkedOutput(["sh", "-c", Self.uploadScript, "sh", name],
-                                             input: base64Lines(Data(contentsOf: file)), timeout: .seconds(600))
-        guard folder.hasPrefix("/") else { throw HerdrError.failed("Copying \(name) failed") }
-        return folder + "/" + name
-    }
-
-    /// Prints only the new folder, whose name holds no line break (a file's may): the path is put together here. The
-    /// shared folder must be the user's own, not a link another user made.
-    static var uploadScript: String {
-        #"""
-        umask 077; r=${TMPDIR:-/tmp}; r=${r%/}/ovvi-drops-$(id -u)
-        mkdir -p "$r" && [ ! -h "$r" ] && [ -O "$r" ] && chmod 700 "$r" || exit 1
-        find "$r" -mindepth 1 -maxdepth 1 -mtime +0 -exec rm -rf {} + 2>/dev/null
-        d=$(mktemp -d "$r/XXXXXXXX") && base64 -d >"$d/$1" && echo "$d"
-        """#
-    }
 }
 
 public struct Channel: Sendable {
@@ -108,6 +85,8 @@ public struct Channel: Sendable {
 public final class ProcessExec: Exec {
     let environment: [String: String]
     private let lookup: Mutex<Lookup>
+    /// herdr's socket path by session, asked again after a connect fails: a path changes only with herdr's rule.
+    private let sockets = Mutex<[String: String]>([:])
     /// The login shell's bound: it runs the user's rc files. Tests on a starved Mac pass a longer one.
     private let shellLimit: Duration
     static let shellLimit = Duration.seconds(3)
@@ -174,6 +153,23 @@ public final class ProcessExec: Exec {
         close(handle)
         if written != bytes.count || rename(temp, file) != 0 {
             unlink(temp)
+        }
+    }
+
+    public func api(_ session: String) async throws -> Channel {
+        let cached = sockets.withLock { $0[session] }
+        let path = if let cached {
+            cached
+        } else {
+            try await herdrSocket(session)
+        }
+        do {
+            let channel = try UnixSocket.connect(path)
+            sockets.withLock { $0[session] = path }
+            return channel
+        } catch {
+            sockets.withLock { $0[session] = nil }
+            throw error
         }
     }
 
@@ -382,29 +378,5 @@ public final class ProcessExec: Exec {
             terminate: terminate,
             exit: { await (status.value, errors.value) },
         )
-    }
-}
-
-struct LineBuffer {
-    private var data = Data()
-    private(set) var scanned = 0
-
-    /// Only the chunk's bytes are scanned: a scan from the start per chunk costs O(n²) on a 280 KB snapshot line.
-    mutating func take(_ chunk: Data) -> [String] {
-        var from = data.endIndex, lines: [String] = []
-        data.append(chunk)
-        while true {
-            let newline = data[from...].firstIndex(of: UInt8(ascii: "\n"))
-            scanned += data.distance(from: from, to: newline.map { data.index(after: $0) } ?? data.endIndex)
-            guard let newline else { break }
-            lines.append(String(decoding: data[..<newline], as: UTF8.self))
-            data.removeSubrange(...newline)
-            from = data.startIndex
-        }
-        return lines
-    }
-
-    var rest: String? {
-        data.isEmpty ? nil : String(decoding: data, as: UTF8.self)
     }
 }

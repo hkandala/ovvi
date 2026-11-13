@@ -20,11 +20,11 @@ agent in pane w1:p2
   │ 2. writes ~/.cache/ovvi/rpc/<id>.req
   │ 3. herdr pane report-metadata w1:p2 ovvi-req=<id>
   ▼
-herdr server ── pane.updated (tokens) ── events stream ── relay ──► Ovvi (HostStore of devbox/default)
+herdr server ── pane.updated (tokens) ── events stream ── ssh forward ──► Ovvi (HostStore of devbox/default)
                                                                      │ 4. run: mv <id>.req <id>.run; base64
 ~/.cache/ovvi/rpc/<id>.run   ◄──────────────────────────── relay ────┘
                                                                      │ 5. herdr calls (layout.apply, tab.move…)
-herdr server  ◄──────────────────────── remote-api-bridge ── relay ──┤    the card shows in the window
+herdr server  ◄──────────────────── API socket ── ssh forward ───────┤    the card shows in the window
                                                                      │ 6. run: write <id>.out, <id>.exit
 ~/.cache/ovvi/rpc/<id>.exit  ◄──────────────────────────── relay ────┘
   │ 7. the script prints <id>.out, exits with the code

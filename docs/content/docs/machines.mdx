@@ -48,7 +48,7 @@ description: "What a machine is, its sessions, the SSH connection, the health ch
   ssh -M -N -f -o ControlPersist=10m -o ServerAliveInterval=5 \
       -o ServerAliveCountMax=3 -o ConnectTimeout=10 \
       -o ForwardAgent=no -o ForwardX11=no -o ClearAllForwardings=yes \
-      -o LogLevel=ERROR -o BatchMode=yes -S ~/Library/Caches/ovvi/<h8>-<pid> <target>
+      -o StreamLocalBindMask=0177 -o LogLevel=ERROR -o BatchMode=yes -S ~/Library/Caches/ovvi/<h8>-<pid> <target>
   ssh -F /dev/null -S ~/Library/Caches/ovvi/<h8>-<pid> -O check <target>    # its pid
   ```
   - With `-f`, ssh goes to the background once it is authenticated and the
@@ -87,14 +87,15 @@ description: "What a machine is, its sessions, the SSH connection, the health ch
     `~/Library/Caches/ovvi` breaks remote connects until Ovvi starts again.
   - Forwarding is off, so a machine cannot reach the Mac's SSH agent or ports
     through the app's long-lived connection. The app's own `-O forward` calls
-    still work.
+    (herdr's socket, the browser's SOCKS) still work; they forward from the Mac
+    to the machine only.
   - **A dead link:** ssh's own keepalive (`ServerAliveInterval=5`,
     `ServerAliveCountMax=3`) ends the master within about 15 s after the
     network goes (a network change, sleep, a server restart). The next run
     starts a new one. The app runs no `-O exit` of its own on a failed check.
   - On quit the app runs `ssh -F /dev/null -S <ctl> -O exit -- <target>` for each master.
-- **The relay:** every run of a remote machine (calls, the events stream,
-  every terminal stream) goes through one SSH session. A server may allow
+- **The relay:** every run of a remote machine (commands, every terminal
+  stream) goes through one SSH session. A server may allow
   only a few sessions per connection (`MaxSessions`; a server with one-time passcodes can refuse
   the third), and a second connection would ask for a second passcode. The
   first run on a new master starts that session; it runs a Perl script
@@ -107,7 +108,7 @@ description: "What a machine is, its sessions, the SSH connection, the health ch
     never holds up the others; its `sh` runs the command with `exec`;
   - the relay sends `l <id> <line>`, and `x <id> <status> <stderr hex>` once a
     run's output ended and it was reaped.
-  - herdr's bridge, events and terminal streams are all lines, so this needs
+  - herdr's terminal streams and the commands' output are lines, so this needs
     no other framing; one process writes them, so lines of two runs never mix.
   - A line passes byte for byte, NUL bytes too, so the NUL-separated (`-z`)
     listings of the plugin cards work over SSH.
@@ -123,6 +124,10 @@ description: "What a machine is, its sessions, the SSH connection, the health ch
     `remote-client-bridge` session, but it speaks herdr's internal binary
     client protocol; `herdr --machine` opens one session per request, as
     `remote-api-bridge` does.
+- **herdr's API socket:** requests and the events stream do not take the
+  relay. The master forwards a local socket to herdr's socket on the machine
+  (`-O forward -L`), and the app connects to it as it connects to This Mac's
+  ([Requests](/docs/talking-to-herdr#requests)).
 - **Automatic starts never prompt.** Every start a run makes uses
   `BatchMode=yes`. How it fails decides what follows:
   - ssh needs an answer (its text has "Permission denied", "Host key
@@ -223,8 +228,9 @@ One loop per open session checks that it answers.
 ## SSH sessions
 
 - A remote machine uses one SSH session, the relay's
-  ([The SSH connection](#the-ssh-connection)), whatever it streams. The
-  browser's SOCKS forward opens channels on the connection, not sessions.
+  ([The SSH connection](#the-ssh-connection)), whatever it streams. herdr's
+  forwarded API socket and the browser's SOCKS forward open channels on the
+  connection, not sessions.
   This Mac uses no SSH.
 
 ## Checks on connect

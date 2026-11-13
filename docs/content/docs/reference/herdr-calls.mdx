@@ -45,10 +45,10 @@ with `pane.split`, or `tab.create` and `tab.move`.
 ([herdr on each machine](/docs/talking-to-herdr#herdr-on-each-machine)).
 
 ```sh
-herdr --session S remote-api-bridge
 herdr --session S terminal session control|observe <terminal_id> \
     --cols C --rows R [--takeover]
-herdr --session S session list --json               # each machine: the Open Session panel, restore, "not running"
+herdr --session S session list --json               # each machine: the Open Session panel, restore, "not running"; its socket_path once per session (a remote machine: per connection)
+ssh -F /dev/null -S <ctl> -O forward -L <ctl>-<s8>:<socket_path> <target>   # a remote machine: herdr's socket, once per session and connection
 herdr --session S session stop|delete S --json      # Open Session's Stop and Delete; errors as JSON on stderr
 herdr --session S server        # remote: nohup, on request; This Mac: a launchd job (D47)
 ```

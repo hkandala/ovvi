@@ -269,3 +269,31 @@ private final class Events: Sendable {
         }
     }
 }
+
+extension Exec {
+    /// ponytail: the whole file is queued on the machine's one relay at once, ahead of its panes' streams and keys, so
+    /// files over 16 MB (herdr's limit for a dropped image) are refused; stream it with backpressure if bigger files
+    /// are needed.
+    public func upload(_ file: URL) async throws -> String {
+        let name = file.lastPathComponent
+        let values = try file.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey])
+        guard values.isRegularFile == true else { throw HerdrError.failed("\(name) is not a file") }
+        guard values.fileSize ?? 0 <= 16 << 20 else { throw HerdrError.failed("\(name) is over 16 MB") }
+        // ponytail: ten minutes for 16 MB; a progress bar when slow links need longer.
+        let folder = try await checkedOutput(["sh", "-c", Self.uploadScript, "sh", name],
+                                             input: base64Lines(Data(contentsOf: file)), timeout: .seconds(600))
+        guard folder.hasPrefix("/") else { throw HerdrError.failed("Copying \(name) failed") }
+        return folder + "/" + name
+    }
+
+    /// Prints only the new folder, whose name holds no line break (a file's may): the path is put together here. The
+    /// shared folder must be the user's own, not a link another user made.
+    static var uploadScript: String {
+        #"""
+        umask 077; r=${TMPDIR:-/tmp}; r=${r%/}/ovvi-drops-$(id -u)
+        mkdir -p "$r" && [ ! -h "$r" ] && [ -O "$r" ] && chmod 700 "$r" || exit 1
+        find "$r" -mindepth 1 -maxdepth 1 -mtime +0 -exec rm -rf {} + 2>/dev/null
+        d=$(mktemp -d "$r/XXXXXXXX") && base64 -d >"$d/$1" && echo "$d"
+        """#
+    }
+}

@@ -284,6 +284,11 @@ struct PaneProcesses: Decodable {
 public struct Session: Codable, Equatable, Sendable {
     public let name: String
     public let running: Bool
+    let socketPath: String?
+
+    enum CodingKeys: String, CodingKey {
+        case name, running, socketPath = "socket_path"
+    }
 
     /// herdr's rule for session names: ASCII letters, digits, `.`, `_` and `-`, at most 64 bytes, not `.` or `..`.
     /// Not a leading `-` either: names from outside (`ovvi://float`) go into argv, where it reads as an option.

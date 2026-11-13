@@ -8,6 +8,8 @@ public actor SSHExec: Exec {
     nonisolated let target: String
     nonisolated let environment: [String: String]
     nonisolated let socket: String
+    /// The master's own options ahead of the user's config: the tests' sshd takes a config of its own.
+    nonisolated let options: [String]
     /// A check costs a `kill(pid, 0)`, not a process. A reused pid reads as a live master until its relay is needed
     /// again and does not start.
     var connection: pid_t?
@@ -23,9 +25,13 @@ public actor SSHExec: Exec {
     var dynamic: (port: UInt16, pid: pid_t)?
     var forwarding: Task<UInt16, Error>?
     var ending: Task<Void, Never>?
+    /// By session: the local socket ssh forwards to herdr's on the machine, on the master with `pid`.
+    var herdrForwards: [String: Forward] = [:]
+    var herdrForwarding: [String: Task<String, Error>] = [:]
 
-    public init(target: String, local: ProcessExec) {
+    public init(target: String, local: ProcessExec, options: [String] = []) {
         self.target = target
+        self.options = options
         environment = local.environment
         let hash = SHA256.hash(data: Data(target.utf8)).prefix(4).map { String(format: "%02x", $0) }.joined()
         // Per app: another Ovvi (a test's, a second build) unlinks a socket at start and ends its master at quit; it
@@ -127,6 +133,13 @@ public actor SSHExec: Exec {
         process.arguments = ["-F", "/dev/null", "-S", socket, "-O", "exit", "--", target]
         process.standardError = FileHandle.nullDevice
         try? process.run()
+        // ssh leaves its forwards' socket files.
+        let prefix = (socket as NSString).lastPathComponent + "-"
+        for name in (try? FileManager.default.contentsOfDirectory(atPath: Self.folder)) ?? []
+            where name.hasPrefix(prefix)
+        {
+            unlink(Self.folder + "/" + name)
+        }
     }
 
     func up(_ ask: Ask?) async throws {
@@ -166,7 +179,7 @@ public actor SSHExec: Exec {
         var argv = ["sh", "-c", #"exec "$@" 2>&1"#, "sh", "/usr/bin/ssh", "-M", "-N", "-f",
                     "-o", "ControlPersist=10m", "-o", "ServerAliveInterval=5", "-o", "ServerAliveCountMax=3",
                     "-o", "ConnectTimeout=10", "-o", "ForwardAgent=no", "-o", "ForwardX11=no",
-                    "-o", "ClearAllForwardings=yes", "-o", "LogLevel=ERROR"]
+                    "-o", "ClearAllForwardings=yes", "-o", "StreamLocalBindMask=0177", "-o", "LogLevel=ERROR"]
         var environment = environment
         if ask == nil {
             argv += ["-o", "BatchMode=yes"]
@@ -176,7 +189,7 @@ public actor SSHExec: Exec {
             environment["SSH_ASKPASS"] = Self.askpass
             environment["SSH_ASKPASS_REQUIRE"] = "force"
         }
-        let channel = try ProcessExec.spawn(argv + ["-S", socket, "--", target], environment)
+        let channel = try ProcessExec.spawn(argv + options + ["-S", socket, "--", target], environment)
         // ConnectTimeout covers only the TCP connect and the banner: a login that hangs (a jump host, a security
         // key under BatchMode) must not hold every run. One that asks has no limit: the user answers.
         let began = ContinuousClock.now

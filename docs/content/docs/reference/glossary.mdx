@@ -76,7 +76,7 @@ description: "The words these docs use"
 | PTY | the pseudo-terminal a shell runs in; it has one size |
 | frame | one message of ANSI bytes from `terminal session` |
 | control / observe | the two stream kinds: control types and resizes; observe only watches |
-| control plane / terminal plane | requests and events (the bridge) / terminal streams (`terminal session`) |
+| control plane / terminal plane | requests and events (herdr's API socket) / terminal streams (`terminal session`) |
 | split tree | herdr's layout: each split cuts a rectangle in two by a ratio |
 | split id | `split_<n>_<path>`: n = place in `splits[]`; path = `root` or one digit per step (0 = first child, 1 = second) |
 | ControlMaster | one shared SSH connection that later `ssh` commands reuse |

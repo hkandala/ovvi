@@ -46,15 +46,15 @@ public actor HerdrClient {
         guard let line = jsonLine(["id": "1", "method": method, "params": params]) else {
             throw HerdrError.failed("\(method): params are not JSON")
         }
-        let channel = try await exec.run([herdr(), "--session", session, "remote-api-bridge"])
+        let channel = try await exec.api(session)
         channel.write(line)
         let reply = try await withTimeout(timeout, onTimeout: channel.terminate) {
             await channel.lines.first { _ in true }
         }
         channel.closeInput()
         guard let reply else {
-            let (status, stderr) = await channel.exit()
-            throw HerdrError.failed("herdr exited \(status): \(stderr.trimmingCharacters(in: .whitespacesAndNewlines))")
+            let text = await channel.exit().stderr.trimmingCharacters(in: .whitespacesAndNewlines)
+            throw HerdrError.failed(text.isEmpty ? "herdr closed the connection with no answer" : text)
         }
         let decoded = try decode(Reply<Result>.self, reply)
         if let error = decoded.error {
@@ -202,7 +202,7 @@ public actor HerdrClient {
         let request = jsonLine(["id": "events", "method": "events.subscribe", "params": params]) ?? ""
         events = Task { [self] in
             do {
-                let channel = try await exec.run([herdr(), "--session", session, "remote-api-bridge"])
+                let channel = try await exec.api(session)
                 channel.write(request)
                 for await line in channel.lines {
                     let message = try? JSONDecoder().decode(EventLine.self, from: Data(line.utf8))
@@ -280,7 +280,7 @@ private struct EventPane: Decodable {
     }
 }
 
-private struct SessionList: Decodable {
+struct SessionList: Decodable {
     let sessions: [Session]
 }
 

@@ -5,8 +5,9 @@ description: "The pieces of the app and how they reach each machine"
 
 A call goes from the views to `HostStore` (one per open session), to
 `HerdrClient` (the `Multiplexer`), to the machine's `Exec`: `ProcessExec` on
-This Mac, `SSHExec` and the relay on a remote machine. There it runs herdr's
-API bridge, a `terminal session` per streamed pane, and the event stream.
+This Mac, `SSHExec` and the relay on a remote machine. Requests and the event
+stream go to herdr's API socket (on a remote machine through a socket the SSH
+connection forwards); each streamed pane runs a `terminal session`.
 
 ## Pieces
 

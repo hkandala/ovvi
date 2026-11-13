@@ -163,7 +163,7 @@ never calls herdr's focus methods. A design gets decision numbers on the
   ([Scrolling, queries and links](/docs/talking-to-herdr#scrolling-queries-and-links)).
 - **Named keys on the terminal stream.** The ask: herdr accepts named keys on
   `terminal.input` (`{"type":"terminal.input","keys":["up"]}`), encoded as
-  `pane.send_keys` does. Then all input takes one path, with no bridge call
+  `pane.send_keys` does. Then all input takes one path, with no request
   per key burst, which matters over SSH
   ([Terminal plane](/docs/talking-to-herdr#terminal-plane)).
 - **Claude Code's transcript path.** herdr's Claude hook sends

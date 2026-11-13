@@ -53,7 +53,7 @@ and watch files and run git the same way
   passes it through unchanged.
 - **Ending a child = closing its stdin.** A `control` run exits in about
   2 ms and herdr frees the pane at once (keys written before the close still
-  arrive). A bridge run exits in about 100 ms. If the app quits or crashes,
+  arrive). If the app quits or crashes,
   the kernel closes its pipes, so every child ends by itself, remote ones
   too: ssh closes the channel. (Measured with herdr 0.9.5, on This Mac and
   over SSH.)
@@ -133,24 +133,58 @@ and watch files and run git the same way
 
 ## Requests
 
-- `call(method, params)`: run `herdr --session S remote-api-bridge`, write
-  one line `{"id":"1","method":"…","params":{…}}`, read one reply line, then
-  close stdin. herdr answers one request per connection.
-- **Timeout:** every `call()` times out after 10 s. On a timeout the app kills
-  the bridge process. A write that times
+- `call(method, params)`: connect to the session's API socket (`Exec.api`),
+  write one line `{"id":"1","method":"…","params":{…}}`, read one reply
+  line, then close the connection. herdr answers one request per connection
+  and then closes it (herdr 0.9.5, `handle_connection`). The app connects in
+  its own process, with no herdr process, on every machine (D4):
+  - **This Mac:** herdr's own socket. Its path is herdr's rule (its config
+    folder, from `XDG_CONFIG_HOME` or `~/.config/herdr`, and `sessions/<S>/`
+    for a session other than `default`), so the app asks herdr:
+    `session list --json` gives each session's `socket_path`. It asks once
+    per session and keeps the path; a connect that fails (the server
+    stopped, restarts, or the session was deleted) forgets it, and the next
+    request asks again.
+  - **A remote machine:** a local socket that the host's ControlMaster
+    forwards to herdr's socket there:
+    `ssh -F /dev/null -S <ctl> -O forward -L <ctl>-<s8>:<socket_path> <target>`,
+    where `<s8>` is 8 hex characters of a hash of the session's name. The
+    remote `socket_path` comes from the same `session list --json`, run over
+    the relay, once per session and connection. Each request opens one
+    channel on the SSH connection, not a session (`MaxSessions` holds). ssh
+    binds the local socket 0600 (`StreamLocalBindMask=0177` on the master) in
+    the app's 0700 folder, and the name has the app's pid, so a second Ovvi
+    on the Mac has its own. ssh leaves the file behind when a master ends, and
+    refuses to bind over it: a new forward removes it first. A new master
+    (after a drop) forwards again on the first request; a connect that finds
+    no listener forwards again on the next. On quit the app removes its
+    forwards' files with its masters.
+  - **A remote end that fails:** ssh takes the connection and closes it with
+    no answer when the machine's end fails. The app then reads
+    `session list --json` over the relay: a session that is not running is
+    the usual "not running"; a running one whose `socket_path` changed is
+    forwarded again; a running one at the same path means the host's sshd
+    refuses to forward a socket (`AllowStreamLocalForwarding no`, or
+    `DisableForwarding`), and the page shows "‹target› refuses to forward
+    herdr's socket: Ovvi needs sshd's AllowStreamLocalForwarding" under
+    Reconnecting. There is no fallback.
+- **Timeout:** every `call()` times out after 10 s. On a timeout the app
+  closes the connection. A write that times
   out shows the notice "herdr did not answer", with no Retry. A read that
-  times out shows Reconnecting.
+  times out shows Reconnecting. A connection is closed exactly once: at its
+  end, when its reader stops (a cancelled call) or on a timeout.
 - Long-lived streams (events, terminals) have no timeout. The
   health check covers them.
-- Cost: 18 ms median and 130 ms at p95 per call (measured locally), plus the
-  network round trip. Text typing never takes this path (special keys do:
-  [Terminal plane](#terminal-plane)). Simpler choice: the
-  bridge, not the local socket. Revisit when a profile shows the cost hurts:
-  talking to the local socket directly takes 0.5 ms.
+- Cost: 0.4 ms of the app's CPU and no process per request on This Mac,
+  plus the network round trip on a remote machine (measured: a bridge
+  process per request took 11 ms of CPU and 63 ms median, 1.6 s at p90, on a
+  loaded Mac). Text typing never takes this path (special keys do:
+  [Terminal plane](#terminal-plane)).
 
 ## Events
 
-- One long-lived bridge run per open session carries `events.subscribe`. A
+- One long-lived connection to the API socket per open session carries
+  `events.subscribe`; on a remote machine it is one more forwarded channel. A
   session without a page in any window has none
   ([Open sessions](/docs/machines#open-sessions)).
 - Subscriptions (herdr accepts no wildcards):
@@ -290,7 +324,7 @@ draws them. Input takes two paths:
   stream as `terminal.input`.
 - Special keys (arrows, Esc, function keys, keys with modifiers, Ctrl
   chords, and the macOS line-editing keys such as ⌘← and ⌥←) go as
-  `pane.send_keys`, one bridge call per burst. Their bytes depend on the
+  `pane.send_keys`, one request per burst. Their bytes depend on the
   program's input modes, and herdr encodes them for those modes. A Ctrl
   chord keeps its Shift: under the kitty keyboard protocol ⌃⇧S is its own
   key, and a program without that protocol gets ⌃S's byte (for a letter). Keys that

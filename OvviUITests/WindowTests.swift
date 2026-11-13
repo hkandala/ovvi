@@ -46,10 +46,11 @@ extension OvviUITests {
 
     func testClosingTheControllingWindowHandsControlOver() async throws {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
-        try await expect("one bridge run") { try await bridges(one) == 1 }
         let (first, second) = try newWindow()
         XCTAssertTrue(element("notice.controlled", in: second).exists(within: connect))
-        try await expect("still one bridge run") { try await bridges(one) == 1 }
+        // Every request and the events stream go over herdr's socket: no herdr process but the terminals'.
+        let runs = try await bridges(one)
+        XCTAssertEqual(runs, 0)
         app.typeKey("s", modifierFlags: [.command, .control])
 
         raise(first)

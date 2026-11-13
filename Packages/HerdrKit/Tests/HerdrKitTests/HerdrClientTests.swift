@@ -36,7 +36,11 @@ final class FakeExec: Exec {
     }
 
     func run(_ argv: [String]) async throws -> Channel {
-        state.withLock { $0.argv.append(argv) }
+        throw HerdrError.failed("no process: \(argv)")
+    }
+
+    func api(_ session: String) async throws -> Channel {
+        state.withLock { $0.argv.append(["api", session]) }
         let (lines, reply) = AsyncStream<String>.makeStream()
         return Channel(
             lines: lines,
@@ -170,7 +174,7 @@ func started(_ client: HerdrClient, _ exec: FakeExec, _ gate: Gate? = nil) async
     let exec = FakeExec { _ in #"{"id":"1","result":{"type":"tab_created","tab":{"tab_id":"w1:t2"}}}"# }
     let created: Created = try await client(exec).call("tab.create", ["workspace_id": "w1", "focus": false])
     #expect(created.tab["tab_id"] == "w1:t2")
-    #expect(exec[\.argv] == [["/opt/herdr", "--session", "s", "remote-api-bridge"]])
+    #expect(exec[\.argv] == [["api", "s"]])
     let request = try #require(JSONSerialization.jsonObject(with: Data(exec[\.written][0].utf8)) as? [String: Any])
     #expect(request["method"] as? String == "tab.create")
     #expect(request["params"] as? [String: AnyHashable] == ["workspace_id": "w1", "focus": false])
