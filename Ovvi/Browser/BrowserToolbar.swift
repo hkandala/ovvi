@@ -34,9 +34,9 @@ struct BrowserToolbar: View {
                     Task { await ClosedPages.menu(for: browser, page: page, under: view) }
                 }
             }
+            .accessibilityIdentifier("\(id).closed")
             .background(MenuAnchor(anchor: closedAnchor))
             .foregroundStyle(look.paneButton)
-            .accessibilityIdentifier("\(id).closed")
             IconButton(symbol: "hammer", help: "Web Inspector", key: .hotkey("browser.inspector"),
                        size: 22, action: browser.view.showInspector)
                 .disabled(!browser.loaded)

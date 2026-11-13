@@ -82,7 +82,14 @@ final class Browser: NSObject {
             mirror(\.estimatedProgress) { $0.progress = $0.view.estimatedProgress },
             mirror(\.canGoBack) { $0.canGoBack = $0.view.canGoBack },
             mirror(\.canGoForward) { $0.canGoForward = $0.view.canGoForward },
-            mirror(\.title) { $0.title = $0.view.title ?? "" },
+            // For the closed pages' list: a title can come after the load's last save, and a route's after its own.
+            // ponytail: a page whose title ticks (a clock) writes its state file 500 ms after each tick.
+            mirror(\.title) {
+                $0.title = $0.view.title ?? ""
+                if $0.loaded {
+                    $0.save()
+                }
+            },
             mirror(\.url) { $0.showAddress() },
         ]
     }
@@ -264,7 +271,7 @@ final class Browser: NSObject {
         store.flatMap { Self.url(text, local: !$0.machine.isRemote) }
     }
 
-    /// The state file holds at most 256 KiB. The title is for the machine's recently closed pages.
+    /// The state file holds at most 256 KiB.
     func save() {
         guard let store, let url = view.url.map({ Self.shown($0, alias).absoluteString }), url != "about:blank"
         else { return }
