@@ -61,7 +61,7 @@ extension OvviUITests {
     func testALongChatLoadsEarlierRowsAsItScrollsUp() async throws {
         // A swipe and a look take about 3 s in the VM, and the chat is about 15 long swipes tall.
         executionTimeAllowance = 300
-        let pane = try await startChat().pane
+        let pane = try await startChat(["-chatDropSeconds", "6"]).pane
         app.typeText("many 25\r")
         let last = row(pane, "reply", "Last.")
         XCTAssertTrue(until(10) { last.exists && last.isHittable })
@@ -101,8 +101,9 @@ extension OvviUITests {
         // A block is hundreds of points; a swipe's momentum varies by tens.
         XCTAssertFalse(moves.contains { $0 > moves[0] + 100 || $0 < -40 }, "a jump: \(moves) at \(counts)")
         XCTAssertTrue(first.isHittable && !loader.exists, "\(counts) \(loader.exists)")
-        // Back at the exact bottom, the stack is the newest block again, and the bottom row stays where it was.
-        try await dropsToOneBlock(pane, opened, at: place) { bottom.click() }
+        // After 6 s at the exact bottom, the stack is the newest block again, and the bottom row stays where it was. A
+        // scroll up meanwhile starts the wait again.
+        try await dropsToOneBlock(pane, opened, at: place, leaving: true) { bottom.click() }
         // Up with the wheel, which has no phases, until a block comes; down with swipes, whose momentum ends at the
         // bottom.
         for _ in 0 ..< 5 where !until(2, { shown() > opened }) {
@@ -238,16 +239,26 @@ extension OvviUITests {
         XCTAssertFalse(last.exists && last.isHittable)
     }
 
-    private func dropsToOneBlock(_ pane: String, _ opened: Int, at place: CGFloat, _ scroll: () async throws -> Void)
-        async throws
+    /// `leaving`: halfway through the wait, a scroll up and back, after which the drop waits its whole time again.
+    private func dropsToOneBlock(_ pane: String, _ opened: Int, at place: CGFloat, leaving: Bool = false,
+                                 _ scroll: () async throws -> Void) async throws
     {
-        let chat = element("chat.\(pane)"), last = row(pane, "reply", "Last.")
+        let chat = element("chat.\(pane)"), last = row(pane, "reply", "Last."), bottom = element("chat.\(pane).bottom")
         let kinds = ["user", "reply"].map { "chat.\(pane).\($0)" }
         let shown = { (try? self.nodes(of: chat).count { kinds.contains($0.identifier) }) ?? 0 }
         try await scroll()
-        XCTAssertTrue(element("chat.\(pane).bottom").vanishes(within: 3))
+        XCTAssertTrue(bottom.vanishes(within: 3))
+        XCTAssertFalse(until(3) { shown() == opened }, "dropped before its wait")
+        if leaving {
+            chat.scroll(byDeltaX: 0, deltaY: 200)
+            XCTAssertTrue(bottom.exists(within: 2))
+            bottom.click()
+            XCTAssertTrue(bottom.vanishes(within: 3))
+            // Past the first wait's end, within the new one's.
+            XCTAssertFalse(until(3) { shown() == opened }, "the scroll up did not start the wait again")
+        }
         var looks: [CGFloat] = []
-        XCTAssertTrue(until(5) {
+        XCTAssertTrue(until(8) {
             looks.append(last.frame.minY)
             return shown() == opened
         }, "\(shown()) \(opened)")

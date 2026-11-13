@@ -45,6 +45,11 @@ struct ChatMessages: View, Equatable {
     private static let block = 34
     private static let budget = 120
     private static let earlierRow: CGFloat = 28, gap: CGFloat = 10
+    /// How long the chat stays at the exact bottom, at rest, before it drops to the newest block: a drop at once
+    /// changed the scroll bar's size each time a scroll reached the bottom. A test's is shorter.
+    private static let dropAfter = Duration.seconds(
+        UserDefaults.standard.string(forKey: "chatDropSeconds").flatMap(Double.init) ?? 60,
+    )
 
     /// The focus binding stays the same for a card. The rows are worked out in the body (3–4 ms for a 3,900-entry
     /// history).
@@ -159,6 +164,7 @@ struct ChatMessages: View, Equatable {
         // The next block comes once the view's top is within half a view of the stack's and the scroll rests, again
         // after each. Not during a scroll: its momentum keeps its own offset, over the place on the top row.
         let more = nearTop && !scrolling && start > 0 ? start : nil
+        let resting = !away && !scrolling && first != nil
         return ScrollViewReader { proxy in
             ScrollView {
                 // As tall as the view at least, its rows at the top: a short chat is then at its exact bottom, and the
@@ -209,9 +215,14 @@ struct ChatMessages: View, Equatable {
             .onScrollGeometryChange(for: Bool.self) { $0.visibleRect.minY < $0.containerSize.height / 2 } action: {
                 nearTop = $1
             }
-            .onScrollPhaseChange {
-                scrolling = $1.isScrolling
-                drop()
+            .onScrollPhaseChange { scrolling = $1.isScrolling }
+            // One wait: a scroll ends it, and the next rest at the bottom starts it again.
+            .task(id: resting) {
+                guard resting else { return }
+                try? await Task.sleep(for: Self.dropAfter)
+                if !Task.isCancelled {
+                    drop()
+                }
             }
             .task(id: more) {
                 // Read again: rows that come in one update with the place still near the top from before them (a
@@ -243,7 +254,6 @@ struct ChatMessages: View, Equatable {
                     tops.hold(at: new.minY, bottom: new.minX <= 0.5)
                     if away != (new.minX > 0.5) {
                         away = new.minX > 0.5
-                        drop()
                     }
                 }
                 let grew = contentHeight.value != new.height
@@ -268,7 +278,7 @@ struct ChatMessages: View, Equatable {
         }
     }
 
-    /// Back at the exact bottom, once the scroll rests, the stack is the newest block again, as at the open: the rows
+    /// A minute at the exact bottom, at rest, and the stack is the newest block again, as at the open: the rows
     /// that go are above the view, and the bottom anchor holds the bottom. Not while a load's rows are on their way,
     /// and not when the view's top would then be near the stack's (as `nearTop`): the block it dropped would load
     /// again, and a stack shorter than the view would move its rows up to the top.

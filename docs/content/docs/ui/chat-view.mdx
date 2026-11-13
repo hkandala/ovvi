@@ -556,10 +556,12 @@ A run is one quiet line with no card: its summary and a chevron.
   moves the messages exactly as far as the fingers.
 - **Rows stay until the bottom.** At the bottom the stack shows the newest
   block. Once the chat leaves the exact bottom, the oldest row shown is fixed:
-  new rows do not take rows off the top. When a scroll brings the chat back to
-  the exact bottom and rests, the stack is the newest block again, as at the
-  open: the rows that go are above the view, and the bottom anchor holds the
-  bottom, so nothing in view moves. Not while earlier rows are on their way.
+  new rows do not take rows off the top. When the chat has stayed at the exact
+  bottom, at rest, for one minute, the stack is the newest block again, as at
+  the open: the rows that go are above the view, and the bottom anchor holds
+  the bottom, so nothing in view moves. A scroll ends the wait, and the next
+  rest at the bottom starts it again, so the scroll bar does not change size
+  each time a scroll reaches the bottom. Not while earlier rows are on their way.
   So a split lays out one block, however far up the chat went. A switch to
   another tab or space and back keeps the rows and the scroll place (its page
   is kept), and while its page is kept the chat goes on following its
