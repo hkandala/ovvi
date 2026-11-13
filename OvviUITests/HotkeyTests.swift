@@ -5,6 +5,9 @@ extension OvviUITests {
     func testARecordedKeyShowsEverywhereAndASwapMovesTheOther() async throws {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         openSettings("shortcuts")
+        // Last in the sidebar.
+        XCTAssertGreaterThan(element("settings.page.shortcuts", in: settingsWindow).frame.minY,
+                             element("settings.page.privacy", in: settingsWindow).frame.maxY - 1)
         addTeardownBlock { @MainActor [self] in
             openSettings("shortcuts")
             let reset = element("keys.reset-all", in: settingsWindow)
@@ -45,8 +48,14 @@ extension OvviUITests {
         XCTAssertTrue(newTab.has(\.stringValue, "Type shortcut…", within: 2))
         // ⌘W records: it closes no window.
         settingsWindow.typeKey("w", modifierFlags: .command)
-        XCTAssertTrue(element("keys.tab.new.question", in: settingsWindow).exists(within: 2))
-        element("keys.tab.new", in: settingsWindow).click()
+        let question = element("keys.tab.new.question", in: settingsWindow)
+        XCTAssertTrue(question.exists(within: 2))
+        XCTAssertEqual(newTab.stringValue, "⌘W")
+        // The field showed the key it asked about: Cancel gives the saved one back.
+        element("keys.tab.new.cancel", in: settingsWindow).click()
+        XCTAssertTrue(question.vanishes(within: 2))
+        XCTAssertEqual(newTab.stringValue, "⌘T")
+        newTab.click()
         settingsWindow.typeKey("y", modifierFlags: [.command, .option])
         XCTAssertTrue(newTab.has(\.stringValue, "⌥⌘Y", within: 2))
         XCTAssertTrue(element("keys.tab.new.reset", in: settingsWindow).isEnabled)
@@ -56,7 +65,6 @@ extension OvviUITests {
         settingsWindow.typeKey("y", modifierFlags: [.command, .option])
         let swap = element("keys.space.new.swap", in: settingsWindow)
         XCTAssertTrue(swap.exists(within: 2))
-        // The field shows the key it asks about; nothing changes before Swap.
         XCTAssertEqual(newSpace.stringValue, "⌥⌘Y")
         XCTAssertEqual(newTab.stringValue, "⌥⌘Y")
         swap.click()

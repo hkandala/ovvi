@@ -765,10 +765,10 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
   field's edge, and the field grew with its keys: rows of two keys reached past the others. The conflict's question
   sat on a line of its own with regular buttons and no tie to the field.
 - **Fix.** The key field is one size on every row (128 × 24 pt, 6 pt corners, a fine separator edge) with the keys as
-  glyphs and 8 pt each side, as System Settings and Xcode show them; the reset button keeps its 16 pt column. Recording
-  gives it a 2 pt accent ring and "Type shortcut…". A conflict shows the asked-for key in the field with a 2 pt orange
-  ring, and under the row, on one baseline, a warning symbol and the question with small Cancel and Swap that end
-  where the field ends.
+  glyphs and 8 pt each side, as System Settings and Xcode show them, ending at the row's edge; the reset button sits
+  before it. Recording gives it a 2 pt accent ring and "Type shortcut…". A conflict shows the asked-for key in the
+  field with a 2 pt orange ring, and under the row, on one baseline, a warning symbol and the question with small
+  Cancel and Swap that end where the field ends.
 - **Decisions.** The page is Shortcuts, last in the sidebar (`SettingsPage.shortcuts`, `settings.page.shortcuts`); its
   row ids stay `keys.*`. ⌘/ lost Customize…; General ▸ Help ▸ Show Shortcuts still opens the panel. Glyph text over
   keycaps in Settings: keycaps of two keys would not fit one field width.

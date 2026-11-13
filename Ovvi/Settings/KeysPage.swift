@@ -31,7 +31,10 @@ struct KeysPage: View {
                 HStack(spacing: 8) {
                     FilterField(prompt: "Search", text: $search, identifier: "keys.search", symbol: "magnifyingglass")
                         .labelsHidden()
-                    Button("Reset All") { hotkeys.resetAll() }.disabled(hotkeys.saved.isEmpty)
+                    Button("Reset All") {
+                        clash = nil
+                        hotkeys.resetAll()
+                    }.disabled(hotkeys.saved.isEmpty)
                         .accessibilityIdentifier("keys.reset-all")
                 }
                 .settingsRow("keys.search")
@@ -62,7 +65,7 @@ struct KeysPage: View {
     private func row(_ hotkey: Hotkey, _ all: [Hotkey]) -> some View {
         let hotkeys = Hotkeys.shared, keys = hotkeys.keys(hotkey)
         let taken = keys.lazy.compactMap { hotkeys.clash($0, for: hotkey, in: all) }.first
-        let asking = clash.flatMap { $0.hotkey.id == hotkey.id ? $0 : nil }
+        let asking = clash?.hotkey.id == hotkey.id ? clash : nil, changed = hotkeys.changed(hotkey)
         return VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Text(hotkey.title)
@@ -73,15 +76,19 @@ struct KeysPage: View {
                         .accessibilityIdentifier("keys.\(hotkey.id).clash")
                 }
                 Spacer(minLength: 12)
-                KeyField(keys: keys, recording: recording == hotkey.id, asking: asking?.key) {
+                // Before the field, so every field ends at the row's edge.
+                Button("Reset", systemImage: "arrow.uturn.backward") {
+                    clash = nil
+                    hotkeys.set(hotkey, hotkey.keys)
+                }
+                .labelStyle(.iconOnly).buttonStyle(.borderless).help("Reset")
+                .opacity(changed ? 1 : 0).disabled(!changed).accessibilityHidden(!changed)
+                .accessibilityIdentifier("keys.\(hotkey.id).reset")
+                KeyField(title: hotkey.title, keys: keys, recording: recording == hotkey.id, asking: asking?.key) {
                     clash = nil
                     recording = hotkey.id
                 }
                 .accessibilityIdentifier("keys.\(hotkey.id)")
-                Button("Reset", systemImage: "arrow.uturn.backward") { hotkeys.set(hotkey, hotkey.keys) }
-                    .labelStyle(.iconOnly).buttonStyle(.borderless).help("Reset").frame(width: Self.reset)
-                    .opacity(hotkeys.changed(hotkey) ? 1 : 0).disabled(!hotkeys.changed(hotkey))
-                    .accessibilityIdentifier("keys.\(hotkey.id).reset")
             }
             if let asking {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -90,22 +97,19 @@ struct KeysPage: View {
                         Text("\(asking.key.glyphs) is \(asking.other.title)’s key.").foregroundStyle(.secondary)
                     }
                     .font(.system(size: 11))
+                    .accessibilityElement(children: .combine)
                     .accessibilityIdentifier("keys.\(hotkey.id).question")
                     Spacer(minLength: 8)
-                    Button("Cancel") { clash = nil }
+                    Button("Cancel") { clash = nil }.accessibilityIdentifier("keys.\(hotkey.id).cancel")
                     if !Hotkeys.fixed.contains(where: { $0.id == asking.other.id }) {
                         Button("Swap") { swap(asking) }.buttonStyle(.borderedProminent)
                             .accessibilityIdentifier("keys.\(hotkey.id).swap")
                     }
                 }
                 .controlSize(.small)
-                // The buttons end where the key field ends, left of the reset button.
-                .padding(.trailing, Self.reset + 8)
             }
         }
     }
-
-    private static let reset: CGFloat = 16
 
     /// The other action takes this one's first key in place of the one it gives up.
     private func swap(_ clash: Clash) {
@@ -157,6 +161,7 @@ struct KeysPage: View {
 /// The action's keys, comma separated, in a field of one size for every row: accent ringed while it records, ringed
 /// as a warning with the key it asks about.
 private struct KeyField: View {
+    let title: String
     let keys: [KeyboardShortcut]
     let recording: Bool
     let asking: KeyboardShortcut?
@@ -185,7 +190,7 @@ private struct KeyField: View {
                 .contentShape(shape)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(text)
+        .accessibilityLabel(title)
         .accessibilityValue(text)
     }
 }
