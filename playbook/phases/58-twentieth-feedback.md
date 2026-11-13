@@ -452,6 +452,8 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
     something so we can see and control everything from hotkeys, hunt through entire codebase and find if we have
     hardcoded hotkeys anywhere and keep it at one central place or some way to register the hotkeys and be able update
     them from settings"
+    Then: "just one more thing, for the hotkeys one, make sure to show the updated shortcuts in cmd+k as well, and
+    anywhere else where we show shortcuts in the ui".
 
 ### Track T: tabs: scroll to a new tab, back and forward through tab history (items 27, 33)
 
