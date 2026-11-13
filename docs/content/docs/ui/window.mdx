@@ -678,14 +678,18 @@ How it works: [Layout and sizing](/docs/layout).
   click in a floating window gives its pane the keys when no view there has them.
 - The buttons show on the keyboard card, on a hovered card and on a zoomed card.
 - **Selecting.** A left drag, a double click, a triple click and a ⇧-click
-  select text in the card. Each left press, drag and release also goes to the
-  program, and a program that reads the mouse (pi, for one) selects and copies
-  on its own. In a plain drag the card's selection takes the press's cell and
-  the pointer's cell whole, as such a program does, so it covers the
-  program's selection. herdr draws a program's reverse video black on white,
-  so a cell that only the program took would show white beside the card's
-  blue. A ⌥-drag selects a rectangle.
-  A press on a watched card takes control.
+  select text in the card. A plain left drag (no modifier key) also goes to
+  the program, so a program that reads the mouse (pi, for one) selects and
+  copies on its own. The card's selection then takes the press's cell and the
+  pointer's cell whole, as such a program does, so it covers the program's
+  selection. herdr draws a program's reverse video black on white, so a cell
+  that only the program took would show white beside the card's blue. A ⇧,
+  ⌥ or ⌃ drag and a double or triple click select in the card alone: the
+  program gets such a single click when the button comes up on the cell where
+  it went down. A ⌥-drag selects a rectangle. A press on a watched card takes
+  control. A program such as pi keeps its selection on its text when the text
+  scrolls or new output comes, and the card's stays on the screen's rows, so
+  white cells can show then.
 - **Context menu** on the header, and on the terminal, where it starts with
   Copy, Paste and Select All. As in herdr, a right click in the terminal opens
   the menu even when the program reads the mouse. ⌥-right click sends the

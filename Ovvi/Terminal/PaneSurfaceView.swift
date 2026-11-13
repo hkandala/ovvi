@@ -23,8 +23,9 @@ final class PaneSurfaceView: AppTerminalView {
     var openLink: ((TerminalLink, Opening) -> Void)?
     private var scrolled: CGFloat = 0
 
-    /// A plain left drag's start (`Selection.swift`).
+    /// A plain left drag's start, and another single click the program gets on its release (`Selection.swift`).
     var anchor: Anchor?
+    var click: NSEvent?
 
     var wantsKeyboard = false
     var onKeyboard: (() -> Void)?
