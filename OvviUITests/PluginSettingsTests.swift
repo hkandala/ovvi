@@ -7,7 +7,8 @@ extension OvviUITests {
         try await waitForPrompt(shell)
         let config = "/tmp/ovvi-e2e-plugin-settings", source = "\(config)/src/ovvi-e2e-shout"
         let card = try await shoutCard(config, shell: shell, extra: "mkdir -p \(config)/src && mv \(config)/plugins/"
-            + "ovvi-e2e-shout \(source) && echo '{\"packages\":[\"\(source)\"]}' > \(config)/settings.json")
+            + "ovvi-e2e-shout \(source) && echo '{\"packages\":[\"\(source)\"]}' > \(config)/settings.json && "
+            + "sed -i '' 's/\"icon\":\"megaphone\",/&\"chooser\":\"Shout\",/' \(source)/package.json")
         XCTAssertTrue(element("pane.\(card.pane).trust").has(\.stringValue, "Install “Shout”?", within: 10))
         let origin = element("pane.\(card.pane).trust.origin").stringValue
         XCTAssertTrue(origin.hasPrefix("ovvi-e2e-shout 1.0.0 in /") && origin.hasSuffix(source.dropFirst(4)), origin)
@@ -16,6 +17,7 @@ extension OvviUITests {
                            + "their build script. Install plugins only from sources you trust.")
         try await cancelsASecondCard()
         try await show(card.tab)
+        XCTAssertEqual(element("pane.\(card.pane).trust.new-pane").value as? Int, 0, "Show in New Pane on at install")
         // Install ahead of Settings, which covers the card on CI's small screen.
         element("pane.\(card.pane).trust.install").click()
         XCTAssertTrue(text("Shout false at load listed").exists(within: 10))
@@ -38,7 +40,8 @@ extension OvviUITests {
         shout.click()
         XCTAssertTrue(text("Shout true listed").exists(within: 3))
         try await send("clear; tr -d ' \\n' < \(config)/settings.json | grep -q "
-            + "'\"plugins\":{\"ovvi-e2e-shout\":{\"shout\":true}}' && grep -qx '\\[\"ovvi-e2e-shout\"\\]' "
+            + "'\"plugins\":{\"ovvi-e2e-shout\":{\"shout\":true}}' && tr -d ' \\n' < \(config)/settings.json | grep -q "
+            + "'\"hideInNewPane\":\\[\"ovvi-e2e-shout\"\\]' && grep -qx '\\[\"ovvi-e2e-shout\"\\]' "
             + "\(config)/trust.json && echo kept-$((6*7))\r", to: shell)
         try await waitFor(shell) { $0.contains("kept-42") }
 

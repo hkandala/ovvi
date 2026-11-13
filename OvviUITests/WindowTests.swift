@@ -139,9 +139,15 @@ extension OvviUITests {
         // The left half of the screen, with no hit test on an edge.
         let front = try XCTUnwrap(window)
         app.menuBars.menuBarItems["Window"].click()
-        app.menuBars.menuItems["Move & Resize"].click()
-        app.menuBars.menuItems["Left"].click()
-        XCTAssertTrue(until(3) { front.frame.width < frame.width - 100 }, "\(front.frame)")
+        let move = app.menuBars.menuItems["Move & Resize"]
+        move.click()
+        move.menuItems["Left"].click()
+        // Once macOS's tiling motion has ended: two equal reads.
+        var last = front.frame
+        XCTAssertTrue(until(3) {
+            defer { last = front.frame }
+            return front.frame == last && last.width < frame.width - 100
+        }, "\(front.frame)")
         let resized = front.frame, ids = app.windows.allElementsBoundByIndex.map(\.identifier)
         app.typeKey("n", modifierFlags: .command)
         XCTAssertTrue(until(3) { app.windows.count == ids.count + 1 }, "no new window")
