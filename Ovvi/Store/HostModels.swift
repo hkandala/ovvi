@@ -259,6 +259,13 @@ func reuse<Owner: AnyObject, Object: Identifiable<String>, Item: Identifiable<St
     }
 }
 
+extension Array {
+    /// The element `offset` steps from `index`, round the ends: the one rule for panes, tabs, spaces and sessions.
+    func step(from index: Int, by offset: Int) -> Element? {
+        isEmpty ? nil : self[((index + offset) % count + count) % count]
+    }
+}
+
 extension [String?] {
     var plainTitle: String {
         compactMap(\.self).filter { !$0.isEmpty }.joined(separator: " | ")

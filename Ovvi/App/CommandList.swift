@@ -242,7 +242,7 @@ struct CommandList {
                 title: title,
                 key: .hotkey(offset < 0 ? "session.previous" : "session.next"),
                 symbol: symbol,
-                enabled: pages?.neighbor(offset) != nil,
+                enabled: (pages?.list.count ?? 0) > 1,
                 action: { pages?.step(offset) },
             )
         }

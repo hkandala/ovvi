@@ -265,8 +265,7 @@ final class Page: Identifiable {
 
     func step(_ offset: Int) {
         guard let workspace = selectedWorkspace, !workspace.tabs.isEmpty else { return }
-        let tabs = workspace.tabs
-        selectedTabIDs[workspace.id] = tabs[(selectedIndex(in: workspace) + offset + tabs.count) % tabs.count].id
+        selectedTabIDs[workspace.id] = workspace.tabs.step(from: selectedIndex(in: workspace), by: offset)?.id
     }
 
     var sidebarWorkspaces: [HostStore.Workspace] {
@@ -275,15 +274,16 @@ final class Page: Identifiable {
 
     func stepWorkspace(_ offset: Int) {
         let workspaces = sidebarWorkspaces
-        guard let index = workspaces.firstIndex(where: { $0.id == selectedWorkspaceID }) else { return }
-        select(workspaces[(index + offset + workspaces.count) % workspaces.count])
+        guard let index = workspaces.firstIndex(where: { $0.id == selectedWorkspaceID }),
+              let workspace = workspaces.step(from: index, by: offset) else { return }
+        select(workspace)
     }
 
     func stepCard(_ offset: Int) {
         guard let ids = selectedTab?.tree?.paneIDs.filter({ store.pane($0).map { !floats($0) } == true }),
               let from = keyboardPane,
               let index = ids.firstIndex(of: from.id),
-              let pane = store.pane(ids[(index + offset + ids.count) % ids.count]) else { return }
+              let pane = ids.step(from: index, by: offset).flatMap(store.pane) else { return }
         go(to: pane)
     }
 

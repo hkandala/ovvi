@@ -93,13 +93,8 @@ final class WindowPages {
         showTerminals()
     }
 
-    func neighbor(_ offset: Int) -> Page? {
-        list.firstIndex { $0 === current }.map { $0 + offset }
-            .flatMap { list.indices.contains($0) ? list[$0] : nil }
-    }
-
     func step(_ offset: Int) {
-        if let page = neighbor(offset) {
+        if let page = list.firstIndex(where: { $0 === current }).flatMap({ list.step(from: $0, by: offset) }) {
             show(page)
         }
     }

@@ -36,6 +36,11 @@ extension OvviUITests {
         XCTAssertTrue(header.has(\.stringValue, one, within: 3))
         app.typeKey("]", modifierFlags: [.command, .option])
         XCTAssertTrue(header.has(\.stringValue, two, within: 3))
+        // Round the ends, as spaces and tabs step.
+        app.typeKey("]", modifierFlags: [.command, .option])
+        XCTAssertTrue(header.has(\.stringValue, one, within: 3))
+        app.typeKey("[", modifierFlags: [.command, .option])
+        XCTAssertTrue(header.has(\.stringValue, two, within: 3))
         app.typeKey("1", modifierFlags: [.command, .option])
         XCTAssertTrue(header.has(\.stringValue, one, within: 3))
         app.typeKey("2", modifierFlags: [.command, .option])
