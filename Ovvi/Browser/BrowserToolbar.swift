@@ -8,7 +8,8 @@ struct BrowserToolbar: View {
     @State private var text = ""
     @FocusState private var editing: Bool
     @State private var hovering = false
-    @State private var closedAnchor = MenuAnchor.Anchor()
+    @State private var closed: [ClosedBrowserPage] = []
+    @State private var showsClosed = false
     @Environment(\.look) private var look
 
     var body: some View {
@@ -30,13 +31,19 @@ struct BrowserToolbar: View {
             .foregroundStyle(look.paneButton)
             address(id)
             IconButton(symbol: "clock.arrow.circlepath", help: "Recently Closed", size: 22) {
-                if let view = closedAnchor.view {
-                    Task { await ClosedPages.menu(for: browser, page: page, under: view) }
+                Task {
+                    closed = await ClosedPages.pages(on: page.store.machine)
+                    showsClosed = true
                 }
             }
             .accessibilityIdentifier("\(id).closed")
-            .background(MenuAnchor(anchor: closedAnchor))
             .foregroundStyle(look.paneButton)
+            .popover(isPresented: $showsClosed, arrowEdge: .bottom) {
+                ClosedPagesMenu(pages: closed) { picked, how in
+                    showsClosed = false
+                    Task { await ClosedPages.reopen(picked, how: how, from: browser, page: page) }
+                }
+            }
             IconButton(symbol: "hammer", help: "Web Inspector", key: .hotkey("browser.inspector"),
                        size: 22, action: browser.view.showInspector)
                 .disabled(!browser.loaded)
@@ -149,28 +156,4 @@ func addressText(_ address: String) -> Text {
     let host = url.flatMap { url in url.host.map { $0 + (url.port.map { ":\($0)" } ?? "") } }
     let rest = host.map { address.components(separatedBy: $0).dropFirst().joined(separator: $0) } ?? ""
     return Text("\(Text(host ?? address))\(Text(rest).foregroundStyle(.secondary))")
-}
-
-/// The view a menu drops down from.
-struct MenuAnchor: NSViewRepresentable {
-    final class Anchor {
-        weak var view: Spot?
-    }
-
-    /// Clicks go to the control over it.
-    final class Spot: NSView {
-        override func hitTest(_: NSPoint) -> NSView? {
-            nil
-        }
-    }
-
-    let anchor: Anchor
-
-    func makeNSView(context _: Context) -> Spot {
-        let view = Spot()
-        anchor.view = view
-        return view
-    }
-
-    func updateNSView(_: Spot, context _: Context) {}
 }

@@ -1,5 +1,5 @@
-import AppKit
 import HerdrKit
+import SwiftUI
 
 /// The browser pages closed on a machine, newest first, in one file on that machine: every device and session of
 /// the machine shares it.
@@ -19,9 +19,10 @@ nonisolated struct ClosedBrowserPage {
         self.icon = icon.flatMap { $0.utf8.count <= 16 << 10 && $0.hasPrefix("iVBORw0KGgo") ? $0 : nil }
     }
 
-    /// The page's title, else its host, else its file's name.
+    /// The page's title on one line, else its host, else its file's name.
     var shown: String {
-        title.isEmpty ? URL(string: url).map { $0.host() ?? $0.lastPathComponent } ?? url : title
+        title.isEmpty ? URL(string: url).map { $0.host() ?? $0.lastPathComponent } ?? url
+            : title.replacing(/\s+/, with: " ")
     }
 
     var entry: [String: String] {
@@ -63,31 +64,6 @@ enum ClosedPages {
         change(machine) { pages in closed + pages.filter { page in !closed.contains { $0.url == page.url } } }
     }
 
-    /// One line, at most 320 pt wide in the menu's font, with an ellipsis: a menu grows to its widest row.
-    private static func cut(_ title: String) -> String {
-        let font = [NSAttributedString.Key.font: NSFont.menuFont(ofSize: 0)]
-        // 200 characters are past 320 pt: the file holds titles of any length.
-        let title = String(title.prefix(200)).replacing(/\s+/, with: " ")
-        guard (title as NSString).size(withAttributes: font).width > 320 else { return title }
-        var shown = title
-        while !shown.isEmpty, ((shown + "…") as NSString).size(withAttributes: font).width > 320 {
-            shown.removeLast()
-        }
-        return shown.trimmingCharacters(in: .whitespaces) + "…"
-    }
-
-    /// The icon in the title: macOS 27 draws no `NSMenuItem.image` in an app's menus, and draws text attachments.
-    private static func row(_ title: String, icon: String?) -> NSAttributedString {
-        let globe = NSImage(systemSymbolName: "globe", accessibilityDescription: nil)?
-            .withSymbolConfiguration(.init(paletteColors: [.secondaryLabelColor]))
-        let attachment = NSTextAttachment()
-        attachment.image = icon.flatMap { Data(base64Encoded: $0) }.flatMap(NSImage.init(data:)) ?? globe
-        attachment.bounds = NSRect(x: 0, y: -3, width: 16, height: 16)
-        let row = NSMutableAttributedString(attachment: attachment)
-        row.append(NSAttributedString(string: "  " + title, attributes: [.font: NSFont.menuFont(ofSize: 0)]))
-        return row
-    }
-
     /// The icon for the state file: 32 px, so a closed page's entry stays small.
     static func png(_ image: NSImage) -> String? {
         let bitmap = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 32, pixelsHigh: 32, bitsPerSample: 8,
@@ -101,39 +77,69 @@ enum ClosedPages {
         return bitmap.representation(using: .png, properties: [:])?.base64EncodedString()
     }
 
-    /// A pick reopens the page, so it leaves the list. As a link: ⌘-click in the background, ⌥-click to the side,
-    /// ⌘⌥-click in the Mac's browser.
-    static func menu(for browser: Browser, page: Page, under view: MenuAnchor.Spot) async {
-        let machine = page.store.machine
+    /// After any change in flight: a pick just before shows.
+    static func pages(on machine: Machine) async -> [ClosedBrowserPage] {
         await changing[machine.id]?.value
-        let pages = await read(machine)
-        let menu = NSMenu()
-        menu.autoenablesItems = false
-        menu.addItem(.sectionHeader(title: "Recently Closed"))
-        var picked: (page: ClosedBrowserPage, how: Opening)?
-        for (index, closed) in pages.enumerated() {
-            let action = MenuAction {
-                let flags = NSApp.currentEvent?.modifierFlags ?? NSEvent.modifierFlags
-                picked = (closed, PaneSurfaceView.linkKey(flags) ?? .here)
+        return await read(machine)
+    }
+
+    /// A pick reopens the page, so it leaves the list.
+    static func reopen(_ closed: ClosedBrowserPage, how: Opening, from browser: Browser, page: Page) async {
+        change(page.store.machine) { $0.filter { $0.url != closed.url } }
+        await page.openFromPlugin(Registry.browser, arg: closed.url, from: browser.terminalID, how: how,
+                                  background: how != .here)
+    }
+}
+
+/// A popover, not an `NSMenu`, for the floating panels' tint (the material `floatingGlass` puts under its glass): a
+/// menu's glass is too thin over a busy page. As a link: ⌘-click in the background, ⌥-click to the side, ⌘⌥-click
+/// in the Mac's browser.
+struct ClosedPagesMenu: View {
+    let pages: [ClosedBrowserPage]
+    let pick: (ClosedBrowserPage, Opening) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Recently Closed").font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                .padding(.horizontal, 8).padding(.vertical, 4)
+                .accessibilityAddTraits(.isHeader)
+            if pages.isEmpty {
+                EmptyState(symbol: "clock.arrow.circlepath", title: "No Recently Closed Pages", compact: true,
+                           id: "browser.closed.empty")
+                    .frame(maxWidth: .infinity)
             }
-            let item = menu.addItem(withTitle: cut(closed.shown), action: #selector(MenuAction.fire),
-                                    keyEquivalent: "")
-            item.attributedTitle = row(item.title, icon: closed.icon)
-            item.target = action
-            item.representedObject = action
-            item.toolTip = closed.shown + "\n" + closed.url
-            item.identifier = .init("browser.closed.\(index)")
+            ForEach(Array(pages.enumerated()), id: \.offset) { index, closed in
+                Button {
+                    pick(closed, PaneSurfaceView.linkKey(NSApp.currentEvent?.modifierFlags ?? NSEvent.modifierFlags)
+                        ?? .here)
+                } label: {
+                    HStack(spacing: 8) {
+                        icon(closed)
+                        Text(closed.shown).lineLimit(1)
+                    }
+                    .padding(.horizontal, 8)
+                    .frame(maxWidth: .infinity, minHeight: 26, alignment: .leading)
+                }
+                .buttonStyle(ChromeStyle(radius: 6))
+                .help(closed.shown + "\n" + closed.url)
+                .accessibilityIdentifier("browser.closed.\(index)")
+            }
         }
-        if pages.isEmpty {
-            menu.addItem(withTitle: "No Recently Closed Pages", action: nil, keyEquivalent: "").isEnabled = false
+        .padding(6)
+        .frame(width: 320)
+        // No focus ring on the first row: a menu shows none until the keys move.
+        .focusEffectDisabled()
+        .presentationBackground(.regularMaterial)
+    }
+
+    @ViewBuilder
+    private func icon(_ closed: ClosedBrowserPage) -> some View {
+        if let image = closed.icon.flatMap({ Data(base64Encoded: $0) }).flatMap(NSImage.init(data:)) {
+            Image(nsImage: image).resizable().interpolation(.high).frame(width: 16, height: 16)
+                .accessibilityHidden(true)
+        } else {
+            ProgramGlyph(icon: "globe")
         }
-        // Not for a card that closed during a remote read.
-        guard view.window != nil else { return }
-        await menu.popUp(at: NSPoint(x: 0, y: -4), in: view)
-        guard let picked else { return }
-        change(machine) { $0.filter { $0.url != picked.page.url } }
-        await page.openFromPlugin(Registry.browser, arg: picked.page.url, from: browser.terminalID, how: picked.how,
-                                  background: picked.how != .here)
     }
 }
 

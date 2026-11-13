@@ -7,10 +7,14 @@ extension OvviUITests {
         let (tab, shell) = try await newTab("closed")
         try await waitForPrompt(shell)
         let page = try await writePages(from: shell), two = page.replacing("one.html", with: "two.html")
-        try await writeOldClosedPages(from: shell)
+        try await putClosedPagesAside(from: shell)
 
         let kept = try await split(shell)
         try await relabel(kept, "ovvi:browser#e2ec01 \(page)")
+        try await show(tab)
+        XCTAssertTrue(pageText("ovvi-page-one").exists(within: 5))
+        expectEmptyMenu(kept)
+        try await writeOldClosedPages(from: shell)
         let gone = try await split(kept, "down")
         try await relabel(gone, "ovvi:browser#e2ec02 \(two)")
         try await closeTab(showing: page, shell: shell)
@@ -22,7 +26,7 @@ extension OvviUITests {
         element("pane.\(gone).close").click()
         XCTAssertTrue(element("pane.\(gone)").vanishes(within: 3))
 
-        // Newest first, 20 at most: the oldest two went. A title too long ends in an ellipsis.
+        // Newest first, 20 at most: the oldest two went. A title too long stays on one line.
         func expectMenu(_ titles: [String], _ count: Int) {
             element("browser.\(kept).closed").click()
             XCTAssertTrue(closedItem(0).exists(within: 5))
@@ -32,8 +36,8 @@ extension OvviUITests {
         }
         expectMenu(["Two", "One", "Old 0"], 20)
         XCTAssertEqual(closedTitle(19), "Old 17")
-        let long = closedTitle(7)
-        XCTAssertTrue(long.hasPrefix("Old 5 xxx") && long.hasSuffix("…") && long.count < 80, long)
+        XCTAssertTrue(closedTitle(7).hasPrefix("Old 5 xxx"))
+        XCTAssertEqual(closedItem(7).frame.size, closedItem(6).frame.size)
         keepScreenshot("recently closed, dark")
         var tabs = try await tabIDs()
         closedItem(0).click()
@@ -56,16 +60,34 @@ extension OvviUITests {
         try await expect("one.html beside the card") { try await paneLabel(side).hasSuffix(" \(page)") }
     }
 
+    /// With no file, the empty state and no rows; Esc closes it.
+    private func expectEmptyMenu(_ card: String) {
+        element("browser.\(card).closed").click()
+        XCTAssertTrue(element("browser.closed.empty").exists(within: 5))
+        XCTAssertFalse(closedItem(0).exists)
+        keepScreenshot("recently closed, empty")
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(element("browser.closed.empty").vanishes(within: 3))
+    }
+
+    private static let closedFile = "~/.local/state/ovvi/closed-pages.json"
+
+    /// The machine's list, put back after the test: none is an empty list.
+    private func putClosedPagesAside(from shell: String) async throws {
+        let file = Self.closedFile
+        sendAfter("mv -f \(file).e2e \(file) 2>/dev/null || rm -f \(file)\r", to: shell)
+        try await send("mkdir -p ~/.local/state/ovvi && mv -n \(file) \(file).e2e 2>/dev/null; clear\r", to: shell)
+        try await waitFor(shell) { !$0.contains("mkdir") }
+    }
+
     /// 20 older pages, newest first: the cap drops the oldest.
     private func writeOldClosedPages(from shell: String) async throws {
-        let file = "~/.local/state/ovvi/closed-pages.json"
+        let file = Self.closedFile
         let old = (0 ..< 20).map { index in
             let title = "Old \(index)" + (index == 5 ? " " + String(repeating: "x", count: 120) : "")
             return #"{"url":"https://old\#(index).invalid/","title":"\#(title)"}"#
         }
-        sendAfter("mv -f \(file).e2e \(file) 2>/dev/null || rm -f \(file)\r", to: shell)
-        try await send("mkdir -p ~/.local/state/ovvi && mv -n \(file) \(file).e2e 2>/dev/null; "
-            + "printf '%s' '[\(old.joined(separator: ","))]' >\(file) && clear\r", to: shell)
+        try await send("printf '%s' '[\(old.joined(separator: ","))]' >\(file) && clear\r", to: shell)
         try await waitFor(shell) { !$0.contains("printf") }
     }
 
@@ -84,12 +106,11 @@ extension OvviUITests {
         XCTAssertTrue(row.vanishes(within: 3))
     }
 
-    /// The row's text after its icon.
     private func closedTitle(_ index: Int) -> String {
-        closedItem(index).title.trimmingCharacters(in: CharacterSet.whitespaces.union(["\u{FFFC}"]))
+        closedItem(index).label
     }
 
     private func closedItem(_ index: Int) -> XCUIElement {
-        app.menuItems["browser.closed.\(index)"]
+        app.buttons["browser.closed.\(index)"]
     }
 }

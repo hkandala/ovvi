@@ -270,12 +270,14 @@ docked at the bottom of the card. Its own control moves it to a window.
 
 ## Recently closed pages
 
-The Recently Closed button drops a menu down from under it: "Recently
-Closed", then the pages closed on the card's machine, newest first, at most
-20. Each row is one line: the page's icon at 16 pt (the `globe` when it had
-none), then its title, else its host or file name, cut at 320 pt with an
-ellipsis. The row's tooltip has the whole title and the address. The menu says
-"No Recently Closed Pages" when there are none.
+The Recently Closed button opens a popover under it, tinted with the regular
+material as the floating panels are: "Recently Closed", then the pages closed
+on the card's machine, newest first, at most 20, in a list 320 pt wide. Each
+row is one line: the page's icon at 16 pt (the `globe` when it had none),
+then its title, else its host or file name, cut with an ellipsis. The row's
+tooltip has the whole title and the address. With no pages, the popover shows
+the empty state: `clock.arrow.circlepath` and "No Recently Closed Pages".
+Esc or a click outside closes it.
 - **What counts.** A browser card that Ovvi closes: its pane (Close Pane,
   ⌘W), its tab, Close Other Tabs, or its space. A page left by a navigation,
   a Replace Pane, or a pane that a process closes through herdr does not count.
@@ -291,7 +293,7 @@ ellipsis. The row's tooltip has the whole title and the address. The menu says
   and drops an older entry with the same address, and the 21st goes. The
   address, title and icon come from each card's state file, read before the
   close (else the label's address alone). The app reads the file each time
-  the menu opens, and writes it as it writes a state file: in the app on This
+  the popover opens, and writes it as it writes a state file: in the app on This
   Mac, through the machine's shell on a remote machine. One app changes it one write at a time per machine; two devices that
   close pages on one machine at the same moment keep one device's change.
 - The file holds addresses as the machine sees them. A process on the machine
