@@ -199,8 +199,7 @@ final class Latency {
     @ObservationIgnored private var slide: [(Int, Double)] = []
 
     private static func glyphs(_ flags: NSEvent.ModifierFlags) -> String {
-        [(NSEvent.ModifierFlags.control, "⌃"), (.option, "⌥"), (.shift, "⇧"), (.command, "⌘")]
-            .filter { flags.contains($0.0) }.map(\.1).joined()
+        KeyboardShortcut.modifierKeys.filter { flags.contains($0.flag) }.map(\.glyph).joined()
     }
 }
 

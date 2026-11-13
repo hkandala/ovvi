@@ -81,7 +81,7 @@ final class Hotkeys {
 
     private static func overlap(_ one: String?, _ other: String?) -> Bool {
         guard let one, let other else { return true }
-        return one == other || [one, other].contains("plugin") && (one + other).contains("plugin.")
+        return one == other || [one, other].contains("plugin") && [one, other].contains { $0.hasPrefix("plugin.") }
     }
 
     func set(_ hotkey: Hotkey, _ keys: [KeyboardShortcut]) {
@@ -224,19 +224,27 @@ extension KeyboardShortcut {
         "left": .leftArrow, "right": .rightArrow, "up": .upArrow, "down": .downArrow, "return": .return, "tab": .tab,
         "space": .space, "escape": .escape, "delete": .delete, "plus": "+",
     ]
-    private static let modifierNames: [(String, EventModifiers)] = [
-        ("ctrl", .control), ("option", .option), ("shift", .shift), ("cmd", .command),
+    struct ModifierKey {
+        let name: String, modifier: EventModifiers, flag: NSEvent.ModifierFlags, glyph: String
+    }
+
+    /// In the order the Mac draws them: ⌃⌥⇧⌘.
+    static let modifierKeys = [
+        ModifierKey(name: "ctrl", modifier: .control, flag: .control, glyph: "⌃"),
+        ModifierKey(name: "option", modifier: .option, flag: .option, glyph: "⌥"),
+        ModifierKey(name: "shift", modifier: .shift, flag: .shift, glyph: "⇧"),
+        ModifierKey(name: "cmd", modifier: .command, flag: .command, glyph: "⌘"),
     ]
 
     init?(chord text: String) {
         guard let chord = Chord(text) else { return nil }
-        self.init(Self.named[chord.key] ?? KeyEquivalent(Character(chord.key)),
-                  modifiers: EventModifiers(Self.modifierNames.filter { chord.modifiers.contains($0.0) }.map(\.1)))
+        let modifiers = Self.modifierKeys.filter { chord.modifiers.contains($0.name) }.map(\.modifier)
+        self.init(Self.named[chord.key] ?? KeyEquivalent(Character(chord.key)), modifiers: EventModifiers(modifiers))
     }
 
     var chord: String {
         let name = Self.named.first { $0.value == key }?.key ?? String(key.character)
-        let names = Self.modifierNames.filter { modifiers.contains($0.1) }.map(\.0)
+        let names = Self.modifierKeys.filter { modifiers.contains($0.modifier) }.map(\.name)
         return Chord(modifiers: Set(names), key: name)?.description ?? ""
     }
 
@@ -249,8 +257,7 @@ extension KeyboardShortcut {
         ]
         let typed = event.characters(byApplyingModifiers: [])?.lowercased() ?? ""
         let key = event.specialKey.flatMap { specials[$0] } ?? [" ": "space", "\u{1B}": "escape"][typed] ?? typed
-        let names = Self.modifierNames.filter { event.modifierFlags.contains(Self("a", modifiers: $0.1).modifierFlags) }
-            .map(\.0)
+        let names = Self.modifierKeys.filter { event.modifierFlags.contains($0.flag) }.map(\.name)
         guard key.unicodeScalars.allSatisfy({ !(0xF700 ... 0xF8FF).contains($0.value) }),
               let chord = Chord(modifiers: Set(names), key: key) else { return nil }
         self.init(chord: chord.description)

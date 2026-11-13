@@ -9,7 +9,6 @@ extension KeyboardShortcut {
     }
 
     var caps: [String] {
-        let modifiers: [(EventModifiers, String)] = [(.control, "⌃"), (.option, "⌥"), (.shift, "⇧"), (.command, "⌘")]
         let keys: [Character: String] = [
             KeyEquivalent.return.character: "↩", KeyEquivalent.tab.character: "⇥",
             KeyEquivalent.leftArrow.character: "←", KeyEquivalent.rightArrow.character: "→",
@@ -17,17 +16,14 @@ extension KeyboardShortcut {
             KeyEquivalent.delete.character: "⌫", KeyEquivalent.escape.character: "⎋",
             KeyEquivalent.space.character: "Space",
         ]
-        return modifiers.filter { self.modifiers.contains($0.0) }.map(\.1)
+        return Self.modifierKeys.filter { modifiers.contains($0.modifier) }.map(\.glyph)
             + [keys[key.character] ?? String(key.character).uppercased()]
     }
 }
 
 extension KeyboardShortcut {
     var modifierFlags: NSEvent.ModifierFlags {
-        let pairs: [(EventModifiers, NSEvent.ModifierFlags)] = [
-            (.command, .command), (.shift, .shift), (.option, .option), (.control, .control),
-        ]
-        return NSEvent.ModifierFlags(pairs.filter { modifiers.contains($0.0) }.map(\.1))
+        NSEvent.ModifierFlags(Self.modifierKeys.filter { modifiers.contains($0.modifier) }.map(\.flag))
     }
 
     /// ⇧⌘[ types "{", so the key matches with or without Shift's character. With Shift, Tab's character is backtab.
