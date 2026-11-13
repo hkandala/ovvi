@@ -535,6 +535,14 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
   focused text field (`card.typing`), where an arrow key moves the caret instead.
 - **For the user.** Settings ▸ Keyboard Shortcuts: record a key, a conflict and Swap, Reset All; the new key in the
   menu, ⌘K, ⌘/ and the tooltip. ⌘← in File Explorer's tree goes Back, in its editor moves the caret.
+- **Runs.** VM: the first run caught ⌃- no longer going Back on the plugin-API page (Back and Forward had been limited
+  to cards with `history`) and a cleared field with an empty accessibility value; both fixed. Then green in the VM:
+  testARecordedKeyShowsEverywhereAndASwapMovesTheOther, testKeyboardShortcutsScenes (on demand; pictures in
+  `~/Downloads/ovvi-research/p58h/`), testKeyboardShortcutsPanelListsTheCommandsKeys, testAPluginPageCallsEveryPartOfTheAPI,
+  testFileExplorerKeepsOneTreeForItsPageAndItsFiles, testFileExplorerFindBarAndFinderKeys, testSettingsPagesSearchAndLook,
+  testKeysMoveTheKeyboardSwapAndResize, testGoBackAndForwardStepThroughTheTabsShownAcrossSpaces,
+  testControlTabStepsTabsNeverPanes. testAFileCardEditsSavesAndReloadsItsFile failed in the VM on its path crumb
+  (`/ › tmp › …`: the VM's `git rev-parse` gave no root), not on a key: for the final CI round.
 
 ### Track T: tabs: scroll to a new tab, back and forward through tab history (items 27, 33)
 
