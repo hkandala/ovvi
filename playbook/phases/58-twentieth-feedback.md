@@ -512,6 +512,30 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
     Then: "just one more thing, for the hotkeys one, make sure to show the updated shortcuts in cmd+k as well, and
     anywhere else where we show shortcuts in the ui".
 
+#### Track H: Findings
+
+- **Cause.** Keys were literals in about 40 places: `KeyboardShortcut` statics and inline `.init` in the command lists,
+  a second-key table, the terminal's line keys in `herdrKey`, the plugin cards' Back and Forward in Swift and ⌘← ⌘→ in
+  the plugin runtime, File Explorer's ⌥⌘F in its page, and glyphs in Settings notes and the welcome. Nothing could
+  change them, and the ⌘/ panel listed only what the key window's command list had.
+- **Fix.** One registry, `Hotkeys`: each action has an id, a group, default keys and a scope; the user's keys live in
+  settings.json `keys`, so a test's config folder keeps them out of the user's. Menus, the palette, ⌘/, tooltips, notes
+  and the welcome read it; plugin commands join it from their manifests (any chord now, `Chord` in HerdrKit), so
+  third-party plugins get their own group. Settings ▸ Keyboard Shortcuts searches, records (⎋ cancels, ⌫ clears),
+  asks before taking another action's key and offers Swap, and resets per row or all. ⌘/ shows only the important
+  keys, with Customize….
+- **Decisions.** A scoped action has its key only where it works (Reload Page over a browser, Insert Path over a
+  terminal), as Save already did: a disabled menu item swallows its key, and Settings' conflicts then match the menu
+  bar. macOS's keys (⌘Q, ⌘C, ⌃⌘F …) stay fixed and never become an action's. Keys that belong to a control stay
+  fixed: Return, Esc, arrows and typing in lists, fields, the chooser, dialogs, the chat composer, the overview's Esc,
+  a page's in-list keys (a Git diff's `[` `]`). A recorded key is the action's only key. Track T's Go Back and Go
+  Forward joined the registry; ⌃⌘← ⌃⌘→ clash with nothing (Resize Pane lost them in a9bd14cc; PaneTests' leftover
+  ⌃⌘→ press went).
+- **Fix (Back and Forward).** Swift takes them ahead of the page on a card with `history`; the runtime reports a
+  focused text field (`card.typing`), where an arrow key moves the caret instead.
+- **For the user.** Settings ▸ Keyboard Shortcuts: record a key, a conflict and Swap, Reset All; the new key in the
+  menu, ⌘K, ⌘/ and the tooltip. ⌘← in File Explorer's tree goes Back, in its editor moves the caret.
+
 ### Track T: tabs: scroll to a new tab, back and forward through tab history (items 27, 33)
 
 27. "in tab bar, when a new tab is opened and that tab is not in view in tab scroll can we move it to that position
