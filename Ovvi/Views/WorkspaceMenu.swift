@@ -10,7 +10,7 @@ struct WorkspaceMenu: View {
     let openSession: () -> Void
 
     var body: some View {
-        let rows = pages.list.flatMap { page in page.store.workspaces.map { (page, $0) } }
+        let rows = pages.list.flatMap { page in page.sidebarWorkspaces.map { (page, $0) } }
         FilterList(prompt: "Filter or create…", name: "workspaces", items: items,
                    start: rows.firstIndex { $0.0 === page && $0.1.id == page.selectedWorkspaceID } ?? 0,
                    maxHeight: 340, pinned: 2, autofocus: page.dragging == nil) { open = false }
@@ -22,7 +22,7 @@ struct WorkspaceMenu: View {
 
     private func items(_ filter: String) -> [FilterList.Item] {
         let workspaces = pages.list.flatMap { page in
-            page.store.workspaces.filter { $0.label.matches(filter) }.map { workspace in
+            page.sidebarWorkspaces.filter { $0.label.matches(filter) }.map { workspace in
                 FilterList.Item(id: "\(page.id).\(workspace.id)",
                                 state: workspace.state,
                                 title: workspace.label,

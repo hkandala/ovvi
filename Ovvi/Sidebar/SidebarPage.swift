@@ -168,8 +168,9 @@ struct SidebarPage: View {
                 case let .active(point):
                     if frames.point == nil {
                         hovering = true
-                        page.sortHold = page.sortHold ?? unpinnedOrder()
                     }
+                    // On every move: a late `onDisappear` of an older view of this page can clear it.
+                    page.holdSort()
                     frames.point = point
                 case .ended:
                     frames.point = nil
@@ -180,7 +181,7 @@ struct SidebarPage: View {
             }
             .task(id: leaves) {
                 try? await Task.sleep(for: .seconds(1))
-                if !Task.isCancelled, !hovering, page.sortHold != nil {
+                if !Task.isCancelled, !hovering, !pages.overview, page.sortHold != nil {
                     page.sortHold = nil
                 }
             }
@@ -188,12 +189,16 @@ struct SidebarPage: View {
             // hold never clears.
             .onChange(of: spaceOrder) {
                 page.sortHold = nil
-                if hovering {
-                    page.sortHold = unpinnedOrder()
+                if hovering || pages.overview {
+                    page.holdSort()
                 }
             }
             // Gone under the pointer (another page, the sidebar hidden), it never sees the pointer leave.
-            .onDisappear { page.sortHold = nil }
+            .onDisappear {
+                if !pages.overview {
+                    page.sortHold = nil
+                }
+            }
         }
     }
 }
@@ -282,12 +287,6 @@ private extension SidebarPage {
         let pinned = rows(in: top).map(Item.row), others = rows(in: rest).map(Item.row)
         let line = !pinned.isEmpty && !others.isEmpty && !page.store.onlyPinned
         return pinned + (region || line ? [.pins] : []) + others
-    }
-
-    /// The unpinned groups' ids in the current sort.
-    func unpinnedOrder() -> [String] {
-        let pinned = page.store.pins
-        return page.sorted(page.store.groups.filter { !pinned.contains($0[0].id) }).map(\.[0].id)
     }
 
     private func agents(of workspace: HostStore.Workspace) -> [HostStore.Pane] {

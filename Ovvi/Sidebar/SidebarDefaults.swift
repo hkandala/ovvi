@@ -41,7 +41,14 @@ extension Page {
             + sorted(groups.filter { !pinned.contains($0[0].id) && !hidden.contains($0[0].id) })
     }
 
-    /// Recent: the group whose agent changed state last first, held still under the pointer.
+    /// Holds the unpinned spaces' shown order, if not held already.
+    func holdSort() {
+        if sortHold == nil {
+            sortHold = sorted(store.groups.filter { !store.pins.contains($0[0].id) }).map(\.[0].id)
+        }
+    }
+
+    /// Recent: the group whose agent changed state last first, held still under the pointer and in the overview.
     func sorted(_ groups: [[HostStore.Workspace]]) -> [[HostStore.Workspace]] {
         guard spaceOrder == .recent else { return groups }
         let place = Dictionary(uniqueKeysWithValues: (sortHold ?? []).enumerated().map { ($1, $0) })

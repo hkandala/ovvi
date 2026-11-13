@@ -55,7 +55,10 @@ struct OverviewPage: View, Equatable {
         }
         // Another session shows: its tiles report no leaving, and would stay live out of view; a scroll that goes with
         // it never ends.
+        // Recent's order holds still while the overview shows, as under the sidebar's pointer.
+        .onAppear { page.holdSort() }
         .onDisappear {
+            page.sortHold = nil
             pages.overviewTabs[page.id] = nil
             pages.overviewScrolling = false
             pages.settleOverview()
