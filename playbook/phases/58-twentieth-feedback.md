@@ -75,7 +75,7 @@ fails; lessons.md's rule makes it 60 s (round 8's final CI, '### Final CI, round
    the fix, and figure is there a better way to fix that white block issue when selecting without removing the native
    drag".
 
-## Track C: a smoother chat (items 10, 11, 12, 13, 15, 16)
+## Track C: a smoother chat (items 10, 11, 12, 13, 15, 16, 22)
 
 10. "on new chat, let's move it bit up such that propmt input is vertically center aligned, right now with logo and
     text it feels bit off"
@@ -94,6 +94,10 @@ fails; lessons.md's rule makes it 60 s (round 8's final CI, '### Final CI, round
     kinda thing? i also see table contetn is getting clipped vertically?" (`r9-2.33.00.png`, `r9-2.33.03.png`,
     `r9-2.33.42.png`)
 16. "let's increase propmt input max height to 10 lines"
+22. "check this, i see chat transcript and input moves at different time when a side pane gets opened up also with
+    chat view the chat is very lagging with the side pane opening etc, it might be because of current system load, but
+    we should fix that input and chat moving at different times, both should adjust at once, so it doesn't feel like
+    too much motion" (`.build/fb57/r9-split-5.08.57.mov`, 12.5 s at 240 fps: a chat card while a pane opens beside it)
 
 ## Track X: Codex chats from the transcript (item 14)
 
