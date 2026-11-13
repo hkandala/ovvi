@@ -106,6 +106,7 @@ struct TrustPrompt: View {
             .padding(.top, 4)
         }
         .padding(24)
+        .scrollsWhenShort()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(look.cardSolid(keyboard: lit))
     }

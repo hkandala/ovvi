@@ -13,11 +13,14 @@ struct EmptyState<Actions: View>: View {
 
     var body: some View {
         if !reconnecting {
-            content
+            ViewThatFits(in: .vertical) {
+                content(compact: compact)
+                content(compact: true).scrollsWhenShort()
+            }
         }
     }
 
-    private var content: some View {
+    private func content(compact: Bool) -> some View {
         VStack(spacing: compact ? 6 : 12) {
             Image(symbol: symbol).font(.system(size: compact ? 20 : 32, weight: .light)).foregroundStyle(.secondary)
                 .symbolRenderingMode(.hierarchical).accessibilityHidden(true)
@@ -40,6 +43,16 @@ struct EmptyState<Actions: View>: View {
         .multilineTextAlignment(.center)
         .frame(maxWidth: 420)
         .padding(compact ? 12 : 24)
+    }
+}
+
+extension View {
+    /// Scrolls where it does not fit (a short card), instead of running over what is above it (the card's header).
+    func scrollsWhenShort() -> some View {
+        ViewThatFits(in: .vertical) {
+            self
+            ScrollView { self }
+        }
     }
 }
 

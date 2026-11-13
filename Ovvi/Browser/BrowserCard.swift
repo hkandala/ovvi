@@ -125,6 +125,7 @@ private struct Asking: View {
             .padding(.top, 6)
         }
         .padding(24)
+        .scrollsWhenShort()
     }
 }
 
