@@ -37,13 +37,13 @@ import Testing
     defer { try? FileManager.default.removeItem(at: file) }
     let shell = try await RelayExec.start()
     #expect(await localExec.read(home: path) == nil)
-    #expect(await shell.read(home: path) == nil)
+    #expect(await shell.read(home: path, timeout: failureBound) == nil)
     try Data("{\"a\":\"é\"}\n".utf8).write(to: file)
     #expect(await localExec.read(home: path) == #"{"a":"é"}"#)
-    #expect(await shell.read(home: path) == #"{"a":"é"}"#)
+    #expect(await shell.read(home: path, timeout: failureBound) == #"{"a":"é"}"#)
     try Data().write(to: file)
     #expect(await localExec.read(home: path) == nil)
-    #expect(await shell.read(home: path) == nil)
+    #expect(await shell.read(home: path, timeout: failureBound) == nil)
 }
 
 /// The app's own environment has no `sh` on its PATH: a write through one would fail.
@@ -53,7 +53,7 @@ import Testing
     var env = localExec.environment
     env["HOME"] = home.path
     let mac = ProcessExec(["HOME": home.path, "PATH": "/nonexistent"], herdr: nil, asked: .now)
-    let shell = try await RelayExec(relay: #require(Relay.start(ProcessExec.spawn(["perl", "-e", Relay.script], env))))
+    let shell = try await RelayExec(relay: Relay.started(env))
     for (name, exec) in [("mac", mac as any Exec), ("shell", shell)] {
         let path = "\(name)/s/a.json"
         await exec.write(home: path, #"{"a":1}"#)

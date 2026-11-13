@@ -55,6 +55,10 @@ tart exec "$vm" zsh -c "$live" || tart exec "$vm" zsh -c "sudo /sbin/umount -f '
 tart exec "$vm" zsh -c "[[ \$(readlink /Applications/Xcode.app) == '$guest/xcode' ]] && xcodebuild -checkFirstLaunchStatus ||
     { sudo ln -sfn '$guest/xcode' /Applications/Xcode.app && sudo xcode-select -s /Applications/Xcode.app &&
       sudo xcodebuild -license accept && sudo xcodebuild -runFirstLaunch; }" >/dev/null
+# /usr/bin/git finds the shared Xcode's git through xcrun, which takes about 9 s over the share until xcrun's cache in
+# the guest's temporary folder (emptied at each boot) has it: longer than the app's 5 s for a git root. Found here,
+# ahead of the tests.
+tart exec "$vm" git --version >/dev/null
 
 # APFS clones: instant, and the next build cannot change a run under way.
 cp -cR "$dd/Build/Products" scripts OvviUITests/Fixtures "$run/"

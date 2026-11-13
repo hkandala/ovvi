@@ -10,6 +10,8 @@ public actor SSHExec: Exec {
     nonisolated let socket: String
     /// The master's own options ahead of the user's config: the tests' sshd takes a config of its own.
     nonisolated let options: [String]
+    /// How long the relay may take to greet: a starved Mac (the tests') takes seconds to start a process.
+    nonisolated let relayTimeout: Duration
     /// A check costs a `kill(pid, 0)`, not a process. A reused pid reads as a live master until its relay is needed
     /// again and does not start.
     var connection: pid_t?
@@ -29,9 +31,10 @@ public actor SSHExec: Exec {
     var herdrForwards: [String: Forward] = [:]
     var herdrForwarding: [String: Task<String, Error>] = [:]
 
-    public init(target: String, local: ProcessExec, options: [String] = []) {
+    public init(target: String, local: ProcessExec, options: [String] = [], relayTimeout: Duration = .seconds(10)) {
         self.target = target
         self.options = options
+        self.relayTimeout = relayTimeout
         environment = local.environment
         let hash = SHA256.hash(data: Data(target.utf8)).prefix(4).map { String(format: "%02x", $0) }.joined()
         // Per app: another Ovvi (a test's, a second build) unlinks a socket at start and ends its master at quit; it
@@ -66,7 +69,7 @@ public actor SSHExec: Exec {
         }
         let task = Task { () -> Relay? in
             guard let channel = try? session(["perl", "-e", Relay.script]) else { return nil }
-            return await Relay.start(channel)
+            return await Relay.start(channel, timeout: relayTimeout)
         }
         relayStart = task
         let started = await task.value

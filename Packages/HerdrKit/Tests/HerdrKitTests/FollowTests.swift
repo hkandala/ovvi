@@ -151,33 +151,41 @@ func `a dropped follow leaves no process`(awk: Bool) async throws {
     }
 }
 
-/// A pi session can pass 100 MB: its backlog loads at `head`'s speed (0.9 s for 80 MB at a load of 15), not at macOS
-/// `tail`'s 17 MB a second (5.3 s). Measured against `tail` on the same file, so a busy Mac slows both, from each one's
-/// first line to its last: the follow starts a dozen processes ahead of its first read, `tail` one, and on a starved
-/// Mac a process can take seconds to start. Each is timed twice, in turns, and the faster time counts: a stall
-/// lengthens one run, not both.
-@Test func `a big backlog loads fast`() async throws {
-    let file = FileManager.default.temporaryDirectory.appending(path: "ovvi-backlog-\(UUID().uuidString).jsonl")
-    defer { try? FileManager.default.removeItem(at: file) }
-    try Data(String(repeating: String(repeating: "x", count: 7999) + "\n", count: 5000).utf8).write(to: file)
-    var tail = Duration.seconds(1000), follow = tail
-    for _ in 0 ..< 2 {
-        var start: ContinuousClock.Instant?
-        for await _ in try await localExec.run(["tail", "-c", "+1", file.path]).lines where start == nil {
-            start = .now
-        }
-        tail = min(tail, ContinuousClock.now - (start ?? .now))
-        start = nil
-        for await line in try await lineByLine(file.path, from: FileMark()) {
-            if case .line = line, start == nil {
-                start = .now
+/// A pi session can pass 100 MB, and macOS's `tail` copies 17 MB a second: the backlog goes out through `head` from a
+/// seek, and `tail` reads the file only from the backlog's end (the check of its last byte, then the follow).
+@Test func `a big backlog goes out through head, never tail`() async throws {
+    let folder = try scratchFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let file = folder.appending(path: "backlog.jsonl"), calls = folder.appending(path: "tail-calls")
+    try Data(String(repeating: String(repeating: "x", count: 99) + "\n", count: 1000).utf8).write(to: file)
+    let tail = folder.appending(path: "tail")
+    try Data("#!/bin/sh\necho \"$*\" >>'\(calls.path)'\nexec /usr/bin/tail \"$@\"\n".utf8).write(to: tail)
+    try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: tail.path)
+    var env = localExec.environment
+    env["PATH"] = folder.path + ":/usr/bin:/bin"
+    var lines = 0
+    // A line written after the backlog comes through the follow's own `tail`.
+    following: for await batch in try await ProcessExec(env, herdr: nil, asked: .now)
+        .follow(file.path, from: FileMark())
+    {
+        for line in batch {
+            if case .line("y", _) = line {
+                break following
+            } else if case .line = line {
+                lines += 1
             } else if case .loaded = line {
-                break
+                let handle = try FileHandle(forWritingTo: file)
+                try handle.seekToEnd()
+                try handle.write(contentsOf: Data("y\n".utf8))
+                try handle.close()
             }
         }
-        follow = min(follow, ContinuousClock.now - (start ?? .now))
     }
-    #expect(follow < tail / 2, "follow \(follow), tail \(tail)")
+    #expect(lines == 1000)
+    let starts = try String(contentsOf: calls, encoding: .utf8).split(separator: "\n")
+        .filter { $0.hasSuffix(file.path) }.map { $0.split(separator: " ")[1] }
+    // The check of the backlog's last byte, then the follow.
+    #expect(starts == ["+100000", "+100001"], "\(starts)")
 }
 
 @Test func `a burst comes in few batches`() async throws {

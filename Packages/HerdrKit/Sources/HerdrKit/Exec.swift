@@ -23,7 +23,12 @@ public extension Exec {
     func forgetHerdr() async {}
 
     func read(home path: String) async -> String? {
-        let text = try? await output(["sh", "-c", #"cat "$HOME/$1" 2>/dev/null"#, "sh", path], timeout: .seconds(5))
+        await read(home: path, timeout: .seconds(5))
+    }
+
+    /// Through the machine's shell.
+    func read(home path: String, timeout: Duration) async -> String? {
+        let text = try? await output(["sh", "-c", #"cat "$HOME/$1" 2>/dev/null"#, "sh", path], timeout: timeout)
         return text?.isEmpty == false ? text : nil
     }
 

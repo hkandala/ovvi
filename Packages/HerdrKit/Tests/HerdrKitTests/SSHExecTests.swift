@@ -18,7 +18,7 @@ import Testing
 
 @Test func `relay carries runs over one process`() async throws {
     let local = localExec
-    let relay = try #require(await Relay.start(ProcessExec.spawn(["perl", "-e", Relay.script], local.environment)))
+    let relay = try await Relay.started(local.environment)
     let failing = try relay.run("echo out; echo err >&2; exit 3")
     let echo = try relay.run("cat")
     let sleeping = try relay.run("sleep 100")
@@ -44,12 +44,18 @@ import Testing
     #expect(await watching.exit().status == 9)
 }
 
+extension Relay {
+    /// The machine's relay, here on This Mac.
+    static func started(_ environment: [String: String]) async throws -> Relay {
+        try #require(await start(ProcessExec.spawn(["perl", "-e", script], environment), timeout: failureBound))
+    }
+}
+
 struct RelayExec: Exec {
     let relay: Relay
 
     static func start() async throws -> RelayExec {
-        try await RelayExec(relay: #require(Relay.start(ProcessExec.spawn(["perl", "-e", Relay.script],
-                                                                          localExec.environment))))
+        try await RelayExec(relay: Relay.started(localExec.environment))
     }
 
     func run(_ argv: [String]) throws -> Channel {
@@ -84,7 +90,7 @@ struct RelayExec: Exec {
 }
 
 @Test func `relay passes NUL bytes unchanged`() async throws {
-    let relay = try #require(await Relay.start(ProcessExec.spawn(["perl", "-e", Relay.script], localExec.environment)))
+    let relay = try await Relay.started(localExec.environment)
     let run = try relay
         .run(#"printf 'a\000b c\000\n'; i=0; while [ $i -lt 20000 ]; do printf 'x/y z\000'; i=$((i+1)); done"#)
     run.closeInput()

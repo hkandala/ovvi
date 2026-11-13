@@ -161,12 +161,13 @@ private func git(_ script: String, in folder: URL) async throws {
     let repo = folder.path + "/r/.git/"
     let refs = ["refs", "packed-refs", "reftable", "config"].map { repo + $0 }
     for exec in try await [localExec as any Exec, RelayExec.start()] {
-        #expect(await GitStatus.files(folder.path + "/r", exec: exec) == [repo + "HEAD"] + refs)
-        #expect(await GitStatus.files(folder.path + "/r/sub", exec: exec) == [repo + "HEAD"] + refs)
+        let files = { (path: String) in await GitStatus.files(folder.path + path, exec: exec, timeout: failureBound) }
+        #expect(await files("/r") == [repo + "HEAD"] + refs)
+        #expect(await files("/r/sub") == [repo + "HEAD"] + refs)
         // git prints the common folder from the physical folder, `../../.git` here.
-        #expect(await GitStatus.files(folder.path + "/link/in", exec: exec) == [repo + "HEAD"] + refs)
-        #expect(await GitStatus.files(folder.path + "/w", exec: exec) == [repo + "worktrees/w/HEAD"] + refs)
-        #expect(await GitStatus.files(folder.path, exec: exec) == nil)
+        #expect(await files("/link/in") == [repo + "HEAD"] + refs)
+        #expect(await files("/w") == [repo + "worktrees/w/HEAD"] + refs)
+        #expect(await files("") == nil)
     }
 }
 
@@ -177,7 +178,7 @@ private func git(_ script: String, in folder: URL) async throws {
         let folder = try scratchFolder()
         defer { try? FileManager.default.removeItem(at: folder) }
         try await git("git init -q -b main; git commit -q --allow-empty -m a; git branch other", in: folder)
-        let files = try #require(await GitStatus.files(folder.path, exec: exec))
+        let files = try #require(await GitStatus.files(folder.path, exec: exec, timeout: failureBound))
         let count = Mutex(0)
         let watch = Task {
             for await _ in Files.watch(paths: files, every: .milliseconds(200), exec: exec) {

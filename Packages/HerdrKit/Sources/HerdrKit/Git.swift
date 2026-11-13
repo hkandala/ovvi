@@ -41,9 +41,9 @@ public extension GitStatus {
     /// Git's own files that the head and the counts come from: the work tree's `HEAD`, and its repository's refs
     /// (loose, packed or a reftable) and `config` (the upstream). A linked worktree's `HEAD` is in its own git folder.
     /// Nil outside a repository.
-    static func files(_ root: String, exec: any Exec) async -> [String]? {
+    static func files(_ root: String, exec: any Exec, timeout: Duration = .seconds(5)) async -> [String]? {
         let lines = await (try? exec.output(["git", "-C", root, "rev-parse", "--absolute-git-dir", "--git-common-dir"],
-                                            timeout: .seconds(5)))?.split(separator: "\n").map(String.init) ?? []
+                                            timeout: timeout))?.split(separator: "\n").map(String.init) ?? []
         guard lines.count == 2, lines[0].hasPrefix("/") else { return nil }
         // Relative only when it is the git folder itself (from the physical folder, so not to be joined to `root`).
         let common = lines[1].hasPrefix("/") ? lines[1] : lines[0]

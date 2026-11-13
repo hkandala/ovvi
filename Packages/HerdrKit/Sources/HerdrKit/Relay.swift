@@ -28,11 +28,11 @@ final class Relay: Sendable {
         self.channel = channel
     }
 
-    static func start(_ channel: Channel) async -> Relay? {
+    static func start(_ channel: Channel, timeout: Duration) async -> Relay? {
         let relay = Relay(channel)
         let (greeted, greeting) = AsyncStream<Bool>.makeStream()
         Task { await relay.route(greeting) }
-        let ready = try? await withTimeout(.seconds(10), onTimeout: channel.terminate) {
+        let ready = try? await withTimeout(timeout, onTimeout: channel.terminate) {
             await greeted.first { _ in true } ?? false
         }
         return ready == true ? relay : nil

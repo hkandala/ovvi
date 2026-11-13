@@ -71,8 +71,8 @@ func `a remote machine's requests go over a forwarded socket, after a server res
     let session = "ovvi-e2e-\(UUID().uuidString.prefix(6).lowercased())"
     try #require(await shell(sessionScript, "up", session) == 0)
     defer { await shell(sessionScript, "down", session) }
-    let exec = SSHExec(target: sshd.alias, local: localExec, options: sshd.options)
-    let client = HerdrClient(session: session, exec: exec)
+    let exec = SSHExec(target: sshd.alias, local: localExec, options: sshd.options, relayTimeout: failureBound)
+    let client = HerdrClient(session: session, exec: exec, timeout: failureBound)
     _ = try await client.snapshot()
     let forwards = await exec.herdrForwards
     let local = try #require(forwards[session]?.local)
@@ -115,8 +115,9 @@ func `a host that refuses to forward a socket says so`() async throws {
     let session = "ovvi-e2e-\(UUID().uuidString.prefix(6).lowercased())"
     try #require(await shell(sessionScript, "up", session) == 0)
     defer { await shell(sessionScript, "down", session) }
-    let exec = SSHExec(target: sshd.alias, local: localExec, options: sshd.options)
+    let exec = SSHExec(target: sshd.alias, local: localExec, options: sshd.options, relayTimeout: failureBound)
     defer { exec.disconnect() }
     let refused = "\(sshd.alias) refuses to forward herdr's socket: Ovvi needs sshd's AllowStreamLocalForwarding"
-    await #expect(throws: HerdrError.failed(refused)) { try await HerdrClient(session: session, exec: exec).snapshot() }
+    let client = HerdrClient(session: session, exec: exec, timeout: failureBound)
+    await #expect(throws: HerdrError.failed(refused)) { try await client.snapshot() }
 }

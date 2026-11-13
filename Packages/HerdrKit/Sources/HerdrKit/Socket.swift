@@ -131,12 +131,14 @@ enum UnixSocket {
         source.resume()
     }
 
-    /// Nil once all is sent, else why not.
+    /// Nil once all is sent or the other end has closed (the reading ends then, with what that end said), else why
+    /// not. ssh closes a forwarded connection that the machine refused, often before the request is sent. No caller
+    /// writes after its own `closeInput`, which would fail the same way.
     private static func send(_ bytes: [UInt8], _ handle: Int32) -> String? {
         var sent = 0
         while sent < bytes.count {
             let count = bytes[sent...].withUnsafeBytes { Darwin.send(handle, $0.baseAddress, $0.count, 0) }
-            guard count > 0 || errno == EINTR else { return String(cString: strerror(errno)) }
+            guard count > 0 || errno == EINTR else { return errno == EPIPE ? nil : String(cString: strerror(errno)) }
             sent += max(count, 0)
         }
         return nil
