@@ -8,6 +8,7 @@ public protocol Exec: Sendable {
     func read(home path: String) async -> String?
     /// Each writer goes through its own temporary file, then a rename; last writer wins. Only the user can read it.
     func write(home path: String, _ line: String) async
+    func remove(home path: String) async
     var isRemote: Bool { get }
 }
 
@@ -174,6 +175,10 @@ public final class ProcessExec: Exec {
         if written != bytes.count || rename(temp, file) != 0 {
             unlink(temp)
         }
+    }
+
+    public func remove(home path: String) async {
+        unlink(URL(filePath: environment["HOME"] ?? NSHomeDirectory()).appending(path: path).path)
     }
 
     public func forgetHerdr() async {

@@ -46,22 +46,27 @@ import Testing
     #expect(await shell.read(home: path) == nil)
 }
 
+/// The app's own environment has no `sh` on its PATH: a write through one would fail.
 @Test func `a state file writes the same on This Mac and through a shell, only for the user`() async throws {
-    let top = ".ovvi-write-\(UUID().uuidString)"
-    let folder = URL(filePath: NSHomeDirectory()).appending(path: top)
-    defer { try? FileManager.default.removeItem(at: folder) }
-    for (name, exec) in try await [("mac", localExec as any Exec), ("shell", RelayExec.start())] {
-        let path = "\(top)/\(name)/s/a.json"
+    let home = try scratchFolder()
+    defer { try? FileManager.default.removeItem(at: home) }
+    var env = localExec.environment
+    env["HOME"] = home.path
+    let mac = ProcessExec(["HOME": home.path, "PATH": "/nonexistent"], herdr: nil, asked: .now)
+    let shell = try await RelayExec(relay: #require(Relay.start(ProcessExec.spawn(["perl", "-e", Relay.script], env))))
+    for (name, exec) in [("mac", mac as any Exec), ("shell", shell)] {
+        let path = "\(name)/s/a.json"
         await exec.write(home: path, #"{"a":1}"#)
         await exec.write(home: path, #"{"a":"é"}"#)
-        #expect(await localExec.read(home: path) == #"{"a":"é"}"#)
+        #expect(await mac.read(home: path) == #"{"a":"é"}"#)
         let mode = { (path: String) in
-            try (FileManager.default
-                .attributesOfItem(atPath: NSHomeDirectory() + "/" + path)[.posixPermissions] as? Int)
+            try FileManager.default.attributesOfItem(atPath: home.path + "/" + path)[.posixPermissions] as? Int
         }
-        #expect(try mode("\(top)/\(name)/s/a.json") == 0o600)
-        #expect(try mode("\(top)/\(name)/s") == 0o700 && mode("\(top)/\(name)") == 0o700)
-        #expect(try FileManager.default.contentsOfDirectory(atPath: folder.path + "/\(name)/s") == ["a.json"])
+        #expect(try mode("\(name)/s/a.json") == 0o600)
+        #expect(try mode("\(name)/s") == 0o700 && mode(name) == 0o700)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: home.path + "/\(name)/s") == ["a.json"])
+        await exec.remove(home: path)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: home.path + "/\(name)/s") == [])
     }
 }
 
@@ -77,6 +82,8 @@ import Testing
     try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: tool.path)
     #expect(try ProcessExec.executable("true", path: path).path == tool.path)
     #expect(try ProcessExec.executable("/bin/sh", path: nil).path == "/bin/sh")
+    // No PATH: env's default.
+    #expect(try ProcessExec.executable("true", path: nil).path == "/usr/bin/true")
     // A folder of the name is no program.
     #expect(throws: HerdrError.failed("tool: command not found")) { try ProcessExec.executable("tool", path: path) }
 }
