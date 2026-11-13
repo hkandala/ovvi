@@ -1,7 +1,7 @@
 {
   "name": "@ovvi/explorer",
   "license": "AGPL-3.0-only",
-  "version": "1.15.0",
+  "version": "1.15.1",
   "private": true,
   "description": "Files and folders",
   "keywords": ["files", "tree", "folder", "finder"],

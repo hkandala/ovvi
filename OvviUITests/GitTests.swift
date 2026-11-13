@@ -274,10 +274,16 @@ extension OvviUITests {
         }, "old \(old.exists ? old.frame : .zero), new \(far.exists ? far.frame : .zero)")
         keepScreenshot("diff card, side by side")
         XCTAssertFalse(page.buttons["a.txt"].exists)
-        element("pane.\(card).diff.file-list").click()
+        // At the left, before Git Home, its symbol saying whether the list shows, as the File Explorer's File Tree.
+        let list = element("pane.\(card).diff.file-list")
+        XCTAssertLessThan(list.frame.maxX, element("pane.\(card).diff.home").frame.minX)
+        XCTAssertFalse(list.isSelected)
+        list.click()
         XCTAssertTrue(page.buttons["a.txt"].exists(within: 3))
-        element("pane.\(card).diff.file-list").click()
+        XCTAssertTrue(list.has(\.isSelected, true, within: 3))
+        list.click()
         XCTAssertTrue(page.buttons["a.txt"].vanishes(within: 3))
+        XCTAssertTrue(list.has(\.isSelected, false, within: 3))
     }
 
     private func makeRepo(_ repo: String, in pane: String) async throws -> String {

@@ -377,8 +377,9 @@ export interface OvviError extends Error {
   change and then sends `theme`. The app's `card.css` loads before the
   plugin's CSS: system fonts at 13 px (`--font-size`), no margin, a clear
   background, so the card's fill draws behind the page. It also has the
-  class `ovvi-sidebar` for a sidebar that slides in and out as the system's
-  do (0.25 s, CSS `ease`, none with Reduce Motion): put it on a flex
+  class `ovvi-sidebar` for a sidebar that slides in and out as the window's
+  sidebar does (0.3 s ease-in-out, with a fade, none with Reduce Motion; the
+  variable `--sidebar-motion` holds that timing): put it on a flex
   child with `--sidebar-width`, and set the attribute `data-closed` to slide
   it out of its row (its parent clips with `overflow: hidden`). The content
   beside it takes the room. The class `end` puts it on the right.

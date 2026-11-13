@@ -1,6 +1,7 @@
-/* The card's fill draws behind the page. */
+/* The card's fill draws behind the page. The window's sidebar motion is every sidebar's in a card. */
 :root {
   --font-size: 13px;
+  --sidebar-motion: 0.3s ease-in-out;
 }
 html,
 body {
@@ -10,24 +11,25 @@ body {
   color: var(--text);
   font: var(--font-size) system-ui;
 }
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --sidebar-motion: 0s;
+  }
+}
 .ovvi-sidebar {
   flex: none;
   box-sizing: border-box;
   width: var(--sidebar-width);
-  transition: margin 0.25s ease, visibility 0.25s;
+  transition: margin var(--sidebar-motion), opacity var(--sidebar-motion), visibility var(--sidebar-motion);
 }
 .ovvi-sidebar[data-closed] {
   margin-inline-start: calc(-1 * var(--sidebar-width));
+  opacity: 0;
   visibility: hidden;
 }
 .ovvi-sidebar.end[data-closed] {
   margin-inline-start: 0;
   margin-inline-end: calc(-1 * var(--sidebar-width));
-}
-@media (prefers-reduced-motion: reduce) {
-  .ovvi-sidebar {
-    transition: none;
-  }
 }
 /* A hidden page keeps its layout and its scroll. */
 .ovvi-page {

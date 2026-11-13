@@ -376,7 +376,12 @@ export async function make(place: Page, root: string, source: string) {
     clean.hidden = (Boolean(files.length) || patch === undefined) && !none
     clean.querySelector("h2")!.textContent = none ? "No matching files" : "No changes"
     clean.style.setProperty("--symbol", `var(${sf(none ? "magnifyingglass" : "checkmark.circle")})`)
-    api.controls.set("diff.file-list", { enabled: files.length > 0 })
+    listButton()
+  }
+
+  /** Its symbol says whether the list shows: with no files, none does. */
+  function listButton() {
+    api.controls.set("diff.file-list", { enabled: files.length > 0, value: list && files.length > 0 })
   }
 
   function openFile(name: string, line: number | undefined, how: How) {
@@ -476,7 +481,7 @@ export async function make(place: Page, root: string, source: string) {
     list = !list
     nav.toggleAttribute("data-closed", !list)
     if (chosen) keep({ list })
-    api.controls.set("diff.file-list", { title: list ? "Hide File List" : "Show File List" })
+    listButton()
     // With Reduce Motion there is no slide to wait for.
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) afterLayout(keepChange)
   }
@@ -559,7 +564,7 @@ export async function make(place: Page, root: string, source: string) {
   place.keep(() => document.removeEventListener("keydown", keys))
   // Only the working tree changes.
   api.files.watch(root, () => (source === "uncommitted" || patch === undefined) && void refresh())
-  api.controls.set("diff.file-list", { title: list ? "Hide File List" : "Show File List" })
+  listButton()
   api.controls.set("diff.wrap", { enabled: !split, value: wrap })
   api.controls.set("diff.layout", { value: split ? "split" : "unified" })
   api.on("settings", (changed) => {

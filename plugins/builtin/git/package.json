@@ -1,7 +1,7 @@
 {
   "name": "@ovvi/git",
   "license": "AGPL-3.0-only",
-  "version": "1.10.10",
+  "version": "1.10.11",
   "private": true,
   "description": "Changes and history",
   "keywords": ["diff", "changes", "commit", "uncommitted", "history"],
@@ -45,6 +45,8 @@
     "header": [
       { "type": "menu", "id": "git.branch", "symbol": "source.branch", "title": "—", "label": "Branch",
         "enabled": false, "hidden": true },
+      { "type": "toggle", "id": "diff.file-list", "symbol": "sidebar.left",
+        "onSymbol": "rectangle.leadingthird.inset.filled", "title": "File List", "value": false, "hidden": true },
       { "type": "button", "id": "diff.home", "symbol": "house", "title": "Git Home", "hidden": true },
       { "type": "button", "id": "git.working", "symbol": "plus.forwardslash.minus", "title": "Working Tree",
         "style": "bordered", "hidden": true },
@@ -59,7 +61,6 @@
         "options": [{ "value": "unified", "title": "Unified" }, { "value": "split", "title": "Side by Side" }] },
       { "type": "toggle", "id": "diff.wrap", "symbol": "text.wrap", "title": "Word Wrap", "value": false,
         "hidden": true },
-      { "type": "button", "id": "diff.file-list", "symbol": "sidebar.left", "title": "Hide File List", "hidden": true },
       { "type": "button", "id": "diff.previous", "symbol": "chevron.up", "title": "Previous Change", "gap": 0,
         "hidden": true },
       { "type": "button", "id": "diff.next", "symbol": "chevron.down", "title": "Next Change", "gap": 0,

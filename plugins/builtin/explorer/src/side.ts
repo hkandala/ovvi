@@ -25,6 +25,8 @@ export function sidebar(ovvi: Ovvi) {
   aside.id = "side"
   const grip = Object.assign(document.createElement("div"), { className: "grip" })
   aside.append(grip)
+  aside.addEventListener("transitionend", (event) =>
+    event.target === aside && event.propertyName === "translate" && document.body.removeAttribute("data-slide"))
   let px = own(ovvi).sideWidth ?? 220
   const width = () => document.body.style.setProperty("--side-width", `${px}px`)
   width()
@@ -41,6 +43,8 @@ export function sidebar(ovvi: Ovvi) {
   }
 
   const chosen = () => own(ovvi).side ?? ovvi.settings.get<string>("file-tree") === "tree"
+  // From the start: only a change of it beside a file slides.
+  document.body.toggleAttribute("data-side", chosen())
   /** As files.css lays it out: the card shows the tree's page. */
   const paged = () => Boolean(document.body.querySelector(':scope > .ovvi-page[data-place="files"]:not([inert])'))
   const folder = (path: string) => path.slice(0, path.lastIndexOf("/") + 1)
@@ -136,13 +140,22 @@ export function sidebar(ovvi: Ovvi) {
     tree.due.clear()
   }
 
+  /** Beside a file, a change slides the tree; the slide's end clears `data-slide`. */
+  function side(on: boolean) {
+    if (file && on !== document.body.hasAttribute("data-side")) document.body.toggleAttribute("data-slide", true)
+    document.body.toggleAttribute("data-side", on)
+  }
+
   function show(keys?: () => boolean) {
     const on = chosen()
-    document.body.toggleAttribute("data-side", on)
+    if (!file || !on) side(on)
     if (!file) return
     if (!on) return give()
-    void (current ? Promise.resolve() : rooted(folder(file), file))
-      .then(() => current?.reveal.then((reveal) => reveal?.(file, keys)))
+    // A tree not drawn yet slides in once it has its rows, not empty.
+    void (current ? Promise.resolve() : rooted(folder(file), file)).then(() => {
+      if (file) side(chosen())
+      return current?.reveal.then((reveal) => reveal?.(file, keys))
+    })
   }
 
   /** A hidden tree gives the keys to the page, as the runtime's `present` does. */

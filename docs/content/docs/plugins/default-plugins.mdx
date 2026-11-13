@@ -455,6 +455,9 @@ file to its row in the tree, showing the tree first when it is hidden, and from 
   the card; the card keeps the width), with no status bar and no row 2 of its
   own: row 2 is the file's. The card keeps the trees of its last five roots,
   as it keeps pages.
+- **It slides** in and out beside a file as the window's sidebar does (0.3 s
+  ease-in-out, with a fade; at once with Reduce Motion), and the file takes
+  the room as it goes. The tree's page shows and hides it at once.
 - **Its root** is the tree's root the card came from, else the file's folder.
   A double-click on a folder or on `..`, ⌘↑, or Open as Root roots the tree
   there, and the card keeps its file.
@@ -628,7 +631,7 @@ An editable text view (CodeMirror 6).
   file in both modes, locked or not, as in the editor.
 - **The outline** is a 190 pt column at the left with the document's
   headings, indented by level. A file with no heading hides the toggle
-  and closes the outline. The outline closes when the last heading goes. It slides in and out (0.25 s). A click
+  and closes the outline. The outline closes when the last heading goes. It slides in and out (0.3 s, the plugins' shared sidebar). A click
   scrolls to the heading and, unlocked, puts the caret on it. `#section` links
   scroll to the heading with GitHub's id. A second heading of the same name is
   `#section-1`.
@@ -751,11 +754,13 @@ app's fonts and `Look` colors. From the top:
 ### Diff
 
 The changes of one source in one scroll (`@pierre/diffs`).
-- **Row 2:** Back and Forward, **Git Home** (`house`), then
+- **Row 2:** Back and Forward, **File List** (`sidebar.left` while the
+  file list is hidden, `rectangle.leadingthird.inset.filled` while
+  it shows, both in the card buttons' color, as File Explorer's File Tree),
+  **Git Home** (`house`), then
   `Unified | Side by Side`, **Word Wrap** (`text.wrap`, the app's symbol
   from Material Design Icons' `wrap`, a toggle in the accent while on; Side
-  by Side always wraps, so it is disabled there), the file list button (`sidebar.left`, its title
-  Hide File List or Show File List), Previous Change (`chevron.up`) and Next
+  by Side always wraps, so it is disabled there), Previous Change (`chevron.up`) and Next
   Change (`chevron.down`). There is no source
   pop-up: another source opens from the home.
 - **A 4 pt gap** sits between row 2 and the page, also while it scrolls: a
@@ -807,8 +812,8 @@ The changes of one source in one scroll (`@pierre/diffs`).
 - **The file list** is a column at the left (28 % of the card, 160 to
   260 pt) in the home's row style: a title with the file count, then one row
   per file with its icon, its name, its folder in secondary, `+n −m` and its letter
-  (`M A D R`, in the tree's colors). A click scrolls to the file. The file
-  list button slides it out and in (0.25 s, the plugins' shared sidebar in
+  (`M A D R`, in the tree's colors). A click scrolls to the file. **File
+  List** slides it out and in (0.3 s, the plugins' shared sidebar in
   `card.css`; at once with Reduce Motion).
 - **Previous and next change** (also **]** and **[** while the page has the
   keyboard) step through the change blocks in order: each run of changed

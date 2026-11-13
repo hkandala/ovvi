@@ -20,15 +20,25 @@
 }
 /* The card's trees (side.ts), one per root, outside the pages. Beside a file: over the card's left, with the file's
    page moved right of it. Hidden, as the runtime hides a page, a tree keeps its layout: its scroll, and a reveal while
-   it is hidden. */
+   it is hidden. Shown or hidden beside a file, it slides and fades as the window's sidebar does, and the file takes
+   the room (side.ts sets data-slide for the motion only: the tree's page shows at once, and a grip drag follows the
+   pointer). */
 #side {
   visibility: hidden;
   position: absolute;
   inset: 0 auto 0 0;
   width: min(var(--side-width), 60%);
   border-right: 1px solid var(--divider);
+  translate: -100% 0;
+  opacity: 0;
 }
-body[data-side] #side { visibility: visible; }
+body[data-side] #side { visibility: visible; translate: none; opacity: 1; }
+/* Visible at once as it comes, so a reveal can give a row the keys; visible until its end as it goes. */
+body[data-slide] #side { transition: translate var(--sidebar-motion), opacity var(--sidebar-motion); }
+body[data-slide]:not([data-side]) #side {
+  transition: translate var(--sidebar-motion), opacity var(--sidebar-motion), visibility var(--sidebar-motion);
+}
+body[data-slide] .ovvi-page { transition: left var(--sidebar-motion); }
 body[data-side] .ovvi-page:not([data-place="files"]) { left: calc(min(var(--side-width), 60%) + 1px); }
 #side > [data-place="files"] { position: absolute; inset: 0; }
 #side > [inert] { visibility: hidden; }
@@ -36,6 +46,8 @@ body[data-side] .ovvi-page:not([data-place="files"]) { left: calc(min(var(--side
 #side .grip { position: absolute; z-index: 6; top: 0; bottom: 0; right: -4px; width: 7px; cursor: col-resize; }
 /* The tree's page: the same tree over the whole card, with its status bar. Its routed page stays empty. */
 .ovvi-page[data-place="files"] { display: none; }
-body:has(> .ovvi-page[data-place="files"]:not([inert])) #side { visibility: visible; right: 0; width: auto; border-right: 0; }
+body:has(> .ovvi-page[data-place="files"]:not([inert])) #side {
+  visibility: visible; right: 0; width: auto; border-right: 0; translate: none; opacity: 1;
+}
 body:has(> .ovvi-page[data-place="files"]:not([inert])) #side footer { display: flex; }
 body:has(> .ovvi-page[data-place="files"]:not([inert])) #side .grip { display: none; }

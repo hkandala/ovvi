@@ -574,6 +574,30 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
     right hand side, let's move that to left side, befdore home icon and also change the icon based on its state similar
     to what we did in file explorer"
 
+### Track E5: Findings
+
+- **Cause (26).** Not a regression: the tree beside a file has shown and hidden at once since it came (08dceb5d, a
+  `display` switch, then `visibility`). It is an absolute layer of its own, not the plugins' shared `.ovvi-sidebar`
+  (a flex child that slides by its margin), because the tree's page reuses it over the whole card.
+- **Fix (26).** The window's sidebar motion (0.3 s ease-in-out, a slide from the leading edge with a fade, none under
+  Reduce Motion) is now `card.css`'s `--sidebar-motion`, used by `.ovvi-sidebar` (Git's file list and Markdown's
+  outline go from 0.25 s `ease` to it, with the fade) and by the tree: closed it sits at `translate: -100%`, opacity
+  0, and the file's page `left` follows. The motion runs only under `data-slide`, which side.ts sets when the choice
+  flips beside a file and clears at the slide's end, so the tree's page shows at once and a grip drag follows the
+  pointer. `data-side` is set from the start (review: a card opened on a folder with the tree chosen kept
+  `data-slide` until the next toggle). A tree not drawn yet (the card's first show of it) slides in once it has its
+  rows: the VM's first strip showed an empty tree slide in and its rows come 0.4 s later.
+- **Fix (28).** Git's file list button is a toggle **File List** before Git Home, with File Tree's two symbols
+  (`sidebar.left`, `rectangle.leadingthird.inset.filled`); its value is "the list shows", so with no files it is off
+  and disabled. Explorer 1.14.2, Git 1.10.11.
+- **Runs.** GitTests' diff step now checks the toggle sits left of Home and is selected while the list shows: on the
+  old code the button sat at the right and was never selected. No UI test checks the slide itself: CI's Mac has
+  Reduce Motion on, and a web view's motion has no accessibility value. The VM (motion on) films it: screenshots
+  every ~70 ms after each click. Pictures, dark and light, before and after: `~/Downloads/ovvi-research/p58e5/`.
+- **For the user.** In a file, toggle File Tree: the tree slides in from the left as the window's sidebar does, the
+  file moves over with it; drag the tree's edge right after: no lag. From the tree's page to a file and back: no
+  motion. In a Git diff, File List sits before the house and fills while the list shows.
+
 ### Track C9: chat glass, divider drags, endless history, the empty chat's box (items 29, 30, 31, 35)
 
 29. "actually in chat view revert the tinted glass, i like the previous version better" (item 12's tint)
