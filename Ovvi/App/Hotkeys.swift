@@ -120,19 +120,19 @@ extension Hotkeys {
 
     private static let general = [
         Hotkey("app.palette", "Command Palette", "App", "cmd+k", "shift+cmd+p", top: true),
-        Hotkey("app.shortcuts", "Keyboard Shortcuts", "App", "cmd+/", top: true),
-        Hotkey("app.settings", "Settings…", "App", "cmd+,", top: true),
-        Hotkey("app.new-window", "New Window", "App", "cmd+n", top: true),
+        Hotkey("app.shortcuts", "Keyboard Shortcuts", "App", "cmd+/"),
+        Hotkey("app.settings", "Settings…", "App", "cmd+,"),
+        Hotkey("app.new-window", "New Window", "App", "cmd+n"),
         Hotkey("app.sidebar", "Toggle Sidebar", "App", "ctrl+cmd+s", top: true),
         Hotkey("app.overview", "Show Overview", "App", "ctrl+cmd+o", top: true),
-        Hotkey("app.bigger", "Increase Font Size", "App", "cmd++", "cmd+=", top: true),
-        Hotkey("app.smaller", "Decrease Font Size", "App", "cmd+-", top: true),
-        Hotkey("app.actual-size", "Reset Font Size", "App", "cmd+0", top: true),
+        Hotkey("app.bigger", "Increase Font Size", "App", "cmd++", "cmd+="),
+        Hotkey("app.smaller", "Decrease Font Size", "App", "cmd+-"),
+        Hotkey("app.actual-size", "Reset Font Size", "App", "cmd+0"),
     ]
 
     private static let sessions = [
         Hotkey("session.open", "Open Session…", "Sessions", "option+cmd+t", top: true),
-        Hotkey("session.detach", "Detach Session", "Sessions", "option+cmd+w", top: true),
+        Hotkey("session.detach", "Detach Session", "Sessions", "option+cmd+w"),
         Hotkey("session.previous", "Previous Session", "Sessions", "option+cmd+[", top: true),
         Hotkey("session.next", "Next Session", "Sessions", "option+cmd+]", top: true),
     ] + jumps("session", "Session", "Sessions", "option+cmd+")
@@ -153,8 +153,8 @@ extension Hotkeys {
         Hotkey("tab.next", "Show Next Tab", "Tabs", "shift+cmd+]", "ctrl+tab", top: true),
         Hotkey("tab.back", "Go Back", "Tabs", "ctrl+cmd+left", top: true),
         Hotkey("tab.forward", "Go Forward", "Tabs", "ctrl+cmd+right", top: true),
-        Hotkey("tab.move-left", "Move Tab Left", "Tabs", "shift+cmd+left", top: true),
-        Hotkey("tab.move-right", "Move Tab Right", "Tabs", "shift+cmd+right", top: true),
+        Hotkey("tab.move-left", "Move Tab Left", "Tabs", "shift+cmd+left"),
+        Hotkey("tab.move-right", "Move Tab Right", "Tabs", "shift+cmd+right"),
     ] + jumps("tab", "Tab", "Tabs", "cmd+")
 
     private static let panes = [
@@ -165,8 +165,8 @@ extension Hotkeys {
         Hotkey("pane.zoom", "Zoom Pane", "Panes", "shift+cmd+return", top: true),
         Hotkey("pane.float", "Float Pane", "Panes"),
         Hotkey("pane.close", "Close Pane", "Panes", "cmd+w", top: true),
-        Hotkey("pane.replace", "Replace Pane", "Panes", "shift+cmd+r", top: true),
-        Hotkey("pane.balance", "Balance Splits", "Panes", "option+cmd+=", top: true),
+        Hotkey("pane.replace", "Replace Pane", "Panes", "shift+cmd+r"),
+        Hotkey("pane.balance", "Balance Splits", "Panes", "option+cmd+="),
         Hotkey("pane.previous", "Select Previous Pane", "Panes", "cmd+[", top: true),
         Hotkey("pane.next", "Select Next Pane", "Panes", "cmd+]", top: true),
     ] + arrows("select", "Select Pane", "option+cmd+") + arrows("move", "Move Pane", "option+shift+cmd+")
@@ -185,7 +185,7 @@ extension Hotkeys {
 
     private static let edit = [
         Hotkey("edit.find", "Find…", "Edit", "cmd+f", top: true),
-        Hotkey("edit.find-next", "Find Next", "Edit", "cmd+g", top: true),
+        Hotkey("edit.find-next", "Find Next", "Edit", "cmd+g"),
         Hotkey("edit.find-previous", "Find Previous", "Edit", "shift+cmd+g", scope: "plugin"),
         Hotkey("edit.save", "Save", "Edit", "cmd+s", scope: "plugin"),
     ]

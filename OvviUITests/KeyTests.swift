@@ -160,9 +160,8 @@ extension OvviUITests {
             "Split Right": "⌘D", "Select Pane": "⌥⌘←→↑↓", "Show Tab 1–9": "⌘1–9", "New Space": "⌃⌘T",
             "Show Space 1–9": "⌃⌘1–9", "Show Session 1–9": "⌥⌘1–9", "Show Previous Tab": "⇧⌘[ or ⌃⇧⇥",
             "Show Next Tab": "⇧⌘] or ⌃⇥",
-            "Command Palette": "⌘K or ⇧⌘P", "Find": "⌘F", "Reset Font Size": "⌘0", "Open Session": "⌥⌘T",
-            "Close Tab": "⇧⌘W", "Close Space": "⌃⌘W", "Detach Session": "⌥⌘W", "Balance Splits": "⌥⌘=",
-            "Zoom Pane": "⇧⌘↩", "Move Tab Left": "⇧⌘←", "Move Tab Right": "⇧⌘→",
+            "Command Palette": "⌘K or ⇧⌘P", "Find": "⌘F", "Open Session": "⌥⌘T", "Close Tab": "⇧⌘W",
+            "Close Space": "⌃⌘W", "Zoom Pane": "⇧⌘↩", "Go Back": "⌃⌘←",
         ]
         for (title, keys) in rows {
             XCTAssertEqual(element("shortcuts.\(title)").value as? String, keys, title)
@@ -171,6 +170,7 @@ extension OvviUITests {
         XCTAssertFalse(element("shortcuts.Close Window").exists)
         // Only the important keys: Settings has the rest.
         XCTAssertFalse(element("shortcuts.Insert Path").exists)
+        XCTAssertFalse(element("shortcuts.Reset Font Size").exists)
         XCTAssertTrue(element("shortcuts.customize").exists)
         XCTAssertGreaterThan(element("shortcuts.section.Sessions").frame.minX,
                              element("shortcuts.section.Panes").frame.maxX)

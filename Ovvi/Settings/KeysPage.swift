@@ -151,7 +151,7 @@ private struct KeyField: View {
     let action: () -> Void
 
     var body: some View {
-        let text = recording ? "Type Shortcut" : keys.map(\.glyphs).joined(separator: " or ")
+        let text = recording ? "Type Shortcut" : keys.isEmpty ? "None" : keys.map(\.glyphs).joined(separator: " or ")
         Button(action: action) {
             HStack(spacing: 4) {
                 if recording {

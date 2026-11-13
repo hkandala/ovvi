@@ -152,7 +152,8 @@ final class WebCardView: BrowserView {
     /// WebKit sends a key again when the page leaves it.
     var handed: NSEvent?
     var keyboard: ((Bool) -> Void)?
-    var step: ((Bool) -> Void)?
+    /// False with no place to go: the key goes on to the menu and the page.
+    var step: ((Bool) -> Bool)?
 
     /// The page's keyboard is in a text field (the runtime's `card.typing`).
     var typing = false
@@ -164,8 +165,9 @@ final class WebCardView: BrowserView {
         guard window?.firstResponder === self else { return super.performKeyEquivalent(with: event) }
         let arrow = [.leftArrow, .rightArrow, .upArrow, .downArrow].contains(event.specialKey)
         let back = Hotkeys.keys("card.back").contains { $0.matches(event) }
-        if let step, !(arrow && typing), back || Hotkeys.keys("card.forward").contains(where: { $0.matches(event) }) {
-            step(back)
+        if let step, !(arrow && typing), back || Hotkeys.keys("card.forward").contains(where: { $0.matches(event) }),
+           step(back)
+        {
             return true
         }
         return NSApp.mainMenu?.performKeyEquivalent(with: event) == true || super.performKeyEquivalent(with: event)

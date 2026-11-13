@@ -102,14 +102,14 @@ final class Plugin {
         header = Header(manifest: manifest)
         name()
         web.bridge = Bridge(plugin: self)
-        // Without history the keys stay the page's.
-        web.view.step = !manifest.history ? nil : { [weak self] back in
-            guard let self, back ? canGoBack : canGoForward else { return }
+        web.view.step = { [weak self] back in
+            guard let self, back ? canGoBack : canGoForward else { return false }
             if back {
                 goBack()
             } else {
                 goForward()
             }
+            return true
         }
     }
 

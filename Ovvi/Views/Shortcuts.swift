@@ -5,7 +5,7 @@ struct Shortcuts: View {
     @FocusState private var focused: Bool
 
     var body: some View {
-        let rows = Self.rows(), first = ["Panes", "Tabs", "Spaces"]
+        let rows = Self.rows(), first = ["Panes", "Tabs"]
         let panel = VStack(spacing: 18) {
             HStack(alignment: .top, spacing: 48) {
                 column(first, rows)
