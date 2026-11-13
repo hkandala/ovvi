@@ -126,14 +126,15 @@ func `herdr's socket is asked once, and again after its server came back`() asyn
     }
     #expect(runs() == 1)
     try await client.stopSession()
+    // The failed connect asks for the path again, once.
     await #expect(throws: HerdrError.self) { try await client.snapshot() }
-    #expect(runs() == 2)
+    #expect(runs() == 3)
     // A deleted session has no socket; one made again under its name has a new one.
     try await client.deleteSession()
     await #expect(throws: HerdrError.failed("herdr has no session \(session)")) { try await client.snapshot() }
     try #require(await shell(sessionScript, "up", session) == 0)
     _ = try await client.snapshot()
     _ = try await client.snapshot()
-    // The list, stop, delete, a list after the failed connect, and one for the new server.
-    #expect(runs() == 5)
+    // The list, stop, its list, delete, a list after the failed connect, and one for the new server.
+    #expect(runs() == 6)
 }

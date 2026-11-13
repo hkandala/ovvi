@@ -142,9 +142,9 @@ and watch files and run git the same way
     folder, from `XDG_CONFIG_HOME` or `~/.config/herdr`, and `sessions/<S>/`
     for a session other than `default`), so the app asks herdr:
     `session list --json` gives each session's `socket_path`. It asks once
-    per session and keeps the path; a connect that fails (the server
-    stopped, restarts, or the session was deleted) forgets it, and the next
-    request asks again.
+    per session and keeps the path. A connect that fails (the server
+    stopped, restarts, or the session was deleted) asks again and tries once
+    more, as a remote machine forwards again; then the request fails.
   - **A remote machine:** a local socket that the host's ControlMaster
     forwards to herdr's socket there:
     `ssh -F /dev/null -S <ctl> -O forward -L <ctl>-<s8>:<socket_path> <target>`,
@@ -157,7 +157,7 @@ and watch files and run git the same way
     on the Mac has its own. ssh leaves the file behind when a master ends, and
     refuses to bind over it: a new forward removes it first. A new master
     (after a drop) forwards again on the first request; a connect that finds
-    no listener forwards again on the next. On quit the app removes its
+    no listener forwards again and tries once more, then fails. On quit the app removes its
     forwards' files with its masters.
   - **A remote end that fails:** ssh takes the connection and closes it with
     no answer when the machine's end fails. The app then reads

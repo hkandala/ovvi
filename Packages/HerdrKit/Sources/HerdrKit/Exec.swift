@@ -85,7 +85,7 @@ public struct Channel: Sendable {
 public final class ProcessExec: Exec {
     let environment: [String: String]
     private let lookup: Mutex<Lookup>
-    /// herdr's socket path by session, asked again after a connect fails: a path changes only with herdr's rule.
+    /// herdr's socket path by session (`socket`).
     private let sockets = Mutex<[String: String]>([:])
     /// The login shell's bound: it runs the user's rc files. Tests on a starved Mac pass a longer one.
     private let shellLimit: Duration
@@ -156,21 +156,25 @@ public final class ProcessExec: Exec {
         }
     }
 
+    /// As a remote machine's forward: a connect that fails (herdr restarted, the session went) asks herdr for the
+    /// path again and tries once more.
     public func api(_ session: String) async throws -> Channel {
-        let cached = sockets.withLock { $0[session] }
-        let path = if let cached {
-            cached
-        } else {
-            try await herdrSocket(session)
-        }
-        do {
-            let channel = try UnixSocket.connect(path)
-            sockets.withLock { $0[session] = path }
+        let path = try await socket(session)
+        if let channel = try? UnixSocket.connect(path) {
             return channel
-        } catch {
-            sockets.withLock { $0[session] = nil }
-            throw error
         }
+        sockets.withLock { $0[session] = nil }
+        return try await UnixSocket.connect(socket(session))
+    }
+
+    /// Kept until a connect fails: a path changes only with herdr's rule.
+    private func socket(_ session: String) async throws -> String {
+        if let path = sockets.withLock({ $0[session] }) {
+            return path
+        }
+        let path = try await herdrSocket(session)
+        sockets.withLock { $0[session] = path }
+        return path
     }
 
     public func remove(home path: String) async {
