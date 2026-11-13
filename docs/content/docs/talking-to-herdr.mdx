@@ -541,9 +541,9 @@ The sidebar's space rows show the branch and the ahead and behind counts
   worktree has its own), and its repository's `refs/`, `packed-refs`,
   `reftable/` and `config` (the upstream). The index and `objects/` are left
   out, so `git add` or a build reads nothing. The watch is the same on every
-  machine, with no process per check: FSEvents on This Mac, and on a remote
-  machine one long-lived Perl run over the relay that compares the files'
-  `lstat` every 2 s and ends when its stdin closes. A watch that ends (a
+  machine, with no process per check: one long-lived Perl run on the machine
+  (over the relay on a remote one) that compares the files' `lstat` every 2 s
+  and ends when its stdin closes. A watch that ends (a
   dropped connection) or finds no repository starts again 60 s later, and
   then reads once, for what it missed. Every space is read again every 60 s,
   which also covers what no watch sees (a folder that became a repository).

@@ -66,7 +66,7 @@ launchctl bootstrap gui/<uid> <plist>
 sh -c 'g=$(command -v git) && { [ "$g" != /usr/bin/git ] || [ "$(uname)" != Darwin ] || xcode-select -p; }'   # once at launch: is git usable (xcode-select only for the /usr/bin/git stub)
 git --no-optional-locks -C <root> status --porcelain=v2 --branch --untracked-files=no   # git state of a space row (D67): on start, when git's files change, every 60 s
 git -C <root> rev-parse --absolute-git-dir --git-common-dir      # once per root, as its watch starts: git's files
-perl -e '<lstat sweep>' 2 <HEAD> <refs> <packed-refs> <reftable> <config>   # a remote machine: one long-lived run per root while a window shows it
+perl -e '<lstat sweep>' 2 <HEAD> <refs> <packed-refs> <reftable> <config>   # every machine: one long-lived run per root while a window shows it (the sidebar) or a card watches it (`git.watch`)
 ```
 
 The `ovvi` command's mailbox, on each machine
