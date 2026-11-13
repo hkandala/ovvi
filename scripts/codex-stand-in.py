@@ -33,7 +33,8 @@ identity = {"event_name": "session_start",
 trusts = not hook or trusted == "sha256:" + hashlib.sha256(json.dumps(identity, sort_keys=True, separators=(",", ":"))
                                                            .encode()).hexdigest()
 token = re.search(r"/\.cache/ovvi/chat/([0-9a-f-]{36})/", hook).group(1) if hook else None
-home = os.environ.get("CODEX_HOME") or os.path.join(folder, "codex")
+# Not `folder/codex`: that is run_as's link to Python.
+home = os.environ.get("CODEX_HOME") or os.path.join(folder, "codex-home")
 thread = args[args.index("resume") + 1] if "resume" in args[:-1] else None
 # The resumed session's rollout, which Codex appends to; `made` are the new ones.
 rollouts = glob(os.path.join(home, "sessions/*/*/*/rollout-*-" + thread + ".jsonl"))[:1] if thread else []

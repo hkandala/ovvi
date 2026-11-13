@@ -69,4 +69,10 @@ def terminal(cleanup):
     finally:
         signal.signal(signal.SIGHUP, signal.SIG_IGN)
         cleanup()
+        # Bracketed paste off again, as the agents leave it: bash 3.2 would take herdr's next paste marks as text.
+        try:
+            sys.stdout.write("\x1b[?2004l")
+            sys.stdout.flush()
+        except OSError:
+            pass
         termios.tcsetattr(0, termios.TCSADRAIN, attributes)
