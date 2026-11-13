@@ -57,7 +57,8 @@ extension OvviUITests {
         let home = "/tmp/\(one)-startup"
         try await send("mkdir -p \(home) && echo 'sleep 2' | tee \(home)/.zshrc \(home)/.bashrc > \(home)/.bash_profile"
             + " && echo rc-$((6*7))\r", to: pane)
-        try await waitFor(pane) { $0.contains("\nrc-42") }
+        // Not on its own row: the new space's card resizes the shell as the line comes, and bash 3.2 redraws it then.
+        try await waitFor(pane, toShow: "rc-42")
         let created = try await Self.call(one, "tab.create", ["workspace_id": workspace(of: tabs[0]), "cwd": "/tmp",
                                                               "env": ["HOME": home, "ZDOTDIR": home], "focus": false])
         let tab = try id(created, "tab"), capsule = element("tab.\(tab)")

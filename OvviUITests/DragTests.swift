@@ -299,8 +299,9 @@ extension OvviUITests {
 
     private func movingTab() async throws -> (tab: String, terminal: String) {
         let (tabs, first) = try await newWorkspace("tabs", tabs: 2)
-        let tab = tabs[0], second = try await split(first)
-        try await split(second, "down")
+        let tab = tabs[0], second = try await split(first), third = try await split(second, "down")
+        // The app evens another client's new pane once a snapshot shows it, the ratios set by then too.
+        XCTAssertTrue(element("pane.\(third)").exists(within: 5))
         try await Self.call(one, "layout.set_split_ratio", ["tab_id": tab, "path": [Bool](), "ratio": 0.3])
         try await Self.call(one, "layout.set_split_ratio", ["tab_id": tab, "path": [true], "ratio": 0.7])
         try await Self.call(one, "tab.rename", ["tab_id": tab, "label": "moving"])
