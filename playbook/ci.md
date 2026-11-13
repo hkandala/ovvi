@@ -158,7 +158,7 @@ another login session, with its own pointer, keyboard and screen.
   `scripts/e2e.sh xcodebuild test-without-building` runs the `.xctestrun`, and the xcresult lands in the share, then in
   `$DERIVED_DATA/vm.xcresult`.
 - **Permissions.** None to grant: `automationmodetool` says the image needs no authentication for Automation
-  Mode. Two asks of macOS would sit over the tests and take their clicks: whether a program that captures the screen
+  Mode. Two alerts of macOS would sit over the tests and take their clicks: whether a program that captures the screen
   may go on (a `screencapture` through `tart exec` or ssh, a UserNotificationCenter alert, again after a month) and
   "App Running in Background", an alert that the open-at-login test brings. Before each run, `scripts/vm-alerts.py`
   answers both in the guest (the screen: approved; that alert's notifications: off) and the script closes an alert

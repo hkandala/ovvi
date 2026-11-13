@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Runs in the Tart VM before its UI tests (scripts/vm-test.sh): no system alert may take the tests' clicks.
 
-Two of macOS's asks would sit over the tests' window:
+Two of macOS's alerts would sit over the tests' window:
 - Whether a program may go on capturing the screen ("… is requesting to bypass the system private window picker"), a
   UserNotificationCenter alert, the first time a program captures it and again after a month: a screenshot through
   `tart exec` or ssh, the e2e helper's films. Its answer is replayd's approvals file: a recent alert date and a hint

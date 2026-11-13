@@ -89,8 +89,10 @@ split = sys.argv.index("--")
 sessions, command = sys.argv[1:split], sys.argv[split + 1:]
 folders = []
 held = {}
-# Never the user's config folder or agents' stores: a launch installs the default plugins into its config folder.
-ISOLATED = ["-configFolder", "/tmp/ovvi-e2e-no-config", "-archivedHome", "/tmp/ovvi-e2e-archived"]
+# Never the user's config folder or agents' stores: a launch installs the default plugins into its config folder. No
+# notification ask, as the tests' own launches (OvviUITests.relaunch).
+ISOLATED = ["-configFolder", "/tmp/ovvi-e2e-no-config", "-archivedHome", "/tmp/ovvi-e2e-archived",
+            "-askNotifications", "NO"]
 # Compiled once: `swift` interpreting a script takes up to 10 s a swipe on CI.
 tools = tempfile.mkdtemp()
 folders.append(tools)

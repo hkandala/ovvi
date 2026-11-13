@@ -39,7 +39,7 @@ extension OvviUITests {
         let ovvi = Self.ovviCommand
         try await run("\(ovvi) notify", in: pane, "usage", 2, "ovvi: missing <title>")
         try await run("\(ovvi) notify Done --pane w9:p9", in: pane, "none", 1, "ovvi: pane w9:p9 is not in")
-        // macOS may not allow Ovvi's notifications (CI): the first one's answer can be either.
+        // The tests ask for no notifications (`-askNotifications NO`): the first one's answer can be either.
         try await run("\(ovvi) notify 'Tests pass' '42 passed' >/dev/null 2>&1; \(ovvi) notify Again --pane w1:p1",
                       in: pane, "again", 1, "ovvi: one notification per pane every 10 s")
 
