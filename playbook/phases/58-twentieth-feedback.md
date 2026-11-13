@@ -145,9 +145,11 @@ fails; lessons.md's rule makes it 60 s (round 8's final CI, '### Final CI, round
   rebuilds pane by pane keeps its ratios. A replaced pane leaves its place to the
   new one, unevened. `SplitNode.closing` evens only the run the pane was in: a row that drops to one pane stays one
   unit of its column.
-- **Runs.** VM, the tile test with its new zoom count and the balance test: on the first build the zoom passed and the
-  balance test's Off half failed on the test (it reopened the same folder, which `ovvi open` reuses). Frame strips of
-  the zoom from the VM recording: `~/Downloads/ovvi-research/p58p/`.
+- **Runs.** VM, first build: the zoom test passed; the balance test's Off half failed on the test (it reopened a folder
+  `ovvi open` reuses), and the strip showed a never-shown tab land on two blank frames (its live terminal moved into
+  the zoom). Final head: the tile test, the balance test and `testSplitsMoveEachCardOnceToItsPlace` (with an in-app
+  close of one of three) green in the VM; the strip shows the zoom grow a picture and land with no blank frame. Strips:
+  `~/Downloads/ovvi-research/p58p/`.
 - **For the user.** Open the overview and click a tile, press Esc, ⌃⌘O: the tile should grow into the page while the
   sidebar and tabs fade in. Split three panes and close the middle one with ×; open a file to the side with ⌥-click;
   type `exit` in one of three panes: each time the row should end equal. Turn the setting off and split twice: halves.
