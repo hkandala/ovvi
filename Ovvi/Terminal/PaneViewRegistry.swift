@@ -202,13 +202,14 @@ final class PaneViewRegistry {
             chat.wantsKeyboard = true
             return
         }
-        terminals[terminalID]?.view.takeKeyboard()
+        // A pane labeled a plugin keeps the terminal it showed before (until it ends), which is no view of its card.
+        let pane = pages?.page(of: terminalID)?.store.terminalPane(terminalID)
+        let terminal = pane?.plugin == nil || pane?.placeholder == true ? terminals[terminalID] : nil
+        terminal?.view.takeKeyboard()
         browsers[terminalID]?.takeKeyboard()
         plugins[terminalID]?.web.view.takeKeyboard()
         // A card with no view for the keys (a missing plugin): they leave the old card, or it would keep getting them.
-        if terminals[terminalID] == nil, browsers[terminalID] == nil, plugins[terminalID] == nil,
-           pages?.floats(terminalID) != true
-        {
+        if terminal == nil, browsers[terminalID] == nil, plugins[terminalID] == nil, pages?.floats(terminalID) != true {
             pages?.window?.makeFirstResponder(nil)
         }
     }

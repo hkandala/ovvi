@@ -18,8 +18,11 @@ extension OvviUITests {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         element("workspace.w2").click()
 
+        try await show(tab)
         let browser = try await split(shell), plugin = try await split(browser, "down")
         let failing = try await split(plugin, "down"), missing = try await split(shell, "down")
+        // Drawn as a terminal first, as when the tab shows: its card keeps that terminal after the relabel.
+        XCTAssertTrue(element("terminal.\(missing)").exists(within: 5))
         try await relabel(browser, "ovvi:browser#e2ecbr file://\(root)/page.html")
         try await relabel(plugin, "ovvi:plugin-api#e2ecpg \(root)/plain/")
         try await relabel(failing, "ovvi:plugin-api#e2ecfl \(root)/fail/")
