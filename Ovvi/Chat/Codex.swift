@@ -76,8 +76,7 @@ struct Codex: ChatAdapter {
         var misses = 1
         while !Task.isCancelled {
             // A kept chat out of view reads nothing and keeps its last state.
-            let shown = chat.store?.windows.contains { $0.terminals.terminals[chat.terminalID]?.inView == true }
-            if shown == true {
+            if chat.store?.inView.contains(chat.paneID) == true {
                 var ready = true
                 if let state = chat.store?.pane(chat.paneID)?.state, state != .needsYou,
                    let client = chat.store?.client,
