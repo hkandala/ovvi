@@ -70,8 +70,8 @@ struct FloatingWindow: View {
                 }
             }
             // Not on the window: a frame's minimum width hides its content's, and the title row's buttons (a chat's
-            // switch too) can need more.
-            .frame(minWidth: 320, maxWidth: .infinity, maxHeight: .infinity)
+            // switch too) can need more. The chat's minimum, so a floating chat never scrolls sideways.
+            .frame(minWidth: ChatView.minWidth, maxWidth: .infinity, maxHeight: .infinity)
             .overlay {
                 if let pane {
                     NewPaneOverlay(chooser: chooser, page: page, cardID: pane.id)
