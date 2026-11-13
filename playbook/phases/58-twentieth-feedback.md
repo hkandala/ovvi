@@ -461,9 +461,10 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
   are gone; plain drags still go to the program (pi copies) and select in the card with libghostty's own rule. White
   cells are a documented known limit (Window ▸ Selecting): an end cell libghostty leaves out (its 60 % rule), a frame
   after each move or click, and pi's text scrolling under its selection.
-- **Tests.** The drag test keeps what still holds: a plain drag reaches a program with drag mode (the stand-in counts
-  drags and its release) and selects in the card (⌘C copies its words). It fails on L3's code (no drags). Its pixel
-  checks for white and end cells are gone, with the stand-in's white mark and its dark relaunch.
+- **Tests.** The right-click test's program now reads drags too (`?1002h`) and checks that a plain drag's moves reach
+  it, beside its press, release and the card's ⌘C copy; that fails on L3's code (no drags). Track M's own drag test,
+  its pixel checks for white and end cells, and its stand-in are gone: nothing they checked still holds.
+- **Runs.** See the Runs line below.
 - **For the user.** In pi, drag over text: pi says "Copied!" and ⌘C copies the card's selection. White cells can show
   at an end, for a frame as you drag back, and on the click that clears it (known limit until herdr reports the mouse
   mode).

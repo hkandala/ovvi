@@ -683,18 +683,22 @@ How it works: [Layout and sizing](/docs/layout).
   copies on its own. A ⇧, ⌥ or ⌃ drag and a double or triple click select in
   the card alone: the program gets such a single click when the button comes
   up on the cell where it went down. A ⌥-drag selects a rectangle. On a
-  watched card, a plain press takes control at once, and another single click
-  when the button comes up.
-- **Known limit: white cells beside a selection.** A program that selects on
-  its own (pi) draws its selection in reverse video, and herdr draws that
-  black on white. The card's blue selection covers it where the two agree, so
-  a cell that only the program took shows white: an end cell (the card takes
-  an end cell only when the pointer is past 60 % of its width, as Ghostty
-  does), for a frame after each move or click (the card's selection changes at
-  once, the program's comes back through herdr), and when the program's text
-  scrolls under its selection. herdr does not tell the app which programs
-  read the mouse. Once it does, a plain drag goes only to such a program and a
-  ⇧-drag only to the card, as in Ghostty.
+  watched card, a plain press takes control at once. A ⇧, ⌥ or ⌃ click takes
+  control when the button comes up.
+- **Known limit: white cells beside a selection.** A program that selects text
+  on its own (pi) shows its selection with the text and background colors
+  swapped. herdr draws that black on white. The card's blue selection covers
+  it where both select the same cells. A cell that only the program selected
+  shows white:
+  - an end cell, because the card takes an end cell by Ghostty's 60 % rule
+    and the program takes it whole;
+  - for one frame after each move or click, because the card's selection
+    changes at once and the program's comes back through herdr;
+  - when the program's text scrolls under its selection.
+
+  herdr does not tell the app which programs read the mouse. When it does, a
+  plain drag will go only to such a program, and a ⇧-drag only to the card,
+  as in Ghostty.
 - **Context menu** on the header, and on the terminal, where it starts with
   Copy, Paste and Select All. As in herdr, a right click in the terminal opens
   the menu even when the program reads the mouse. ⌥-right click sends the

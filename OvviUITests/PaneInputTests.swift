@@ -31,9 +31,9 @@ extension OvviUITests {
         let elsewhere = try await read(other)
         XCTAssertFalse(elsewhere.replacing("\n", with: "").contains(command))
 
-        // A program that reads clicks (SGR mouse mode) sees the ⌥-right click as a plain right press: button 2, not
-        // 10 (Alt adds 8). Without ⌥ the menu opens over it.
-        try await send("\u{15}clear; printf '\\033[?1000h\\033[?1006h'; cat -v\r", to: pane)
+        // A program that reads clicks and drags (SGR mouse mode) sees the ⌥-right click as a plain right press: button
+        // 2, not 10 (Alt adds 8). Without ⌥ the menu opens over it.
+        try await send("\u{15}clear; printf '\\033[?1002h\\033[?1006h'; cat -v\r", to: pane)
         try await expect("cat to run") { try await foreground(pane).contains("cat") }
         XCUIElement.perform(withKeyModifiers: .option) { terminal.rightClick() }
         try await waitFor(pane) { $0.contains("[<2;") }
@@ -42,8 +42,8 @@ extension OvviUITests {
         XCTAssertTrue(menu["Copy"].exists(within: 2))
         app.typeKey(.escape, modifierFlags: [])
 
-        // A left click reaches it as a press and a release, and so does a drag, which also selects in the card. The
-        // ⌥-right click after the drag bounds the wait. Reports wrap.
+        // A left click reaches it as a press and a release, and so does a drag, with its moves (pi selects and copies
+        // so), which also selects in the card. The ⌥-right click after the drag bounds the wait. Reports wrap.
         func reports(_ button: Int, _ text: String) -> Int {
             text.replacing("\n", with: "").components(separatedBy: "[<\(button);").count - 1
         }
@@ -60,29 +60,7 @@ extension OvviUITests {
         XCUIElement.perform(withKeyModifiers: .option) { terminal.rightClick() }
         try await waitFor(pane) { reports(2, $0) > rights }
         let text = try await read(pane)
-        XCTAssertEqual(reports(0, text), 4, text)
-    }
-
-    /// A program that reads the mouse with drags (as pi does) gets a plain left drag, which selects in the card too.
-    func testADragSelectsInTheProgramAndInTheCard() async throws {
-        let (tab, pane) = try await newTab("select")
-        element("tab.\(tab)").click()
-        let terminal = element("terminal.\(pane)")
-        XCTAssertTrue(terminal.has(\.isHittable, true, within: 3))
-        try await waitForPrompt(pane)
-        try await send("clear; '\(Self.fixtures)/mouse-select'\r", to: pane)
-        try await waitFor(pane, toShow: "drags 0 releases 0")
-        // The middle of the second row, where the program's words are.
-        let rows = try XCTUnwrap((terminal.value as? String ?? "").split(separator: " ").compactMap { Int($0) }.first)
-        let row = 1.5 / Double(rows)
-        terminal.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: row))
-            .click(forDuration: 0.2, thenDragTo: terminal.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: row)))
-        try await waitFor(pane) { $0.contains("releases 1") && !$0.contains("drags 0 ") }
-        NSPasteboard.general.clearContents()
-        app.typeKey("c", modifierFlags: .command)
-        try await expect("⌘C to copy the card's selection") {
-            NSPasteboard.general.string(forType: .string)?.contains("abc abc") == true
-        }
+        XCTAssertTrue(reports(0, text) == 4 && reports(32, text) > 0, text)
     }
 
     /// The drag comes from a window of the helper's: from Finder, at times no drag starts on CI.

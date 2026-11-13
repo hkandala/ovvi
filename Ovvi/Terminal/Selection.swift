@@ -5,8 +5,8 @@ import HerdrKit
 /// and copies on its own. A ⇧, ⌥ or ⌃ drag and a double or triple click select in the card alone; the program gets such
 /// a single click on its release when the pointer stayed in its cell. ponytail: such a program's selection draws beside
 /// the card's, in reverse video that herdr draws black on white, so a cell only the program took shows white: an end
-/// cell (libghostty takes one only past its 60 % point), and for a frame after each move, since the card's selection
-/// moves at once and the program's comes back through herdr. herdr reports no mouse mode; once it does, follow Ghostty
+/// cell (Ghostty's 60 % rule), and for a frame after each move, since the card's selection moves at once and the
+/// program's comes back through herdr. herdr reports no mouse mode; once it does, follow Ghostty
 /// (a drag to a mouse program only, a ⇧-drag to the card; ~/Downloads/ovvi-research/p58m/herdr-mouse-mode.patch).
 extension PaneSurfaceView {
     override func mouseDown(with event: NSEvent) {

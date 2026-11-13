@@ -232,7 +232,7 @@ final class PaneSurfaceView: AppTerminalView {
                         modifiers: modifiers(event) & ~(button == .right ? 4 : 0))
     }
 
-    var scale: CGFloat {
+    private var scale: CGFloat {
         window?.backingScaleFactor ?? 2
     }
 
