@@ -76,26 +76,24 @@ struct Codex: ChatAdapter {
         var misses = 1
         while !Task.isCancelled {
             // A kept chat out of view reads nothing and keeps its last state.
-            guard chat.store?.windows
-                .contains(where: { $0.terminals.terminals[chat.terminalID]?.inView == true }) == true
-            else {
-                try? await Task.sleep(for: .seconds(0.5))
-                continue
-            }
-            var ready = true
-            if let state = chat.store?.pane(chat.paneID)?.state, state != .needsYou, let client = chat.store?.client,
-               let screen = try? await client.recent(chat.paneID, lines: 8)
-            {
-                ready = CodexRollout.ready(screen)
-            }
-            misses = ready ? 0 : misses + 1
-            if chat.source == nil, chat.problem == nil, chat.outgoing.contains(where: \.notSent) {
-                chat.problem = "Codex has not started a session"
-            }
-            let recorded: Chat.Phase? = misses >= 2 ? .waiting : nil
-            // Only a change: Observation reports equal writes too.
-            if !Task.isCancelled, chat.recorded != recorded {
-                chat.recorded = recorded
+            let shown = chat.store?.windows.contains { $0.terminals.terminals[chat.terminalID]?.inView == true }
+            if shown == true {
+                var ready = true
+                if let state = chat.store?.pane(chat.paneID)?.state, state != .needsYou,
+                   let client = chat.store?.client,
+                   let screen = try? await client.recent(chat.paneID, lines: 8)
+                {
+                    ready = CodexRollout.ready(screen)
+                }
+                misses = ready ? 0 : misses + 1
+                if chat.source == nil, chat.problem == nil, chat.outgoing.contains(where: \.notSent) {
+                    chat.problem = "Codex has not started a session"
+                }
+                let recorded: Chat.Phase? = misses >= 2 ? .waiting : nil
+                // Only a change: Observation reports equal writes too.
+                if !Task.isCancelled, chat.recorded != recorded {
+                    chat.recorded = recorded
+                }
             }
             try? await Task.sleep(for: .seconds(0.5))
         }
