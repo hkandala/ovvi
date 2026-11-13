@@ -66,7 +66,7 @@ struct Detail: View {
                 EmptyState(symbol: "macwindow", title: "No tabs in \(workspace.label)") {
                     Button { Task { await page.newTab() } } label: {
                         Text("New Tab")
-                        Text(KeyboardShortcut.hotkey("tab.new")?.glyphs ?? "").foregroundStyle(.secondary)
+                        Text(Hotkeys.glyphs("tab.new")).foregroundStyle(.secondary)
                     }
                     .buttonStyle(.glassProminent)
                 }

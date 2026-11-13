@@ -107,6 +107,11 @@ final class Hotkeys {
         return byID[id].map(shared.keys) ?? []
     }
 
+    /// The first key's glyphs, or none.
+    static func glyphs(_ id: String) -> String {
+        keys(id).first?.glyphs ?? ""
+    }
+
     /// For text that names a key: its glyphs, or the action's title when it has none.
     static func named(_ id: String) -> String {
         keys(id).first?.glyphs ?? byID[id]?.title ?? id
