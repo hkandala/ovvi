@@ -36,8 +36,9 @@ only lists them.
 POST /<session>/plugin-logs with a time (seconds since 1970) as the body gives back the plugin pages' console lines
 since then, from the plugin logs of every config folder of the tests: a failed test keeps them.
 POST /<session>/forget-windows removes the Debug build's saved windows ($TMPDIR/dev.ovvi.app.debug.savedState, and
-talagentd's folder in ~/Library/Daemon Containers where the helper may read it): a test that restores windows starts
-from none, not from an earlier test's.
+talagentd's folder in ~/Library/Daemon Containers where the helper may read it) and AppKit's saved main window frames
+(`NSWindow Frame main-…` in its defaults, which a launch opens at): a test that restores or resizes windows leaves
+none for the next test.
 POST /<session>/ssh-hostname with an SSH target and a host name as the body sets that HostName in its ~/.ssh/config
 block, on CI only: `<target>.invalid` fails a new connection at once (no network), 192.0.2.1 after its 10 s
 ConnectTimeout (a link that is down), 127.0.0.1 is CI's sshd again.
@@ -330,6 +331,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         if entry.get("protected", {}).get("signingIdentifier") == "dev.ovvi.app.debug":
                             shutil.rmtree(os.path.join(os.path.dirname(mapping), f"{folder}.savedState"),
                                           ignore_errors=True)
+            saved = subprocess.run(["defaults", "export", "dev.ovvi.app.debug", "-"], capture_output=True).stdout
+            with contextlib.suppress(plistlib.InvalidFileException, ValueError):
+                for key in plistlib.loads(saved):
+                    if key.startswith("NSWindow Frame main-"):
+                        subprocess.run(["defaults", "delete", "dev.ovvi.app.debug", key], capture_output=True)
             status, reply = 200, b""
         elif action == "ssh-hostname":
             config, (target, name) = os.path.expanduser("~/.ssh/config"), body.decode().split()

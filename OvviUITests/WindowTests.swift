@@ -136,6 +136,8 @@ extension OvviUITests {
         XCTAssertEqual(frame.minX, screen.minX, accuracy: 2, "\(frame) in \(screen)")
 
         step("New window: the next one takes the size and place of the window last resized")
+        // AppKit saves each main window's frame, and a later launch opens at it.
+        addTeardownBlock { @MainActor [self] in try await forgetWindows() }
         // The left half of the screen, with no hit test on an edge.
         let front = try XCTUnwrap(window)
         app.menuBars.menuBarItems["Window"].click()
