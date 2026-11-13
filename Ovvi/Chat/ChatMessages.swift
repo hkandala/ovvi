@@ -44,6 +44,7 @@ struct ChatMessages: View, Equatable {
     /// rows one of 110–160 ms.
     private static let block = 34
     private static let budget = 120
+    private static let earlierRow: CGFloat = 28, gap: CGFloat = 10
 
     /// The focus binding stays the same for a card. The rows are worked out in the body (3–4 ms for a 3,900-entry
     /// history).
@@ -167,10 +168,10 @@ struct ChatMessages: View, Equatable {
                     Filler(height: viewHeight)
                     // Not lazy: a lazy stack guesses the height of the rows it has not built, by up to four times,
                     // and after a split shows a blank where it guesses wrong. `start` keeps the layout short.
-                    VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: Self.gap) {
                         if start > 0 {
                             // Drawn only near the top: a spinner animates, also out of view.
-                            Color.clear.frame(height: 28)
+                            Color.clear.frame(height: Self.earlierRow)
                                 .overlay {
                                     if near {
                                         Loader(id: "chat.\(chat.paneID).earlier")
@@ -277,7 +278,7 @@ struct ChatMessages: View, Equatable {
         // Held at the bottom, the view's top moves up by what goes above the block's first row, which then sits under
         // the top padding, the earlier rows' row and the gap.
         guard rows.indices.contains(start), let top = tops.places[rows[start].id],
-              viewTop.value - top + topPadding + 28 + 10 >= viewHeight.value / 2 else { return }
+              viewTop.value - top + topPadding + Self.earlierRow + Self.gap >= viewHeight.value / 2 else { return }
         first = nil
     }
 
