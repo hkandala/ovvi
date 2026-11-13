@@ -12,8 +12,9 @@ extension SSHExec {
     /// (`ssh -O forward -L`): no process per request, one channel on the connection each.
     public func api(_ session: String) async throws -> Channel {
         let name = "The forward of herdr's socket on \(target)"
+        let local = try await forwarded(session)
         let channel: Channel
-        if let first = try? await UnixSocket.connect(forwarded(session), as: name) {
+        if let first = try? UnixSocket.connect(local, as: name) {
             channel = first
         } else {
             // No listener (the master ended, or its file went): forwarded again, once.
@@ -31,7 +32,8 @@ extension SSHExec {
 
     /// ssh takes a forwarded connection and closes it when the machine's end fails: herdr is not running (the
     /// caller's session list tells), its socket moved (forwarded again next time), or sshd refuses to forward it. A
-    /// master that went meanwhile (a dropped link) closed it too: that is no refusal.
+    /// master that went meanwhile (a dropped link) closed it too: that is no refusal. ponytail: a re-forward's cancel
+    /// drops connections still waiting on the old listener, which read as a refusal once; tell them apart if seen.
     private func unanswered(_ session: String, on pid: pid_t?) async -> (status: Int32, stderr: String)? {
         guard let pid, pid == connection, herdrForwards[session]?.pid == pid,
               let listed = try? await herdrSession(session), listed.running, pid == connection,

@@ -4,15 +4,7 @@
 # same PATH and no other variable.
 herdr=$(PATH=${PATH#*:} command -v herdr)
 HERDR=$herdr
-# The app connects to herdr's socket: `session list` names one of `bridge-socket`'s instead, whose connections run this.
-case "$*" in "--session $2 session list"*)
-    s=/tmp/ovvi-e2e-bridge-$PPID-$2.sock
-    [ -S "$s" ] || { nohup "${0%/*}/../bridge-socket" "$s" "$0" "$2" $PPID >/dev/null 2>&1 &
-        i=0; while [ ! -S "$s" ] && [ $i -lt 100 ]; do sleep 0.05; i=$((i + 1)); done; }
-    set -o pipefail
-    "$HERDR" "$@" | sed "s#\"socket_path\":\"[^\"]*/sessions/$2/herdr.sock\"#\"socket_path\":\"$s\"#"
-    exit
-esac
+. "${0%/*}/../serve-socket"
 case "$*" in *remote-api-bridge*)
     set -o pipefail
     "$herdr" "$@" | {
