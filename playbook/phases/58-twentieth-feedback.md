@@ -965,6 +965,13 @@ The user's files: `.build/fb57/r11-fontkeys-11.20.52.png`, `r11-tabslide-11.23.5
   order (the sidebar's page dots). The ⌥ + swipe and a step in the overview go through `WindowPages.step`, so they
   wrap too. The sidebar's finger slide still stops at the ends. Previous Session and Next Session are disabled only
   with one page.
+- **Runs.** `make lint build test` green except HerdrKit's two SSHForwardTests and "a started server shares the CLI's
+  paths" (sshd and `launchctl bootstrap` fail from this agent's shell, also alone; no HerdrKit change): for the final
+  round. VM green, 9 tests: tab history, the session and space keys (fails on the old code at the wrap), the ⌘/ panel,
+  recorded keys, testSecondShortcuts (⌘= still runs), font size keys, pane keys, ⌃⇥, testKeyboardShortcutsScenes
+  (before and after in `~/Downloads/ovvi-research/p58h3/`).
+- **For the user.** ⌘+ and ⌘= both grow the text; Settings ▸ Shortcuts and View show ⌘+ only. ⌃⇧[ and ⌃⇧] step tab
+  history, also with a terminal or a browser focused. ⌥⌘] on the last session goes to the first.
 
 ### Track T2: the tab slide is laggy (item 43)
 
