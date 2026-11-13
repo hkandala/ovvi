@@ -143,6 +143,8 @@ extension Hotkeys {
         Hotkey("tab.close-right", "Close Tabs to the Right", "Tabs"),
         Hotkey("tab.previous", "Show Previous Tab", "Tabs", "shift+cmd+[", "ctrl+shift+tab", top: true),
         Hotkey("tab.next", "Show Next Tab", "Tabs", "shift+cmd+]", "ctrl+tab", top: true),
+        Hotkey("tab.back", "Go Back", "Tabs", "ctrl+cmd+left", top: true),
+        Hotkey("tab.forward", "Go Forward", "Tabs", "ctrl+cmd+right", top: true),
         Hotkey("tab.move-left", "Move Tab Left", "Tabs", "shift+cmd+left", top: true),
         Hotkey("tab.move-right", "Move Tab Right", "Tabs", "shift+cmd+right", top: true),
     ] + jumps("tab", "Tab", "Tabs", "cmd+")
