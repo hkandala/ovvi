@@ -382,3 +382,50 @@ fails; lessons.md's rule makes it 60 s (round 8's final CI, '### Final CI, round
   formatted text on the clipboard. Drag forward and then back past where you pressed: still no white cell. A ⇧-drag or
   a double click selects in the card only. After a selection, scroll pi or let it write: pi's selection moves with its
   text and white cells can show (known limit). Pictures (dark): `~/Downloads/ovvi-research/p58m/`.
+
+### Track L
+
+- **Cause.** Ovvi started a process for nearly everything it asked: every herdr request was a `remote-api-bridge`
+  (two execs with `/usr/bin/env`), the sidebar ran `git status` per space every 10 s (9–14 processes each with this
+  Mac's wrapped git), a card's state save was `sh`+`mkdir`+`cat`+`mv`, a shown Claude chat ran `tr`+`sleep` every
+  0.3 s, and Git and File Explorer cards refreshed (4 git runs, about 40 processes here) on any change under the root,
+  ignored build output and `.git/objects` included, up to once a second.
+- **Fix, one way for both machines.** Every herdr request and the events stream go to herdr's API socket in the app
+  (`Exec.api`): This Mac connects to herdr's `socket_path` (from `session list --json`, kept until a connect fails);
+  a remote machine to a local socket its ControlMaster forwards there (`ssh -O forward -L`, once per session and
+  master; a stale file removed, an old forward cancelled first, `StreamLocalBindMask=0177`, the app's pid in the
+  name, files removed at quit). A host whose sshd refuses stream-local forwarding shows "‹target› refuses to forward
+  herdr's socket: Ovvi needs sshd's AllowStreamLocalForwarding", no fallback. The sidebar's branch follows git's own
+  files (`HEAD`, refs, `packed-refs`, `reftable/`, `config`; a worktree's own `HEAD`): FSEvents here, one long-lived
+  Perl `lstat` loop over the relay there, plus a 60 s read. Claude's state watch is one long-lived Perl run on both
+  machines. Folder watches drop changes under an ignored folder and in `.git/objects` (one `check-ignore` per new
+  output folder, then cached) and come at most every 2 s; the Git home and the Explorer take changes and head from
+  one `git status --porcelain=v2 --branch` (`git.changes`), and the Git home reads branches and history only on
+  `git.watch` (the sidebar's watch), a moved head, a write or Show More. Programs start by their path, found on PATH
+  at each run; state files are written and removed in the app.
+- **Decisions.** The remote state write stays one `sh` over the relay: a relay file op would be a second protocol for
+  no Mac gain, and the read already splits the same way. The remote git watch is Perl, not the 2 s `cksum` poll the
+  Explorer uses (4–5 processes a check, more than the old 10 s git); Debian's `perl-base` has no Time::HiRes, so it
+  sweeps every ref file (30 ms at 10,000 loose refs; ponytail note). Terminal streams stay `terminal session` runs
+  (D7). The UI fixtures that changed herdr's answers (late, down) now serve the app a socket whose connections run
+  their bridge (`OvviUITests/Fixtures/bridge-socket`), so they test the same thing. An expanded ignored folder in the
+  Explorer no longer refreshes while a build writes into it (documented). Codex's 0.5 s screen check is kept: it is
+  now one socket request, no process.
+- **Measured** in the VM, the same UI-driven scenario on 0b9f1448 (before) and this track (after), 90 s each: the
+  app's direct forks (kqueue), every new pid in the VM, the app's CPU. Idle, five git spaces and a Git and a File
+  Explorer card shown: forks 112 → 5 a minute (the 60 s reads), new pids 124 → 16, CPU 1.2 → 0.9 %. A build writing
+  ignored output twice a second beside them (its own `date` and `sleep` are about 240 pids a minute): forks 269 → 5,
+  new pids 990 → 225, the app 3.4 → 0.8 % and WebKit 1.9 → 0 %. A Claude chat shown: forks 91 → 9, new pids 292 →
+  18. On this Mac's wrapped git each old git run was 9–14 processes more, so the gain here is larger than the VM's.
+- **Runs.** HerdrKit: a user-level sshd on a free port drives the forward (works, 0600/0700, herdr restart, master
+  SIGKILL then a stale file, the file deleted under a live master, which failed before the review's fix, refusal);
+  a test herdr wrapper counts `session list` runs (one, again after stop, delete, restart); socket close on answer,
+  timeout, drop, cancelled updates. VM green: the window, failure (stopped, failed stream with `down`, late snapshot,
+  starts), find bar's late read, sidebar git, Git card and home, Git diff, three File Explorer, plugin API and three
+  Claude chat tests. Not run here (CI's sshd): RemoteTests, ReconnectTests, RemoteBrowserTests and
+  testAChatOnARemoteMachine, for the final CI round.
+- **For the user.** A remote machine: connect, then drop the link (sleep the Mac or turn Wi-Fi off and on): the page
+  shows Reconnecting and comes back, cards answer, the sidebar's branch still follows a commit there within about
+  2 s. Restart herdr (`herdr session stop`, Start in the page): the page comes back. On This Mac a commit or a
+  checkout in a terminal shows in the sidebar within about a second; a build writing into `build/` or `node_modules`
+  no longer makes a Git or File Explorer card refresh.
