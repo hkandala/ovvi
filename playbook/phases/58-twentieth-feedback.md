@@ -1103,6 +1103,23 @@ The user's files: `.build/fb57/r11-fontkeys-11.20.52.png`, `r11-tabslide-11.23.5
     letter as host name, so let's say i type vps and press enter, i see connecting to v.., and fails of course, but
     when i press add machine button, it takes the correct full name, fix tihs"
 
+- **Cause.** Add Machine's Add button (`.keyboardShortcut(.defaultAction)`) ran a closure that captured the body's
+  trimmed SSH target. SwiftUI keeps a default button's action from when the button turns on, which is at the first
+  letter typed. So Return added "v" for "vps", while a click ran the current closure. `draft` (`@State`) was read live,
+  so only the captured target was stale. Every way into Add Machine (Settings ▸ Machines, the machine menu, the new
+  window's list) opens this page, and Save on a machine's page has the same button.
+- **Fix.** The button's action is `save()`, which reads the target and the saved machine when it runs: Return and a
+  click run the same code. It still checks the target before it reaches ssh.
+- **Siblings.** I checked every `keyboardShortcut` and `onSubmit` in `Ovvi/`. AskDialog reads `@State` and is one view
+  per question. The welcome's Next / Get Started captures `last`, but Return on the last page closes it on the old code
+  in the VM (its title changes with the page). The rest have constant actions or are text fields' submits, which refresh
+  with their text.
+- **Runs.** VM, old code: `testAddMachineFromANewWindowConnectsInIt` (now types only the target and Return) failed with
+  the machine named "o". VM, new code: it passed, with `testSettingsMachinePageSavesAnEdit`. `make lint build test` passed on
+  the rebased tree.
+- **For the user.** Add Machine, type `vps` and press Return: "Connecting to vps…". Save on an existing machine with
+  Return keeps the edit.
+
 ### Track K2: HerdrKit's sshd and launchd tests fail in an agent's pane
 
 - **Cause.** Not the variables the tests pass on, and not the app: the agent launcher (`pi`) runs the agent
