@@ -10,7 +10,8 @@ final class Bridge {
     var failure: PluginProblem?
     @ObservationIgnored private var state: Any?
     @ObservationIgnored private var saving: Task<Void, Never>?
-    @ObservationIgnored private var watches: [Int: String] = [:]
+    /// `git`: git's own files of the root (`git.watch`), else a path's changes.
+    @ObservationIgnored private var watches: [Int: (path: String, git: Bool)] = [:]
     @ObservationIgnored private var watching: [Int: Task<Void, Never>] = [:]
     @ObservationIgnored private(set) var visible = false
     @ObservationIgnored private var written: Data?
@@ -115,10 +116,14 @@ final class Bridge {
     }
 
     private func watch(_ id: Int) {
-        guard visible, let path = watches[id], let store = plugin?.web.store else { return }
+        guard visible, let (path, git) = watches[id], let store = plugin?.web.store else { return }
         watching[id]?.cancel()
         watching[id] = Task { [weak self] in
-            for await _ in await Files.watch(path, exec: store.machine.exec()) {
+            let exec = await store.machine.exec(), runs = await store.gitRuns()
+            let changes = git ? runs ? await GitStatus.watch(path, exec: exec) : nil
+                : Files.watch(path, git: runs, exec: exec)
+            guard let changes else { return }
+            for await _ in changes {
                 self?.event("watch", id)
             }
         }
@@ -167,7 +172,7 @@ final class Bridge {
                 "\(args["level"] as? String ?? "log"): \(args["text"] as? String ?? "")",
             )
         case "files.info": return try await info(args)
-        case "files.watch", "files.unwatch": try watch(name, args)
+        case "files.watch", "files.unwatch", "git.watch": try watch(name, args)
         case _ where PluginCalls.gitWrites.contains(name): return try await serial { try await self.calls(name, args) }
         case _ where name.hasPrefix("files.") || name.hasPrefix("git."): return try await calls(name, args)
         case _ where name.hasPrefix("card.") || name.hasPrefix("state.") || name.hasPrefix("controls."):
@@ -219,7 +224,7 @@ final class Bridge {
 
     private func watch(_ name: String, _ args: [String: Any]) throws {
         guard let id = args["id"] as? Int else { throw PluginError("failed", "id is missing") }
-        guard name == "files.watch" else {
+        guard name != "files.unwatch" else {
             watches[id] = nil
             watching.removeValue(forKey: id)?.cancel()
             return
@@ -227,7 +232,7 @@ final class Bridge {
         guard let path = args["path"] as? String, path.hasPrefix("/") else {
             throw PluginError("failed", "path must be an absolute path")
         }
-        watches[id] = path
+        watches[id] = (path, name == "git.watch")
         watch(id)
     }
 

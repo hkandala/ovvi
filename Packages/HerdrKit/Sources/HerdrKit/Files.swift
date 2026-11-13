@@ -109,13 +109,29 @@ public enum Files {
     if [ -h "$1" ]; then cat "$t" >"$1"; else mv -f "$t" "$1"; fi
     """#
 
-    public static func watch(_ path: String, exec: any Exec) -> AsyncStream<Void> {
+    /// `git`: git may run. On This Mac a folder's changes that git ignores (a build's output) or that are git's
+    /// objects wake nothing, and they come at most every 2 s; a remote check sees no ignored file anyway.
+    public static func watch(_ path: String, git: Bool = false, exec: any Exec) -> AsyncStream<Void> {
         let (stream, continuation) = AsyncStream<Void>.makeStream(bufferingPolicy: .bufferingNewest(1))
+        var isFolder: ObjCBool = false
         if exec.isRemote {
             let task = Task { await poll(path, exec: exec, continuation) }
             continuation.onTermination = { _ in task.cancel() }
+        } else if FileManager.default.fileExists(atPath: path, isDirectory: &isFolder), isFolder.boolValue {
+            let (batches, batch) = AsyncStream<[String]>.makeStream()
+            let events = Events([path], latency: 2) { batch.yield($0) }
+            let task = Task {
+                var ignored = Ignored(root: path, canonical: events.targets[0], git: git)
+                for await paths in batches where await ignored.matter(paths, exec: exec) {
+                    continuation.yield()
+                }
+            }
+            continuation.onTermination = { _ in
+                events.stop()
+                task.cancel()
+            }
         } else {
-            let events = Events([path], continuation)
+            let events = Events([path]) { _ in continuation.yield() }
             continuation.onTermination = { _ in events.stop() }
         }
         return stream
@@ -141,7 +157,7 @@ public enum Files {
             }
             continuation.onTermination = { _ in task.cancel() }
         } else {
-            let events = Events(paths, continuation)
+            let events = Events(paths) { _ in continuation.yield() }
             continuation.onTermination = { _ in events.stop() }
         }
         return stream
@@ -209,13 +225,15 @@ public enum Files {
 /// the nearest folder that exists: one made later sends nothing.
 private final class Events: Sendable {
     private static let queue = DispatchQueue(label: "ovvi.files.watch")
-    private let changed: AsyncStream<Void>.Continuation
+    /// The paths that changed, under the targets; the targets themselves for events the system dropped.
+    private let changed: @Sendable ([String]) -> Void
     /// Canonical, as the events name paths (`/private/tmp`).
-    private let targets: [String]
+    let targets: [String]
     /// Set once in init and released once in `stop`, which the stream's end calls once.
     private nonisolated(unsafe) var stream: FSEventStreamRef?
 
-    init(_ paths: [String], _ changed: AsyncStream<Void>.Continuation) {
+    /// `latency`: how often at most a stream of changes calls `changed`, after a first one at once.
+    init(_ paths: [String], latency: CFTimeInterval = 1, _ changed: @escaping @Sendable ([String]) -> Void) {
         let roots = paths.map { path in
             var root = path, isFolder: ObjCBool = false
             while root != "/",
@@ -241,17 +259,15 @@ private final class Events: Sendable {
             let dropped = (0 ..< count).contains {
                 flags[$0] & FSEventStreamEventFlags(kFSEventStreamEventFlagMustScanSubDirs) != 0
             }
-            if dropped || changed.contains(where: { path in
-                events.targets.contains { path == $0 || path.hasPrefix($0 + "/") }
-            }) {
-                events.changed.yield()
+            let under = changed.filter { path in events.targets.contains { path == $0 || path.hasPrefix($0 + "/") } }
+            if dropped || !under.isEmpty {
+                events.changed(dropped ? events.targets : under)
             }
         }
         let flags = kFSEventStreamCreateFlagUseCFTypes | kFSEventStreamCreateFlagFileEvents
             | kFSEventStreamCreateFlagNoDefer
-        // A second's latency: a folder lists again at most that often while a build writes.
         stream = FSEventStreamCreate(nil, callback, &context, Array(Set(roots)) as CFArray,
-                                     FSEventStreamEventId(kFSEventStreamEventIdSinceNow), 1,
+                                     FSEventStreamEventId(kFSEventStreamEventIdSinceNow), latency,
                                      FSEventStreamCreateFlags(flags))
         if let stream {
             FSEventStreamSetDispatchQueue(stream, Self.queue)
@@ -295,5 +311,73 @@ extension Exec {
         find "$r" -mindepth 1 -maxdepth 1 -mtime +0 -exec rm -rf {} + 2>/dev/null
         d=$(mktemp -d "$r/XXXXXXXX") && base64 -d >"$d/$1" && echo "$d"
         """#
+    }
+}
+
+/// What git ignores under a watched folder. A folder git ignores is kept: git never looks inside one, so nothing under
+/// it counts, until a `.gitignore` or `info/exclude` changes. A build asks git once per new output folder, then never.
+struct Ignored {
+    let root: String
+    /// As the events name paths.
+    let canonical: String
+    var git: Bool
+    private var folders: Set<String> = []
+    private var rootAsked = false
+
+    init(root: String, canonical: String, git: Bool) {
+        (self.root, self.canonical, self.git) = (root, canonical, git)
+    }
+
+    mutating func matter(_ paths: [String], exec: any Exec) async -> Bool {
+        let relative = paths.map { $0 == canonical ? "" : String($0.dropFirst(canonical.count + 1)) }
+        if relative.contains(where: { $0.hasSuffix(".gitignore") || $0.hasSuffix(".git/info/exclude") }) {
+            folders = []
+            return true
+        }
+        let left = relative.filter { path in
+            !(path == ".git/objects" || path.hasPrefix(".git/objects/") || path.contains("/.git/objects/"))
+                && !Self.folders(of: path).contains(where: folders.contains)
+        }
+        guard !left.isEmpty else { return false }
+        // The root and git's own files (the index, refs) always count; git asks nothing about them.
+        guard git, !left.contains(where: { $0.isEmpty || $0 == ".git" || $0.hasPrefix(".git/") }) else { return true }
+        // The root too, once: a card on an ignored folder (`node_modules`) watches what is in it.
+        let asked = Set(left.flatMap { [$0] + Self.folders(of: $0) } + (rootAsked ? [] : ["."]))
+        rootAsked = true
+        guard let ignored = await ignored(asked, exec: exec) else { return true }
+        if ignored.contains(".") {
+            git = false
+            return true
+        }
+        let parents = Set(left.flatMap(Self.folders(of:)))
+        folders.formUnion(ignored.intersection(parents))
+        return left.contains { path in !([path] + Self.folders(of: path)).contains(where: ignored.contains) }
+    }
+
+    /// `a/b/c` → `a/b`, `a`.
+    private static func folders(of path: String) -> [String] {
+        var folders: [String] = [], part = path
+        while let slash = part.lastIndex(of: "/") {
+            part = String(part[..<slash])
+            folders.append(part)
+        }
+        return folders
+    }
+
+    /// Nil when git cannot tell (no repository: then it never asks again).
+    private mutating func ignored(_ paths: Set<String>, exec: any Exec) async -> Set<String>? {
+        guard let channel = try? await exec.run(["git", "--no-optional-locks", "-C", root, "check-ignore", "-z",
+                                                 "--stdin"]) else { return nil }
+        channel.write(paths.joined(separator: "\0") + "\0")
+        channel.closeInput()
+        let output = try? await withTimeout(.seconds(10), onTimeout: channel.terminate) {
+            await channel.lines.reduce(into: "") { $0 += $1 + "\n" }
+        }
+        // 1: none ignored.
+        guard let output, await [0, 1].contains(channel.exit().status) else {
+            git = false
+            return nil
+        }
+        return Set(output.split(separator: "\0").map(String.init).filter { $0 != "\n" })
     }
 }

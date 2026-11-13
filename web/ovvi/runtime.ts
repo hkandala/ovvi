@@ -173,6 +173,14 @@ const ovvi: Ovvi = {
     pull: (root) => call("git.pull", { root }),
     push: (root) => call("git.push", { root }),
     switch: (root, branch) => call("git.switch", { root, branch }),
+    watch(root, fn) {
+      const id = ++next
+      watches.set(id, fn)
+      tell("git.watch", { id, path: root })
+      return () => {
+        if (watches.delete(id)) tell("files.unwatch", { id })
+      }
+    },
     init: (folder) => call("git.init", { root: folder }),
   },
   state: {
@@ -270,6 +278,11 @@ function make(arg: string, at?: string): Kept {
         watch: { value: (path: string, fn: () => void) => own(watch(path, () => (current === kept ? fn() : kept.due.add(fn)))) },
       }),
     },
+    git: {
+      value: Object.create(ovvi.git, {
+        watch: { value: (root: string, fn: () => void) => own(watch(root, () => (current === kept ? fn() : kept.due.add(fn)), true)) },
+      }),
+    },
   })
   const kept: Kept = {
     offs: [], controls: new Map(), due: new Set(), places: new Set(), shownOnce: false, drawn: false, dropped: false,
@@ -359,20 +372,22 @@ function backForward(event: KeyboardEvent) {
   tell("card.step", { back })
 }
 
-/** One watch of the machine per path for all pages: on a remote machine each one polls. */
+/** One watch of the machine per path (and kind) for all pages: on a remote machine each one polls. */
 const watched = new Map<string, { fns: Set<() => void>; off: Off }>()
-function watch(path: string, fn: () => void): Off {
-  let shared = watched.get(path)
+function watch(path: string, fn: () => void, git = false): Off {
+  const key = `${git ? "git" : "files"} ${path}`
+  let shared = watched.get(key)
   if (!shared) {
     const fns = new Set<() => void>()
-    shared = { fns, off: ovvi.files.watch(path, () => [...fns].forEach((each) => each())) }
-    watched.set(path, shared)
+    const all = () => [...fns].forEach((each) => each())
+    shared = { fns, off: git ? ovvi.git.watch(path, all) : ovvi.files.watch(path, all) }
+    watched.set(key, shared)
   }
   const { fns, off } = shared
   fns.add(fn)
   return () => {
     if (!fns.delete(fn) || fns.size) return
-    watched.delete(path)
+    watched.delete(key)
     off()
   }
 }

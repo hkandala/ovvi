@@ -285,10 +285,13 @@ export async function show(place: Place): Promise<Reveal> {
    *  ponytail: `--numstat` leaves untracked files out; count them too if the bar should match Git's diff. */
   async function git() {
     const at = repo
-    const [now, head, numstat] = at ? await Promise.all([ovvi.git.status(at).catch(() => changes),
-      ovvi.git.head(at).catch(() => undefined), ovvi.run(["git", "--no-optional-locks", "diff-index", "--numstat", "HEAD"], { cwd: at }).catch(() => null)])
-      : [[], null, null]
-    changes = now
+    // The letters and the head from one `git status`.
+    const [now, numstat] = at ? await Promise.all([ovvi.git.changes(at).catch(() => undefined),
+      ovvi.run(["git", "--no-optional-locks", "diff-index", "--numstat", "HEAD"], { cwd: at }).catch(() => null)])
+      : [{ status: [], head: null }, null]
+    // A failed read is no head, as `git.head`'s answer outside a repository.
+    const head = now ? now.head : null
+    changes = now?.status ?? changes
     showStatus()
     const lines = { added: 0, removed: 0 }
     // Binary files count `-`.

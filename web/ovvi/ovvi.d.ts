@@ -146,7 +146,8 @@ export interface Files {
   write(path: string, data: string | Uint8Array, options?: { over?: string }): Promise<{ hash: string }>
   /** Renames or moves a file or a folder; never replaces: fails when something is at `to`. */
   move(path: string, to: string): Promise<void>
-  /** Calls fn after a change under path, only while the card shows, and once on showing again. */
+  /** Calls fn after a change under path, only while the card shows, and once on showing again. Under a folder, what
+   *  git ignores (a build's output) and git's objects call nothing, and calls come at most every 2 s. */
   watch(path: string, fn: () => void): Off
 }
 
@@ -156,8 +157,14 @@ export interface Git {
   /** The changed files from the root, each untracked file on its own: the index's letter for a file it adds or
    *  renames, else the work tree's, else the index's. */
   status(root: string): Promise<Change[]>
-  /** The changes as the index keeps them: staged (the index against HEAD) and unstaged (untracked included). */
-  changes(root: string): Promise<{ staged: Change[]; unstaged: Change[] }>
+  /** The changes as the index keeps them: staged (the index against HEAD) and unstaged (untracked included); with
+   *  `status`'s list and `head`'s answer plus the commit HEAD names ("" before the first), all from one `git status`. */
+  changes(root: string): Promise<{
+    staged: Change[]
+    unstaged: Change[]
+    status: Change[]
+    head: { branch: string; ahead: number; behind: number; commit: string } | null
+  }>
   /** The checkout's branch (the short hash when detached) and how far it is from its upstream; null outside a
    *  repository. */
   head(root: string): Promise<{ branch: string; ahead: number; behind: number } | null>
@@ -189,6 +196,10 @@ export interface Git {
   /** A remote branch (`origin/x`) makes a local one that tracks it. */
   switch(root: string, branch: string): Promise<void>
   init(folder: string): Promise<void>
+  /** Calls fn after a change of git's own files of the root: its `HEAD`, the repository's refs and its config (a
+   *  commit, a checkout, a fetch, a new branch or tag, an upstream), as the sidebar's branch follows them. Only while
+   *  the card shows, and once on showing again. */
+  watch(root: string, fn: () => void): Off
 }
 
 export interface Change {

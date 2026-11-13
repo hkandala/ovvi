@@ -32,8 +32,12 @@ import Testing
 }
 
 @Test func `status letters from real porcelain`() {
-    let porcelain = " M sub/a.txt\0R  sub/de ep/f.txt\0sub/deep/f.txt\0UU both.txt\0AM new.txt\0?? sub/tab\tx\0"
-        + "!! build/\0C  copy.txt\0orig.txt\0?? \u{301}x\0"
+    let porcelain = "# branch.oid 1a2b3c4d\0# branch.head main\0"
+        + "1 .M N... 100644 100644 100644 1a2b 1a2b sub/a.txt\0"
+        + "2 R. N... 100644 100644 100644 1a2b 1a2b R100 sub/de ep/f.txt\0sub/deep/f.txt\0"
+        + "u UU N... 100644 100644 100644 100644 1a2b 3c4d 5e6f both.txt\0"
+        + "1 AM N... 000000 100644 100644 0000 1a2b new.txt\0? sub/tab\tx\0! build/\0"
+        + "2 C. N... 100644 100644 100644 1a2b 1a2b C75 copy.txt\0orig.txt\0? \u{301}x\0"
     #expect(Git.Change.parse(porcelain) == [
         Git.Change(letter: "M", path: "sub/a.txt", oldPath: nil),
         Git.Change(letter: "R", path: "sub/de ep/f.txt", oldPath: "sub/deep/f.txt"),
@@ -44,6 +48,7 @@ import Testing
         Git.Change(letter: "A", path: "copy.txt", oldPath: "orig.txt"),
         Git.Change(letter: "U", path: "\u{301}x", oldPath: nil),
     ])
+    #expect(GitStatus(porcelain: porcelain) == GitStatus(branch: "main", ahead: 0, behind: 0))
 }
 
 @Test func `root, status, log and graph of a repository, here and remote`() async throws {
@@ -88,8 +93,11 @@ import Testing
 }
 
 @Test func `staged and unstaged changes from real porcelain`() {
-    let porcelain = "MM both.txt\0R  new name\0old name\0 D gone.txt\0UU clash.txt\0?? new.txt\0!! build/\0"
-        + "C  copy.txt\0orig.txt\0"
+    let porcelain = "1 MM N... 100644 100644 100644 1a2b 3c4d both.txt\0"
+        + "2 R. N... 100644 100644 100644 1a2b 1a2b R100 new name\0old name\0"
+        + "1 .D N... 100644 100644 000000 1a2b 1a2b gone.txt\0"
+        + "u UU N... 100644 100644 100644 100644 1a2b 3c4d 5e6f clash.txt\0? new.txt\0! build/\0"
+        + "2 C. N... 100644 100644 100644 1a2b 1a2b C75 copy.txt\0orig.txt\0"
     let (staged, unstaged) = Git.Change.split(porcelain)
     #expect(staged == [
         Git.Change(letter: "M", path: "both.txt", oldPath: nil),
@@ -116,7 +124,9 @@ import Testing
     try await Git.run(work, ["add", "-A", "--", "b"], exec: exec)
     #expect(try await Git.changes(work, exec: exec).staged.map(\.path) == ["b"])
     try await Git.run(work, ["commit", "-m", "two"], exec: exec)
-    #expect(try await Git.changes(work, exec: exec) == ([], []))
+    let committed = try await Git.changes(work, exec: exec)
+    #expect(committed.staged.isEmpty && committed.unstaged.isEmpty && committed.status.isEmpty)
+    #expect(committed.head == GitStatus(branch: "main", ahead: 1, behind: 0) && committed.commit.count == 40)
     try await Git.run(work, ["push"], exec: exec)
     try await Git.run(other, ["fetch", "--all"], exec: exec)
     #expect(try await Git.branches(other, exec: exec) == [

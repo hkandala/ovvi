@@ -92,9 +92,14 @@ private func failure(_ name: String, _ args: [String: Any], _ calls: PluginCalls
     #expect(try await call("git.root", ["folder": "/"]) is NSNull)
     let status = try #require(await call("git.status", ["root": repo.path]) as? [[String: Any]])
     #expect(status.contains { $0["path"] as? String == "sub/a.txt" && $0["letter"] as? String == "M" })
-    let changes = try #require(await call("git.changes", ["root": repo.path]) as? [String: [[String: Any]]])
-    #expect(changes["staged"]?.contains { $0["letter"] as? String == "R" && $0["oldPath"] != nil } == true)
-    #expect(changes["unstaged"]?.contains { $0["path"] as? String == "sub/a.txt" } == true)
+    let changes = try #require(await call("git.changes", ["root": repo.path]) as? [String: Any])
+    let list = { (key: String) in changes[key] as? [[String: Any]] }
+    #expect(list("staged")?.contains { $0["letter"] as? String == "R" && $0["oldPath"] != nil } == true)
+    #expect(list("unstaged")?.contains { $0["path"] as? String == "sub/a.txt" } == true)
+    // The same as `git.status` and `git.head`, from one run.
+    #expect(list("status")?.map { "\($0["letter"] ?? "") \($0["path"] ?? "")" }
+        == status.map { "\($0["letter"] ?? "") \($0["path"] ?? "")" })
+    #expect((changes["head"] as? [String: Any])?["branch"] as? String == "main")
     let head = try #require(await call("git.head", ["root": repo.path]) as? [String: Any])
     #expect(head["branch"] as? String == "main")
     let raw = try await all.call("git.head", JSONSerialization.data(withJSONObject: ["root": repo.path]))
@@ -131,8 +136,10 @@ private func failure(_ name: String, _ args: [String: Any], _ calls: PluginCalls
     _ = try await call("git.init", ["root": fresh.path])
     #expect(try await call("git.root", ["folder": fresh.path]) as? String == fresh.path)
     func changes() async throws -> [String: [String]] {
-        let json = try #require(await call("git.changes", ["root": root]) as? [String: [[String: Any]]])
-        return json.mapValues { $0.compactMap { $0["path"] as? String } }
+        let json = try #require(await call("git.changes", ["root": root]) as? [String: Any])
+        return ["staged", "unstaged"].reduce(into: [:]) { paths, key in
+            paths[key] = (json[key] as? [[String: Any]])?.compactMap { $0["path"] as? String }
+        }
     }
     _ = try await call("git.stage", ["root": root, "paths": ["*.txt"]])
     #expect(try await changes() == ["staged": ["*.txt"], "unstaged": ["b.txt"]])

@@ -7,11 +7,11 @@ public struct GitStatus: Equatable, Sendable {
 }
 
 public extension GitStatus {
-    /// From `git status --porcelain=v2 --branch`: `# branch.head` (the short commit when detached) and
-    /// `# branch.ab +A -B` (absent without an upstream). Nil without a head line.
+    /// From `git status --porcelain=v2 --branch`, with `-z` or not: `# branch.head` (the short commit when detached)
+    /// and `# branch.ab +A -B` (absent without an upstream). Nil without a head line.
     init?(porcelain: String) {
         var head: String?, oid = "", ahead = 0, behind = 0
-        for line in porcelain.split(separator: "\n") {
+        for line in porcelain.split(whereSeparator: { $0 == "\n" || $0 == "\0" }) {
             let words = line.split(separator: " ")
             guard words.count >= 3, words[0] == "#" else { continue }
             switch words[1] {
@@ -85,9 +85,10 @@ public enum Git {
         try await Change.parse(porcelain(root, exec: exec))
     }
 
+    /// The changes and the head in one run.
     static func porcelain(_ root: String, exec: any Exec) async throws -> String {
-        try await exec.checkedOutput(["git", "--no-optional-locks", "-C", root, "status", "--porcelain=v1", "-z",
-                                      "--untracked-files=all"])
+        try await exec.checkedOutput(["git", "--no-optional-locks", "-C", root, "status", "--porcelain=v2", "--branch",
+                                      "-z", "--untracked-files=all"])
     }
 
     /// Not `--all`: the stash, notes and git's own refs would add lanes.
@@ -143,8 +144,8 @@ extension Git.Change {
         }
     }
 
-    /// In `git status --porcelain=v1 -z` a rename's or a copy's source path is the next field, also for a rename in
-    /// the work tree after `add -N`.
+    /// As `git status --porcelain=v1` has it: `index` and `tree` are a space when unchanged, `??` untracked, `!!`
+    /// ignored.
     struct Entry {
         let index: Character, tree: Character, path: String, oldPath: String?
 
@@ -162,17 +163,23 @@ extension Git.Change {
         }
     }
 
+    /// From `git status --porcelain=v2 -z`: `1 XY` (8 fields ahead of the path), `2 XY` (9; a rename's or a copy's
+    /// source path is the next field), `u XY` (10), `? ` and `! `; the `# ` headers are the head's.
     static func entries(_ porcelain: String) -> [Entry] {
         var fields = porcelain.split(separator: "\0", omittingEmptySubsequences: true)[...]
         var entries: [Entry] = []
-        // By bytes: a path may start with a combining character.
-        while let field = fields.popFirst()?.utf8, field.count > 3 {
-            let index = Character(Unicode.Scalar(field[field.startIndex]))
-            let tree = Character(Unicode.Scalar(field[field.index(after: field.startIndex)]))
-            let oldPath = [index, tree].contains(where: { $0 == "R" || $0 == "C" }) ? fields.popFirst().map(String.init)
-                : nil
-            entries.append(Entry(index: index, tree: tree, path: String(decoding: field.dropFirst(3), as: UTF8.self),
-                                 oldPath: oldPath))
+        // By bytes: a path may start with a combining character, and hold spaces.
+        while let field = fields.popFirst().map({ Array($0.utf8) }) {
+            guard field.count > 2, field[1] == UInt8(ascii: " ") else { continue }
+            let kind = Character(Unicode.Scalar(field[0]))
+            guard let ahead = ["1": 8, "2": 9, "u": 10, "?": 1, "!": 1][kind] else { continue }
+            let spaces = field.indices.filter { field[$0] == UInt8(ascii: " ") }
+            guard spaces.count >= ahead else { continue }
+            let path = String(decoding: field[(spaces[ahead - 1] + 1)...], as: UTF8.self)
+            let letter = { (byte: UInt8) in byte == UInt8(ascii: ".") ? " " : Character(Unicode.Scalar(byte)) }
+            let (index, tree) = "?!".contains(kind) ? (kind, kind) : (letter(field[2]), letter(field[3]))
+            entries.append(Entry(index: index, tree: tree, path: path,
+                                 oldPath: kind == "2" ? fields.popFirst().map(String.init) : nil))
         }
         return entries
     }

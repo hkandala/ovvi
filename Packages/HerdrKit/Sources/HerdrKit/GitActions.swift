@@ -1,10 +1,19 @@
 import Foundation
 
 public extension Git {
-    static func changes(_ root: String, exec: any Exec) async throws
-        -> (staged: [Change], unstaged: [Change])
-    {
-        try await Change.split(porcelain(root, exec: exec))
+    /// The index's view (`staged`, `unstaged`), `status`'s and the head with its commit (empty before the first),
+    /// from one run.
+    struct Changes {
+        public let staged: [Change], unstaged: [Change], status: [Change]
+        public let head: GitStatus?, commit: String
+    }
+
+    static func changes(_ root: String, exec: any Exec) async throws -> Changes {
+        let porcelain = try await porcelain(root, exec: exec)
+        let (staged, unstaged) = Change.split(porcelain)
+        let oid = porcelain.split(separator: "\0").first { $0.hasPrefix("# branch.oid ") }?.dropFirst(13) ?? ""
+        return Changes(staged: staged, unstaged: unstaged, status: Change.parse(porcelain),
+                       head: GitStatus(porcelain: porcelain), commit: oid == "(initial)" ? "" : String(oid))
     }
 
     struct Branch: Equatable, Sendable {

@@ -146,10 +146,12 @@ public struct PluginCalls: Sendable {
         case "git.status": return try await Git.status(root, exec: exec).map(Self.json)
         case "git.changes":
             let changes = try await Git.changes(root, exec: exec)
-            return ["staged": changes.staged.map(Self.json), "unstaged": changes.unstaged.map(Self.json)]
+            return ["staged": changes.staged.map(Self.json), "unstaged": changes.unstaged.map(Self.json),
+                    "status": changes.status.map(Self.json),
+                    "head": changes.head
+                        .map { Self.json($0).merging(["commit": changes.commit]) { $1 } } as Any? ?? NSNull()]
         case "git.head":
-            return await GitStatus.of(root, exec: exec).map { ["branch": $0.branch, "ahead": $0.ahead,
-                                                               "behind": $0.behind] }
+            return await GitStatus.of(root, exec: exec).map(Self.json)
         case "git.branches":
             return try await Git.branches(root, exec: exec)
                 .map { ["name": $0.name, "remote": $0.remote, "current": $0.current] }
@@ -191,6 +193,10 @@ public struct PluginCalls: Sendable {
         guard !branch.hasPrefix("-") else { throw PluginError("failed", "No branch \(branch)") }
         let remote = try await Git.branches(root, exec: exec).contains { $0.remote && $0.name == branch }
         return ["switch"] + (remote ? ["--track", branch] : [branch])
+    }
+
+    private static func json(_ head: GitStatus) -> [String: Any] {
+        ["branch": head.branch, "ahead": head.ahead, "behind": head.behind]
     }
 
     private static func json(_ change: Git.Change) -> [String: Any] {

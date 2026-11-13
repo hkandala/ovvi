@@ -404,7 +404,9 @@ shows it whole.
   | ⌘-click | opens in a new tab ([Opening](#opening)) | adds to the selection |
 
 - The tree and the letters update after each change under the root while
-  the card shows. The open folders list again. A root that cannot be listed
+  the card shows, at most every 2 s; on This Mac a change that git ignores
+  (a build's output) or in `.git/objects` updates nothing. The letters and
+  the branch come from one `git status` (`git.changes`). The open folders list again. A root that cannot be listed
   shows "Can't list ‹root›" in the middle of the card, under `folder.badge.questionmark`. Only a root that is gone
   empties a tree it listed: any other failure (a remote machine's dropped link, its 10 s bound) keeps the rows, and the
   next listing brings them up to date.
@@ -707,7 +709,13 @@ app's fonts and `Look` colors. From the top:
   a repository or cannot run, the page shows git's message in the middle.
 - The home reads again after each change under the root while the card
   shows (on This Mac also `.git`'s own: a commit or a fetch from a
-  terminal), and after each write.
+  terminal), and after each write. A change takes the changes and the head
+  from one `git status --porcelain=v2 --branch` (`git.changes`); the
+  branches and the history read again only when git's own files change
+  (`git.watch`: `HEAD`, the refs, `config`, as the sidebar's branch follows
+  them), when the head moved, after a write or Show More, or after a read
+  that failed. On This Mac a change that git ignores (a build's output) or
+  in `.git/objects` reads nothing, and the reads come at most every 2 s.
 
 ### Writes
 

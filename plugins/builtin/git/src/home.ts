@@ -63,22 +63,36 @@ export async function make(place: Page, root: string) {
   const running: string[] = []
   let drawn = ""
 
-  const load = coalesce(read)
+  let history: Commit[] = [], read: { head: string; asked: number } | undefined
+  /** Every read takes the changes and the head from one `git status`; the branches and the history only when git's
+   *  own files changed, the head moved, after a write or Show More, or after a read that failed. */
+  let whole = true
+  const changed = coalesce(work)
+  const load = () => {
+    whole = true
+    return changed()
+  }
 
-  async function read() {
-    const asked = limit
-    const [changes, head, list, commits] = await Promise.allSettled([
-      ovvi.git.changes(root), ovvi.git.head(root), ovvi.git.branches(root), ovvi.git.log(root, { limit: asked }),
-    ])
+  async function work() {
+    const asked = limit, all = whole
+    whole = false
+    const [changes] = await Promise.allSettled([ovvi.git.changes(root)])
+    const head = changes.status === "fulfilled" ? changes.value.head : null
+    const key = JSON.stringify(head)
+    const again = all || read?.head !== key || read.asked !== asked
+    const [list, commits] = again
+      ? await Promise.allSettled([ovvi.git.branches(root), ovvi.git.log(root, { limit: asked })])
+      : [{ status: "fulfilled", value: branches } as const, { status: "fulfilled", value: history } as const]
+    read = changes.status === "fulfilled" && list.status === "fulfilled" && commits.status === "fulfilled"
+      ? { head: key, asked } : undefined
     // ponytail: any failure of `git.root` (a folder gone, a repository git refuses) reads as none; match git's message
     // if those must show it.
     const bare = changes.status === "rejected" && (await ovvi.git.root(root).catch(() => "")) === null
     failure = changes.status === "rejected" ? (changes.reason as Error).message : undefined
     branches = list.status === "fulfilled" ? list.value : []
-    const branch = head.status === "fulfilled" ? head.value : null
     api.controls.set("git.branch", {
-      title: branch?.branch ?? "—",
-      value: branch?.branch ?? "",
+      title: head?.branch ?? "—",
+      value: head?.branch ?? "",
       items: [
         ...branches.filter((b) => !b.remote).map((b) => ({ value: b.name, title: b.name })),
         ...(branches.some((b) => b.remote)
@@ -88,10 +102,10 @@ export async function make(place: Page, root: string) {
     })
     const count = (n: number, word: string) => (n > 0 ? { badge: n, label: `${word}, ${n} ${word === "Pull" ? "behind" : "ahead"}` }
       : { badge: 0, label: "" })
-    api.controls.set("git.pull", count(branch?.behind ?? 0, "Pull"))
-    api.controls.set("git.push", count(branch?.ahead ?? 0, "Push"))
+    api.controls.set("git.pull", count(head?.behind ?? 0, "Pull"))
+    api.controls.set("git.push", count(head?.ahead ?? 0, "Push"))
     buttons()
-    const history = commits.status === "fulfilled" ? commits.value : []
+    history = commits.status === "fulfilled" ? commits.value : []
     const state = changes.status === "fulfilled"
       ? { ...changes.value, commits: history, more: history.length >= asked }
       : { failure, bare }
@@ -381,7 +395,8 @@ export async function make(place: Page, root: string) {
     enable()
   })
 
-  api.files.watch(root, () => void load())
+  api.files.watch(root, () => void changed())
+  api.git.watch(root, () => void load())
   message.value = kept().draft ?? ""
   await load()
   document.title = ""
