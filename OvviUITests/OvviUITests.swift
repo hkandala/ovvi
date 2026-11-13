@@ -209,7 +209,8 @@ extension OvviUITests {
         case .saved: ["-session", session ?? one, "-NSQuitAlwaysKeepsWindows", "YES"]
         case .restored: ["-defaultSession", session ?? one, "-machines", "[]"]
         }
-        app.launchArguments = start + config + pinned + args
+        // macOS's ask for notifications would sit over the window and take clicks: no test needs them.
+        app.launchArguments = start + config + pinned + ["-askNotifications", "NO"] + args
         // The default plugins install from npm's cache (`make web` fills it), never the network.
         app.launchEnvironment["npm_config_offline"] = "true"
         app.launch()

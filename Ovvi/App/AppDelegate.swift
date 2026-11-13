@@ -57,11 +57,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     }
 
     func applicationWillFinishLaunching(_: Notification) {
-        UserDefaults.standard.register(defaults: ["NSQuitAlwaysKeepsWindows": true])
+        UserDefaults.standard.register(defaults: ["NSQuitAlwaysKeepsWindows": true, "askNotifications": true])
         let center = UNUserNotificationCenter.current()
         center.delegate = self
-        // macOS asks the user once; later calls answer at once. The Dock badge shows only with `.badge` allowed.
-        center.requestAuthorization(options: [.alert, .badge]) { _, _ in }
+        // macOS asks the user once; later calls answer at once. The Dock badge shows only with `.badge` allowed. The UI
+        // tests launch with `-askNotifications NO`: no one answers there, and the ask sits over the window's top right
+        // and takes their clicks, at every launch.
+        if UserDefaults.standard.bool(forKey: "askNotifications") {
+            center.requestAuthorization(options: [.alert, .badge]) { _, _ in }
+        }
         // SwiftUI routes `ovvi://` URLs to its scenes, which take none (`handlesExternalEvents`), and drops them.
         NSAppleEventManager.shared().setEventHandler(self, andSelector: #selector(openURL(_:reply:)),
                                                      forEventClass: AEEventClass(kInternetEventClass),

@@ -55,7 +55,8 @@ the session:
   idles, closes or loses its agent).
 - A click activates the app, shows that page and selects the pane.
 - The app asks for permission (alerts and the badge) at launch; macOS asks the
-  user only once.
+  user only once. The UI tests launch with `-askNotifications NO`: macOS's ask
+  would sit over the window at every launch until someone answers it.
 - An agent posts its own with `ovvi notify <title> [<body>]`
   ([CLI](/docs/agent-control/cli#notify)): the title and body it gives, with
   "‹agent› · ‹session›" as the subtitle. The id is
