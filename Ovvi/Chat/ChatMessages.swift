@@ -14,6 +14,7 @@ struct ChatMessages: View, Equatable {
     @State private var settling: Task<Void, Never>?
     @State private var first: String?
     @State private var earlier = false
+    @State private var nearTop = false
     /// The rows come on the turn after the view is made, so that a switch to a tab whose chat is made draws the window,
     /// the tab and the card in the click's own turn (the rows take 124 ms of a long chat).
     @State private var drawn = false
@@ -97,6 +98,23 @@ struct ChatMessages: View, Equatable {
                 }
             }
         }
+        // A lone new width (a split's motion gives the card its final size once) lays the rows and the reply box out
+        // at once; one in a run of them (a drag) waits for the run's end, so the rows wrap once, not at every frame,
+        // and the box waits with them. At once while the reading column keeps its width.
+        .frame(width: width)
+        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { new in
+            let run = settling != nil
+            guard run, let old = width, min(old, new) < ChatView.column + 64 else {
+                width = new
+                SettlingHost.settle(&settling) { settling = nil }
+                return
+            }
+            SettlingHost.settle(&settling) {
+                width = new
+                settling = nil
+            }
+        }
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height.value = $0 }
         .animation(.slide, value: welcome)
         .fadeEdges(.vertical, start: 12, end: 0)
@@ -120,7 +138,7 @@ struct ChatMessages: View, Equatable {
             }
         }
         .onAppear {
-            (tops, atBottom, away, first, earlier) = (Tops(), true, false, nil, false)
+            (tops, atBottom, away, first, earlier, nearTop) = (Tops(), true, false, nil, false, false)
             position = ScrollPosition(idType: String.self)
         }
     }
@@ -134,7 +152,9 @@ struct ChatMessages: View, Equatable {
         let pin = kept == nil && rows.indices.contains(start) && away
         // Read here: a change of the view's state or environment read inside the reader's content does not build it
         // again, only a change of what its closure holds. The chat's observed values are tracked inside.
-        let (scrolledUp, loading, laidOut, error, place) = (!atBottom, earlier, width, look.error, position)
+        let (scrolledUp, loading, error, place) = (!atBottom, earlier, look.error, position)
+        // The next block comes once the view's top is within half a view of the stack's, again after each.
+        let more = nearTop && start > 0 ? start : nil
         return ScrollViewReader { proxy in
             ScrollView {
                 // As tall as the view at least, its rows at the top: a short chat is then at its exact bottom, and the
@@ -146,7 +166,8 @@ struct ChatMessages: View, Equatable {
                     // and after a split shows a blank where it guesses wrong. `start` keeps the layout short.
                     VStack(alignment: .leading, spacing: 10) {
                         if start > 0 {
-                            earlierButton(loading: loading) { showEarlier(rows, before: start) }
+                            Loader(id: "chat.\(chat.paneID).earlier").frame(maxWidth: .infinity).frame(height: 28)
+                                .padding(.top, topPadding)
                         }
                         Rows(chat: chat, rows: rows[start...], tops: tops, fades: chat.current && !loading) {
                             position.scrollTo(y: $0)
@@ -174,13 +195,22 @@ struct ChatMessages: View, Equatable {
                     first = rows[start].id
                 }
             }
+            .onScrollGeometryChange(for: Bool.self) { $0.visibleRect.minY < $0.containerSize.height / 2 } action: {
+                nearTop = $1
+            }
+            .task(id: more) {
+                if let more {
+                    // Together: the rows that come are no message the agent just took, so they do not fade.
+                    (earlier, first) = (true, rows[Self.start(rows[..<more])].id)
+                }
+            }
             // At the exact bottom the chat stays there as rows come and the card resizes; scrolled up, even by a
             // point, it keeps its offset.
             .defaultScrollAnchor(.bottom, for: .initialOffset)
             .defaultScrollAnchor(.bottom, for: .sizeChanges)
             // A short chat reads from the top, where its first message went.
             .defaultScrollAnchor(.top, for: .alignment)
-            // At a new width or Show Earlier this runs ahead of the rows' new places. x: how far the bottom is out of
+            // At a new width or earlier rows this runs ahead of the rows' new places. x: how far the bottom is out of
             // view; at 0 the anchor holds the bottom instead.
             .onScrollGeometryChange(for: CGRect.self) { geometry in
                 CGRect(x: geometry.contentSize.height + geometry.contentInsets.bottom - geometry.visibleRect.maxY,
@@ -205,23 +235,6 @@ struct ChatMessages: View, Equatable {
             }
             .focusEffectDisabled()
             .accessibilityIdentifier("chat.\(chat.paneID)")
-            // A lone new width (a split's motion gives the card its final size once) wraps the rows at once, with the
-            // reply box; one in a run of them (a drag) waits for the run's end, so the rows wrap once, not at every
-            // frame. At once while the reading column keeps its width.
-            .frame(width: laidOut)
-            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { new in
-                let run = settling != nil
-                guard run, let old = width, min(old, new) < ChatView.column + 64 else {
-                    width = new
-                    SettlingHost.settle(&settling) { settling = nil }
-                    return
-                }
-                SettlingHost.settle(&settling) {
-                    width = new
-                    settling = nil
-                }
-            }
             // After the messages' id, which would replace its own.
             .overlay(alignment: .bottom) {
                 if scrolledUp {
@@ -261,40 +274,6 @@ struct ChatMessages: View, Equatable {
         .accessibilityLabel("Scroll to Bottom")
         .accessibilityIdentifier("chat.\(chat.paneID).bottom")
         .padding(.bottom, 10)
-    }
-
-    /// The spinner draws first: the run loop turn after its commit lays the rows out, which holds the main thread.
-    private func showEarlier(_ rows: [ChatRow], before start: Int) {
-        guard !earlier else { return }
-        earlier = true
-        let id = rows[Self.start(rows[..<start])].id
-        // After this turn's commit, at `beforeWaiting` only: a click's tracking loop can exit ahead of the commit.
-        // The wake-up runs the next turn without waiting for an event.
-        let activity = CFRunLoopActivity.beforeWaiting.rawValue
-        let observer = CFRunLoopObserverCreateWithHandler(nil, activity, false, Int.max) { _, _ in
-            MainActor.assumeIsolated { first = id }
-            CFRunLoopWakeUp(CFRunLoopGetMain())
-        }
-        CFRunLoopAddObserver(CFRunLoopGetMain(), observer, .commonModes)
-    }
-
-    private func earlierButton(loading: Bool, _ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text("Show Earlier").opacity(loading ? 0 : 1)
-                .overlay {
-                    if loading {
-                        ProgressView().controlSize(.small)
-                    }
-                }
-                .font(.system(size: 12, weight: .medium)).padding(.horizontal, 12).frame(height: 28)
-                .glassEffect(.regular.interactive(), in: .capsule)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Show Earlier")
-        .accessibilityValue(loading ? "loading" : "")
-        .accessibilityIdentifier("chat.\(chat.paneID).earlier")
-        .frame(maxWidth: .infinity)
-        .padding(.top, topPadding)
     }
 
     private var topPadding: CGFloat {

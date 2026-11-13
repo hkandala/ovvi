@@ -73,7 +73,6 @@ struct Composer: View {
     var composing: FocusState<Bool>.Binding
     /// The empty chat's, with its greeting.
     var placeholder: String?
-    @Environment(\.look) private var look
     static let inset: CGFloat = 18
 
     var body: some View {
@@ -108,7 +107,7 @@ struct Composer: View {
             }
         }
         .padding(.leading, Self.inset).padding(.trailing, 11).padding(.top, 13).padding(.bottom, 11)
-        .glassEffect(.regular.tint(look.replyBox), in: .rect(cornerRadius: 18))
+        .glassEffect(.regular, in: .rect(cornerRadius: 18))
         .contentShape(.rect)
         .onTapGesture { composing.wrappedValue = true }
     }

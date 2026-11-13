@@ -195,7 +195,7 @@ struct Rows: View {
     let chat: Chat
     let rows: ArraySlice<ChatRow>
     let tops: Tops
-    /// Not for rows that come with a history or Show Earlier: dim means not taken yet.
+    /// Not for rows that come with a history or an earlier block: dim means not taken yet.
     let fades: Bool
     let restore: (CGFloat) -> Void
     @State private var opened: Set<String> = []

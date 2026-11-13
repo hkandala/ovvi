@@ -563,30 +563,31 @@ A run is one quiet line with no card: its summary and a chevron.
   once its history is current.
 - **The place on the top row.** Scrolled up, the app knows the row at the
   top of the view and how far the view's top is into it. When the rows
-  above that row change height (a new width) or come (Show Earlier), the
+  above that row change height (a new width) or come (earlier rows), the
   view goes back to the same place on that row, to the point, also when a
   wider card's shorter content moved the scroll to the end. The row is
   the last one whose top is above the view's top, else the first row.
 - The app sets the scroll's place only for that and for Scroll to Bottom.
   It never gives the scroll view back a place the scroll view reported.
-- **Show Earlier.** When a chat has older rows, a glass pill "Show Earlier"
-  (12 pt, 28 pt tall) is the stack's first row, centered, with the
-  messages' top padding above it and the rows' 10 pt gap under it. A click
-  shows a small spinner in place of its words, and the next block (the same
-  rule: about 120 lines, at most 34 rows) comes above on the next run loop
-  turn, so the spinner draws before the rows lay out. The rows in view stay
-  where they are (the place on the top row). The rows it adds stay when the
-  chat scrolls back to the bottom.
+- **Earlier rows.** When a chat has older rows, a small spinner is the
+  stack's first row, centered in a 28 pt row, with the messages' top padding
+  above it and the rows' 10 pt gap under it. There is no button: once the
+  view's top is within half a view of the stack's top, the next block (the
+  same rule: about 120 lines, at most 34 rows) comes above, and again after
+  each block while the view stays that near, so a scroll up goes on through
+  the whole chat. The rows in view stay where they are (the place on the top
+  row). The spinner goes once the first row shows. The rows that come stay
+  when the chat scrolls back to the bottom.
 - **Resizing.** A narrow card (under 824 pt, where the column narrows too)
-  lays its messages out at a lone new width at once, with the reply box: a
+  lays its messages and its reply box out at a lone new width at once: a
   split's motion gives the card its final size once, so the messages and the
   box take it in the same frame and move with the card. A width that comes
   within 150 ms of the last one (a divider drag, a window resize) waits until
   the width stops changing for 150 ms, so a drag wraps the text once more at
-  its end, not at every frame. Meanwhile the card clips the messages, or its
-  fill shows beside them, and the reply box and the Scroll to Bottom button
-  follow the card at once. Scrolled up, the view keeps its place on the top
-  row.
+  its end, not at every frame. The reply box and the Scroll to Bottom button
+  wait with the messages and take the new width in the same frame. Meanwhile
+  the card clips them, or its fill shows beside them. Scrolled up, the view
+  keeps its place on the top row.
 - **The end.** 32 pt stay free between the last row and the reply box (an
   empty last row, 22 pt, plus the rows' spacing).
 - **Scroll to Bottom.** While the bottom of the messages is more than 40 pt
@@ -642,9 +643,7 @@ A run is one quiet line with no card: its summary and a chevron.
   - An image shows as its description, linked to its address. The chat never
     fetches it: a reply could send what the agent read to any server.
   - Footnotes read as written (`[^1]`): swift-markdown has none.
-- **The reply box.** A glass box (radius 18), tinted with the card's own
-  color at 45 % so that the messages under it stay faint, with "Ask
-  Anything", 14 pt. Its
+- **The reply box.** A glass box (radius 18) with "Ask Anything", 14 pt. Its
   text is 18 pt in from the box's sides, and the box is 14 pt in from the
   column, so the text lines up with the messages' 32 pt edges. It has 13 pt
   of padding on top and 11 pt at the bottom. It grows up to 10 lines, then
@@ -724,8 +723,7 @@ UI tests point the reads at a fixture home (`-archivedHome`), as Archived Sessio
 
 - Messages, replies, "Worked" and notes read as text with their words. A run
   and each call are buttons whose value is "open" or "closed". Send, Stop,
-  Scroll to Bottom and Show Earlier are named; Show Earlier's value is
-  "loading" while its rows come. The state reads as its word.
+  Scroll to Bottom are named. The state reads as its word.
 - Identifiers, after `chat.‹pane id›`: `.composer`, `.send`, `.stop`,
   `.model`, `.user`, `.sending`, `.not-sent`, `.reply`, `.worked`, `.empty`, `.loading`, `.stack`, `.tool`, `.tool.input`,
   `.tool.output`, `.note`, `.bottom`, `.earlier`, `.question`, `.option.‹option›`,

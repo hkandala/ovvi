@@ -55,45 +55,52 @@ extension OvviUITests {
         XCTAssertTrue(until(10) { last.exists && last.isHittable })
     }
 
-    func testALongChatShowsEarlierRowsInPlace() async throws {
+    /// Scrolled up, the next block comes above once the view's top nears the stack's, again and again, and the rows in
+    /// view stay where they are: each swipe up (with its momentum) moves them as far as the first did, or less at the
+    /// top, never a block more.
+    func testALongChatLoadsEarlierRowsAsItScrollsUp() async throws {
         let pane = try await startChat().pane
         app.typeText("many 25\r")
         let last = row(pane, "reply", "Last.")
         XCTAssertTrue(until(10) { last.exists && last.isHittable })
-        let chat = element("chat.\(pane)"), earlier = element("chat.\(pane).earlier")
-        let first = row(pane, "user", "many 25")
+        XCTAssertTrue(element("chat.\(pane).send").exists(within: 5))
+        let chat = element("chat.\(pane)"), loader = element("chat.\(pane).earlier")
+        let first = row(pane, "user", "many 25"), bottom = element("chat.\(pane).bottom")
+        XCTAssertTrue(loader.exists)
         XCTAssertFalse(first.exists)
+        let point = "\(chat.frame.midX) \(chat.frame.midY)"
+        func swipe(_ step: Int) async throws {
+            _ = try await Self.post("\(one)/swipe", Data("\(point) \(step) 20 0 1".utf8))
+        }
+        var upward = 0
+        for step in [10, -10] where upward == 0 {
+            try await swipe(step)
+            if bottom.exists(within: 2) {
+                upward = step
+            }
+        }
+        let kinds = ["user", "reply"].map { "chat.\(pane).\($0)" }
+        var counts: [Int] = [], moves: [Int] = []
+        for _ in 0 ..< 60 where !first.isHittable {
+            let found = try nodes(of: chat), view = found[0].frame
+            counts.append(found.count { kinds.contains($0.identifier) })
+            let shown = try XCTUnwrap(found.first { kinds.contains($0.identifier) && view.contains($0.frame) })
+            let (kind, text, place) = (shown.identifier, shown.value as? String ?? "", shown.frame.minY)
+            try await swipe(upward)
+            let same = app.descendants(matching: .any)
+                .matching(NSPredicate(format: "identifier == %@ AND value == %@", kind, text)).firstMatch
+            try moves.append(Int(XCTUnwrap(steady(3) { same.frame.minY }) - place))
+        }
+        // A block is hundreds of points; a swipe's momentum varies by a few.
+        XCTAssertFalse(moves.contains { $0 > moves[0] + 40 }, "a jump: \(moves) at \(counts)")
+        XCTAssertTrue(first.isHittable, "\(counts)")
+        XCTAssertGreaterThanOrEqual(Set(counts).count, 3, "two loads at least: \(counts)")
+        XCTAssertFalse(loader.exists)
         func up() {
-            for _ in 0 ..< 5 where !earlier.isHittable && !first.isHittable {
+            for _ in 0 ..< 5 where !first.isHittable {
                 chat.scroll(byDeltaX: 0, deltaY: 5000)
             }
         }
-        var clicks = 0
-        while !first.exists, clicks < 5 {
-            up()
-            clicks += 1
-            guard clicks <= 2 else {
-                earlier.click()
-                continue
-            }
-            let found = try nodes(of: chat), tree = found[0]
-            let button = try XCTUnwrap(found.first { $0.identifier == "chat.\(pane).earlier" }).frame
-            let kinds = ["user", "reply", "stack", "worked"].map { "chat.\(pane).\($0)" }
-            let under = try XCTUnwrap(found.filter { kinds.contains($0.identifier) && $0.frame.maxY > button.minY }
-                .min { $0.frame.minY < $1.frame.minY })
-            XCTAssertGreaterThanOrEqual(under.frame.minY - button.maxY, 10, "\(button) \(under.frame)")
-            let top = try XCTUnwrap(found.filter {
-                $0.identifier == "chat.\(pane).user" && $0.frame.minY >= tree.frame.minY - 1
-            }.min { $0.frame.minY < $1.frame.minY })
-            let (text, place) = (top.value as? String ?? "", top.frame.minY)
-            earlier.click()
-            let same = row(pane, "user", text)
-            XCTAssertTrue(until(3) { abs(same.frame.minY - place) < 2 }, "\(text) \(place) \(same.frame)")
-        }
-        XCTAssertGreaterThanOrEqual(clicks, 2)
-        up()
-        XCTAssertTrue(first.isHittable)
-        XCTAssertFalse(earlier.exists)
         staysAtTheBottom(pane, first) { element("chat.\(pane).bottom").click() }
         up()
         staysAtTheBottom(pane, first) {
@@ -170,6 +177,48 @@ extension OvviUITests {
             return widths[0] < Int(wide) - 100 && abs(widths[0] - widths[1] - inset) > 1
         }, "the messages kept their old width after the card's changed: \(looks)")
         _ = try await poll("a pane beside the chat") { try await order(tab).first { $0 != pane } }
+    }
+
+    /// A divider drag holds the messages' width until the drag ends, and the reply box's with it: both take the new one
+    /// in the same frame.
+    func testADividerDragMovesTheMessagesWithTheReplyBox() async throws {
+        let (tab, pane) = try await startChat()
+        try await say("many 6", in: pane)
+        XCTAssertTrue(row(pane, "reply", "Last.").exists(within: 10))
+        _ = try await splitByButton(pane, in: tab)
+        let card = element("pane.\(pane)"), chat = element("chat.\(pane)"), box = element("chat.\(pane).composer")
+        let divider = element("divider.\(tab).root")
+        XCTAssertTrue(divider.exists(within: 3))
+        let rest = try XCTUnwrap(steady(3) {
+            [card.frame.width - chat.frame.width, chat.frame.width - box.frame.width]
+        })
+        let (inset, gap) = (Int(rest[0]), Int(rest[1]))
+        let wide = card.frame.width
+        let from = divider.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).screenPoint
+        let path = (1 ... 4).map { "\(from.x - CGFloat($0) * 20) \(from.y)" }.joined(separator: " 0.05 ")
+        let drag = Task.detached { [one] in
+            try await Self.post("\(one)/press", Data("\(from.x) \(from.y) \(path)".utf8))
+        }
+        // Each look is one snapshot: the card's width, the messages' and the reply box's.
+        var looks: [[Int]] = []
+        func look() -> [Int] {
+            let seen = (try? nodes(of: mainWindows.firstMatch)) ?? []
+            let widths = ["pane.\(pane)", "chat.\(pane)", "chat.\(pane).composer"].map { id in
+                Int(seen.first { $0.identifier == id }?.frame.width ?? 0)
+            }
+            looks.append(widths)
+            return widths
+        }
+        XCTAssertTrue(until(10) {
+            let widths = look()
+            return CGFloat(widths[0]) < wide - 70 && abs(widths[0] - widths[1] - inset) <= 1
+        }, "\(looks)")
+        _ = try await drag.value
+        try await release()
+        XCTAssertNotNil(steady(3) { look() }, "\(looks)")
+        XCTAssertTrue(looks.contains { abs($0[0] - $0[1] - inset) > 1 }, "the messages followed the drag: \(looks)")
+        XCTAssertFalse(looks.contains { abs($0[1] - $0[2] - gap) > 1 }, "the box and the messages apart: \(looks)")
+        XCTAssertEqual(looks.last.map { $0[0] - $0[1] } ?? 0, inset, accuracy: 1, "\(looks)")
     }
 
     private func keepsTop(_ top: Set<String>, of chat: XCUIElement, _ pane: String, narrow: Bool) {

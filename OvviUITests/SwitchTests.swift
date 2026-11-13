@@ -21,11 +21,12 @@ extension OvviUITests {
         try await select(chatTab)
         XCTAssertTrue(until(5) { last.exists && last.isHittable })
 
-        for _ in 0 ..< 5 where !earlier.isHittable {
+        // Every row: no more come later, which would change what the switches keep.
+        for _ in 0 ..< 30 where earlier.exists {
             chat.scroll(byDeltaX: 0, deltaY: 5000)
         }
-        earlier.click()
-        XCTAssertTrue(until(3) { (try? rows()) ?? 0 > 10 })
+        XCTAssertFalse(earlier.exists)
+        XCTAssertGreaterThan(try rows(), 10)
         let top = try XCTUnwrap(steady(3) {
             let seen = atTop(of: chat, pane)
             return seen.isEmpty ? nil : seen
