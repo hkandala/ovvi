@@ -30,26 +30,24 @@ extension OvviUITests {
         step("⌘⌥-click on a folder shows it in the Finder, outside Ovvi")
         let tabs = try await tabIDs().count
         XCUIElement.perform(withKeyModifiers: [.command, .option]) { row("build", in: file).click() }
-        finder("build")
+        let finder = XCUIApplication(bundleIdentifier: "com.apple.finder").windows["build"]
+        XCTAssertTrue(finder.exists(within: 5))
+        finder.buttons[XCUIIdentifierCloseWindow].click()
+        app.activate()
 
-        step("⌘⌥-click on a Git change row shows its folder in the Finder")
-        try await send("mkdir -p \(repo)/fresh && touch \(repo)/fresh/x\r", to: shell)
+        step("⌘⌥-click on a Git change row opens its file in the Mac's app for it")
         let git = try await split(card)
         try await Self.call(one, "pane.rename", ["pane_id": git, "label": "ovvi:git#e2ekgt \(root)/"])
-        let fresh = element("git.\(git).page").buttons["Untracked: fresh"]
-        XCTAssertTrue(fresh.exists(within: 10))
-        XCUIElement.perform(withKeyModifiers: [.command, .option]) { fresh.click() }
-        finder("fresh")
+        let changed = element("git.\(git).page").buttons["Modified: a.txt"]
+        XCTAssertTrue(changed.exists(within: 10))
+        XCUIElement.perform(withKeyModifiers: [.command, .option]) { changed.click() }
+        let editor = XCUIApplication(bundleIdentifier: "com.apple.TextEdit")
+        XCTAssertTrue(editor.windows["a.txt"].exists(within: 10))
+        editor.terminate()
+        app.activate()
         let now = try await tabIDs()
         XCTAssertEqual(now.count, tabs, "\(now)")
         try await show(tab)
         try await send("rm -rf \(repo)\r", to: shell)
-    }
-
-    private func finder(_ folder: String) {
-        let window = XCUIApplication(bundleIdentifier: "com.apple.finder").windows[folder]
-        XCTAssertTrue(window.exists(within: 5), folder)
-        window.buttons[XCUIIdentifierCloseWindow].click()
-        app.activate()
     }
 }
