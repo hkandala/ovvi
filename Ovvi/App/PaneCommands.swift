@@ -125,9 +125,9 @@ extension CommandList {
         var main = self
         main.floating = nil
         let browser = pane.flatMap(page.browser)
-        let steps = ["Increase Font Size": 1, "Decrease Font Size": -1, "Reset Font Size": 0]
+        let steps = ["app.bigger": 1, "app.smaller": -1, "app.actual-size": 0]
         let sizes = main.all.filter { $0.section == .size || $0.id == "app.font-size" }.map { size in
-            guard let browser, let step = steps[size.title] else { return size }
+            guard let browser, let step = size.id.flatMap({ steps[$0] }) else { return size }
             var zoom = size
             zoom.enabled = true
             zoom.action = { browser.view.zoom(step) }
