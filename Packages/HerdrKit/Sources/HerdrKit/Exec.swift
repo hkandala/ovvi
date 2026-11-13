@@ -6,6 +6,8 @@ public protocol Exec: Sendable {
     func herdr() async throws -> String?
     func forgetHerdr() async
     func read(home path: String) async -> String?
+    /// Each writer goes through its own temporary file, then a rename; last writer wins. Only the user can read it.
+    func write(home path: String, _ line: String) async
     var isRemote: Bool { get }
 }
 
@@ -21,7 +23,6 @@ public extension Exec {
         return text?.isEmpty == false ? text : nil
     }
 
-    /// Each writer goes through its own temporary file; last writer wins. Only the user can read it.
     func write(home path: String, _ line: String) async {
         let script = #"umask 077; f="$HOME/$1"; mkdir -p "${f%/*}" && cat >"$f.$$" && mv "$f.$$" "$f""#
         await succeeds(script, [path], input: [line])
@@ -157,6 +158,24 @@ public final class ProcessExec: Exec {
         return text?.isEmpty == false ? text : nil
     }
 
+    /// Here, not by `sh`, `mkdir`, `cat` and `mv`: no process. As the shell's write under `umask 077`: new folders
+    /// 0700, the file 0600 from its creation.
+    public func write(home path: String, _ line: String) async {
+        let file = URL(filePath: environment["HOME"] ?? NSHomeDirectory()).appending(path: path).path
+        try? FileManager.default.createDirectory(atPath: (file as NSString).deletingLastPathComponent,
+                                                 withIntermediateDirectories: true,
+                                                 attributes: [.posixPermissions: 0o700])
+        let temp = file + ".\(UUID().uuidString)"
+        let handle = open(temp, O_WRONLY | O_CREAT | O_EXCL, 0o600)
+        guard handle >= 0 else { return }
+        let bytes = Array((line + "\n").utf8)
+        let written = bytes.withUnsafeBytes { Darwin.write(handle, $0.baseAddress, $0.count) }
+        close(handle)
+        if written != bytes.count || rename(temp, file) != 0 {
+            unlink(temp)
+        }
+    }
+
     public func forgetHerdr() async {
         lookup.withLock { $0 = Lookup(path: nil, asked: .now - .seconds(60)) }
     }
@@ -285,11 +304,27 @@ public final class ProcessExec: Exec {
         }
     }
 
+    /// A name is looked up on the child's PATH at each run, as `env` does (a program installed or moved since is
+    /// found), with no `env` process; a path is taken as it is.
+    static func executable(_ name: String, path: String?) throws -> URL {
+        if name.contains("/") {
+            return URL(filePath: name)
+        }
+        for folder in (path ?? "/usr/bin:/bin").split(separator: ":") {
+            let file = "\(folder)/\(name)"
+            var info = stat()
+            if stat(file, &info) == 0, info.st_mode & S_IFMT == S_IFREG, access(file, X_OK) == 0 {
+                return URL(filePath: file)
+            }
+        }
+        throw HerdrError.failed("\(name): command not found")
+    }
+
     static func spawn(_ argv: [String], _ environment: [String: String]) throws -> Channel {
         let process = Process()
         let stdin = Pipe(), stdout = Pipe(), stderr = Pipe()
-        process.executableURL = URL(filePath: "/usr/bin/env")
-        process.arguments = argv
+        process.executableURL = try executable(argv.first ?? "", path: environment["PATH"])
+        process.arguments = Array(argv.dropFirst())
         process.environment = environment
         process.standardInput = stdin
         process.standardOutput = stdout

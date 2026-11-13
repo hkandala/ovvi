@@ -432,7 +432,7 @@ every device must see belongs in files on the machine.
   The app reads it once, before the card's first load. So a relaunch,
   another device, a card made again after a drop, or a cold restart of herdr
   starts where it was. A missing file means no state.
-- **The file's rules** are the browser's: written atomically over stdin, at
+- **The file's rules** are the browser's: written atomically (a temporary file, then a rename), at
   most 256 KiB, last writer wins. Nothing is written after the pane closed.
   Closing a plugin pane removes its file. On connect the app removes files
   not touched for 30 days.

@@ -28,7 +28,12 @@ and watch files and run git the same way
   at launch the app reads `PATH`, `HOME`, `SSH_AUTH_SOCK`, every `XDG_*`
   variable and herdr's path once with `$SHELL -lic` (stdin closed,
   3 s timeout, output parsed after a unique marker). `HERDR_*` variables are removed from
-  child processes.
+  child processes. A program starts by its full path, which the app looks up
+  on that `PATH` at each run (no `env` process), so a program installed or
+  moved later is found. The app reads and writes card state files itself,
+  with no process: a write goes to a temporary file in the same folder, then
+  a rename, with new folders 0700 and the file 0600. On a remote machine the
+  same write runs as one `sh` over the relay.
 - **A remote machine:** every run goes through the relay, one SSH
   session on the host's ControlMaster ([The SSH connection](/docs/machines#the-ssh-connection)). The
   app starts it with a `Process` like this, the relay's script in the

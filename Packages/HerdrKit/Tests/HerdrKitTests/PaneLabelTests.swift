@@ -46,6 +46,41 @@ import Testing
     #expect(await shell.read(home: path) == nil)
 }
 
+@Test func `a state file writes the same on This Mac and through a shell, only for the user`() async throws {
+    let top = ".ovvi-write-\(UUID().uuidString)"
+    let folder = URL(filePath: NSHomeDirectory()).appending(path: top)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    for (name, exec) in try await [("mac", localExec as any Exec), ("shell", RelayExec.start())] {
+        let path = "\(top)/\(name)/s/a.json"
+        await exec.write(home: path, #"{"a":1}"#)
+        await exec.write(home: path, #"{"a":"é"}"#)
+        #expect(await localExec.read(home: path) == #"{"a":"é"}"#)
+        let mode = { (path: String) in
+            try (FileManager.default
+                .attributesOfItem(atPath: NSHomeDirectory() + "/" + path)[.posixPermissions] as? Int)
+        }
+        #expect(try mode("\(top)/\(name)/s/a.json") == 0o600)
+        #expect(try mode("\(top)/\(name)/s") == 0o700 && mode("\(top)/\(name)") == 0o700)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: folder.path + "/\(name)/s") == ["a.json"])
+    }
+}
+
+@Test func `a program is found on the run's PATH, never through env`() throws {
+    let folder = URL.temporaryDirectory.appending(path: "ovvi-path-\(UUID().uuidString)")
+    try FileManager.default.createDirectory(at: folder.appending(path: "tool"), withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let path = "\(folder.path):/usr/bin:/bin"
+    #expect(try ProcessExec.executable("true", path: path).path == "/usr/bin/true")
+    let tool = folder.appending(path: "true")
+    try Data("#!/bin/sh\n".utf8).write(to: tool)
+    #expect(try ProcessExec.executable("true", path: path).path == "/usr/bin/true")
+    try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: tool.path)
+    #expect(try ProcessExec.executable("true", path: path).path == tool.path)
+    #expect(try ProcessExec.executable("/bin/sh", path: nil).path == "/bin/sh")
+    // A folder of the name is no program.
+    #expect(throws: HerdrError.failed("tool: command not found")) { try ProcessExec.executable("tool", path: path) }
+}
+
 @Test func `a Git place ends its root in a slash, so a root's last word is no source`() {
     let diff = { (label: String) in PaneLabel(label)?.diffSource ?? "home" }
     #expect(diff("ovvi:git#abc123 /x/My Project abcdef0/") == "home")
