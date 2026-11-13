@@ -95,7 +95,6 @@ struct KeysPage: View {
                 .controlSize(.small)
             }
         }
-        .settingsRow("keys.\(hotkey.id)")
     }
 
     /// The other action takes this one's first key in place of the one it gives up.

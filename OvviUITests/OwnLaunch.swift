@@ -36,6 +36,7 @@ extension OvviUITests {
         "testEveryReorderOfTheSpacesMoves",
         "testFloatingWindowsHaveTheirOwnCommandsAndComeBackAfterRelaunch",
         "testInstallingHerdrOnThisMacShowsItsProgressAndConnects",
+        "testKeyboardShortcutsScenes",
         "testLaunchesInEachLook",
         "testLayoutMotionAnimatesWithoutBlanking",
         "testMemoryAndCPUOverManyTabs",
