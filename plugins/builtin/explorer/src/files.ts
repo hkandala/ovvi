@@ -90,7 +90,12 @@ export async function show(place: Place): Promise<Reveal> {
   }
   let dotfiles = own(ovvi).hiddenFiles ?? ovvi.settings.get<boolean>("hidden-files")
   let dim = ovvi.settings.get<boolean>("ignored")
-  ovvi.controls.set("hidden-files", { value: dotfiles })
+  /** The eye in row 2 and View ▸ Show Hidden Files (⇧⌘., as Finder's). */
+  const eye = (yes: boolean) => {
+    ovvi.controls.set("hidden-files", { value: yes })
+    ovvi.controls.set("show-hidden", { checked: yes })
+  }
+  eye(dotfiles)
 
   /** `""` is the root; a folder's path ends in `/`, as the tree's. */
   const children = new Map<string, Set<string>>()
@@ -336,7 +341,7 @@ export async function show(place: Place): Promise<Reveal> {
     if (!dotfiles && dotted(relative)) {
       dotfiles = true
       choose(ovvi, { hiddenFiles: true })
-      ovvi.controls.set("hidden-files", { value: true })
+      eye(true)
       await refresh()
     }
     for (const above of folders(relative).reverse()) {
@@ -369,9 +374,11 @@ export async function show(place: Place): Promise<Reveal> {
       for (const at of children.keys()) if (at) folder(at)?.collapse()
     } else if (id === "root") {
       void move(value === undefined ? undefined : String(value))
-    } else if (id === "hidden-files") {
-      choose(ovvi, { hiddenFiles: value === true })
-      showDotfiles(value === true)
+    } else if (id === "hidden-files" || id === "show-hidden") {
+      const yes = id === "hidden-files" ? value === true : !dotfiles
+      choose(ovvi, { hiddenFiles: yes })
+      eye(yes)
+      showDotfiles(yes)
     }
   })
   ovvi.on("settings", (changed) => {
@@ -381,7 +388,7 @@ export async function show(place: Place): Promise<Reveal> {
     }
     if ("hidden-files" in changed && own(ovvi).hiddenFiles === undefined) {
       const yes = changed["hidden-files"] === true
-      ovvi.controls.set("hidden-files", { value: yes })
+      eye(yes)
       showDotfiles(yes)
     }
   })

@@ -40,6 +40,7 @@ export default async function main(ovvi: Ovvi) {
     scoped.controls.set("browser", { hidden: place !== "file" || !htmlPage(scoped, arg) })
     if (place !== "markdown") scoped.controls.set("lock-editing", { enabled: false, checked: false })
     scoped.controls.set("tree-keys", { enabled: place !== "files" })
+    scoped.controls.set("show-hidden", { enabled: place === "files" })
     scoped.controls.set("find-replace", { enabled: place === "file" || place === "markdown" })
     root.dataset.place = place
     if (place === "files") {

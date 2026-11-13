@@ -22,6 +22,7 @@ extension OvviUITests {
         try await send("touch new.md src/deep/a.swift\r", to: shell)
         XCTAssertTrue(row("new.md", in: tree).exists(within: 5))
         keepScreenshot("file explorer home")
+        togglesDotfiles(card, tree)
         app.typeKey("o", modifierFlags: [.command, .control])
         XCTAssertTrue(element("overview.card.\(card)").has(\.stringValue, "explorer", within: 3))
         app.typeKey(.escape, modifierFlags: [])
@@ -333,6 +334,18 @@ extension OvviUITests {
             try await show(tab)
         }
         try await send("rm -rf \(repo)\r", to: shell)
+    }
+
+    /// ⇧⌘., as Finder's: the dotfiles show, with the eye on; again, they go.
+    private func togglesDotfiles(_ card: String, _ tree: XCUIElement) {
+        let eye = element("pane.\(card).hidden-files")
+        XCTAssertFalse(row(".gitignore", in: tree).exists || eye.isSelected)
+        app.typeKey(".", modifierFlags: [.command, .shift])
+        XCTAssertTrue(row(".gitignore", in: tree).exists(within: 5))
+        XCTAssertTrue(eye.has(\.isSelected, true, within: 3))
+        app.typeKey(".", modifierFlags: [.command, .shift])
+        XCTAssertTrue(row(".gitignore", in: tree).vanishes(within: 5))
+        XCTAssertTrue(eye.has(\.isSelected, false, within: 3))
     }
 
     func row(_ name: String, in page: XCUIElement) -> XCUIElement {
