@@ -1042,3 +1042,17 @@ The user's files: `.build/fb57/r11-fontkeys-11.20.52.png`, `r11-tabslide-11.23.5
 53. "and there is one weird bug, open add machine, type the host name, and press enter, then it takes up only first
     letter as host name, so let's say i type vps and press enter, i see connecting to v.., and fails of course, but
     when i press add machine button, it takes the correct full name, fix tihs"
+
+### Track K2: HerdrKit's sshd and launchd tests fail in an agent's pane
+
+- **Cause.** Not the variables the tests pass on, and not the app: the agent launcher (`pi`) runs the agent
+  (`pi.real`) of every agent started in pi-herd in a macOS sandbox, and every process the agent starts inherits it.
+  `sandbox_check` gives 1 for those agents and 0 for agents started from zsh. In the sandbox, also with `env -i`,
+  `launchctl bootstrap gui/501` of a minimal job exits 5 (Input/output error). sshd listens, but the helper process
+  it starts for each login cannot make its own sandbox ("Operation not permitted"), so the login closes. `log show`
+  says "Cannot run while sandboxed". The likely trigger is `CI=1`, which pi-herd sets for its agents; that is not
+  checked, because a test of it from this pane runs inside the same sandbox.
+- **Fix.** The two SSHForwardTests and "a started server shares the CLI's paths" skip in a sandbox
+  (`unsandboxed`, `sandbox_check` on the test process). They still run on CI and from a plain shell.
+- **For the user.** To run these tests from an agent's pane, find what makes the launcher add its sandbox for
+  pi-herd's agents (start `pi` from zsh with and without `CI=1` and check its `pi.real`).

@@ -38,6 +38,15 @@ let herdrInstalled: @Sendable () async -> Bool = {
     return await shell("which", "herdr") == 0
 }
 
+/// False in a sandbox (the agent launcher puts agents started in pi-herd in one). There `launchctl bootstrap` fails
+/// (5, Input/output error), and so does sshd's own `sandbox_init`, which closes every login.
+let unsandboxed: @Sendable () -> Bool = {
+    typealias Check = @convention(c) (pid_t, UnsafePointer<CChar>?, Int32) -> Int32
+    // RTLD_DEFAULT; `sandbox_check` has no public header.
+    guard let check = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "sandbox_check") else { return true }
+    return unsafeBitCast(check, to: Check.self)(getpid(), nil, 0) == 0
+}
+
 private func withSession(_ exec: any Exec, _ body: (HerdrClient) async throws -> Void) async throws {
     let session = "ovvi-e2e-\(UUID().uuidString.prefix(6).lowercased())"
     try #require(await shell(sessionScript, "up", session) == 0)
@@ -277,7 +286,7 @@ private func control(_ client: HerdrClient) async throws {
     })
 }
 
-@Test(.enabled("herdr is not on PATH", herdrInstalled))
+@Test(.enabled("herdr is not on PATH", herdrInstalled), .enabled("under a sandbox", unsandboxed))
 func `a started server shares the CLI's paths`() async throws {
     struct Moved: Exec {
         let base: ProcessExec

@@ -60,7 +60,7 @@ private func mode(_ path: String) -> Int? {
     (try? FileManager.default.attributesOfItem(atPath: path))?[.posixPermissions] as? Int
 }
 
-@Test(.enabled("herdr is not on PATH", herdrInstalled), .enabled("no sshd") {
+@Test(.enabled("herdr is not on PATH", herdrInstalled), .enabled("under a sandbox", unsandboxed), .enabled("no sshd") {
     FileManager.default.isExecutableFile(atPath: "/usr/sbin/sshd")
 })
 func `a remote machine's requests go over a forwarded socket, after a server restart and a dropped connection too`()
@@ -106,7 +106,7 @@ func `a remote machine's requests go over a forwarded socket, after a server res
     #expect(!FileManager.default.fileExists(atPath: local))
 }
 
-@Test(.enabled("herdr is not on PATH", herdrInstalled), .enabled("no sshd") {
+@Test(.enabled("herdr is not on PATH", herdrInstalled), .enabled("under a sandbox", unsandboxed), .enabled("no sshd") {
     FileManager.default.isExecutableFile(atPath: "/usr/sbin/sshd")
 })
 func `a host that refuses to forward a socket says so`() async throws {
