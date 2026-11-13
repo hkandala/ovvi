@@ -689,18 +689,17 @@ How it works: [Layout and sizing](/docs/layout).
 - **Selecting.** A left drag, a double click, a triple click and a ⇧-click
   select text in the card. A plain left drag (no modifier key) also goes to
   the program, so a program that reads the mouse (pi, for one) selects and
-  copies on its own. A ⇧, ⌥ or ⌃ drag and a double or triple click select in
-  the card alone: the program gets such a single click when the button comes
-  up on the cell where it went down. A ⌥-drag selects a rectangle. On a
-  watched card, a plain press takes control at once. A ⇧, ⌥ or ⌃ click takes
-  control when the button comes up.
+  copies on its own. Such a program takes the press's cell and the pointer's
+  cell whole, so the card's selection takes them whole too. A ⇧, ⌥ or ⌃ drag
+  and a double or triple click select in the card alone: the program gets
+  such a single click when the button comes up on the cell where it went
+  down. A ⌥-drag selects a rectangle. On a watched card, a plain press takes
+  control at once. A ⇧, ⌥ or ⌃ click takes control when the button comes up.
 - **Known limit: white cells beside a selection.** A program that selects text
   on its own (pi) shows its selection with the text and background colors
   swapped. herdr draws that black on white. The card's blue selection covers
   it where both select the same cells. A cell that only the program selected
   shows white:
-  - an end cell, because the card takes an end cell by Ghostty's 60 % rule
-    and the program takes it whole;
   - for one frame after each move or click, because the card's selection
     changes at once and the program's comes back through herdr;
   - when the program's text scrolls under its selection.

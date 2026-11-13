@@ -23,8 +23,8 @@ final class PaneSurfaceView: AppTerminalView {
     var openLink: ((TerminalLink, Opening) -> Void)?
     private var scrolled: CGFloat = 0
 
-    /// A plain left drag that goes to the program, or another single click it gets on its release (`Selection.swift`).
-    var dragging = false
+    /// A plain left drag's start, and another single click the program gets on its release (`Selection.swift`).
+    var anchor: Anchor?
     var click: NSEvent?
 
     var wantsKeyboard = false
@@ -232,7 +232,7 @@ final class PaneSurfaceView: AppTerminalView {
                         modifiers: modifiers(event) & ~(button == .right ? 4 : 0))
     }
 
-    private var scale: CGFloat {
+    var scale: CGFloat {
         window?.backingScaleFactor ?? 2
     }
 
