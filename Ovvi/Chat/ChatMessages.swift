@@ -218,9 +218,7 @@ struct ChatMessages: View, Equatable {
             .onScrollPhaseChange { scrolling = $1.isScrolling }
             // One wait: a scroll ends it, and the next rest at the bottom starts it again.
             .task(id: resting) {
-                guard resting else { return }
-                try? await Task.sleep(for: Self.dropAfter)
-                if !Task.isCancelled {
+                if resting, await (try? Task.sleep(for: Self.dropAfter)) != nil {
                     drop()
                 }
             }

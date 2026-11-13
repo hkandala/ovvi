@@ -61,7 +61,7 @@ extension OvviUITests {
     func testALongChatLoadsEarlierRowsAsItScrollsUp() async throws {
         // A swipe and a look take about 3 s in the VM, and the chat is about 15 long swipes tall.
         executionTimeAllowance = 300
-        let pane = try await startChat(["-chatDropSeconds", "6"]).pane
+        let pane = try await startChat(["-chatDropSeconds", "10"]).pane
         app.typeText("many 25\r")
         let last = row(pane, "reply", "Last.")
         XCTAssertTrue(until(10) { last.exists && last.isHittable })
@@ -101,7 +101,7 @@ extension OvviUITests {
         // A block is hundreds of points; a swipe's momentum varies by tens.
         XCTAssertFalse(moves.contains { $0 > moves[0] + 100 || $0 < -40 }, "a jump: \(moves) at \(counts)")
         XCTAssertTrue(first.isHittable && !loader.exists, "\(counts) \(loader.exists)")
-        // After 6 s at the exact bottom, the stack is the newest block again, and the bottom row stays where it was. A
+        // After 10 s at the exact bottom, the stack is the newest block again, and the bottom row stays where it was. A
         // scroll up meanwhile starts the wait again.
         try await dropsToOneBlock(pane, opened, at: place, leaving: true) { bottom.click() }
         // Up with the wheel, which has no phases, until a block comes; down with swipes, whose momentum ends at the
@@ -232,6 +232,25 @@ extension OvviUITests {
         XCTAssertEqual(looks.last.map { $0[0] - $0[1] } ?? 0, inset, accuracy: 1, "\(looks)")
     }
 
+    /// Narrower than its minimum width, the chat keeps that width and scrolls sideways to its reply box's Send.
+    func testANarrowChatScrollsSideways() async throws {
+        let pane = try await startChat(["-balanceSplits", "NO"]).pane
+        try await say("steps", in: pane)
+        XCTAssertTrue(row(pane, "reply", "Done.").exists(within: 10))
+        let card = element("pane.\(pane)"), chat = element("chat.\(pane)"), send = element("chat.\(pane).send")
+        XCTAssertTrue(send.exists(within: 5))
+        _ = try await Self.call(one, "pane.split", ["target_pane_id": pane, "direction": "right",
+                                                    "ratio": 280 / card.frame.width, "cwd": "/tmp", "focus": false])
+        XCTAssertTrue(until(5) { card.frame.width < 340 }, "\(card.frame)")
+        XCTAssertNotNil(steady(3) { [card.frame, send.frame] })
+        XCTAssertEqual(chat.frame.width, 360, accuracy: 1)
+        XCTAssertGreaterThan(send.frame.maxX, card.frame.maxX)
+        XCTAssertTrue([-600.0, 600].contains { step in
+            chat.scroll(byDeltaX: step, deltaY: 0)
+            return until(2) { send.frame.maxX <= card.frame.maxX }
+        }, "\(send.frame) \(card.frame)")
+    }
+
     private func keepsTop(_ top: Set<String>, of chat: XCUIElement, _ pane: String, narrow: Bool) {
         XCTAssertTrue(until(3) { (chat.frame.width < 600) == narrow && !atTop(of: chat, pane).isDisjoint(with: top) },
                       "\(top) \(atTop(of: chat, pane))")
@@ -239,7 +258,7 @@ extension OvviUITests {
         XCTAssertFalse(last.exists && last.isHittable)
     }
 
-    /// `leaving`: halfway through the wait, a scroll up and back, after which the drop waits its whole time again.
+    /// `leaving`: during the wait, a scroll up and back, after which the drop waits its whole time again.
     private func dropsToOneBlock(_ pane: String, _ opened: Int, at place: CGFloat, leaving: Bool = false,
                                  _ scroll: () async throws -> Void) async throws
     {
@@ -248,17 +267,20 @@ extension OvviUITests {
         let shown = { (try? self.nodes(of: chat).count { kinds.contains($0.identifier) }) ?? 0 }
         try await scroll()
         XCTAssertTrue(bottom.vanishes(within: 3))
-        XCTAssertFalse(until(3) { shown() == opened }, "dropped before its wait")
+        let rested = Date.now
+        XCTAssertFalse(until(2) { shown() == opened }, "dropped before its wait")
         if leaving {
             chat.scroll(byDeltaX: 0, deltaY: 200)
+            XCTAssertLessThan(Date.now.timeIntervalSince(rested), 8, "too slow to test the wait's restart")
             XCTAssertTrue(bottom.exists(within: 2))
             bottom.click()
             XCTAssertTrue(bottom.vanishes(within: 3))
-            // Past the first wait's end, within the new one's.
-            XCTAssertFalse(until(3) { shown() == opened }, "the scroll up did not start the wait again")
+            // Until a second past the first wait's end, within the new one's.
+            XCTAssertFalse(until(rested.addingTimeInterval(11).timeIntervalSinceNow) { shown() == opened },
+                           "the scroll up did not start the wait again")
         }
         var looks: [CGFloat] = []
-        XCTAssertTrue(until(8) {
+        XCTAssertTrue(until(14) {
             looks.append(last.frame.minY)
             return shown() == opened
         }, "\(shown()) \(opened)")

@@ -1061,6 +1061,34 @@ The user's files: `.build/fb57/r11-fontkeys-11.20.52.png`, `r11-tabslide-11.23.5
     the pane is smaller than that, horizontal scrolll should be enabled with the min width, check what's the correct
     min width for good experience, without garbled layout"
 
+#### Track C11 findings
+
+- **Cause (48).** C10's drop ran from the `away` flip and the scroll's rest, so every scroll that reached the bottom
+  dropped the earlier blocks, and the scroll bar changed size right then. **Fix:** one wait, a `.task(id:)` keyed on
+  "at the exact bottom, at rest, with blocks kept": a minute, then the same drop as C10's (no jump). A scroll ends
+  it (a swipe's phases or the wheel's `away`), and the next rest at the bottom starts it again. A test sets the time
+  with `-chatDropSeconds`.
+- **The reply box (49).** 24 pt from the column's sides, not 14: it reaches 8 pt past the messages' 32 pt edges, and
+  its text sits 10 pt inside them. The question card above it takes the same margin.
+- **The minimum width (49): 360 pt.** The VM's pictures at 400, 360, 330, 300 and 270 pt (the empty chat, tool rows
+  open and shut, a bubble and a reply with a long path, the research table, the question card): at 300 pt and under,
+  a reply wraps to two or three words a line and the user's bubble to five lines; at 270 pt the tool rows cut their
+  commands (`ba… date d…`). At 360 pt every row keeps its look, the longest greeting stays at its full 26 pt, and the
+  box keeps its model label and Send on one row. The table scrolls sideways in its own box at any width. A narrower
+  card keeps 360 pt in a horizontal scroll view, always there so that the chat keeps its state across the line;
+  `basedOnSize` stops a sideways rubber band at normal widths. With "Show scroll bars: Always" the scroller sits
+  under the reply box and cuts nothing (the content takes the scroll view's own height).
+- **Decisions.** A floating chat keeps the window's 320 pt minimum and scrolls 40 pt there, as a card does. Below
+  360 pt the vertical scroll bar and Scroll to Bottom sit on the 360 pt view, partly out of sight until a sideways
+  scroll.
+- **Runs.** In the VM, on the old code: the loads test red ("dropped before its wait"), the new narrow-chat test red
+  (the messages 277 pt wide, not 360). On the new code: both green, with the wait's restart checked (a wheel up and
+  Scroll to Bottom within the first 10 s wait, no drop until past its end, then the drop with the bottom row still).
+  Pictures, dark and light, before (top) and after (bottom): `~/Downloads/ovvi-research/p58c11/`.
+- **For the user.** Scroll a long chat to the top, back to the bottom: the scroll bar keeps its size for a minute,
+  then the earlier rows go with nothing in view moving; a scroll up in that minute starts it over. Narrow a chat card
+  below 360 pt: the chat keeps its width and scrolls sideways with a sideways swipe; the reply box's sides.
+
 ### Track C12: chat cards stay in memory (item 50)
 
 50. "and for the chat, how many panes do we preserve in memeory, i mean before how many panes do i see fade in effect

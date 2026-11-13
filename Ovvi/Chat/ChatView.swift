@@ -16,9 +16,10 @@ struct ChatView: View {
     var body: some View {
         GeometryReader { card in
             ScrollView(.horizontal) {
-                content.frame(width: max(card.size.width, Self.minWidth), height: card.size.height)
+                content.frame(width: max(card.size.width, Self.minWidth))
             }
             .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
+            .focusEffectDisabled()
         }
     }
 
