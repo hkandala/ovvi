@@ -33,12 +33,12 @@ extension CommandList {
             Command(
                 section: .file,
                 title: "Save",
-                key: save ? .save : nil,
+                key: save ? .hotkey("edit.save") : nil,
                 group: .edit,
                 symbol: "square.and.arrow.down",
                 enabled: save,
             ) { editor()?.command("save") },
-            Command(section: .edit, title: "Find…", key: .init("f"), symbol: "magnifyingglass",
+            Command(section: .edit, title: "Find…", key: .hotkey("edit.find"), symbol: "magnifyingglass",
                     keywords: "search scrollback", enabled: terminal || over, action: {
                         if let editor = finder() {
                             editor.command("find")
@@ -46,10 +46,10 @@ extension CommandList {
                             page?.openFind(pane)
                         }
                     }),
-            Command(section: .edit, title: "Find Next", key: .findNext, symbol: "chevron.down",
+            Command(section: .edit, title: "Find Next", key: .hotkey("edit.find-next"), symbol: "chevron.down",
                     enabled: find || over) { page?.findStep(1, in: finder()) },
-            Command(section: .edit, title: "Find Previous", key: over ? .findPrevious : nil, symbol: "chevron.up",
-                    enabled: find || over) { page?.findStep(-1, in: finder()) },
+            Command(section: .edit, title: "Find Previous", key: over ? .hotkey("edit.find-previous") : nil,
+                    symbol: "chevron.up", enabled: find || over) { page?.findStep(-1, in: finder()) },
         ]
     }
 }

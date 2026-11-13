@@ -231,12 +231,14 @@ struct BackForward: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            IconButton(symbol: "chevron.left", help: "Back", key: .back, size: 22) { plugin.goBack() }
+            IconButton(symbol: "chevron.left", help: "Back", key: .hotkey("card.back"), size: 22) { plugin.goBack() }
                 .disabled(!plugin.canGoBack)
                 .accessibilityIdentifier("pane.\(plugin.paneID).go-back")
-            IconButton(symbol: "chevron.right", help: "Forward", key: .forward, size: 22) { plugin.goForward() }
-                .disabled(!plugin.canGoForward)
-                .accessibilityIdentifier("pane.\(plugin.paneID).go-forward")
+            IconButton(symbol: "chevron.right", help: "Forward", key: .hotkey("card.forward"), size: 22) {
+                plugin.goForward()
+            }
+            .disabled(!plugin.canGoForward)
+            .accessibilityIdentifier("pane.\(plugin.paneID).go-forward")
         }
         .foregroundStyle(look.paneButton)
     }

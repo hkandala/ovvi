@@ -5,8 +5,10 @@ import SwiftUI
 
 struct GeneralPage: View {
     private var settings = AppSettings()
-    private static let chooserNote = "What ⌘T, ⌘D and New Space open."
     private static let fixedNote = "Hold ⌥ as you make a pane to choose each time."
+    private static var chooserNote: String {
+        "What \(Hotkeys.named("tab.new")), \(Hotkeys.named("pane.split-right")) and New Space open."
+    }
 
     var body: some View {
         let opens = Chooser.fixedRow(settings.newPaneOpens)?.id ?? ""
@@ -150,7 +152,7 @@ struct AppearancePage: View {
                     }
                 } label: {
                     Text("Text size")
-                    Text("⌘+ and ⌘− change it in any window.")
+                    Text("\(Hotkeys.named("app.bigger")) and \(Hotkeys.named("app.smaller")) change it in any window.")
                 }
                 .settingsRow("appearance.font-size")
             }

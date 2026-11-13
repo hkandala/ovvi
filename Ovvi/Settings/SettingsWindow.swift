@@ -1,10 +1,10 @@
 import SwiftUI
 
 enum SettingsPage: String, CaseIterable, Hashable {
-    case general, appearance, terminal, agents, machines, plugins, privacy
+    case general, appearance, terminal, agents, keys, machines, plugins, privacy
 
     var title: String {
-        rawValue.capitalized
+        self == .keys ? "Keyboard Shortcuts" : rawValue.capitalized
     }
 
     var symbol: String {
@@ -13,6 +13,7 @@ enum SettingsPage: String, CaseIterable, Hashable {
         case .appearance: "circle.lefthalf.filled"
         case .terminal: "apple.terminal"
         case .agents: "sparkles"
+        case .keys: "keyboard"
         case .machines: "desktopcomputer"
         case .plugins: "puzzlepiece.extension"
         case .privacy: "hand.raised"
@@ -142,6 +143,7 @@ private struct SettingsPageView: View {
             case .appearance: AppearancePage()
             case .terminal: TerminalPage()
             case .agents: AgentsPage()
+            case .keys: KeysPage()
             case .machines: MachinesPage()
             case .plugins: PluginsPage()
             case .privacy: PrivacyPage()
@@ -240,6 +242,8 @@ struct SettingsSearch: Identifiable {
                        words: "notifications done"),
         SettingsSearch(id: "agents.from-agents", title: "When an agent sends one", page: .agents,
                        words: "notifications notify"),
+        SettingsSearch(id: "keys.search", title: "Keyboard shortcuts", page: .keys,
+                       words: "keys hotkeys bindings record change reset"),
         SettingsSearch(id: "machines.list", title: "Machines", page: .machines, words: "remote ssh host add"),
         SettingsSearch(id: "privacy.websites", title: "Approved websites", page: .privacy,
                        words: "browser sites privacy allowlist add"),

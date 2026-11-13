@@ -219,8 +219,8 @@ public struct PluginManifest: Decodable, Sendable, Equatable {
             guard command.menu.map(["file", "edit", "view"].contains) != false else {
                 throw bad("commands", "menu must be file, edit or view")
             }
-            guard command.key.map({ $0.hasPrefix("cmd+") && $0.count > 4 }) != false else {
-                throw bad("commands", "key must be a ⌘ chord such as cmd+e")
+            guard command.key.map({ Chord($0) != nil }) != false else {
+                throw bad("commands", "key must be a chord with cmd, ctrl or option, such as cmd+e")
             }
         }
         if let handle = handles.first(where: { !["save", "find"].contains($0) }) {

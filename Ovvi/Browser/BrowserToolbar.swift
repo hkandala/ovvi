@@ -28,7 +28,7 @@ struct BrowserToolbar: View {
             }
             .foregroundStyle(look.paneButton)
             address(id)
-            IconButton(symbol: "hammer", help: "Web Inspector", key: .init("i", modifiers: [.command, .option]),
+            IconButton(symbol: "hammer", help: "Web Inspector", key: .hotkey("browser.inspector"),
                        size: 22, action: browser.view.showInspector)
                 .disabled(!browser.loaded)
                 .foregroundStyle(look.paneButton)

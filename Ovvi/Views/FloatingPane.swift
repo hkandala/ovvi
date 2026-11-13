@@ -149,13 +149,13 @@ struct FloatingWindow: View {
             }
             .accessibilityValue(pinned ? "on" : "off")
             .accessibilityIdentifier("\(id).pin")
-            IconButton(symbol: "xmark", help: "Close Pane", key: .closeTab) {
+            IconButton(symbol: "xmark", help: "Close Pane", key: .hotkey("tab.close")) {
                 if let pane {
                     page.close(.pane(pane.id))
                 }
             }
             .accessibilityIdentifier("\(id).close")
-            IconButton(symbol: "pip.exit", help: "Detach Pane", key: .closePane) {
+            IconButton(symbol: "pip.exit", help: "Detach Pane", key: .hotkey("pane.close")) {
                 page.floating[floating.terminalID] = nil
             }
             .accessibilityIdentifier("\(id).detach")

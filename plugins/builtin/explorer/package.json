@@ -1,7 +1,7 @@
 {
   "name": "@ovvi/explorer",
   "license": "AGPL-3.0-only",
-  "version": "1.14.1",
+  "version": "1.15.0",
   "private": true,
   "description": "Files and folders",
   "keywords": ["files", "tree", "folder", "finder"],
@@ -101,7 +101,9 @@
       { "id": "lock-editing", "title": "Lock Editing", "menu": "view", "key": "cmd+e", "symbol": "lock",
         "keywords": ["markdown", "read", "edit", "unlock"] },
       { "id": "tree-keys", "title": "Switch Between Tree and File", "menu": "view", "key": "cmd+shift+e",
-        "symbol": "sidebar.left", "keywords": ["focus", "keyboard", "file tree", "sidebar", "editor"] }
+        "symbol": "sidebar.left", "keywords": ["focus", "keyboard", "file tree", "sidebar", "editor"] },
+      { "id": "find-replace", "title": "Find and Replace…", "menu": "edit", "key": "cmd+option+f",
+        "symbol": "text.magnifyingglass", "keywords": ["search", "substitute", "editor"] }
     ]
   }
 }

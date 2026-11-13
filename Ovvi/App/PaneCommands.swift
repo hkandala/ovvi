@@ -7,13 +7,13 @@ extension CommandList {
         -> [Command]
     {
         let pane = target(), zoomed = pane.map { page?.zoomedPaneID == $0.id } ?? false, fixed = Chooser.fixed != nil
-        func act(_ title: String, _ key: KeyboardShortcut? = nil, _ section: Command.Section = .pane,
+        func act(_ title: String, _ hotkey: String? = nil, _ section: Command.Section = .pane,
                  symbol: String? = nil, enabled: Bool = true, id: String? = nil, heading: String? = nil,
                  _ run: @escaping (Page, HostStore.Pane) async -> Void) -> Command
         {
             let alternate = fixed && section == .pane && title.hasPrefix("Split") ? title + " and Choose…" : nil
-            return Command(section: section, title: title, id: id, key: key, group: .panes, symbol: symbol,
-                           heading: heading, keywords: "pane", enabled: pane != nil && enabled,
+            return Command(section: section, title: title, id: id, key: hotkey.flatMap { .hotkey($0) }, group: .panes,
+                           symbol: symbol, heading: heading, keywords: "pane", enabled: pane != nil && enabled,
                            alternate: alternate, action: {
                                if let page, let pane = target() {
                                    Task { await run(page, pane) }
@@ -31,15 +31,16 @@ extension CommandList {
             }
         }
         return [
-            act("Float Pane", symbol: "pip.enter") { $0.float($1) },
-            act("Split Right", .splitRight, symbol: "rectangle.split.2x1") { await $0.split($1.id, .right) },
-            act("Split Down", .splitDown, symbol: "rectangle.split.1x2") { await $0.split($1.id, .down) },
-            act("Split Left", symbol: "rectangle.lefthalf.inset.filled") {
+            act("Float Pane", "pane.float", symbol: "pip.enter") { $0.float($1) },
+            act("Split Right", "pane.split-right", symbol: "rectangle.split.2x1") { await $0.split($1.id, .right) },
+            act("Split Down", "pane.split-down", symbol: "rectangle.split.1x2") { await $0.split($1.id, .down) },
+            act("Split Left", "pane.split-left", symbol: "rectangle.lefthalf.inset.filled") {
                 await $0.split($1.id, .right, before: true)
             },
-            act("Split Up", symbol: "rectangle.tophalf.inset.filled") { await $0.split($1.id, .down, before: true)
+            act("Split Up", "pane.split-up", symbol: "rectangle.tophalf.inset.filled") {
+                await $0.split($1.id, .down, before: true)
             },
-            act(zoomed ? "Restore Pane" : "Zoom Pane", .zoom, symbol: "plus.magnifyingglass",
+            act(zoomed ? "Restore Pane" : "Zoom Pane", "pane.zoom", symbol: "plus.magnifyingglass",
                 enabled: pane.map { page?.canZoom($0.id) == true } ?? false) { $0.zoom($1.id) },
             Command(section: .paneMove, title: "Move Pane to Tab", symbol: "arrow.right.square", keywords: "pane",
                     enabled: pane != nil, menu: [
@@ -63,7 +64,7 @@ extension CommandList {
     private static func ends(_ page: Page?, _ pane: HostStore.Pane?,
                              _ target: @escaping @MainActor () -> HostStore.Pane?) -> [Command]
     {
-        let replace = Command(section: .close, title: "Replace Pane", key: .replacePane, group: .panes,
+        let replace = Command(section: .close, title: "Replace Pane", key: .hotkey("pane.replace"), group: .panes,
                               symbol: "arrow.clockwise.square", keywords: "pane restart new shell respawn reset",
                               enabled: pane != nil) { page?.replacePane(target()) }
         // A plugin card's ⌥⌘R is Reload Plugin.
@@ -71,7 +72,7 @@ extension CommandList {
             Command(
                 section: .close,
                 title: "Redraw Terminal",
-                key: .redraw,
+                key: .hotkey("terminal.redraw"),
                 group: .panes,
                 symbol: "arrow.trianglehead.2.clockwise",
                 keywords: "pane refresh repaint rerender tui garbled",
@@ -108,8 +109,9 @@ extension CommandList {
                                 }
                             })
         return redraw + [replace] + terminal + [agent] + plugins + [
-            Command(section: .close, title: "Close Pane", key: .closePane, group: .panes, symbol: "xmark.square",
-                    keywords: "pane", enabled: pane != nil || page?.standIn != nil) { page?.closePane(target()) },
+            Command(section: .close, title: "Close Pane", key: .hotkey("pane.close"), group: .panes,
+                    symbol: "xmark.square", keywords: "pane", enabled: pane != nil || page?.standIn != nil,
+                    action: { page?.closePane(target()) }),
         ]
     }
 }
@@ -139,10 +141,9 @@ extension CommandList {
             }
         }
         let list = [
-            Command(section: .close, title: "Detach Pane", key: .closePane, group: .panes, symbol: "pip.exit") {
-                page.floating[terminalID] = nil
-            },
-            Command(section: .view, title: "Command Palette", key: .palette, symbol: "command",
+            Command(section: .close, title: "Detach Pane", key: .hotkey("pane.close"), group: .panes,
+                    symbol: "pip.exit", action: { page.floating[terminalID] = nil }),
+            Command(section: .view, title: "Command Palette", key: .hotkey("app.palette"), symbol: "command",
                     enabled: palette != nil) { palette?.wrappedValue.toggle() },
             Command(section: .view, title: "Stay on Top", symbol: "pin", checked: page.floating[terminalID] == true,
                     setting: true) { page.floating[terminalID]?.toggle() },
@@ -154,7 +155,7 @@ extension CommandList {
                 edit("Paste", #selector(NSText.paste(_:)), "doc.on.clipboard"),
             ] + Self.pane(page, tabs: false) { pane }.filter { $0.section == .close }.map {
                 var command = $0
-                command.key = command.key == .closePane ? .closeTab : command.key
+                command.key = command.title == "Close Pane" ? .hotkey("tab.close") : command.key
                 return command
             } + sizes + Self.browser(browser, chooser: pane.flatMap { page.store.chooser($0.id) })
         return list + Self.plugin(pane?.terminalID.flatMap { page.terminals.plugins[$0] }, besides: list)

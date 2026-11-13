@@ -260,6 +260,17 @@ public enum PluginPackages {
         try write(json, to: settings)
     }
 
+    /// A top-level value of the app's own, such as `keys`.
+    public static func value(_ key: String, in settings: URL) -> Any? {
+        (try? read(settings))?[key]
+    }
+
+    public static func set(_ value: Any?, _ key: String, in settings: URL) throws {
+        var json = try read(settings)
+        json[key] = value
+        try write(json, to: settings)
+    }
+
     private static func write(_ json: [String: Any], to settings: URL) throws {
         try FileManager.default.createDirectory(at: settings.deletingLastPathComponent(),
                                                 withIntermediateDirectories: true)

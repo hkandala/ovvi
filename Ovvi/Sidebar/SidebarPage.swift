@@ -64,17 +64,19 @@ struct SidebarPage: View {
                     .allowsHitTesting(false)
                 Spacer(minLength: gap)
                 SortMenu(page: page, order: spaceOrder)
-                IconButton(symbol: "plus", help: "New Space", key: .newWorkspace) { Task { await page.newWorkspace() } }
-                    .disabled(store.state != .live)
-                    .accessibilityIdentifier("sidebar.new-workspace")
-                    .overlay {
-                        if plus, page.dragging != nil {
-                            DropIndicator(radius: 7)
-                        }
+                IconButton(symbol: "plus", help: "New Space", key: .hotkey("space.new")) {
+                    Task { await page.newWorkspace() }
+                }
+                .disabled(store.state != .live)
+                .accessibilityIdentifier("sidebar.new-workspace")
+                .overlay {
+                    if plus, page.dragging != nil {
+                        DropIndicator(radius: 7)
                     }
-                    .onDrop(of: [.ovviDrag], delegate: PaneDrop(page: page, target: .move(.newWorkspace()),
-                                                                over: $plus))
-                    .clearsDrop(page) { plus = false }
+                }
+                .onDrop(of: [.ovviDrag], delegate: PaneDrop(page: page, target: .move(.newWorkspace()),
+                                                            over: $plus))
+                .clearsDrop(page) { plus = false }
             }
             .padding(.leading, Sidebar.rowInsets.leading + WorkspaceRow.textInset)
             .padding(.trailing, Sidebar.rowInsets.trailing)

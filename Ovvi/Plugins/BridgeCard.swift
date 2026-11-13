@@ -144,13 +144,13 @@ extension CommandList {
         let taken = Set(list.compactMap(\.key))
         return plugin.manifest.commands.map { command in
             let change = bridge.commands[command.id] ?? [:]
-            var key = command.key.flatMap(shortcut)
+            var key = Hotkeys.shared.keys(Hotkey(plugin.manifest, command)).first
             if let shown = key, taken.contains(shown) {
                 key = nil
                 if logged.insert("\(plugin.manifest.id) \(command.id)").inserted {
                     PluginLog.add(
                         plugin.manifest.id,
-                        "the key \(command.key ?? "") of the command \(command.id) is the "
+                        "the key \(shown.chord) of the command \(command.id) is the "
                             + "app's: it is left off",
                     )
                 }
@@ -171,14 +171,4 @@ extension CommandList {
     }
 
     @MainActor private static var logged = Set<String>()
-
-    private static func shortcut(_ text: String) -> KeyboardShortcut? {
-        let parts = text.lowercased().split(separator: "+")
-        guard let last = parts.last, last.count == 1, let char = last.first else { return nil }
-        let modifiers: [Substring: EventModifiers] = ["cmd": .command, "shift": .shift, "option": .option,
-                                                      "alt": .option, "ctrl": .control, "control": .control]
-        return KeyboardShortcut(KeyEquivalent(char), modifiers: parts.dropLast().reduce(into: []) {
-            $0.insert(modifiers[$1] ?? [])
-        })
-    }
 }

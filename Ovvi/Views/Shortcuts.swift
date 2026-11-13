@@ -1,14 +1,18 @@
 import SwiftUI
 
+/// The important keys; Settings ▸ Keyboard Shortcuts has them all.
 struct Shortcuts: View {
-    let commands: [Command]
     @FocusState private var focused: Bool
 
     var body: some View {
-        let rows = Self.rows(commands), first: [Command.Group] = [.panes, .tabs, .workspaces]
-        let panel = HStack(alignment: .top, spacing: 48) {
-            column(first, rows)
-            column(Command.Group.allCases.filter { !first.contains($0) }, rows)
+        let rows = Self.rows(), first = ["Panes", "Tabs", "Spaces"]
+        let panel = VStack(spacing: 18) {
+            HStack(alignment: .top, spacing: 48) {
+                column(first, rows)
+                column(Hotkeys.groups.filter { !first.contains($0) }, rows)
+            }
+            Button("Customize…") { SettingsRoute.shared.open(.keys) }
+                .buttonStyle(.glass).accessibilityIdentifier("shortcuts.customize")
         }
         .padding(.horizontal, 28).padding(.vertical, 24)
         // ponytail: a window under about 870 pt wide clips its sides; a scroll view on both axes fills the whole
@@ -27,14 +31,14 @@ struct Shortcuts: View {
         .accessibilityIdentifier("shortcuts")
     }
 
-    private func column(_ groups: [Command.Group], _ rows: [Row]) -> some View {
+    private func column(_ groups: [String], _ rows: [Row]) -> some View {
         let groups = groups.filter { group in rows.contains { $0.group == group } }
         return VStack(alignment: .leading, spacing: 0) {
             ForEach(groups, id: \.self) { group in
-                Text(group.rawValue).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                Text(group).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
                     .padding(.top, group == groups.first ? 0 : 18).padding(.bottom, 4)
                     .accessibilityAddTraits(.isHeader)
-                    .accessibilityIdentifier("shortcuts.section.\(group.rawValue)")
+                    .accessibilityIdentifier("shortcuts.section.\(group)")
                 ForEach(rows.filter { $0.group == group }, id: \.title) { row in
                     HStack(spacing: 4) {
                         Text(row.title)
@@ -43,7 +47,7 @@ struct Shortcuts: View {
                             if index > 0 {
                                 Text("or").foregroundStyle(.secondary).padding(.horizontal, 4)
                             }
-                            ForEach(caps, id: \.self, content: Self.keycap)
+                            ForEach(caps, id: \.self, content: Keycap.init)
                         }
                     }
                     .font(.system(size: 13))
@@ -57,30 +61,29 @@ struct Shortcuts: View {
         .frame(width: 380)
     }
 
-    private static func keycap(_ cap: String) -> some View {
-        Text(cap).font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
-            .padding(.horizontal, 5)
-            .frame(minWidth: 22, minHeight: 22)
-            .background(.quaternary, in: .rect(cornerRadius: 5))
-    }
-
     private struct Row {
-        let group: Command.Group
+        let group: String
         let title: String
         let keys: [[String]]
     }
 
-    private static func rows(_ commands: [Command]) -> [Row] {
+    /// A family shows as one row while each of its actions keeps its default keys.
+    @MainActor private static func rows() -> [Row] {
+        let hotkeys = Hotkeys.shared
         var rows: [Row] = []
-        for command in commands {
-            guard let key = command.key, !rows.contains(where: { $0.title == command.family?.title }) else {
+        for hotkey in Hotkeys.app where hotkey.top {
+            let keys = hotkeys.keys(hotkey)
+            guard !keys.isEmpty else { continue }
+            if let family = hotkey.family, Hotkeys.app.allSatisfy({ $0.family?.title != family.title
+                    || !hotkeys.changed($0) })
+            {
+                if !rows.contains(where: { $0.title == family.title }), let key = keys.first {
+                    rows.append(Row(group: hotkey.group, title: family.title,
+                                    keys: [key.caps.dropLast() + [family.keys]]))
+                }
                 continue
             }
-            let caps = command.family.map { key.caps.dropLast() + [$0.keys] } ?? key.caps
-            let seconds = KeyboardShortcut.seconds.filter { $0.first == key }.map(\.second.caps)
-            rows.append(Row(group: command.group ?? command.section.group,
-                            title: command.family?.title ?? Palette.pageTitle(command),
-                            keys: [caps] + seconds))
+            rows.append(Row(group: hotkey.group, title: hotkey.title.replacing("…", with: ""), keys: keys.map(\.caps)))
         }
         return rows
     }

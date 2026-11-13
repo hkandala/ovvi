@@ -22,8 +22,8 @@ Settings that are not on this page do not exist.
   Settings: the sidebar floats inside the window with the traffic lights at
   its top, and the toolbar shows the page's title and, on a machine's or a
   plugin's page, the Back button.
-- **Sidebar.** General, Appearance, Terminal, Agents, Machines, Plugins and
-  Privacy, each with its filled two-tone symbol (13 pt medium) on the same
+- **Sidebar.** General, Appearance, Terminal, Agents, Keyboard Shortcuts,
+  Machines, Plugins and Privacy, each with its filled two-tone symbol (13 pt medium) on the same
   22 pt rounded tile, as Raycast's settings: in dark a dark grey tile lit
   from the top with a fine light rim and a near-white symbol, in light a
   white tile with a fine dark rim and a dark grey symbol. The same grey tile for
@@ -64,7 +64,8 @@ folder of its own (the UI tests) only flips the switch.
 
 New panes open: what every new pane opens. New Pane shows the chooser
 ([New pane](/docs/ui/new-pane)). Its line under the title says "What ⌘T, ⌘D
-and New Space open." for New Pane, else "Hold ⌥ as you make a pane to choose
+and New Space open." for New Pane (with the keys that New Tab and Split Right
+have), else "Hold ⌥ as you make a pane to choose
 each time." Any other choice opens that kind at once,
 with no chooser ([A fixed pick](/docs/ui/new-pane#a-fixed-pick)). The key
 holds the row's id: `terminal`, the agent's command, or the plugin's id. The
@@ -165,6 +166,43 @@ without opening a stream again. So the page has no preview.
   "Turn Off Notifications When an Agent Needs You" (D48). Notification Settings…
   opens Ovvi's page in System Settings, where banners, sounds and the Dock
   badge are.
+
+## Keyboard Shortcuts
+
+Every action that has a key, or can have one, in one list: the app's and each
+plugin's, third-party plugins too. A key that the user sets here is the key
+everywhere: the menu bar, the palette (⌘K), the Keyboard Shortcuts panel (⌘/),
+the tooltips and the text that names a key.
+
+- **Top row.** A search field and Reset All. The search keeps the actions
+  whose title, group or keys hold every word typed (`tab`, `⌘T`, `cmd+t`), or
+  shows No Results.
+- **Groups.** App, Sessions, Spaces, Tabs, Panes, Terminal, Edit, Browser and
+  Plugins (what works over any plugin card: Back, Forward, Reload Plugin),
+  then one group per plugin with keys, named as the plugin. Each row is the
+  action's title and its keys as keycaps, or None.
+- **Recording.** A click on the keys asks for new ones: the field says Type
+  Shortcut. The next key with ⌘, ⌃ or ⌥ becomes the action's only key. ⎋
+  cancels, ⌫ clears the key, a click elsewhere cancels, and a key with no ⌘,
+  ⌃ or ⌥ beeps and waits. Keys the app uses (⌘W, ⌘,) record too.
+- **Conflicts.** A key another action already has where this one works asks
+  under the row: "⌥⌘Y is New Space's key." with Cancel and Swap. Swap gives the
+  other action this one's old key. Two actions only conflict where both work:
+  a browser's ⌘R and a terminal's ⌥⌘R never meet, and neither do two plugins'
+  keys. A row whose key another action holds (a plugin's key that the app
+  uses) shows a warning symbol that names the other action; the app's action
+  keeps the key.
+- **Reset.** A changed row shows a reset button that gives back its default
+  keys. Reset All gives back every default.
+- **Saved** in `settings.json` under `keys`, the chords per action id, for
+  example `"keys": { "tab.new": ["option+cmd+y"] }`; an empty list is no key.
+  An action with no entry has its default keys
+  ([Keyboard shortcuts](/docs/ui/theme-and-accessibility#keyboard-shortcuts)).
+- Keys that belong to a control are not in the list and stay fixed: ↩, ⎋, ⇥,
+  arrows and typing in a list, a field, the chooser or a dialog; Return and
+  ⇧Return in a chat's composer, Esc to stop the agent; Esc to leave the
+  overview; and a plugin page's own keys inside its lists (a Git diff's `[`
+  and `]`).
 
 ## Machines
 

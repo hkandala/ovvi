@@ -137,12 +137,21 @@ the agent rows, the hover card, notifications):
 
 ## Keyboard shortcuts
 
-The palette and the menu bar come from one command list, so each shortcut is
-defined once. A command with two shortcuts shows the first in the menu; a key
-monitor runs the first's command for the second (⇧⌘P, ⌃⇥, ⌃⇧⇥, ⌘=), always on
-the key window's own command list. It takes ⌃⇥ and ⌃⇧⇥ in every card and
-text field (a chat's composer, a browser's address), so they never move the
-keyboard to the next terminal instead.
+Every key lives in one registry: each action has an id (`tab.new`), a group,
+its default keys and the key the user set in
+[Settings ▸ Keyboard Shortcuts](/docs/ui/settings#keyboard-shortcuts). The
+menu bar, the palette, the Keyboard Shortcuts panel, the tooltips, the text
+that names a key, the terminal's line keys and the plugin cards' Back and
+Forward all read it, and a plugin's command keys join it from its manifest
+([Commands](/docs/plugins/manifest#commands)). The tables below are the
+defaults.
+
+The palette and the menu bar come from one command list. A command with two
+default keys shows the first in the menu; a key monitor runs the first's
+command for the second (⇧⌘P, ⌃⇥, ⌃⇧⇥, ⌘=), always on the key window's own
+command list. It takes ⌃⇥ and ⌃⇧⇥ in every card and text field (a chat's
+composer, a browser's address), so they never move the keyboard to the next
+terminal instead. A key the user records is the action's only key.
 
 One pattern for every level: the key says the action, the modifier says the
 level. `T` makes, `W` closes, `[` and `]` step, `1` to `9` jump. ⌘ is the pane
@@ -165,14 +174,14 @@ page. A split gives the keyboard to the new pane. A tab, space or session
 shown, however it comes into view, gives the keyboard to its keyboard card.
 
 **Keyboard Shortcuts panel.** ⌘/ (Help ▸ Keyboard Shortcuts, also in the
-palette) opens a glass panel over the window, like the palette. It lists
-every command with a shortcut, read from the command list so it never goes
-stale, in two columns grouped as Panes, Tabs, Spaces, Sessions, View,
-Edit and Plugins (the palette's groups). Plugins shows only over a plugin
-card. Each modifier and key is its own keycap. A command's second shortcut
-follows after "or". A set of commands that differ only by the key shows as
-one row with one keycap for the keys: "Select Pane ⌥ ⌘ ←→↑↓", "Show Tab 1–9
-⌘ 1–9". Esc, ⌘/ or a click outside closes it.
+palette) opens a glass panel over the window, like the palette. It lists the
+important keys, as set, in two columns grouped as Panes, Tabs, Spaces,
+Sessions, App and Edit, and Customize… under them opens Settings ▸ Keyboard
+Shortcuts, which has every key. Each modifier and key is its own keycap. An
+action's second key follows after "or". A set of actions that differ only by
+the key shows as one row with one keycap for the keys while each keeps its
+default: "Select Pane ⌥ ⌘ ←→↑↓", "Show Tab 1–9 ⌘ 1–9"; one changed, each shows
+on its own row. Esc, ⌘/ or a click outside closes it.
 
 | Keys | Action | Menu |
 |---|---|---|
@@ -204,8 +213,8 @@ one row with one keycap for the keys: "Select Pane ⌥ ⌘ ←→↑↓", "Show 
 | ⌥⌘= | Balance Splits: even out the splits of the tab | View ▸ Pane |
 | ⌥⌘ + arrow | Select Pane Left, Right, Up, Down: the keyboard goes to the next card that way (as in Ghostty and iTerm2) | View ▸ Pane |
 | ⌘[ and ⌘] | Select Previous Pane, Select Next Pane, over every card | View ▸ Pane |
-| ⌃- and ⌃⇧- | over a plugin card, Back and Forward (VS Code's Go Back and Go Forward), in every view | |
-| ⌘← and ⌘→ | over a plugin card, Back and Forward (in a text field they still move the caret) | |
+| ⌃- and ⌃⇧-, ⌘← and ⌘→ | over a plugin card, Back and Forward (VS Code's Go Back and Go Forward), ahead of the page's own keys; an arrow key in a text field still moves the caret | |
+| ⌘← ⌘→, ⌘⌫, ⌥← ⌥→ | in a terminal: to the line's start and end, delete to the line's start, back and forward a word (⌃A, ⌃E, ⌃U, ⌥B, ⌥F to the program) | |
 | ⌥⇧⌘ + arrow | Move Pane: swap the keyboard card with the card that way | View ▸ Pane |
 | ⌘+ (and ⌘=), ⌘-, ⌘0 | Increase, Decrease, Reset Font Size: the text size; on a browser card that has the keyboard, the page's zoom (⌘0 also undoes a pinch) | View |
 | ⌃⌘F | full screen (the macOS key) | View |

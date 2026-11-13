@@ -28,9 +28,11 @@ struct TitleBar: View {
         .underOverview(pages)
         .overlay(alignment: .trailing) {
             if pages.overview {
-                IconButton(symbol: "xmark", help: "Close Overview", key: .overview) { pages.toggleOverview() }
-                    .accessibilityIdentifier("overview.close")
-                    .underOverview(pages, own: true)
+                IconButton(symbol: "xmark", help: "Close Overview", key: .hotkey("app.overview")) {
+                    pages.toggleOverview()
+                }
+                .accessibilityIdentifier("overview.close")
+                .underOverview(pages, own: true)
             }
         }
         .padding(.leading, Self.inset(fullScreen: fullScreen))
@@ -43,7 +45,7 @@ struct TitleBar: View {
     @ViewBuilder private var row: some View {
         HStack(spacing: gap) {
             // `rectangle.leftthird.inset.filled` alone draws too thin a bar at 13 pt to tell open and closed apart.
-            IconButton(symbol: "sidebar.left", help: "Toggle Sidebar", key: .toggleSidebar) { sidebar.toggle() }
+            IconButton(symbol: "sidebar.left", help: "Toggle Sidebar", key: .hotkey("app.sidebar")) { sidebar.toggle() }
                 .overlay {
                     if sidebar {
                         Image(systemName: "rectangle.leftthird.inset.filled").font(.body.weight(.medium))
@@ -74,11 +76,13 @@ struct TitleBar: View {
         } else {
             Spacer(minLength: 0)
         }
-        IconButton(symbol: "square.grid.2x2", help: "Show Overview", key: .overview) { pages.toggleOverview() }
-            .accessibilityIdentifier("titlebar.overview")
-        IconButton(symbol: "command", help: "Command Palette", key: .palette) { palette.toggle() }
+        IconButton(symbol: "square.grid.2x2", help: "Show Overview", key: .hotkey("app.overview")) {
+            pages.toggleOverview()
+        }
+        .accessibilityIdentifier("titlebar.overview")
+        IconButton(symbol: "command", help: "Command Palette", key: .hotkey("app.palette")) { palette.toggle() }
             .accessibilityIdentifier("titlebar.palette")
-        IconButton(symbol: "plus", help: "New Tab", key: .newTab) { Task { await page.newTab() } }
+        IconButton(symbol: "plus", help: "New Tab", key: .hotkey("tab.new")) { Task { await page.newTab() } }
             .disabled(page.selectedWorkspace == nil || page.store.state != .live)
             .accessibilityIdentifier("titlebar.new-tab")
             .overlay {

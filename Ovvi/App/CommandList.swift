@@ -36,21 +36,20 @@ struct CommandList {
             Command(section: .app, title: "Plugins…", group: .plugins, symbol: SettingsPage.plugins.symbol,
                     keywords: "install update remove packages npm git settings",
                     action: { SettingsRoute.shared.open(.plugins) }),
-            Command(section: .file, title: "New Window", key: .init("n"), symbol: "macwindow.badge.plus") {
-                WindowPages.open(machine: nil)
-            },
-            Command(section: .file, title: "New Tab", key: .newTab, group: .tabs, symbol: "plus.square",
+            Command(section: .file, title: "New Window", key: .hotkey("app.new-window"),
+                    symbol: "macwindow.badge.plus") { WindowPages.open(machine: nil) },
+            Command(section: .file, title: "New Tab", key: .hotkey("tab.new"), group: .tabs, symbol: "plus.square",
                     enabled: live && workspace != nil) { Task { await page?.newTab() } },
-            Command(section: .file, title: "New Space", key: .newWorkspace,
+            Command(section: .file, title: "New Space", key: .hotkey("space.new"),
                     group: .workspaces, symbol: "folder.badge.plus", keywords: "workspace", enabled: live,
                     alternate: Chooser.fixed == nil ? nil : "New Space and Choose…",
                     action: { Task { await page?.newWorkspace() } }),
-            Command(section: .file, title: "Open Session…", key: .openSession, group: .sessions,
+            Command(section: .file, title: "Open Session…", key: .hotkey("session.open"), group: .sessions,
                     symbol: "rectangle.stack.badge.plus",
                     keywords: "create start switch", enabled: openSession != nil, action: {
                         openSession?.wrappedValue = true
                     }),
-            Command(section: .file, title: "Go to Directory…", key: editor == nil ? .findPrevious : nil,
+            Command(section: .file, title: "Go to Directory…", key: editor == nil ? .hotkey("terminal.directory") : nil,
                     group: .edit, symbol: "folder", keywords: "cd folder path navigate",
                     enabled: page?.store.machine.isRemote == false
                         && page?.keyboardPane.map { $0.program?.isShell == true && $0.plugin == nil } == true,
@@ -59,33 +58,33 @@ struct CommandList {
                     }),
         ]
         let close = [
-            Command(section: .close, title: "Close Tab", key: .closeTab, group: .tabs, symbol: "xmark.rectangle",
-                    enabled: tab != nil, action: {
+            Command(section: .close, title: "Close Tab", key: .hotkey("tab.close"), group: .tabs,
+                    symbol: "xmark.rectangle", enabled: tab != nil, action: {
                         if let page, let tab = page.selectedTab {
                             page.close(.tab(tab.id))
                         }
                     }),
-            Command(section: .close, title: "Close Other Tabs", group: .tabs, symbol: "xmark.rectangle.fill",
-                    enabled: (workspace?.tabs.count ?? 0) > 1, action: {
+            Command(section: .close, title: "Close Other Tabs", key: .hotkey("tab.close-others"), group: .tabs,
+                    symbol: "xmark.rectangle.fill", enabled: (workspace?.tabs.count ?? 0) > 1, action: {
                         if let page, let tab = page.selectedTab {
                             page.closeTabs(besides: tab.id, right: false)
                         }
                     }),
-            Command(section: .close, title: "Close Tabs to the Right", group: .tabs,
-                    symbol: "arrow.right.to.line.compact",
+            Command(section: .close, title: "Close Tabs to the Right", key: .hotkey("tab.close-right"),
+                    group: .tabs, symbol: "arrow.right.to.line.compact",
                     enabled: tab != nil && workspace?.tabs.last?.id != tab?.id, action: {
                         if let page, let tab = page.selectedTab {
                             page.closeTabs(besides: tab.id, right: true)
                         }
                     }),
-            Command(section: .close, title: "Close Space", key: .init("w", modifiers: [.command, .control]),
+            Command(section: .close, title: "Close Space", key: .hotkey("space.close"),
                     group: .workspaces, symbol: "folder.badge.minus", keywords: "workspace", enabled: workspace != nil,
                     action: {
                         if let page, let workspace = page.selectedWorkspace {
                             page.close(.workspace(workspace.id))
                         }
                     }),
-            Command(section: .close, title: "Detach Session", key: .init("w", modifiers: [.command, .option]),
+            Command(section: .close, title: "Detach Session", key: .hotkey("session.detach"),
                     group: .sessions, symbol: "rectangle.stack.badge.minus", enabled: pages?.canDetach == true,
                     action: {
                         if let pages, let page = pages.current {
@@ -98,7 +97,7 @@ struct CommandList {
         let browser = page?.keyboardPane.flatMap { page?.browser($0) }
         let chat = page?.keyboardPane.flatMap { page?.shownChat($0) } != nil
         let edit = [
-            Command(section: .edit, title: "Insert Path…", key: .init("i", modifiers: [.command, .shift]),
+            Command(section: .edit, title: "Insert Path…", key: .hotkey("terminal.insert-path"),
                     symbol: "text.insert", keywords: "file folder path",
                     enabled: terminal) { Task { await page?.choosePath(directory: false) } },
         ] + Self.editorCommands(page: page, pane: nil, terminal: live && terminal && !chat) { [page] in page?.editor }
@@ -112,7 +111,8 @@ struct CommandList {
         // With no main window's list, ⌘W closes the key window: a disabled Close Pane would swallow it.
         return all.map { command in
             var command = command
-            command.key = command.title == "Close Window" ? .closePane : command.key == .closePane ? nil : command.key
+            command.key = command.title == "Close Window" ? .hotkey("pane.close")
+                : command.title == "Close Pane" ? nil : command.key
             return command
         }
     }
@@ -132,13 +132,13 @@ struct CommandList {
             }
         }
         return [
-            Command(section: .view, title: "Command Palette", key: .palette, symbol: "command",
+            Command(section: .view, title: "Command Palette", key: .hotkey("app.palette"), symbol: "command",
                     enabled: palette != nil) { palette?.wrappedValue.toggle() },
-            Command(section: .help, title: "Keyboard Shortcuts", key: .init("/"), symbol: "keyboard",
+            Command(section: .help, title: "Keyboard Shortcuts", key: .hotkey("app.shortcuts"), symbol: "keyboard",
                     keywords: "keys help", enabled: shortcuts != nil) { shortcuts?.wrappedValue.toggle() },
-            Command(section: .view, title: "Toggle Sidebar", key: .toggleSidebar, symbol: "sidebar.left",
+            Command(section: .view, title: "Toggle Sidebar", key: .hotkey("app.sidebar"), symbol: "sidebar.left",
                     enabled: sidebar != nil && pages?.overview != true) { sidebar?.wrappedValue.toggle() },
-            Command(section: .view, title: "Show Overview", key: .overview, symbol: "square.grid.2x2",
+            Command(section: .view, title: "Show Overview", key: .hotkey("app.overview"), symbol: "square.grid.2x2",
                     keywords: "all tabs grid expose", enabled: pages?.current != nil,
                     checked: pages?.overview == true) { pages?.toggleOverview() },
             Command(section: .view, title: "Appearance", symbol: "circle.lefthalf.filled",
@@ -151,14 +151,16 @@ struct CommandList {
                         Command(section: .view, title: value.rawValue.capitalized,
                                 checked: settings.style == value) { settings.style = value }
                     }, previews: true),
-            Command(section: .size, title: "Increase Font Size", key: .bigger, symbol: "textformat.size.larger",
-                    keywords: "bigger text", enabled: size < sizes.upperBound || page != nil,
-                    action: zoom(1) { PaneTerminal.stepFontSize(1) }),
-            Command(section: .size, title: "Decrease Font Size", key: .init("-"), symbol: "textformat.size.smaller",
-                    keywords: "smaller text", enabled: size > sizes.lowerBound || page != nil,
+            Command(section: .size, title: "Increase Font Size", key: .hotkey("app.bigger"),
+                    symbol: "textformat.size.larger", keywords: "bigger text",
+                    enabled: size < sizes.upperBound || page != nil, action: zoom(1) { PaneTerminal.stepFontSize(1) }),
+            Command(section: .size, title: "Decrease Font Size", key: .hotkey("app.smaller"),
+                    symbol: "textformat.size.smaller", keywords: "smaller text",
+                    enabled: size > sizes.lowerBound || page != nil,
                     action: zoom(-1) { PaneTerminal.stepFontSize(-1) }),
-            Command(section: .size, title: "Reset Font Size", key: .init("0"), symbol: "textformat.size",
-                    keywords: "actual size text", enabled: size != PaneTerminal.fontSize || page != nil,
+            Command(section: .size, title: "Reset Font Size", key: .hotkey("app.actual-size"),
+                    symbol: "textformat.size", keywords: "actual size text",
+                    enabled: size != PaneTerminal.fontSize || page != nil,
                     action: zoom(0) { [settings] in settings.fontSize = PaneTerminal.fontSize }),
         ]
     }
@@ -212,7 +214,7 @@ struct CommandList {
             ),
             // AppKit's View menu has its own item and key.
             Command(section: .palette, title: fullScreen ? "Exit Full Screen" : "Enter Full Screen",
-                    key: .init("f", modifiers: [.command, .control]),
+                    key: .hotkey("app.full-screen"),
                     symbol: "arrow.up.left.and.arrow.down.right") { NSApp.keyWindow?.toggleFullScreen(nil) },
             Self.reloadPlugins,
             Command(section: .palette, title: "Settings…", symbol: "gearshape", keywords: "preferences options",
@@ -236,7 +238,7 @@ struct CommandList {
             Command(
                 section: .pages,
                 title: title,
-                key: .init(offset < 0 ? "[" : "]", modifiers: [.command, .option]),
+                key: .hotkey(offset < 0 ? "session.previous" : "session.next"),
                 symbol: symbol,
                 enabled: pages?.neighbor(offset) != nil,
                 action: { pages?.step(offset) },
@@ -244,13 +246,13 @@ struct CommandList {
         }
         func stepWorkspace(_ title: String, _ symbol: String, _ offset: Int) -> Command {
             Command(section: .workspaceSteps, title: title,
-                    key: .init(offset < 0 ? "[" : "]", modifiers: [.command, .control]), symbol: symbol,
+                    key: .hotkey(offset < 0 ? "space.previous" : "space.next"), symbol: symbol,
                     enabled: (page?.sidebarWorkspaces.count ?? 0) > 1) { page?.stepWorkspace(offset) }
         }
         return [
-            Command(section: .tabSteps, title: "Show Previous Tab", key: .previousTab, symbol: "chevron.backward",
-                    enabled: tabs.count > 1) { page?.step(-1) },
-            Command(section: .tabSteps, title: "Show Next Tab", key: .nextTab, symbol: "chevron.forward",
+            Command(section: .tabSteps, title: "Show Previous Tab", key: .hotkey("tab.previous"),
+                    symbol: "chevron.backward", enabled: tabs.count > 1) { page?.step(-1) },
+            Command(section: .tabSteps, title: "Show Next Tab", key: .hotkey("tab.next"), symbol: "chevron.forward",
                     enabled: tabs.count > 1) { page?.step(1) },
             // Xcode's keys: VS Code's ⌃- is a plugin card's Back, ⌘[ a pane step. Enabled with nothing to go to: the
             // history is no observed state, and a disabled item swallows its key.
@@ -275,7 +277,7 @@ extension CommandList {
     private static func moveTab(_ page: Page?, _ offset: Int, enabled: Bool) -> Command {
         let side = offset < 0 ? "left" : "right"
         return Command(section: .tabSteps, title: "Move Tab \(side.capitalized)",
-                       key: .init(offset < 0 ? .leftArrow : .rightArrow, modifiers: [.command, .shift]),
+                       key: .hotkey("tab.move-\(side)"),
                        symbol: "arrow.\(side).to.line", enabled: enabled, action: {
                            // The menu takes the arrow ahead of a text field or a web card: there it still selects
                            // to the line's end. Not from the palette or a click (the palette's field has the
@@ -299,16 +301,12 @@ extension CommandList {
 
     private var paneKeys: [Command] {
         let enabled = pages?.current?.keyboardPane != nil, tab = pages?.current?.selectedTab
-        let arrows: [(Heading, KeyEquivalent)] = [
-            (.left, .leftArrow), (.right, .rightArrow), (.up, .upArrow), (.down, .downArrow),
-        ]
-        func each(_ title: String, _ modifiers: EventModifiers?, symbol suffix: String,
+        func each(_ title: String, _ id: String, symbol suffix: String,
                   _ act: @escaping (Page, HostStore.Pane, Heading) async -> Void) -> [Command]
         {
-            arrows.map { heading, key in
+            [Heading.left, .right, .up, .down].map { heading in
                 Command(section: .paneKeys, title: "\(title) \(heading.rawValue.capitalized)",
-                        key: modifiers.map { .init(key, modifiers: $0) },
-                        family: (title, "←→↑↓"),
+                        key: .hotkey("pane.\(id)-\(heading.rawValue)"),
                         symbol: "arrow.\(heading.rawValue)\(suffix)",
                         keywords: "pane",
                         enabled: enabled, action: {
@@ -324,26 +322,26 @@ extension CommandList {
         }
         // Enabled even when it looks even: the menu can lag the tab's last change.
         let balance = Command(section: .paneKeys, title: "Balance Splits",
-                              key: .init("=", modifiers: [.command, .option]), symbol: "equal.square",
+                              key: .hotkey("pane.balance"), symbol: "equal.square",
                               keywords: "pane even", enabled: tab != nil, action: {
                                   if let page = pages?.current, let tab = page.selectedTab {
                                       Task { await page.store.write { try await page.store.balance(tab.id, $0) } }
                                   }
                               })
         return [balance] +
-            each("Select Pane", [.command, .option], symbol: "") { page, _, heading in
+            each("Select Pane", "select", symbol: "") { page, _, heading in
                 page.moveKeyboard(heading)
             }
             + [
-                Command(section: .paneKeys, title: "Select Previous Pane", key: .init("["), symbol: "chevron.left",
-                        keywords: "pane", enabled: enabled) { pages?.current?.stepCard(-1) },
-                Command(section: .paneKeys, title: "Select Next Pane", key: .init("]"), symbol: "chevron.right",
-                        keywords: "pane", enabled: enabled) { pages?.current?.stepCard(1) },
+                Command(section: .paneKeys, title: "Select Previous Pane", key: .hotkey("pane.previous"),
+                        symbol: "chevron.left", keywords: "pane", enabled: enabled) { pages?.current?.stepCard(-1) },
+                Command(section: .paneKeys, title: "Select Next Pane", key: .hotkey("pane.next"),
+                        symbol: "chevron.right", keywords: "pane", enabled: enabled) { pages?.current?.stepCard(1) },
             ]
-            + each("Move Pane", [.command, .option, .shift], symbol: ".square") {
+            + each("Move Pane", "move", symbol: ".square") {
                 await $0.store.swap($1.id, $2)
             }
-            + each("Resize Pane", nil, symbol: ".to.line") {
+            + each("Resize Pane", "resize", symbol: ".to.line") {
                 await $0.store.resize($1.id, $2)
             }
             + [Command(section: .paneSetting, title: "Focus Follows Mouse", symbol: "cursorarrow.motionlines",
@@ -356,27 +354,23 @@ extension CommandList {
 
     /// Each finds its place when the key is pressed: the menu can lag a switch.
     static func jumps(_ page: Page?, _ pages: WindowPages?) -> [Command] {
-        func jump(_ section: Command.Section, _ level: String, _ modifiers: EventModifiers, _ titles: [String],
-                  _ show: @escaping (Int) -> Void) -> [Command]
+        func jump(_ section: Command.Section, _ id: String, _ titles: [String], _ show: @escaping (Int) -> Void)
+            -> [Command]
         {
-            func key(_ index: Int) -> KeyboardShortcut {
-                KeyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: modifiers)
-            }
-            return titles.enumerated().map { index, title in
-                Command(section: section, title: title, key: key(index),
-                        family: ("Show \(level) 1–9", "1–9")) { show(index) }
+            titles.enumerated().map { index, title in
+                Command(section: section, title: title, key: .hotkey("\(id).\(index + 1)")) { show(index) }
             }
         }
         let tabs = (page?.selectedWorkspace?.tabs ?? []).prefix(9), workspaces = page?.sidebarWorkspaces ?? []
-        return jump(.tabs, "Tab", .command, tabs.map { page?.titleText($0) ?? $0.label }) { index in
+        return jump(.tabs, "tab", tabs.map { page?.titleText($0) ?? $0.label }) { index in
             if let page, let workspace = page.selectedWorkspace, workspace.tabs.indices.contains(index) {
                 page.select(workspace, tab: workspace.tabs[index].id)
             }
-        } + jump(.workspaces, "Space", [.command, .control], workspaces.prefix(9).map(\.label)) {
+        } + jump(.workspaces, "space", workspaces.prefix(9).map(\.label)) {
             if let page, page.sidebarWorkspaces.indices.contains($0) {
                 page.select(page.sidebarWorkspaces[$0])
             }
-        } + jump(.sessions, "Session", [.command, .option], (pages?.list ?? []).prefix(9).map(\.id)) {
+        } + jump(.sessions, "session", (pages?.list ?? []).prefix(9).map(\.id)) {
             if let pages, pages.list.indices.contains($0) {
                 pages.show(pages.list[$0])
             }

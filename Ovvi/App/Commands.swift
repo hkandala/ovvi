@@ -1,38 +1,9 @@
-import var Carbon.HIToolbox.Events.kVK_Tab // not all of Carbon: its EventModifiers clashes with SwiftUI's
+import var Carbon.HIToolbox.Events.kVK_Delete // not all of Carbon: its EventModifiers clashes with SwiftUI's
+import var Carbon.HIToolbox.Events.kVK_Tab
 import HerdrKit
 import SwiftUI
 
 extension KeyboardShortcut {
-    static let newTab = KeyboardShortcut("t")
-    static let openSession = KeyboardShortcut("t", modifiers: [.command, .option])
-    static let newWorkspace = KeyboardShortcut("t", modifiers: [.command, .control])
-    static let toggleSidebar = KeyboardShortcut("s", modifiers: [.command, .control])
-    static let overview = KeyboardShortcut("o", modifiers: [.command, .control])
-    static let palette = KeyboardShortcut("k")
-    static let splitRight = KeyboardShortcut("d")
-    static let splitDown = KeyboardShortcut("d", modifiers: [.command, .shift])
-    static let zoom = KeyboardShortcut(.return, modifiers: [.command, .shift])
-    static let closePane = KeyboardShortcut("w")
-    /// ⇧⌘R: ⌘R reloads a browser card.
-    static let replacePane = KeyboardShortcut("r", modifiers: [.command, .shift])
-    static let redraw = KeyboardShortcut("r", modifiers: [.command, .option])
-    static let closeTab = KeyboardShortcut("w", modifiers: [.command, .shift])
-    static let previousTab = KeyboardShortcut("[", modifiers: [.command, .shift])
-    static let nextTab = KeyboardShortcut("]", modifiers: [.command, .shift])
-    static let back = KeyboardShortcut("-", modifiers: .control)
-    static let forward = KeyboardShortcut("-", modifiers: [.control, .shift])
-    static let bigger = KeyboardShortcut("+")
-    static let findNext = KeyboardShortcut("g")
-    static let save = KeyboardShortcut("s")
-    static let findPrevious = KeyboardShortcut("g", modifiers: [.command, .shift])
-
-    static let seconds: [(second: KeyboardShortcut, first: KeyboardShortcut)] = [
-        (KeyboardShortcut("p", modifiers: [.command, .shift]), .palette),
-        (KeyboardShortcut(.tab, modifiers: [.control, .shift]), .previousTab),
-        (KeyboardShortcut(.tab, modifiers: .control), .nextTab),
-        (KeyboardShortcut("="), .bigger),
-    ]
-
     var glyphs: String {
         caps.joined()
     }
@@ -43,6 +14,8 @@ extension KeyboardShortcut {
             KeyEquivalent.return.character: "↩", KeyEquivalent.tab.character: "⇥",
             KeyEquivalent.leftArrow.character: "←", KeyEquivalent.rightArrow.character: "→",
             KeyEquivalent.upArrow.character: "↑", KeyEquivalent.downArrow.character: "↓",
+            KeyEquivalent.delete.character: "⌫", KeyEquivalent.escape.character: "⎋",
+            KeyEquivalent.space.character: "Space",
         ]
         return modifiers.filter { self.modifiers.contains($0.0) }.map(\.1)
             + [keys[key.character] ?? String(key.character).uppercased()]
@@ -58,8 +31,9 @@ extension KeyboardShortcut {
     }
 
     /// ⇧⌘[ types "{", so the key matches with or without Shift's character. With Shift, Tab's character is backtab.
+    /// Delete types DEL, not its key equivalent's backspace.
     func matches(_ event: NSEvent) -> Bool {
-        let keys = Int(event.keyCode) == kVK_Tab ? "\t"
+        let keys = Int(event.keyCode) == kVK_Tab ? "\t" : Int(event.keyCode) == kVK_Delete ? "\u{8}"
             : (event.charactersIgnoringModifiers ?? "") + (event.characters(byApplyingModifiers: []) ?? "")
         return event.modifierFlags.intersection([.command, .shift, .option, .control]) == modifierFlags
             && keys.lowercased().contains(key.character)
@@ -67,9 +41,12 @@ extension KeyboardShortcut {
 
     /// Takes the key even when the command is disabled, and in a text field too: else ⌃⇥ goes on to AppKit's key
     /// view loop, which steps the panes.
+    /// Only a command's keys: Back's ⌘← stays the page's.
     @MainActor static func second(_ event: NSEvent) -> Bool {
-        guard let first = seconds.first(where: { $0.second.matches(event) })?.first,
-              let commands = CommandList.keyWindow else { return false }
+        guard let commands = CommandList.keyWindow,
+              let first = Hotkeys.app.lazy.map(Hotkeys.shared.keys)
+                  .first(where: { $0.dropFirst().contains { $0.matches(event) } })?.first,
+              commands.contains(where: { $0.key == first }) else { return false }
         commands.run { $0 == first }
         return true
     }
@@ -191,7 +168,6 @@ struct Command {
     var id: String?
     var key: KeyboardShortcut?
     var group: Group?
-    var family: (title: String, keys: String)?
     var symbol: String?
     var program: String?
     var heading: String?
@@ -240,7 +216,7 @@ struct AppCommands: Commands {
         }
         CommandGroup(replacing: .appInfo) { Button("About Ovvi") { openWindow(id: WindowPages.aboutScene) } }
         CommandGroup(replacing: .appSettings) {
-            Button("Settings…") { openWindow(id: WindowPages.settingsScene) }.keyboardShortcut(",")
+            Button("Settings…") { openWindow(id: WindowPages.settingsScene) }.keyboardShortcut(.hotkey("app.settings"))
         }
         CommandGroup(after: .appInfo) { items(list, .app) }
         CommandGroup(replacing: .newItem) { items(list, .file) }

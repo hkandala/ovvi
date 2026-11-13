@@ -143,10 +143,8 @@ final class PaneSurfaceView: AppTerminalView {
         }
         if !hasMarkedText(), let key = Self.herdrKey(event) {
             terminal?.keys([key])
-        } else if event.modifierFlags.intersection([.command, .control, .option, .shift]) == [.command, .control],
-                  event.charactersIgnoringModifiers == "f"
-        {
-            // ⌃⌘F: AppKit's window toggles full screen only for keys no view takes; libghostty takes all.
+        } else if Hotkeys.keys("app.full-screen").contains(where: { $0.matches(event) }) {
+            // AppKit's window toggles full screen only for keys no view takes; libghostty takes all.
             window?.toggleFullScreen(nil)
         } else if hasMarkedText() || !event.modifierFlags.contains(.command) {
             super.keyDown(with: event)
@@ -281,16 +279,20 @@ final class PaneSurfaceView: AppTerminalView {
     /// them as xterm does.
     /// Option follows Settings ▸ Terminal ▸ Option key (`macos-option-as-alt`); ⌥← and ⌥→ move by word with every
     /// choice.
+    /// The Terminal keys of Settings ▸ Keyboard Shortcuts, as the keys a shell and readline take.
+    private static let edits = [("terminal.line-start", "ctrl+a"), ("terminal.line-end", "ctrl+e"),
+                                ("terminal.delete-line", "ctrl+u"), ("terminal.word-back", "alt+b"),
+                                ("terminal.word-forward", "alt+f")]
+
     static func herdrKey(_ event: NSEvent) -> String? {
+        if let edit = edits.first(where: { Hotkeys.keys($0.0).contains { $0.matches(event) } }) {
+            return edit.1
+        }
         let flags = event.modifierFlags
         let control = flags.contains(.control), option = flags.contains(.option), shift = flags.contains(.shift)
         let named = names[event.keyCode]
         if flags.contains(.command) {
-            guard !control, !option else { return nil }
-            return ["left": "ctrl+a", "right": "ctrl+e", "backspace": "ctrl+u"][named ?? ""]
-        }
-        if option, !control, !shift, let word = ["left": "alt+b", "right": "alt+f"][named ?? ""] {
-            return word
+            return nil
         }
         let prefix = (control ? "ctrl+" : "") + (option ? "alt+" : "")
         if let named {

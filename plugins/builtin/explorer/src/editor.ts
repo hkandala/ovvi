@@ -276,15 +276,7 @@ export async function editor(place: Place, extensions: Extension[], parent: HTML
 
   ovvi.on("save", () => void save())
   ovvi.on("find", () => find.open(view, false))
-  const replace = (event: KeyboardEvent) => {
-    if (!place.shown || event.code !== "KeyF" || !event.metaKey || !event.altKey || event.shiftKey || event.ctrlKey) {
-      return
-    }
-    event.preventDefault()
-    find.open(view, true)
-  }
-  addEventListener("keydown", replace)
-  keep(() => removeEventListener("keydown", replace))
+  ovvi.on("control", ({ id }) => id === "find-replace" && place.shown && find.open(view, true))
   ovvi.on("findNext", () => findNext(view))
   ovvi.on("findPrevious", () => findPrevious(view))
   ovvi.files.watch(path, () => void check())

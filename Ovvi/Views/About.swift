@@ -25,6 +25,8 @@ struct About: View {
         .containerBackground(for: .window) { WindowBackground(look: look) }
         .windowMinimizeBehavior(.disabled)
         // The menu bar's ⌘W is a main window's Close Pane.
-        .background { Button("Close") { dismiss() }.keyboardShortcut("w").opacity(0).accessibilityHidden(true) }
+        .background {
+            Button("Close") { dismiss() }.keyboardShortcut(.hotkey("pane.close")).opacity(0).accessibilityHidden(true)
+        }
     }
 }

@@ -1,0 +1,71 @@
+import XCTest
+
+/// Settings ▸ Keyboard Shortcuts saves to the tests' config folder: each test resets what it records.
+extension OvviUITests {
+    func testARecordedKeyShowsEverywhereAndASwapMovesTheOther() async throws {
+        XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
+        recordAndSwap()
+
+        // The menu bar, the palette, the ⌘/ panel and a tooltip read the new keys.
+        XCTAssertTrue(element("titlebar.new-tab").label.hasSuffix("⌃⌘T"), element("titlebar.new-tab").label)
+        openPalette()
+        app.typeText("new tab")
+        let row = element("palette.command.New Tab")
+        XCTAssertTrue(row.exists(within: 2))
+        XCTAssertTrue(row.label.hasSuffix("⌃⌘T"), row.label)
+        app.typeKey(.escape, modifierFlags: [])
+        app.typeKey("/", modifierFlags: .command)
+        XCTAssertTrue(element("shortcuts.New Tab").has(\.stringValue, "⌃⌘T", within: 2))
+        XCTAssertEqual(element("shortcuts.New Space").stringValue, "⌥⌘Y")
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(element("shortcuts").vanishes(within: 2))
+
+        let tabs = try await Self.ids("tab", in: one), spaces = try await Self.ids("workspace", in: one)
+        closeNew("tab", besides: tabs)
+        element("terminal.w1:p1").click()
+        app.typeKey("t", modifierFlags: [.command, .control])
+        _ = try await newTabID(after: tabs)
+        let after = try await Self.ids("workspace", in: one)
+        XCTAssertEqual(after, spaces)
+    }
+
+    /// New Tab gets ⌥⌘Y, then gives it to New Space for New Space's ⌃⌘T.
+    private func recordAndSwap() {
+        openSettings("keys")
+        addTeardownBlock { @MainActor [self] in
+            openSettings("keys")
+            element("keys.reset-all", in: settingsWindow).click()
+            XCTAssertTrue(element("keys.tab.new", in: settingsWindow).has(\.stringValue, "⌘T", within: 2))
+        }
+        let newTab = element("keys.tab.new", in: settingsWindow)
+        let newSpace = element("keys.space.new", in: settingsWindow)
+        XCTAssertTrue(newTab.has(\.stringValue, "⌘T", within: 3))
+        newTab.click()
+        XCTAssertTrue(newTab.has(\.stringValue, "Type Shortcut", within: 2))
+        // ⌘W records: it closes no window.
+        settingsWindow.typeKey("w", modifierFlags: .command)
+        XCTAssertTrue(element("keys.tab.new.question", in: settingsWindow).exists(within: 2))
+        element("keys.tab.new", in: settingsWindow).click()
+        settingsWindow.typeKey("y", modifierFlags: [.command, .option])
+        XCTAssertTrue(newTab.has(\.stringValue, "⌥⌘Y", within: 2))
+        XCTAssertTrue(element("keys.tab.new.reset", in: settingsWindow).isEnabled)
+
+        // A key another action has asks first; Swap gives that one the key given up.
+        newSpace.click()
+        settingsWindow.typeKey("y", modifierFlags: [.command, .option])
+        let swap = element("keys.space.new.swap", in: settingsWindow)
+        XCTAssertTrue(swap.exists(within: 2))
+        XCTAssertEqual(newSpace.stringValue, "⌃⌘T")
+        swap.click()
+        XCTAssertTrue(newSpace.has(\.stringValue, "⌥⌘Y", within: 2))
+        XCTAssertTrue(newTab.has(\.stringValue, "⌃⌘T", within: 2))
+
+        let search = element("keys.search", in: settingsWindow)
+        search.click()
+        search.typeText("new space")
+        XCTAssertTrue(element("keys.tab.new", in: settingsWindow).vanishes(within: 2))
+        XCTAssertTrue(newSpace.exists)
+        settingsWindow.typeKey("w", modifierFlags: .command)
+        XCTAssertTrue(settingsWindow.vanishes(within: 2))
+    }
+}

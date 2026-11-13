@@ -154,12 +154,17 @@ final class WebCardView: BrowserView {
     var keyboard: ((Bool) -> Void)?
     var step: ((Bool) -> Void)?
 
+    /// The page's keyboard is in a text field (the runtime's `card.typing`).
+    var typing = false
+
     /// WebKit gives the page every ⌘ key first, and CodeMirror takes some of the app's: the menu goes first, as over a
-    /// native text view.
+    /// native text view. Back and Forward too, ahead of the page's own keys (a tree's ⌘← would go to the parent row),
+    /// but an arrow moves the caret in a text field.
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         guard window?.firstResponder === self else { return super.performKeyEquivalent(with: event) }
-        let back = KeyboardShortcut.back.matches(event)
-        if let step, back || KeyboardShortcut.forward.matches(event) {
+        let arrow = [.leftArrow, .rightArrow, .upArrow, .downArrow].contains(event.specialKey)
+        let back = Hotkeys.keys("card.back").contains { $0.matches(event) }
+        if let step, !(arrow && typing), back || Hotkeys.keys("card.forward").contains(where: { $0.matches(event) }) {
             step(back)
             return true
         }

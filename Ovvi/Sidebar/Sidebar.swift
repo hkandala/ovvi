@@ -71,7 +71,7 @@ struct Sidebar: View {
                 FilterField(prompt: "Filter", text: $filter, identifier: "sidebar.filter")
                     .onExitCommand { filter = "" }
                     .padding(.trailing, 4)
-                IconButton(symbol: "plus.square.on.square", help: "Open Session", key: .openSession,
+                IconButton(symbol: "plus.square.on.square", help: "Open Session", key: .hotkey("session.open"),
                            action: openSession)
                     .accessibilityIdentifier("sidebar.open-session")
             }

@@ -27,12 +27,12 @@ struct WelcomeView: View {
     private enum Page: String {
         case running, layout, agents, plugins, machines, herdr
 
-        func words(herdrFound: Bool) -> (title: String, text: String) {
+        @MainActor func words(herdrFound: Bool) -> (title: String, text: String) {
             switch self {
             case .running: ("Your work keeps running", "Terminals, agents and tools live in sessions. Close the window "
                     + "or quit Ovvi, and they keep going.")
-            case .layout: ("Panes, tabs and spaces", "Split a pane with ⌘D, open a tab with ⌘T, and keep each project "
-                    + "in its own space.")
+            case .layout: ("Panes, tabs and spaces", "Split a pane with \(Hotkeys.named("pane.split-right")), open a "
+                    + "tab with \(Hotkeys.named("tab.new")), and keep each project in its own space.")
             case .agents: ("Work with agents your way", "Watch an agent in its terminal, then switch to the chat when "
                     + "it suits you: the same agent, mid-task.")
             case .plugins: ("Everything you need, right there", "Open Git, a browser or your own plugins beside any "

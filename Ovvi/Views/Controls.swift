@@ -13,6 +13,17 @@ struct FadeText: View {
     }
 }
 
+struct Keycap: View {
+    let cap: String
+
+    var body: some View {
+        Text(cap).font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+            .padding(.horizontal, 5)
+            .frame(minWidth: 22, minHeight: 22)
+            .background(.quaternary, in: .rect(cornerRadius: 5))
+    }
+}
+
 struct IconButton: View {
     let symbol: String
     let help: String

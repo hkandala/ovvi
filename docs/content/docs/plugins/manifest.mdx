@@ -78,7 +78,7 @@ In the `ovvi` key:
   `opens`, known header types with unique ids, a `gap` of 0 or more, `digits`
   only `mono`, a value on every segmented option, commands with ids unique
   among the commands and the header's controls, a
-  `file`, `edit` or `view` menu and a `cmd+` key, known `handles`, `connect`
+  `file`, `edit` or `view` menu and a key that reads as a chord, known `handles`, `connect`
   origins as above, and the settings' rules ([Settings](#settings)).
 
 ## What a plugin opens
@@ -199,7 +199,10 @@ or a menu item gives the card the keyboard, as a click on its page does.
 
 `commands` puts a card's commands in the menu bar and ⌘K, with their keys,
 only while that card has the keyboard. Elsewhere the item is gone, so it
-swallows no key (D93).
+swallows no key (D93). The app owns the keys: each command is a row in
+Settings ▸ Keyboard Shortcuts, in a group named as the plugin, where the user
+can change or clear its key ([Keyboard Shortcuts](/docs/ui/settings#keyboard-shortcuts)).
+The page never matches the key itself: it hears the pick.
 
 ```json
 "commands": [
@@ -209,9 +212,12 @@ swallows no key (D93).
 ```
 
 - `menu` is `file`, `edit` or `view`. `keywords` are more words that ⌘K finds
-  the command by. `key` is a ⌘ chord (`cmd+e`,
-  `cmd+shift+k`). A key that the app already uses is left off, and the log
-  says so once.
+  the command by. `key` is the default key, a chord with `cmd`, `ctrl` or
+  `option` (`alt`), plus `shift` if needed, and one key: a character or
+  `left`, `right`, `up`, `down`, `return`, `tab`, `space`, `escape`,
+  `delete`, `plus` (`cmd+e`, `cmd+shift+k`, `ctrl+option+left`). The user's
+  key wins over it. A key that an app command already has is left off, the
+  log says so once, and Settings marks the row.
 - A pick sends `{ id }` to `ovvi.on("control")`, as a header button does.
   `ovvi.controls.set` changes `title`, `checked` and `enabled`. A disabled
   command has no key, so ⌘E has its key only over Markdown.

@@ -103,7 +103,7 @@ private struct Tile: View, Equatable {
                 FadeText(text: page.titleLabel(tab)).fontWeight(.medium)
                 Spacer(minLength: 0)
                 if hovering {
-                    IconButton(symbol: "xmark", help: "Close Tab", key: .closeTab, size: 22) {
+                    IconButton(symbol: "xmark", help: "Close Tab", key: .hotkey("tab.close"), size: 22) {
                         page.close(.tab(tab.id))
                     }
                     .accessibilityIdentifier("overview.tab.\(tab.id).close")

@@ -497,8 +497,8 @@ An editable text view (CodeMirror 6).
   accent while on), Find Previous, Find Next and Close. The first match
   from the selection is selected as you type. Return and ⇧Return, ⌘G and ⇧⌘G
   step through the matches. A match scrolls into view below the bar. Esc
-  closes it. **⌥⌘F** (Find and Replace, taken by the page: the menu has no
-  item for it) adds a second row with the Replace field, **Replace** and
+  closes it. **⌥⌘F** (Find and Replace…, a command of the plugin's in the
+  Edit menu) adds a second row with the Replace field, **Replace** and
   **All** (Replace All); Return in the field replaces, ⌘Return replaces
   all. A read only file shows the find row only. Markdown has the same bar.
 
@@ -859,14 +859,17 @@ The changes of one source in one scroll (`@pierre/diffs`).
 Over a web card, ⌘ keys go to the menu first, as over a native text view. A
 key that no menu item has reaches the page. Some items have their key only
 over the card that uses it, because a disabled menu item swallows its key.
+The table shows the defaults: the menu's keys and Back and Forward change in
+[Settings ▸ Keyboard Shortcuts](/docs/ui/settings#keyboard-shortcuts), where
+File Explorer's commands are a group of their own. The keys inside a page's
+lists and fields (a Git diff's `[` `]`, ⌘↩ in the commit field) are the page's.
 
 | Keys | Command | When it has its key |
 |---|---|---|
-| ⌃- ⌃⇧- | Back, Forward in the card | always over the page: the card's view takes them before the page and the menu |
-| ⌘← ⌘→ | Back, Forward in the card | while no text field in the page has the keyboard: there they move the caret |
+| ⌃- ⌃⇧-, ⌘← ⌘→ | Back, Forward in the card | always over the page: the card's view takes them before the page and the menu; an arrow key in a text field moves the caret there |
 | ⌘S | Save (File menu): the editor's text to disk | only while File or Markdown has the keyboard |
 | ⌘F | Find… (Edit menu): the editor's find bar; on the tree and a Git diff, its find bar (a filter of the files) | on File, Markdown, the tree and a Git diff. Disabled on Preview and the Git home |
-| ⌥⌘F | Find and Replace: the find bar with its Replace row (the page's own key) | on File and Markdown, in a file that is not read only (Markdown unlocked) |
+| ⌥⌘F | Find and Replace… (Edit menu): the find bar with its Replace row | on File and Markdown; a read only file (Markdown locked) shows the find row only |
 | ⌘G | Find Next (Edit menu); in a Git diff, Next Change | always. Over a terminal it steps the find bar |
 | ⇧⌘G | Find Previous (Edit menu); in a Git diff, Previous Change | only while File, Markdown, the tree or a Git diff has the keyboard. Elsewhere ⇧⌘G is Go to Directory |
 | ⌘E | Lock Editing (View menu, while a File Explorer card has the keyboard; disabled outside Markdown): locks and unlocks Markdown | only while Markdown has the keyboard |

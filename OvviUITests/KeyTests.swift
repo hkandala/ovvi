@@ -152,7 +152,7 @@ extension OvviUITests {
         let panel = element("shortcuts")
         app.typeKey("/", modifierFlags: .command)
         XCTAssertTrue(panel.exists(within: 2))
-        for section in ["Panes", "Tabs", "Spaces", "Sessions", "View", "Edit"] {
+        for section in ["Panes", "Tabs", "Spaces", "Sessions", "App", "Edit"] {
             XCTAssertTrue(element("shortcuts.section.\(section)").exists, section)
         }
         XCTAssertFalse(element("shortcuts.section.Plugins").exists)
@@ -162,13 +162,16 @@ extension OvviUITests {
             "Show Next Tab": "⇧⌘] or ⌃⇥",
             "Command Palette": "⌘K or ⇧⌘P", "Find": "⌘F", "Reset Font Size": "⌘0", "Open Session": "⌥⌘T",
             "Close Tab": "⇧⌘W", "Close Space": "⌃⌘W", "Detach Session": "⌥⌘W", "Balance Splits": "⌥⌘=",
-            "Insert Path": "⇧⌘I", "Zoom Pane": "⇧⌘↩", "Move Tab Left": "⇧⌘←", "Move Tab Right": "⇧⌘→",
+            "Zoom Pane": "⇧⌘↩", "Move Tab Left": "⇧⌘←", "Move Tab Right": "⇧⌘→",
         ]
         for (title, keys) in rows {
             XCTAssertEqual(element("shortcuts.\(title)").value as? String, keys, title)
         }
         XCTAssertFalse(element("shortcuts.Resize Pane").exists)
         XCTAssertFalse(element("shortcuts.Close Window").exists)
+        // Only the important keys: Settings has the rest.
+        XCTAssertFalse(element("shortcuts.Insert Path").exists)
+        XCTAssertTrue(element("shortcuts.customize").exists)
         XCTAssertGreaterThan(element("shortcuts.section.Sessions").frame.minX,
                              element("shortcuts.section.Panes").frame.maxX)
         keepScreenshot("keyboard shortcuts")

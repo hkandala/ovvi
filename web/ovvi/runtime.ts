@@ -206,7 +206,8 @@ const ovvi: Ovvi = {
   pages: {
     async route(fn) {
       draw = fn
-      addEventListener("keydown", backForward, true)
+      addEventListener("focusin", typing, true)
+      addEventListener("focusout", typing, true)
       await fill(context.arg, context.at)
     },
   },
@@ -346,16 +347,10 @@ function present(kept: Kept, again?: { arg: string; at?: string }) {
   if (document.hasFocus()) dispatchEvent(new Event("focus"))
 }
 
-/** Runs ahead of a page's own keys: a tree's ← goes to the parent row. */
-function backForward(event: KeyboardEvent) {
-  const back = event.key === "ArrowLeft"
-  if (!back && event.key !== "ArrowRight") return
-  if (!event.metaKey || event.shiftKey || event.altKey || event.ctrlKey) return
-  const target = event.composedPath()[0]
-  if (target instanceof HTMLElement && (target.isContentEditable || target.matches("input, textarea"))) return
-  event.preventDefault()
-  event.stopPropagation()
-  tell("card.step", { back })
+/** The app takes Back and Forward ahead of the page, except an arrow in a text field, which moves the caret. */
+function typing(event: FocusEvent) {
+  const target = event.type === "focusin" ? event.composedPath()[0] : null
+  tell("card.typing", { typing: target instanceof HTMLElement && (target.isContentEditable || target.matches("input, textarea")) })
 }
 
 /** `files.watch` or `git.watch`; `files.unwatch` ends either. */

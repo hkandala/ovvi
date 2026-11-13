@@ -112,7 +112,7 @@ struct Palette: View {
     private func commandRows(_ list: [Command]) -> [(item: FilterList.Item, keywords: String)] {
         Command.Section.allCases.filter { ![.tabs, .workspaces, .sessions].contains($0) }
             .flatMap { section in list.filter { $0.section == section } }
-            .filter { $0.enabled && $0.key != .palette }.map { command in
+            .filter { $0.enabled && $0.title != "Command Palette" }.map { command in
                 let opens = !command.menu.isEmpty || command.name != nil || command.field != nil
                 let title = command.checked
                     .flatMap { command.setting ? "Turn \($0 ? "Off" : "On") \(command.title)" : nil }

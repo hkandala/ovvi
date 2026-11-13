@@ -268,22 +268,21 @@ private extension PaneCard {
                                }
                            })
                            .accessibilityIdentifier("pane.\(id).float")
-                IconButton(symbol: "rectangle.split.2x1", help: "Split Right", key: .splitRight, size: 22) {
-                    Task { await page.split(id, .right) }
-                }
-                .accessibilityIdentifier("pane.\(id).split-right")
-                IconButton(symbol: "rectangle.split.1x2", help: "Split Down", key: .splitDown, size: 22) {
-                    Task { await page.split(id, .down) }
-                }
-                .accessibilityIdentifier("pane.\(id).split-down")
+                IconButton(symbol: "rectangle.split.2x1", help: "Split Right", key: .hotkey("pane.split-right"),
+                           size: 22, action: { Task { await page.split(id, .right) } })
+                    .accessibilityIdentifier("pane.\(id).split-right")
+                IconButton(symbol: "rectangle.split.1x2", help: "Split Down", key: .hotkey("pane.split-down"),
+                           size: 22, action: { Task { await page.split(id, .down) } })
+                    .accessibilityIdentifier("pane.\(id).split-down")
             }
             IconButton(symbol: zoomed ? "arrow.down.right.and.arrow.up.left"
-                : "arrow.up.left.and.arrow.down.right", help: zoomed ? "Restore Pane" : "Zoom Pane", key: .zoom,
+                : "arrow.up.left.and.arrow.down.right", help: zoomed ? "Restore Pane" : "Zoom Pane",
+                key: .hotkey("pane.zoom"),
                 size: 22,
                 accent: zoomed) { page.zoom(id) }
                 .accessibilityIdentifier("pane.\(id).zoom")
                 .disabled(!page.canZoom(id))
-            IconButton(symbol: "xmark", help: "Close Pane", key: .closePane, size: 22) {
+            IconButton(symbol: "xmark", help: "Close Pane", key: .hotkey("pane.close"), size: 22) {
                 page.close(.pane(id))
             }
             .accessibilityIdentifier("pane.\(id).close")

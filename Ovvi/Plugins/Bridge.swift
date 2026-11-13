@@ -185,9 +185,10 @@ final class Bridge {
         case "card.go":
             guard let arg = args["arg"] as? String else { throw PluginError("failed", "arg is missing") }
             plugin.go(arg, at: args["at"] as? String)
-        case "card.step": plugin.web.view.step?(args["back"] as? Bool == true)
+        case "card.typing": plugin.web.view.typing = args["typing"] as? Bool == true
         case "card.ready":
             plugin.web.ready = true
+            plugin.web.view.typing = false
             // A change between the context and the runtime's start has no one to hear it.
             event("visible", visible)
             event("keyboard", keyboard)

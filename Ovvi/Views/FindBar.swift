@@ -28,7 +28,7 @@ struct FindBar: View {
                 .accessibilityIdentifier("find.count")
             IconButton(symbol: "chevron.up", help: "Find Previous", size: 22) { Task { await find.step(-1) } }
                 .accessibilityIdentifier("find.previous")
-            IconButton(symbol: "chevron.down", help: "Find Next", key: .findNext, size: 22) {
+            IconButton(symbol: "chevron.down", help: "Find Next", key: .hotkey("edit.find-next"), size: 22) {
                 Task { await find.step(1) }
             }
             .accessibilityIdentifier("find.next")

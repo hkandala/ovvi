@@ -320,7 +320,7 @@ private struct WindowContent: View {
                     .padding(.top, 96).floatingPanel(open: open(.palette), alignment: .top)
             }
             if panel == .shortcuts {
-                Shortcuts(commands: commands.all).floatingPanel(open: open(.shortcuts), alignment: .center)
+                Shortcuts().floatingPanel(open: open(.shortcuts), alignment: .center)
             }
         }
         .modifier(CloseDialog(page: page))

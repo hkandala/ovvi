@@ -14,7 +14,7 @@ struct EmptySession: View {
             HStack(spacing: 8) {
                 Button { Task { await page.newWorkspace() } } label: {
                     Text("New Space")
-                    Text(KeyboardShortcut.newWorkspace.glyphs).foregroundStyle(.secondary)
+                    Text(Hotkeys.named("space.new")).foregroundStyle(.secondary)
                 }
                 .buttonStyle(.glassProminent)
                 .accessibilityIdentifier("detail.new-workspace")
