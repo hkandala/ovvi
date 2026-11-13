@@ -429,3 +429,70 @@ fails; lessons.md's rule makes it 60 s (round 8's final CI, '### Final CI, round
   2 s. Restart herdr (`herdr session stop`, Start in the page): the page comes back. On This Mac a commit or a
   checkout in a terminal shows in the sidebar within about a second; a build writing into `build/` or `node_modules`
   no longer makes a Git or File Explorer card refresh.
+
+## Round 2 (items 24–34)
+
+Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in pi, the white block flickering),
+`r10-chat-drag-9.48.49.mov` (9.8 s: a chat card while a divider is dragged).
+
+### Track M2: the white block, simply or not at all (item 24)
+
+24. "in pi when drag and select the white block still flickers a bit, see if you can fix it without much workarounds,
+    also identify what actually introduced this issue, if its too complicated let's drop entire fix, and leave it,
+    let's apply fix if its simple one" (`r10-select-9.32.48.mov`)
+
+### Track H: every hotkey in one place, rebindable (item 25)
+
+25. "we have so many hotkeys and shortcuts right, including in plugins and stuff, i know we have cmd+/ one to see
+    shortcuts, but it doesn't cover all, we can keep only important ones in it, i am thinking we can add another section
+    in settings, call it hotkeys or something and list everything, grouped accordingly, group per plugin etc, even
+    custom plugin ones should be listed there, so in this settings page we should be able to cahnge hotkey as well, like
+    cliking on the hotkey should record the hotkey and update it, use proper modern design and good ux there, and also
+    have a search for it, so we can ssearch and update hotkeys quickly, see if we need to map all hotkeys at one place or
+    something so we can see and control everything from hotkeys, hunt through entire codebase and find if we have
+    hardcoded hotkeys anywhere and keep it at one central place or some way to register the hotkeys and be able update
+    them from settings"
+
+### Track T: tabs: scroll to a new tab, back and forward through tab history (items 27, 33)
+
+27. "in tab bar, when a new tab is opened and that tab is not in view in tab scroll can we move it to that position
+    automatically with scroll animaiton, essentially, if i do cmd+click and a new tab has come up and that's not in view
+    then the tab bar scrolls bringing that tab in view"
+33. "can we also have a shortcut to go to previously active tab, liek history forward and backward within a session, it
+    can go across workspaces as well, like i think vs code or something has something similar, if the tab is closed we
+    skip it, no need to reopne or anything, we skip and go to previous one to it. basically i want a quick shortcut to
+    navigate across tabs based on what was last active and history, keep the shortcut simple as well, so its easy to
+    remember and use."
+
+### Track E5: explorer and Git sidebars (items 26, 28)
+
+26. "in file explorer, for file tree sidebar when opening and collapsing can we do slide in animation like other
+    sidebars we have"
+28. "in git diff view as well we have a sidebar icon which expands and collapse file list sidebar but that icon is on
+    right hand side, let's move that to left side, befdore home icon and also change the icon based on its state similar
+    to what we did in file explorer"
+
+### Track C9: chat glass, divider drags, endless history (items 29, 30, 31)
+
+29. "actually in chat view revert the tinted glass, i like the previous version better" (item 12's tint)
+30. "now in the chat when id do cmd+d they move together, but if i drag using resize handler there is still weird
+    behavior where chat is stuck but input is moving, keep input also stuck and reset like how transcript does?"
+    (`r10-chat-drag-9.48.49.mov`)
+31. "in chat view, can we do auto scroll, instead of shwoing show earlier, as soon as user reaches to the end show the
+    loader animation and load and keep loading automatically as user scrolls"
+
+### Track X2: Relaunch with Chat on a resumed Codex (item 32)
+
+32. "so for codex, i can see chat loads for resumed session, but the thing is let's say i resumed a session in codex
+    using codex resume, i dont see relaunch with chat button until i type some prompt, after one prompt, i see that
+    button, and relaunch with chat works fine now, and relaunched chat has transcript and works as expected, we need to
+    make sure to show relaunch with chat even on resumeed codex conversation with no prompt yet"
+
+### Track B: recently closed browser pages (item 34)
+
+34. "for browser, can we show history icon left to the developer tools icon, and clicking on it we should show a drop
+    down showing recently closed tabs, and clicking on any one should open that in new tab, and along with option+click,
+    cmd+option+click support. but one thing is we should figure out how to persist that state, mostly per machine, in
+    some state file or something, but we have to limit the max number of pages, may be like 20 pages or something and
+    drop the old ones, it should be simple, and fetch from state file, so for any machine it comes from that state file
+    or something."
