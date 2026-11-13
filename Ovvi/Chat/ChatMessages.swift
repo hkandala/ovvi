@@ -228,13 +228,14 @@ struct ChatMessages: View, Equatable {
                 CGRect(x: geometry.contentSize.height + geometry.contentInsets.bottom - geometry.visibleRect.maxY,
                        y: geometry.contentOffset.y, width: 0, height: geometry.contentSize.height)
             } action: { old, new in
-                // The rows' new height can move the offset in the same update (a wider card's shorter content, clamped
-                // at the end): the place is the one ahead of that update.
-                let place = old.height == new.height ? new : old
-                tops.hold(at: place.minY, bottom: place.minX <= 0.5)
-                // Only a scroll moves it: during a load an update can report the grown rows ahead of the anchor.
-                if old.height == new.height, away != (new.minX > 0.5) {
-                    away = new.minX > 0.5
+                // Only a scroll moves them. The rows' new height can move the offset in the same update (a wider card's
+                // shorter content, clamped at the end), and the rows' new tops can come ahead of it, so the place held
+                // is the one from before. During a load an update can report the grown rows ahead of the anchor.
+                if old.height == new.height {
+                    tops.hold(at: new.minY, bottom: new.minX <= 0.5)
+                    if away != (new.minX > 0.5) {
+                        away = new.minX > 0.5
+                    }
                 }
                 if old.height != new.height, earlier {
                     earlier = false

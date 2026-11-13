@@ -203,8 +203,7 @@ extension OvviUITests {
         // Each look is one snapshot: the card's width, the messages' and the reply box's.
         var looks: [[Int]] = []
         func look() -> [Int] {
-            // The card only: a snapshot of the window held the app's main thread, which then followed the drag late.
-            guard let seen = try? nodes(of: card) else { return [0, 0, 0] }
+            guard let seen = try? nodes(of: mainWindows.firstMatch) else { return [0, 0, 0] }
             let widths = ["pane.\(pane)", "chat.\(pane)", "chat.\(pane).composer"].map { id in
                 Int(seen.first { $0.identifier == id }?.frame.width ?? 0)
             }
