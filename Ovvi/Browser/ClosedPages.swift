@@ -19,10 +19,11 @@ nonisolated struct ClosedBrowserPage {
         self.icon = icon.flatMap { $0.utf8.count <= 16 << 10 && $0.hasPrefix("iVBORw0KGgo") ? $0 : nil }
     }
 
-    /// The page's title on one line, else its host, else its file's name.
+    /// The page's title on one line, else its host, else its file's name. 200 characters are past the row's width:
+    /// a process on the machine writes the title.
     var shown: String {
         title.isEmpty ? URL(string: url).map { $0.host() ?? $0.lastPathComponent } ?? url
-            : title.replacing(/\s+/, with: " ")
+            : String(title.prefix(200)).replacing(/\s+/, with: " ")
     }
 
     var entry: [String: String] {
@@ -95,6 +96,11 @@ enum ClosedPages {
 /// menu's glass is too thin over a busy page. As a link: ⌘-click in the background, ⌥-click to the side, ⌘⌥-click
 /// in the Mac's browser.
 struct ClosedPagesMenu: View {
+    struct Shown: Identifiable {
+        let id = UUID()
+        let pages: [ClosedBrowserPage]
+    }
+
     let pages: [ClosedBrowserPage]
     let pick: (ClosedBrowserPage, Opening) -> Void
 
@@ -127,8 +133,6 @@ struct ClosedPagesMenu: View {
         }
         .padding(6)
         .frame(width: 320)
-        // No focus ring on the first row: a menu shows none until the keys move.
-        .focusEffectDisabled()
         .presentationBackground(.regularMaterial)
     }
 

@@ -60,14 +60,20 @@ extension OvviUITests {
         try await expect("one.html beside the card") { try await paneLabel(side).hasSuffix(" \(page)") }
     }
 
-    /// With no file, the empty state and no rows; Esc closes it.
+    /// With no file, the empty state and no rows. Esc closes it, and so does the button, as a menu's.
     private func expectEmptyMenu(_ card: String) {
-        element("browser.\(card).closed").click()
-        XCTAssertTrue(element("browser.closed.empty").exists(within: 5))
+        let button = element("browser.\(card).closed"), empty = element("browser.closed.empty")
+        button.click()
+        XCTAssertTrue(empty.exists(within: 5))
         XCTAssertFalse(closedItem(0).exists)
         keepScreenshot("recently closed, empty")
         app.typeKey(.escape, modifierFlags: [])
-        XCTAssertTrue(element("browser.closed.empty").vanishes(within: 3))
+        XCTAssertTrue(empty.vanishes(within: 3))
+        button.click()
+        XCTAssertTrue(empty.exists(within: 5))
+        button.click()
+        XCTAssertTrue(empty.vanishes(within: 3))
+        XCTAssertFalse(empty.exists(within: 1), "the second click reopened it")
     }
 
     private static let closedFile = "~/.local/state/ovvi/closed-pages.json"

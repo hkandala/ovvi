@@ -1051,6 +1051,28 @@ The user's files: `.build/fb57/r11-fontkeys-11.20.52.png`, `r11-tabslide-11.23.5
 47. "so on recently closed, that glass window is too transparent, let's add some tint to it, also have some empty
     placeholder better, like we just show text now, show some icon or something showing empty state better"
 
+#### Track B2: Findings
+
+- **Cause.** The menu was an `NSMenu`: the system draws its glass, thin over a busy page, and an app cannot tint it.
+  This replaces Track B's `NSMenu` decision.
+- **Fix.** A SwiftUI popover from the button, with `.presentationBackground(.regularMaterial)`: the material that
+  `floatingGlass` puts under the floating panels' glass, and it fills the arrow too. The VM compared four: a plain
+  popover (as thin as the menu), `presentationBackground`, the material behind the content (the same look), and
+  `floatingGlass` inside the popover (its arrow kept the thin glass). Rows are buttons in `ChromeStyle`, as the hover
+  card's; none gives the compact `EmptyState` with `clock.arrow.circlepath`. Text cuts with SwiftUI's ellipsis in a
+  320 pt list.
+- **Cause (found by the VM run).** With `popover(isPresented:)`, the first popover after a launch showed the list from
+  before the read (empty), so a relaunch showed "No Recently Closed Pages" over a full file. The list now goes in
+  by `popover(item:)`.
+- **Decisions.** The popover takes no arrow keys or type-select as the menu did. With Keyboard navigation on, Tab
+  moves a visible focus ring and Space picks. A second click on the button closes it, as a menu's (the VM checked).
+- **Runs.** The VM: the closed-pages test red after the relaunch (the empty first popover, also seen in the explore
+  pictures), then green with `popover(item:)`; the four browser tests green. HerdrKit's sshd and launchctl tests
+  fail in `make test` on this Mac (sshd `sandbox_init`, bootstrap error 5), as on other tracks; no HerdrKit change.
+- **For the user.** The VM has Keyboard navigation on and shows a focus ring on the first row; check that your Mac
+  shows none. Open the menu over a busy page in dark and light. Before and after:
+  `~/Downloads/ovvi-research/p58b2/sheet.png`.
+
 ### Track C11: the chat's block reset waits, the input's padding and a minimum width (items 48, 49)
 
 48. "so on resetting blocks in chat, don't do it immediately, leave for some time after user reached bottom, any
