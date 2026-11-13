@@ -135,6 +135,6 @@ func `herdr's socket is asked once, and again after its server came back`() asyn
     try #require(await shell(sessionScript, "up", session) == 0)
     _ = try await client.snapshot()
     _ = try await client.snapshot()
-    // The list, stop, its list, delete, a list after the failed connect, and one for the new server.
+    // The list, stop, its list, delete, its list (no session), and one for the new server.
     #expect(runs() == 6)
 }

@@ -193,7 +193,7 @@ private func git(_ script: String, in folder: URL) async throws {
             try? await Task.sleep(for: .milliseconds(500))
             return count.withLock { $0 } > 0
         })
-        // Past FSEvents' 1 s latency and several sweeps: the last change's events have all come.
+        // Past several sweeps: the last change's events have all come.
         try await Task.sleep(for: .seconds(1.5))
         count.withLock { $0 = 0 }
         try await git("echo x >f; git add f", in: folder)
