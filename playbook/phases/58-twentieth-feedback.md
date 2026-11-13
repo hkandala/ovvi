@@ -728,6 +728,11 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
 - **For the user.** ⌘⌥-click on an entry opens the Mac's default browser (no UI test, since it leaves the app). On a
   remote machine, close a browser card and open the menu from another card there.
 
+### Track C10: a long chat drops its earlier blocks at the bottom (item 38)
+
+38. Asked whether a long chat should keep every loaded block (each split then lays out all the rows, about 110–160 ms
+    per 100 rows): "yeah let's do drop the blocks to one block once we reach bottom in chat view".
+
 ### Track H2: the Shortcuts page, done properly (item 37)
 
 37. "for the hotkey ones, can we make the keys smaller like they are touching th input border also that or thing when
