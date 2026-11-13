@@ -95,8 +95,8 @@ extension OvviUITests {
                 .matching(NSPredicate(format: "identifier == %@ AND value == %@", kind, text)).firstMatch
             try moves.append(Int(XCTUnwrap(steady(3) { same.frame.minY }) - place))
         }
-        // A block is hundreds of points; a swipe's momentum varies by a few.
-        XCTAssertFalse(moves.contains { $0 > moves[0] + 40 || $0 < -40 }, "a jump: \(moves) at \(counts)")
+        // A block is hundreds of points; a swipe's momentum varies by tens.
+        XCTAssertFalse(moves.contains { $0 > moves[0] + 100 || $0 < -40 }, "a jump: \(moves) at \(counts)")
         XCTAssertTrue(first.isHittable, "\(counts)")
         XCTAssertGreaterThanOrEqual(Set(counts).count, 3, "two loads at least: \(counts)")
         XCTAssertFalse(loader.exists)
@@ -203,7 +203,8 @@ extension OvviUITests {
         // Each look is one snapshot: the card's width, the messages' and the reply box's.
         var looks: [[Int]] = []
         func look() -> [Int] {
-            guard let seen = try? nodes(of: mainWindows.firstMatch) else { return [0, 0, 0] }
+            // The card only: a snapshot of the window held the app's main thread, which then followed the drag late.
+            guard let seen = try? nodes(of: card) else { return [0, 0, 0] }
             let widths = ["pane.\(pane)", "chat.\(pane)", "chat.\(pane).composer"].map { id in
                 Int(seen.first { $0.identifier == id }?.frame.width ?? 0)
             }

@@ -573,10 +573,11 @@ A run is one quiet line with no card: its summary and a chevron.
 - **Earlier rows.** When a chat has older rows, the stack's first row is a
   28 pt row, with the messages' top padding above it and the rows' 10 pt gap
   under it. There is no button: once the view's top is within half a view of
-  the stack's top, a small spinner shows in that row, and the next block (the
-  same rule: about 120 lines, at most 34 rows) comes above, again after each
-  block while the view stays that near, so a scroll up goes on through the
-  whole chat. The rows in view stay where they are (the place on the top
+  the stack's top, a small spinner shows in that row, and once the scroll
+  rests the next block (the same rule: about 120 lines, at most 34 rows)
+  comes above, again after each block while the view stays that near, so
+  scrolling up goes on through the whole chat. Not during a scroll: its
+  momentum keeps its own place and would jump by the block. The rows in view stay where they are (the place on the top
   row). The row goes once the chat's first row is in the stack. The rows
   that come stay when the chat scrolls back to the bottom.
 - **Resizing.** A narrow card (under 824 pt, where the column narrows too)

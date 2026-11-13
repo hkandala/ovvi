@@ -15,6 +15,7 @@ struct ChatMessages: View, Equatable {
     @State private var first: String?
     @State private var earlier = false
     @State private var nearTop = false
+    @State private var scrolling = false
     /// The rows come on the turn after the view is made, so that a switch to a tab whose chat is made draws the window,
     /// the tab and the card in the click's own turn (the rows take 124 ms of a long chat).
     @State private var drawn = false
@@ -153,8 +154,9 @@ struct ChatMessages: View, Equatable {
         // Read here: a change of the view's state or environment read inside the reader's content does not build it
         // again, only a change of what its closure holds. The chat's observed values are tracked inside.
         let (scrolledUp, loading, near, error, place) = (!atBottom, earlier, nearTop, look.error, position)
-        // The next block comes once the view's top is within half a view of the stack's, again after each.
-        let more = nearTop && start > 0 ? start : nil
+        // The next block comes once the view's top is within half a view of the stack's and the scroll rests, again
+        // after each. Not during a scroll: its momentum keeps its own offset, over the place on the top row.
+        let more = nearTop && !scrolling && start > 0 ? start : nil
         return ScrollViewReader { proxy in
             ScrollView {
                 // As tall as the view at least, its rows at the top: a short chat is then at its exact bottom, and the
@@ -205,10 +207,11 @@ struct ChatMessages: View, Equatable {
             .onScrollGeometryChange(for: Bool.self) { $0.visibleRect.minY < $0.containerSize.height / 2 } action: {
                 nearTop = $1
             }
+            .onScrollPhaseChange { scrolling = $1.isScrolling }
             .task(id: more) {
                 // Read again: rows that come in one update with the place still near the top from before them (a
                 // history read to its end) left it near only until their layout.
-                if let more, nearTop {
+                if let more, nearTop, !scrolling {
                     // Together: the rows that come are no message the agent just took, so they do not fade.
                     (earlier, first) = (true, rows[Self.start(rows[..<more])].id)
                 }
