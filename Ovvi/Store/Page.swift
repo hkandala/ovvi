@@ -43,6 +43,8 @@ final class Page: Identifiable {
         selectedTab.flatMap { zoomedPanes[$0.id] }
     }
 
+    /// The unpinned spaces' order the sidebar holds still while the pointer is over its list (Recent).
+    var sortHold: [String]?
     var dragging: Dragged?
     var lifted: Dragged?
     var closing: HostStore.Closing?

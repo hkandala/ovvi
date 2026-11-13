@@ -23,7 +23,6 @@ struct SidebarPage: View {
     }
 
     @AppStorage(Page.foldsAndShelves, store: .sidebar) private var opened = ""
-    @State private var held: [String]?
     @State private var hovering = false
     @State private var leaves = 0
 
@@ -38,14 +37,13 @@ struct SidebarPage: View {
 
     var body: some View {
         let store = page.store
-        let pinned = store.pins, all = store.groups, hidden = store.hidden
+        let pinned = store.pins, all = store.groups, groups = page.sidebarGroups
         let spaceDrag: String? = if case let .workspace(id) = page.dragging {
             id
         } else {
             nil
         }
-        let top = all.filter { pinned.contains($0[0].id) }
-        let rest = sorted(all.filter { !pinned.contains($0[0].id) && !hidden.contains($0[0].id) })
+        let top = groups.filter { pinned.contains($0[0].id) }, rest = groups.filter { !pinned.contains($0[0].id) }
         // Not for a worktree, which goes with its repository; nothing to drag in while only the pinned ones show.
         let region = filter.isEmpty && !store.onlyPinned && all.contains { $0[0].id == spaceDrag }
         let items = items(top, rest, region: region)
@@ -170,7 +168,7 @@ struct SidebarPage: View {
                 case let .active(point):
                     if frames.point == nil {
                         hovering = true
-                        held = held ?? unpinnedOrder()
+                        page.sortHold = page.sortHold ?? unpinnedOrder()
                     }
                     frames.point = point
                 case .ended:
@@ -182,18 +180,20 @@ struct SidebarPage: View {
             }
             .task(id: leaves) {
                 try? await Task.sleep(for: .seconds(1))
-                if !Task.isCancelled, !hovering, held != nil {
-                    held = nil
+                if !Task.isCancelled, !hovering, page.sortHold != nil {
+                    page.sortHold = nil
                 }
             }
             // A hold from the old sort would keep its order: the menu's pick leaves the pointer over the list, so the
             // hold never clears.
             .onChange(of: spaceOrder) {
-                held = nil
+                page.sortHold = nil
                 if hovering {
-                    held = unpinnedOrder()
+                    page.sortHold = unpinnedOrder()
                 }
             }
+            // Gone under the pointer (another page, the sidebar hidden), it never sees the pointer leave.
+            .onDisappear { page.sortHold = nil }
         }
     }
 }
@@ -209,6 +209,7 @@ private extension SidebarPage {
         }
     }
 
+    /// `Page.spaceOrder`, read through the view's own settings so a change in Settings redraws the list.
     private var spaceOrder: SpaceOrder {
         page.store.order ?? settings.spaceOrder
     }
@@ -286,19 +287,7 @@ private extension SidebarPage {
     /// The unpinned groups' ids in the current sort.
     func unpinnedOrder() -> [String] {
         let pinned = page.store.pins
-        return sorted(page.store.groups.filter { !pinned.contains($0[0].id) }).map(\.[0].id)
-    }
-
-    /// Recent: the group whose agent changed state last first, held still under the pointer.
-    private func sorted(_ groups: [[HostStore.Workspace]]) -> [[HostStore.Workspace]] {
-        guard spaceOrder == .recent else { return groups }
-        let place = Dictionary(uniqueKeysWithValues: (held ?? []).enumerated().map { ($1, $0) })
-        return groups.map { group in
-            let changed = group.flatMap(\.tabs).flatMap { page.store.panes(in: $0.id) }.compactMap(\.changeSeq).max()
-            return (group, place[group[0].id] ?? .max, -(changed ?? -1))
-        }
-        .sorted { ($0.1, $0.2) < ($1.1, $1.2) }
-        .map(\.0)
+        return page.sorted(page.store.groups.filter { !pinned.contains($0[0].id) }).map(\.[0].id)
     }
 
     private func agents(of workspace: HostStore.Workspace) -> [HostStore.Pane] {

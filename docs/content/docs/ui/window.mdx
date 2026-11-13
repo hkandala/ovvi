@@ -334,9 +334,9 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   count toward no Dock badge, are not in the Dock menu, and send no notification, neither from herdr's states nor
   from `ovvi notify` ([Notifications](/docs/status#notifications)). Show All Spaces brings their states back with no
   notification for what changed meanwhile. The next and previous space keys, ⌃⌘1–9 and the overview skip them too.
-- **Order elsewhere.** Next and previous space (⌃⌘[ ]), ⌃⌘1–9, the overview, Move Pane to Tab and the palette follow
-  herdr's order with the pinned spaces first, less the hidden ones: the sidebar's in Manual. Not Recent's, which
-  moves under the keys.
+- **Order elsewhere.** Next and previous space (⌃⌘[ ], a row swipe), ⌃⌘1–9, the overview, Move Pane to Tab and the
+  palette follow the order the sidebar shows, pinned spaces first, then the sort, less the hidden ones; while the
+  rows hold still under the pointer, the held order.
 - **Middle.** The [space rows](#space-rows), 10 pt apart. 18 pt fades show at the top and
   bottom of the space list when content is under them. When the selected space
   changes, however it changes (a click, the overview, ⌃⌘[ ], ⌃⌘1–9, a
@@ -719,7 +719,7 @@ How it works: [Layout and sizing](/docs/layout).
   - Move Pane to Tab ▸ (New Tab, right after the pane's tab and disabled
     for a pane alone in its tab, and New Space, a separator, then every
     tab of the session but the pane's own, grouped by space: each
-    space's name as a section header, in herdr's order: the sidebar's in Manual), Rename
+    space's name as a section header, in the sidebar's order), Rename
     Pane…, Reset Pane Name.
   - On a plugin card: Reload Plugin (⌥⌘R) and Show Log.
   - Redraw Terminal (⌥⌘R, not on a browser or plugin pane), Replace Pane (⇧⌘R), Open Terminal Here (on an agent,
@@ -968,7 +968,7 @@ agents at once.
   the overview then shows; a sideways swipe alone goes nowhere. From the top:
   the session's title as the sidebar's
   page header has it (13 pt semibold; the machine's name for `default`), then
-  the session's spaces in herdr's order, pinned ones first, less the hidden ones (the sidebar's in Manual), 32 pt apart: each
+  the session's spaces in the sidebar's order, 32 pt apart: each
   space's name (13 pt semibold, secondary), then its tabs as tiles in a
   grid, 2 to 4 a row (as many 340 pt tiles as fit), 16 pt apart. Wide
   margins all round: 8 % of the window's width
@@ -1202,7 +1202,7 @@ Two windows on different sessions each control their own session.
   tie, the title that is the whole filter comes first ("open file" gives
   Open File › before Open File Explorer Here), then a title that starts with
   the filter ("font size" gives Font Size › before Increase Font Size), then
-  commands before places, then the menu's and herdr's order, pinned spaces first (the sidebar's in Manual).
+  commands before places, then the menu's and the sidebar's order.
 - **Rows at open.** The palette reads its commands and places once, as it
   opens. A tab that changes its title while the palette is open keeps the
   old title in it, and a tab closed meanwhile stays listed and does nothing.

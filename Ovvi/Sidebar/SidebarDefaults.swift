@@ -29,12 +29,28 @@ extension Page {
         store.pins.formSymmetricDifference([workspace])
     }
 
-    /// herdr's order with the pinned spaces first, a worktree with its repository, less the ones the sidebar hides: the
-    /// sidebar's in Manual, and the order of ⌃⌘[ ], ⌃⌘1–9, the overview and the palette's places.
+    var spaceOrder: SpaceOrder {
+        store.order ?? AppSettings().spaceOrder
+    }
+
+    /// The sidebar's order: the pinned spaces in herdr's order, then the others in the sort, a worktree with its
+    /// repository, less the ones the sidebar hides. Also the order of ⌃⌘[ ], ⌃⌘1–9, the overview and the palette.
     var sidebarGroups: [[HostStore.Workspace]] {
         let pinned = store.pins, hidden = store.hidden, groups = store.groups
         return groups.filter { pinned.contains($0[0].id) }
-            + groups.filter { !pinned.contains($0[0].id) && !hidden.contains($0[0].id) }
+            + sorted(groups.filter { !pinned.contains($0[0].id) && !hidden.contains($0[0].id) })
+    }
+
+    /// Recent: the group whose agent changed state last first, held still under the pointer.
+    func sorted(_ groups: [[HostStore.Workspace]]) -> [[HostStore.Workspace]] {
+        guard spaceOrder == .recent else { return groups }
+        let place = Dictionary(uniqueKeysWithValues: (sortHold ?? []).enumerated().map { ($1, $0) })
+        return groups.map { group in
+            let changed = group.flatMap(\.tabs).flatMap { store.panes(in: $0.id) }.compactMap(\.changeSeq).max()
+            return (group, place[group[0].id] ?? .max, -(changed ?? -1))
+        }
+        .sorted { ($0.1, $0.2) < ($1.1, $1.2) }
+        .map(\.0)
     }
 }
 

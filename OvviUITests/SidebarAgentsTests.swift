@@ -89,6 +89,47 @@ extension OvviUITests {
         try await dragsOnlyInManual(alphaRow, betaRow, sort)
     }
 
+    func testSpaceKeysFollowTheSidebarsRecentOrder() async throws {
+        XCTAssertTrue(element("workspace.w1").exists(within: connect))
+        let alpha = try await newTab("keys-a", in: "w1").pane, beta = try await newTab("keys-b", in: "w2").pane
+        let created = try await createWorkspace("keys-c")
+        // Recent: gamma, beta, alpha; herdr's order: alpha, beta, gamma.
+        for pane in [alpha, beta, created.pane] {
+            try await report(pane, "working", agent: "pi")
+        }
+        let alphaRow = element("workspace.w1"), betaRow = element("workspace.w2")
+        let gammaRow = element("workspace.\(workspace(of: created.tab))"), sort = element("sidebar.sort")
+        try await waitForValue("agent.\(created.pane)", containing: "Working")
+        addTeardownBlock { @MainActor in
+            if sort.value as? String == "Recent" {
+                sort.click()
+                sort.menuItems["Manual"].click()
+            }
+        }
+        sort.click()
+        sort.menuItems["Recent"].click()
+        element("sidebar.header").hover()
+        try await expectOrder([gammaRow, betaRow, alphaRow], "gamma's agent changed last")
+        alphaRow.click()
+        XCTAssertTrue(alphaRow.has(\.isSelected, true, within: 2))
+        for (key, row) in [("]", gammaRow), ("]", betaRow), ("[", gammaRow), ("[", alphaRow), ("1", gammaRow)] {
+            app.typeKey(key, modifierFlags: [.command, .control])
+            XCTAssertTrue(row.has(\.isSelected, true, within: 2), "⌃⌘\(key) to \(row.identifier)")
+        }
+
+        // Held under the pointer, the keys keep the order shown.
+        betaRow.hover()
+        try await report(alpha, "idle", agent: "pi")
+        try await waitForValue("agent.\(alpha)", containing: "Done")
+        app.typeKey("3", modifierFlags: [.command, .control])
+        XCTAssertTrue(alphaRow.has(\.isSelected, true, within: 2), "⌃⌘3 during the hold")
+        XCTAssertLessThan(betaRow.frame.minY, alphaRow.frame.minY, "moved under the pointer")
+        element("sidebar.header").hover()
+        try await expectOrder([alphaRow, gammaRow, betaRow], "alpha's finish on top once the pointer left")
+        app.typeKey("2", modifierFlags: [.command, .control])
+        XCTAssertTrue(gammaRow.has(\.isSelected, true, within: 2), "⌃⌘2 after the hold")
+    }
+
     private func dragsOnlyInManual(_ alphaRow: XCUIElement, _ betaRow: XCUIElement,
                                    _ sort: XCUIElement) async throws
     {
