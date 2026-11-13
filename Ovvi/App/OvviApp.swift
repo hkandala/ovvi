@@ -145,9 +145,7 @@ struct ContentView: View {
             pages.visible = scenePhase == .active
             pages.markShown()
             guard pages.visible, let store = pages.current?.store else { return }
-            repeat {
-                await store.updateGit(all: true)
-            } while await (try? Task.sleep(for: .seconds(10))) != nil
+            await store.followGit()
         }
     }
 

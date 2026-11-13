@@ -102,6 +102,9 @@ final class HostStore {
     @ObservationIgnored private(set) var client: (any Multiplexer)?
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored var gitReads: Set<String> = []
+    /// By root, while a window follows the session's git (`followGit`).
+    @ObservationIgnored var gitWatches: [String: Task<Void, Never>] = [:]
+    @ObservationIgnored var gitFollowers = 0
     /// 8 at most: a 600-pane session's first snapshot makes 600 herdr runs.
     @ObservationIgnored let asks = Gate(8)
     @ObservationIgnored private var seen: Seen
@@ -286,20 +289,6 @@ final class HostStore {
         closeArrived()
         Task { await updateGit(all: false) }
         return changes
-    }
-
-    func updateGit(all: Bool) async {
-        guard onScreen, await gitUsable.value else { return }
-        for workspace in workspaces {
-            guard onScreen, !Task.isCancelled else { return }
-            let root = root(of: workspace)
-            guard let root, all || root != workspace.gitRoot, !gitReads.contains(workspace.id) else { continue }
-            workspace.gitRoot = root
-            gitReads.insert(workspace.id)
-            // One after another: 30 workspaces are not 30 git processes at once.
-            workspace.git = await GitStatus.of(root, exec: machine.exec())
-            gitReads.remove(workspace.id)
-        }
     }
 }
 

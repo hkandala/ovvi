@@ -36,6 +36,27 @@ public extension GitStatus {
         return await (try? exec.output(argv, timeout: .seconds(5))).flatMap(GitStatus.init(porcelain:))
     }
 
+    /// Git's own files that the head and the counts come from: the work tree's `HEAD`, and its repository's refs
+    /// (loose, packed or a reftable) and `config` (the upstream). A linked worktree's `HEAD` is in its own git folder.
+    /// Nil outside a repository.
+    static func files(_ root: String, exec: any Exec) async -> [String]? {
+        let lines = await (try? exec.output(["git", "-C", root, "rev-parse", "--absolute-git-dir", "--git-common-dir"],
+                                            timeout: .seconds(5)))?.split(separator: "\n").map(String.init) ?? []
+        guard lines.count == 2, lines[0].hasPrefix("/") else { return nil }
+        // Relative to the `-C` folder.
+        let common = URL(filePath: lines[1], relativeTo: URL(filePath: root, directoryHint: .isDirectory))
+            .absoluteURL.standardized
+        return [lines[0] + "/HEAD"] + ["refs", "packed-refs", "reftable", "config"].map {
+            common.appending(path: $0).path
+        }
+    }
+
+    /// Follows `files`: a change to one makes the head and counts read again.
+    static func watch(_ root: String, exec: any Exec) async -> AsyncStream<Void>? {
+        guard let files = await files(root, exec: exec) else { return nil }
+        return Files.watch(paths: files, exec: exec)
+    }
+
     /// On a Mac `/usr/bin/git` is a stub that opens the developer tools' install dialog when `xcode-select -p` finds
     /// none.
     static func usable(exec: any Exec) async -> Bool {

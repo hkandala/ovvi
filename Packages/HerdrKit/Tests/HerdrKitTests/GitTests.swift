@@ -1,5 +1,6 @@
 import Foundation
 @testable import HerdrKit
+import Synchronization
 import Testing
 
 @Test func `git status gives the branch and its ahead and behind counts`() {
@@ -129,4 +130,61 @@ import Testing
     #expect(try await Git.branches(other, exec: exec).filter(\.current).map(\.name) == ["side"])
     let error = await #expect(throws: HerdrError.self) { try await Git.run(other, ["switch", "nope"], exec: exec) }
     #expect(error?.localizedDescription.contains("nope") == true)
+}
+
+private func git(_ script: String, in folder: URL) async throws {
+    _ = try await localExec.checkedOutput(["sh", "-c", """
+    set -e; cd "$1"; export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t \
+      GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
+    \(script)
+    """, "sh", folder.path], timeout: failureBound)
+}
+
+@Test func `a work tree's git files are its HEAD and its repository's refs, also in a subfolder or a worktree`(
+) async throws {
+    let folder = try scratchFolder()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    try await git("git init -q -b main r; cd r; git commit -q --allow-empty -m a; mkdir sub; git worktree add -q ../w",
+                  in: folder)
+    let repo = folder.path + "/r/.git/"
+    let refs = ["refs", "packed-refs", "reftable", "config"].map { repo + $0 }
+    for exec in try await [localExec as any Exec, RelayExec.start()] {
+        #expect(await GitStatus.files(folder.path + "/r", exec: exec) == [repo + "HEAD"] + refs)
+        #expect(await GitStatus.files(folder.path + "/r/sub", exec: exec) == [repo + "HEAD"] + refs)
+        #expect(await GitStatus.files(folder.path + "/w", exec: exec) == [repo + "worktrees/w/HEAD"] + refs)
+        #expect(await GitStatus.files(folder.path, exec: exec) == nil)
+    }
+}
+
+/// A watch sees a checkout, a commit, a new upstream and packed refs, not the index or new objects (`git add`), on
+/// both machines.
+@Test func `the branch follows git's own files, not its index or objects`() async throws {
+    for exec in try await [localExec as any Exec, RelayExec.start()] {
+        let folder = try scratchFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        try await git("git init -q -b main; git commit -q --allow-empty -m a; git branch other", in: folder)
+        let files = try #require(await GitStatus.files(folder.path, exec: exec))
+        let count = Mutex(0)
+        let watch = Task {
+            for await _ in Files.watch(paths: files, every: .milliseconds(200), exec: exec) {
+                count.withLock { $0 += 1 }
+            }
+        }
+        defer { watch.cancel() }
+        // Several sweeps, and past FSEvents' 1 s latency: a change would show by then.
+        try await Task.sleep(for: .seconds(1))
+        try await git("echo x >f; git add f", in: folder)
+        try await Task.sleep(for: .seconds(3))
+        #expect(count.withLock { $0 } == 0)
+        for step in ["git checkout -q other", "git commit -qm b",
+                     "git config branch.other.remote . && git config branch.other.merge refs/heads/main",
+                     "git pack-refs --all"]
+        {
+            let before = count.withLock { $0 }
+            try await git(step, in: folder)
+            #expect(await eventually { count.withLock { $0 } > before }, "\(step)")
+            // The step's events have all come: the next count is the next step's.
+            try await Task.sleep(for: .seconds(1.5))
+        }
+    }
 }

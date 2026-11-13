@@ -487,8 +487,8 @@ handshake fails, it exits 1 with the reason on stderr.
 The sidebar's space rows show the branch and the ahead and behind counts
 (D67). herdr's snapshot has no branch, so the app asks git on the machine:
 - **Command.** `git --no-optional-locks -C <root> status --porcelain=v2
-  --branch --untracked-files=no` (`--no-optional-locks`, so a run every 10 s
-  never leaves `index.lock` behind), through `Exec.run`, so it works the same
+  --branch --untracked-files=no` (`--no-optional-locks`, so a run never
+  leaves `index.lock` behind), through `Exec.run`, so it works the same
   on This Mac and over SSH. `git` comes from the login shell's `PATH`, like herdr. The
   root is the space's `worktree.checkout_path`, else the cwd of its first
   pane. A run that takes over 5 s is ended.
@@ -497,11 +497,21 @@ The sidebar's space rows show the branch and the ahead and behind counts
   `# branch.ab +A -B` gives ahead and behind (absent without an upstream). The
   app reads no other line. A nonzero exit means the folder is not a git
   repository, and the row has no git line.
-- **When.** For a space that is new or whose root changed, and every 10 s
-  for every space, only for the page in view of a visible window. Hidden
-  pages never run. One run per space at a time. Fetch, Pull and Push in a
-  row's menu read it again when git ends, and the 10 s refresh skips the
-  space while they run.
+- **When.** For a space that is new or whose root changed, when git's own
+  files of its root change, and every 60 s for every space, only for the page
+  in view of a visible window. Hidden pages never run and watch nothing. One
+  run per space at a time; a change that comes during a run reads again after
+  it. Fetch, Pull and Push in a row's menu read it again when git ends.
+- **Git's own files.** One `git rev-parse --absolute-git-dir
+  --git-common-dir` per root gives them: the work tree's `HEAD` (a linked
+  worktree has its own), and its repository's `refs/`, `packed-refs`,
+  `reftable/` and `config` (the upstream). The index and `objects/` are left
+  out, so `git add` or a build reads nothing. The watch is the same on every
+  machine, with no process per check: FSEvents on This Mac, and on a remote
+  machine one long-lived Perl run over the relay that compares the files'
+  `lstat` every 2 s and ends when its stdin closes. A watch that ends (a
+  dropped connection) starts again with the next snapshot; the 60 s read
+  covers what no watch sees (a folder that became a repository).
 - **No developer tools.** At launch the app checks once where `git` is. When
   it is only `/usr/bin/git` and `xcode-select -p` fails, the app runs no git
   on This Mac, so macOS never offers to install the developer tools. Rows on

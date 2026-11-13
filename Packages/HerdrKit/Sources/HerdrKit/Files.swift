@@ -115,11 +115,62 @@ public enum Files {
             let task = Task { await poll(path, exec: exec, continuation) }
             continuation.onTermination = { _ in task.cancel() }
         } else {
-            let events = Events(path, continuation)
+            let events = Events([path], continuation)
             continuation.onTermination = { _ in events.stop() }
         }
         return stream
     }
+
+    /// Any change to the paths, a folder's whole tree included, with no process per check: FSEvents on This Mac, and
+    /// on a remote machine one long-lived Perl run (the relay's Perl) that compares their `lstat` every `interval`.
+    /// It ends when the remote run does (a dropped connection).
+    public static func watch(paths: [String], every interval: Duration = .seconds(2),
+                             exec: any Exec) -> AsyncStream<Void>
+    {
+        let (stream, continuation) = AsyncStream<Void>.makeStream(bufferingPolicy: .bufferingNewest(1))
+        if exec.isRemote {
+            let task = Task {
+                let seconds = Double(interval.components.seconds) + Double(interval.components.attoseconds) / 1e18
+                if let channel = try? await exec.run(["perl", "-e", statScript, String(seconds)] + paths) {
+                    for await _ in channel.lines {
+                        continuation.yield()
+                    }
+                    channel.terminate()
+                }
+                continuation.finish()
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        } else {
+            let events = Events(paths, continuation)
+            continuation.onTermination = { _ in events.stop() }
+        }
+        return stream
+    }
+
+    /// A line each time a sweep differs from the one before. The wait is a `select` on stdin, so the run ends when its
+    /// stdin closes. A path in the home folder may be relative to it.
+    static let statScript = #"""
+    use strict; use warnings;
+    my ($every, @paths) = @ARGV;
+    $| = 1;
+    sub sweep {
+        my $path = shift;
+        my @info = lstat $path or return "$path -\n";
+        my $text = "$path @info[1, 7, 9]\n";
+        if (-d _ && opendir(my $folder, $path)) {
+            $text .= sweep("$path/$_") for sort grep { $_ ne '.' && $_ ne '..' } readdir $folder;
+        }
+        return $text;
+    }
+    my $last;
+    while (1) {
+        my $now = join '', map { sweep(m{^/} ? $_ : "$ENV{HOME}/$_") } @paths;
+        print "changed\n" if defined $last && $now ne $last;
+        $last = $now;
+        my $in = ''; vec($in, 0, 1) = 1;
+        exit 0 if select($in, undef, undef, $every) > 0 && !sysread(STDIN, my $byte, 1);
+    }
+    """#
 
     /// ponytail: a file's check reads it whole (up to 16 MB) every 2 s, and the caller reads it again to compare
     /// hashes; yield the hash when that costs too much. A folder's check sees its own entries, what `git status` sees
@@ -152,25 +203,31 @@ public enum Files {
     }
 }
 
-/// Whatever file the path names: a file an editor replaced, or one that comes back, is still seen. The stream is on
+/// Whatever file a path names: a file an editor replaced, or one that comes back, is still seen. The stream is on
 /// the nearest folder that exists: one made later sends nothing.
 private final class Events: Sendable {
     private static let queue = DispatchQueue(label: "ovvi.files.watch")
     private let changed: AsyncStream<Void>.Continuation
     /// Canonical, as the events name paths (`/private/tmp`).
-    private let target: String
+    private let targets: [String]
     /// Set once in init and released once in `stop`, which the stream's end calls once.
     private nonisolated(unsafe) var stream: FSEventStreamRef?
 
-    init(_ path: String, _ changed: AsyncStream<Void>.Continuation) {
-        var root = path, isFolder: ObjCBool = false
-        while root != "/",
-              !(FileManager.default.fileExists(atPath: root, isDirectory: &isFolder) && isFolder.boolValue)
-        {
-            root = (root as NSString).deletingLastPathComponent
+    init(_ paths: [String], _ changed: AsyncStream<Void>.Continuation) {
+        let roots = paths.map { path in
+            var root = path, isFolder: ObjCBool = false
+            while root != "/",
+                  !(FileManager.default.fileExists(atPath: root, isDirectory: &isFolder) && isFolder.boolValue)
+            {
+                root = (root as NSString).deletingLastPathComponent
+            }
+            return root
         }
-        let canonical = (try? URL(filePath: root).resourceValues(forKeys: [.canonicalPathKey]).canonicalPath) ?? root
-        target = canonical + path.dropFirst(root.count)
+        targets = zip(paths, roots).map { path, root in
+            let canonical = (try? URL(filePath: root).resourceValues(forKeys: [.canonicalPathKey]).canonicalPath)
+                ?? root
+            return canonical + path.dropFirst(root.count)
+        }
         self.changed = changed
         var context = FSEventStreamContext(version: 0, info: Unmanaged.passUnretained(self).toOpaque(), retain: nil,
                                            release: nil, copyDescription: nil)
@@ -178,14 +235,14 @@ private final class Events: Sendable {
             guard let info else { return }
             let events = Unmanaged<Events>.fromOpaque(info).takeUnretainedValue()
             let changed = Unmanaged<CFArray>.fromOpaque(paths).takeUnretainedValue() as? [String] ?? []
-            if changed.contains(where: { $0 == events.target || $0.hasPrefix(events.target + "/") }) {
+            if changed.contains(where: { path in events.targets.contains { path == $0 || path.hasPrefix($0 + "/") } }) {
                 events.changed.yield()
             }
         }
         let flags = kFSEventStreamCreateFlagUseCFTypes | kFSEventStreamCreateFlagFileEvents
             | kFSEventStreamCreateFlagNoDefer
         // A second's latency: a folder lists again at most that often while a build writes.
-        stream = FSEventStreamCreate(nil, callback, &context, [root] as CFArray,
+        stream = FSEventStreamCreate(nil, callback, &context, Array(Set(roots)) as CFArray,
                                      FSEventStreamEventId(kFSEventStreamEventIdSinceNow), 1,
                                      FSEventStreamCreateFlags(flags))
         if let stream {
