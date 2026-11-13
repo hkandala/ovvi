@@ -48,6 +48,45 @@ fails; lessons.md's rule makes it 60 s (round 8's final CI, '### Final CI, round
    bugs so many times already, investigate how clicking on pane activates and make sure it works all the time for
    terminal panes or browwser panes or plugin panes without any edge cases like this"
 
+### Track K: Findings
+
+- **How a click activated a card.** A card became the keyboard card only when a view inside it became first responder
+  and claimed it: the terminal surface, a web view (`onKeyboard`), the address, path and reply fields
+  (`tookKeyboard`). On top of that sat per-view tap gestures: the header's (phase 57 item 112), the browser cover's,
+  the chooser's background. A view that takes no keys and had no gesture did nothing: a plugin's error
+  (`PluginFailure`, the user's "needs Node.js"), a missing plugin, the plugin loader, a card's picture, a header
+  button of a plugin. Each earlier report got a gesture on the one view it named, which is why the bug came back.
+  Not a regression: `PluginFailure` never had one.
+- **Fix: one mechanism.** Every card is its own `MovingCard` NSView. One local left-mouse-down monitor
+  (`MovingCard.activateOnClick`) hit-tests the window, finds the card under the click, and on the next turn, after
+  AppKit's mouse-down: if the first responder is inside the card (a field, the page, the terminal, selected text) it
+  only marks the card (`tookKeyboard`); else `page.go(to:)` gives the keys to the card's own view. It never eats the
+  click: links, buttons, text selection and drags work as before. The three tap gestures are gone. Skipped: a hidden
+  or kept page's cards (`isHidden`), a floated pane's placeholder, an open panel, a window under a sheet.
+- **A card with no view for the keys** (a missing plugin) left them on the old terminal while it showed the border:
+  `PaneViewRegistry.focus` now clears the window's first responder then, so ⌘W and typing no longer reach the old
+  card. A floating window whose first responder is the window itself gets its pane's view back on a click.
+- A headless probe (an unshown window, `sendEvent`): `NSHostingView` refuses first responder, a click on SwiftUI
+  content leaves it alone, and selectable text is an `AppKitTextInteractionView` inside the card.
+- Seen, not this track's: in a very short plugin card the error view runs over its header row (the after picture).
+
+### Track K: Runs
+
+- New test `testAClickAnywhereOnACardGivesItTheKeyboard` (CardClickTests.swift): a terminal, a browser, a plugin
+  page, a plugin error and a missing plugin in one tab, the address field and a plugin header button of inactive
+  cards, a chat's reply and a drag-select on an inactive chat. Red on the old code in the VM: "w2:p5 is not lit" at
+  the error step. Green in the VM with the fix, 8 tests: it, `testAClickOnACardsHeaderGivesItTheKeyboard`,
+  `testAClickBeforeACardDrewKeepsTheKeyboard`, `testABrowserKeepsAFailedAddressAndTakesClicksOffItsPage`,
+  `testDropOnACardsCenterSwapsAndOnItsEdgePlacesBeside`,
+  `testCommandTOpensInTheKeyboardCardsDirectoryAndCommandWClosesIt`,
+  `testFloatingAPaneOpensItsWindowAndDetachPutsItBack`, `testAChatTakesTheKeyboardOnAnyClickAndItsBoxGrows`.
+- On the final tree (a drag-select step added): `make lint build test` green; in the VM green, 3 tests: it,
+  `testAChatTakesTheKeyboardOnAnyClickAndItsBoxGrows`, `testAFloatingWindowShowsTheChat`. For the final round:
+  FloatTests, BrowserTests, BrowserClickTests, PaneTests, FinishTests, PluginAPITests, the chooser tests.
+- Pictures (VM, dark): `~/Downloads/ovvi-research/p58k/before-cards-to-click.png`, `after-error-clicked.png` (the
+  error card lit, the terminal's cursor hollow).
+- Reviewer: two rounds (a blocker on the missing plugin's keys, fixed), ready.
+
 ## Track P: the overview's zoom, balanced splits (items 7, 8)
 
 7. "i don't see any animation now when selecting a tab from overview, before i used to see some animation of pane
