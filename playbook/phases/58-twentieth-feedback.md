@@ -849,3 +849,17 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
 
 40. "one last thing when recent sorting is used, and we use ctrl cmd [ to move around workspaces it goes in manual
     order instead of what ew see in the sidebar"
+
+- **Cause.** ⌃⌘[ ], ⌃⌘1–9, the row swipe, the overview, the palette and Move Pane to Tab read
+  `Page.sidebarWorkspaces`: herdr's order with the pinned spaces first. Recent's sort and its hold under the pointer
+  lived only in the sidebar's view (round 7 kept the keys on herdr's order on purpose, as Recent moves under them).
+- **Fix.** One list: the sort and the hold (`sortHold`) moved onto `Page`, `sidebarGroups` sorts the unpinned spaces,
+  and the sidebar draws from it, so every step and number reads what the sidebar shows, the held order included. The
+  sidebar takes the hold on each pointer move while none is held, and drops it when it goes away under the pointer.
+- **Decisions (review).** The overview holds Recent's order while it shows, so a tile never moves under a click; the
+  space menu of a collapsed sidebar lists each session in the sidebar's order (pins first, less the hidden ones), as
+  ⌃⌘[ ] walk it.
+- **Runs.** VM: testSpaceKeysFollowTheSidebarsRecentOrder failed on the old code at the first ⌃⌘] (to beta, not
+  gamma). The fix's VM run found the VM busy with the final CI round: the touched tests go to that round.
+- **For the user.** Sort Spaces ▸ Recent, then ⌃⌘[ ], ⌃⌘] and ⌃⌘1–9: they walk the rows top to bottom as shown,
+  also with the pointer resting on the list after an agent finished.
