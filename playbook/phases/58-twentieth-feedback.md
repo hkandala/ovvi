@@ -430,6 +430,33 @@ fails; lessons.md's rule makes it 60 s (round 8's final CI, '### Final CI, round
   checkout in a terminal shows in the sidebar within about a second; a build writing into `build/` or `node_modules`
   no longer makes a Git or File Explorer card refresh.
 
+### Final CI
+
+Round 1's tracks only (main up to 7c911c3b); round 2 gets its own final round.
+
+- **Cause (every Codex chat test).** The Codex stand-in's default `CODEX_HOME` (Track X) was
+  `$TMPDIR/ovvi-stand-in/codex`, the link `run_as` makes to Python, so its first rollout write failed with
+  `NotADirectoryError` and the chat showed no message. And only the Claude stand-in turned bracketed paste off at its
+  exit: after the Codex one quit for Relaunch with Chat, herdr pasted the relaunch line, which CI's bash 3.2 ran as
+  `00~codex`. Never seen before: those tests had run nowhere.
+- **Fix.** The default is `codex-home`; the shared `terminal()` turns bracketed paste off for every stand-in.
+- **Cause (the moving tab's drag test).** It split twice through herdr and set its ratios at once. When the app read
+  the second split only after those ratios, Track P's balance evened that pane's run as another client's split (0.7
+  to 0.5) after the test took the layout. By design (Track P's decisions), so the test waits for the new pane's card
+  before it sets the ratios.
+- **Cause (the startup icon test).** It typed its setup line into a new space's shell while the card resized it; bash
+  3.2 redrew the line and the marker's output landed on the command's last row. The wait reads it anywhere
+  (`waitFor(_:toShow:)`).
+- **Runs.** p58-final1 (1345a05b): full 43361989105 (28 min) and 43361997772 (61 min, queued), the three Codex tests
+  red in both; on-demand 43362006380 green (39 min). Chosen 43369393457 (7 chat tests, executed 7) green.
+  p58-final2 (f6a688c7): full 43370213191 (50 min, the startup test red) and 43370223954 (30 min, the drag test red).
+  Chosen 43376566308 (executed 2) green. p58-final3 (7c911c3b): full 43377334173 (45 min) and 43377343607 (28 min)
+  green on the first try, 295 tests each, none skipped, the whole watch list in (RemoteTests, ReconnectTests, the
+  remote chats included). On-demand not run again: no fix touched what it runs. Test times not refreshed: about
+  4970 and 5480 s, as in round 8.
+- **Left as is.** `AgentCardTests` sets a ratio right after a herdr split too: the app may even it first, and then
+  Balance Splits has nothing to change. It cannot fail, only proves less.
+
 ## Round 2 (items 24–34)
 
 Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in pi, the white block flickering),
