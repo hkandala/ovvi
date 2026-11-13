@@ -523,6 +523,22 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
     navigate across tabs based on what was last active and history, keep the shortcut simple as well, so its easy to
     remember and use."
 
+#### Track T: Findings
+
+- **Cause (27).** The bar scrolled only to a selected tab, at once (D42, `dd8ebd1f`), so a tab that opened in the
+  background (⌘-click, Open in New Tab, another herdr client) past the bar's end stayed out of view.
+- **Fix (27).** One change handler on the space, its selected tab and its tab ids: a new tab slides into view with the
+  app's slide (0.22 s, none with Reduce Motion), and its selection during the slide scrolls nothing more; keys, the
+  palette and a space switch still jump; a click still never scrolls.
+- **Fix (33).** The page keeps the last 100 tabs shown, across spaces; Go Back and Go Forward (Window menu, palette)
+  step through it past closed tabs, as a browser does. `select` sets the tab before the space, so a switch never
+  records the space's old tab. Stand-in tab ids map to herdr's in the history as in the used-tab list.
+- **Decisions.** ⌃⌘← and ⌃⌘→, Xcode's keys: VS Code's ⌃- and ⌃⇧- are a plugin card's Back and Forward, a browser's
+  ⌘[ ⌘] the pane steps, and ⌘ chords never reach a terminal program. Both items stay enabled with nothing to step to:
+  the history is no observed state, and a disabled item would swallow the key. One history per page (a session in a
+  window), as each window has its own selection.
+- **For the user.** ⌘-click a link with the bar full: the new tab slides in. ⌃⌘← and ⌃⌘→ across two spaces.
+
 ### Track E5: explorer and Git sidebars (items 26, 28)
 
 26. "in file explorer, for file tree sidebar when opening and collapsing can we do slide in animation like other
