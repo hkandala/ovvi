@@ -226,3 +226,28 @@ fails; lessons.md's rule makes it 60 s (round 8's final CI, '### Final CI, round
 - **For the user.** Open the overview and click a tile, press Esc, ⌃⌘O: the tile should grow into the page while the
   sidebar and tabs fade in. Split three panes and close the middle one with ×; open a file to the side with ⌥-click;
   type `exit` in one of three panes: each time the row should end equal. Turn the setting off and split twice: halves.
+
+## Track L: Ovvi's own load (item 23)
+
+23. "can you also invoke one more agent to do deep analysis on how much ovvi contributes to system load, in terms of
+    all commands that get run from plugins, our idle processes etc, i just want to make sure our ovvi app is not a
+    heavy one adding too much load". The report: `~/Downloads/ovvi-research/ovvi-load/report.md` (Ovvi ≈ 10 % of one
+    core, ≈ 300 process starts a minute, 75 % of them the sidebar's git poll; every herdr call a `remote-api-bridge`
+    process). On its fixes: "1. let's do sidebar git branch fix", "3. yep let's do it", "4. yep, make sure there is no
+    behavioral difference", "for the memory we already cap them right, so that's fine if it takes more memory, as long
+    as system has memory we can leverage it". On the helper: "why can't we ssh and talk to its socket api as well? i
+    am not understanding what value this helper adds at all", then "yep sounds good, but make sure we do this reliably
+    and doesn't introduce weird edge case bugs", and to start: "okay start everything, try to have one simple approach
+    for both mac and remote machines, separting them will lead to edge cases and shit, implement all of this carefully
+    and reliably".
+
+    Decided: (1) the sidebar's git branch follows git's own files (HEAD, refs) with a ≥ 60 s safety poll; (2) every
+    herdr request goes to herdr's API socket, with no `remote-api-bridge`: on This Mac the socket itself, on a remote
+    machine a local socket forwarded to the remote one over the host's ControlMaster (`ssh -O forward`), so one client
+    code path connects to a socket path either way (D4 and D15 updated; a host that refuses stream-local forwarding
+    shows a clear error, no fallback); (3) Git and File Explorer cards ignore events under `.git/objects` and ignored
+    paths, wait 2 s to refresh, and use one `git status --porcelain=v2 --branch` for changes and head, branches and log
+    only when refs change; (4) the Claude chat's `tr`/`sleep 0.3` loop becomes a file watch and Codex's 0.5 s
+    `pane.read` check gets cheaper, with no change in what shows or when; (5) card state files are written without
+    `sh`/`mkdir`/`cat`/`mv` and programs start without the `/usr/bin/env` step (the program found on PATH at each run);
+    the presence marks stay as they are (cheap once (2) lands). Memory: no change.
