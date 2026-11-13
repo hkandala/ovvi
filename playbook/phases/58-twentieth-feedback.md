@@ -68,7 +68,12 @@ fails; lessons.md's rule makes it 60 s (round 8's final CI, '### Final CI, round
   card. A floating window whose first responder is the window itself gets its pane's view back on a click.
 - A headless probe (an unshown window, `sendEvent`): `NSHostingView` refuses first responder, a click on SwiftUI
   content leaves it alone, and selectable text is an `AppKitTextInteractionView` inside the card.
-- Seen, not this track's: in a very short plugin card the error view runs over its header row (the after picture).
+- **A short card's error ran over its header** (seen in the VM; the orchestrator's follow-up). Cause: `EmptyState`
+  has a fixed natural height, and SwiftUI centers a view taller than its frame on that frame, so it and the
+  failure's solid fill ran up over the card's header rows. Fix: `EmptyState` picks its full look, else its compact
+  look, else the compact look in a scroll view (`ViewThatFits`, the `scrollsWhenShort()` extension); the plugin's
+  install question and the browser's "Open this page?" scroll the same way. Clipping the card's content area in
+  `PaneCard` was the other place, but it would cut the chat's and the toasts' glass and hide the error's buttons.
 
 ### Track K: Runs
 
@@ -86,6 +91,13 @@ fails; lessons.md's rule makes it 60 s (round 8's final CI, '### Final CI, round
 - Pictures (VM, dark): `~/Downloads/ovvi-research/p58k/before-cards-to-click.png`, `after-error-clicked.png` (the
   error card lit, the terminal's cursor hollow).
 - Reviewer: two rounds (a blocker on the missing plugin's keys, fixed), ready.
+- The short card's error: the new check in the same test (the title stays at least 32 pt under the 70 pt header) was
+  red on the old code in the VM ("639.75 is not greater than 653.5"), green with the fix, 6 tests: it,
+  `testABrowserKeepsAFailedAddressAndTakesClicksOffItsPage`, `testAPluginPackageAsksForTrustBuildsAndReloads`,
+  `testAPluginCardAsksAndItsPageSetsItsSettings`, `testTheOvviCommandListsAndInstallsPlugins`,
+  `testAPaneLabeledInHerdrShowsItsPageAfterARestart`. Picture: `~/Downloads/ovvi-research/p58k/after-short-error.png`.
+  Reviewer: two rounds, approve. The VM's saved main window frame was tiled to its left half (512 pt, from another
+  run), which hid the second tab capsule and failed every `newTab`: deleted `NSWindow Frame main-AppWindow-1`.
 
 ## Track P: the overview's zoom, balanced splits (items 7, 8)
 
