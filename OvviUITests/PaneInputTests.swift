@@ -76,7 +76,10 @@ extension OvviUITests {
         try await waitForPrompt(pane)
         try await send("clear; '\(Self.fixtures)/mouse-select'\r", to: pane)
         try await waitFor(pane, toShow: "drags 0 releases 0")
-        let rows = try XCTUnwrap((terminal.value as? String)?.split(separator: " ").first.flatMap { Int($0) })
+        let grid = (terminal.value as? String ?? "").split(separator: " ").compactMap { Int($0) }
+        let rows = try XCTUnwrap(grid.first)
+        // The second mark ends at column 52.
+        XCTAssertGreaterThanOrEqual(grid.last ?? 0, 52)
         // The cells in the screenshot's pixels, from the first mark: 6 cells from column 30.
         let first = try await poll("the program's mark") { () -> Shot? in
             Shot(terminal.screenshot().image, rows: rows).flatMap { $0.whites(row: 0).isEmpty ? nil : $0 }

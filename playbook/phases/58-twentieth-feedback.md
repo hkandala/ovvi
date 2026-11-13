@@ -376,7 +376,9 @@ fails; lessons.md's rule makes it 60 s (round 8's final CI, '### Final CI, round
   pixel in the row, both end cells blue, the cells past them not (a word selection reaches them). The cell geometry
   comes from the mark's pixels. For Track K: `mouseDown` now lives in `Terminal/Selection.swift`.
 - **Runs.** VM: green on the fix (both tests); red with the old cell rule (no edge points: "a white cell beside the
-  selection", the white `c` and `a` at the ends in the picture).
+  selection", the white `c` and `a` at the ends in the picture); red without the far-corner click (the word selection:
+  "cell 2 selected, cell 1 not"). The right-click test ran only in the VM: it belongs in the final CI round.
 - **For the user.** In pi, drag over text: only the blue selection, no white cell, and pi says "Copied!" with its
   formatted text on the clipboard. Drag forward and then back past where you pressed: still no white cell. A ⇧-drag or
-  a double click selects in the card only. Pictures: `~/Downloads/ovvi-research/p58m/`.
+  a double click selects in the card only. After a selection, scroll pi or let it write: pi's selection moves with its
+  text and white cells can show (known limit). Pictures (dark): `~/Downloads/ovvi-research/p58m/`.

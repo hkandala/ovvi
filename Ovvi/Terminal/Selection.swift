@@ -15,7 +15,7 @@ extension PaneSurfaceView {
     struct Anchor {
         let column: Int, row: Int
         /// libghostty's press, in its points (top left). libghostty skips a move under 1 px, so a press within 1 px
-        /// of the last move keeps that move's point: one press in a thousand near a cell's 60 % point may differ.
+        /// of the last move keeps that move's point: a press that near a cell's 60 % point may land on its other side.
         var press: CGPoint
     }
 
