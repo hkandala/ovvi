@@ -121,13 +121,18 @@ private struct ToolDetail: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(title).font(.system(size: 10, weight: .medium)).foregroundStyle(.tertiary)
-            ScrollView([.vertical, .horizontal]) {
-                // The id on the text, which moves as it scrolls.
-                ChatLinks.text(ChatLinks.linked(text)).font(.system(size: 11, design: .monospaced)).lineSpacing(2)
-                    .textSelection(.enabled)
-                    .fixedSize().accessibilityIdentifier(id).padding(8)
+            // One scroll view per axis: inside the chat's sideways one, a scroll view of both axes gets no vertical
+            // wheel (only its scroll bar moves it).
+            ScrollView {
+                ScrollView(.horizontal) {
+                    // The id on the text, which moves as it scrolls.
+                    ChatLinks.text(ChatLinks.linked(text)).font(.system(size: 11, design: .monospaced)).lineSpacing(2)
+                        .textSelection(.enabled)
+                        .fixedSize().accessibilityIdentifier(id).padding(8)
+                }
+                // Text narrower than the box at its left.
+                .defaultScrollAnchor(.leading)
             }
-            .defaultScrollAnchor(.topLeading)
             .frame(maxHeight: 180).fixedSize(horizontal: false, vertical: true)
             .background(.primary.opacity(0.04), in: .rect(cornerRadius: 6))
         }
