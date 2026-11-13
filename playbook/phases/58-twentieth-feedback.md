@@ -772,6 +772,11 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
 - **Decisions.** The page is Shortcuts, last in the sidebar (`SettingsPage.shortcuts`, `settings.page.shortcuts`); its
   row ids stay `keys.*`. ⌘/ lost Customize…; General ▸ Help ▸ Show Shortcuts still opens the panel. Glyph text over
   keycaps in Settings: keycaps of two keys would not fit one field width.
+- **Runs.** Green in the VM: testKeyboardShortcutsScenes (three rounds of pictures; before and after in
+  `~/Downloads/ovvi-research/p58h2/`), testARecordedKeyShowsEverywhereAndASwapMovesTheOther (now also Cancel and
+  the sidebar order), testKeyboardShortcutsPanelListsTheCommandsKeys, testSettingsPagesSearchAndLook.
+- **For the user.** Settings ▸ Shortcuts, last in the sidebar: the key fields line up at the row's edge; record a key
+  another action has, then Cancel and Swap; ⌘/ has no Customize… and shows "⌘ K, ⇧ ⌘ P".
 
 ### Track Z: zoom kept per tab (item 39)
 
