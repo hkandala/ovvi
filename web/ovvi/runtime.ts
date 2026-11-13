@@ -147,14 +147,7 @@ const ovvi: Ovvi = {
     write: (path, data, options) =>
       call("files.write", { path, over: options?.over, ...(typeof data === "string" ? { text: data } : { base64: data.toBase64() }) }),
     move: (path, to) => call("files.move", { path, target: to }),
-    watch(path, fn) {
-      const id = ++next
-      watches.set(id, fn)
-      tell("files.watch", { id, path })
-      return () => {
-        if (watches.delete(id)) tell("files.unwatch", { id })
-      }
-    },
+    watch: (path, fn) => subscribe("files.watch", path, fn),
   },
   git: {
     root: (folder) => call("git.root", { folder }),
@@ -173,14 +166,7 @@ const ovvi: Ovvi = {
     pull: (root) => call("git.pull", { root }),
     push: (root) => call("git.push", { root }),
     switch: (root, branch) => call("git.switch", { root, branch }),
-    watch(root, fn) {
-      const id = ++next
-      watches.set(id, fn)
-      tell("git.watch", { id, path: root })
-      return () => {
-        if (watches.delete(id)) tell("files.unwatch", { id })
-      }
-    },
+    watch: (root, fn) => subscribe("git.watch", root, fn),
     init: (folder) => call("git.init", { root: folder }),
   },
   state: {
@@ -370,6 +356,16 @@ function backForward(event: KeyboardEvent) {
   event.preventDefault()
   event.stopPropagation()
   tell("card.step", { back })
+}
+
+/** `files.watch` or `git.watch`; `files.unwatch` ends either. */
+function subscribe(method: string, path: string, fn: () => void): Off {
+  const id = ++next
+  watches.set(id, fn)
+  tell(method, { id, path })
+  return () => {
+    if (watches.delete(id)) tell("files.unwatch", { id })
+  }
 }
 
 /** One watch of the machine per path (and kind) for all pages: on a remote machine each one polls. */
