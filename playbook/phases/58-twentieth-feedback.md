@@ -735,8 +735,9 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
   now go through one helper, `outsideMainQueue` (`MenuAction.swift`), in the default run-loop mode, so a second menu
   waits out the first. A lint rule (`nested_run_loops`) rejects the plain calls elsewhere.
 - **Runs.** The closed-pages test, green in the VM with the rows (vm9). `testAPluginPageCallsEveryPartOfTheAPI`
-  failed twice in the VM at its first wait ("ready: yes"): the page stopped at `files.list`, before any menu call,
-  so not this change; it goes to the final round.
+  failed twice in the VM at its first wait ("ready: yes"): the page stopped at `files.list`, before any menu call.
+  It fails the same way at b849d6fe, which has none of these menu changes (likely the VM's git, which also gave no
+  root in track H's file card run). It goes to the final round.
 - **For the user.** ⌘⌥-click on an entry opens the Mac's default browser (no UI test, since it leaves the app). On a
   remote machine, close a browser card and open the menu from another card there.
 

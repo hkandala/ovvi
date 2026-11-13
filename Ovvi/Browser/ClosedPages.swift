@@ -15,7 +15,8 @@ nonisolated struct ClosedBrowserPage {
         guard let url = Browser.url(url, local: local) else { return nil }
         self.url = url.absoluteString
         self.title = title
-        self.icon = icon.flatMap { $0.count <= 16 << 10 ? $0 : nil }
+        // Only Ovvi's own PNG: `NSImage` reads PDF and more.
+        self.icon = icon.flatMap { $0.utf8.count <= 16 << 10 && $0.hasPrefix("iVBORw0KGgo") ? $0 : nil }
     }
 
     /// The page's title, else its host, else its file's name.
@@ -65,6 +66,8 @@ enum ClosedPages {
     /// One line, at most 320 pt wide in the menu's font, with an ellipsis: a menu grows to its widest row.
     private static func cut(_ title: String) -> String {
         let font = [NSAttributedString.Key.font: NSFont.menuFont(ofSize: 0)]
+        // 200 characters are past 320 pt: the file holds titles of any length.
+        let title = String(title.prefix(200)).replacing(/\s+/, with: " ")
         guard (title as NSString).size(withAttributes: font).width > 320 else { return title }
         var shown = title
         while !shown.isEmpty, ((shown + "…") as NSString).size(withAttributes: font).width > 320 {
