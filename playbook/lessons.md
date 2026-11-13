@@ -150,6 +150,12 @@ Problems that came back, and the rule that stops each. How we work is in
   at landing. Hand a layout shown ahead of herdr over only when herdr's tree puts every pane in the same place; lay a
   moving card's content out once, at its final size; and check a change with the per-frame track
   (`testSplitsMoveEachCardOnceToItsPlace`), not a single mid-motion sample.
+- **A scroll's momentum keeps its own offset.** A `ScrollPosition` set while a swipe's momentum ran was lost, and
+  the rows jumped by what came above them: change the content above the view only once the scroll rests
+  (`onScrollPhaseChange`).
+- **A custom `Layout` places a subview with the offer it measured it with.** Measured with no height and placed with
+  that height as a concrete offer, a stack shared it out its own way: a `minimumScaleFactor` text shrank and a text
+  field scrolled its text out of view.
 - **Never give a `ScrollPosition` binding back what the scroll view wrote into it.** It names a row as a scroll
   begins or ends, and the next body puts that row back at the top: a jump. Use a binding that
   drops the writes and set it only for the app's own scrolls. `defaultScrollAnchor(.bottom)` alone follows new rows

@@ -624,6 +624,42 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
     empty chat's reply box; the greeting grows from small to large, the logo and greeting move up as the box grows, and
     the typed text vanishes from the box in some frames)
 
+#### Track C9 findings
+
+- **The reply box's glass (29).** Plain glass again (`.glassEffect(.regular)`), as before item 12; the card-color
+  tint and its `Look` token are gone. The 10-line box of item 16 stays; Track C's "(12, 16)" tint line no longer holds.
+- **Cause, the box moving during a drag (30).** The drag's width hold (since 018f06ba) sat on the scroll view, and
+  the reply box is in its parent's bottom safe-area inset, so the box followed the card at every frame while the rows
+  held their width. **Fix:** the hold wraps the whole chat (rows, question card, reply box, Scroll to Bottom): one
+  width, in the same frame, during and after a drag. The empty chat and the loader follow the card at once (no rows to
+  wrap). The waiting drawer's terminal follows the card on purpose: a terminal must take its size.
+- **Earlier rows (31).** No Show Earlier button. While older rows exist the stack's first row is a 28 pt row; once
+  the view's top is within half a view of the stack's, a spinner shows there, and once the scroll rests the next block
+  comes, again after each block while still that near. The spinner draws only near the top (it animates, also out of
+  view). **Causes found on the way, each a jump in the VM:** a load during a swipe's momentum (the scroll view keeps
+  its own offset over the restore: 2306 pt), so loads wait for the rest (`onScrollPhaseChange`); the geometry update
+  that grew the rows recomputed the held top row from the old offset against tops that could already be new ones, so
+  it held a new row in place (2293 pt): the place is now held only from a scroll; a history read to its end came in
+  one update with the place still near the top from the short chat before it, which loaded a block at the open and
+  held the view away from the bottom: the load reads `nearTop` again when it runs. A load can still chain into the
+  next before its place lands (two blocks in one rest).
+- **Cause, the empty chat (35).** `BoxInMiddle` measured the stack with no height, then placed it with that height
+  as a concrete offer, which a stack shares out its own way: the greeting (one line, `minimumScaleFactor`) got less
+  and shrank, and the field got less than its text and scrolled it out of view (the blank box). A headless probe
+  showed the greeting 30, 19, 19, 27, 30 pt tall at 1 to 5 lines. It also centered the box at its current height, so
+  each line moved the header up 8.5 pt. **Fix:** the stack is placed with the offer it was measured with, and the
+  middle is the box's one-line middle, from the field's first line (its height less its last baseline less its first,
+  plus the Send row), so more lines grow the box downward. The probe: the greeting 30 pt and the box's top still.
+- **Runs.** Red on the old code in the VM: the drag test (38 looks with the box and the rows apart), the empty chat's
+  header 255 × 108 to 160 × 97 at two lines, the loads test (no load: out of time). Green on the new code in the VM:
+  the drag, loads, split, switch, keeps-its-place and empty-chat tests; the loads run's recording reads reply 25 down
+  to 6 in steady steps. Pictures, dark and light, before and after:
+  `~/Downloads/ovvi-research/p58c9/`.
+- **For the user.** Scroll up through a long chat with the trackpad, fast; drag a divider beside a chat; type six
+  lines into a new chat's box; the reply box's glass in both appearances. A decision: the loaded rows stay until the
+  card is made again (D95), so after a scroll through a 150-turn chat each split lays out every row (about 100 rows
+  took 110–160 ms); dropping them back to one block at the exact bottom would bound it.
+
 ### Track X2: Relaunch with Chat on a resumed Codex (item 32)
 
 32. "so for codex, i can see chat loads for resumed session, but the thing is let's say i resumed a session in codex
