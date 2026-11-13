@@ -162,6 +162,9 @@ fails; lessons.md's rule makes it 60 s (round 8's final CI, '### Final CI, round
   tests: `-archivedHome`). A `CODEX_HOME` set only in the pane's shell is not seen: that chat fills at its first prompt,
   as before. The stand-in now honors `CODEX_HOME` (default: its own temporary folder), keeps its rollout when started
   without Ovvi's flags, reports its session to herdr then, and goes on with `resume <id>`.
+- **Runs.** HerdrKit's new test and `make lint build test` green on the rebased tree. The VM stayed busy (other
+  tracks), so `testRelaunchWithChatShowsACodexSessionsHistory` (with the Codex chat tests) goes to the final CI round;
+  without the fix its side file names no rollout and the chat is empty.
 - **For the user.** With a real Codex: resume a session from Archived Sessions and one with Relaunch with Chat. The
   history shows before the first message and does not load again at it. Once with an old, compressed (`.zst`) session.
 
