@@ -90,6 +90,9 @@ struct Composer: View {
                     return .handled
                 }
                 .padding(.trailing, Self.inset - 11)
+                // The empty chat's middle: the box's at one line (the field's first line, the Send row's 22 pt and the
+                // padding around them), which more lines leave where it is: the box grows downward.
+                .alignmentGuide(.replyBox) { ($0.height - $0[.lastTextBaseline] + $0[.firstTextBaseline] + 22) / 2 }
                 .accessibilityIdentifier("chat.\(chat.paneID).composer")
             HStack(spacing: 8) {
                 let model = [chat.history.model.map(ChatHistory.modelName), chat.history.effort].compactMap(\.self)

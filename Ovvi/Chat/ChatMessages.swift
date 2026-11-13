@@ -91,7 +91,6 @@ struct ChatMessages: View, Equatable {
                                 .id(question.raw)
                         }
                         Composer(chat: chat, composing: composing, placeholder: welcome ? phrase.placeholder : nil)
-                            .alignmentGuide(.replyBox) { $0[VerticalAlignment.center] }
                     }
                     // The box's text on the messages' edges: the box reaches past them by its own padding.
                     .padding(.bottom, 14).padding(.top, 4).readingColumn(margin: 32 - Composer.inset)
@@ -101,7 +100,8 @@ struct ChatMessages: View, Equatable {
         // A lone new width (a split's motion gives the card its final size once) lays the rows and the reply box out
         // at once; one in a run of them (a drag) waits for the run's end, so the rows wrap once, not at every frame,
         // and the box waits with them. At once while the reading column keeps its width.
-        .frame(width: width)
+        // Not the empty chat's, which has no rows to wrap.
+        .frame(width: reading || welcome ? nil : width)
         .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { new in
             let run = settling != nil
@@ -152,7 +152,7 @@ struct ChatMessages: View, Equatable {
         let pin = kept == nil && rows.indices.contains(start) && away
         // Read here: a change of the view's state or environment read inside the reader's content does not build it
         // again, only a change of what its closure holds. The chat's observed values are tracked inside.
-        let (scrolledUp, loading, error, place) = (!atBottom, earlier, look.error, position)
+        let (scrolledUp, loading, near, error, place) = (!atBottom, earlier, nearTop, look.error, position)
         // The next block comes once the view's top is within half a view of the stack's, again after each.
         let more = nearTop && start > 0 ? start : nil
         return ScrollViewReader { proxy in
@@ -166,7 +166,13 @@ struct ChatMessages: View, Equatable {
                     // and after a split shows a blank where it guesses wrong. `start` keeps the layout short.
                     VStack(alignment: .leading, spacing: 10) {
                         if start > 0 {
-                            Loader(id: "chat.\(chat.paneID).earlier").frame(maxWidth: .infinity).frame(height: 28)
+                            // Drawn only near the top: a spinner animates, also out of view.
+                            Color.clear.frame(height: 28)
+                                .overlay {
+                                    if near {
+                                        Loader(id: "chat.\(chat.paneID).earlier")
+                                    }
+                                }
                                 .padding(.top, topPadding)
                         }
                         Rows(chat: chat, rows: rows[start...], tops: tops, fades: chat.current && !loading) {
@@ -191,7 +197,8 @@ struct ChatMessages: View, Equatable {
             .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { viewHeight.value = $1 }
             .scrollPosition(.constant(place))
             .task(id: pin) {
-                if pin {
+                // A load in the same update pins as well, from its own row.
+                if pin, more == nil {
                     first = rows[start].id
                 }
             }
@@ -311,7 +318,7 @@ private extension ChatMessages {
     }
 }
 
-private extension VerticalAlignment {
+extension VerticalAlignment {
     nonisolated enum ReplyBox: AlignmentID {
         static func defaultValue(in context: ViewDimensions) -> CGFloat {
             context[VerticalAlignment.center]
@@ -322,8 +329,8 @@ private extension VerticalAlignment {
     nonisolated static let replyBox = VerticalAlignment(ReplyBox.self)
 }
 
-/// The empty chat's: the reply box's middle in the card's, its header above it, and the stack's top no higher than the
-/// card's (a short card keeps the header). Otherwise the stack at its own height.
+/// The empty chat's: the reply box's middle at one line in the card's, its header above it, and the stack's top no
+/// higher than the card's (a short card keeps the header). Otherwise the stack at its own height.
 private struct BoxInMiddle: Layout {
     let fills: Bool
 
@@ -337,10 +344,9 @@ private struct BoxInMiddle: Layout {
         let offer = ProposedViewSize(width: bounds.width, height: nil)
         let height = stack.sizeThatFits(offer).height
         let top = fills ? max(bounds.minY, bounds.midY - stack.dimensions(in: offer)[.replyBox]) : bounds.maxY - height
-        stack.place(
-            at: CGPoint(x: bounds.minX, y: top),
-            proposal: ProposedViewSize(width: bounds.width, height: height),
-        )
+        // The offer it was measured with: offered its height, the stack shares it out its own way, and the greeting
+        // shrinks as the reply box grows.
+        stack.place(at: CGPoint(x: bounds.minX, y: top), proposal: offer)
     }
 }
 

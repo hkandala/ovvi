@@ -21,6 +21,7 @@ extension OvviUITests {
                             "What can I help with?": "Ask a question or give a task",
                             "Ready when you are.": "Type your first message"]
         XCTAssertEqual(composer.placeholderValue, placeholders[empty.stringValue], empty.stringValue)
+        boxGrowsDownward(pane)
 
         let worked = app.descendants(matching: .any).matching(identifier: "chat.\(pane).worked")
         step("A turn of a reply alone")
@@ -104,5 +105,24 @@ extension OvviUITests {
             XCTAssertFalse(nodes.contains { $0.identifier == "chat.\(pane).empty" }, "the empty chat showed")
             return shown.exists
         })
+    }
+
+    private func boxGrowsDownward(_ pane: String) {
+        let empty = element("chat.\(pane).empty"), composer = element("chat.\(pane).composer")
+        step("More lines grow the box downward: the glyph, the phrase at its size and the box's top stay")
+        let (header, top) = (empty.frame, composer.frame.minY)
+        app.typeText("1")
+        for line in 2 ... 6 {
+            app.typeKey(.return, modifierFlags: .shift)
+            app.typeText("\(line)")
+            XCTAssertTrue(until(2) { composer.stringValue.hasSuffix("\n\(line)") })
+            let seen = steady(2) { [empty.frame, composer.frame] }
+            XCTAssertEqual(seen?[0], header, "line \(line)")
+            XCTAssertEqual(seen?[1].minY ?? 0, top, accuracy: 1, "line \(line)")
+        }
+        XCTAssertEqual(composer.stringValue, "1\n2\n3\n4\n5\n6")
+        app.typeKey("a", modifierFlags: .command)
+        app.typeKey(.delete, modifierFlags: [])
+        XCTAssertTrue(until(2) { composer.frame.minY == top })
     }
 }

@@ -484,9 +484,10 @@ A run is one quiet line with no card: its summary and a chevron.
   line, tool rows, Working and Worked stay outside the bubbles.
 - Rows sit 10 pt apart, and a user's bubble has 8 pt more above and under
   it, so each turn reads as one block.
-- **An empty chat** of a new conversation puts the reply box in the middle
-  of the card, under its header rows, and a header above the box, until the
-  first message. The header is
+- **An empty chat** of a new conversation puts the reply box, as it is at one
+  line, in the middle of the card, under its header rows, and a header above
+  the box, until the first message. More lines grow the box downward: the
+  header and the box's top stay where they are. The header is
   the agent's program glyph (the one in the tab, 64 pt, at half opacity) with
   a phrase 14 pt under it in 26 pt semibold, picked at random when the chat
   view is made, with the reply box's placeholder that goes with it (after the
@@ -569,15 +570,15 @@ A run is one quiet line with no card: its summary and a chevron.
   the last one whose top is above the view's top, else the first row.
 - The app sets the scroll's place only for that and for Scroll to Bottom.
   It never gives the scroll view back a place the scroll view reported.
-- **Earlier rows.** When a chat has older rows, a small spinner is the
-  stack's first row, centered in a 28 pt row, with the messages' top padding
-  above it and the rows' 10 pt gap under it. There is no button: once the
-  view's top is within half a view of the stack's top, the next block (the
-  same rule: about 120 lines, at most 34 rows) comes above, and again after
-  each block while the view stays that near, so a scroll up goes on through
-  the whole chat. The rows in view stay where they are (the place on the top
-  row). The spinner goes once the first row shows. The rows that come stay
-  when the chat scrolls back to the bottom.
+- **Earlier rows.** When a chat has older rows, the stack's first row is a
+  28 pt row, with the messages' top padding above it and the rows' 10 pt gap
+  under it. There is no button: once the view's top is within half a view of
+  the stack's top, a small spinner shows in that row, and the next block (the
+  same rule: about 120 lines, at most 34 rows) comes above, again after each
+  block while the view stays that near, so a scroll up goes on through the
+  whole chat. The rows in view stay where they are (the place on the top
+  row). The row goes once the chat's first row is in the stack. The rows
+  that come stay when the chat scrolls back to the bottom.
 - **Resizing.** A narrow card (under 824 pt, where the column narrows too)
   lays its messages and its reply box out at a lone new width at once: a
   split's motion gives the card its final size once, so the messages and the
@@ -587,7 +588,8 @@ A run is one quiet line with no card: its summary and a chevron.
   its end, not at every frame. The reply box and the Scroll to Bottom button
   wait with the messages and take the new width in the same frame. Meanwhile
   the card clips them, or its fill shows beside them. Scrolled up, the view
-  keeps its place on the top row.
+  keeps its place on the top row. An empty chat, or one that loads, follows
+  the card at once: it has no rows to wrap.
 - **The end.** 32 pt stay free between the last row and the reply box (an
   empty last row, 22 pt, plus the rows' spacing).
 - **Scroll to Bottom.** While the bottom of the messages is more than 40 pt

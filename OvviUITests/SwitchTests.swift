@@ -22,9 +22,11 @@ extension OvviUITests {
         XCTAssertTrue(until(5) { last.exists && last.isHittable })
 
         // Every row: no more come later, which would change what the switches keep.
-        for _ in 0 ..< 30 where earlier.exists {
+        let first = row(pane, "user", "many 12 30")
+        for _ in 0 ..< 30 where !first.isHittable {
             chat.scroll(byDeltaX: 0, deltaY: 5000)
         }
+        XCTAssertTrue(first.isHittable)
         XCTAssertFalse(earlier.exists)
         XCTAssertGreaterThan(try rows(), 10)
         let top = try XCTUnwrap(steady(3) {
