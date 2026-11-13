@@ -823,3 +823,16 @@ Recordings in `.build/fb57/`: `r10-select-9.32.48.mov` (7.4 s: a drag-select in 
   the VM ("Zoom Pane" on the first tab's card); green on the fix with the zoom, move and replace tests.
 - **For the user.** Zoom a card in two tabs and switch between them; open the overview and hover the tabs: each tab
   shows its own zoomed card.
+
+### Simplification pass (round 2)
+
+- **Read.** `502bd00e..635e8e8f` with the ponytail eye: the key registry and the Shortcuts page, tab history and the
+  tab slide, closed pages and `outsideMainQueue` with its lint rule, Codex's session from argv, per-tab zoom, the
+  chat's loads and drops and `BoxInMiddle`, the explorer and Git sidebars, the selection after M2. No dead code, no
+  timers, no compat code, no history in comments; every rule there reads the same on This Mac and a remote machine.
+- **Fix.** Four modifier tables (glyphs, AppKit flags, chord names, Latency's glyphs) are one, `modifierKeys`; the
+  scopes' overlap reads plainly; the chat's drop reads the earlier rows' row and gap from the constants the layout
+  uses. No behaviour changes.
+- **Runs.** `make lint build test` green. VM: the recorded-key, ⌘/ panel, ⌃⇥, per-tab zoom and long-chat loads tests
+  green; testALongChatKeepsItsPlaceAndScrollsToTheBottom failed when macOS's "Ovvi Notifications" banner over the
+  card's header took the Split Right click (it opened System Settings); for the final CI round.
