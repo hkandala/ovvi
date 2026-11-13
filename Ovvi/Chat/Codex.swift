@@ -83,8 +83,7 @@ struct Codex: ChatAdapter {
                 continue
             }
             var ready = true
-            if let state = chat.store?.pane(chat.paneID)?.state, state != .needsYou,
-               let client = chat.store?.client,
+            if let state = chat.store?.pane(chat.paneID)?.state, state != .needsYou, let client = chat.store?.client,
                let screen = try? await client.recent(chat.paneID, lines: 8)
             {
                 ready = CodexRollout.ready(screen)

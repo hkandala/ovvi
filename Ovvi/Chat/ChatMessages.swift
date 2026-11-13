@@ -46,7 +46,7 @@ struct ChatMessages: View, Equatable {
     private static let budget = 120
     private static let earlierRow: CGFloat = 28, gap: CGFloat = 10
     /// How long the chat stays at the exact bottom, at rest, before it drops to the newest block: a drop at once
-    /// changed the scroll bar's size each time a scroll reached the bottom. A test's is shorter.
+    /// would change the scroll bar's size each time a scroll reached the bottom. A test's is shorter.
     private static let dropAfter = Duration.seconds(
         UserDefaults.standard.string(forKey: "chatDropSeconds").flatMap(Double.init) ?? 60,
     )

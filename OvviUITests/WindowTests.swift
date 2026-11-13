@@ -183,7 +183,7 @@ extension OvviUITests {
     }
 
     /// Add Machine in a new window's list connects the machine in that window: no other window opens. Return adds
-    /// the whole target typed, as the Add button does: it once added the first letter only.
+    /// the whole target typed, as the Add button does.
     func testAddMachineFromANewWindowConnectsInIt() throws {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         let first = mainWindows.firstMatch.identifier
