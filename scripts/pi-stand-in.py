@@ -7,7 +7,8 @@ format, reports its state to herdr and answers prompts on its terminal: "wait" o
 works until Esc and takes a message sent meanwhile after its tool, as pi steers, "/tree" moves the leaf back before
 the last user message, "tools" runs every kind of tool, "agents" ends its turn while herdr hears working until 1 is
 typed, a prompt of OVVI_STAND_IN_SCENE's turns plays that turn (scripts/welcome-scene/scene.py), anything else gets one
-command and the reply "Echo: <prompt>".
+command and the reply "Echo: <prompt>". OVVI_STAND_IN_LATE=<s>: its state's session line comes that late, as a
+remote machine's can.
 """
 import hashlib
 import json
@@ -174,8 +175,10 @@ def cleanup():
 def main():
     line(transcript, {"type": "session", "version": 3, "id": str(uuid.uuid4()),
                       "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime()), "cwd": os.getcwd()})
-    line(state, {"type": "session", "path": transcript})
     with terminal(cleanup):
+        # Raw first: setraw drops what came in, and a prompt can come while the session line is late.
+        time.sleep(float(os.environ.get("OVVI_STAND_IN_LATE", "0")))
+        line(state, {"type": "session", "path": transcript})
         say("pi stand-in " + state)
         stand_in.report("idle")
         text = ""

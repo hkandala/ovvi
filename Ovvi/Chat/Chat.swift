@@ -51,6 +51,7 @@ final class Chat {
     /// A card showed the chat: its TUI follows the agent too, so that a switch back shows the rows at once.
     @ObservationIgnored private(set) var shown = false
     @ObservationIgnored private var following: Task<Void, Never>?
+    @ObservationIgnored private var starting: Task<Void, Never>?
 
     init(adapter: any ChatAdapter, paneID: String, terminalID: String, store: HostStore, current: Bool) {
         self.adapter = adapter
@@ -119,12 +120,26 @@ final class Chat {
             Task { try? await client.sendInput(text, keys: [], pane: paneID) }
             return
         }
-        guard phase == .ready || phase == .working else { return }
+        // A dialog takes no message: its answers go first.
+        guard phase != .waiting else { return }
         let message = Outgoing(text: text)
         outgoing.removeAll(where: \.notSent)
         outgoing.append(message)
         draft = ""
+        // Typed while the agent starts (pi's session is read from its machine), it waits, dimmed, as one on its way
+        // does, and goes once the agent is ready, at most 30 s. One wait after another: messages go in their order.
+        let previous = starting
+        let ready = Task {
+            await previous?.value
+            for _ in 0 ..< 150 where phase == .starting {
+                try? await Task.sleep(for: .milliseconds(200))
+            }
+        }
+        starting = ready
         Task {
+            await ready.value
+            // Not to an agent started again in the pane: that one has a chat of its own.
+            guard live, phase == .ready || phase == .working else { return notSent(message.id) }
             let sent = await (try? client.prompt(text, pane: paneID)) != nil
             if !sent {
                 notSent(message.id)

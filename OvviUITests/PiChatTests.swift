@@ -53,9 +53,10 @@ extension OvviUITests {
         XCTAssertFalse(row(pane, "user", "later").exists)
     }
 
-    /// Its process lists no arguments, as npm's pi, whose process title overwrites them.
+    /// Its process lists no arguments, as npm's pi, whose process title overwrites them. Its session comes 8 s late:
+    /// the message typed meanwhile goes once pi is ready.
     func testAPiRunListsEveryKindOfTool() async throws {
-        let (tab, pane) = try await startChat(agent: 2, environment: "OVVI_STAND_IN_TITLE=1 ")
+        let (tab, pane) = try await startChat(agent: 2, environment: "OVVI_STAND_IN_TITLE=1 OVVI_STAND_IN_LATE=8 ")
         try await say("tools", in: pane)
         XCTAssertTrue(row(pane, "reply", "All tools.").exists(within: 5))
         let stack = element("chat.\(pane).stack")

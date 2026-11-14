@@ -302,6 +302,13 @@ extension OvviUITests {
         return try await poll("a pane beside the chat") { try await order(tab).first { $0 != pane } }
     }
 
+    /// One Return: a chat whose agent still starts sends it once the agent is ready (a remote pi's session comes
+    /// over ssh).
+    func say(_ text: String, in pane: String) async throws {
+        app.typeText(text + "\r")
+        XCTAssertTrue(row(pane, "user", text).exists(within: 15))
+    }
+
     func row(_ pane: String, _ kind: String, _ value: String) -> XCUIElement {
         app.descendants(matching: .any)
             .matching(NSPredicate(format: "identifier == %@ AND value == %@", "chat.\(pane).\(kind)", value)).firstMatch

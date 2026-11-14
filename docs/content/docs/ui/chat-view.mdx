@@ -340,8 +340,12 @@ line with the new leaf and `at`, the transcript's size at the move.
 
 ## Sending and stopping
 
-- **Send:** Return or the Send button gives `agent.prompt {target, text}`,
-  only while the agent is ready or working. ⇧Return and ⌥Return add a line.
+- **Send:** Return or the Send button gives `agent.prompt {target, text}`
+  while the agent is ready or working. A message sent while the agent starts
+  waits, dimmed, and goes once the agent is ready, in the order sent; after
+  30 s, or when a dialog opens first, it is "Not sent". While the agent waits
+  on a dialog, Return sends nothing. ⇧Return and
+  ⌥Return add a line.
   herdr pastes the text with bracketed paste and presses Enter. herdr refuses
   unless a foreground process has the agent's name.
 - While the agent works, Send stays on. Claude Code and OpenCode queue the
