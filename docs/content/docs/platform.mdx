@@ -33,6 +33,18 @@ description: "The codebase, dependencies, swipes and views, the tab bar and test
   with the app, and `SHA256SUMS`. The tag is the version people see; the
   build number is main's commit count, so it only grows. A local `make
   app` stamps the same two from the nearest `v*` tag behind HEAD.
+- **`install.sh`**, a file on each release: `curl -fsSL
+  https://github.com/hkandala/ovvi/releases/latest/download/install.sh | sh`
+  (`sh -s -- --version 0.1.0` for one release, `--dev` for Ovvi Tip). It
+  checks for macOS 26 and Apple silicon, checks the zip against `SHA256SUMS`,
+  puts the app in `/Applications` (else `~/Applications`) in place of an old
+  copy, asks to quit a running one, asks before it installs herdr (herdr's
+  own install, as the welcome's) and herdr's integrations for Claude Code,
+  Codex, Pi and OpenCode (`herdr integration install`), skips what is there,
+  and opens the app. curl adds no quarantine flag, so Gatekeeper never asks; a
+  zip that a browser downloaded opens only after System Settings ▸ Privacy &
+  Security ▸ Open Anyway (right-click Open no longer skips the check since
+  macOS 15).
 - **Ovvi Tip**, the dev build: a dispatch of `tip.yml` builds any commit (main
   by default) and replaces the rolling pre-release `tip` with `Ovvi-Tip.zip`.
   It is `Ovvi Tip.app`, `dev.ovvi.app.tip`, with a DEV badge on the icon, and

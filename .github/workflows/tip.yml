@@ -36,8 +36,8 @@ jobs:
           sha=$(git rev-parse HEAD)
           printf 'Ovvi Tip, the dev build of %s: %s\n\nInstall it beside Ovvi:\n\n```sh\n%s\n```\n' \
             "$sha" "$(git log -1 --format=%s)" \
-            'curl -fsSL https://github.com/hkandala/ovvi/releases/latest/download/install.sh | sh -s -- --dev' \
+            'curl -fsSL https://github.com/hkandala/ovvi/releases/download/tip/install.sh | sh -s -- --dev' \
             > .build/notes.md
           gh release delete tip --cleanup-tag --yes || true
           gh release create tip --target "$sha" --prerelease --title "Ovvi Tip ${sha::7}" \
-            --notes-file .build/notes.md .build/Ovvi-Tip.zip .build/SHA256SUMS
+            --notes-file .build/notes.md .build/Ovvi-Tip.zip .build/SHA256SUMS scripts/install.sh

@@ -37,5 +37,8 @@ jobs:
       - run: scripts/release-notes.sh "$GITHUB_REF_NAME" > .build/notes.md
       - name: publish
         run: |
-          gh release create "$GITHUB_REF_NAME" --verify-tag --title "Ovvi $VERSION" --notes-file .build/notes.md \
-            $([[ $VERSION == *-* ]] && echo --prerelease) ".build/Ovvi-$VERSION.zip" .build/SHA256SUMS
+          printf '\n---\n\nInstall it: `curl -fsSL %s | sh -s -- --version %s`\n' \
+            "https://github.com/hkandala/ovvi/releases/download/$GITHUB_REF_NAME/install.sh" "$VERSION" |
+            cat .build/notes.md - |
+            gh release create "$GITHUB_REF_NAME" --verify-tag --title "Ovvi $VERSION" --notes-file - \
+              $([[ $VERSION == *-* ]] && echo --prerelease) ".build/Ovvi-$VERSION.zip" .build/SHA256SUMS scripts/install.sh
