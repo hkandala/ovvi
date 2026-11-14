@@ -1447,3 +1447,9 @@ Round 3's tracks and the simplification pass (main up to 30326c5b), then the thr
   testAFileDroppedOnARemoteCardPastesItsCopysPath (new file name) runs on CI only: for the final round.
 - **For the user.** Take a screenshot, drop it on a terminal card, and ⌘-hover and ⌘-click the pasted path: the
   underline runs to `.png` and the image opens. Also a path with `\(`, `\'` or `\!` in it.
+
+### Track W4: toasts have a maximum width (item 61)
+
+61. "[r12-toast-1.15.50.png: a Git card's error toast across the card's whole width, cut with … before Copy and OK]
+    these toasts should have some max length, its covering full width? it should cover certain length and then be
+    capped with ..."
