@@ -1,5 +1,5 @@
 SHELL := /bin/bash -eo pipefail
-.PHONY: setup format lint web build build-tests test e2e vm-e2e run app dmg install icons
+.PHONY: setup format lint web build build-tests test e2e vm-e2e run app zip install icons
 
 DERIVED_DATA ?= .build/DerivedData
 XCODEBUILD := xcodebuild -project Ovvi.xcodeproj -scheme Ovvi -derivedDataPath $(DERIVED_DATA)
@@ -110,24 +110,32 @@ vm-e2e: build-tests
 run: build
 	open "$(DERIVED_DATA)/Build/Products/Debug/Ovvi Dev.app" $(if $(SESSION),--args -session $(SESSION))
 
-# Ad-hoc signed: fine on this Mac; another Mac needs right-click > Open once, and notifications need a real signing
-# identity. Only install and dmg get the installed app's bundle id: macOS keys saved windows and defaults by it.
+# Ad-hoc signed, with Hardened Runtime off: under it, an ad-hoc app cannot load Sparkle (dyld: "different Team IDs").
+# A copy that a browser downloaded opens only after System Settings > Privacy & Security > Open Anyway (curl adds no
+# quarantine, so install.sh skips that), and notifications need a real signing identity. Only install and zip get the
+# installed app's bundle id: macOS keys saved windows and defaults by it.
 BUNDLE_ID ?= dev.ovvi.app.release
 URL_SCHEME ?= ovvi-release
-install dmg: BUNDLE_ID = dev.ovvi.app
-install dmg: URL_SCHEME = ovvi
+install zip: BUNDLE_ID = dev.ovvi.app
+install zip: URL_SCHEME = ovvi
+# The version people see: the newest v* tag (release.yml passes its own); 0.1.0 before the first. The build number,
+# which Sparkle compares, is the commit count: it only grows on main.
+VERSION ?= $(or $(patsubst v%,%,$(shell git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null)),0.1.0)
+BUILD ?= $(shell git rev-list --count HEAD)
+APP := $(DERIVED_DATA)/Build/Products/Release/Ovvi.app
 app: web
 	$(XCODEBUILD) $(MAC) -configuration Release PRODUCT_BUNDLE_IDENTIFIER=$(BUNDLE_ID) OVVI_URL_SCHEME=$(URL_SCHEME) \
-		build $(NOWARN) $(BEAUTIFY)
-	@echo "$(DERIVED_DATA)/Build/Products/Release/Ovvi.app"
+		MARKETING_VERSION=$(VERSION) CURRENT_PROJECT_VERSION=$(BUILD) build $(NOWARN) $(BEAUTIFY)
+	@echo "$(APP)"
 
 # ~/.agents/skills: pi and Codex; ~/.claude/skills: Claude Code. -f replaces a dangling link, for which -e is false.
 install: app
 	rm -rf ~/Applications/Ovvi.app
-	cp -R $(DERIVED_DATA)/Build/Products/Release/Ovvi.app ~/Applications/
+	cp -R $(APP) ~/Applications/
 	for d in ~/.agents/skills ~/.claude/skills; do mkdir -p $$d; [ -e $$d/ovvi ] || ln -sfn $(CURDIR)/skills/ovvi $$d/ovvi; done
 
-dmg: app
-	rm -f .build/Ovvi.dmg
-	hdiutil create -volname Ovvi -srcfolder $(DERIVED_DATA)/Build/Products/Release/Ovvi.app -ov -format UDZO .build/Ovvi.dmg
-
+# A release's files (release.yml): the app zipped with the framework's symbolic links kept, and its checksum.
+zip: app
+	mkdir -p .build && rm -f .build/Ovvi-*.zip
+	ditto -c -k --sequesterRsrc --keepParent $(APP) .build/Ovvi-$(VERSION).zip
+	cd .build && shasum -a 256 Ovvi-$(VERSION).zip >SHA256SUMS

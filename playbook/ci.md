@@ -7,6 +7,8 @@ How CI runs, how to run part of it, and how to keep it green and fast.
 - **Workflows.** `.github/workflows/ci.yml` runs the checks on every push to main and on pull requests,
   except docs-only changes (`playbook/**`, `docs/**`, `resources/**`, `**/*.md`): those start no run. The
   UI tests run only on a dispatch.
+- **Releases.** `.github/workflows/release.yml` publishes a release from a version tag on main
+  ([release.md](release.md)).
 - **Docs site.** `.github/workflows/docs-deploy.yml` builds the docs and deploys them to the Vercel project
   `ovvi` when `docs/` changes; Vercel's own git deploys are off. Run the `vercel` CLI only from the repo
   root: in another folder `vercel pull --yes` creates and links a new project.

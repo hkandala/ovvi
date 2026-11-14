@@ -67,7 +67,7 @@ Problems that came back, and the rule that stops each. How we work is in
   `-session` loaded the user's machines, and the new-window view tried their SSH.
 - **Every app with the installed bundle id shares its saved windows and defaults.** A Release build run by hand (a
   measure) quit with its throwaway session's window, and the user's next launch restored that window instead of
-  theirs. `make app` builds `dev.ovvi.app.release` (scheme `ovvi-release://`); only `make install` and `make dmg`
+  theirs. `make app` builds `dev.ovvi.app.release` (scheme `ovvi-release://`); only `make install` and `make zip`
   build `dev.ovvi.app`. A measure still shares `~/.config/ovvi`: pass `-configFolder`.
 - **Each test restores what it changes** (defaults, herdr focus, the pointer, leftover sessions) and reads
   fixture ids from herdr instead of assuming them; otherwise it passes alone and fails in its shard.

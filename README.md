@@ -36,7 +36,7 @@ Website and docs: [ovvi.dev](https://ovvi.dev).
 make setup      # Homebrew tools and the git hooks
 make install    # a Release build copied to ~/Applications, and the ovvi skill linked for agents
 make app        # the Release app only
-make dmg        # a disk image of it
+make zip        # the release's zip of it and its SHA256SUMS (playbook/release.md)
 make run        # build and open the app (SESSION=<name> for one session; agents: ovvi-dev-* only)
 make format     # SwiftLint's fixes and SwiftFormat
 make lint build test   # checks, the build, the unit tests and the docs and license checks

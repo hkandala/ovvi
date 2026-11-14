@@ -1,0 +1,34 @@
+# Releases
+
+A version tag on main publishes a release: `.github/workflows/release.yml` checks that the tag is on main, runs
+`make lint test`, builds `make zip` (the Release app, ad-hoc signed, Hardened Runtime off) and publishes a GitHub
+Release with `Ovvi-<version>.zip`, `SHA256SUMS` and the notes of `scripts/release-notes.sh`. The tag sets the version
+(`v0.2.0` is 0.2.0); the build number is main's commit count (`git rev-list --count`). A local `make app` stamps
+the same two values from the newest `v*` tag. A tag with a suffix (`v0.2.0-rc.1`) makes a pre-release, which
+GitHub's "latest" skips.
+
+## Before a tag
+
+1. A full run and the on-demand tests on the commit, both green ([ci.md](ci.md#running-part-of-it)):
+   `gh workflow run ci.yml --ref main` and `gh workflow run ci.yml --ref main -f on_demand=true`.
+2. A default plugin whose source changed since the last tag gets a higher version in its `package.json`
+   (`git diff --stat <last tag> -- plugins/builtin`): an app with a newer version replaces an unedited copy at launch
+   ([Packages](../docs/content/docs/plugins/packages.mdx)).
+
+## Tag
+
+An annotated tag: its message opens the notes (the highlights, in your words), then the `feat` subjects since the
+last release, then the `fix` and `perf` subjects, folded.
+
+```sh
+git tag -a v0.2.0 -m "The highlights" && git push origin v0.2.0
+```
+
+## Check
+
+- `gh run watch $(gh run list --workflow release.yml --limit 1 --json databaseId --jq '.[0].databaseId')`, then the
+  release page: the zip, `SHA256SUMS`, the notes.
+- Install it on a clean Mac (the Tart VM) and open it once.
+
+A failed run publishes nothing: fix it on main, move the tag (`git tag -f -a`, `git push -f origin <tag>`), and it
+runs again. To drop a test release: `gh release delete <tag> --cleanup-tag --yes`.

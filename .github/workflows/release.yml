@@ -1,0 +1,42 @@
+name: release
+
+# A version tag on main publishes a release (playbook/release.md); a tag with a suffix (v0.2.0-rc.1) a pre-release,
+# which GitHub's "latest" skips.
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+', 'v[0-9]+.[0-9]+.[0-9]+-*']
+
+permissions:
+  contents: write
+
+# Two tags pushed together publish one after the other.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: xcode-27
+    timeout-minutes: 30
+    environment: release
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # the tags, and the commit count for the build number
+      - name: the tag is on main, after the previous release
+        run: |
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+          prev=$(git describe --tags --abbrev=0 --match 'v[0-9]*' "$GITHUB_SHA^" 2>/dev/null) || prev=
+          [ -z "$prev" ] || git merge-base --is-ancestor "$prev" "$GITHUB_SHA"
+          echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+      - run: brew update --quiet && brew bundle
+      - run: make lint
+      - run: make test
+      - run: make zip
+      - run: scripts/release-notes.sh "$GITHUB_REF_NAME" > .build/notes.md
+      - name: publish
+        run: |
+          gh release create "$GITHUB_REF_NAME" --verify-tag --title "Ovvi $VERSION" --notes-file .build/notes.md \
+            $([[ $VERSION == *-* ]] && echo --prerelease) ".build/Ovvi-$VERSION.zip" .build/SHA256SUMS
