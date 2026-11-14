@@ -1351,3 +1351,12 @@ Round 3's tracks and the simplification pass (main up to 30326c5b), then the thr
 - **Conflicts.** None in the registry or macOS's fixed keys; the plugins' keys are ⌘E, ⇧⌘E, ⇧⌘., ⌥⌘F; CodeMirror
   binds no ⇧⌘C; a terminal program never gets ⌘ keys (the menu goes first). The detached Web Inspector's own ⇧⌘C
   (Start Element Selection) loses to the menu while a card has an address, as its other ⌘ keys already do.
+- **Runs.** VM green: testCopyAddressCopiesEachCardsAddress (a terminal's folder, a browser's URL, File Explorer's
+  open file, a Git commit and Working Tree's root, an agent's session id, each read from the pasteboard; the cue in
+  the frames, `~/Downloads/ovvi-research/p58y/`), testKeyboardShortcutsPanelListsTheCommandsKeys (now checks ⇧⌘C),
+  testARecordedKeyShowsEverywhereAndASwapMovesTheOther. The first run failed on a wait for the Git page's title, which
+  the copy does not need (the Git page loads slowly in the VM): removed.
+- **For the user.** ⇧⌘C on a browser, a terminal, an agent (terminal and chat view), File Explorer's tree and a file
+  in it, a Git commit, Working Tree, a Tart VM, and in a floating window (it copies, with no cue there); the card's menu
+  names what it copies. Open question: on File Explorer's tree and the Git home, copy the selected row instead? That
+  needs the page to tell the app its selection, a new plugin call (API 4).
