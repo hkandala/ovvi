@@ -688,14 +688,26 @@ A run is one quiet line with no card: its summary and a chevron.
 
 - Chat | TUI is in the card header, not a swipe. TUI is the agent's own
   terminal interface.
-- A card of a marked pane opens on its TUI; the user switches to Chat. After
-  [Relaunch with Chat](#relaunch-with-chat), for an agent that an agent
-  started with `ovvi agent`, and for every new agent when Settings ▸ Agents ▸
-  Open new agents in is Chat ([Settings](/docs/ui/settings#agents)), it opens
-  on the chat. An agent flips it with
-  `ovvi view` ([CLI](/docs/agent-control/cli#agent-chat-and-view)). The
-  choice is kept in memory per pane, for every window of the session. The card keeps
+- A new agent's card opens on Settings ▸ Agents ▸ Open new agents in
+  ([Settings](/docs/ui/settings#agents)). After
+  [Relaunch with Chat](#relaunch-with-chat), and for an agent that an agent
+  started with `ovvi agent`, it opens on the chat. An agent flips it with
+  `ovvi view` ([CLI](/docs/agent-control/cli#agent-chat-and-view)). The card keeps
   the keyboard across a switch: the reply box or the terminal.
+- **Each pane keeps its view**, in every window of the session and after the
+  app relaunches. The app saves the view of each chat pane on the pane's
+  machine, in `$HOME/.local/state/ovvi/<session>/views.json`, by terminal id
+  (`{"term_…": "chat"}`). It saves when a chat first shows and at each switch,
+  and reads the file once, after the session's first snapshot. A chat with no
+  saved view (one that no Ovvi showed yet) opens on the setting. A new launch
+  in the pane (New Pane, Relaunch with Chat) decides again.
+- The entry goes with the pane's terminal: at once when the app sees the
+  terminal go (the pane closed, its shell ended), else at the next read. A
+  terminal id stays through moves and a live update of herdr. A cold restart
+  of herdr gives new ids, but it also starts every agent again without Ovvi's
+  flags, so no pane has a chat until Relaunch with Chat, which opens on the
+  chat. Simpler choice: two Macs on one remote session each write the whole
+  file, and the last write wins.
 - A floated chat pane shows its chat in its floating window, with Chat | TUI
   in the window's title row
   ([Floating pane](/docs/ui/window#floating-pane)).

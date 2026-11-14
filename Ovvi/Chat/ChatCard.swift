@@ -15,9 +15,54 @@ extension HostStore {
         // A new conversation only from a launch that resumed nothing.
         let chat = Chat(adapter: adapter, paneID: pane.id, terminalID: terminalID, store: self,
                         current: launch?.fresh == true)
-        chat.showsChat = launch?.opensChat == true
         chats[terminalID] = chat
+        chat.showsChat = launch?.opensChat ?? views?[terminalID].map { $0 == "chat" }
+            ?? (AppSettings().agentView == .chat)
         return chat
+    }
+
+    /// On the pane's machine, beside the cards' state files: it outlives the app, and a terminal's id survives moves.
+    /// A cold restart of herdr gives new ids, but it also ends every chat (herdr starts the agents again without the
+    /// flags). ponytail: two Macs on one remote session write the whole file, last writer wins; one file per pane if
+    /// that shows.
+    private var viewsPath: String {
+        ".local/state/ovvi/\(session)/views.json"
+    }
+
+    /// After the first snapshot, so that terminals gone meanwhile go from the file.
+    func loadViews() async {
+        let text = await machine.exec().read(home: viewsPath)
+        let saved = text.flatMap { try? JSONDecoder().decode([String: String].self, from: Data($0.utf8)) } ?? [:]
+        let live = Set(last?.panes.compactMap(\.terminalID) ?? [])
+        var views = saved.filter { live.contains($0.key) }
+        // Chats made ahead of the read.
+        for chat in chats.values {
+            if let view = views[chat.terminalID] {
+                chat.showsChat = view == "chat"
+            } else {
+                views[chat.terminalID] = chat.showsChat ? "chat" : "tui"
+            }
+        }
+        self.views = views
+        if views != saved {
+            writeViews()
+        }
+    }
+
+    func keep(_ chat: Chat) {
+        let view = chat.showsChat ? "chat" : "tui"
+        guard views != nil, views?[chat.terminalID] != view else { return }
+        views?[chat.terminalID] = view
+        writeViews()
+    }
+
+    func writeViews() {
+        guard let views, let data = try? JSONEncoder().encode(views) else { return }
+        let previous = viewsWrite, path = viewsPath, machine = machine
+        viewsWrite = Task {
+            await previous?.value
+            await machine.exec().write(home: path, String(decoding: data, as: UTF8.self))
+        }
     }
 }
 

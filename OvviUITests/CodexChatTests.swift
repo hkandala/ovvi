@@ -36,8 +36,7 @@ extension OvviUITests {
         element("workspace.w2").click()
         XCTAssertTrue(element("tab.\(tab)").exists(within: 3))
         element("tab.\(tab)").click()
-        XCTAssertTrue(element("pane.\(pane).view.tui").has(\.isSelected, true, within: 10))
-        element("pane.\(pane).view.chat").click()
+        XCTAssertTrue(element("pane.\(pane).view.chat").has(\.isSelected, true, within: 10))
         XCTAssertTrue(row(pane, "reply", "Allowed.").exists(within: 5))
 
         try await say("new", in: pane)

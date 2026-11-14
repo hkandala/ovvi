@@ -52,8 +52,7 @@ extension OvviUITests {
         element("workspace.w2").click()
         XCTAssertTrue(element("tab.\(tab)").exists(within: 3))
         element("tab.\(tab)").click()
-        XCTAssertTrue(element("pane.\(pane).view.tui").has(\.isSelected, true, within: 10))
-        element("pane.\(pane).view.chat").click()
+        XCTAssertTrue(element("pane.\(pane).view.chat").has(\.isSelected, true, within: 10))
         try expectNoEmptyChat(pane, until: row(pane, "reply", "Done."))
         XCTAssertTrue(until(3) { worked.count == 3 }, "\(worked.count)")
     }
@@ -95,6 +94,25 @@ extension OvviUITests {
         let top = table.frame.minY
         table.scroll(byDeltaX: 0, deltaY: 300)
         XCTAssertTrue(until(2) { table.frame.minY > top + 50 }, "the chat did not scroll over the table: \(top)")
+    }
+
+    /// Each agent card opens again on the view it showed, whatever Settings' first view of new agents says.
+    func testEachChatComesBackOnItsViewAfterARelaunch() async throws {
+        let (chatTab, chat) = try await startChat()
+        let (tuiTab, tui) = try await startChat(chat: false)
+        XCTAssertTrue(element("pane.\(tui).view.tui").has(\.isSelected, true, within: 15))
+        for first in ["terminal", "chat"] {
+            step("Relaunched with new agents opening in \(first)")
+            relaunch(one, ["-agentView", first])
+            XCTAssertTrue(element("workspace.w2").exists(within: connect))
+            element("workspace.w2").click()
+            element("tab.\(chatTab)").click()
+            XCTAssertTrue(element("pane.\(chat).view.chat").has(\.isSelected, true, within: 10))
+            XCTAssertTrue(element("chat.\(chat).composer").exists(within: 5))
+            element("tab.\(tuiTab)").click()
+            XCTAssertTrue(element("pane.\(tui).view.tui").has(\.isSelected, true, within: 10))
+            XCTAssertFalse(element("chat.\(tui).composer").exists)
+        }
     }
 
     /// Each look is one snapshot: none until `shown` holds the empty chat's header.

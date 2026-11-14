@@ -7,7 +7,8 @@ struct Launch {
     let token: String
     /// The pane's asks when the line went in: an answer to an earlier ask can show the program ahead of the agent.
     let after: Int
-    let opensChat: Bool
+    /// Nil for one read back from herdr: the pane's saved view decides.
+    let opensChat: Bool?
     /// Starts a new conversation (resumes none).
     let fresh: Bool
     var pids: Set<Int> = []
@@ -42,7 +43,7 @@ extension HostStore {
               let parts = new.chat?.split(separator: " ").map(String.init), parts.count == 3,
               Chooser.agent(parts[0]) != nil, let token = ChatAdapters.token(parts[1]) else { return }
         let pids = Set(parts[2].split(separator: ",").compactMap { Int($0) })
-        launches[terminal] = Launch(command: parts[0], token: token, after: 0, opensChat: false, fresh: false,
+        launches[terminal] = Launch(command: parts[0], token: token, after: 0, opensChat: nil, fresh: false,
                                     pids: pids)
     }
 

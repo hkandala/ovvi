@@ -59,6 +59,9 @@ final class HostStore {
     }
 
     @ObservationIgnored var chats: [String: Chat] = [:]
+    /// Chat or TUI by terminal (`views.json`), nil until read.
+    @ObservationIgnored var views: [String: String]?
+    @ObservationIgnored var viewsWrite: Task<Void, Never>?
     /// Not observed: an observed write (`program`, `choosers`) follows each change.
     @ObservationIgnored var launches: [String: Launch] = [:]
     @ObservationIgnored let writes = Gate(1)
@@ -192,6 +195,7 @@ final class HostStore {
                 if !loadedSessions {
                     loadedSessions = true
                     Task { [machine, session] in await machine.exec().pruneState(session: session) }
+                    Task { await loadViews() }
                     Task { [machine] in
                         if let script = AgentCommands.script {
                             await machine.exec().prepareAgent(script: script)

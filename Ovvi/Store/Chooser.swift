@@ -169,6 +169,10 @@ extension HostStore {
             chats = chats.filter { !closed.contains($0.key) }
         }
         launches = launches.filter { !closed.contains($0.key) }
+        if let views, views.keys.contains(where: closed.contains) {
+            self.views = views.filter { !closed.contains($0.key) }
+            writeViews()
+        }
     }
 
     func key(_ event: NSEvent, _ chooser: Chooser, page: Page?) {

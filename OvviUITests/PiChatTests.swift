@@ -73,9 +73,7 @@ extension OvviUITests {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         element("workspace.w2").click()
         element("tab.\(tab)").click()
-        let chat = element("pane.\(pane).view.chat")
-        XCTAssertTrue(chat.exists(within: 10))
-        chat.click()
+        XCTAssertTrue(element("pane.\(pane).view.chat").has(\.isSelected, true, within: 10))
         XCTAssertTrue(row(pane, "reply", "All tools.").exists(within: 5))
     }
 

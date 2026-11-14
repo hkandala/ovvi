@@ -26,7 +26,10 @@ final class Chat {
 
     @ObservationIgnored private var seen = 0
 
-    var showsChat = false
+    var showsChat = false {
+        didSet { store?.keep(self) }
+    }
+
     /// The history holds what the agent wrote: the chat shows a loader until then, its empty state only once it knows
     /// the conversation is new. False for a chat found running or resumed until its transcript is read, and for one
     /// nothing followed for a while.
