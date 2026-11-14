@@ -2,7 +2,9 @@
 
 A version tag on main publishes a release: `.github/workflows/release.yml` checks that the tag is on main, runs
 `make lint test`, builds `make zip` (the Release app, ad-hoc signed, Hardened Runtime off) and publishes a GitHub
-Release with `Ovvi-<version>.zip`, `SHA256SUMS` and the notes of `scripts/release-notes.sh`. The tag sets the version
+Release with `Ovvi-<version>.zip`, `SHA256SUMS`, `install.sh`, the notes of `scripts/release-notes.sh` and
+Sparkle's feed, `appcast.xml` (`scripts/appcast.sh`). The build job holds no secret; the publish job (Ubuntu, the
+`release` environment) signs the zip with `SPARKLE_PRIVATE_KEY` and runs only the tag's own scripts. The tag sets the version
 (`v0.2.0` is 0.2.0); the build number is main's commit count (`git rev-list --count`). A local `make app` stamps
 the same two values from the nearest `v*` tag behind HEAD, so a build at the tag matches the release. A tag with a suffix (`v0.2.0-rc.1`) makes a pre-release, which
 GitHub's "latest" skips.

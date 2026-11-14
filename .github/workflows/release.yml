@@ -15,12 +15,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
+  # No secret here: the key signs in publish, which runs no build tools.
+  build:
     runs-on: xcode-27
     timeout-minutes: 30
-    environment: release
-    env:
-      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -34,11 +32,41 @@ jobs:
       - run: make lint
       - run: make test
       - run: make zip
-      - run: scripts/release-notes.sh "$GITHUB_REF_NAME" > .build/notes.md
+      - run: |
+          scripts/release-notes.sh "$GITHUB_REF_NAME" > .build/notes.md
+          plutil -extract CFBundleVersion raw .build/DerivedData/Build/Products/Release/Ovvi.app/Contents/Info.plist > .build/build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release
+          path: |
+            .build/Ovvi-*.zip
+            .build/SHA256SUMS
+            .build/notes.md
+            .build/build
+          retention-days: 1
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: release
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: release
+          path: .build
       - name: publish
         run: |
-          printf '\n---\n\nInstall it: `curl -fsSL %s | sh -s -- --version %s`\n' \
-            "https://github.com/hkandala/ovvi/releases/download/$GITHUB_REF_NAME/install.sh" "$VERSION" |
+          version=${GITHUB_REF_NAME#v} zip=Ovvi-${GITHUB_REF_NAME#v}.zip
+          url=https://github.com/hkandala/ovvi/releases/download/$GITHUB_REF_NAME
+          scripts/appcast.sh Ovvi ".build/$zip" "$url/$zip" "$version" "$(cat .build/build)" .build/notes.md \
+            > .build/appcast.xml
+          printf '\n---\n\nInstall it: `curl -fsSL %s/install.sh | sh -s -- --version %s`\n' "$url" "$version" |
             cat .build/notes.md - |
-            gh release create "$GITHUB_REF_NAME" --verify-tag --title "Ovvi $VERSION" --notes-file - \
-              $([[ $VERSION == *-* ]] && echo --prerelease) ".build/Ovvi-$VERSION.zip" .build/SHA256SUMS scripts/install.sh
+            gh release create "$GITHUB_REF_NAME" --verify-tag --title "Ovvi $version" --notes-file - \
+              $([[ $version == *-* ]] && echo --prerelease) ".build/$zip" .build/SHA256SUMS .build/appcast.xml \
+              scripts/install.sh

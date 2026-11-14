@@ -18,26 +18,57 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  tip:
+  # No secret here: it runs the code of any ref. The key signs in publish, which runs main's scripts only.
+  build:
     runs-on: xcode-27
     timeout-minutes: 30
-    environment: release
-    env:
-      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref }}
           fetch-depth: 0 # the tags for the version, and the commit count for the build number
       - run: make zip TIP=1
+      - run: |
+          [ -f .build/Ovvi-Tip.zip ] || { echo "::error::${{ inputs.ref }} predates Ovvi Tip"; exit 1; }
+          plist=".build/DerivedData/Build/Products/Release/Ovvi Tip.app/Contents/Info.plist"
+          plutil -extract CFBundleShortVersionString raw "$plist" > .build/version
+          plutil -extract CFBundleVersion raw "$plist" > .build/build
+          sha=$(git rev-parse HEAD)
+          echo "$sha" > .build/sha
+          printf 'Ovvi Tip, the dev build of %s: %s\n' "$sha" "$(git log -1 --format=%s)" > .build/notes.md
+      - uses: actions/upload-artifact@v7
+        with:
+          name: tip
+          path: |
+            .build/Ovvi-Tip.zip
+            .build/SHA256SUMS
+            .build/notes.md
+            .build/version
+            .build/build
+            .build/sha
+          retention-days: 1
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: release
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: tip
+          path: .build
       - name: publish
         run: |
-          [ -f .build/Ovvi-Tip.zip ] || { echo "::error::${{ inputs.ref }} predates Ovvi Tip"; exit 1; }
-          sha=$(git rev-parse HEAD)
-          printf 'Ovvi Tip, the dev build of %s: %s\n\nInstall it beside Ovvi:\n\n```sh\n%s\n```\n' \
-            "$sha" "$(git log -1 --format=%s)" \
-            'curl -fsSL https://github.com/hkandala/ovvi/releases/download/tip/install.sh | sh -s -- --dev' \
-            > .build/notes.md
+          sha=$(cat .build/sha) url=https://github.com/hkandala/ovvi/releases/download/tip
+          scripts/appcast.sh "Ovvi Tip" .build/Ovvi-Tip.zip "$url/Ovvi-Tip.zip" "$(cat .build/version)" \
+            "$(cat .build/build)" .build/notes.md > .build/appcast.xml
+          printf '\nInstall it beside Ovvi: `curl -fsSL %s/install.sh | sh -s -- --dev`\n' "$url" |
+            cat .build/notes.md - > .build/body.md
           gh release delete tip --cleanup-tag --yes || true
-          gh release create tip --target "$sha" --prerelease --title "Ovvi Tip ${sha::7}" \
-            --notes-file .build/notes.md .build/Ovvi-Tip.zip .build/SHA256SUMS scripts/install.sh
+          gh release create tip --target "$sha" --prerelease --title "Ovvi Tip ${sha::7}" --notes-file .build/body.md \
+            .build/Ovvi-Tip.zip .build/SHA256SUMS .build/appcast.xml scripts/install.sh
