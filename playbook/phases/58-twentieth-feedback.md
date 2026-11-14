@@ -1303,3 +1303,11 @@ Round 3's tracks and the simplification pass (main up to 30326c5b), then the thr
 
 56. "one more thing, can we add an option in settings to toggle animations on and off, with default being on, and
     check through entire app where we have animations and we should disable those and make everything instant"
+
+### Track V3: a card remembers Chat or TUI over a relaunch (item 57)
+
+57. "another thing i noticed is, ovvi doesn't remember whether i am using chat view or terminal view for agent sessions,
+    like i have opened few sessions in chat mode and few in tui mode, when i restart, everything goes to default mode
+    as per the settings which is tui right now, it should remember per session thing somehow, also can you give me full
+    list of what's stored in herdr sessions, what's in file states on the machines, and what's within our app data,
+    give me full breakdown of it in a dark minimal html report"
