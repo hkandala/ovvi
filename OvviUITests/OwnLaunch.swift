@@ -26,7 +26,6 @@ extension OvviUITests {
         "testARemoteWindowOpensAnotherSessionOfItsMachine",
         "testATabClickComesIntoViewWithoutAFlicker",
         "testATabComesIntoViewWithoutAFlicker",
-        "testATabThatOpensOutOfViewSlidesIntoView",
         "testAWorkspaceSwitchMakesOnlyTheCapsulesInView",
         "testAddingAKeyHostOpensItInANewWindowWithoutAsking",
         "testAnEvictedCardComesBackWithItsPicture",

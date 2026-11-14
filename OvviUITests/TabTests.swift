@@ -207,8 +207,12 @@ extension OvviUITests {
     }
 
     func testATabThatOpensOutOfViewSlidesIntoView() async throws {
-        relaunch(one, ["-recordMotion", "YES"])
         let (tabs, pane) = try await newWorkspace("opens", tabs: 8)
+        // After the tabs: a snapshot after the click that brings the last ones would open them in the background.
+        relaunch(one, ["-recordMotion", "YES"])
+        let row = element("workspace.\(workspace(of: tabs[0]))")
+        XCTAssertTrue(row.exists(within: connect))
+        row.click()
         let first = element("tab.\(tabs[0])"), rowEnd = element("titlebar.overview").frame.minX - 8
         XCTAssertTrue(first.has(\.isSelected, true, within: 3))
         XCTAssertTrue(element("tabs.fades").has(\.stringValue, "trailing", within: 2))
@@ -220,8 +224,10 @@ extension OvviUITests {
         // It glows as it opens; a tab that opens selected does not.
         let glowed = element("tabs.glowed")
         XCTAssertTrue(glowed.has(\.stringValue, tab, within: 3), glowed.stringValue)
+        let before = try await tabIDs()
         app.typeKey("t", modifierFlags: .command)
-        XCTAssertTrue(element("tabs.count").has(\.stringValue, "10", within: 3))
+        let made = try await newTabID(after: before)
+        XCTAssertTrue(element("tab.\(made)").has(\.isSelected, true, within: 3))
         let next = try await createTab(in: workspace(of: tabs[0])).tab
         XCTAssertTrue(glowed.has(\.stringValue, "\(tab), \(next)", within: 3), glowed.stringValue)
     }

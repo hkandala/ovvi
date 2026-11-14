@@ -6,6 +6,8 @@ struct TabBar: View {
     static let height: CGFloat = 34
     static let inset: CGFloat = 2
     static let radius: CGFloat = 17
+    /// Inside the capsule's height, padded by `inset` on top and bottom.
+    static let pill = RoundedRectangle(cornerRadius: radius - inset, style: .continuous)
 
     let workspace: HostStore.Workspace
     let page: Page
@@ -22,6 +24,7 @@ struct TabBar: View {
     @State private var made = 0
     /// Tabs that opened in the background, until their glow ends.
     @State private var opened: Set<String> = []
+    /// The tests' record of the glows shown.
     @State private var glowed: [String] = []
     @Environment(\.look) private var look
 
@@ -65,8 +68,7 @@ struct TabBar: View {
                                 }
                                 .background {
                                     if index == selected {
-                                        Pill(shape: RoundedRectangle(cornerRadius: Self.radius - Self.inset,
-                                                                     style: .continuous))
+                                        Pill(shape: Self.pill)
                                             .padding(.vertical, Self.inset).allowsHitTesting(false)
                                             .transition(.identity)
                                     }
@@ -150,6 +152,11 @@ struct TabBar: View {
                 }
                 if old[1] != shown {
                     clicked = nil
+                    // An open that selects its tab once herdr answers: its snapshot may show the tab first.
+                    opened.remove(shown)
+                }
+                if switched {
+                    opened.removeAll()
                 }
             }
         }
@@ -190,20 +197,22 @@ private struct OpenGlow: View {
     @State private var lit = false
 
     var body: some View {
-        RoundedRectangle(cornerRadius: TabBar.radius - TabBar.inset, style: .continuous)
-            .strokeBorder(Color.accentColor, lineWidth: 1.5)
+        TabBar.pill.strokeBorder(Color.accentColor, lineWidth: 1.5)
             .shadow(color: .accentColor.opacity(0.6), radius: 3)
             .padding(.vertical, TabBar.inset)
             .opacity(lit ? 1 : 0)
             .allowsHitTesting(false)
             .accessibilityHidden(true)
-            .onAppear {
-                // Reduce Motion: no fade, the border shows and goes at once.
-                let reduced = Animation.reduced
-                withAnimation(reduced ? nil : .easeIn(duration: 0.15)) { lit = true } completion: {
-                    withAnimation(reduced ? .linear(duration: 0).delay(0.6) : .easeOut(duration: 0.5).delay(0.15)) {
-                        lit = false
-                    } completion: { done() }
+            .task {
+                // Reduce Motion: no fade, the border shows and goes at once. A nil animation's completion runs in the
+                // same update, which then never shows the border.
+                if Animation.reduced {
+                    lit = true
+                    try? await Task.sleep(for: .seconds(0.6))
+                    return done()
+                }
+                withAnimation(.easeIn(duration: 0.15)) { lit = true } completion: {
+                    withAnimation(.easeOut(duration: 0.5).delay(0.15)) { lit = false } completion: { done() }
                 }
             }
             .onDisappear(perform: done)

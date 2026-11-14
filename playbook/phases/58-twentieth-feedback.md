@@ -1240,6 +1240,32 @@ Round 3's tracks and the simplification pass (main up to 30326c5b), then the thr
     that is opened, only for the ones through cmd+click, like basically show the tab pill border like fade in and fade
     out quickly, to indicate that tab has opened, if that makes sense"
 
+#### Track T3: Findings
+
+- **Fix.** The branch that slides a background tab (⌘-click, an agent, a plugin, another client) also marks it; its
+  capsule draws the pill's shape as a 1.5 pt accent border with a 3 pt accent shadow, in view or out: 0.15 s ease-in,
+  0.15 s held, 0.5 s ease-out. The glow starts on the capsule's own appear: the lazy row makes an out-of-view capsule
+  only as the slide nears it, so a value animated by the bar was already off by then. It ends when its capsule leaves
+  (a space switch, a lazy rebuild never replays it). ⌘T's stand-in selects in the same update, and its swap for
+  herdr's id keeps the count: no glow.
+- **Cause (review).** Opens that select only once herdr answers (Move Pane to Tab ▸ New Tab, a plain Open in New Tab,
+  a tab dropped on a space) can show the tab unselected for a snapshot first: a selection now drops its mark. Filmed:
+  a Move Pane to Tab ▸ New Tab showed no glow.
+- **Cause (Reduce Motion).** Filmed in the VM with Reduce Motion on: a `nil`-animation `withAnimation`'s completion
+  ran in the same update, so the border never showed. **Fix:** under Reduce Motion the border shows at once and goes
+  after 0.6 s, one `Task.sleep` (there is no animation to time it).
+- **Decisions.** Timings as the brief proposed, unchanged after the films: the glow reads clearly and is gone within
+  0.8 s. Two background tabs in one snapshot glow only the last, as only it slides.
+- **For the user.** ⌘-click a link with the bar full and not full, in Glass and Classic, dark and light: the new tab's
+  border lights blue and fades. ⌘T and Move Pane to Tab ▸ New Tab: no glow. Reduce Motion: a short plain highlight.
+- **Cause (a test race).** `newWorkspace` clicks the new space's row once herdr made its tabs, not once the app shows
+  them: a snapshot after the click that brings the last tabs opens them in the background, and the bar slides to its
+  end (seen in the VM right after a launch). The glow test relaunches after `newWorkspace`, then clicks the row;
+  other users of the helper with several tabs keep the race.
+- **Runs.** VM: TabTests and TitleRowTests (19) green on the head, the glow test also with Reduce Motion on (as on
+  CI). Films before and after (Glass and Classic, dark and light, in and out of view, ⌘T, Move Pane to Tab ▸ New
+  Tab, Reduce Motion) and sheets in `~/Downloads/ovvi-research/p58t3/`. Review: `~/Downloads/ovvi-research/p58t3/review.md`.
+
 ### Track E7: hidden files are dimmed like ignored ones (item 55)
 
 55. "when the hidden files are shown on cmd+shift+. can we show them dimmed similar to git ignored ones, and make the
