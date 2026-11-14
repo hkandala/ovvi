@@ -19,8 +19,9 @@ export default async function main(ovvi) {
       line(part, `${error.code} ${error.message}`)
     }
   }
+  // Above the lines: the lines grow as the test goes, and a button pushed below the card takes no click.
   const button = (title, fn) => {
-    const node = document.body.appendChild(document.createElement("button"))
+    const node = document.body.insertBefore(document.createElement("button"), list)
     node.textContent = title
     node.onclick = fn
   }
