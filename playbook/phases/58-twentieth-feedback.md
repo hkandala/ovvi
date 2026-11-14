@@ -1254,14 +1254,21 @@ Round 3's tracks and the simplification pass (main up to 30326c5b), then the thr
   its name; its icon still dims. Explorer 1.15.3, API stays 3.
 - **Decisions.** As Finder: each hidden item dims, and the rows inside a shown hidden folder (`.github/workflows`)
   look normal, since they are not hidden themselves. So hidden rows cannot take Git's `ignored` status: pierre gives
-  it to every row under an ignored folder. Pierre's row decoration gives each hidden row a word, "Hidden", drawn
-  nowhere (1 pt, clipped) and read by VoiceOver; the trees' CSS dims a row that has it while the trees carry
-  `data-dim`, the setting. The word is also the only sign XCUITest can read (CI's screenshots show no web content).
-  Outside a repository, a long hidden name cuts 5 pt sooner (the word's lane adds one gap): left as it is.
-- **Runs.** FilesTests' ⇧⌘. step now checks that `.gitignore` carries "Hidden" and `a.txt` does not, turns the
-  setting off in Settings ▸ Plugins (the word goes), and on again. VM on the old code (5a01673a): red at the first
-  check. RUNS_AFTER
+  it to every row under an ignored folder. Pierre's row decoration gives each hidden row an empty mark, and the trees'
+  CSS dims a row that has it (`:has`) while the trees carry `data-dim`, the setting. Outside a repository, a long
+  hidden name cuts 5 pt sooner (the mark's lane adds one gap): left as it is.
+- **Cause (the test).** A tree row is one button to accessibility (WebKit flattens pierre's `<button>`, label and
+  title both its `aria-label`): a word in the row ("Hidden", clipped or transparent) never reached XCUITest, in the
+  VM. So the test reads the row's picture, as the change dots' test does, and checks nothing on CI, whose screenshots
+  draw no web content.
+- **Runs.** The ⇧⌘. step (moved with its helpers to ExplorerKeysTests.swift: FilesTests.swift was at 400 lines)
+  checks that `.gitignore` is dimmed and `a.txt` not, turns the setting off in Settings ▸ Plugins (not dimmed), and
+  on again. VM: on the old code (5a01673a) red at the first dim check; on 9268487d green with ExplorerKeysTests' ⇧⌘E
+  test and the tree beside a file. An earlier VM run also had FilesTests' other four tests green. A first test right
+  after the VM's boot timed out twice waiting for the default plugins to build (the pictures, the keyboard test):
+  not this change, they passed in the next run.
 - **For the user.** In a repository, ⇧⌘.: `.env`, `.gitignore` and `.github` dim, `.github`'s rows do not; a
   modified dotfile keeps its yellow name. Settings ▸ Plugins ▸ File Explorer ▸ Dim ignored and hidden files off:
-  nothing dims, ignored files included. A file opened with the tree beside it, the same. Pictures, dark and light,
+  nothing dims, ignored files included. A file opened with the tree beside it, the same. A selected dimmed row
+  keeps its dim name on the selection, as an ignored one does. Pictures, dark and light,
   before and after: `~/Downloads/ovvi-research/p58e7/`.
