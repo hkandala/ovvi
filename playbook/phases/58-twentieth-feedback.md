@@ -1244,3 +1244,24 @@ Round 3's tracks and the simplification pass (main up to 30326c5b), then the thr
 
 55. "when the hidden files are shown on cmd+shift+. can we show them dimmed similar to git ignored ones, and make the
     setting for dimmed apply to both git ignore and hidden files"
+
+#### Track E7: Findings
+
+- **Fix.** One rule in the tree's page, the tree beside a file and the filter's matches (one `show()`, This Mac and
+  remote alike): a row is dimmed when git ignores it or its own name starts with `.`, while the setting **Dim ignored
+  and hidden files** is on (key `dim`, was `ignored`, default on). A dimmed hidden row looks as an ignored one: the
+  ignored color on its name, its icon at half opacity. A hidden name with a Git letter keeps the letter's color on
+  its name; its icon still dims. Explorer 1.15.3, API stays 3.
+- **Decisions.** As Finder: each hidden item dims, and the rows inside a shown hidden folder (`.github/workflows`)
+  look normal, since they are not hidden themselves. So hidden rows cannot take Git's `ignored` status: pierre gives
+  it to every row under an ignored folder. Pierre's row decoration gives each hidden row a word, "Hidden", drawn
+  nowhere (1 pt, clipped) and read by VoiceOver; the trees' CSS dims a row that has it while the trees carry
+  `data-dim`, the setting. The word is also the only sign XCUITest can read (CI's screenshots show no web content).
+  Outside a repository, a long hidden name cuts 5 pt sooner (the word's lane adds one gap): left as it is.
+- **Runs.** FilesTests' ⇧⌘. step now checks that `.gitignore` carries "Hidden" and `a.txt` does not, turns the
+  setting off in Settings ▸ Plugins (the word goes), and on again. VM on the old code (5a01673a): red at the first
+  check. RUNS_AFTER
+- **For the user.** In a repository, ⇧⌘.: `.env`, `.gitignore` and `.github` dim, `.github`'s rows do not; a
+  modified dotfile keeps its yellow name. Settings ▸ Plugins ▸ File Explorer ▸ Dim ignored and hidden files off:
+  nothing dims, ignored files included. A file opened with the tree beside it, the same. Pictures, dark and light,
+  before and after: `~/Downloads/ovvi-research/p58e7/`.

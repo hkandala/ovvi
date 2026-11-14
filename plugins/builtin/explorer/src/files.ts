@@ -70,15 +70,14 @@ const look = {
   [data-item-rename-input] { border-radius: 4px; background: var(--card); outline: 1.5px solid var(--accent);
     outline-offset: -1.5px; }
   :host(:not([data-keys])) [data-type="item"]::before { outline: none !important; }
-  /* A hidden row dims as an ignored one does, while the setting is on. Its word "Hidden" is for VoiceOver only. */
-  [data-item-section="decoration"] > span { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); }
-  :host(:not([data-dim])) [data-item-section="decoration"] > span { display: none; }
+  /* A hidden row dims as an ignored one does, while the setting is on. */
   :host([data-dim]) [data-type="item"]:has(> [data-item-section="decoration"] > span) {
     &:not([data-item-git-status]) > [data-item-section="content"] { color: var(--trees-git-ignored-color); }
     & > [data-item-section="icon"] { opacity: .5; } }`,
-  // As Finder: a hidden name, not the rows inside its folder.
+  // As Finder: a hidden name, not the rows inside its folder. An empty mark the CSS above finds: pierre's rows take no
+  // attributes of ours, and its `ignored` status dims every row under a folder.
   renderRowDecoration: ({ row }: FileTreeRowDecorationContext) =>
-    row.name.startsWith(".") && row.path !== UP ? { text: "Hidden" } : null,
+    row.name.startsWith(".") && row.path !== UP ? { text: "" } : null,
 }
 const dotted = (path: string) => /(^|\/)\.[^/]/.test(path)
 
