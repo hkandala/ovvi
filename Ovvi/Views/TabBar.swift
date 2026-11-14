@@ -20,6 +20,9 @@ struct TabBar: View {
     @State private var clicked: String?
     @State private var visible: ClosedRange<CGFloat> = 0 ... .infinity
     @State private var made = 0
+    /// Tabs that opened in the background, until their glow ends.
+    @State private var opened: Set<String> = []
+    @State private var glowed: [String] = []
     @Environment(\.look) private var look
 
     var body: some View {
@@ -48,6 +51,16 @@ struct TabBar: View {
                                 .overlay {
                                     if page.dragging?.paneID != nil, over == index {
                                         DropIndicator(radius: Self.radius)
+                                    }
+                                }
+                                .overlay {
+                                    if opened.contains(tab.id) {
+                                        OpenGlow { opened.remove(tab.id) }
+                                            .onAppear {
+                                                if SettlingHost.record {
+                                                    glowed.append(tab.id)
+                                                }
+                                            }
                                     }
                                 }
                                 .background {
@@ -130,6 +143,7 @@ struct TabBar: View {
                 if !switched, old[1] == shown, new.count > old.count, let id = fresh.last {
                     // A new tab's capsule lays out in this same update, and a scroll to it can miss: once it has.
                     Task { withAnimation(.slide) { proxy.scrollTo(id) } }
+                    opened.insert(id)
                 } else if old == new || switched || old[1] != shown, !shown.isEmpty, shown != clicked {
                     withTransaction(\.animation, nil) { proxy.scrollTo(shown) }
                     Task { proxy.scrollTo(shown) }
@@ -145,6 +159,7 @@ struct TabBar: View {
         // The tests' count: the lazy row has no element for a tab out of view.
         .testValue("tabs.count", "Tab Count", "\(tabs.count)")
         .testValue("tabs.made", "Tabs Made", "\(made)", shown: SettlingHost.record)
+        .testValue("tabs.glowed", "Tabs Glowed", glowed.joined(separator: ", "), shown: SettlingHost.record)
         .onDisappear { spring?.cancel() }
     }
 
@@ -165,5 +180,32 @@ struct TabBar: View {
             try? await Task.sleep(for: .milliseconds(100))
             withAnimation(.easeOut(duration: 0.1)) { pulsing = nil }
         }
+    }
+}
+
+/// A tab that opened in the background: its pill's border lights in the accent color and fades, once. It starts as
+/// its capsule appears, which a lazy row makes only as the slide brings it near.
+private struct OpenGlow: View {
+    let done: () -> Void
+    @State private var lit = false
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: TabBar.radius - TabBar.inset, style: .continuous)
+            .strokeBorder(Color.accentColor, lineWidth: 1.5)
+            .shadow(color: .accentColor.opacity(0.6), radius: 3)
+            .padding(.vertical, TabBar.inset)
+            .opacity(lit ? 1 : 0)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+            .onAppear {
+                // Reduce Motion: no fade, the border shows and goes at once.
+                let reduced = Animation.reduced
+                withAnimation(reduced ? nil : .easeIn(duration: 0.15)) { lit = true } completion: {
+                    withAnimation(reduced ? .linear(duration: 0).delay(0.6) : .easeOut(duration: 0.5).delay(0.15)) {
+                        lit = false
+                    } completion: { done() }
+                }
+            }
+            .onDisappear(perform: done)
     }
 }
