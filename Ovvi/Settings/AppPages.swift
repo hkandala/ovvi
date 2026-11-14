@@ -39,6 +39,15 @@ struct GeneralPage: View {
                 }
                 .settingsRow("general.balance-splits")
             }
+            if Updates.checks {
+                Section("Updates") {
+                    Toggle(isOn: Binding { Updates.shared.automatic } set: { Updates.shared.automatic = $0 }) {
+                        Text("Check for updates automatically")
+                        Text("Once a day. Ovvi asks before it installs one.")
+                    }
+                    .identifiedSettingsRow("general.updates")
+                }
+            }
             Section("Help") {
                 LabeledContent("Keyboard shortcuts") {
                     Button("Show Shortcuts") { CommandList.runInMainWindow("app.shortcuts") }

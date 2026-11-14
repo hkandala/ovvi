@@ -35,6 +35,14 @@
 			</array>
 		</dict>
 	</array>
+	<key>SUFeedURL</key>
+	<string>$(OVVI_FEED_URL)</string>
+	<key>SUPublicEDKey</key>
+	<string>1kcOZ+0L/5ArBw64cOM0SOkMgg6a3vjP1Li5Mh6KpzQ=</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUAllowsAutomaticUpdates</key>
+	<false/>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>

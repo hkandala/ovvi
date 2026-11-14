@@ -28,6 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         Self.restoredFullScreen = Set(NSApp.windows.filter { $0.styleMask.contains(.fullScreen) }
             .map(ObjectIdentifier.init))
         PluginBuilds.writeTypes()
+        Updates.shared.start()
         Task { await DefaultPlugins.shared.install() }
         // After restored windows made their cards and started their processes.
         Task {

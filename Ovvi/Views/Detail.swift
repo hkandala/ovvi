@@ -153,6 +153,7 @@ struct Detail: View {
                     AccessibilityNotification.Announcement(text).post()
                 }
             }
+            UpdateNotice()
         }
         .padding(.horizontal, gap * 2)
         .padding(.bottom, 30)

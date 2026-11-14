@@ -10,6 +10,7 @@
 		0A2120E44437314C4F083E64 /* HerdrKit in Frameworks */ = {isa = PBXBuildFile; productRef = 42A62881E820297033DC0FF9 /* HerdrKit */; };
 		5E1D7A3C9B2F4E6081A3C5D7 /* GhosttyTerminal in Frameworks */ = {isa = PBXBuildFile; productRef = 6F2E8B4DAC305F7192B4D6E8 /* GhosttyTerminal */; };
 		8D4C2A6E1F3B5C7D9E0A1B2C /* Markdown in Frameworks */ = {isa = PBXBuildFile; productRef = AF6E4C8A3B5D7E9F1A2C3D4E /* Markdown */; };
+		5A1C3E7B9D2F4A6C8E0B1D3F /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 7C3E5A9B1D4F6C8E0A2B3D5F /* Sparkle */; };
 		D5B2F3C4E5061728394A5B6C /* catalog.json in Resources */ = {isa = PBXBuildFile; fileRef = C4A1E2B3D4F5061728394A5B /* catalog.json */; };
 		7E44A1B2C3D4E5F60718293A /* web in Resources */ = {isa = PBXBuildFile; fileRef = 7E44A1B2C3D4E5F60718293B /* web */; };
 /* End PBXBuildFile section */
@@ -98,6 +99,7 @@
 				0A2120E44437314C4F083E64 /* HerdrKit in Frameworks */,
 				5E1D7A3C9B2F4E6081A3C5D7 /* GhosttyTerminal in Frameworks */,
 				8D4C2A6E1F3B5C7D9E0A1B2C /* Markdown in Frameworks */,
+				5A1C3E7B9D2F4A6C8E0B1D3F /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -177,6 +179,7 @@
 				42A62881E820297033DC0FF9 /* HerdrKit */,
 				6F2E8B4DAC305F7192B4D6E8 /* GhosttyTerminal */,
 				AF6E4C8A3B5D7E9F1A2C3D4E /* Markdown */,
+				7C3E5A9B1D4F6C8E0A2B3D5F /* Sparkle */,
 			);
 			productName = Ovvi;
 			productReference = 21288B51504EFA0EF1A20CCE /* Ovvi.app */;
@@ -214,6 +217,7 @@
 				CF6031F84141B56A559E35B9 /* XCLocalSwiftPackageReference "Packages/HerdrKit" */,
 				7A3F9C5EBD41608203C5E7F9 /* XCRemoteSwiftPackageReference "libghostty-spm" */,
 				9E5D3B7F2A4C6D8E0F1B2C3D /* XCRemoteSwiftPackageReference "swift-markdown" */,
+				6B2D4F8A0C3E5B7D9F1A2C4E /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 108494E918F2B6D742A8C165 /* Products */;
@@ -288,6 +292,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.1;
 				OVVI_APP_NAME = Ovvi;
+				OVVI_FEED_URL = "https://github.com/hkandala/ovvi/releases/latest/download/appcast.xml";
 				OVVI_URL_SCHEME = ovvi;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.ovvi.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -553,6 +558,14 @@
 				version = 0.9.0;
 			};
 		};
+		6B2D4F8A0C3E5B7D9F1A2C4E /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = exactVersion;
+				version = 2.10.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -569,6 +582,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 9E5D3B7F2A4C6D8E0F1B2C3D /* XCRemoteSwiftPackageReference "swift-markdown" */;
 			productName = Markdown;
+		};
+		7C3E5A9B1D4F6C8E0A2B3D5F /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6B2D4F8A0C3E5B7D9F1A2C4E /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

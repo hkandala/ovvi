@@ -34,7 +34,7 @@ struct CommandList {
         let live = page?.store.state == .live
         // A key only where its action works (Settings ▸ Shortcuts' scopes): a disabled item swallows it.
         let terminal = page?.keyboardPane.map { $0.plugin == nil } == true
-        let file = [
+        let file = Updates.commands + [
             Command(section: .app, title: "Plugins…", group: .plugins, symbol: SettingsPage.plugins.symbol,
                     keywords: "install update remove packages npm git settings",
                     action: { SettingsRoute.shared.open(.plugins) }),

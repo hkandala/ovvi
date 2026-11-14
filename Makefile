@@ -119,13 +119,14 @@ BUILD ?= $(shell git rev-list --count HEAD)
 # quarantine, so install.sh skips that), and notifications need a real signing identity. Only install and zip get the
 # installed app's bundle id: macOS keys saved windows and defaults by it.
 # TIP=1: Ovvi Tip, the dev build of any commit (tip.yml), which runs beside Ovvi: its own name, bundle id, scheme and
-# folders (Registry.name), and a DEV badge on the icon.
+# folders (Registry.name), its own update feed, and a DEV badge on the icon.
 ifdef TIP
 NAME := Ovvi Tip
 BUNDLE_ID := dev.ovvi.app.tip
 URL_SCHEME := ovvi-tip
 VERSION := $(VERSION)-tip.$(shell git rev-parse --short=7 HEAD)
-TIP_SETTINGS := OVVI_APP_NAME='$(NAME)' OVVI_CONDITIONS=TIP
+TIP_SETTINGS := OVVI_APP_NAME='$(NAME)' OVVI_CONDITIONS=TIP \
+	OVVI_FEED_URL=https://github.com/hkandala/ovvi/releases/download/tip/appcast.xml
 ZIP := Ovvi-Tip.zip
 else
 NAME := Ovvi

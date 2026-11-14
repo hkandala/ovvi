@@ -207,7 +207,7 @@ struct SettingsSearch: Identifiable {
     var detail: SettingsDetail?
     var place: String?
 
-    static let app = [
+    static let app: [SettingsSearch] = [
         SettingsSearch(id: "general.open-at-login", title: "Open at login", page: .general,
                        words: "startup launch login items"),
         SettingsSearch(id: "general.new-pane", title: "New panes open", page: .general,
@@ -218,6 +218,10 @@ struct SettingsSearch: Identifiable {
         SettingsSearch(id: "general.shortcuts", title: "Keyboard shortcuts", page: .general, words: "keys help"),
         SettingsSearch(id: "general.welcome", title: "Welcome to Ovvi", page: .general,
                        words: "onboarding intro tour help getting started herdr install"),
+    ] + (Updates.checks ? [
+        SettingsSearch(id: "general.updates", title: "Check for updates automatically", page: .general,
+                       words: "update version release new sparkle"),
+    ] : []) + [
         SettingsSearch(id: "appearance.appearance", title: "Appearance", page: .appearance,
                        words: "auto light dark theme mode"),
         SettingsSearch(id: "appearance.style", title: "Interface style", page: .appearance,
