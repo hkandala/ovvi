@@ -1307,6 +1307,35 @@ Round 3's tracks and the simplification pass (main up to 30326c5b), then the thr
 58. "also on the tab glow thing, it is shownig border in blue color now, can we use border color itself, like right
     now pane has some border color or something right, it will be good if its in border color instead of blue color"
 
+- **Inventory.** SwiftUI: the cards' layout motion and fades (TabPage, Core Animation in CardMotion), the overview's
+  tile zoom and fade, the window sidebar's slide, the sidebar's session pages (swipe lift), reorder slides, folds and
+  Archived Sessions, the tab bar's slide, spring-load pulse, icon bounce and dropped-tab glide, T3's glow, drag-target
+  and hover highlights, the divider grip, the hover panels' fade and scale, a revealed card's flash, the chat's fades,
+  first-message rise and taken-message dim, the header path's shake, the plugin toast, NewPane's fades, the browser
+  card's fade, the window start fade, Settings' scroll to a found row, the welcome (intro, page turns, words, herdr
+  check). Core Animation: the terminal's first fade (layer and `NSAnimationContext`), and two implicit sublayer fades
+  (the ⌘-hover link tint, a terminal's cover). Web: card.css's `.ovvi-sidebar`, Explorer's side slide and its
+  tree's own fades (in a shadow root), Git's disclosure turn. Not ours: system controls, windows, full screen,
+  menus, sheets, popovers, the chat's interactive glass button. No Liquid Glass morphs (no `glassEffectID`).
+- **Fix.** One switch, `Animation.off` (`animations` in app storage, like the other Appearance settings, not
+  settings.json), folded into `Animation.reduced`; `.motion(_:)` wraps the fades and highlights Reduce Motion keeps.
+  All in `Views/Motion.swift`. SwiftLint `animations` (an animation on a line with no gate) and `core_animation`
+  (layer motion only in the files that gate it) catch new ones. Web cards get `data-animations-off` on the root with
+  the CSS variables (user script and `theme`), card.css turns every transition off under it, and Explorer copies it
+  into its trees' shadow roots.
+- **Decisions.** T3's glow: as under Reduce Motion, its border on for 0.6 s with no fade (it still says the tab is
+  new). Spinners and the loader's delay stay (work, not motion). The welcome's clips play (content); its intro does not
+  play with Animations off. A keyframe animator keeps an ungated trigger (a gated one plays once as the switch flips).
+- **Cause (found by the new test).** The first change after the switch went off still slid every card once: TabPage's
+  `move` went from the last tree's hash to 0, and `CardMotion` armed a motion for any new `move`. A `move` of 0 now
+  lands at once.
+- **Runs.** VM: the new test red on that cause, then green with the split, overview and reorder tests, the plugin API,
+  Explorer and Welcome tests. Films and strips: `~/Downloads/ovvi-research/p58n4/`.
+- **Item 58.** The glow strokes `look.activeBorder`, the keyboard card's border, with a 3 pt glow of it: in VM pictures it reads in all four looks, so its opacity and
+  width stay.
+- **For the user.** Settings ▸ Appearance ▸ Animations off: a split, ⌥⌘=, the overview, the sidebar's toggle, a session swipe, a
+  hover card, a tab opened behind, Explorer's tree beside a file and Git's File List all change at once.
+
 ### Track V3: a card remembers Chat or TUI over a relaunch (item 57)
 
 57. "another thing i noticed is, ovvi doesn't remember whether i am using chat view or terminal view for agent sessions,

@@ -35,7 +35,8 @@ struct CardMotion<Content: View>: NSViewRepresentable {
         if SettlingHost.record {
             card.setAccessibilityIdentifier("motion.\(id)")
         }
-        if move != card.move {
+        // No motion (0) lands at once, also the first change after the motions went off.
+        if move != card.move, move != 0 {
             card.arm(move, to: rect, fade: false)
         } else {
             card.rect = rect
