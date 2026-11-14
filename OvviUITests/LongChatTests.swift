@@ -55,8 +55,8 @@ extension OvviUITests {
     }
 
     /// Scrolled up, the next block comes above once the view's top nears the stack's, again and again, and the rows in
-    /// view stay where they are: each swipe up (with its momentum) moves them as far as the first did, or less at the
-    /// top, never a block more.
+    /// view stay where they are: each swipe up (with its momentum) moves them at most its own travel, never a block
+    /// more.
     func testALongChatLoadsEarlierRowsAsItScrollsUp() async throws {
         // A swipe and a look take about 3 s in the VM, and the chat is about 15 long swipes tall.
         executionTimeAllowance = 300
@@ -97,8 +97,9 @@ extension OvviUITests {
                 .matching(NSPredicate(format: "identifier == %@ AND value == %@", kind, text)).firstMatch
             try moves.append(Int(XCTUnwrap(steady(3) { same.frame.minY }) - place))
         }
-        // A block is hundreds of points; a swipe's momentum varies by tens.
-        XCTAssertFalse(moves.contains { $0 > moves[0] + 100 || $0 < -40 }, "a jump: \(moves) at \(counts)")
+        // A swipe's travel: 20 moves of 25 pt and a momentum of 25 pt × 0.9ⁿ, about 750 pt; less where it meets the
+        // loaded rows' top before the next block comes (the first swipe too). A block is thousands of points.
+        XCTAssertFalse(moves.contains { $0 > 790 || $0 < -40 }, "a jump: \(moves) at \(counts)")
         XCTAssertTrue(first.isHittable && !loader.exists, "\(counts) \(loader.exists)")
         // After 10 s at the exact bottom, the stack is the newest block again, and the bottom row stays where it was. A
         // scroll up meanwhile starts the wait again.
