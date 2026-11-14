@@ -2,6 +2,8 @@ import XCTest
 
 extension OvviUITests {
     func testGitCardCommitsPushesAndOpensDiffs() async throws {
+        // 80–105 s on CI, and once XCUITest took 32 s to hover a branch menu's item.
+        executionTimeAllowance = 240
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("git")
         try await waitForPrompt(left)
@@ -13,8 +15,7 @@ extension OvviUITests {
 
         let home = element("git.\(card).page")
         XCTAssertTrue(commit("on the side", in: home).exists(within: 10))
-        XCTAssertTrue(commit("second", in: home).exists)
-        XCTAssertTrue(home.buttons["Untracked: b.md"].exists)
+        XCTAssertTrue(commit("second", in: home).exists && home.buttons["Untracked: b.md"].exists)
         keepScreenshot("git home")
         try await rowFacts(home, card: card, root: root, hash: hash)
         try await commitAndPush(home, card: card, shell: left, repo: repo)
