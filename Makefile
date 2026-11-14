@@ -110,32 +110,46 @@ vm-e2e: build-tests
 run: build
 	open "$(DERIVED_DATA)/Build/Products/Debug/Ovvi Dev.app" $(if $(SESSION),--args -session $(SESSION))
 
-# Ad-hoc signed, with Hardened Runtime off: under it, an ad-hoc app cannot load Sparkle (dyld: "different Team IDs").
-# A copy that a browser downloaded opens only after System Settings > Privacy & Security > Open Anyway (curl adds no
-# quarantine, so install.sh skips that), and notifications need a real signing identity. Only install and zip get the
-# installed app's bundle id: macOS keys saved windows and defaults by it.
-BUNDLE_ID ?= dev.ovvi.app.release
-URL_SCHEME ?= ovvi-release
-install zip: BUNDLE_ID = dev.ovvi.app
-install zip: URL_SCHEME = ovvi
 # The version people see: the nearest v* tag behind HEAD (release.yml passes its own tag); 0.1.0 before the first.
 # The build number, which Sparkle compares, is the commit count: it only grows on main.
 VERSION ?= $(or $(patsubst v%,%,$(shell git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null)),0.1.0)
 BUILD ?= $(shell git rev-list --count HEAD)
-APP := $(DERIVED_DATA)/Build/Products/Release/Ovvi.app
+# Ad-hoc signed, with Hardened Runtime off: under it, an ad-hoc app cannot load Sparkle (dyld: "different Team IDs").
+# A copy that a browser downloaded opens only after System Settings > Privacy & Security > Open Anyway (curl adds no
+# quarantine, so install.sh skips that), and notifications need a real signing identity. Only install and zip get the
+# installed app's bundle id: macOS keys saved windows and defaults by it.
+# TIP=1: Ovvi Tip, the dev build of any commit (tip.yml), which runs beside Ovvi: its own name, bundle id, scheme and
+# folders (Registry.name), and a DEV badge on the icon.
+ifdef TIP
+NAME := Ovvi Tip
+BUNDLE_ID := dev.ovvi.app.tip
+URL_SCHEME := ovvi-tip
+VERSION := $(VERSION)-tip.$(shell git rev-parse --short=7 HEAD)
+TIP_SETTINGS := OVVI_APP_NAME='$(NAME)' SWIFT_ACTIVE_COMPILATION_CONDITIONS=TIP
+ZIP := Ovvi-Tip.zip
+else
+NAME := Ovvi
+BUNDLE_ID ?= dev.ovvi.app.release
+URL_SCHEME ?= ovvi-release
+install zip: BUNDLE_ID = dev.ovvi.app
+install zip: URL_SCHEME = ovvi
+ZIP = Ovvi-$(VERSION).zip
+endif
+APP := $(DERIVED_DATA)/Build/Products/Release/$(NAME).app
 app: web
 	$(XCODEBUILD) $(MAC) -configuration Release PRODUCT_BUNDLE_IDENTIFIER=$(BUNDLE_ID) OVVI_URL_SCHEME=$(URL_SCHEME) \
-		MARKETING_VERSION=$(VERSION) CURRENT_PROJECT_VERSION=$(BUILD) build $(NOWARN) $(BEAUTIFY)
+		MARKETING_VERSION=$(VERSION) CURRENT_PROJECT_VERSION=$(BUILD) $(TIP_SETTINGS) build $(NOWARN) $(BEAUTIFY)
+	$(if $(TIP),swift scripts/tip-icon.swift Ovvi/Assets.xcassets/AppIcon.appiconset "$(APP)")
 	@echo "$(APP)"
 
 # ~/.agents/skills: pi and Codex; ~/.claude/skills: Claude Code. -f replaces a dangling link, for which -e is false.
 install: app
-	rm -rf ~/Applications/Ovvi.app
-	cp -R $(APP) ~/Applications/
+	rm -rf ~/Applications/"$(NAME).app"
+	cp -R "$(APP)" ~/Applications/
 	for d in ~/.agents/skills ~/.claude/skills; do mkdir -p $$d; [ -e $$d/ovvi ] || ln -sfn $(CURDIR)/skills/ovvi $$d/ovvi; done
 
-# A release's files (release.yml): the app zipped with the framework's symbolic links kept, and its checksum.
+# A release's files (release.yml, tip.yml): the app zipped with the framework's symbolic links kept, and its checksum.
 zip: app
 	rm -f .build/Ovvi-*.zip
-	ditto -c -k --sequesterRsrc --keepParent $(APP) .build/Ovvi-$(VERSION).zip
-	cd .build && shasum -a 256 Ovvi-$(VERSION).zip >SHA256SUMS
+	ditto -c -k --sequesterRsrc --keepParent "$(APP)" .build/$(ZIP)
+	cd .build && shasum -a 256 $(ZIP) >SHA256SUMS

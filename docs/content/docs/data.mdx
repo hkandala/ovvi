@@ -19,7 +19,10 @@ the UI tests, CI) is `Ovvi Dev.app`, `dev.ovvi.app.debug`, so it has its own
 defaults, saved windows, notifications, login item and browser data, and it
 claims the `ovvi-dev://` scheme, not `ovvi://`. Its folders on This Mac are
 `~/.config/ovvi-dev` and `~/Library/Logs/Ovvi Dev/plugins`. It never reads or
-writes the installed app's. What it shares are the files that belong to the
+writes the installed app's. Ovvi Tip, the dev build of any commit (`make zip
+TIP=1`, the `tip` release: [Install](/docs/platform#install)), is `Ovvi Tip.app`,
+`dev.ovvi.app.tip`, and keeps its own the same way: the `ovvi-tip://` scheme,
+`~/.config/ovvi-tip` and `~/Library/Logs/Ovvi Tip/plugins`. What these builds share are the files that belong to the
 sessions and panes both apps show: `~/.cache/ovvi` and `~/.local/state/ovvi`
 on each machine, and on This Mac the herdr server jobs with their logs
 (`~/Library/Logs/Ovvi/<session>.log`) and `~/Library/Caches/ovvi`, whose SSH
@@ -32,7 +35,8 @@ is not running. Run it without `sudo`. macOS keeps an app's saved windows in
 the first launch after a reset closes them anyway
 ([Welcome](/docs/ui/welcome)). When macOS refuses to delete a folder (some
 WebKit caches), the script goes on, lists what it kept and exits with 1. For a
-Debug build it also deletes `~/.config/ovvi-dev` and `~/Library/Logs/Ovvi Dev`. For the installed app, and only while no Ovvi build
+Debug build it also deletes `~/.config/ovvi-dev` and `~/Library/Logs/Ovvi Dev`, for Ovvi Tip `~/.config/ovvi-tip`
+and `~/Library/Logs/Ovvi Tip`. For the installed app, and only while no Ovvi build
 runs, it also deletes `~/.config/ovvi`, `~/Library/Logs/Ovvi`,
 `~/Library/Caches/ovvi`, `~/.cache/ovvi` and `~/.local/state/ovvi`, which other
 builds share. It never touches herdr's sessions or the agents' files.

@@ -34,3 +34,12 @@ git tag -a v0.2.0 -m "The highlights" && git push origin v0.2.0
 A failed run publishes nothing: fix it on main, move the tag (`git tag -f -a`, `git push -f origin <tag>`), and it
 runs again. To drop a test release: `gh release delete <tag> --cleanup-tag --yes`.
 
+## Dev builds
+
+Ovvi Tip is the dev build of any commit: `gh workflow run tip.yml` (main) or `gh workflow run tip.yml -f ref=<sha,
+branch or tag>`. It replaces the rolling pre-release `tip` (its notes name the commit) with `Ovvi-Tip.zip` and
+`SHA256SUMS`. The app is `Ovvi Tip.app`, `dev.ovvi.app.tip`, with a DEV badge on its icon, and keeps its own settings
+and folders, so it runs beside Ovvi ([Data](../docs/content/docs/data.mdx)). Locally: `make zip TIP=1`.
+
+It runs only on a dispatch: a build holds one of the 5 macOS runners for about 6 minutes, and main gets dozens of
+pushes a day, so a build per push would double what pushes cost and take runners from full runs.

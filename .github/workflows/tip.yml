@@ -1,0 +1,43 @@
+name: tip
+
+# Ovvi Tip, the dev build of any commit (playbook/release.md): replaces the rolling pre-release `tip`, which install.sh
+# --dev installs beside Ovvi. A dispatch only, not each push: a build takes a runner for about 6 minutes, and main
+# gets dozens of pushes a day on 5 shared runners.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: The commit, branch or tag to build
+        default: main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tip
+  cancel-in-progress: false
+
+jobs:
+  tip:
+    runs-on: xcode-27
+    timeout-minutes: 30
+    environment: release
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0 # the tags for the version, and the commit count for the build number
+      - run: brew update --quiet && brew bundle
+      - run: make zip TIP=1
+      - name: publish
+        run: |
+          sha=$(git rev-parse HEAD)
+          printf 'Ovvi Tip, the dev build of %s: %s\n\nInstall it beside Ovvi:\n\n```sh\n%s\n```\n' \
+            "$sha" "$(git log -1 --format=%s)" \
+            'curl -fsSL https://github.com/hkandala/ovvi/releases/latest/download/install.sh | sh -s -- --dev' \
+            > .build/notes.md
+          gh release delete tip --cleanup-tag --yes || true
+          gh release create tip --target "$sha" --prerelease --latest=false --title "Ovvi Tip ${sha::7}" \
+            --notes-file .build/notes.md .build/Ovvi-Tip.zip .build/SHA256SUMS

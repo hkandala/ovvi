@@ -89,6 +89,8 @@ enum Registry {
 
     #if DEBUG
         nonisolated static let name = "ovvi-dev", logs = "Ovvi Dev"
+    #elseif TIP
+        nonisolated static let name = "ovvi-tip", logs = "Ovvi Tip"
     #else
         nonisolated static let name = "ovvi", logs = "Ovvi"
     #endif

@@ -69,6 +69,9 @@ case $id in
 dev.ovvi.app.debug) paths="$paths
 $HOME/.config/ovvi-dev
 $L/Logs/Ovvi Dev" ;;
+dev.ovvi.app.tip) paths="$paths
+$HOME/.config/ovvi-tip
+$L/Logs/Ovvi Tip" ;;
 dev.ovvi.app) paths="$paths
 $HOME/.config/ovvi
 $L/Logs/Ovvi
