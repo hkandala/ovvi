@@ -25,20 +25,22 @@ custom_rules:
     severity: error
   reduce_motion:
     included: '/Ovvi/'
-    excluded: 'Ovvi/Views/Style\.swift$'
+    excluded: 'Ovvi/Views/Motion\.swift$'
     regex: 'accessibilityReduceMotion|accessibilityDisplayShouldReduceMotion'
-    message: 'Read Reduce Motion through Animation.reduced (Views/Style.swift)'
+    message: 'Read Reduce Motion through Animation.reduced (Views/Motion.swift)'
     severity: error
-  animations: # Settings ▸ Appearance ▸ Animations off makes every motion instant; the one place is Views/Style.swift
+  # Settings ▸ Appearance ▸ Animations off makes every motion instant. The gate goes on the animation's own line, also
+  # where an outer guard covers it: the rule reads one line.
+  animations:
     included: '/Ovvi/'
-    excluded: 'Ovvi/Views/Style\.swift$'
-    regex: '^(?![^\n]*(reduced|\.motion\())[^\n]*(\.(easeIn|easeOut|easeInOut|linear|spring|smooth|snappy|bouncy|timingCurve)\(|withAnimation( \{|\(\))|\b(withAnimation|animation)\(\.(easeIn|easeOut|easeInOut|linear|spring|smooth|snappy|bouncy|default)\b|\.(keyframe|phase)Animator\()'
-    message: 'Wrap the animation in .motion(…), or gate it on Animation.reduced, on its line (Views/Style.swift)'
+    excluded: 'Ovvi/Views/Motion\.swift$'
+    regex: '^(?![^\n]*(\breduced\b|\.motion\())[^\n]*(\.(easeIn|easeOut|easeInOut|linear|spring|smooth|snappy|bouncy|timingCurve|interpolatingSpring|interactiveSpring)\(|withAnimation( \{|\(\))|\b(withAnimation|animation)\((Animation)?\.(easeIn|easeOut|easeInOut|linear|spring|smooth|snappy|bouncy|default)\b|(animation( =|:)|: Animation\??\s*=)\s*\.(easeIn|easeOut|easeInOut|linear|spring|smooth|snappy|bouncy)\b|\.(keyframe|phase)Animator\(|\b(Keyframe|Phase)Animator\(|\.symbolEffect\()'
+    message: 'Wrap the animation in .motion(…), or gate it on Animation.reduced, on its line (Views/Motion.swift)'
     severity: error
   core_animation: # these files gate their layer motion on Animation.reduced (CardMotion through TabPage's move)
     included: '/Ovvi/'
     excluded: 'Ovvi/(Views/CardMotion|Terminal/TerminalDrawing|Terminal/TerminalCard)\.swift$'
-    regex: 'CA(Basic|Keyframe|Spring)Animation\(|CATransition\(|NSAnimationContext\.runAnimationGroup|\.animator\(\)'
+    regex: 'CA(Basic|Keyframe|Spring)Animation\(|CAAnimationGroup\(|CATransition\(|NSAnimationContext\.(runAnimationGroup|beginGrouping)|allowsImplicitAnimation|setAnimationDuration|\.animator\(\)'
     message: 'Gate layer motion on Animation.reduced and add its file to core_animation in .swiftlint.yml'
     severity: error
   herdr_commands:

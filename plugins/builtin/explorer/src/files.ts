@@ -60,6 +60,9 @@ const look = {
   [data-item-section="content"] [data-truncate-content="visible"] { display: inline; direction: ltr; }
   [data-item-section="content"] :is([data-truncate-content="overflow"], [data-truncate-marker-cell],
     [data-truncate-fill]) { display: none !important; }
+  /* Animations off (card.css's rule stops at the shadow root): the tree's own fades too. */
+  :host([data-animations-off]) *, :host([data-animations-off]) *::before, :host([data-animations-off]) *::after {
+    transition: none !important; }
   /* The sticky folders on the card, with no band (stack.ts): the view masked under them, their copy over it. */
   :host { position: relative; }
   :host([data-stack]) [data-file-tree-virtualized-scroll] {
@@ -145,7 +148,15 @@ export async function show(place: Place): Promise<Reveal> {
   // pierre counts an ignored path as a change of the folders above it: their dot shows only for git's changes.
   // ponytail: a style per tree in its shadow root; drop it when pierre leaves ignored paths out of its counts.
   const dots = [tree, results].map((each) => each.getFileTreeContainer()!.shadowRoot!.appendChild(document.createElement("style")))
+  const still = () => {
+    const off = document.documentElement.hasAttribute("data-animations-off")
+    for (const each of [tree, results]) each.getFileTreeContainer()?.toggleAttribute("data-animations-off", off)
+  }
+  still()
+  const switched = new MutationObserver(still)
+  switched.observe(document.documentElement, { attributeFilter: ["data-animations-off"] })
   keep(() => {
+    switched.disconnect()
     tree.cleanUp()
     results.cleanUp()
   })

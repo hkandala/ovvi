@@ -176,26 +176,6 @@ struct SpringDrop: DropDelegate {
     }
 }
 
-extension Animation {
-    static var highlight: Animation? {
-        .motion(.easeOut(duration: 0.12))
-    }
-
-    static var slide: Animation? {
-        reduced ? nil : .timingCurve(.slide, duration: 0.22)
-    }
-
-    static var fade: Animation? {
-        reduced ? nil : .easeOut(duration: 0.2)
-    }
-}
-
-extension UnitCurve {
-    /// Rex's "production" curve.
-    static let slide = UnitCurve.bezier(startControlPoint: UnitPoint(x: 0.2, y: 0.9),
-                                        endControlPoint: UnitPoint(x: 0.3, y: 1))
-}
-
 struct Landing: Equatable {
     let ids: [String]
     let offset: CGFloat
@@ -243,7 +223,9 @@ private struct Lands: ViewModifier {
     let landing: Landing?
 
     func body(content: Content) -> some View {
-        content.keyframeAnimator(initialValue: 0, trigger: Animation.reduced ? nil : landing) { content, offset in
+        // Not a gated trigger, which plays once as the switch flips: the tab bar lands only with motion.
+        // swiftlint:disable:next animations
+        content.keyframeAnimator(initialValue: 0, trigger: landing) { content, offset in
             content.offset(x: offset)
                 .allowsHitTesting(offset == 0)
         } keyframes: { _ in

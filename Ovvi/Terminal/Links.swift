@@ -188,7 +188,11 @@ extension PaneSurfaceView {
             )
             tint.addSublayer(box)
         }
+        // A new sublayer fades in by itself: not with Reduce Motion or Animations off.
+        CATransaction.begin()
+        CATransaction.setDisableActions(Animation.reduced)
         layer.addSublayer(tint)
+        CATransaction.commit()
         linkTint = tint
     }
 

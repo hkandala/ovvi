@@ -32,6 +32,10 @@ export default async function main(ovvi) {
   line("state", runs)
   line("card", `${ovvi.api} ${ovvi.card.plugin.id} ${ovvi.card.machine.name} ${ovvi.card.arg}`)
   line("theme", `${ovvi.theme.dark ? "dark" : "light"} ${ovvi.theme.textSize > 0}`)
+  // Settings ▸ Appearance ▸ Animations: on the root from the first paint, and on each change.
+  const motion = () => line("motion", document.documentElement.hasAttribute("data-animations-off") ? "off" : "on")
+  motion()
+  new MutationObserver(motion).observe(document.documentElement, { attributeFilter: ["data-animations-off"] })
 
   await check("files.write", async () => (await ovvi.files.write(`${root}/a.txt`, "hello\n")).hash.length > 0)
   const read = await ovvi.files.read(`${root}/a.txt`)

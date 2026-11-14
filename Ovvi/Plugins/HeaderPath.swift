@@ -12,7 +12,7 @@ struct PathField: View {
 
     var body: some View {
         let id = control.id ?? "", value = control.value?.text ?? "", remote = page.store.machine.isRemote
-        let header = plugin.header, shown = MachinePath.short(value, remote: remote)
+        let header = plugin.header, shown = MachinePath.short(value, remote: remote), still = Animation.reduced
         HStack(spacing: 6) {
             Button { header.send?(["id": id]) } label: {
                 Image(symbol: control.symbol ?? "folder").foregroundStyle(.secondary)
@@ -53,8 +53,10 @@ struct PathField: View {
         .fieldCapsule()
         .overlay { Capsule().strokeBorder(Color.accentColor, lineWidth: 1.5).opacity(editing ? 1 : 0) }
         .focusEffectDisabled()
-        .keyframeAnimator(initialValue: 0.0, trigger: Animation.reduced ? 0 : header.refused[id] ?? 0) { field, shift in
-            field.offset(x: shift)
+        // Not a gated trigger, which plays once as the switch flips: the shake's drawing reads the switch.
+        // swiftlint:disable:next animations
+        .keyframeAnimator(initialValue: 0.0, trigger: header.refused[id] ?? 0) { field, shift in
+            field.offset(x: still ? 0 : shift)
         } keyframes: { _ in
             KeyframeTrack {
                 for shift in [-6.0, 6, -4, 4, 0] {

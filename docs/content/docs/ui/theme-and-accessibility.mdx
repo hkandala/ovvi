@@ -155,8 +155,8 @@ once. That covers:
 - The chat's fades, its first message's rise, a refused path's shake in a
   plugin card's header (a beep instead), a plugin card's toast slide, a browser card's fade in, a
   terminal's first fade in.
-- The welcome's logo, page turns and words. Its clips are the pages' content:
-  they play.
+- The welcome: its logo intro does not play, and its pages and words change at
+  once. Its clips are the pages' content: they play.
 - Every CSS transition in a plugin card ([Theme](/docs/plugins/api#what-each-part-does)).
 
 A tab that opens in the background shows its lit border for 0.6 s with no
@@ -167,8 +167,9 @@ sheets, popovers, switches) and follows Reduce Motion there. A swipe still
 follows the fingers; at the lift its page lands at once.
 
 With Animations on, Reduce Motion turns off the motions in
-[Accessibility](#accessibility) and keeps the drag and hover highlights, the
-hover panels' fade and a revealed card's flash.
+[Accessibility](#accessibility) and keeps the fades and highlights, for
+example the drag and hover highlights, the hover panels' fade, the divider
+grip, a revealed card's flash and the welcome's cross-fades.
 
 `make lint` rejects an animation that does not read the switch: each one is
 wrapped in `.motion(…)` or checked against `Animation.reduced` on its line, and

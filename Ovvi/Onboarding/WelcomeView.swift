@@ -8,7 +8,8 @@ struct WelcomeView: View {
     let close: () -> Void
     @State private var page = 0
     /// nil once the intro has handed over to the first page.
-    @State private var intro: WelcomeIntro.Step? = .hidden
+    /// The intro is all motion: none with Animations off.
+    @State private var intro: WelcomeIntro.Step? = Animation.off ? nil : .hidden
     @State private var herdrFound = false
     @State private var reels = WelcomeClip.Reels()
     private var settings = AppSettings()

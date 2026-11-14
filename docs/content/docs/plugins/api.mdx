@@ -387,7 +387,9 @@ export interface OvviError extends Error {
   `data-animations-off`, and `card.css` turns off every CSS transition, so
   each change shows its end at once. CSS animations (a spinner) go on. No
   `transitionend` comes then: a page that waits for one reads the element's
-  `transitionDuration` first, as it does for Reduce Motion.
+  `transitionDuration` first, as it does for Reduce Motion. The rule does not
+  reach into a shadow root: style your own there (File Explorer copies the
+  attribute onto its trees).
 - **Visible.** A card is visible while it is in the shown tab or in a
   floating window. A card that is not gets `visible` false and its watches
   stop. Its `run` calls go on. When it shows again, each watch runs once,

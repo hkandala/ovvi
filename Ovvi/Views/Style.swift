@@ -3,33 +3,6 @@ import SwiftUI
 
 nonisolated let gap: CGFloat = 8
 
-/// Every motion the app runs reads one of these (`make lint`'s `animations` rule): with Settings ▸ Appearance ▸
-/// Animations off, each one takes no time.
-extension Animation {
-    /// CI's Mac has Reduce Motion on.
-    private static let forceMotion = UserDefaults.standard.bool(forKey: "forceMotion")
-
-    /// Settings ▸ Appearance ▸ Animations off (`AppSettings.animations`).
-    static var off: Bool {
-        UserDefaults.standard.object(forKey: "animations") as? Bool == false
-    }
-
-    /// The system's Reduce Motion alone.
-    static var reduceMotion: Bool {
-        NSWorkspace.shared.accessibilityDisplayShouldReduceMotion && !forceMotion
-    }
-
-    /// No movement: Reduce Motion or Animations off.
-    static var reduced: Bool {
-        off || reduceMotion
-    }
-
-    /// A motion that Reduce Motion keeps (a fade, a highlight), none with Animations off.
-    static func motion(_ animation: Animation) -> Animation? {
-        off ? nil : animation
-    }
-}
-
 /// Values from Rex's Glass (Modern) and Classic (System) material files, tuned by eye.
 struct Look: Equatable {
     let style: InterfaceStyle

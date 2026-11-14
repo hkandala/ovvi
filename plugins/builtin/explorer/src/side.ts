@@ -140,9 +140,13 @@ export function sidebar(ovvi: Ovvi) {
     tree.due.clear()
   }
 
-  /** Beside a file, a change slides the tree; the slide's end clears `data-slide`. */
+  /** Beside a file, a change slides the tree; the slide's end clears `data-slide`. With Reduce Motion or Animations off
+   *  no slide runs, and no end would clear it. */
   function side(on: boolean) {
-    if (file && on !== document.body.hasAttribute("data-side")) document.body.toggleAttribute("data-slide", true)
+    const root = document.documentElement
+    const slides = !root.hasAttribute("data-animations-off")
+      && parseFloat(getComputedStyle(root).getPropertyValue("--sidebar-motion")) > 0
+    if (file && slides && on !== document.body.hasAttribute("data-side")) document.body.toggleAttribute("data-slide", true)
     document.body.toggleAttribute("data-side", on)
   }
 

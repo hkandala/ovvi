@@ -20,7 +20,8 @@ extension OvviUITests {
                      "files.missing: notFound Not a file", #"run: 3 "\#(root)\nin\n""#,
                      "files.list: sub/ .gitignore a.txt ignored.txt!", "files.paths: .gitignore a.txt",
                      "git.root: \(root)", "git.status: U .gitignore, U a.txt", "git.changes: a.txt", "git.commit: one",
-                     "git.head: main", "git.branches: main", "git.diff: true", "clipboard: written", "symbol: true"]
+                     "git.head: main", "git.branches: main", "git.diff: true", "clipboard: written", "symbol: true",
+                     "motion: on"]
         {
             XCTAssertTrue(text(line).exists, line)
         }
@@ -46,10 +47,11 @@ extension OvviUITests {
         try await reloadsUnderAToast(card, in: cardTab, shell: shell)
         try await failingCard(root)
 
-        relaunch(one, ["-configFolder", config])
+        relaunch(one, ["-configFolder", config, "-animations", "NO"])
         element("workspace.w2").click()
         try await show(cardTab)
         XCTAssertTrue(text("state: 3").exists(within: 10))
+        XCTAssertTrue(text("motion: off").exists, "Animations off on the card's root")
         try await send("rm -rf \(config) \(folder) ~/.local/state/ovvi/\(one)/plugin-api\r", to: shell)
     }
 

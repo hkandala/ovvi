@@ -4,8 +4,8 @@ extension OvviUITests {
     /// Settings ▸ Appearance ▸ Animations, on by default. Off, a split and its close slide no card, the overview's tile
     /// zooms in no frame and a reorder moves the spaces in no motion; it stays off after a relaunch.
     func testAnimationsOffMakesTheMotionsInstant() async throws {
-        // Not pinned: a pinned key would hide the switch's write.
-        let args = ["-recordMotion", "YES", "-forceMotion", "YES"]
+        // The switch's key unpinned: a pinned key would hide its write. Move Down and ⌘D need these two.
+        let args = ["-recordMotion", "YES", "-forceMotion", "YES", "-spaceOrder", "manual", "-newPaneOpens", ""]
         relaunch(one, args, pin: false)
         addTeardownBlock { @MainActor [self] in
             openSettings("appearance")
@@ -20,6 +20,7 @@ extension OvviUITests {
         }
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("animations")
+        element("tab.\(tab)").click()
         step("Animations on")
         try await motions(tab, pane, moving: true)
 

@@ -221,10 +221,11 @@ private struct Slid: ViewModifier, Animatable {
 
 extension Animation {
     /// 0.2 s with no bounce: 0.14 s feels too quick.
-    static func session(speed: Double = 0, distance: Double = 0) -> Animation {
+    static func session(speed: Double = 0, distance: Double = 0) -> Animation? {
         // Critically damped, it would go past the page from a relative speed over ω = 2π / response.
         let response = 0.2, initial = distance == 0 ? 0 : min(max(speed / distance, 0), 2 * .pi / response)
-        return Animation(Arrive(spring: .interpolatingSpring(duration: response, bounce: 0, initialVelocity: initial)))
+        let spring = Animation.motion(.interpolatingSpring(duration: response, bounce: 0, initialVelocity: initial))
+        return spring.map { Animation(Arrive(spring: $0)) }
     }
 }
 

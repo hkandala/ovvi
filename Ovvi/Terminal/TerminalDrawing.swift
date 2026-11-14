@@ -214,7 +214,11 @@ extension PaneSurfaceView {
         if let still, let layer, still !== layer {
             still.frame = layer.bounds
             still.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
+            // A new sublayer fades in by itself: not with Reduce Motion or Animations off.
+            CATransaction.begin()
+            CATransaction.setDisableActions(Animation.reduced)
             layer.addSublayer(still)
+            CATransaction.commit()
         }
         guard let terminal, terminal.grid != nil else { return }
         // A settle begun while evicted (a resize) would reveal the empty surface.

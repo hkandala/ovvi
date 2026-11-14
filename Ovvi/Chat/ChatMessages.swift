@@ -313,7 +313,7 @@ struct ChatMessages: View, Equatable {
     private func bottomButton(_ action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: "arrow.down").font(.system(size: 12, weight: .semibold)).frame(width: 30, height: 30)
-                .glassEffect(.regular.interactive(!Animation.off), in: .circle)
+                .glassEffect(.regular.interactive(), in: .circle)
         }
         .buttonStyle(.plain)
         .help("Scroll to Bottom")
