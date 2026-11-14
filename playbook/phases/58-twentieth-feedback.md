@@ -1425,3 +1425,18 @@ Round 3's tracks and the simplification pass (main up to 30326c5b), then the thr
 60. "[r12-path-12.32.14.png: a terminal line `/tmp/ovvi-drops-25150/0q49a36u/Screenshot\ 2026-11-14\ at\ 12.31.29 AM.png`]
     for this kind of links where space is there, our url parsing is handling till before AM, while our parsing should
     be till .png"
+
+- **Cause.** One finder, `TerminalLink` in HerdrKit, makes the links of terminal cards (⌘-hover, ⌘-click, ⌥) and of
+  the chat view; plugin cards find none of their own (File Explorer's Markdown links only web addresses). It took
+  `\ ` as part of a path, but ended a path at any character outside its list, and U+202F, the narrow no-break space
+  macOS puts before a screenshot's `AM`, was outside it. The drop paste escapes ASCII spaces only, which is right: no
+  shell splits a word on U+202F, so `cat /…/Screenshot\ …\ 12.31.29 AM.png` works in zsh as pasted.
+- **Fix.** One rule in the finder: a no-break space (U+00A0, U+202F) is a path's own character, like a backslash
+  escape; an unescaped ASCII space still ends it. The end trim drops a trailing no-break space and never a character a
+  backslash escapes (`/tmp/wow\!`). The opened path is the unescaped real name, as before.
+- **Drop paste.** Ghostty's escape set plus `^`: under zsh's `EXTENDED_GLOB` an unescaped `^` is a glob (a check
+  expanded `a^b.txt` to five files). U+202F, U+00A0, `~`, `=`, `%` mid-path need nothing in zsh, bash or sh.
+- **Tests.** Unit cases: the user's line with its trailing ` -`, U+00A0, every escape the drop makes, `\!` at the
+  end, a quoted path with U+202F, a URL that stops at U+202F; 3 of them fail on the old finder. The e2e helper's
+  dropped file is now `drop me's (1) at 12.31 AM.txt` (U+202F before `AM`), so both drop tests paste it, and
+  testDroppingAFilePastesItsPath ⌘-clicks the pasted path's last cells and checks that the file opens.

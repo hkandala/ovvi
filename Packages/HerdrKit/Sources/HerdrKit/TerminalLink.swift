@@ -247,9 +247,10 @@ private struct Finder {
     }
 
     /// No `:` (it starts a line number) and no `=` or `,` (`--out=/tmp/a`, `a.txt,b.txt`). A bracket opens only a
-    /// name (`app/(home)/page.tsx`): `Read(/tmp/a.txt)` is a call on a path.
+    /// name (`app/(home)/page.tsx`): `Read(/tmp/a.txt)` is a call on a path. A no-break space is a name's own (macOS
+    /// puts U+202F before a screenshot's `AM`); only an ASCII space a shell splits on ends the path.
     private static func isPathChar(_ char: Character) -> Bool {
-        char.isLetter || char.isNumber || "-_.~/+@%".contains(char)
+        char.isLetter || char.isNumber || "-_.~/+@%\u{00A0}\u{202F}".contains(char)
     }
 
     private static func unescaped(_ path: String) -> String {
@@ -291,8 +292,8 @@ private struct Finder {
 
     // MARK: Ends
 
-    /// Drops the punctuation after a link: `.,;:!?`, a closing bracket or quote it did not open, markdown's `*`, and
-    /// a `_` when one comes before it.
+    /// Drops the punctuation after a link: `.,;:!?`, a closing bracket or quote it did not open, markdown's `*`, a
+    /// `_` when one comes before it, and a no-break space; never a character a backslash escapes (`/tmp/a\!`).
     private func trimmed(_ start: Int, _ end: Int) -> Int {
         let pairs: [Character: Character] = [")": "(", "]": "[", "}": "{"]
         var end = end
@@ -306,7 +307,9 @@ private struct Finder {
             } else {
                 "\"'".contains(last) && count(last) % 2 == 1
             }
-            guard ".,;:!?*".contains(last) || unopened || last == "_" && start > 0 && chars[start - 1] == "_"
+            guard end - start < 2 || chars[end - 2] != "\\",
+                  ".,;:!?*\u{00A0}\u{202F}".contains(last) || unopened
+                  || last == "_" && start > 0 && chars[start - 1] == "_"
             else { break }
             end -= 1
         }

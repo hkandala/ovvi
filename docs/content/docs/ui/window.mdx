@@ -897,7 +897,10 @@ terminal.
     (`/notes.md`) or a closing `/` (`/tmp/`), so slash commands (`/compact`,
     `/help`) are no paths. A relative path needs a `/` and an extension, so
     `and/or`, `1/2` and `2026/11/11` are none. A space belongs to a path
-    only between quotes (`'/tmp/my file.txt'`) or escaped (`my\ file.txt`).
+    only between quotes (`'/tmp/my file.txt'`) or escaped (`my\ file.txt`); a
+    backslash escape (`\(`, `\'`, `\!`) is the path's own. A no-break space
+    (U+00A0, or U+202F before a screenshot's `AM`) belongs to the path too:
+    no shell splits a word on it.
     A `:line` or `:line:column` after the path, tsc's `(line,column)` or
     Python's `", line 12` lands on that line. In a diff line (`--- a/`,
     `+++ b/`, `diff --git`) the `a/` and `b/` are dropped, and a mention's `@`

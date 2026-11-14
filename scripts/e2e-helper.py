@@ -384,7 +384,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 os.makedirs(items, exist_ok=True)
                 folder = tempfile.mkdtemp(prefix="NSIRD_ovvi-e2e_", dir=items)
             folders.append(folder)
-            path = os.path.join(folder, "drop me's (1).txt")
+            path = os.path.join(folder, "drop me's (1) at 12.31\u202fAM.txt")
             with open(path, "w") as file:
                 file.write("ovvi-e2e-dropped\n")
             x, y, tx, ty = body.decode().split()

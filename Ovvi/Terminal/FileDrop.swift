@@ -64,14 +64,15 @@ extension PaneSurfaceView {
         return true
     }
 
-    /// Ghostty's `Shell.escape` (libghostty-spm's copy is internal). A path with a line break is quoted instead: a
-    /// shell without bracketed paste would run the line after it.
+    /// Ghostty's `Shell.escape` (libghostty-spm's copy is internal), plus `^`, a glob under zsh's `EXTENDED_GLOB`. A
+    /// no-break space (U+202F in a screenshot's name) splits no word: it stays as it is. A path with a line break is
+    /// quoted instead: a shell without bracketed paste would run the line after it.
     private static func escaped(_ path: String) -> String {
         if path.contains(where: \.isNewline) {
             return path.shellQuoted
         }
         return path.unicodeScalars.reduce(into: "") { text, scalar in
-            if "\\ ()[]{}<>\"'`!#$&;|*?\t".unicodeScalars.contains(scalar) {
+            if "\\ ()[]{}<>\"'`!#$&;|*?^\t".unicodeScalars.contains(scalar) {
                 text += "\\"
             }
             text.unicodeScalars.append(scalar)

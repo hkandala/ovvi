@@ -85,7 +85,10 @@ Drag a card by its header (the title area, not its buttons) by 4 pt or more.
 Drop files from Finder on a terminal: their paths are pasted into that pane,
 each with a backslash before every space and shell character, joined by
 spaces, in one bracketed paste. That is what Ghostty, herdr's usual terminal,
-sends herdr for a drop. An image with no file (from a browser or a screenshot
+sends herdr for a drop, plus a backslash before `^` (a glob under zsh's
+`EXTENDED_GLOB`). A no-break space (U+202F before a screenshot's `AM`) gets
+none: no shell splits a word on it. A ⌘-click on the pasted path opens the
+file. An image with no file (from a browser or a screenshot
 thumbnail) is saved as a PNG in a new folder in the user's temporary folder
 first, or, when the source only promises a file (as browsers may), received
 there; then that path is pasted. A file in a `TemporaryItems` folder (a

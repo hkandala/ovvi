@@ -129,8 +129,22 @@ private let cases: [(String, [Found])] = [
     ("Links.swift", []),
     ("e.g. this", []),
 
-    // Spaces only between quotes.
+    // Spaces only between quotes, escaped, or no-break (U+202F before a screenshot's `AM`, U+00A0).
     ("/tmp/my file.txt", [file("/tmp/my")]),
+    (
+        "/tmp/d/Screenshot\\ 2026-11-14\\ at\\ 12.31.29\u{202F}AM.png -",
+        [file("/tmp/d/Screenshot\\ 2026-11-14\\ at\\ 12.31.29\u{202F}AM.png",
+              "/tmp/d/Screenshot 2026-11-14 at 12.31.29\u{202F}AM.png")],
+    ),
+    ("cat /tmp/a\u{00A0}b.txt -n", [file("/tmp/a\u{00A0}b.txt")]),
+    ("see /tmp/a.txt\u{00A0}!", [file("/tmp/a.txt")]),
+    ("cat /tmp/drop\\ me\\'s\\ \\(1\\)\\ \\&\\ \\^x.txt", [
+        file("/tmp/drop\\ me\\'s\\ \\(1\\)\\ \\&\\ \\^x.txt", "/tmp/drop me's (1) & ^x.txt"),
+    ]),
+    ("rm /tmp/wow\\! now", [file("/tmp/wow\\!", "/tmp/wow!")]),
+    ("'/tmp/d/Screenshot 2026-11-14 at 12.31.29\u{202F}AM.png' -",
+     [file("/tmp/d/Screenshot 2026-11-14 at 12.31.29\u{202F}AM.png")]),
+    ("https://x.dev/a\u{202F}b", [web("https://x.dev/a")]),
     ("open '/tmp/my file.txt' now", [file("/tmp/my file.txt")]),
     ("\"~/My Notes/a b.md\"", [file("~/My Notes/a b.md")]),
     ("\"not a path\" and 'also not'", []),

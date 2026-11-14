@@ -166,8 +166,11 @@ extension OvviUITests {
         try await send("cat ", to: pane)
         let path = try await String(decoding: Self.post("\(one)/file-drag", Data(points.utf8)), as: UTF8.self)
         let folder = URL(filePath: path).deletingLastPathComponent().lastPathComponent
-        let name = #"drop\ me\'s\ \(1\).txt"#
+        // macOS puts U+202F before a screenshot's AM; only the ASCII spaces need escapes.
+        let name = #"drop\ me\'s\ \(1\)\ at\ 12.31"# + "\u{202F}AM.txt"
         try await waitFor(pane, toShow: "\(folder)/\(name)")
+        try await commandClickOpens(path, at: "cat \(URL(filePath: path).deletingLastPathComponent().path)/\(name)",
+                                    in: pane)
 
         try await send(" ", to: pane)
         let temporary = try await String(
@@ -187,6 +190,29 @@ extension OvviUITests {
         try await waitFor(pane, toShow: "echo ovvi-e2e-$((6*7))")
         try await Self.call(one, "pane.send_keys", ["pane_id": pane, "keys": ["enter"]])
         try await waitFor(pane) { $0.contains("ovvi-e2e-42") }
+    }
+
+    /// ⌘-click on the pasted path's last cells, past its escapes and its U+202F, opens the real file.
+    private func commandClickOpens(_ path: String, at typed: String, in pane: String) async throws {
+        step("A ⌘-click on the pasted path's end opens the file")
+        let terminal = element("terminal.\(pane)")
+        let grid = try XCTUnwrap(terminal.value as? String).split(separator: " ").compactMap { Double($0) }
+        let rows = try await read(pane).split(separator: "\n", omittingEmptySubsequences: false)
+        let row = try XCTUnwrap(rows.lastIndex { $0.contains("cat /") }, "\(rows)")
+        let start = try XCTUnwrap(rows[row].range(of: "cat /")).lowerBound
+        // The line starts at that row and wraps at the grid's width; every character here takes one cell.
+        let index = rows[row].distance(from: rows[row].startIndex, to: start) + typed.count - 2
+        let cell = CGSize(width: terminal.frame.width / grid[1], height: terminal.frame.height / grid[0])
+        let point = terminal.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(
+            dx: cell.width * (Double(index % Int(grid[1])) + 0.5),
+            dy: cell.height * (Double(row + index / Int(grid[1])) + 0.5),
+        ))
+        let before = try await tabIDs()
+        point.hover()
+        XCUIElement.perform(withKeyModifiers: .command) { point.click() }
+        let opened = try await newTabID(after: before)
+        closeAfter("tab", opened)
+        try await labelEnds(pane(of: opened), " \(path)")
     }
 
     func testAClickOnACardsHeaderGivesItTheKeyboard() async throws {
