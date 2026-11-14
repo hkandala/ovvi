@@ -106,10 +106,10 @@ extension OvviUITests {
             relaunch(one, ["-agentView", first])
             XCTAssertTrue(element("workspace.w2").exists(within: connect))
             element("workspace.w2").click()
-            element("tab.\(chatTab)").click()
+            try await select(chatTab)
             XCTAssertTrue(element("pane.\(chat).view.chat").has(\.isSelected, true, within: 10))
             XCTAssertTrue(element("chat.\(chat).composer").exists(within: 5))
-            element("tab.\(tuiTab)").click()
+            try await select(tuiTab)
             XCTAssertTrue(element("pane.\(tui).view.tui").has(\.isSelected, true, within: 10))
             XCTAssertFalse(element("chat.\(tui).composer").exists)
         }

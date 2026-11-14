@@ -698,16 +698,20 @@ A run is one quiet line with no card: its summary and a chevron.
   app relaunches. The app saves the view of each chat pane on the pane's
   machine, in `$HOME/.local/state/ovvi/<session>/views.json`, by terminal id
   (`{"term_…": "chat"}`). It saves when a chat first shows and at each switch,
-  and reads the file once, after the session's first snapshot. A chat with no
-  saved view (one that no Ovvi showed yet) opens on the setting. A new launch
-  in the pane (New Pane, Relaunch with Chat) decides again.
+  the app's own switches too (a `/command` sent from the reply box, OpenCode's
+  fallback to its TUI). It reads the file after the session's first snapshot,
+  and again at the next snapshot if the read failed, then writes it back (which
+  keeps it from the 30-day sweep of state files). A chat with no saved view (one
+  that no Ovvi showed yet) opens on the setting. A new launch in the pane (New
+  Pane, Relaunch with Chat) decides again. A card made before the read is in
+  shows the setting's view until then.
 - The entry goes with the pane's terminal: at once when the app sees the
   terminal go (the pane closed, its shell ended), else at the next read. A
   terminal id stays through moves and a live update of herdr. A cold restart
   of herdr gives new ids, but it also starts every agent again without Ovvi's
   flags, so no pane has a chat until Relaunch with Chat, which opens on the
-  chat. Simpler choice: two Macs on one remote session each write the whole
-  file, and the last write wins.
+  chat. Simpler choice: each write is the whole file as this app knows it, so
+  two Macs on one remote session undo each other's switches.
 - A floated chat pane shows its chat in its floating window, with Chat | TUI
   in the window's title row
   ([Floating pane](/docs/ui/window#floating-pane)).

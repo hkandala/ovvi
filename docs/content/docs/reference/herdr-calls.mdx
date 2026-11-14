@@ -90,6 +90,7 @@ sh -c 'rm -f "$HOME/$1"' sh <path>                  # a remote machine: a typed 
 sh -c 'cat "$HOME/$1"' sh .local/state/ovvi/closed-pages.json     # a remote machine: Recently Closed opens; then the write above, after a close or a pick
 find "$HOME/.local/state/ovvi/<S>" -type f -mtime +30 -delete       # once on connect
 sh -c 'cat "$HOME/$1"' sh .local/state/ovvi/<S>/views.json      # a remote machine: each chat pane's Chat or TUI, after the first snapshot; written as above at each change (This Mac in the app)
+sh -c '[ -s "$HOME/$1" ] || echo none' sh .local/state/ovvi/<S>/views.json   # both machines, when that read gave nothing: a missing file, or a failed read to try again at the next snapshot
 sh -c 'kill -WINCH "$@"' sh <pid>…                 # a placeholder redraws its new label
 ssh -F /dev/null -S <ctl> -O forward -D 127.0.0.1:<P> <target>   # a remote machine: its first browser card's proxy
 ssh -F /dev/null -S <ctl> -O cancel -D 127.0.0.1:<P> <target>    # its last card went

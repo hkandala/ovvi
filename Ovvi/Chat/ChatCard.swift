@@ -23,15 +23,35 @@ extension HostStore {
 
     /// On the pane's machine, beside the cards' state files: it outlives the app, and a terminal's id survives moves.
     /// A cold restart of herdr gives new ids, but it also ends every chat (herdr starts the agents again without the
-    /// flags). ponytail: two Macs on one remote session write the whole file, last writer wins; one file per pane if
-    /// that shows.
+    /// flags). ponytail: each write is the whole file as this app knows it, so two Macs on one remote session undo
+    /// each other's switches; read, change one key and write if that shows.
     private var viewsPath: String {
         ".local/state/ovvi/\(session)/views.json"
     }
 
-    /// After the first snapshot, so that terminals gone meanwhile go from the file.
-    func loadViews() async {
-        let text = await machine.exec().read(home: viewsPath)
+    /// At each snapshot until it is read, after the first one's sweep of old state files (so that a file old enough
+    /// goes first): terminals gone meanwhile go from it.
+    func readViews(pruning: Bool) {
+        guard views == nil, !viewsReading else { return }
+        viewsReading = true
+        Task {
+            if pruning {
+                await machine.exec().pruneState(session: session)
+            }
+            await loadViews()
+            viewsReading = false
+        }
+    }
+
+    private func loadViews() async {
+        let exec = await machine.exec()
+        let text = await exec.read(home: viewsPath)
+        // A failed read (a remote's ssh, its timeout) is nil too: only a missing or empty file starts empty.
+        if text == nil,
+           await (try? exec.output(["sh", "-c", #"[ -s "$HOME/$1" ] || echo none"#, "sh", viewsPath])) != "none"
+        {
+            return
+        }
         let saved = text.flatMap { try? JSONDecoder().decode([String: String].self, from: Data($0.utf8)) } ?? [:]
         let live = Set(last?.panes.compactMap(\.terminalID) ?? [])
         var views = saved.filter { live.contains($0.key) }
@@ -44,9 +64,8 @@ extension HostStore {
             }
         }
         self.views = views
-        if views != saved {
-            writeViews()
-        }
+        // Also unchanged: each write refreshes the file's age for the sweep.
+        writeViews()
     }
 
     func keep(_ chat: Chat) {

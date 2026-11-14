@@ -22,6 +22,11 @@ extension OvviUITests {
             XCTAssertTrue(row(chat.pane, "reply", last).exists(within: 20))
             chats.append((chat, last))
         }
+        // Each pane keeps its view over the relaunch: measure them as their TUI.
+        for (chat, _) in chats {
+            try await select(chat.tab)
+            element("pane.\(chat.pane).view.tui").click()
+        }
         relaunch(one, ["-recordLatency", "YES"])
         addTeardownBlock { @MainActor in self.keep(self.element("app.latency").stringValue, as: "latency") }
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
