@@ -270,8 +270,11 @@ extension OvviUITests {
         let rested = Date.now
         XCTAssertFalse(until(2) { shown() == opened }, "dropped before its wait")
         if leaving {
-            chat.scroll(byDeltaX: 0, deltaY: 200)
-            XCTAssertTrue(bottom.exists(within: 2))
+            // XCUITest's wheel has no phases, and on CI one moved nothing: once more, still inside the first wait.
+            XCTAssertTrue((0 ..< 2).contains { _ in
+                chat.scroll(byDeltaX: 0, deltaY: 200)
+                return bottom.exists(within: 2)
+            })
             bottom.click()
             XCTAssertTrue(bottom.vanishes(within: 3))
             // Until a second past the first wait's end, within the new one's.
