@@ -1020,7 +1020,8 @@ agents at once.
   program runs).
 - **Click.** A click on a tile selects its space and tab and leaves the
   overview: the tile's miniature grows to the tab's page over 0.18 s (ease
-  out) while the other tiles fade out, and the sidebar and the title row fade
+  out), in the render server as the cards move (a busy main thread drops none
+  of its frames), while the other tiles fade out, and the sidebar and the title row fade
   in over 0.12 s; then the page shows. The sidebar and the title row stay
   laid out under the overview, hidden, so they come at once in a big session
   too. Esc, the title row's × and ⌃⌘O leave the same way, on the selected

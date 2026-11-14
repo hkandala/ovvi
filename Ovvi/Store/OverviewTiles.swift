@@ -4,8 +4,9 @@ import SwiftUI
 
 extension WindowPages {
     static let tile: CGFloat = 0.35
-    /// e2e (`-recordMotion YES`): the zooms' frames drawn between their start and end.
-    static var zoomSteps = 0
+    static let zoom = 0.18
+    /// e2e (`-recordMotion YES`): the zooms started.
+    static var zooms = 0
 
     func toggleOverview() {
         if overview {

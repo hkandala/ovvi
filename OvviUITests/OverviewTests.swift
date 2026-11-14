@@ -80,7 +80,7 @@ extension OvviUITests {
         XCTAssertTrue(tabs.allSatisfy { record.contains("loader \($0)") }, record)
     }
 
-    /// The tile zooms to the page as the overview closes.
+    /// The tile zooms to the page as the overview closes, in Core Animation.
     func testOverviewTileIntoAnUnshownTabShowsItSteadily() async throws {
         relaunch(one, ["-recordMotion", "YES", "-forceMotion", "YES"])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
@@ -90,11 +90,11 @@ extension OvviUITests {
             app.typeKey("o", modifierFlags: [.command, .control])
             let overview = element("overview"), tile = element("overview.tab.\(tab)")
             XCTAssertTrue(tile.has(\.isHittable, true, within: 3))
-            let steps = Int(element("overview.zoom").stringValue) ?? 0
+            let zooms = Int(element("overview.zoom").stringValue) ?? 0
             tile.click()
             XCTAssertTrue(overview.vanishes(within: 2))
-            let zoomed = (Int(element("overview.zoom").stringValue) ?? 0) - steps
-            XCTAssertGreaterThanOrEqual(zoomed, 2, "\(round): frames of the zoom")
+            // Its frames are the render server's: this test's own queries hold the main thread for a moment.
+            XCTAssertEqual((Int(element("overview.zoom").stringValue) ?? 0) - zooms, 1, "\(round): the zoom")
             let card = element("pane.\(pane)")
             var values: [String] = []
             let end = Date.now + 1.5

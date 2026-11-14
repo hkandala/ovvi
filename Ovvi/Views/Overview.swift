@@ -37,9 +37,18 @@ struct Overview: View {
                 .overlay(alignment: .topLeading) {
                     if let zoom {
                         // Pictures only: a live terminal stays in its tile until the page takes it.
-                        Miniature(tab: zoom.tab, page: page, size: tabPage.size, live: [])
-                            .accessibilityHidden(true)
-                            .modifier(Grow(progress: grown ? 1 : 0, from: zoom.from, page: tabPage))
+                        Zoom(from: zoom.from, page: tabPage) {
+                            // Not an overview opened again since a second leave closed this one.
+                            if pages.leaving {
+                                pages.closeOverview()
+                            }
+                        } content: {
+                            Miniature(tab: zoom.tab, page: page, size: tabPage.size, live: [])
+                        }
+                        .frame(width: tabPage.width, height: tabPage.height)
+                        .padding(.leading, tabPage.minX)
+                        .padding(.top, tabPage.minY)
+                        .accessibilityHidden(true)
                     }
                 }
                 .onChange(of: pages.leaving, initial: true) {
@@ -80,37 +89,54 @@ struct Overview: View {
         // A tile that still streams has no picture yet for the zoom to grow.
         pages.terminals.takePictures(of: pages.tileCards(page, tab.id).map(\.0))
         zoom = (tab, from)
-        // Next turn: a view inserted in the same update as the change starts at its end, with no motion.
+        // The other tiles' fade. Next turn: a view inserted in the same update as the change starts at its end.
         Task {
-            withAnimation(.motion(.easeOut(duration: 0.18))) { grown = true } completion: {
-                // Not an overview opened again since a second leave closed this one.
-                if pages.leaving {
-                    pages.closeOverview()
-                }
-            }
+            withAnimation(.motion(.easeOut(duration: WindowPages.zoom))) { grown = true }
         }
     }
 }
 
-/// The zoom's frame at each step: a plain animated frame reaches the miniature's layout only at its end.
-private struct Grow: ViewModifier, Animatable {
-    var progress: CGFloat
+/// Grown by Core Animation, as cards move (`CardMotion`): the render server draws its frames, so work on the main
+/// thread meanwhile drops none (an accessibility client's snapshot of the window, 75 ms in the VM and 380 ms on CI,
+/// left one frame of a zoom drawn on the main thread). The content lays out once, at the page's size.
+private struct Zoom<Content: View>: NSViewRepresentable {
     let from: CGRect
     let page: CGRect
+    let done: () -> Void
+    @ViewBuilder let content: Content
 
-    var animatableData: CGFloat {
-        get { progress }
-        set { progress = newValue }
+    func makeNSView(context _: Context) -> NSHostingView<Content> {
+        let host = NSHostingView(rootView: content)
+        host.safeAreaRegions = []
+        host.wantsLayer = true
+        guard let layer = host.layer, page.width > 0, page.height > 0 else {
+            done()
+            return host
+        }
+        // The layer's y grows upward, as its superlayer's (`MovingCard`): the tile's rect in it, then scaled about the
+        // anchor.
+        let scale = CGSize(width: from.width / page.width, height: from.height / page.height)
+        let anchor = CGPoint(x: layer.anchorPoint.x * page.width, y: layer.anchorPoint.y * page.height)
+        let start = CATransform3DConcat(
+            CATransform3DMakeScale(scale.width, scale.height, 1),
+            CATransform3DMakeTranslation(from.minX - page.minX + (scale.width - 1) * anchor.x,
+                                         page.maxY - from.maxY + (scale.height - 1) * anchor.y, 0),
+        )
+        let grow = CABasicAnimation(keyPath: "transform")
+        (grow.fromValue, grow.toValue, grow.duration) = (start, CATransform3DIdentity, WindowPages.zoom)
+        grow.timingFunction = CAMediaTimingFunction(name: .easeOut)
+        CATransaction.begin()
+        CATransaction.setCompletionBlock(done)
+        layer.add(grow, forKey: "zoom")
+        CATransaction.commit()
+        if SettlingHost.record {
+            WindowPages.zooms += 1
+        }
+        return host
     }
 
-    func body(content: Content) -> some View {
-        if SettlingHost.record, progress > 0, progress < 1 {
-            WindowPages.zoomSteps += 1
-        }
-        let step = { (start: CGFloat, end: CGFloat) in start + (end - start) * progress }
-        let rect = CGRect(x: step(from.minX, page.minX), y: step(from.minY, page.minY),
-                          width: step(from.width, page.width), height: step(from.height, page.height))
-        return content.frame(width: rect.width, height: rect.height).position(x: rect.midX, y: rect.midY)
+    func updateNSView(_ host: NSHostingView<Content>, context _: Context) {
+        host.rootView = content
     }
 }
 
