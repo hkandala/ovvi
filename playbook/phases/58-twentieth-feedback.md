@@ -1483,3 +1483,37 @@ Round 3's tracks and the simplification pass (main up to 30326c5b), then the thr
 - **For the user.** A failed Git fetch or checkout in a wide card: the toast stops at about a third of a wide window,
   ends in …, hover shows the whole message, Copy copies it. ⇧⌘C on a terminal deep in folders: the notice wraps once and
   ends in ….
+
+### Final CI, round 4
+
+Round 4's tracks (T3, E7, N4, V3, Y, U, W4) and this round's fixes; head p58r4-final8 (441dc4ba).
+- **Fix (newWorkspace).** T3's race in the shared helper: it clicked the space's row once herdr had made the tabs,
+  and a snapshot after the click opened the last ones in the background (the bar slid, `tabs[0]` left the lazy row).
+  Now a space of several tabs is made under a temporary label and renamed after its last tab; the row's label proves
+  the app holds every tab before the click (snapshots are read one at a time). T3's relaunch-and-click is gone. The
+  ponytail look at round 4's diff found nothing to change.
+- **Cause (app: a Return while the agent starts).** `Chat.send` dropped a message while the phase was starting and
+  kept the draft with no sign: a remote pi chat lost its first message on CI (pi's session is read over ssh). **Fix:**
+  the message waits, dimmed, and goes once the agent is ready, in order, at most 30 s, then "Not sent"; not to an agent
+  started again in the pane. The pi stand-in's `OVVI_STAND_IN_LATE` holds its session line back; the pi tools test
+  sends its first message then (red on the old app in the VM).
+- **Causes (tests).** The plugin API page's lines pushed its buttons below the card (Open's click landed under the
+  window): the buttons come first. A long chat's swipes move 470–640 pt, and the first can stop short: bounded by a
+  swipe's own travel. Background tabs the lazy row never made: stepped to by their count. A tool run clicked while its
+  Working row went: after Stop goes. A split's `exit` typed while its shell started: after the prompt. The 400-pane
+  stress test: a fold during a 6 s sidebar redraw, and a split whose herdr pane came after 6 s (wider bounds). An
+  overview snapshot during the first launch's plugin builds: 15 s. The Git commit-and-push test (80–105 s) got 240 s
+  after XCUITest took 32 s to hover a menu item.
+- **Open (not proven).** One long-chat wheel scroll moved nothing (no frame moved): XCUITest's wheel or the chat
+  ignoring it, which CI's frames cannot tell. The test scrolls once more. If a user's scroll ever fails right after
+  Scroll to Bottom, this is it.
+- **Open bug (overview zoom).** testOverviewTileIntoAnUnshownTabShowsItSteadily, run 43603829659 shard 0: the zoom into
+  an unshown tab drew 1 of the 2 frames it needs (0.18 s). Likely the unshown tab's page builds on the main thread
+  during the zoom on a slow runner: a hitch, for a profiling track.
+- **Runs.** final1–final7: each red on a different rare test (above), fixed by cause; final3 and final5 had both full
+  runs green, final7 and final8 on-demand green. final8: full 43603827109 green (307 of 307, 64 min); full 43603829659
+  red on the overview zoom, its shard 2 stopped by CI's 30-minute limit with no app launch for 12.5 min and no
+  xcresult written (testmanagerd), rerun once: 62 of 62 green; on-demand 43603832178 green (22, 2 skipped as always, 18 min); checks
+  43603825358 green, with SSHForwardTests and "a started server shares the CLI's paths" run, not skipped. U's and W4's
+  tests green in final8 and in chosen-tests run 43582368229. A VM-only red, not this round's: the pi tree test's
+  dimmed-bubble check fails in the VM on the old app too (no Reduce Motion there; CI passes it).
