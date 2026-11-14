@@ -62,10 +62,8 @@ extension CommandList {
     }
 
     /// No key without an address: a disabled item swallows its key.
-    static func copyAddress(_ page: Page?, _ pane: HostStore.Pane?,
-                            _ target: @escaping @MainActor () -> HostStore.Pane?) -> Command
-    {
-        let address = pane.flatMap { page?.address($0) }
+    static func copyAddress(_ page: Page?, _ target: @escaping @MainActor () -> HostStore.Pane?) -> Command {
+        let address = target().flatMap { page?.address($0) }
         return Command(section: .paneMove, title: "Copy \(address?.kind ?? "Address")", id: "pane.copy-address",
                        key: address == nil ? nil : .hotkey("pane.copy-address"), group: .panes,
                        symbol: "link", keywords: "pane address url path session id commit hash clipboard",
@@ -124,7 +122,7 @@ extension CommandList {
                                     }
                                 }
                             })
-        return [copyAddress(page, pane, target)] + redraw + [replace] + terminal + [agent] + plugins + [
+        return [copyAddress(page, target)] + redraw + [replace] + terminal + [agent] + plugins + [
             Command(section: .close, title: "Close Pane", id: "pane.close", key: .hotkey("pane.close"), group: .panes,
                     symbol: "xmark.square", keywords: "pane", enabled: pane != nil || page?.standIn != nil,
                     action: { page?.closePane(target()) }),
@@ -169,7 +167,7 @@ extension CommandList {
             + [
                 edit("Copy", #selector(NSText.copy(_:)), "doc.on.doc"),
                 edit("Paste", #selector(NSText.paste(_:)), "doc.on.clipboard"),
-                Self.copyAddress(page, pane) { pane },
+                Self.copyAddress(page) { pane },
             ] + Self.pane(page, tabs: false) { pane }.filter { $0.section == .close }.map {
                 var command = $0
                 command.key = command.id == "pane.close" ? .hotkey("tab.close") : command.key
@@ -182,7 +180,7 @@ extension CommandList {
 extension Page {
     /// What Copy Address copies, and what to call it: what the card shows, as its own machine names it.
     func address(_ pane: HostStore.Pane) -> (kind: String, text: String)? {
-        let folder: (kind: String, text: String)? = pane.cwd.map { ("Path", $0) }
+        let folder: (kind: String, text: String)? = (store.chooser(pane.id)?.folder ?? pane.cwd).map { ("Path", $0) }
         if let label = pane.browser {
             let shown = pane.terminalID.flatMap { terminals.browsers[$0]?.address } ?? ""
             return [shown, label.arg].first { !$0.isEmpty }.map { ("URL", $0) }

@@ -1334,13 +1334,13 @@ Round 3's tracks and the simplification pass (main up to 30326c5b), then the thr
   | Card | Address |
   |---|---|
   | Browser | the page's URL as the address bar shows it (a remote machine's `localhost` form); before the first load, the label's URL; a blank page has none |
-  | Agent, terminal or chat view | the agent's session id (`Pane.session`: herdr's report, else the id after `resume`) |
+  | Agent, terminal or chat view | the agent's session id (`Pane.session`: herdr's report, else the id after `resume`; pi's is its session file) |
   | Agent with no session id yet | its folder, as a terminal: the item then reads Copy Path, so the user sees which |
   | Terminal | the pane's folder (herdr's `cwd`), the full path |
   | File Explorer | the open file's path (with or without the tree beside it, a preview, Markdown); on the tree, the shown folder's |
   | Git | a commit's full hash while a commit shows; Working Tree and the home page: the repository's root |
-  | Another plugin | by its manifest's `opens`: a path for `files` and `folders`, the URL for `urls`; with no `opens` (Tart VM), the page's title when it set one (the VM's name), else the pane's folder |
-  | New pane chooser | the pane's folder |
+  | Another plugin | by its manifest's `opens`: a path for `files` and `folders`, the URL for `urls`; with an empty argument (Tart VM), the page's title when it set one (the VM's name, All VMs on its list), else the pane's folder |
+  | New pane chooser | the folder it shows |
   | Overview | the keyboard card, as View ▸ Pane |
   | No card (an empty space) | disabled, with no key: ⇧⌘C goes on to whatever has the keyboard |
 

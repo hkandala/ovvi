@@ -748,20 +748,21 @@ How it works: [Layout and sizing](/docs/layout).
   **Reset Pane Name** (enabled once the pane has a name, not on a browser
   or plugin pane, also in the palette)
   clears herdr's label, so the header shows the program again.
-- <a id="copy-address"></a>**Copy Address** (⇧⌘C, as in Arc; also in a floating window's menu and the palette) puts
-  the keyboard card's address on the clipboard and shows "Copied ‹address›" for 1.5 s. The address is what the card
+- <a id="copy-address"></a>**Copy Address** (⇧⌘C; also in a floating window's menu and the palette) puts
+  the keyboard card's address on the clipboard and shows "Copied ‹address›" for 1.5 s in the main window. The address is what the card
   shows, as its own machine names it, with no host name: a remote path pastes as it is into that machine's shell or
-  agent. The menu item names it: Copy URL, Copy Path, Copy Session ID, Copy Commit ID or Copy Title. With no card
-  (an empty space) the item is disabled and has no key, so ⇧⌘C goes on to the page or program.
+  agent. The menu item names it: Copy URL, Copy Path, Copy Session ID, Copy Commit ID or Copy Title. With no card,
+  or a card with no address (a blank browser card), the item is disabled and has no key, so ⇧⌘C goes on to the page.
 
   | Card | Address |
   |---|---|
   | Browser | the address bar's URL |
-  | Agent, in its terminal or its chat view | the agent's session id; before the agent reports one, its folder |
-  | Terminal, New pane chooser | the pane's folder |
-  | File Explorer | the open file's path; on the tree, its folder's |
+  | Agent, in its terminal or its chat view | the agent's session id (pi's is its session file); before the agent reports one, its folder |
+  | Terminal | the pane's folder |
+| New pane chooser | the folder it shows |
+  | File Explorer | the open file's path; on the tree page, the shown folder's |
   | Git | the commit's full hash while a commit shows; else the repository's root |
-  | Another plugin | its place, by the manifest's `opens`; with no `opens`, the page's title (a Tart VM's name), else the pane's folder |
+  | Another plugin | its place, the label's argument (a path or a URL); with no argument, the page's title (a Tart VM's name, or All VMs on its list), else the pane's folder |
 
   A folder's path has no `/` at the end, as Finder's Copy as Pathname.
 - Drag the header to move the pane ([Drag and drop](/docs/ui/drag-and-drop)). A click on the header's empty part

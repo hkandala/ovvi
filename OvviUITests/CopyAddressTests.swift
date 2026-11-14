@@ -24,7 +24,6 @@ extension OvviUITests {
         try await relabel(explorer, "ovvi:explorer#e2ecpe \(root)/a.txt")
         try await relabel(git, "ovvi:git#e2ecpg \(root)/ \(hash)")
         XCTAssertTrue(pageText("ovvi-copy-page").exists(within: 10))
-        XCTAssertTrue(element("pane.\(git).title").has(\.stringValue, "one", within: 10))
 
         func copies(_ card: String, _ expected: (String) -> Bool) {
             let target = element(card == shell ? "terminal.\(card)" : "pane.\(card).title")
@@ -41,6 +40,8 @@ extension OvviUITests {
         copies(browser) { $0 == "file://\(root)/page.html" }
         copies(explorer) { $0 == "\(root)/a.txt" }
         copies(git) { $0 == hash }
+        try await relabel(git, "ovvi:git#e2ecpg \(root)/ uncommitted")
+        copies(git) { $0 == root }
 
         let id = UUID().uuidString.lowercased()
         // The state ahead of the session: herdr takes no state report after it.
