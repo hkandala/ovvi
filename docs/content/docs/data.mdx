@@ -76,6 +76,11 @@ builds share. It never touches herdr's sessions or the agents' files.
 | An agent's transcript, session record and server | the agent | its own files and server on the pane's machine; Archived Sessions reads them ([Archived Sessions](/docs/ui/window#archived-sessions)) |
 | An agent session's title | the agent; the app keeps the last one read per pane in memory | the agent's own files on the pane's machine ([Session titles](/docs/ui/chat-view#session-titles)) |
 | ControlMaster sockets | app | `~/Library/Caches/ovvi/`, while running |
+| Update checks: on or off (`SUEnableAutomaticChecks`), the last check (`SULastCheckTime`), a skipped version (`SUSkippedVersion`) | Sparkle, This Mac | app storage (`UserDefaults`); a download waits in `~/Library/Caches/<bundle id>/org.sparkle-project.Sparkle/` |
+
+A Release build sends one request a day of its own: an HTTPS GET of its update
+feed on github.com ([Updates](/docs/platform#install)), with the app's version
+in the User-Agent and no system profile.
 
 <Callout title="Nothing the app saves describes herdr's state">
 The only exception is each window's restore state: the names of its pages.

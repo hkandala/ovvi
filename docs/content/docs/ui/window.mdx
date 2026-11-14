@@ -1170,6 +1170,11 @@ A short message after a failed action or a refused move, or from an agent.
   information tone, with **Show**, in each window that shows the session.
   Show selects the pane's space, tab and card in that window. Ovvi does
   not come to the front for it.
+- **Update** (D112): when the daily check finds a newer build, "Ovvi ‹version›
+  is available" in the information tone with `arrow.down.circle.fill`,
+  **Update…** and ×, in every window, under the other notices. It stays until
+  Update… or ×; × hides it until the next daily check finds the build again.
+  Update… opens Sparkle's window with the release notes. Release builds only.
 - It goes after 4 s (a check after 2 s; one with **Show** or **Retry** after 6 s;
   a spinner when its command ends), or at ×. While the pointer is over it, it
   stays, and it goes when the pointer leaves if its time is up. A newer notice replaces it. After × or a newer notice, a command's

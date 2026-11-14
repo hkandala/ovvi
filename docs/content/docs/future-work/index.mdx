@@ -43,10 +43,9 @@ never calls herdr's focus methods. A design gets decision numbers on the
 - **Reorder the machines** in the machine menu.
 - **herdr inside the app** (herdr-core), so the user never installs herdr or
   needs to know about it: no mention of herdr anywhere in the app's UI.
-- **Releases and updates:** CI builds a notarized Developer ID `.dmg` and
-  `.app` on a version tag and uploads them to GitHub (signed ad hoc now:
-  [Platform](/docs/platform)), and the app checks for updates and tells the
-  user.
+- **A notarized download:** with a Developer ID, the release job signs,
+  notarizes and staples the app, adds a `.dmg`, and a Homebrew cask follows
+  (signed ad hoc now: [Install](/docs/platform#install)).
 - **Anonymous telemetry:** daily users, error reports and other usage
   numbers, sent to a hosted analytics service.
 - **Richer agent notifications** than the needs-you and finished banners

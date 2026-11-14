@@ -50,6 +50,16 @@ description: "The codebase, dependencies, swipes and views, the tab bar and test
   It is `Ovvi Tip.app`, `dev.ovvi.app.tip`, with a DEV badge on the icon, and
   runs beside Ovvi with settings of its own ([Data](/docs/data)). The build
   marks the icon itself (`scripts/tip-icon.swift`), from the app's own.
+- **Updates** (D112): Sparkle checks a feed once a day, Ovvi's
+  `releases/latest/download/appcast.xml` (GitHub's newest release that is not
+  a pre-release) and Ovvi Tip's `releases/download/tip/appcast.xml`, so
+  neither app sees the other's builds. The feed has one item, the release
+  itself; its notes are the release's, in Markdown. The release's publish job
+  signs the zip with the EdDSA key (`scripts/appcast.sh`), and the app checks
+  it against its `SUPublicEDKey`: an ad-hoc app has no stable code signature,
+  so the key is what Sparkle trusts. Sparkle never installs by itself: Ovvi
+  shows a [notice](/docs/ui/window#notice), and Install Update asks first.
+  Debug builds and the UI tests never check.
 
 ## Dependencies
 
@@ -57,6 +67,7 @@ description: "The codebase, dependencies, swipes and views, the tab bar and test
 |---|---|---|
 | Terminal drawing | `Lakr233/libghostty-spm`, exact pin (it brings DisplayLink) | Metal, IME, one Swift API |
 | SSH | the system `/usr/bin/ssh` | the user's SSH setup works unchanged |
+| Updates | `sparkle-project/Sparkle` 2.10.1, exact pin, in Release builds (D112) | it replaces a running app safely (rights, quarantine, relaunch) and checks each download's EdDSA signature |
 | The chat's Markdown | `swiftlang/swift-markdown` 0.9.0, exact pin (it brings cmark-gfm) | Apple's GFM parser: tables, task lists, strikethrough (D86) |
 | The default plugins' content ([File Explorer and Git](/docs/plugins/default-plugins)) | CodeMirror 6 (editor, languages, search), `@pierre/trees`, `markdown-it` and `pdfjs-dist` in `plugins/builtin/explorer`, `@pierre/diffs` in `plugins/builtin/git`; exact pins in each package's lockfile | recognized editors and viewers in the system's WebKit; no framework of our own |
 | Building the plugins | Node with npm (in the `Brewfile`, and installed on CI). Each package builds with its own `esbuild` and checks with its own TypeScript; `web/` builds the API's runtime and checks it against its types. `make web` runs them all | the app ships no bundler and no package manager; at run time it uses the user's own ([Build a plugin](/docs/plugins/building)); no build output is in git |

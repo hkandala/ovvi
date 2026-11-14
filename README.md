@@ -25,8 +25,8 @@ Website and docs: [ovvi.dev](https://ovvi.dev).
 - herdr 0.9.3 or later on each machine, found by `command -v herdr` in the login shell (else
   `~/.local/bin/herdr`). The Mac needs it only for its own sessions.
 - Perl on remote machines (the SSH relay is a small Perl script; nearly every Unix has it).
-- Dependencies: libghostty-spm (which brings DisplayLink) and swift-markdown (which brings cmark-gfm), Swift
-  packages at exact pins, and the system `ssh`; nothing else ships in the app.
+- Dependencies: libghostty-spm (which brings DisplayLink), swift-markdown (which brings cmark-gfm) and Sparkle (the
+  updater), Swift packages at exact pins, and the system `ssh`; nothing else ships in the app.
 - To build: Xcode 27 and Homebrew (`make setup` installs SwiftFormat, SwiftLint, xcbeautify and Node from
   the `Brewfile`). The docs site needs Node 22 and pnpm 10.
 
@@ -68,7 +68,7 @@ keyboard shortcuts ([all of them](https://ovvi.dev/docs/ui/theme-and-accessibili
 
 ## Future work
 
-herdr inside the app, releases with an updater, an iPhone and iPad app, image paste, floating status pills, a changes
+herdr inside the app, a notarized download, an iPhone and iPad app, image paste, floating status pills, a changes
 panel: [Future work](docs/content/docs/future-work/index.mdx).
 
 ## License
