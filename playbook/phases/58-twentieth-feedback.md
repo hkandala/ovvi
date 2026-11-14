@@ -1419,3 +1419,9 @@ Round 3's tracks and the simplification pass (main up to 30326c5b), then the thr
   in it, a Git commit, Working Tree, a Tart VM, and in a floating window (it copies, with no cue there); the card's menu
   names what it copies. Open question: on File Explorer's tree and the Git home, copy the selected row instead? That
   needs the page to tell the app its selection, a new plugin call (API 4).
+
+### Track U: a path link runs to its end, through escaped and narrow spaces (item 60)
+
+60. "[r12-path-12.32.14.png: a terminal line `/tmp/ovvi-drops-25150/0q49a36u/Screenshot\ 2026-11-14\ at\ 12.31.29 AM.png`]
+    for this kind of links where space is there, our url parsing is handling till before AM, while our parsing should
+    be till .png"
