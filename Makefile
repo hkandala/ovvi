@@ -125,7 +125,7 @@ NAME := Ovvi Tip
 BUNDLE_ID := dev.ovvi.app.tip
 URL_SCHEME := ovvi-tip
 VERSION := $(VERSION)-tip.$(shell git rev-parse --short=7 HEAD)
-TIP_SETTINGS := OVVI_APP_NAME='$(NAME)' SWIFT_ACTIVE_COMPILATION_CONDITIONS=TIP
+TIP_SETTINGS := OVVI_APP_NAME='$(NAME)' OVVI_CONDITIONS=TIP
 ZIP := Ovvi-Tip.zip
 else
 NAME := Ovvi

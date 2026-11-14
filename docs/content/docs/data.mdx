@@ -20,10 +20,11 @@ defaults, saved windows, notifications, login item and browser data, and it
 claims the `ovvi-dev://` scheme, not `ovvi://`. Its folders on This Mac are
 `~/.config/ovvi-dev` and `~/Library/Logs/Ovvi Dev/plugins`. It never reads or
 writes the installed app's. Ovvi Tip, the dev build of any commit (`make zip
-TIP=1`, the `tip` release: [Install](/docs/platform#install)), is `Ovvi Tip.app`,
-`dev.ovvi.app.tip`, and keeps its own the same way: the `ovvi-tip://` scheme,
-`~/.config/ovvi-tip` and `~/Library/Logs/Ovvi Tip/plugins`. What these builds share are the files that belong to the
-sessions and panes both apps show: `~/.cache/ovvi` and `~/.local/state/ovvi`
+TIP=1`, the `tip` release: [Install](/docs/platform#install)), is `Ovvi
+Tip.app`, `dev.ovvi.app.tip`, and keeps its own the same way: the
+`ovvi-tip://` scheme, `~/.config/ovvi-tip` and `~/Library/Logs/Ovvi
+Tip/plugins`. What the builds share are the files that belong to the sessions
+and panes every build shows: `~/.cache/ovvi` and `~/.local/state/ovvi`
 on each machine, and on This Mac the herdr server jobs with their logs
 (`~/Library/Logs/Ovvi/<session>.log`) and `~/Library/Caches/ovvi`, whose SSH
 sockets are per app.

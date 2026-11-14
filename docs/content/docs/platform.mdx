@@ -32,7 +32,7 @@ description: "The codebase, dependencies, swipes and views, the tab bar and test
   pre-release) publishes a GitHub Release (`release.yml`): `Ovvi-0.2.0.zip`
   with the app, and `SHA256SUMS`. The tag is the version people see; the
   build number is main's commit count, so it only grows. A local `make
-  app` stamps the same two from the newest tag.
+  app` stamps the same two from the nearest `v*` tag behind HEAD.
 - **Ovvi Tip**, the dev build: a dispatch of `tip.yml` builds any commit (main
   by default) and replaces the rolling pre-release `tip` with `Ovvi-Tip.zip`.
   It is `Ovvi Tip.app`, `dev.ovvi.app.tip`, with a DEV badge on the icon, and

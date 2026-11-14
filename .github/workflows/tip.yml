@@ -29,15 +29,15 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
           fetch-depth: 0 # the tags for the version, and the commit count for the build number
-      - run: brew update --quiet && brew bundle
       - run: make zip TIP=1
       - name: publish
         run: |
+          [ -f .build/Ovvi-Tip.zip ] || { echo "::error::${{ inputs.ref }} predates Ovvi Tip"; exit 1; }
           sha=$(git rev-parse HEAD)
           printf 'Ovvi Tip, the dev build of %s: %s\n\nInstall it beside Ovvi:\n\n```sh\n%s\n```\n' \
             "$sha" "$(git log -1 --format=%s)" \
             'curl -fsSL https://github.com/hkandala/ovvi/releases/latest/download/install.sh | sh -s -- --dev' \
             > .build/notes.md
           gh release delete tip --cleanup-tag --yes || true
-          gh release create tip --target "$sha" --prerelease --latest=false --title "Ovvi Tip ${sha::7}" \
+          gh release create tip --target "$sha" --prerelease --title "Ovvi Tip ${sha::7}" \
             --notes-file .build/notes.md .build/Ovvi-Tip.zip .build/SHA256SUMS

@@ -37,6 +37,7 @@ make setup      # Homebrew tools and the git hooks
 make install    # a Release build copied to ~/Applications, and the ovvi skill linked for agents
 make app        # the Release app only
 make zip        # the release's zip of it and its SHA256SUMS (playbook/release.md)
+make install TIP=1   # Ovvi Tip, the dev build, beside Ovvi
 make run        # build and open the app (SESSION=<name> for one session; agents: ovvi-dev-* only)
 make format     # SwiftLint's fixes and SwiftFormat
 make lint build test   # checks, the build, the unit tests and the docs and license checks

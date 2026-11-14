@@ -101,9 +101,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         return menu
     }
 
-    /// Debug and measure builds claim `ovvi-dev://` and `ovvi-release://`, so neither takes the installed app's URLs.
+    /// macOS hands each build only its own scheme (`ovvi://`, `ovvi-dev://`, `ovvi-release://`, `ovvi-tip://`), and
+    /// files.
     func application(_: NSApplication, open urls: [URL]) {
-        urls.filter { ["ovvi", "ovvi-dev", "ovvi-release"].contains($0.scheme) }.forEach(WindowPages.float)
+        urls.filter { !$0.isFileURL }.forEach(WindowPages.float)
         // Files only: `ovvi://float/?…` has a directory path too ("/").
         let folders = urls.filter { $0.isFileURL && $0.hasDirectoryPath }
         if !folders.isEmpty {
