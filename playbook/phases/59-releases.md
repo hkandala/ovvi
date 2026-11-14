@@ -66,7 +66,11 @@ Records the work as it lands: Findings, Runs, commits.
   A running copy is quit by the user: an Apple event `quit` from a script needs the user's Automation consent first.
 - **Runs.** The VM, terminal only: the release zip through `file://` with no terminal (opens, no Gatekeeper dialog),
   then under `expect` with a fake HOME (waits for the quit, replaces the copy, installs herdr, three integrations
-  current, Pi declined); with no terminal and the app running it stops with its message.
+  current, Pi declined); with no terminal and the app running it stops with its message. Then from the real
+  pre-release `v0.1.0-rc.1` and the `tip` release, both through `curl … | sh`: Ovvi and Ovvi Tip side by side, no
+  Gatekeeper dialog. The update: a second Tip published, Ovvi Tip's last check set back a day, a throwaway XCUITest
+  in the VM saw the notice "Ovvi 0.1.0-rc.1-tip.0c46c9d is available", pressed Update…, Install Update and Install
+  and Relaunch; the relaunched app had build 3402 and the same card, and the pane's loop counted on through it.
 - **For the user.** The menu bar and Activity Monitor say "Ovvi" for Ovvi Tip (as for Ovvi Dev); the badge says DEV.
   Build Tips from main: a branch's commit count can pass later main Tips', and Sparkle then offers none of them. The
   curl install links no `ovvi` skill (only `make install` does). A pre-release cannot test the release app's feed:
