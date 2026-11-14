@@ -247,7 +247,10 @@ The caret has the text's color: white in dark, black in light.
   Only the changed middle of the text is replaced, so the caret and the
   scroll stay. A dirty file keeps the user's text and shows the toast.
 - **The toast** is one line on a glass capsule at the top of the card, 6 pt
-  under the header, with one or two small round buttons. The text and the buttons
+  under the header, with one or two small round buttons. It is as wide as its
+  text, at most 520 pt (as the window's [notices](/docs/ui/window#notice)) and
+  10 pt inside the card's sides; longer text ends in …, and the pointer over it
+  shows the whole text. The text and the buttons
   are 8 pt apart. The buttons sit 7 pt inside the capsule's top, bottom and
   right edge, so their curves follow its curve. The last button is the default. It slides in over 0.15 s. A
   button's action ends it. A button that deletes or discards work is red:

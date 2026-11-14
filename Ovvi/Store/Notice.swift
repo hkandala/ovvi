@@ -11,4 +11,8 @@ struct Notice {
     var show: String?
     var retry: (@MainActor @Sendable () -> Void)?
     let id = UUID()
+
+    /// The widest a toast or notice draws, so a long error reads as one short line (about 65 characters) ending in …,
+    /// not a band across the window. It shows whole on hover.
+    static let width: CGFloat = 520
 }

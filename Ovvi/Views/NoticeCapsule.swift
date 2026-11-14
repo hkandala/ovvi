@@ -17,28 +17,30 @@ struct NoticeCapsule<Action: View>: View {
         case .progress: ("", "In progress", look.working)
         case .success: ("checkmark.circle.fill", "Done", look.finished)
         }
-        HStack(spacing: 8) {
-            Group {
-                if tone == .progress {
-                    ProgressView().controlSize(.small)
-                } else {
-                    Image(systemName: symbol ?? toneSymbol).foregroundStyle(color)
+        Capped(width: Notice.width) {
+            HStack(spacing: 8) {
+                Group {
+                    if tone == .progress {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Image(systemName: symbol ?? toneSymbol).foregroundStyle(color)
+                    }
                 }
-            }
-            .accessibilityLabel(label)
-            .accessibilityIdentifier("notice.symbol")
-            VStack(alignment: .leading, spacing: 2) {
-                Text(text).lineLimit(2)
-                if !detail.isEmpty {
-                    Text(detail).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(2)
-                        .accessibilityIdentifier("notice.detail")
+                .accessibilityLabel(label)
+                .accessibilityIdentifier("notice.symbol")
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(text).lineLimit(2).help(text)
+                    if !detail.isEmpty {
+                        Text(detail).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(2).help(detail)
+                            .accessibilityIdentifier("notice.detail")
+                    }
                 }
+                action
             }
-            action
+            .buttonBorderShape(.capsule)
+            .padding(.horizontal, 14)
+            .padding(.vertical, detail.isEmpty ? 0 : 8)
         }
-        .buttonBorderShape(.capsule)
-        .padding(.horizontal, 14)
-        .padding(.vertical, detail.isEmpty ? 0 : 8)
         .frame(minHeight: 36)
         .floatingGlass(in: .capsule)
         .accessibilityElement(children: .contain)

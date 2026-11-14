@@ -101,7 +101,9 @@ export default async function main(ovvi) {
   })
   ovvi.on("theme", (theme) => line("theme", `${theme.dark ? "dark" : "light"} changed`))
 
-  button("Toast", async () => line("toast", await ovvi.toast("Pick one", ["No", "Yes"])))
+  const long = "Pick one. This line is long on purpose: it runs past the toast's widest, so the toast stops there "
+    + "and ends it with an ellipsis, and the whole of it shows on hover."
+  button("Toast", async () => line("toast", await ovvi.toast(long, ["No", "Yes"])))
   button("Menu", async () => line("menu", await ovvi.menu.show([{ title: "Heading" }, { value: "one", title: "One" }, "-",
     { value: "two", title: "Two", symbol: "star" }])))
   button("Go", () => ovvi.card.go(`${root}/sub/`, { at: "x" }))

@@ -35,7 +35,7 @@ struct PluginCard: View {
             }
             .overlay(alignment: .top) {
                 if let toast = plugin.web.toast {
-                    ToastView(toast: toast, plugin: plugin).padding(.top, 6)
+                    ToastView(toast: toast, plugin: plugin).padding(.top, 6).padding(.horizontal, PaneCard.inset)
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
             }
@@ -57,30 +57,32 @@ private struct ToastView: View {
 
     var body: some View {
         let id = "pane.\(plugin.paneID).toast"
-        HStack(spacing: 8) {
-            Text(toast.text).lineLimit(1).accessibilityIdentifier(id)
-            if let other = toast.other {
-                Button(other.title, role: other.role) {
-                    plugin.web.toast = nil
-                    other.run()
+        Capped(width: Notice.width) {
+            HStack(spacing: 8) {
+                Text(toast.text).lineLimit(1).help(toast.text).accessibilityIdentifier(id)
+                if let other = toast.other {
+                    Button(other.title, role: other.role) {
+                        plugin.web.toast = nil
+                        other.run()
+                    }
+                    .buttonStyle(.glass)
+                    // The role alone draws nothing on glass.
+                    .foregroundStyle(other.role == .destructive ? look.error : Color.primary)
+                    .accessibilityIdentifier("\(id).other")
                 }
-                .buttonStyle(.glass)
-                // The role alone draws nothing on glass.
-                .foregroundStyle(other.role == .destructive ? look.error : Color.primary)
-                .accessibilityIdentifier("\(id).other")
+                Button(toast.main.title, role: toast.main.role) {
+                    plugin.web.toast = nil
+                    toast.main.run()
+                }
+                .buttonStyle(.glassProminent)
+                .tint(toast.main.role == .destructive ? look.error : nil)
+                .accessibilityIdentifier("\(id).main")
             }
-            Button(toast.main.title, role: toast.main.role) {
-                plugin.web.toast = nil
-                toast.main.run()
-            }
-            .buttonStyle(.glassProminent)
-            .tint(toast.main.role == .destructive ? look.error : nil)
-            .accessibilityIdentifier("\(id).main")
+            .controlSize(.small)
+            // A rounded rectangle's corner runs into the toast capsule's curve.
+            .buttonBorderShape(.capsule)
+            .padding(.leading, 14).padding([.trailing, .vertical], 7)
         }
-        .controlSize(.small)
-        // A rounded rectangle's corner runs into the toast capsule's curve.
-        .buttonBorderShape(.capsule)
-        .padding(.leading, 14).padding([.trailing, .vertical], 7)
         .glassEffect(.regular, in: .capsule)
     }
 }

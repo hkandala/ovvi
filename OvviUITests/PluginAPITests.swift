@@ -79,7 +79,7 @@ extension OvviUITests {
     private func cardCalls(_ card: String, in tab: String, root: String) async throws {
         let button = { (title: String) in self.element("plugin-api.\(card).page").buttons[title] }
         button("Toast").click()
-        XCTAssertTrue(element("pane.\(card).toast").exists(within: 3))
+        toastStopsAtItsWidest(card)
         element("pane.\(card).toast.main").click()
         XCTAssertTrue(text("toast: Yes").exists(within: 3))
         XCTAssertTrue(text("keyboard: true").exists)
@@ -129,6 +129,18 @@ extension OvviUITests {
         _ = try await newTabID(after: tabs)
         try await show(tab)
         XCTAssertFalse(text("control: taken").exists(within: 0.5))
+    }
+
+    /// A long toast in a wide card: the whole text, the capsule 520 pt and centered.
+    private func toastStopsAtItsWidest(_ card: String) {
+        let toast = element("pane.\(card).toast"), main = element("pane.\(card).toast.main")
+        XCTAssertTrue(toast.exists(within: 3))
+        XCTAssertTrue(toast.stringValue.hasSuffix("shows on hover."), toast.stringValue)
+        // The capsule runs 14 pt before the text and 7 pt past the last button.
+        let wide = element("plugin-api.\(card).card").frame, left = toast.frame.minX - 14, right = main.frame.maxX + 7
+        XCTAssertGreaterThan(wide.width, 600)
+        XCTAssertEqual(right - left, 520, accuracy: 1, "a long toast stops at its widest")
+        XCTAssertEqual(left - wide.minX, wide.maxX - right, accuracy: 1)
     }
 
     /// The new page has no toast: the old one's buttons would answer nobody.

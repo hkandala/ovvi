@@ -1,6 +1,6 @@
 {
   "name": "ovvi-plugin-api-fixture",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "description": "Calls every part of the plugin API (PluginAPITests)",
   "peerDependencies": { "@ovvi/plugin-api": "*" },
