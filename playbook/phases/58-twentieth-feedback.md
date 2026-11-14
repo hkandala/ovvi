@@ -1507,9 +1507,10 @@ Round 4's tracks (T3, E7, N4, V3, Y, U, W4) and this round's fixes; head p58r4-f
 - **Open (not proven).** One long-chat wheel scroll moved nothing (no frame moved): XCUITest's wheel or the chat
   ignoring it, which CI's frames cannot tell. The test scrolls once more. If a user's scroll ever fails right after
   Scroll to Bottom, this is it.
-- **Open bug (overview zoom).** testOverviewTileIntoAnUnshownTabShowsItSteadily, run 43603829659 shard 0: the zoom into
-  an unshown tab drew 1 of the 2 frames it needs (0.18 s). Likely the unshown tab's page builds on the main thread
-  during the zoom on a slow runner: a hitch, for a profiling track.
+- **Overview zoom (fixed by Track O).** testOverviewTileIntoAnUnshownTabShowsItSteadily, run 43603829659 shard 0: the
+  zoom into an unshown tab drew 1 of the 2 frames it needs (0.18 s). The cause was a main-thread stall during a zoom
+  drawn on the main thread, not the page build; Track O moved the zoom to the render server (bbf8a290), green in
+  chosen-tests run 43615993258.
 - **Runs.** final1–final7: each red on a different rare test (above), fixed by cause; final3 and final5 had both full
   runs green, final7 and final8 on-demand green. final8: full 43603827109 green (307 of 307, 64 min); full 43603829659
   red on the overview zoom, its shard 2 stopped by CI's 30-minute limit with no app launch for 12.5 min and no
