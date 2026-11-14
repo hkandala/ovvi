@@ -82,8 +82,8 @@ struct BrowserCard: View {
                 }
             }
             // No fade over a picture: half way, both show the card's fill through.
-            .animation(Animation.reduced || browser.view.shot.image != nil ? nil
-                : .easeOut(duration: 0.15), value: browser.ready)
+            .animation(browser.view.shot.image == nil && !Animation.reduced ? .easeOut(duration: 0.15) : nil,
+                       value: browser.ready)
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("browser.\(browser.paneID).card")
     }

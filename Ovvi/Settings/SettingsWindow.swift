@@ -223,6 +223,8 @@ struct SettingsSearch: Identifiable {
         SettingsSearch(id: "appearance.style", title: "Interface style", page: .appearance,
                        words: "glass classic"),
         SettingsSearch(id: "appearance.font-size", title: "Text size", page: .appearance, words: "font bigger"),
+        SettingsSearch(id: "appearance.animations", title: "Animations", page: .appearance,
+                       words: "motion slide fade zoom instant reduce"),
         SettingsSearch(id: "terminal.font", title: "Font", page: .terminal, words: "typeface monospaced"),
         SettingsSearch(id: "terminal.cursor", title: "Cursor", page: .terminal, words: "block bar underline"),
         SettingsSearch(id: "terminal.blink", title: "Blink the cursor", page: .terminal),

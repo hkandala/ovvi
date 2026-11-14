@@ -31,7 +31,7 @@ struct ChromeStyle: ButtonStyle {
                             // light does not fade: in the sidebar's lazy stack each fade keeps the main thread busy for
                             // half of a hover sweep over 200 spaces, with 100 ms frames.
                             shape.fill(.primary.opacity(strength))
-                                .animation(style.light == nil ? .easeOut(duration: 0.14) : nil, value: lit)
+                                .animation(style.light == nil ? .motion(.easeOut(duration: 0.14)) : nil, value: lit)
                         } else if let tint = style.tint {
                             shape.fill(tint)
                         } else {

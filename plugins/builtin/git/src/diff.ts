@@ -475,8 +475,8 @@ export async function make(place: Page, root: string, source: string) {
     nav.toggleAttribute("data-closed", !list)
     if (chosen) keep({ list })
     listButton()
-    // With Reduce Motion there is no slide to wait for.
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) afterLayout(keepChange)
+    // With Reduce Motion or Animations off there is no slide to wait for.
+    if (!parseFloat(getComputedStyle(nav).transitionDuration)) afterLayout(keepChange)
   }
   // After the slide: once, not for each of its properties.
   nav.addEventListener("transitionend", (event) => event.target === nav && event.propertyName === "visibility" && keepChange())

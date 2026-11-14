@@ -125,6 +125,8 @@ the agent rows, the hover card, notifications):
   that opens in the background, the spring-load pulse, the sidebar's slide, the plugins' sidebar slide, a plugin
   card's toast slide, the panels' scale-in, the chat's first-message
   motion and its fades (the rows as they show, a message the agent takes).
+  The welcome shows a still frame of each clip. The short fades and highlights
+  stay ([Motion](#motion)).
 - Reduce Transparency is handled by the system: its blurs and glass turn
   opaque. Classic is an opaque
   window for users who want no blur at all.
@@ -134,6 +136,43 @@ the agent rows, the hover card, notifications):
 - The card header buttons and the divider grip have a contrast of at least
   3:1 against what is behind them, in both styles and both appearances
   (measured 3.3:1 to 4.1:1 on CI's desktop; in Glass it depends on the desktop).
+
+## Motion
+
+Every motion the app runs goes through one switch,
+[Settings ▸ Appearance ▸ Animations](/docs/ui/settings#appearance) (on by
+default). With it off, each motion takes no time: the change shows its end at
+once. That covers:
+
+- The cards' moves as a pane splits, closes, zooms or opens, and their fades.
+- The overview's zoom into a tile and its fade.
+- The tab bar's slide to a tab and the spring-load pulse; the program icon's
+  bounce; a dropped tab's glide to its place.
+- The window's sidebar slide; the sidebar's session pages after a swipe, its
+  reorder slides, its folds and Archived Sessions opening.
+- The drag targets' highlights, the divider grip's fade, the hover light on
+  buttons, the hover panels' fade and scale-in, a revealed card's flash.
+- The chat's fades, its first message's rise, a refused path's shake in a
+  plugin card's header (a beep instead), a plugin card's toast slide, a browser card's fade in, a
+  terminal's first fade in.
+- The welcome's logo, page turns and words. Its clips are the pages' content:
+  they play.
+- Every CSS transition in a plugin card ([Theme](/docs/plugins/api#what-each-part-does)).
+
+A tab that opens in the background shows its accent border for 0.6 s with no
+fade, as with Reduce Motion: it still says that the tab is new. The flash on a
+revealed card shows and goes the same way. Spinners keep turning: they show
+work, not motion. The system draws its own motion (windows, full screen, menus,
+sheets, popovers, switches) and follows Reduce Motion there. A swipe still
+follows the fingers; at the lift its page lands at once.
+
+With Animations on, Reduce Motion turns off the motions in
+[Accessibility](#accessibility) and keeps the drag and hover highlights, the
+hover panels' fade and a revealed card's flash.
+
+`make lint` rejects an animation that does not read the switch: each one is
+wrapped in `.motion(…)` or checked against `Animation.reduced` on its line, and
+only the files that gate their layer motion may use Core Animation.
 
 ## Keyboard shortcuts
 

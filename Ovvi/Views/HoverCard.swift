@@ -58,7 +58,7 @@ private struct HoverPanelHost: ViewModifier {
                         open.content.id(open.owner).transition(.asymmetric(
                             insertion: .opacity.combined(with: Animation.reduced ? .identity
                                 : .scale(scale: 0.97, anchor: open.place.panel))
-                                .animation(.easeOut(duration: 0.13)),
+                                .animation(.motion(.easeOut(duration: 0.13))),
                             removal: .identity,
                         ))
                     }

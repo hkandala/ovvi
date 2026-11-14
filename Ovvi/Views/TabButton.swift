@@ -26,7 +26,7 @@ struct TabButton: View {
         } label: {
             HStack(spacing: 10) {
                 IconStack(panes: stack)
-                    .keyframeAnimator(initialValue: 1.0, trigger: bounces) { content, scale in
+                    .keyframeAnimator(initialValue: 1.0, trigger: Animation.reduced ? 0 : bounces) { content, scale in
                         content.scaleEffect(scale)
                     } keyframes: { _ in
                         SpringKeyframe(1.15, duration: 0.15)

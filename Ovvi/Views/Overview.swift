@@ -82,7 +82,7 @@ struct Overview: View {
         zoom = (tab, from)
         // Next turn: a view inserted in the same update as the change starts at its end, with no motion.
         Task {
-            withAnimation(.easeOut(duration: 0.18)) { grown = true } completion: {
+            withAnimation(.motion(.easeOut(duration: 0.18))) { grown = true } completion: {
                 // Not an overview opened again since a second leave closed this one.
                 if pages.leaving {
                     pages.closeOverview()
@@ -120,7 +120,7 @@ extension View {
     func underOverview(_ pages: WindowPages, own: Bool = false) -> some View {
         let shown = (pages.overview && !pages.leaving) == own
         // Fades with the tile's zoom; the opacity alone: the tab the tile picks changes in the same update.
-        return animation(pages.leaving ? .easeOut(duration: 0.12) : nil) { $0.opacity(shown ? 1 : 0) }
+        return animation(pages.leaving ? .motion(.easeOut(duration: 0.12)) : nil) { $0.opacity(shown ? 1 : 0) }
             .allowsHitTesting(shown)
             // Not `accessibilityHidden(false)`, which overrides the hidden ones inside.
             .accessibilityElement(children: shown ? .contain : .ignore)

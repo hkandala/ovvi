@@ -63,8 +63,9 @@ struct WelcomeView: View {
         [.running, .layout, .agents, .plugins, .machines] + (herdrMissing ? [.herdr] : [])
     }
 
+    /// The clips are the pages' content: they play with Animations off, and only Reduce Motion stills them.
     private var still: Bool {
-        Animation.reduced
+        Animation.reduceMotion
     }
 
     var body: some View {
@@ -95,8 +96,8 @@ struct WelcomeView: View {
                     }
                     .shadow(color: current == .herdr ? .clear : Look.shade(dark).opacity(0.7), radius: 8)
                     .id(page * 2 + (herdrFound ? 1 : 0))
-                    .transition(.asymmetric(insertion: .opacity.animation(.easeOut(duration: 0.3).delay(0.15)),
-                                            removal: .opacity.animation(.easeIn(duration: 0.15))))
+                    .transition(.asymmetric(insertion: .opacity.animation(.motion(.easeOut(duration: 0.3).delay(0.15))),
+                                            removal: .opacity.animation(.motion(.easeIn(duration: 0.15)))))
                 }
                 footer(last: last, blocked: blocked)
             }
@@ -198,7 +199,7 @@ struct WelcomeView: View {
     /// A key during the intro only ends it: the first page shows.
     private func go(_ step: Int) {
         guard intro == nil else { return endIntro() }
-        withAnimation(still ? .smooth(duration: 0.3) : .spring(duration: 0.55, bounce: 0.08)) {
+        withAnimation(.motion(still ? .smooth(duration: 0.3) : .spring(duration: 0.55, bounce: 0.08))) {
             page = min(max(page + step, 0), pages.count - 1)
         }
     }
@@ -210,7 +211,7 @@ struct WelcomeView: View {
         intro = .mark
         try? await Task.sleep(for: .seconds(1.2))
         guard intro != nil else { return }
-        if !still {
+        if !Animation.reduced {
             intro = .panes
             // The picture fades in as the panes settle into its own.
             try? await Task.sleep(for: .seconds(0.45))
@@ -220,7 +221,7 @@ struct WelcomeView: View {
 
     private func endIntro() {
         guard intro != nil else { return }
-        withAnimation(.smooth(duration: 0.55)) { intro = nil }
+        withAnimation(.motion(.smooth(duration: 0.55))) { intro = nil }
     }
 }
 

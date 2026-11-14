@@ -155,6 +155,11 @@ struct AppearancePage: View {
                     Text("\(Hotkeys.named("app.bigger")) and \(Hotkeys.named("app.smaller")) change it in any window.")
                 }
                 .settingsRow("appearance.font-size")
+                Toggle(isOn: settings.$animations) {
+                    Text("Animations")
+                    Text("Off, everything changes at once: no slides, fades or zooms.")
+                }
+                .identifiedSettingsRow("appearance.animations")
             }
         }
     }

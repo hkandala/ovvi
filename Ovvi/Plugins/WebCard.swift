@@ -21,6 +21,7 @@ final class WebCard {
     @ObservationIgnored private var loaded = false
     @ObservationIgnored var loads = 0
     @ObservationIgnored private var css = ""
+    @ObservationIgnored private var still = false
     private(set) var title = ""
     @ObservationIgnored private var titleObservation: NSKeyValueObservation?
 
@@ -53,11 +54,10 @@ final class WebCard {
     }
 
     /// The user script also starts a page still loading or loaded again with the colors, so every first paint has them.
-    func theme(_ css: String, _ theme: [String: Any]) {
-        self.css = css
+    func theme(_ css: String, still: Bool, _ theme: [String: Any]) {
+        (self.css, self.still) = (css, still)
         if loaded {
-            view.callAsyncJavaScript("document.documentElement.style.cssText = css", arguments: ["css": css],
-                                     in: nil, in: .page)
+            view.callAsyncJavaScript(Self.root, arguments: ["css": css, "still": still], in: nil, in: .page)
         }
         // The page hears `theme` after its CSS variables changed.
         bridge?.theme = theme
@@ -80,15 +80,19 @@ final class WebCard {
         bridge?.place(arg, at: place)
     }
 
+    /// With Animations off, `card.css` turns off every transition under `data-animations-off`.
+    private static let root = "document.documentElement.style.cssText = css; "
+        + "document.documentElement.toggleAttribute('data-animations-off', still)"
+
     func script() {
-        let card = (bridge?.context() ?? [:]).merging(["css": css]) { $1 }
+        let card = (bridge?.context() ?? [:]).merging(["css": css, "still": still]) { $1 }
         let json = (try? JSONSerialization.data(withJSONObject: card)).map {
             String(decoding: $0, as: UTF8.self)
         } ?? "{}"
         let content = view.configuration.userContentController
         content.removeAllUserScripts()
         content.addUserScript(WKUserScript(
-            source: "window.ovvi_card = \(json); document.documentElement.style.cssText = window.ovvi_card.css",
+            source: "window.ovvi_card = \(json); { const { css, still } = window.ovvi_card; \(Self.root) }",
             injectionTime: .atDocumentStart, forMainFrameOnly: true,
         ))
     }
@@ -219,9 +223,13 @@ struct WebCardContent: View {
         }
         let css = colors.map { "--\($0): \($1)" }.joined(separator: "; ")
             + "; --app-text-size: \(settings.fontSize)px; color-scheme: \(look.dark ? "dark" : "light")"
-        WebHost(view: card.view, hidden: hidden).onChange(of: css, initial: true) {
-            card.theme(css, ["dark": look.dark, "style": look.style.rawValue, "textSize": settings.fontSize,
-                             "colors": Dictionary(uniqueKeysWithValues: colors)])
+        WebHost(view: card.view, hidden: hidden).onChange(of: [css, "\(settings.animations)"], initial: true) {
+            card.theme(
+                css,
+                still: !settings.animations,
+                ["dark": look.dark, "style": look.style.rawValue, "textSize": settings.fontSize,
+                 "colors": Dictionary(uniqueKeysWithValues: colors)],
+            )
         }
     }
 }

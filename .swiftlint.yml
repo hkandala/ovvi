@@ -29,6 +29,18 @@ custom_rules:
     regex: 'accessibilityReduceMotion|accessibilityDisplayShouldReduceMotion'
     message: 'Read Reduce Motion through Animation.reduced (Views/Style.swift)'
     severity: error
+  animations: # Settings ▸ Appearance ▸ Animations off makes every motion instant; the one place is Views/Style.swift
+    included: '/Ovvi/'
+    excluded: 'Ovvi/Views/Style\.swift$'
+    regex: '^(?![^\n]*(reduced|\.motion\())[^\n]*(\.(easeIn|easeOut|easeInOut|linear|spring|smooth|snappy|bouncy|timingCurve)\(|withAnimation( \{|\(\))|\b(withAnimation|animation)\(\.(easeIn|easeOut|easeInOut|linear|spring|smooth|snappy|bouncy|default)\b|\.(keyframe|phase)Animator\()'
+    message: 'Wrap the animation in .motion(…), or gate it on Animation.reduced, on its line (Views/Style.swift)'
+    severity: error
+  core_animation: # these files gate their layer motion on Animation.reduced (CardMotion through TabPage's move)
+    included: '/Ovvi/'
+    excluded: 'Ovvi/(Views/CardMotion|Terminal/TerminalDrawing|Terminal/TerminalCard)\.swift$'
+    regex: 'CA(Basic|Keyframe|Spring)Animation\(|CATransition\(|NSAnimationContext\.runAnimationGroup|\.animator\(\)'
+    message: 'Gate layer motion on Animation.reduced and add its file to core_animation in .swiftlint.yml'
+    severity: error
   herdr_commands:
     included: '/Ovvi/'
     regex: '\b(Text|Label|message|Button)\([^\n]*"[^"\n]*(herdr --|herdr (session|workspace|tab|pane|server|attach)\b|in herdr\b)'

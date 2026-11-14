@@ -5,6 +5,8 @@ struct AppSettings: DynamicProperty {
     @AppStorage("appearance") var appearance = Appearance.dark
     @AppStorage("interfaceStyle") var style = InterfaceStyle.glass
     @AppStorage("fontSize") var fontSize = PaneTerminal.fontSize
+    /// Read by `Animation.off`.
+    @AppStorage("animations") var animations = true
     @AppStorage("focusFollowsMouse") var followMouse = false
     /// Read by `HostStore.balances`.
     @AppStorage("balanceSplits") var balanceSplits = true

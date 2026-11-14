@@ -91,8 +91,13 @@ way ([Layout](/docs/layout#dividers)).
 | Appearance | picture tiles: Auto, Light, Dark | `appearance` | Dark |
 | Interface style | picture tiles: Glass, Classic | `interfaceStyle` | Glass |
 | Text size | stepper, 8 to 32 pt | `fontSize` | 13 |
+| Animations | switch | `animations` | on |
 
 - Appearance and interface style: [Theme and accessibility](/docs/ui/theme-and-accessibility#appearance-and-interface-style).
+- Animations: its line under the title says "Off, everything changes at once:
+  no slides, fades or zooms." Off, every motion of the app takes no time: each
+  change shows its end at once, in every window and in plugin cards
+  ([Motion](/docs/ui/theme-and-accessibility#motion)).
 - The text size is the terminal font size. A change applies to every terminal
   at once, without opening its stream again. Each card's grid changes, so the
   PTYs resize.

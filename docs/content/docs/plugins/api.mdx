@@ -383,6 +383,11 @@ export interface OvviError extends Error {
   child with `--sidebar-width`, and set the attribute `data-closed` to slide
   it out of its row (its parent clips with `overflow: hidden`). The content
   beside it takes the room. The class `end` puts it on the right.
+  With Settings ▸ Appearance ▸ Animations off, the root has the attribute
+  `data-animations-off`, and `card.css` turns off every CSS transition, so
+  each change shows its end at once. CSS animations (a spinner) go on. No
+  `transitionend` comes then: a page that waits for one reads the element's
+  `transitionDuration` first, as it does for Reduce Motion.
 - **Visible.** A card is visible while it is in the shown tab or in a
   floating window. A card that is not gets `visible` false and its watches
   stop. Its `run` calls go on. When it shows again, each watch runs once,

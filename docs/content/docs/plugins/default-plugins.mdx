@@ -328,7 +328,7 @@ shows it whole.
   (`…ode/ovvi`). A click shows the whole path, selected. Return goes there,
   with `.`, `..` and `//` resolved: the tree rooted at that folder becomes the
   card's next place. A path that is no folder makes the field shake (a beep
-  with Reduce Motion); the typed path stays. Esc puts the root back. A path
+  with Reduce Motion or Animations off); the typed path stays. Esc puts the root back. A path
   that does not start with `/` (or `~` on This Mac) goes from the root, so
   `src` or `..` works, and an empty one is the root. The folder icon before the path is **Choose Folder…**: the folder
   panel on This Mac, a "Go to Folder" field on a remote machine (`~` is the
@@ -462,7 +462,7 @@ file to its row in the tree, showing the tree first when it is hidden, and from 
   own: row 2 is the file's. The card keeps the trees of its last five roots,
   as it keeps pages.
 - **It slides** in and out beside a file as the window's sidebar does (0.3 s
-  ease-in-out, with a fade; at once with Reduce Motion), and the file takes
+  ease-in-out, with a fade; at once with Reduce Motion or Animations off), and the file takes
   the room as it goes. The tree's page shows and hides it at once.
 - **Its root** is the tree's root the card came from, else the file's folder.
   A double-click on a folder or on `..`, ⌘↑, or Open as Root roots the tree
@@ -825,7 +825,7 @@ The changes of one source in one scroll (`@pierre/diffs`).
   per file with its icon, its name, its folder in secondary, `+n −m` and its letter
   (`M A D R`, in the tree's colors). A click scrolls to the file. **File
   List** slides it out and in (0.3 s, the plugins' shared sidebar in
-  `card.css`; at once with Reduce Motion).
+  `card.css`; at once with Reduce Motion or Animations off).
 - **Previous and next change** (also **]** and **[** while the page has the
   keyboard) step through the change blocks in order: each run of changed
   lines, as editors step through changes. git's own hunks (`@@`) are not the

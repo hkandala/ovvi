@@ -61,7 +61,7 @@ struct WelcomeIntro: View {
                 .foregroundStyle(.primary)
                 .position(x: center.x, y: center.y + Self.size.height * Self.scale / 2 + 52)
                 .opacity(step == .mark ? 1 : 0).blur(radius: step == .mark ? 0 : 4)
-                .animation(.smooth(duration: step == .panes ? 0.35 : 0.7).delay(step == .mark ? 0.25 : 0),
+                .animation(.motion(.smooth(duration: step == .panes ? 0.35 : 0.7).delay(step == .mark ? 0.25 : 0)),
                            value: step)
         }
         .allowsHitTesting(false)
@@ -78,11 +78,11 @@ struct WelcomeIntro: View {
     }
 
     /// Back to front as they come in; in the same order, a beat apart, as they spread into panes.
-    private func animation(_ index: Int) -> Animation {
+    private func animation(_ index: Int) -> Animation? {
         switch step {
-        case .hidden: .default
-        case .mark: .spring(duration: 0.6, bounce: 0.18).delay(Double(index) * 0.09)
-        case .panes: .spring(duration: 0.75, bounce: 0.1).delay(Double(index) * 0.05)
+        case .hidden: .motion(.default)
+        case .mark: .motion(.spring(duration: 0.6, bounce: 0.18).delay(Double(index) * 0.09))
+        case .panes: .motion(.spring(duration: 0.75, bounce: 0.1).delay(Double(index) * 0.05))
         }
     }
 }

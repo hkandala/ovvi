@@ -27,7 +27,7 @@ struct SplitDivider: View {
                 Capsule().fill(look.grip)
                     .frame(width: right ? 3 : 36, height: right ? 36 : 3)
                     .opacity(hovering || start != nil ? 1 : 0)
-                    .animation(.easeOut(duration: 0.2), value: hovering || start != nil)
+                    .animation(.motion(.easeOut(duration: 0.2)), value: hovering || start != nil)
             }
             .overlay {
                 Color.clear.contentShape(.rect)

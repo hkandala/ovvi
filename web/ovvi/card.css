@@ -16,6 +16,12 @@ body {
     --sidebar-motion: 0s;
   }
 }
+/* Settings ▸ Appearance ▸ Animations off: every change at once. Animations (a spinner) show work and stay. */
+:root[data-animations-off] *,
+:root[data-animations-off] *::before,
+:root[data-animations-off] *::after {
+  transition: none !important;
+}
 .ovvi-sidebar {
   flex: none;
   box-sizing: border-box;

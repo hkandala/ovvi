@@ -182,10 +182,10 @@ struct TabBar: View {
         clicked = tabID
         page.select(workspace, tab: tabID)
         guard !Animation.reduced else { return }
-        withAnimation(.easeOut(duration: 0.1)) { pulsing = tabID }
+        withAnimation(.motion(.easeOut(duration: 0.1))) { pulsing = tabID }
         Task {
             try? await Task.sleep(for: .milliseconds(100))
-            withAnimation(.easeOut(duration: 0.1)) { pulsing = nil }
+            withAnimation(.motion(.easeOut(duration: 0.1))) { pulsing = nil }
         }
     }
 }
@@ -211,8 +211,8 @@ private struct OpenGlow: View {
                     try? await Task.sleep(for: .seconds(0.6))
                     return done()
                 }
-                withAnimation(.easeIn(duration: 0.15)) { lit = true } completion: {
-                    withAnimation(.easeOut(duration: 0.5).delay(0.15)) { lit = false } completion: { done() }
+                withAnimation(.motion(.easeIn(duration: 0.15))) { lit = true } completion: {
+                    withAnimation(.motion(.easeOut(duration: 0.5).delay(0.15))) { lit = false } completion: { done() }
                 }
             }
             .onDisappear(perform: done)

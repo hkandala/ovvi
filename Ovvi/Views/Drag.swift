@@ -177,7 +177,9 @@ struct SpringDrop: DropDelegate {
 }
 
 extension Animation {
-    static let highlight = Animation.easeOut(duration: 0.12)
+    static var highlight: Animation? {
+        .motion(.easeOut(duration: 0.12))
+    }
 
     static var slide: Animation? {
         reduced ? nil : .timingCurve(.slide, duration: 0.22)
@@ -241,7 +243,7 @@ private struct Lands: ViewModifier {
     let landing: Landing?
 
     func body(content: Content) -> some View {
-        content.keyframeAnimator(initialValue: 0, trigger: landing) { content, offset in
+        content.keyframeAnimator(initialValue: 0, trigger: Animation.reduced ? nil : landing) { content, offset in
             content.offset(x: offset)
                 .allowsHitTesting(offset == 0)
         } keyframes: { _ in

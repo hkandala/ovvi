@@ -303,7 +303,7 @@ struct CardFlash: View {
                     .accessibilityElement().accessibilityLabel("Revealed").accessibilityIdentifier("pane.\(id).flash")
             }
         }
-        .animation(.easeOut(duration: 0.25), value: store.flashing == id)
+        .animation(.motion(.easeOut(duration: 0.25)), value: store.flashing == id)
     }
 }
 
