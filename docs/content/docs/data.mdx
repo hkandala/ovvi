@@ -78,8 +78,8 @@ builds share. It never touches herdr's sessions or the agents' files.
 | ControlMaster sockets | app | `~/Library/Caches/ovvi/`, while running |
 | Update checks: on or off (`SUEnableAutomaticChecks`), the last check (`SULastCheckTime`), a skipped version (`SUSkippedVersion`) | Sparkle, This Mac | app storage (`UserDefaults`); a download waits in `~/Library/Caches/<bundle id>/org.sparkle-project.Sparkle/` |
 
-A Release build sends one request a day of its own: an HTTPS GET of its update
-feed on github.com ([Updates](/docs/platform#install)), with the app's version
+The installed app and Ovvi Tip send one request a day of their own: an HTTPS
+GET of the app's update feed on github.com ([Updates](/docs/platform#install)), with the app's version
 in the User-Agent and no system profile.
 
 <Callout title="Nothing the app saves describes herdr's state">

@@ -1,16 +1,14 @@
 import Sparkle
 import SwiftUI
 
-/// Sparkle's updater (D106), in Release builds: Debug builds and the UI tests never check. A daily check that finds an
-/// update shows the window's update notice, not Sparkle's window (gentle reminders); Update… opens Sparkle's.
+/// Sparkle's updater (D112). A daily check that finds an update shows the window's update notice, not Sparkle's window
+/// (gentle reminders); Update… opens Sparkle's.
 @MainActor @Observable
 final class Updates: NSObject, SPUStandardUserDriverDelegate {
     static let shared = Updates()
-    #if DEBUG
-        static let checks = false
-    #else
-        static let checks = true
-    #endif
+    /// Only builds with a feed check: the installed app and Ovvi Tip (`make install`, `make zip`), not Debug builds,
+    /// the UI tests or the measures' `make app`.
+    static let checks = !((Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") as? String) ?? "").isEmpty
 
     /// Ovvi ▸ Check for Updates…, in the palette too.
     static var commands: [Command] {

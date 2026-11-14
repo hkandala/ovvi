@@ -11,7 +11,7 @@ on:
         default: main
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: tip
@@ -47,15 +47,15 @@ jobs:
             .build/build
             .build/sha
           retention-days: 1
+          include-hidden-files: true
 
   publish:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: release
-    env:
-      GH_TOKEN: ${{ github.token }}
-      SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
@@ -63,6 +63,9 @@ jobs:
           name: tip
           path: .build
       - name: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
           sha=$(cat .build/sha) url=https://github.com/hkandala/ovvi/releases/download/tip
           scripts/appcast.sh "Ovvi Tip" .build/Ovvi-Tip.zip "$url/Ovvi-Tip.zip" "$(cat .build/version)" \

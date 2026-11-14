@@ -292,7 +292,6 @@
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.1;
 				OVVI_APP_NAME = Ovvi;
-				OVVI_FEED_URL = "https://github.com/hkandala/ovvi/releases/latest/download/appcast.xml";
 				OVVI_URL_SCHEME = ovvi;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.ovvi.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";

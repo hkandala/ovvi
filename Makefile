@@ -119,14 +119,15 @@ BUILD ?= $(shell git rev-list --count HEAD)
 # quarantine, so install.sh skips that), and notifications need a real signing identity. Only install and zip get the
 # installed app's bundle id: macOS keys saved windows and defaults by it.
 # TIP=1: Ovvi Tip, the dev build of any commit (tip.yml), which runs beside Ovvi: its own name, bundle id, scheme and
-# folders (Registry.name), its own update feed, and a DEV badge on the icon.
+# folders (Registry.name), its own update feed, and a DEV badge on the icon. Only the installed app and Ovvi Tip have
+# a feed (FEED), so no other build checks for updates.
 ifdef TIP
 NAME := Ovvi Tip
 BUNDLE_ID := dev.ovvi.app.tip
 URL_SCHEME := ovvi-tip
 VERSION := $(VERSION)-tip.$(shell git rev-parse --short=7 HEAD)
-TIP_SETTINGS := OVVI_APP_NAME='$(NAME)' OVVI_CONDITIONS=TIP \
-	OVVI_FEED_URL=https://github.com/hkandala/ovvi/releases/download/tip/appcast.xml
+TIP_SETTINGS := OVVI_APP_NAME='$(NAME)' OVVI_CONDITIONS=TIP
+FEED := https://github.com/hkandala/ovvi/releases/download/tip/appcast.xml
 ZIP := Ovvi-Tip.zip
 else
 NAME := Ovvi
@@ -134,12 +135,13 @@ BUNDLE_ID ?= dev.ovvi.app.release
 URL_SCHEME ?= ovvi-release
 install zip: BUNDLE_ID = dev.ovvi.app
 install zip: URL_SCHEME = ovvi
+install zip: FEED = https://github.com/hkandala/ovvi/releases/latest/download/appcast.xml
 ZIP = Ovvi-$(VERSION).zip
 endif
 APP := $(DERIVED_DATA)/Build/Products/Release/$(NAME).app
 app: web
 	$(XCODEBUILD) $(MAC) -configuration Release PRODUCT_BUNDLE_IDENTIFIER=$(BUNDLE_ID) OVVI_URL_SCHEME=$(URL_SCHEME) \
-		MARKETING_VERSION=$(VERSION) CURRENT_PROJECT_VERSION=$(BUILD) $(TIP_SETTINGS) build $(NOWARN) $(BEAUTIFY)
+		MARKETING_VERSION=$(VERSION) CURRENT_PROJECT_VERSION=$(BUILD) OVVI_FEED_URL=$(FEED) $(TIP_SETTINGS) build $(NOWARN) $(BEAUTIFY)
 	$(if $(TIP),swift scripts/tip-icon.swift Ovvi/Assets.xcassets/AppIcon.appiconset "$(APP)")
 	@echo "$(APP)"
 

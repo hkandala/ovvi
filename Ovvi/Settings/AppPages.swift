@@ -41,7 +41,8 @@ struct GeneralPage: View {
             }
             if Updates.checks {
                 Section("Updates") {
-                    Toggle(isOn: Binding { Updates.shared.automatic } set: { Updates.shared.automatic = $0 }) {
+                    @Bindable var updates = Updates.shared
+                    Toggle(isOn: $updates.automatic) {
                         Text("Check for updates automatically")
                         Text("Once a day. Ovvi asks before it installs one.")
                     }

@@ -7,7 +7,7 @@ on:
     tags: ['v[0-9]+.[0-9]+.[0-9]+', 'v[0-9]+.[0-9]+.[0-9]+-*']
 
 permissions:
-  contents: write
+  contents: read
 
 # Two tags pushed together publish one after the other.
 concurrency:
@@ -44,15 +44,15 @@ jobs:
             .build/notes.md
             .build/build
           retention-days: 1
+          include-hidden-files: true
 
   publish:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: release
-    env:
-      GH_TOKEN: ${{ github.token }}
-      SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
@@ -60,6 +60,9 @@ jobs:
           name: release
           path: .build
       - name: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
           version=${GITHUB_REF_NAME#v} zip=Ovvi-${GITHUB_REF_NAME#v}.zip
           url=https://github.com/hkandala/ovvi/releases/download/$GITHUB_REF_NAME
