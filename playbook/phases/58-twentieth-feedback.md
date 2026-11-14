@@ -1206,3 +1206,28 @@ The user's files: `.build/fb57/r11-fontkeys-11.20.52.png`, `r11-tabslide-11.23.5
 - **Runs.** VM green: testAChatStaysPastTheKeptPages, testSwitchesKeepHeavyCardsAsTheyWere,
   testACodexChatSendsStopsAndShowsTheTerminalWhileItWaits, testStoppedSessionSaysSoAndComesBackWhenStartedAgain,
   testClosedBrowserPagesReopenFromTheMenuAndStayAfterARelaunch (testAReconnectingPageShowsItsStateOnce skips there).
+
+### Final CI, round 3
+
+Round 3's tracks and the simplification pass (main up to 30326c5b), then the three decisions from the review.
+- **Cause (testAToolOutputScrollsInsideItsBox).** The app: C11 put the chat in a sideways scroll view, and inside one a
+  scroll view of both axes gets no vertical wheel (lessons.md), so an open tool output no longer scrolled. **Fix:** a
+  vertical scroll view around a sideways one, as before 50b8a3e2.
+- **Cause (testASplitMovesTheMessagesWithTheReplyBox, testADividerDragMovesTheMessagesWithTheReplyBox).** The tests: a
+  split leaves the chat card about 354 pt wide on a 1024 pt screen, where the messages keep 360, so card minus inset
+  never held. The app lays out a card wider than 360 as before. **Fix:** both expect max(card − inset, 360); the
+  divider drag widens the chat (narrowed, the messages stay at 360 and show nothing), with the inset taken before the
+  split.
+- **Cause (testAFloatingWindowShowsTheChat).** C11's 24 pt box margins: the box's text sits 9 pt right of the reply's
+  frame, not on it. Not the width: a floating chat's title row (its switch) keeps the window at about 400 pt, so the
+  320 pt minimum never reached it (a check of the chat inside the window passed on the old code, so it is not kept).
+- **Decisions.** Every floating window is at least 360 pt wide (`ChatView.minWidth`). The Codex screen check runs while
+  `HostStore.inView` holds the pane, the set the shown marks use: a minimized window or a card zoomed away reads
+  nothing, and another session's repeated terminal id no longer counts. LongChatTests lost its 8 s wall-clock assert.
+- **Runs.** VM: the four red tests red on 30326c5b, all green with the fixes, with the narrow-chat, long-chat, chat-end
+  and Codex chat tests. p58r3-final1 (cb4002d3): full 43529074152 (43 min) and 43529084758 (67 min, it waited for
+  runners) green on the first try, 304 of 304 each, every watch-list test passed, none skipped; on-demand 43529095686
+  (21 min) green, 22 passed and 2 skipped as on CI always (no GPU process, the welcome film). The checks run
+  43529070474 ran SSHForwardTests and "a started server shares the CLI's paths" (passed, not skipped). Test times not
+  refreshed: the listed tests moved little; 29 new tests count 15 s each, and the shards stayed within 20–40 % (about
+  5470 and 5710 s of tests).
