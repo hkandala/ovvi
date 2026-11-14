@@ -41,3 +41,33 @@ The user's words are quoted; the decisions under them are the orchestrator's.
 ## Tracks
 
 Records the work as it lands: Findings, Runs, commits.
+
+### Phase 59 (one agent, parts A to F)
+
+- **Decisions.** The dev app is **Ovvi Tip** (`dev.ovvi.app.tip`, `ovvi-tip://`, `~/.config/ovvi-tip`, a DEV badge
+  drawn at build time by `scripts/tip-icon.swift`): "Ovvi Dev" is the Debug build's, and a new name changes none of
+  its scripts. It keeps its own copy of what the Debug build keeps (`#elseif TIP` beside `#if DEBUG` in
+  `Registry.swift`; everything keyed by bundle id) and shares what belongs to sessions (herdr's jobs, `~/.cache/ovvi`,
+  `~/.local/state/ovvi`). Tips build on a dispatch only: about 6 runner-minutes each on 5 shared macOS runners, with
+  about 70 pushes a day. D106 and D107 were taken: the decisions are D112 (Sparkle) and D113 (releases, Tip).
+- **Cause (Hardened Runtime).** An ad-hoc app under Hardened Runtime cannot load Sparkle's framework: the runtime is
+  off in both configurations until a Developer ID exists.
+- **Cause (a command-line build setting).** `WRAPPER_NAME` or `SWIFT_ACTIVE_COMPILATION_CONDITIONS` on xcodebuild's
+  command line reaches every package target too (duplicate outputs; no `SWIFT_PACKAGE`): the app target reads
+  `OVVI_APP_NAME` and `OVVI_CONDITIONS`, which only it uses.
+- **Cause (the release artifact).** upload-artifact skips hidden files, and a glob under `.build` made `.build` the
+  search root, so nothing uploaded: `include-hidden-files: true`.
+- **Fix (the key).** The EdDSA key is an openssl Ed25519 key in Sparkle's base64-seed form. It lives only in the
+  publish jobs (Ubuntu, the `release` environment, write token), which run no build tools: a Tip builds any ref's
+  code in a job with no secret and a read token. `scripts/appcast.sh` signs with OpenSSL 3; Ed25519 is deterministic,
+  so its signature is sign_update's byte for byte (checked, and `sign_update --verify` accepts it). Sparkle's
+  Markdown shows HTML as text: the feed's notes fold no `<details>`.
+- **Fix (install.sh).** One `main()`, so a cut-off download runs nothing and no child reads the script from stdin.
+  A running copy is quit by the user: an Apple event `quit` from a script needs the user's Automation consent first.
+- **Runs.** The VM, terminal only: the release zip through `file://` with no terminal (opens, no Gatekeeper dialog),
+  then under `expect` with a fake HOME (waits for the quit, replaces the copy, installs herdr, three integrations
+  current, Pi declined); with no terminal and the app running it stops with its message.
+- **For the user.** The menu bar and Activity Monitor say "Ovvi" for Ovvi Tip (as for Ovvi Dev); the badge says DEV.
+  Build Tips from main: a branch's commit count can pass later main Tips', and Sparkle then offers none of them. The
+  curl install links no `ovvi` skill (only `make install` does). A pre-release cannot test the release app's feed:
+  `releases/latest` finds nothing before `v0.1.0`.
