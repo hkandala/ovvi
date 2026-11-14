@@ -1453,3 +1453,33 @@ Round 3's tracks and the simplification pass (main up to 30326c5b), then the thr
 61. "[r12-toast-1.15.50.png: a Git card's error toast across the card's whole width, cut with … before Copy and OK]
     these toasts should have some max length, its covering full width? it should cover certain length and then be
     capped with ..."
+
+#### Track W4: Findings
+
+- **Cause.** Two native views draw every toast and notice: a plugin card's toast (`ToastView`, Git's error with Copy
+  and OK, Revert's question, a failed build's Try Again, "‹name› has unsaved edits.") and the window's notice capsule
+  (`NoticeCapsule`: errors, Copy Address's "Copied ‹address›", Pull and Push, agents' notices, Reconnecting, Controlled
+  in another window, the update notice, Settings' and Open Session's errors). Neither had a width limit, so a long text
+  took the whole card or window. Plugins draw no toasts of their own: a page's notice (Git's failure line, Tart VM's
+  messages) is page content.
+- **Fix.** One width, `Notice.width` = 520 pt, for both, through the existing `Capped` layout (it offers at most that
+  width and takes the view's own size; `frame(maxWidth:)` would stretch a short toast to 520). Short texts stay as
+  narrow as before, centered as before; a long one ends in …, and the pointer over the text shows it whole (`.help`).
+  Copy still copies git's whole message. The toast also keeps the card's 10 pt inset on each side, so in a narrow card
+  it never touches the card's edges.
+- **Decisions.** 520 pt, from the VM's pictures: about 60 characters of text beside the buttons, a line that reads
+  in one look; in the VM's 1024 pt window a single card is about 690 pt, so the toast is clearly short of the card's
+  width there and far short in a wide window, and a split card (about 330 pt) still gets the full card less its inset. The toast stays one line (its design). The window notice keeps its
+  two lines (its design): Pull and Push show git's last two lines, and the error is the second; at 520 pt a long text
+  wraps once and then ends in ….
+- **Runs.** VM, old app with the new checks: testAPluginPageCallsEveryPartOfTheAPI red (the toast 710.5 pt in a
+  690 pt card). VM, new app: testAPluginPageCallsEveryPartOfTheAPI, testGitCardCommitsPushesAndOpensDiffs (a narrow
+  card's toast stays inside the page), testGitHomeInitializesCommitsAllAndShowsMore, testFileExplorerFindBarAndFinderKeys,
+  testAPluginPackageAsksForTrustBuildsAndReloads, testWorkspaceRowsShowGitWorktreesAndSync,
+  testAnAgentsNoticeStaysUnderThePointer, testCopyAddressCopiesEachCardsAddress green. testAFileCardEditsSavesAndReloadsItsFile
+  failed on File Explorer's jump bar ("/ › tmp › …"), which this track does not touch: for the final round.
+- **Pictures.** `~/Downloads/ovvi-research/p58w4/`: before (left) and after (right), dark and light, a wide card's
+  toast, a narrow card's toast and the window's notice.
+- **For the user.** A failed Git fetch or checkout in a wide card: the toast stops at about a third of a wide window,
+  ends in …, hover shows the whole message, Copy copies it. ⇧⌘C on a terminal deep in folders: the notice wraps once and
+  ends in ….

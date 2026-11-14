@@ -137,9 +137,11 @@ extension OvviUITests {
         XCTAssertTrue(toast.exists(within: 3))
         XCTAssertTrue(toast.stringValue.hasSuffix("shows on hover."), toast.stringValue)
         // The capsule runs 14 pt before the text and 7 pt past the last button.
-        let wide = element("plugin-api.\(card).card").frame, left = toast.frame.minX - 14, right = main.frame.maxX + 7
+        let wide = element("plugin-api.\(card).page").frame, left = toast.frame.minX - 14, right = main.frame.maxX + 7
         XCTAssertGreaterThan(wide.width, 600)
-        XCTAssertEqual(right - left, 520, accuracy: 1, "a long toast stops at its widest")
+        // A text cut with … can take a few points less than it was offered.
+        XCTAssertLessThanOrEqual(right - left, 521, "a long toast stops at its widest")
+        XCTAssertGreaterThan(right - left, 500)
         XCTAssertEqual(left - wide.minX, wide.maxX - right, accuracy: 1)
     }
 

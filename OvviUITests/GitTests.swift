@@ -44,10 +44,11 @@ extension OvviUITests {
         branch.menuItems["side"].click()
         let toast = element("pane.\(card).toast")
         XCTAssertTrue(until(10) { toast.stringValue.contains("overwritten") })
-        // A narrow card's toast keeps the card's 10 pt inset on both sides.
-        let narrow = element("git.\(card).card").frame, main = element("pane.\(card).toast.main")
-        XCTAssertGreaterThanOrEqual(toast.frame.minX - 14, narrow.minX + 10 - 1)
-        XCTAssertLessThanOrEqual(main.frame.maxX + 7, narrow.maxX - 10 + 1)
+        // A narrow card's toast stays inside the page, which sits the card's 10 pt inset inside the card.
+        let narrow = element("git.\(card).page").frame, main = element("pane.\(card).toast.main")
+        XCTAssertLessThan(narrow.width, 540)
+        XCTAssertGreaterThanOrEqual(toast.frame.minX - 14, narrow.minX - 1)
+        XCTAssertLessThanOrEqual(main.frame.maxX + 7, narrow.maxX + 1)
         main.click()
         try await revert(home, page, card: card, shell: left, repo: repo)
         branch.click()
