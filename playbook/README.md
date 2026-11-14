@@ -18,3 +18,4 @@ Finished phases are in git history.
 |---|---|---|
 | 57 | Nineteenth feedback: empty states, a simpler sidebar, cards that survive idle | [57-nineteenth-feedback.md](phases/57-nineteenth-feedback.md) |
 | 58 | Twentieth feedback: clicks that always land, balanced splits, a smoother chat | [58-twentieth-feedback.md](phases/58-twentieth-feedback.md) |
+| 59 | Releases: a curl install, Sparkle updates, dev builds | [59-releases.md](phases/59-releases.md) |
