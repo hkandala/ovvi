@@ -188,6 +188,10 @@ private struct Finder {
                     end += 2
                 } else if Self.isPathChar(chars[end]) {
                     end += 1
+                } else if "\u{00A0}\u{202F}".contains(chars[end]), chars[index ..< end].contains("/") {
+                    // A no-break space splits no shell word (macOS puts U+202F before a screenshot's `AM`); before
+                    // a path's first `/` it is prose's (`see\u{00A0}/tmp/a.txt`).
+                    end += 1
                 } else if "([{".contains(chars[end]), chars[end - 1] == "/" {
                     open += 1
                     end += 1
@@ -247,10 +251,9 @@ private struct Finder {
     }
 
     /// No `:` (it starts a line number) and no `=` or `,` (`--out=/tmp/a`, `a.txt,b.txt`). A bracket opens only a
-    /// name (`app/(home)/page.tsx`): `Read(/tmp/a.txt)` is a call on a path. A no-break space is a name's own (macOS
-    /// puts U+202F before a screenshot's `AM`); only an ASCII space a shell splits on ends the path.
+    /// name (`app/(home)/page.tsx`): `Read(/tmp/a.txt)` is a call on a path.
     private static func isPathChar(_ char: Character) -> Bool {
-        char.isLetter || char.isNumber || "-_.~/+@%\u{00A0}\u{202F}".contains(char)
+        char.isLetter || char.isNumber || "-_.~/+@%".contains(char)
     }
 
     private static func unescaped(_ path: String) -> String {
@@ -341,8 +344,10 @@ public extension TerminalLink {
             read[index] = cells
             return cells
         }
+        // A last cell with text, or an escaped space (`my\ file` wrapped after its space).
         func full(_ index: Int) -> Bool {
-            cellsOf(index).last.map { $0 != " " } ?? false
+            let cells = cellsOf(index)
+            return cells.last.map { $0 != " " } ?? false || cells.suffix(2) == ["\\", " "]
         }
         var first = row, last = row
         while first > 0, row - first < 20, full(first - 1) {

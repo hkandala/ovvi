@@ -1431,12 +1431,19 @@ Round 3's tracks and the simplification pass (main up to 30326c5b), then the thr
   `\ ` as part of a path, but ended a path at any character outside its list, and U+202F, the narrow no-break space
   macOS puts before a screenshot's `AM`, was outside it. The drop paste escapes ASCII spaces only, which is right: no
   shell splits a word on U+202F, so `cat /…/Screenshot\ …\ 12.31.29 AM.png` works in zsh as pasted.
-- **Fix.** One rule in the finder: a no-break space (U+00A0, U+202F) is a path's own character, like a backslash
-  escape; an unescaped ASCII space still ends it. The end trim drops a trailing no-break space and never a character a
-  backslash escapes (`/tmp/wow\!`). The opened path is the unescaped real name, as before.
+- **Fix.** One rule in the finder: once a path has its first `/`, a no-break space (U+00A0, U+202F) is its own
+  character, like a backslash escape; an unescaped ASCII space still ends it. Before the `/` it stays prose's
+  (`see\u{00A0}/tmp/a.txt` is `/tmp/a.txt`). The end trim drops a trailing no-break space and never a character a
+  backslash escapes (`/tmp/wow\!`). A row that ends in an escaped space (`my\ ` wrapped after its space) goes on in
+  the next row, as a full row does. The opened path is the unescaped real name, as before.
 - **Drop paste.** Ghostty's escape set plus `^`: under zsh's `EXTENDED_GLOB` an unescaped `^` is a glob (a check
   expanded `a^b.txt` to five files). U+202F, U+00A0, `~`, `=`, `%` mid-path need nothing in zsh, bash or sh.
 - **Tests.** Unit cases: the user's line with its trailing ` -`, U+00A0, every escape the drop makes, `\!` at the
   end, a quoted path with U+202F, a URL that stops at U+202F; 3 of them fail on the old finder. The e2e helper's
   dropped file is now `drop me's (1) at 12.31 AM.txt` (U+202F before `AM`), so both drop tests paste it, and
   testDroppingAFilePastesItsPath ⌘-clicks the pasted path's last cells and checks that the file opens.
+- **Runs.** VM: testDroppingAFilePastesItsPath green; with the old finder red ("waited for a new tab": the ⌘-click
+  on `AM.txt` hit no link). Unit: 5 of the new checks fail on the old finder. RemoteTests'
+  testAFileDroppedOnARemoteCardPastesItsCopysPath (new file name) runs on CI only: for the final round.
+- **For the user.** Take a screenshot, drop it on a terminal card, and ⌘-hover and ⌘-click the pasted path: the
+  underline runs to `.png` and the image opens. Also a path with `\(`, `\'` or `\!` in it.

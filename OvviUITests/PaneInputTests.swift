@@ -169,8 +169,7 @@ extension OvviUITests {
         // macOS puts U+202F before a screenshot's AM; only the ASCII spaces need escapes.
         let name = #"drop\ me\'s\ \(1\)\ at\ 12.31"# + "\u{202F}AM.txt"
         try await waitFor(pane, toShow: "\(folder)/\(name)")
-        try await commandClickOpens(path, at: "cat \(URL(filePath: path).deletingLastPathComponent().path)/\(name)",
-                                    in: pane)
+        try await commandClickOpens(path, shown: name, in: pane)
 
         try await send(" ", to: pane)
         let temporary = try await String(
@@ -193,8 +192,9 @@ extension OvviUITests {
     }
 
     /// ⌘-click on the pasted path's last cells, past its escapes and its U+202F, opens the real file.
-    private func commandClickOpens(_ path: String, at typed: String, in pane: String) async throws {
+    private func commandClickOpens(_ path: String, shown name: String, in pane: String) async throws {
         step("A ⌘-click on the pasted path's end opens the file")
+        let typed = "cat \(URL(filePath: path).deletingLastPathComponent().path)/\(name)"
         let terminal = element("terminal.\(pane)")
         let grid = try XCTUnwrap(terminal.value as? String).split(separator: " ").compactMap { Double($0) }
         let rows = try await read(pane).split(separator: "\n", omittingEmptySubsequences: false)
@@ -212,7 +212,7 @@ extension OvviUITests {
         XCUIElement.perform(withKeyModifiers: .command) { point.click() }
         let opened = try await newTabID(after: before)
         closeAfter("tab", opened)
-        try await labelEnds(pane(of: opened), " \(path)")
+        try await labelEnds(self.pane(of: opened), " \(path)")
     }
 
     func testAClickOnACardsHeaderGivesItTheKeyboard() async throws {

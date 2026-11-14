@@ -138,6 +138,8 @@ private let cases: [(String, [Found])] = [
     ),
     ("cat /tmp/a\u{00A0}b.txt -n", [file("/tmp/a\u{00A0}b.txt")]),
     ("see /tmp/a.txt\u{00A0}!", [file("/tmp/a.txt")]),
+    ("see\u{00A0}/tmp/a.txt and\u{202F}more/b.md", [file("/tmp/a.txt"), file("more/b.md")]),
+    ("/tmp/a.txt\u{00A0}now", [file("/tmp/a.txt\u{00A0}now")]),
     ("cat /tmp/drop\\ me\\'s\\ \\(1\\)\\ \\&\\ \\^x.txt", [
         file("/tmp/drop\\ me\\'s\\ \\(1\\)\\ \\&\\ \\^x.txt", "/tmp/drop me's (1) & ^x.txt"),
     ]),
@@ -214,6 +216,12 @@ private func cells(_ rows: [String], columns: Int) -> (Int) -> [String] {
     #expect(link?.target == "https://x.dev/aaaa/end")
     #expect(places[link?.range.lowerBound ?? 0] == .init(row: 0, column: 4))
     #expect(places[(link?.range.upperBound ?? 1) - 1] == .init(row: 1, column: 6))
+}
+
+@Test func `a path wrapped after an escaped space is one link`() {
+    let rows = ["cat /tmp/my\\ ", "file.txt -n"]
+    let (text, _) = TerminalLink.line(at: 1, rows: rows.count, cells: cells(rows, columns: 13))
+    #expect(TerminalLink.all(in: text).map(\.target) == ["/tmp/my file.txt"])
 }
 
 @Test func `a row that does not fill its width ends its line`() {
