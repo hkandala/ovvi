@@ -1322,3 +1322,32 @@ Round 3's tracks and the simplification pass (main up to 30326c5b), then the thr
     copy file path, even if certain file is open, that file path, and for git diff view we should copy commit id if we
     are viewing specific commit, for browser it should be url, look through evrything and see if there's anything else
     i missed. essentially cmd+shift+c should copy some url / session, something useful."
+
+#### Track Y: Findings
+
+- **Design.** One action, **Copy Address** (⇧⌘C, Arc's key), in the registry's Panes group: Settings ▸ Shortcuts,
+  ⌘/, the card's menu, View ▸ Pane, a floating window's menu and ⌘K. It acts on the keyboard card (the floating
+  window's card there) and copies one thing: the card's address, what the card shows as its own machine names it.
+  The menu item says what that is (Copy URL, Copy Path, Copy Session ID, Copy Commit ID, Copy Title); ⌘K also finds it
+  as "copy address". The app's notice shows "Copied ‹address›" for 1.5 s, the success tone.
+
+  | Card | Address |
+  |---|---|
+  | Browser | the page's URL as the address bar shows it (a remote machine's `localhost` form); before the first load, the label's URL; a blank page has none |
+  | Agent, terminal or chat view | the agent's session id (`Pane.session`: herdr's report, else the id after `resume`) |
+  | Agent with no session id yet | its folder, as a terminal: the item then reads Copy Path, so the user sees which |
+  | Terminal | the pane's folder (herdr's `cwd`), the full path |
+  | File Explorer | the open file's path (with or without the tree beside it, a preview, Markdown); on the tree, the shown folder's |
+  | Git | a commit's full hash while a commit shows; Working Tree and the home page: the repository's root |
+  | Another plugin | by its manifest's `opens`: a path for `files` and `folders`, the URL for `urls`; with no `opens` (Tart VM), the page's title when it set one (the VM's name), else the pane's folder |
+  | New pane chooser | the pane's folder |
+  | Overview | the keyboard card, as View ▸ Pane |
+  | No card (an empty space) | disabled, with no key: ⇧⌘C goes on to whatever has the keyboard |
+
+- **Decisions.** Folders and roots lose their last `/` (Finder's Copy as Pathname). Remote machines: the plain path
+  or id, no host: the copy goes into a shell, an agent or a herdr call on that machine, where `host:path` would need
+  cutting, and the card already says its machine. Plugins: no new call and no manifest key. The label's argument
+  (its form fixed by `opens`) and the page's `document.title` already reach the app, so the API stays 3.
+- **Conflicts.** None in the registry or macOS's fixed keys; the plugins' keys are ⌘E, ⇧⌘E, ⇧⌘., ⌥⌘F; CodeMirror
+  binds no ⇧⌘C; a terminal program never gets ⌘ keys (the menu goes first). The detached Web Inspector's own ⇧⌘C
+  (Start Element Selection) loses to the menu while a card has an address, as its other ⌘ keys already do.

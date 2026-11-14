@@ -171,6 +171,7 @@ extension Hotkeys {
         Hotkey("pane.float", "Float Pane", "Panes"),
         Hotkey("pane.close", "Close Pane", "Panes", "cmd+w", top: true),
         Hotkey("pane.replace", "Replace Pane", "Panes", "shift+cmd+r"),
+        Hotkey("pane.copy-address", "Copy Address", "Panes", "shift+cmd+c", top: true),
         Hotkey("pane.balance", "Balance Splits", "Panes", "option+cmd+="),
         Hotkey("pane.previous", "Select Previous Pane", "Panes", "cmd+[", top: true),
         Hotkey("pane.next", "Select Next Pane", "Panes", "cmd+]", top: true),

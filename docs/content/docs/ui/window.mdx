@@ -729,7 +729,7 @@ How it works: [Layout and sizing](/docs/layout).
     for a pane alone in its tab, and New Space, a separator, then every
     tab of the session but the pane's own, grouped by space: each
     space's name as a section header, in the sidebar's order), Rename
-    Pane…, Reset Pane Name.
+    Pane…, Reset Pane Name, Copy Address (⇧⌘C, named for what it copies).
   - On a plugin card: Reload Plugin (⌥⌘R) and Show Log.
   - Redraw Terminal (⌥⌘R, not on a browser or plugin pane), Replace Pane (⇧⌘R), Open Terminal Here (on an agent,
     browser or plugin pane), Start Agent Here ▸, Open Browser Here, Open File Explorer Here, Open Git Here (each but
@@ -748,6 +748,22 @@ How it works: [Layout and sizing](/docs/layout).
   **Reset Pane Name** (enabled once the pane has a name, not on a browser
   or plugin pane, also in the palette)
   clears herdr's label, so the header shows the program again.
+- <a id="copy-address"></a>**Copy Address** (⇧⌘C, as in Arc; also in a floating window's menu and the palette) puts
+  the keyboard card's address on the clipboard and shows "Copied ‹address›" for 1.5 s. The address is what the card
+  shows, as its own machine names it, with no host name: a remote path pastes as it is into that machine's shell or
+  agent. The menu item names it: Copy URL, Copy Path, Copy Session ID, Copy Commit ID or Copy Title. With no card
+  (an empty space) the item is disabled and has no key, so ⇧⌘C goes on to the page or program.
+
+  | Card | Address |
+  |---|---|
+  | Browser | the address bar's URL |
+  | Agent, in its terminal or its chat view | the agent's session id; before the agent reports one, its folder |
+  | Terminal, New pane chooser | the pane's folder |
+  | File Explorer | the open file's path; on the tree, its folder's |
+  | Git | the commit's full hash while a commit shows; else the repository's root |
+  | Another plugin | its place, by the manifest's `opens`; with no `opens`, the page's title (a Tart VM's name), else the pane's folder |
+
+  A folder's path has no `/` at the end, as Finder's Copy as Pathname.
 - Drag the header to move the pane ([Drag and drop](/docs/ui/drag-and-drop)). A click on the header's empty part
   gives the card the keyboard, as a click on its content does.
 - **Replace Pane** (⇧⌘R, also in the palette) puts a fresh shell in the pane's

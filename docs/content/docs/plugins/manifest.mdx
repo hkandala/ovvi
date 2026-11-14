@@ -93,6 +93,8 @@ label's argument holds, and the card's title.
 | `git` | a repository's root with its `/`, then optionally a space and `uncommitted` or a commit hash | the root's name, `Working Tree` or the short hash (the page's title, a commit's subject, once it loads) | `{ "git": true }` |
 | `urls` | a URL | its last part | `{ "urls": ["https://github.com/*/*/pull/*"] }` |
 
+- Copy Address (⇧⌘C) copies the argument: the path, the URL, or a commit's hash (a repository's root for
+  `uncommitted` and the home). A card with no `opens` copies its page's title, else the pane's folder.
 - `files` is a list of patterns. Each is a name glob (`*.csv`, `Makefile`),
   case blind, or a uniform type identifier (`public.image`). A type matches
   its subtypes, as `UTType.conforms(to:)` says. A name the system does not
