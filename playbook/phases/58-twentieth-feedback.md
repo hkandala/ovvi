@@ -1535,5 +1535,6 @@ Round 4's tracks (T3, E7, N4, V3, Y, U, W4) and this round's fixes; head p58r4-f
   CI; 3 loops alone, 9 loops, or `renice` passed 4 of 4 each): red with 1 frame, CI's failure. The new code under the
   same load: 5 of 5 green. A screen recording of that run shows the rect grow from the tile to the page over 4 to 5
   frames at 30 fps. No load: the zoom, Animations off, overview, session-step, browser-and-chat, small-snapshot,
-  chat-made-again, heavy-switch, reveal and kept-chats tests green.
+  chat-made-again, heavy-switch, reveal and kept-chats tests green. CI on f66a3eeb: the zoom test and the other 5 OverviewTests green
+  (43615993258, 6 executed).
 - **For the user.** Click a tile in the overview, with VoiceOver on too: the tile should grow smoothly into the page.
