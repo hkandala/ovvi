@@ -1517,3 +1517,23 @@ Round 4's tracks (T3, E7, N4, V3, Y, U, W4) and this round's fixes; head p58r4-f
   43603825358 green, with SSHForwardTests and "a started server shares the CLI's paths" run, not skipped. U's and W4's
   tests green in final8 and in chosen-tests run 43582368229. A VM-only red, not this round's: the pi tree test's
   dimmed-bubble check fails in the VM on the old app too (no Reduce Motion there; CI passes it).
+
+### Track O: the overview zoom into an unshown tab
+
+- **Cause.** Not the page. The click's update builds the unshown tab's page before the zoom starts (70 ms of layout in
+  the VM, before the zoom's first step), and it costs the zoom no frames. The zoom drew each frame on the main thread
+  (an `Animatable` modifier). Right after the click, XCUITest's query ("Checking existence of overview") takes an
+  accessibility snapshot of the whole app on the main thread: Time Profiler in the VM put 75 of the 83 ms before the
+  zoom's first frame in `AXUIElementCopyHierarchy`, including the menu bar's menus opened for inspection. On CI that
+  query took 381 ms, longer than the zoom: 1 frame. Any accessibility client, or other main-thread work, does the same.
+- **Fix.** The zoom runs in the render server, as the cards' motion does: the miniature lays out once at the page's
+  size and an animation of its layer's transform grows it from the tile's rect, and its end closes the overview. The
+  other tiles' fade and the chrome's fade stay SwiftUI (with a busy main thread they jump, under the zoom).
+  `overview.zoom` counts zooms that started. The main thread can no longer count the frames, and the test now checks
+  one zoom per click.
+- **Runs.** VM, the old code, the test's app under `taskpolicy -b` and 3 busy loops in the VM (the load that matches
+  CI; 3 loops alone, 9 loops, or `renice` passed 4 of 4 each): red with 1 frame, CI's failure. The new code under the
+  same load: 5 of 5 green. A screen recording of that run shows the rect grow from the tile to the page over 4 to 5
+  frames at 30 fps. No load: the zoom, Animations off, overview, session-step, browser-and-chat and small-snapshot
+  tests green.
+- **For the user.** Click a tile in the overview, with VoiceOver on too: the tile should grow smoothly into the page.
