@@ -283,14 +283,19 @@ extension OvviUITests {
 
     func newWorkspace(_ label: String, tabs count: Int = 1) async throws -> (tabs: [String], pane: String) {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        let (tab, pane) = try await createWorkspace(label)
+        let (tab, pane) = try await createWorkspace(count > 1 ? "\(label)…" : label)
         let workspace = workspace(of: tab)
         var tabs = [tab]
         for _ in 1 ..< count {
             try await tabs.append(createTab(in: workspace).tab)
         }
+        // The app reads herdr's snapshots in order: once the row shows a label set after the last tab, the app has
+        // every tab. A snapshot after the click would open the late ones in the background, and the bar would slide.
+        if count > 1 {
+            try await Self.call(one, "workspace.rename", ["workspace_id": workspace, "label": label])
+        }
         let row = element("workspace.\(workspace)")
-        XCTAssertTrue(row.exists(within: 3))
+        XCTAssertTrue(row.has(\.label, label, within: 10), row.label)
         row.click()
         XCTAssertTrue(element("tab.\(tabs[0])").exists(within: 3))
         XCTAssertTrue(element("tabs.count").has(\.stringValue, "\(count)", within: 3))

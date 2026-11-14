@@ -207,12 +207,8 @@ extension OvviUITests {
     }
 
     func testATabThatOpensOutOfViewSlidesIntoView() async throws {
-        let (tabs, pane) = try await newWorkspace("opens", tabs: 8)
-        // After the tabs: a snapshot after the click that brings the last ones would open them in the background.
         relaunch(one, ["-recordMotion", "YES"])
-        let row = element("workspace.\(workspace(of: tabs[0]))")
-        XCTAssertTrue(row.exists(within: connect))
-        row.click()
+        let (tabs, pane) = try await newWorkspace("opens", tabs: 8)
         let first = element("tab.\(tabs[0])"), rowEnd = element("titlebar.overview").frame.minX - 8
         XCTAssertTrue(first.has(\.isSelected, true, within: 3))
         XCTAssertTrue(element("tabs.fades").has(\.stringValue, "trailing", within: 2))
