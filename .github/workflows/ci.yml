@@ -18,10 +18,6 @@ on:
         type: boolean
         default: false
 
-env:
-  HERDR_VERSION: 0.9.5
-  HERDR_SHA256: fb77c2232a05a8035421382c894392f4174e4e38a18e48af3dd0290157c3a7e2
-
 permissions:
   contents: read
 
@@ -37,15 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: brew update --quiet && brew bundle
-      - name: install herdr
-        run: &install-herdr |
-          mkdir -p ~/.local/bin
-          curl -fsSL -o ~/.local/bin/herdr "https://github.com/herdrdev/herdr/releases/download/v$HERDR_VERSION/herdr-macos-aarch64"
-          echo "$HERDR_SHA256  $HOME/.local/bin/herdr" | shasum -a 256 -c
-          chmod +x ~/.local/bin/herdr
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          # The app finds herdr through the login shell, like a user's rc file after install.
-          echo 'export PATH="$HOME/.local/bin:$PATH"' | tee -a ~/.zshrc >> ~/.bash_profile
+      - run: scripts/ci-herdr.sh
       - run: make lint
       - run: make build
       - run: make build-tests
@@ -88,8 +76,7 @@ jobs:
       - if: ${{ !inputs.only_testing }}
         run: tar -xf products.tar && rm products.tar
       # The image has xcbeautify and node.
-      - name: install herdr
-        run: *install-herdr
+      - run: scripts/ci-herdr.sh
       - run: scripts/ci-sshd.sh
       # CI has no coding agents: stand-ins go on the login shell's PATH, here and on the remote machine.
       - run: |

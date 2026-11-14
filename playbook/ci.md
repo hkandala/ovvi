@@ -15,7 +15,7 @@ How CI runs, how to run part of it, and how to keep it green and fast.
 - **Machines.** `runs-on: xcode-27`: a VM with a 1x display (a 1024 × 674 pt screen), the US keyboard layout
   and Reduce Motion on; 3 cores and 7 GB, and one runner can be half as fast as the next. The account has 5 macOS
   runners: GitHub's limit for every plan below Enterprise, shared by all of the account's runs. herdr is downloaded
-  and checked by its SHA-256 (`HERDR_VERSION` in `ci.yml`). At 1x, cell sizes round: `stty size` can be one column
+  and checked by its SHA-256 (`scripts/ci-herdr.sh`). At 1x, cell sizes round: `stty size` can be one column
   narrower than the card's grid, and a 1 pt font step can leave the column count the same, so grid tests allow one
   column. A second ⌃⌘F during the full-screen animation is lost.
 - **Checks** (a push or a pull request): one job, `checks`, runs `make lint`, `make build`,

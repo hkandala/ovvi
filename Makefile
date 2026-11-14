@@ -118,8 +118,8 @@ BUNDLE_ID ?= dev.ovvi.app.release
 URL_SCHEME ?= ovvi-release
 install zip: BUNDLE_ID = dev.ovvi.app
 install zip: URL_SCHEME = ovvi
-# The version people see: the newest v* tag (release.yml passes its own); 0.1.0 before the first. The build number,
-# which Sparkle compares, is the commit count: it only grows on main.
+# The version people see: the nearest v* tag behind HEAD (release.yml passes its own tag); 0.1.0 before the first.
+# The build number, which Sparkle compares, is the commit count: it only grows on main.
 VERSION ?= $(or $(patsubst v%,%,$(shell git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null)),0.1.0)
 BUILD ?= $(shell git rev-list --count HEAD)
 APP := $(DERIVED_DATA)/Build/Products/Release/Ovvi.app
@@ -136,6 +136,6 @@ install: app
 
 # A release's files (release.yml): the app zipped with the framework's symbolic links kept, and its checksum.
 zip: app
-	mkdir -p .build && rm -f .build/Ovvi-*.zip
+	rm -f .build/Ovvi-*.zip
 	ditto -c -k --sequesterRsrc --keepParent $(APP) .build/Ovvi-$(VERSION).zip
 	cd .build && shasum -a 256 Ovvi-$(VERSION).zip >SHA256SUMS

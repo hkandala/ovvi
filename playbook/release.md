@@ -4,7 +4,7 @@ A version tag on main publishes a release: `.github/workflows/release.yml` check
 `make lint test`, builds `make zip` (the Release app, ad-hoc signed, Hardened Runtime off) and publishes a GitHub
 Release with `Ovvi-<version>.zip`, `SHA256SUMS` and the notes of `scripts/release-notes.sh`. The tag sets the version
 (`v0.2.0` is 0.2.0); the build number is main's commit count (`git rev-list --count`). A local `make app` stamps
-the same two values from the newest `v*` tag. A tag with a suffix (`v0.2.0-rc.1`) makes a pre-release, which
+the same two values from the nearest `v*` tag behind HEAD, so a build at the tag matches the release. A tag with a suffix (`v0.2.0-rc.1`) makes a pre-release, which
 GitHub's "latest" skips.
 
 ## Before a tag
@@ -18,7 +18,8 @@ GitHub's "latest" skips.
 ## Tag
 
 An annotated tag: its message opens the notes (the highlights, in your words), then the `feat` subjects since the
-last release, then the `fix` and `perf` subjects, folded.
+last release, then the `fix` and `perf` subjects, folded. A lightweight tag (GitHub's web
+form makes one) opens the notes with its commit's subject instead.
 
 ```sh
 git tag -a v0.2.0 -m "The highlights" && git push origin v0.2.0
@@ -32,3 +33,4 @@ git tag -a v0.2.0 -m "The highlights" && git push origin v0.2.0
 
 A failed run publishes nothing: fix it on main, move the tag (`git tag -f -a`, `git push -f origin <tag>`), and it
 runs again. To drop a test release: `gh release delete <tag> --cleanup-tag --yes`.
+

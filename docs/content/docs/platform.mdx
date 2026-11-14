@@ -23,8 +23,8 @@ description: "The codebase, dependencies, swipes and views, the tab bar and test
   syntax grammars). No GNU libintl: the libghostty package builds Ghostty with
   `-Di18n=false`.
 - Signing: ad hoc (`make app`), with App Sandbox off, because the app runs the
-  `herdr` CLI and `ssh`. The project turns Hardened Runtime on, but it applies
-  only with a real signing identity, which notifications need too.
+  `herdr` CLI and `ssh`, and Hardened Runtime off: under it an ad-hoc app
+  cannot load Sparkle's framework. Notifications need a real signing identity.
 
 ## Dependencies
 
