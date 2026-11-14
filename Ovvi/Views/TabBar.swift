@@ -190,15 +190,16 @@ struct TabBar: View {
     }
 }
 
-/// A tab that opened in the background: its pill's border lights in the accent color and fades, once. It starts as
-/// its capsule appears, which a lazy row makes only as the slide brings it near.
+/// A tab that opened in the background: its pill's border lights in a card's border color and fades, once. It starts
+/// as its capsule appears, which a lazy row makes only as the slide brings it near.
 private struct OpenGlow: View {
     let done: () -> Void
     @State private var lit = false
+    @Environment(\.look) private var look
 
     var body: some View {
-        TabBar.pill.strokeBorder(Color.accentColor, lineWidth: 1.5)
-            .shadow(color: .accentColor.opacity(0.6), radius: 3)
+        TabBar.pill.strokeBorder(look.activeBorder, lineWidth: 1.5)
+            .shadow(color: look.activeBorder, radius: 3)
             .padding(.vertical, TabBar.inset)
             .opacity(lit ? 1 : 0)
             .allowsHitTesting(false)
