@@ -233,7 +233,7 @@ extension OvviUITests {
         if fold.value as? String == "collapsed" {
             fold.click()
         }
-        XCTAssertTrue(fold.has(\.stringValue, "expanded", within: 2))
+        XCTAssertTrue(fold.has(\.stringValue, "expanded", within: 10))
     }
 
     /// Unfolds them again after the test: the tests' defaults keep the folds.
@@ -243,7 +243,8 @@ extension OvviUITests {
         if fold.value as? String == "expanded" {
             fold.click()
         }
-        XCTAssertTrue(fold.has(\.stringValue, "collapsed", within: 2))
+        // Up to 10 s, as unfold's: with 300 rows, CI's app still drew a sidebar swipe 6 s after it began.
+        XCTAssertTrue(fold.has(\.stringValue, "collapsed", within: 10))
         addTeardownBlock { @MainActor [self] in
             let fold = element("fold.\(workspace)")
             if fold.exists, fold.value as? String == "collapsed" {
