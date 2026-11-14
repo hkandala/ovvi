@@ -1314,3 +1314,11 @@ Round 3's tracks and the simplification pass (main up to 30326c5b), then the thr
     as per the settings which is tui right now, it should remember per session thing somehow, also can you give me full
     list of what's stored in herdr sessions, what's in file states on the machines, and what's within our app data,
     give me full breakdown of it in a dark minimal html report"
+
+### Track Y: ⇧⌘C copies the card's address (item 59)
+
+59. "okay one more thing, i want to introduce one more feature similar to arc one cmd+shift+c on pressing this shortcut
+    on any tab it should copy things like, on an agent tab it should copy agent session id, in file explorer we should
+    copy file path, even if certain file is open, that file path, and for git diff view we should copy commit id if we
+    are viewing specific commit, for browser it should be url, look through evrything and see if there's anything else
+    i missed. essentially cmd+shift+c should copy some url / session, something useful."
