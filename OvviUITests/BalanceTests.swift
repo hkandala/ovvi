@@ -21,6 +21,8 @@ extension OvviUITests {
         step("Another client's split and a pane whose shell exits even the row")
         let third = try await split(first)
         try await expectWidths(tab, [first: 1 / 3, third: 1 / 3, card: 1 / 3])
+        // At its prompt: on CI the row never evened after an exit typed while the new shell started.
+        try await waitForPrompt(third)
         try await send("exit\r", to: third)
         try await expectWidths(tab, [first: 0.5, card: 0.5])
 
