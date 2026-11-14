@@ -70,13 +70,13 @@ extension OvviUITests {
         XCTAssertTrue(element("pane.\(new)").vanishes(within: 3))
         moved("the split and its close", slides, from: slid)
 
-        let steps = { Int(zoom.stringValue) ?? 0 }, zoomed = steps()
+        let zooms = { Int(zoom.stringValue) ?? 0 }, zoomed = zooms()
         app.typeKey("o", modifierFlags: [.command, .control])
         let tile = element("overview.tab.\(tab)")
         XCTAssertTrue(tile.has(\.isHittable, true, within: 3))
         tile.click()
         XCTAssertTrue(element("overview").vanishes(within: 2))
-        moved("the overview's zoom", steps, from: zoomed)
+        moved("the overview's zoom", zooms, from: zoomed)
 
         // The order's changes with a motion, and without.
         let counts = { moves.stringValue.split(separator: " ").compactMap { Int($0) } }, before = counts()

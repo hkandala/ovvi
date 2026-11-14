@@ -43,12 +43,13 @@ struct Overview: View {
                                 pages.closeOverview()
                             }
                         } content: {
+                            // In the host's own tree: a modifier on the host would not hide it.
                             Miniature(tab: zoom.tab, page: page, size: tabPage.size, live: [])
+                                .accessibilityHidden(true)
                         }
                         .frame(width: tabPage.width, height: tabPage.height)
                         .padding(.leading, tabPage.minX)
                         .padding(.top, tabPage.minY)
-                        .accessibilityHidden(true)
                     }
                 }
                 .onChange(of: pages.leaving, initial: true) {
@@ -97,8 +98,8 @@ struct Overview: View {
 }
 
 /// Grown by Core Animation, as cards move (`CardMotion`): the render server draws its frames, so work on the main
-/// thread meanwhile drops none (an accessibility client's snapshot of the window, 75 ms in the VM and 380 ms on CI,
-/// left one frame of a zoom drawn on the main thread). The content lays out once, at the page's size.
+/// thread meanwhile (an accessibility client's snapshot of the window) drops none. The content lays out once, at the
+/// page's size.
 private struct Zoom<Content: View>: NSViewRepresentable {
     let from: CGRect
     let page: CGRect
@@ -109,7 +110,7 @@ private struct Zoom<Content: View>: NSViewRepresentable {
         let host = NSHostingView(rootView: content)
         host.safeAreaRegions = []
         host.wantsLayer = true
-        guard let layer = host.layer, page.width > 0, page.height > 0 else {
+        guard let layer = host.layer else {
             done()
             return host
         }
