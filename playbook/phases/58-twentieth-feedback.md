@@ -1315,6 +1315,36 @@ Round 3's tracks and the simplification pass (main up to 30326c5b), then the thr
     list of what's stored in herdr sessions, what's in file states on the machines, and what's within our app data,
     give me full breakdown of it in a dark minimal html report"
 
+#### Track V3: Findings
+
+- **Cause.** Chat or TUI lived only on the in-memory `Chat`, which a relaunch makes again from `launch?.opensChat ==
+  true`. Launches are in memory too, and the one read back from herdr's `ovvi-chat` token had `false`, so every chat
+  the app found running opened on TUI, whatever the setting.
+- **Fix.** The session's `HostStore` keeps each chat pane's view in `$HOME/.local/state/ovvi/<session>/views.json`
+  on the pane's machine (the cards' state folder, `Exec.read`/`write(home:)`: one path for This Mac and remote), by
+  terminal id. It writes at a chat's first show and at each switch (`showsChat`'s `didSet`), drops an entry when its
+  terminal goes, and reads the file after the first snapshot (after the 30-day sweep), pruned to live terminals and
+  written back. A launch typed in this run decides (`opensChat`), else the saved view, else the setting.
+- **Decisions.** Keyed by terminal id, not pane id. Spiked on herdr 0.9.5: pane ids survive a cold restart and are not
+  reused within a run, but change on a move to another space (and herdr reuses space ids after a restart); terminal
+  ids survive moves (D6) and change on a cold restart. A cold restart ends every chat anyway (herdr starts the agents
+  again without Ovvi's flags, and Relaunch with Chat opens on Chat), so the choice survives a relaunch, moves and a
+  live update, and nothing is lost on a cold restart that a chat could show. A failed read (a remote's ssh or
+  timeout) is told from a missing file by `[ -s ]`, and is tried again at the next snapshot, so it never overwrites
+  the file. The app's own switches (a `/command`, OpenCode's fallback) are kept too. A card made before the read
+  shows the setting's view until it is in. Two Macs on one remote session undo each other's switches (ponytail note).
+- **Floating panes and stopped agents.** A float shows the same `Chat`, so the same view. An agent that stops leaves
+  the entry while its terminal lives; Relaunch with Chat makes a new launch, which opens on Chat and saves it.
+- **Runs (VM).** The new test on the old app: red at its first relaunch (the Chat pane came back on TUI). The first
+  commit: 9 chat tests green (the new one, the five that now expect Chat after a relaunch, the float and Relaunch
+  with Chat tests). After the review's fixes: the new test and two relaunch tests green. `make lint build test` green
+  on the rebased tree (HerdrKit's `Git.root` check failed once under load, green on the rerun). Not run here:
+  `testKeptChatsCost` (on demand, now switches its chats to TUI before its relaunch) and `testAChatOnARemoteMachine`,
+  for the final round.
+- **For the user.** Two agent panes, one switched to Chat and one on TUI; quit and reopen Ovvi: each comes back as
+  it was, also after Settings ▸ Agents ▸ Open new agents in changes, after a card moves to another space, and in a
+  floating window. On a remote machine too. After `herdr session stop` and Start, agents show Relaunch with Chat.
+
 ### Track Y: ⇧⌘C copies the card's address (item 59)
 
 59. "okay one more thing, i want to introduce one more feature similar to arc one cmd+shift+c on pressing this shortcut
