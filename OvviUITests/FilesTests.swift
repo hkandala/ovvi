@@ -336,16 +336,43 @@ extension OvviUITests {
         try await send("rm -rf \(repo)\r", to: shell)
     }
 
-    /// ⇧⌘., as Finder's: the dotfiles show, with the eye on; again, they go.
+    /// ⇧⌘., as Finder's: the dotfiles show, with the eye on, dimmed while the setting says so; again, they go.
     private func togglesDotfiles(_ card: String, _ tree: XCUIElement) {
         let eye = element("pane.\(card).hidden-files")
         XCTAssertFalse(row(".gitignore", in: tree).exists || eye.isSelected)
         app.typeKey(".", modifierFlags: [.command, .shift])
         XCTAssertTrue(row(".gitignore", in: tree).exists(within: 5))
         XCTAssertTrue(eye.has(\.isSelected, true, within: 3))
+        XCTAssertTrue(dimmed(".gitignore", in: tree).exists(within: 3))
+        XCTAssertFalse(dimmed("a.txt", in: tree).exists)
+        addTeardownBlock { @MainActor [self] in
+            if testRun?.hasSucceeded == false {
+                explorerDims(true)
+            }
+        }
+        explorerDims(false)
+        XCTAssertTrue(dimmed(".gitignore", in: tree).vanishes(within: 5))
+        explorerDims(true)
+        XCTAssertTrue(dimmed(".gitignore", in: tree).exists(within: 5))
         app.typeKey(".", modifierFlags: [.command, .shift])
         XCTAssertTrue(row(".gitignore", in: tree).vanishes(within: 5))
         XCTAssertTrue(eye.has(\.isSelected, false, within: 3))
+    }
+
+    /// A dimmed row's word for VoiceOver, drawn nowhere.
+    private func dimmed(_ name: String, in tree: XCUIElement) -> XCUIElement {
+        row(name, in: tree).descendants(matching: .any).matching(NSPredicate(format: "value == 'Hidden'")).firstMatch
+    }
+
+    /// Settings ▸ Plugins ▸ File Explorer ▸ Dim ignored and hidden files, through General: Plugins opens on its list.
+    private func explorerDims(_ dims: Bool) {
+        app.typeKey(",", modifierFlags: .command)
+        XCTAssertTrue(element("settings.page.general").exists(within: 5))
+        element("settings.page.general").click()
+        element("settings.page.plugins").click()
+        element("plugins.explorer").click()
+        turn("plugins.explorer.setting.dim", dims)
+        settingsWindow.typeKey("w", modifierFlags: .command)
     }
 
     func row(_ name: String, in page: XCUIElement) -> XCUIElement {

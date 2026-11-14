@@ -1,7 +1,7 @@
 {
   "name": "@ovvi/explorer",
   "license": "AGPL-3.0-only",
-  "version": "1.15.2",
+  "version": "1.15.3",
   "private": true,
   "description": "Files and folders",
   "keywords": ["files", "tree", "folder", "finder"],
@@ -89,7 +89,7 @@
     "settings": [
       { "id": "hidden-files", "type": "toggle", "title": "Show hidden files",
         "description": "Names that start with a dot.", "default": false },
-      { "id": "ignored", "type": "toggle", "title": "Dim files that Git ignores", "default": true },
+      { "id": "dim", "type": "toggle", "title": "Dim ignored and hidden files", "default": true },
       { "id": "file-tree", "type": "choice", "title": "When a file opens", "default": "file",
         "options": [{ "value": "file", "title": "Show only the file" },
           { "value": "tree", "title": "Show the file with the tree" }] },

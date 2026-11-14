@@ -45,7 +45,7 @@ changed that value in the card's header: the card keeps its own choice.
 | Plugin | Setting | Control | Default | What it changes |
 |---|---|---|---|---|
 | File Explorer | Show hidden files (`hidden-files`), "Names that start with a dot." | switch | off | row 2's Show Hidden Files in new trees |
-| File Explorer | Dim files that Git ignores (`ignored`) | switch | on | whether the tree dims the files git ignores, in every tree at once |
+| File Explorer | Dim ignored and hidden files (`dim`) | switch | on | whether the tree dims the files git ignores and the hidden files it shows, in every tree at once |
 | File Explorer | When a file opens (`file-tree`): Show only the file, Show the file with the tree | menu | Show only the file | whether a file shows with [the tree beside it](#the-tree-beside-a-file) in a card with no choice of its own |
 | File Explorer | Markdown opens in (`markdown`): Rich Text, Source | segmented | Rich Text | the mode of a Markdown file in a card with no mode of its own |
 | File Explorer | Lock Markdown for reading (`markdown-lock`) | switch | on | the lock of a Markdown file in a card with no lock of its own |
@@ -355,7 +355,11 @@ shows it whole.
   change inside. A folder shows the dot only for a change in `git status`
   under it, never for the files git ignores. A listing asks git only which
   of its own names git ignores (`git check-ignore`), and those are dimmed
-  while the setting "Dim files that Git ignores" is on.
+  while the setting "Dim ignored and hidden files" is on. With Show Hidden
+  Files on, that setting dims each name that starts with `.` the same way, as
+  Finder does: the rows inside a hidden folder are not hidden themselves, so
+  they look normal. A dimmed row's name has the ignored color and its icon
+  half its opacity; a Git letter keeps its own color.
   Modified is the needs-you color, added, untracked and renamed the finished
   color, and deleted the error color. A root inside a repository, but not its
   root, shows no letters and dims nothing.

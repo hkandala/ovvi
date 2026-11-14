@@ -1,5 +1,5 @@
 import { FileTree, type FileTreeBatchOperation, type FileTreeDirectoryHandle, type FileTreeRenameEvent,
-  type GitStatus } from "@pierre/trees"
+  type FileTreeRowDecorationContext, type GitStatus } from "@pierre/trees"
 import type { Change, OvviError } from "@ovvi/plugin-api"
 import { footer } from "./footer"
 import { stack } from "./stack"
@@ -69,7 +69,17 @@ const look = {
   /* Inside its box: the row's name clips what goes past it. */
   [data-item-rename-input] { border-radius: 4px; background: var(--card); outline: 1.5px solid var(--accent);
     outline-offset: -1.5px; }
-  :host(:not([data-keys])) [data-type="item"]::before { outline: none !important; }`,
+  :host(:not([data-keys])) [data-type="item"]::before { outline: none !important; }
+  /* A hidden row dims as an ignored one does, while the setting is on. Its word "Hidden" is for VoiceOver only. */
+  [data-item-section="decoration"] > span { position: absolute; width: 1px; height: 1px;
+    overflow: hidden; clip-path: inset(50%); }
+  :host(:not([data-dim])) [data-item-section="decoration"] > span { display: none; }
+  :host([data-dim]) [data-type="item"]:has(> [data-item-section="decoration"] > span) {
+    &:not([data-item-git-status]) > [data-item-section="content"] { color: var(--trees-git-ignored-color); }
+    & > [data-item-section="icon"] { opacity: .5; } }`,
+  // As Finder: a hidden name, not the rows inside its folder.
+  renderRowDecoration: ({ row }: FileTreeRowDecorationContext) =>
+    row.name.startsWith(".") && row.path !== UP ? { text: "Hidden" } : null,
 }
 const dotted = (path: string) => /(^|\/)\.[^/]/.test(path)
 
@@ -89,7 +99,7 @@ export async function show(place: Place): Promise<Reveal> {
     ovvi.card.go(root === "/" ? "/" : `${root}/`)
   }
   let dotfiles = own(ovvi).hiddenFiles ?? ovvi.settings.get<boolean>("hidden-files")
-  let dim = ovvi.settings.get<boolean>("ignored")
+  let dim = ovvi.settings.get<boolean>("dim")
   /** The eye in row 2 and View ▸ Show Hidden Files (⇧⌘., as Finder's). */
   const eye = (yes: boolean) => {
     ovvi.controls.set("hidden-files", { value: yes })
@@ -134,6 +144,10 @@ export async function show(place: Place): Promise<Reveal> {
   tree.render({ containerWrapper: host })
   results.render({ containerWrapper: matches })
   for (const each of [tree, results]) stack(each.getFileTreeContainer()!)
+  const dimmed = () => {
+    for (const each of [tree, results]) each.getFileTreeContainer()!.toggleAttribute("data-dim", dim)
+  }
+  dimmed()
   // pierre counts an ignored path as a change of the folders above it: their dot shows only for git's changes.
   // ponytail: a style per tree in its shadow root; drop it when pierre leaves ignored paths out of its counts.
   const dots = [tree, results].map((each) => each.getFileTreeContainer()!.shadowRoot!.appendChild(document.createElement("style")))
@@ -382,8 +396,9 @@ export async function show(place: Place): Promise<Reveal> {
     }
   })
   ovvi.on("settings", (changed) => {
-    if ("ignored" in changed) {
-      dim = changed.ignored === true
+    if ("dim" in changed) {
+      dim = changed.dim === true
+      dimmed()
       showStatus()
     }
     if ("hidden-files" in changed && own(ovvi).hiddenFiles === undefined) {
