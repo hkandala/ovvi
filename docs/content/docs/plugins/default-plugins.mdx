@@ -359,10 +359,11 @@ shows it whole.
   Files on, that setting dims each name that starts with `.` the same way, as
   Finder does: the rows inside a hidden folder are not hidden themselves, so
   they look normal. A dimmed row's name has the ignored color and its icon
-  half its opacity; a Git letter keeps its own color.
+  half its opacity; a hidden name with a Git letter keeps the letter's color,
+  and its icon still dims. VoiceOver reads "Hidden" on a dimmed hidden row.
   Modified is the needs-you color, added, untracked and renamed the finished
   color, and deleted the error color. A root inside a repository, but not its
-  root, shows no letters and dims nothing.
+  root, shows no letters and dims only hidden names.
 - **An empty folder** shows a folder icon and "This folder is empty" in the middle of the card.
 - **The find bar** floats at the tree's top right, as the terminal's ⌘F bar
   and the editor's do: a capsule with the field ("Filter"), the number of

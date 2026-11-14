@@ -71,8 +71,7 @@ const look = {
     outline-offset: -1.5px; }
   :host(:not([data-keys])) [data-type="item"]::before { outline: none !important; }
   /* A hidden row dims as an ignored one does, while the setting is on. Its word "Hidden" is for VoiceOver only. */
-  [data-item-section="decoration"] > span { position: absolute; width: 1px; height: 1px;
-    overflow: hidden; clip-path: inset(50%); }
+  [data-item-section="decoration"] > span { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); }
   :host(:not([data-dim])) [data-item-section="decoration"] > span { display: none; }
   :host([data-dim]) [data-type="item"]:has(> [data-item-section="decoration"] > span) {
     &:not([data-item-git-status]) > [data-item-section="content"] { color: var(--trees-git-ignored-color); }
@@ -144,10 +143,6 @@ export async function show(place: Place): Promise<Reveal> {
   tree.render({ containerWrapper: host })
   results.render({ containerWrapper: matches })
   for (const each of [tree, results]) stack(each.getFileTreeContainer()!)
-  const dimmed = () => {
-    for (const each of [tree, results]) each.getFileTreeContainer()!.toggleAttribute("data-dim", dim)
-  }
-  dimmed()
   // pierre counts an ignored path as a change of the folders above it: their dot shows only for git's changes.
   // ponytail: a style per tree in its shadow root; drop it when pierre leaves ignored paths out of its counts.
   const dots = [tree, results].map((each) => each.getFileTreeContainer()!.shadowRoot!.appendChild(document.createElement("style")))
@@ -277,8 +272,10 @@ export async function show(place: Place): Promise<Reveal> {
       ...letters.flatMap(({ letter, path }) => (STATUS[letter] ? [{ path, status: STATUS[letter] }] : [])),
       ...(dim ? [...ignored] : []).map((path) => ({ path, status: "ignored" as const })),
     ]
-    tree.setGitStatus(status)
-    results.setGitStatus(status)
+    for (const each of [tree, results]) {
+      each.setGitStatus(status)
+      each.getFileTreeContainer()!.toggleAttribute("data-dim", dim)
+    }
     const changed = [...new Set(letters.flatMap((change) => folders(change.path)))]
     // As specific as the rule that hides them, and after it: it wins.
     const shown = changed.map((path) =>
@@ -398,7 +395,6 @@ export async function show(place: Place): Promise<Reveal> {
   ovvi.on("settings", (changed) => {
     if ("dim" in changed) {
       dim = changed.dim === true
-      dimmed()
       showStatus()
     }
     if ("hidden-files" in changed && own(ovvi).hiddenFiles === undefined) {
