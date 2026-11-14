@@ -24,6 +24,8 @@ extension OvviUITests {
         XCTAssertEqual(run.stringValue, "closed")
         let tools = app.descendants(matching: .any).matching(identifier: "chat.\(pane).tool")
         XCTAssertEqual(tools.count, 0)
+        // The turn's end, with Stop: its Working row goes after "Done." and moves the rows (a CI click landed above).
+        XCTAssertTrue(element("chat.\(pane).stop").vanishes(within: 5))
         run.click()
         XCTAssertTrue(run.has(\.stringValue, "open", within: 2))
         XCTAssertTrue(until(2) { tools.count == 2 }, "\(tools.count)")
