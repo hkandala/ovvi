@@ -54,7 +54,7 @@ description: "The codebase, dependencies, swipes and views, the tab bar and test
   `releases/latest/download/appcast.xml` (GitHub's newest release that is not
   a pre-release) and Ovvi Tip's `releases/download/tip/appcast.xml`, so
   neither app sees the other's builds. The feed has one item, the release
-  itself; its notes are the release's, in Markdown. The release's publish job
+  itself; its notes are the release's, in Markdown. Each workflow's publish job
   signs the zip with the EdDSA key (`scripts/appcast.sh`), and the app checks
   it against its `SUPublicEDKey`: an ad-hoc app has no stable code signature,
   so the key is what Sparkle trusts. Sparkle never installs by itself: Ovvi
