@@ -166,7 +166,7 @@ extension OvviUITests {
             "Show Space 1–9": "⌃⌘1–9", "Show Session 1–9": "⌥⌘1–9", "Show Previous Tab": "⇧⌘[, ⌃⇧⇥",
             "Show Next Tab": "⇧⌘], ⌃⇥",
             "Command Palette": "⌘K, ⇧⌘P", "Find": "⌘F", "Open Session": "⌥⌘T", "Close Tab": "⇧⌘W",
-            "Close Space": "⌃⌘W", "Zoom Pane": "⇧⌘↩", "Go Back": "⌃⇧[",
+            "Close Space": "⌃⌘W", "Zoom Pane": "⇧⌘↩", "Go Back": "⌃⇧[", "Copy Address": "⇧⌘C",
         ]
         for (title, keys) in rows {
             XCTAssertEqual(element("shortcuts.\(title)").value as? String, keys, title)
