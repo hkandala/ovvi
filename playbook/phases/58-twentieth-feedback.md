@@ -1298,3 +1298,8 @@ Round 3's tracks and the simplification pass (main up to 30326c5b), then the thr
   nothing dims, ignored files included. A file opened with the tree beside it, the same. A selected dimmed row
   keeps its dim name on the selection, as an ignored one does. Pictures, dark and light,
   before and after: `~/Downloads/ovvi-research/p58e7/`.
+
+### Track N4: a setting turns every animation off (item 56)
+
+56. "one more thing, can we add an option in settings to toggle animations on and off, with default being on, and
+    check through entire app where we have animations and we should disable those and make everything instant"
