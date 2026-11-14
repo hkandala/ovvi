@@ -79,14 +79,16 @@ extension OvviUITests {
         let (tab, pane) = try await startChat(["-recordFrames", "YES"])
         try await say("hello", in: pane)
         XCTAssertTrue(row(pane, "reply", "Echo: **hello**").exists(within: 5))
+        let count = Int(element("tabs.count").stringValue) ?? 0
         var others: [String] = []
         for index in 1 ... 8 {
             let made = try await createTab(in: "w2", label: "other \(index)")
             closeAfter("tab", made.tab)
             others.append(made.tab)
         }
+        // By the count: the bar slides to each tab opened behind, and the lazy row may never make the first ones.
+        XCTAssertTrue(element("tabs.count").has(\.stringValue, "\(count + 8)", within: 5))
         for other in others {
-            XCTAssertTrue(element("tab.\(other)").exists(within: 5), other)
             app.typeKey("]", modifierFlags: [.command, .shift])
             XCTAssertTrue(element("tab.\(other)").has(\.isSelected, true, within: 5), other)
         }
