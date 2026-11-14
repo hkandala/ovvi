@@ -53,7 +53,8 @@ extension OvviUITests {
             try await fill(pane)
             app.typeKey("o", modifierFlags: [.command, .control])
             let card = element("overview.card.\(pane)"), tile = element("overview.tab.\(tab)")
-            XCTAssertTrue(until(5) { card.stringValue.hasPrefix("snapshot") }, "\(card.exists) '\(card.stringValue)'")
+            // Up to 15 s: a runner's first launch builds the default plugins meanwhile, and a query then took 7 s.
+            XCTAssertTrue(until(15) { card.stringValue.hasPrefix("snapshot") }, "\(card.exists) '\(card.stringValue)'")
             app.typeKey(.escape, modifierFlags: [])
             XCTAssertTrue(element("overview").vanishes(within: 2))
             try await Task.sleep(for: .seconds(2))
