@@ -1231,3 +1231,16 @@ Round 3's tracks and the simplification pass (main up to 30326c5b), then the thr
   43529070474 ran SSHForwardTests and "a started server shares the CLI's paths" (passed, not skipped). Test times not
   refreshed: the listed tests moved little; 29 new tests count 15 s each, and the shards stayed within 20–40 % (about
   5470 and 5710 s of tests).
+
+## Round 4
+
+### Track T3: a background tab glows as it opens (item 54)
+
+54. "okay tab slide much better, one more improvement, along with tab slide, can we do a quick border glow to the tab
+    that is opened, only for the ones through cmd+click, like basically show the tab pill border like fade in and fade
+    out quickly, to indicate that tab has opened, if that makes sense"
+
+### Track E7: hidden files are dimmed like ignored ones (item 55)
+
+55. "when the hidden files are shown on cmd+shift+. can we show them dimmed similar to git ignored ones, and make the
+    setting for dimmed apply to both git ignore and hidden files"
