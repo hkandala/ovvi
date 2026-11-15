@@ -90,7 +90,8 @@ extension HostStore {
                 .filter { !$0.isEmpty && !$0.hasPrefix("hint:") }
             let line = lines.first { $0.hasPrefix("! [") }
                 ?? lines.first { $0.hasPrefix("error:") || $0.hasPrefix("fatal:") } ?? lines.last ?? whole
-            done = Notice(text: line, whole: whole)
+            // git pads a ref's line into columns.
+            done = Notice(text: line.split(separator: " ").joined(separator: " "), whole: whole)
         }
         workspace.git = await GitStatus.of(root, exec: exec)
         let failed = done.tone == .error
