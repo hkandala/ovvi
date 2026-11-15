@@ -21,3 +21,4 @@ Finished phases are in git history.
 | 58 | Twentieth feedback: clicks that always land, balanced splits, a smoother chat | [58-twentieth-feedback.md](phases/58-twentieth-feedback.md) |
 | 59 | Releases: a curl install, Sparkle updates, dev builds | [59-releases.md](phases/59-releases.md) |
 | 60 | The default plugins on npm, updates per plugin | [60-plugin-packages.md](phases/60-plugin-packages.md) |
+| 61 | Anonymous usage data: one daily event to PostHog | [61-telemetry.md](phases/61-telemetry.md) |
