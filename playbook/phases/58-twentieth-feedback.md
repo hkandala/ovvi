@@ -1768,6 +1768,9 @@ final4 (da432aec). Each red was a different rare test, all in the tests; no app 
   in a visible frame read at 677. Since be527016 a new window takes the frame of the window last placed, the first,
   which filled the visible frame at launch. **Fix:** the test compares the new window's height with the first
   window's, not with the screen read later.
+- **Cause (a folder's watch).** The checks on bb5c791e: HerdrKit's "a folder's watch skips what git ignores" counted
+  one change after the ignored writes. The ready writes' last batch comes 2 s after them, then waits for git
+  check-ignore, past the test's fixed 2.5 s wait. **Fix:** the count resets once no batch came for 3 s.
 - **Also.** The usage data endpoint moved to `https://e.ovvi.dev/batch/`, the user's PostHog managed proxy (bb5c791e,
   after final4: checks only, by the orchestrator's call). plugins.yml by dispatch: green, the three `@ovvi/*` packages
   skipped with their "not on npm yet" warning, nothing published.
@@ -1775,5 +1778,5 @@ final4 (da432aec). Each red was a different rare test, all in the tests; no app 
   checks 43716099348, plugins 43716286164. final2: full 43723224014 red (⌥ menu), 43723231606 green, on-demand
   43723239192 green. final3: full 43731263946 green, 43731271376 red (new window), on-demand 43731279043 green.
   final4: full 43742416584 and 43742426268 green (308 of 308 each), on-demand 43742435934 green (22, 2 skipped as
-  always), checks 43742409520. The watch list ran and passed in final4, the welcome, the npm plugin, the ovvi command, the
+  always), checks 43742409520. Checks on bb5c791e 43757070520 red (the watch test), on 1aec6049 43758521400 green (202 HerdrKit tests, the usage send to a local listener among them). The watch list ran and passed in final4, the welcome, the npm plugin, the ovvi command, the
   reconnecting page, the herdr install on This Mac, testSettingsScenes and the measure tests included.
