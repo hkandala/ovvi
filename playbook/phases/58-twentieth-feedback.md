@@ -1665,3 +1665,31 @@ The user's words (items 71–72, after O2):
     app's feed is `releases/latest/download/appcast.xml`, a 404 until `v0.1.0`; Ovvi Dev (phase 59 round 2) has no feed.
 
 Track O3 (71). Items 67–70 moved: 68–70 to phase 59 round 2, 67 to phase 60.
+
+### Track O3: the overview fades in and out (item 71)
+
+- **Fix.** The overview is one SwiftUI opacity fade both ways (`Animation.fade`, 0.2 s ease out): opening, the page
+  goes at once and the overview fades in while the sidebar and title row fade out; leaving, the overview fades out
+  while the page, the sidebar and the title row fade in. Under Reduce Motion and with Animations off, both are instant.
+- **Removed.** Track O's Core Animation `Zoom`, O2's shrink and its first-frame state, the click shield, `leaving` and
+  `leaveOverview`, the tile rects (`tileFrames`, the `overview` coordinate space), the picture taken for the zoom, the
+  `overview.zoom`/`overview.shrink` counters, `WindowPages.shrinks`, Overview.swift's `core_animation` lint entry and
+  the zoom parts of OverviewTests and AnimationsTests. Net −179 lines (−199 + 25 in code and tests).
+- **Decisions.** Opening does not cross-fade the page: `TabPages` hides it and its hosts in the same update, and
+  waiting for a fade there would be a workaround of the kind the user asked to remove. Reduce Motion turns the fade off
+  as the brief asks, as the chat's fades do. No test reads the fade (XCUITest can't see opacity, and a counter would be
+  plumbing again): testOverviewTileIntoAnUnshownTabShowsItSteadily is back to its check from before Track P (motion on, a
+  tile click shows its terminal and no loading card after it drew), and AnimationsTests drops the overview.
+- **Review fixes.** The overview's Esc monitor lived until the fade-out ended and swallowed Esc meant for the
+  terminal: it acts only while the overview shows. A reopen during the fade-out lost its page's sort hold and tiles to the
+  old page's late `onDisappear`: that cleanup skips the page still shown.
+- **Runs.** VM, the first head: OverviewTests (6), testAnimationsOffMakesTheMotionsInstant,
+  testACardNeverShowsTheOverviewsSmallSnapshot and testCardsShowTheirTextOnEveryPath, 9 of 9 green.
+  The rebased head with the review's fixes: testOverviewTileIntoAnUnshownTabShowsItSteadily,
+  testOverviewShowsEveryTabLiveAndOpensOne, testOverviewStepsBetweenSessions, testAChatCardMadeAgainNeverShowsItsTUI,
+  testAnEvictedCardComesBackWithItsPicture and testSwitchesKeepHeavyCardsAsTheyWere, 6 of 6 green. For the final
+  round: the rest of the suite (CI's Reduce Motion makes the fade instant there).
+- **Pictures.** `~/Downloads/ovvi-research/p58o3/`: `open-fade-strip.png` and `leave-fade-strip.png` (frames of the
+  VM recording), `sheet-all.png` (the test's two rounds).
+- **For the user.** Press ⌃⌘O: the page goes, the grid fades in. Click a tile, or Esc: the grid fades out as the page
+  fades in. With Reduce Motion or Animations off, both are instant.
