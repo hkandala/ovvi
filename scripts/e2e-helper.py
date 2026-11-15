@@ -93,6 +93,8 @@ held = {}
 # notification ask, as the tests' own launches (OvviUITests.relaunch).
 ISOLATED = ["-configFolder", "/tmp/ovvi-e2e-no-config", "-archivedHome", "/tmp/ovvi-e2e-archived",
             "-askNotifications", "NO"]
+# npm as the tests' own launches have it (OvviUITests.relaunch).
+NPM = ["--env", "npm_config_offline=true", "--env", "npm_config_registry=http://127.0.0.1:9/"]
 # Compiled once: `swift` interpreting a script takes up to 10 s a swipe on CI.
 tools = tempfile.mkdtemp()
 folders.append(tools)
@@ -362,7 +364,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif action == "open-folder":
             folder = tempfile.mkdtemp(prefix="ovvi-e2e-drop-", dir="/tmp")
             folders.append(folder)
-            run = subprocess.run(["open", "--env", "npm_config_offline=true", "-a", body.decode(), folder, "--args",
+            run = subprocess.run(["open", *NPM, "-a", body.decode(), folder, "--args",
                                   "-session", session,
                                   "-ApplePersistenceIgnoreState", "YES", *ISOLATED],
                                  capture_output=True, timeout=10)
@@ -372,7 +374,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif action == "open-url":
             # -a: LaunchServices may know other builds of the app.
             app, url = body.decode().split("\n")
-            run = subprocess.run(["open", "--env", "npm_config_offline=true", "-g", "-a", app, url, "--args",
+            run = subprocess.run(["open", *NPM, "-g", "-a", app, url, "--args",
                                   "-machines", "[]", *ISOLATED],
                                  capture_output=True, timeout=10)
             status, reply = (200, b"") if run.returncode == 0 else (500, run.stderr)

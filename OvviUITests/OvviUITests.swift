@@ -211,8 +211,10 @@ extension OvviUITests {
         }
         // macOS's ask for notifications would sit over the window and take clicks: no test needs them.
         app.launchArguments = start + config + pinned + ["-askNotifications", "NO"] + args
-        // The default plugins install from npm's cache (`make web` fills it), never the network.
+        // The default plugins install from npm's cache (`make web` fills it), never the network. npm keys a cached
+        // package's versions by its registry, so a registry no one uses answers a default's check with nothing.
         app.launchEnvironment["npm_config_offline"] = "true"
+        app.launchEnvironment["npm_config_registry"] = "http://127.0.0.1:9/"
         app.launch()
     }
 
