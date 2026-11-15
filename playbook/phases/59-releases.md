@@ -86,4 +86,7 @@ checkout: its own name, bundle id, scheme and folders, a badge, no update feed, 
 `tip.yml`, the `tip` release, `install.sh --dev` and Ovvi Tip go. `RELEASING.md` at the root replaces
 `playbook/release.md`.
 
+The icon: after two sets of options (an orange badge, then channel colours), the user picked "let's go with blueprint
+one": Xcode beta's blueprint style (a blue tile, a faint grid, white outlined cards).
+
 ### Track D2 (one agent)
