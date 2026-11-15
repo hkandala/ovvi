@@ -417,7 +417,8 @@ spaces first, then [Sort Spaces](#sidebar)' order), like herdr's Spaces panel.
     "Pulling ‹name›…". When git ends, the git line is read again, and the
     notice turns to a green check and "Pulled ‹name›" for 2 s, or for 4 s, in
     the error tone, to the line of git's message that says what went wrong
-    (its `error:` or `fatal:` line, else its last line but hints); the pointer
+    (a refused ref's line, `! [rejected] main -> main (fetch first)`, else its
+    `error:` or `fatal:` line, else its last line but hints); the pointer
     over it shows the whole message. Pull and Push stay enabled at zero
     behind or ahead: the counts are from the last fetch, and Pull fetches
     first.
@@ -762,9 +763,9 @@ How it works: [Layout and sizing](/docs/layout).
   | Card | Address |
   |---|---|
   | Browser | the address bar's URL |
-  | Agent, in its terminal or its chat view | the agent's session id, the one its resume takes (`claude --resume`, `codex resume`, `opencode --session`, `pi --session`), never a file; pi reports its session file, `‹time›_‹id›.jsonl`, and the id is the part after the `_`. Before the agent reports one, its folder |
+  | Agent, in its terminal or its chat view | the agent's session id, the one its resume takes (`claude --resume`, `codex resume`, `opencode --session`, `pi --session`), never a file; pi reports its session file, `‹time›_‹id›.jsonl`, and the id is the part after the time's `_`. Before the agent reports one, its folder |
   | Terminal | the pane's folder |
-| New pane chooser | the folder it shows |
+  | New pane chooser | the folder it shows |
   | File Explorer | the open file's path; on the tree page, the shown folder's |
   | Git | the commit's full hash while a commit shows; else the repository's root |
   | Another plugin | its place, the label's argument (a path or a URL); with no argument, the page's title (a Tart VM's name, or All VMs on its list), else the pane's folder |

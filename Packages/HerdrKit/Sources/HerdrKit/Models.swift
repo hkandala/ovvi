@@ -111,11 +111,14 @@ public struct AgentSession: Decodable, Sendable {
     public let agent: String?
     public let value: String?
 
-    /// The id a session resumes with. pi's file is `<time>_<id>.jsonl`, and `pi --session` takes the id too.
+    /// The id a session resumes with. pi's file is `<time>_<id>.jsonl`, and `pi --session` takes the id too; a file
+    /// of another name resumes only by its path.
     public static func id(_ value: String) -> String {
-        guard value.hasPrefix("/") else { return value }
         let name = ((value as NSString).lastPathComponent as NSString).deletingPathExtension
-        return name.firstIndex(of: "_").map { String(name[name.index(after: $0)...]) } ?? name
+        guard value.hasPrefix("/"), let id = name.wholeMatch(of: /\d{4}-\d\d-\d\dT[0-9-]+Z_(.+)/)?.1 else {
+            return value
+        }
+        return String(id)
     }
 }
 

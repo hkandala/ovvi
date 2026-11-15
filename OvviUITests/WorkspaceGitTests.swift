@@ -72,12 +72,10 @@ extension OvviUITests {
         row.rightClick()
         XCTAssertTrue(app.menuItems["Push"].exists(within: 2))
         app.menuItems["Push"].click()
-        // One line, git's error line; the whole message on hover.
-        let refused = notice.staticTexts.matching(NSPredicate(format: "value BEGINSWITH 'error: failed to push'"))
-            .firstMatch
+        // One line, the refused ref's: the whole message only on hover.
+        let refused = notice.staticTexts.matching(NSPredicate(format: "value BEGINSWITH '! [rejected]'")).firstMatch
         XCTAssertTrue(refused.exists(within: 10), notice.debugDescription)
-        XCTAssertTrue(refused.label.contains("rejected"), refused.label)
-        XCTAssertLessThanOrEqual(notice.frame.height, 36.5)
+        XCTAssertLessThan(refused.frame.height, 24)
         XCTAssertEqual(symbol.label, "Error")
         keepScreen("push refused")
 

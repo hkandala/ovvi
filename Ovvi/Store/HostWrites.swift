@@ -83,11 +83,13 @@ extension HostStore {
         do {
             try await Git.run(root, sync.arguments, exec: exec)
         } catch {
-            // The notice is one line: git's `error:` or `fatal:` line, else its last one but hints.
+            // One line that says why: a refused ref's (`! [rejected] main -> main (fetch first)`), else git's
+            // `error:` or `fatal:` line, else its last one but hints.
             let whole = error.localizedDescription
             let lines = whole.split(whereSeparator: \.isNewline).map { $0.trimmingCharacters(in: .whitespaces) }
                 .filter { !$0.isEmpty && !$0.hasPrefix("hint:") }
-            let line = lines.first { $0.hasPrefix("error:") || $0.hasPrefix("fatal:") } ?? lines.last ?? whole
+            let line = lines.first { $0.hasPrefix("! [") }
+                ?? lines.first { $0.hasPrefix("error:") || $0.hasPrefix("fatal:") } ?? lines.last ?? whole
             done = Notice(text: line, whole: whole)
         }
         workspace.git = await GitStatus.of(root, exec: exec)

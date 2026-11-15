@@ -5,7 +5,7 @@ struct Notice {
         case error, warning, info, progress, success
     }
 
-    /// One line: a toast or notice never wraps.
+    /// Drawn on one line.
     let text: String
     /// The whole message, on hover, when `text` is the line of it that says what went wrong.
     var whole: String?

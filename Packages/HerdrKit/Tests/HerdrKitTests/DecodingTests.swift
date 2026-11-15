@@ -145,6 +145,7 @@ private func snapshot() throws -> Snapshot {
     let file = "/Users/u/.pi/agent/sessions/--Users-u--/2026-09-24T03-45-44-245Z_01a0d184-eb35-7582-9908-5e85a3b6bcc8"
     #expect(AgentSession.id(file + ".jsonl") == "01a0d184-eb35-7582-9908-5e85a3b6bcc8")
     #expect(AgentSession.id("/home/u/.pi/agent/sessions/--tmp--/2026-11-14T10-00-00-000Z_my_id.jsonl") == "my_id")
+    #expect(AgentSession.id("/Users/u/my_notes.jsonl") == "/Users/u/my_notes.jsonl")
     #expect(AgentSession.id("1b77b9f3-ed25-4373-964e-295a0158d7e8") == "1b77b9f3-ed25-4373-964e-295a0158d7e8")
     #expect(AgentSession.id("ses_1a2b3c4d5e6fABCDEF") == "ses_1a2b3c4d5e6fABCDEF")
 }

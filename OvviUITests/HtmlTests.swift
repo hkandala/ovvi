@@ -72,9 +72,9 @@ extension OvviUITests {
         // A long name over two lines: one line, ending in …, no wider than the cap.
         let long = String(repeating: "far-", count: 40) + "gone"
         try await send("clear; \(Self.ovviCommand) open \(long)$'\\n'next.md\r", to: shell)
-        XCTAssertTrue(notice.staticTexts.matching(NSPredicate(format: "value ENDSWITH 'next.md'")).firstMatch
-            .exists(within: 10), notice.debugDescription)
-        XCTAssertLessThanOrEqual(notice.frame.height, 36.5)
+        let line = notice.staticTexts.matching(NSPredicate(format: "value ENDSWITH 'next.md'")).firstMatch
+        XCTAssertTrue(line.exists(within: 10), notice.debugDescription)
+        XCTAssertLessThan(line.frame.height, 24)
         XCTAssertLessThanOrEqual(notice.frame.width, 520.5)
         keepScreenshot("a long file not found notice")
         notFound(notice, "next.md")
