@@ -144,9 +144,7 @@ extension HostStore {
     var agentPanes: [Pane] {
         workspaces.flatMap(\.tabs).flatMap { panes(in: $0.id).filter { $0.state != nil } }
     }
-}
 
-extension HostStore {
     var name: String {
         session == Session.defaultName ? machine.name : "\(machine.name) · \(session)"
     }

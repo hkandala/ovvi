@@ -19,9 +19,7 @@ extension KeyboardShortcut {
         return Self.modifierKeys.filter { modifiers.contains($0.modifier) }.map(\.glyph)
             + [keys[key.character] ?? String(key.character).uppercased()]
     }
-}
 
-extension KeyboardShortcut {
     var modifierFlags: NSEvent.ModifierFlags {
         NSEvent.ModifierFlags(Self.modifierKeys.filter { modifiers.contains($0.modifier) }.map(\.flag))
     }
