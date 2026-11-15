@@ -136,7 +136,6 @@ extension PaneSurfaceView {
 
     private func cell(at point: NSPoint) -> TerminalLink.Place? {
         guard let metrics, metrics.cellWidthPixels > 0, metrics.cellHeightPixels > 0 else { return nil }
-        let scale = window?.backingScaleFactor ?? 2
         let column = Int(point.x * scale) / Int(metrics.cellWidthPixels)
         let row = Int((bounds.height - point.y) * scale) / Int(metrics.cellHeightPixels)
         guard (0 ..< Int(metrics.columns)).contains(column), (0 ..< Int(metrics.rows)).contains(row) else { return nil }
@@ -168,7 +167,6 @@ extension PaneSurfaceView {
         linkTint = nil
         (found == nil && hoveredLink == nil ? NSCursor.arrow : .pointingHand).set()
         guard let found, let metrics, let layer else { return }
-        let scale = window?.backingScaleFactor ?? 2
         let cell = CGSize(width: CGFloat(metrics.cellWidthPixels) / scale,
                           height: CGFloat(metrics.cellHeightPixels) / scale)
         let tint = CALayer()

@@ -11,8 +11,7 @@ import HerdrKit
 /// such a single click on its release when the pointer stayed in its cell. ponytail: the program's cells still show
 /// white for a frame after each move or click, since the card's selection moves at once and the program's comes back
 /// through herdr, and when the program's text scrolls under its selection. herdr reports no mouse mode; once it does,
-/// follow Ghostty (a drag to a mouse program only, a ⇧-drag to the card;
-/// ~/Downloads/ovvi-research/p58m/herdr-mouse-mode.patch).
+/// follow Ghostty (a drag to a mouse program only, a ⇧-drag to the card).
 extension PaneSurfaceView {
     struct Anchor {
         let column: Int, row: Int
