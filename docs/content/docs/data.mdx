@@ -79,11 +79,10 @@ builds share. It never touches herdr's sessions or the agents' files.
 | The last 7 usage events sent | app, disk, This Mac | `~/Library/Logs/Ovvi/usage.log` ([Usage data](/docs/telemetry#see-what-it-sent)) |
 | Update checks: on or off (`SUEnableAutomaticChecks`), the last check (`SULastCheckTime`), a skipped version (`SUSkippedVersion`) | Sparkle, This Mac | app storage (`UserDefaults`); a download waits in `~/Library/Caches/<bundle id>/org.sparkle-project.Sparkle/` |
 
-The installed app sends one request a day of its own: an HTTPS
-GET of the app's update feed on github.com ([Updates](/docs/platform#install)), with the app's version
-in the User-Agent and no system profile. The released app also sends its
-anonymous usage counts, at most one request an hour
-([Usage data](/docs/telemetry)).
+The released app makes two requests of its own: an HTTPS GET of its update
+feed on github.com once a day, with the app's version in the User-Agent and no
+system profile ([Updates](/docs/platform#install)), and its anonymous usage
+report, one a day ([Usage data](/docs/telemetry)).
 
 <Callout title="Nothing the app saves describes herdr's state">
 The only exception is each window's restore state: the names of its pages.

@@ -217,12 +217,9 @@ the app's own build.
 ## Publishing
 
 `.github/workflows/plugins.yml` publishes `@ovvi/plugin-api` (`web/ovvi/`),
-`@ovvi/explorer` and `@ovvi/git` when main has a `version` in their
-`package.json` that npm does not have, apart from app releases. It builds the
-plugin (`npm ci`, `npm run build`), then runs `npm publish` with npm's
-trusted publishing: no token, and npm adds provenance. A change to a default
-plugin's source bumps its `version`, so the change reaches npm with the next
-push. The first publish of each name is by hand (RELEASING.md, Plugins).
+`@ovvi/explorer` and `@ovvi/git` to npm when main has a `version` that npm
+does not have. A change to a default plugin's source bumps its `version`. How
+to release one: [RELEASING.md](https://github.com/hkandala/ovvi/blob/main/RELEASING.md#plugins).
 
 ## Choices
 

@@ -15,7 +15,7 @@ sessions. Ideas for later are in [Future work](/docs/future-work).
 
 ## The problem
 
-People run many coding agents (Claude Code, Codex, pi) at once, often on
+People run many coding agents (Claude Code, Codex, Pi) at once, often on
 several machines. herdr keeps those agents alive in panes on each machine and
 knows when each one is working, blocked or done (the app shows these as
 working, needs you and finished). But herdr's interface is a terminal UI: one
@@ -39,9 +39,8 @@ cards laid out the way herdr splits them. Everything it does is in [Features](/d
 3. **Never send the user to herdr.** Everything a user does with sessions,
    spaces, tabs, panes and machines is done in the app. No text in the UI
    tells the user to run a herdr command; where there is nothing yet, the app
-   shows the button that makes it. The one exception: when herdr is not
-   installed, the page shows the install command, because the app cannot
-   install herdr.
+   shows the button that makes it. When herdr is not installed, the page
+   shows **Install herdr**, which runs herdr's own install command.
 4. **The simplest thing that works.** Each shortcut we take on purpose is
    marked "Simpler choice" and says when to revisit it.
 

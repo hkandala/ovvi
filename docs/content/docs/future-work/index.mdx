@@ -189,7 +189,8 @@ never calls herdr's focus methods. A design gets decision numbers on the
 
 - Tearing a tab off into a new window: a tab belongs to its herdr space,
   and a window shows pages, not single tabs.
-- Key sequences and custom shortcuts: macOS menus hold the shortcuts.
+- Key sequences (two keys in a row, such as ⌘K ⌘S): a shortcut is one key
+  with its modifiers.
 - Traffic lights inside the tab bar: needs private API
   (`setCustomTitlebarHeight:`).
 - Jump to prompt: needs OSC 133 marks, and herdr's frames carry none.
