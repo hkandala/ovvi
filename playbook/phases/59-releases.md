@@ -123,7 +123,8 @@ place in .agents and keep a symlink in .claude, and we should have a way to upda
 - **Decisions (skill, remote machines).** The app writes no skill on the machines where it puts its `ovvi` command:
   it writes nothing into an agent's own folders anywhere (its side files stay in `~/.cache/ovvi`), it would need a
   consent of its own per machine, and Ovvi and Ovvi Dev share `~/.cache/ovvi`, so the two would need a version rule
-  to stop replacing each other's copy. Remote machines keep the documented copy.
+  to stop replacing each other's copy. Remote machines and other agents: `npx skills add hkandala/ovvi -g`
+  (vercel-labs/skills; the README's skills.sh badge), which finds the repo's one skill with no file of its own.
 - **For the user.** `~/Applications/Ovvi.app` (the old `make install`, `dev.ovvi.app`) is left alone: the `v0.1.0`
   curl install finds it there and replaces it in place, keeping its settings (`~/.config/ovvi`, its defaults). Then
   `git pull && make install` gives `~/Applications/Ovvi Dev.app` beside it, with its own settings in

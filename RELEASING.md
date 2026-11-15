@@ -73,7 +73,8 @@ curl -fsSL https://github.com/hkandala/ovvi/releases/latest/download/install.sh 
 Add `-s -- --version 0.2.0` after `sh` for one release. The script checks the zip against `SHA256SUMS`, puts
 `Ovvi.app` in `/Applications` (or `~/Applications`) in place of an old copy, and opens the app. It asks before it links
 the `ovvi` skill for Claude Code, Codex, Pi and OpenCode (to the app's own copy, so updates update it), and before it
-installs herdr and its agent integrations. curl adds no quarantine flag, so Gatekeeper never asks.
+installs herdr and its agent integrations. curl adds no quarantine flag, so Gatekeeper never asks. Other agents, other
+machines: `npx skills add hkandala/ovvi -g` installs the skill.
 
 ## Dev builds
 

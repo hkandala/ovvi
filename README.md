@@ -1,5 +1,7 @@
 # Ovvi
 
+[![skills.sh](https://skills.sh/b/hkandala/ovvi)](https://skills.sh/hkandala/ovvi)
+
 Ovvi is a native macOS app for [herdr](https://github.com/herdrdev/herdr), the terminal multiplexer for AI
 coding agents. herdr keeps the spaces, tabs and panes; Ovvi shows them as live terminal cards in a
 Liquid Glass window and lets you drive them with the mouse, the trackpad and the keyboard.
@@ -39,9 +41,10 @@ curl -fsSL https://github.com/hkandala/ovvi/releases/latest/download/install.sh 
 The script needs macOS 26 or later on Apple silicon. It checks the download against the release's `SHA256SUMS`,
 installs Ovvi in `/Applications` (`~/Applications` when that is not writable), asks before it links the `ovvi` skill
 for agents and before it installs herdr and herdr's integrations for Claude Code, Codex, Pi and OpenCode, and opens
-Ovvi. Add `-s -- --version 0.1.0` after `sh`
-for that release. The builds are not notarized yet: a zip downloaded in a browser opens only after System
-Settings ▸ Privacy & Security ▸ Open Anyway; the script needs no such step.
+Ovvi. Add `-s -- --version 0.1.0` after `sh` for that release. The builds are not notarized yet: a zip downloaded in a
+browser opens only after System Settings ▸ Privacy & Security ▸ Open Anyway; the script needs no such step.
+
+For other agents, or without the script, `npx skills add hkandala/ovvi -g` installs the `ovvi` skill.
 
 ## Build from source
 

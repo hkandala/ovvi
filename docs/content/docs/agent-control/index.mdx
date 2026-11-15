@@ -52,11 +52,11 @@ Every herdr detail points to the herdr skill (`herdr --skill`).
   that link. An update replaces the app in place, so it updates the skill
   too. `make install` links both to the checkout's `skills/ovvi` instead.
   Both leave an `ovvi` skill that is already there alone, and replace a
-  dangling link (an app that moved).
-- **On a remote machine,** copy the folder to the same places, for example
-  `ssh <machine> mkdir -p .agents/skills && scp -r skills/ovvi
-  <machine>:.agents/skills/`. Ovvi does not install
-  it there.
+  dangling link (an app that moved). For other agents, or without the
+  script: `npx skills add hkandala/ovvi -g`.
+- **On a remote machine,** run `npx skills add hkandala/ovvi -g` there (it
+  needs Node), or copy the folder to the same places. Ovvi does not install it
+  there.
 
 ## What Ovvi does, and what stays herdr
 
