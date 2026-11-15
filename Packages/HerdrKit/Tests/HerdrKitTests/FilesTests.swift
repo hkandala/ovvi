@@ -305,8 +305,12 @@ private final class Dropping: Exec {
         try? await Task.sleep(for: .milliseconds(500))
         return count.withLock { $0 } > 0
     })
-    // Past the 2 s latency: the last change's events have all come.
-    try await Task.sleep(for: .seconds(2.5))
+    // The last writes' batch comes 2 s after them, then waits for git's check: once no batch came for 3 s, all came.
+    var last = -1
+    while last != count.withLock({ $0 }) {
+        last = count.withLock { $0 }
+        try await Task.sleep(for: .seconds(3))
+    }
     count.withLock { $0 = 0 }
     for index in 0 ..< 3 {
         try write("build/deep/out\(index).o")
