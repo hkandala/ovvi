@@ -1751,3 +1751,29 @@ Order: phases 59 round 2, 60 and 61 land; then a docs pass and a code pass at on
   field share a pattern: a refactor.
 - **For the user.** `herdrVersion` (HerdrClient.swift) is 0.9.3 while the docs and `ci-herdr.sh` say 0.9.5: the
   minimum the app accepts is older than the one it is tested with. Decide which one is right.
+
+### Final CI, round 5
+
+Phase 58 round 5, phase 59 round 2, phases 60 and 61 and the docs and code passes; heads p58r5-final1 (a3bb069d) to
+final4 (da432aec). Each red was a different rare test, all in the tests; no app change.
+- **Cause (long chat swipe).** testALongChatLoadsEarlierRowsAsItScrollsUp saw a 939 pt move (bound 790). Frame by frame
+  in the recording, every frame was a plain scroll, no jump: the swipe's 20 moves came 7, then the other 13 in one burst
+  after a 1.1 s gap, and AppKit's momentum after that burst ran 439 pt, against 36–116 pt for the other seven swipes.
+  **Fix:** the bound is 1200 pt, with those numbers; a block is thousands of points.
+- **Cause (⌥ menu item).** testAFixedPicksMenuItemsAndSetting: XCUITest's hover into View ▸ Pane lost the open submenu
+  under the pointer and sent no click. Not the app: renaming a tab or the pane in herdr while the submenu is open leaves
+  it open, and the exact flow passed 8 of 8 in the VM. **Fix:** the test runs the alternate item by its key, ⌥⇧⌘D
+  (macOS takes ⌥⌘D: a VM run hid the VM's Dock, set back).
+- **Cause (new window's height).** testNewWindowListsTheSessionsToPickFrom: the second window came out 674 pt tall
+  in a visible frame read at 677. Since be527016 a new window takes the frame of the window last placed, the first,
+  which filled the visible frame at launch. **Fix:** the test compares the new window's height with the first
+  window's, not with the screen read later.
+- **Also.** The usage data endpoint moved to `https://e.ovvi.dev/batch/`, the user's PostHog managed proxy (bb5c791e,
+  after final4: checks only, by the orchestrator's call). plugins.yml by dispatch: green, the three `@ovvi/*` packages
+  skipped with their "not on npm yet" warning, nothing published.
+- **Runs.** final1: full 43716263583 green (308), full 43716271685 red (long chat), on-demand 43716278840 green,
+  checks 43716099348, plugins 43716286164. final2: full 43723224014 red (⌥ menu), 43723231606 green, on-demand
+  43723239192 green. final3: full 43731263946 green, 43731271376 red (new window), on-demand 43731279043 green.
+  final4: full 43742416584 and 43742426268 green (308 of 308 each), on-demand 43742435934 green (22, 2 skipped as
+  always), checks 43742409520. The watch list ran and passed in final4, the welcome, the npm plugin, the ovvi command, the
+  reconnecting page, the herdr install on This Mac, testSettingsScenes and the measure tests included.
