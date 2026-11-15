@@ -2,8 +2,7 @@ import XCTest
 
 extension OvviUITests {
     /// Settings ▸ Appearance ▸ Animations, on by default. Off, a split and its close slide no card and a reorder moves
-    /// the
-    /// spaces in no motion; it stays off after a relaunch.
+    /// the spaces in no motion; it stays off after a relaunch.
     func testAnimationsOffMakesTheMotionsInstant() async throws {
         // The switch's key unpinned: a pinned key would hide its write. Move Down and ⌘D need these two.
         let args = ["-recordMotion", "YES", "-forceMotion", "YES", "-spaceOrder", "manual", "-newPaneOpens", ""]

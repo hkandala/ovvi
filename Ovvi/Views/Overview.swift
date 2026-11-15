@@ -36,7 +36,7 @@ struct Overview: View {
             monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
                 guard Int(event.keyCode) == kVK_Escape else { return event }
                 let leave = MainActor.assumeIsolated {
-                    guard let window = pages.window, NSApp.keyWindow === window, !pages.panelOpen,
+                    guard pages.overview, let window = pages.window, NSApp.keyWindow === window, !pages.panelOpen,
                           !(window.firstResponder is NSText) else { return false }
                     pages.closeOverview()
                     return true

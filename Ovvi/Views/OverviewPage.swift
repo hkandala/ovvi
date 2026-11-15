@@ -58,6 +58,8 @@ struct OverviewPage: View, Equatable {
         // Recent's order holds still while the overview shows, as under the sidebar's pointer.
         .onAppear { page.holdSort() }
         .onDisappear {
+            // An overview opened again during this one's fade-out shows the same page.
+            guard !(pages.overview && pages.current === page) else { return }
             page.sortHold = nil
             pages.overviewTabs[page.id] = nil
             pages.overviewScrolling = false

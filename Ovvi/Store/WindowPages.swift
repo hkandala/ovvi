@@ -32,6 +32,7 @@ final class WindowPages {
     private static var folders: [URL] = []
     /// From the menu bar's commands: they exist with no window.
     static var openWindow: OpenWindowAction?
+    static let mainScene = "main", floatScene = "float", aboutScene = "about", settingsScene = "settings"
 
     init() {
         terminals.pages = self
@@ -373,8 +374,4 @@ extension NSWindow {
     var panelOpen: Bool {
         WindowPages.windows.first { $0.window === self }?.panelOpen == true
     }
-}
-
-extension WindowPages {
-    static let mainScene = "main", floatScene = "float", aboutScene = "about", settingsScene = "settings"
 }

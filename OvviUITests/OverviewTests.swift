@@ -80,7 +80,7 @@ extension OvviUITests {
         XCTAssertTrue(tabs.allSatisfy { record.contains("loader \($0)") }, record)
     }
 
-    /// The overview fades in and out; a tile's click shows its tab's terminal, never a loading card after the fade.
+    /// With motion on, a tile's click on a tab never shown shows its terminal, and never a loading card after it drew.
     func testOverviewTileIntoAnUnshownTabShowsItSteadily() async throws {
         relaunch(one, ["-recordMotion", "YES", "-forceMotion", "YES"])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
