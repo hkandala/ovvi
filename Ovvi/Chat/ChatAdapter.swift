@@ -195,14 +195,13 @@ extension Chat {
         } else {
             done = Self.lines(run, read, &state, &history, &torn)
         }
-        let five = done.five
         // Not into another session's parser (a session line started it again meanwhile).
         if self.source == source {
             parser.put(state)
             if done.count > 0 {
                 marks[source] = run[done.count - 1].mark
             }
-            if five {
+            if done.five {
                 problem = Self.unknownFormat
             }
             check(torn: torn)

@@ -120,7 +120,6 @@ struct LinkedText: View {
         return parts.dropFirst().reduce(parts[0]) { Text("\($0)\($1)") }
     }
 
-    /// Each line's part of each link.
     private static func frames(_ layouts: [Text.LayoutKey.AnchoredLayout],
                                _ geometry: GeometryProxy) -> [LinkPart]
     {
@@ -143,7 +142,6 @@ private struct LinkMark: TextAttribute {
     let index: Int
 }
 
-/// A line's part of a link.
 private struct LinkPart {
     let link: Int, rect: CGRect
 }
