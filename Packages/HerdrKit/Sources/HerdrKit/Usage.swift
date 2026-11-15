@@ -41,7 +41,7 @@ public final class Usage {
         key: String,
         log: URL,
         defaults: UserDefaults = .standard,
-        endpoint: URL? = URL(string: "https://eu.i.posthog.com/batch/"),
+        endpoint: URL? = URL(string: "https://e.ovvi.dev/batch/"),
     ) {
         self.key = key
         self.log = log

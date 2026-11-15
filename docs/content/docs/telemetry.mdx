@@ -12,7 +12,7 @@ error messages. The counts show how many people use Ovvi and which features matt
 - **One event a day of use**, `app_day`. A day counts when Ovvi runs on it. Ovvi keeps the day's yes or no flags in
   its app storage and sends a day only after it has ended: at the next launch, or at the hourly check while Ovvi
   runs. So each day goes once, with all its flags.
-- **One request** to PostHog Cloud EU, `https://eu.i.posthog.com/batch/`, over HTTPS, with a 10 s limit. It goes
+- **One request** to `https://e.ovvi.dev/batch/`, over HTTPS, with a 10 s limit. It goes
   from an ephemeral session: no cookies, no cache, and `en` as its language, not yours. A failed send keeps its days for the next launch or hour; a day
   older than 7 days goes unsent.
 - **Only the released app sends** (the build of a release, `make zip`). Ovvi Dev, Debug builds, other Release builds,
@@ -72,7 +72,8 @@ install id. The menu item works once a send wrote the file.
 
 ## Where it goes
 
-PostHog Cloud EU stores the events in the EU. The project discards client IP addresses and keeps no person
+The request goes to `e.ovvi.dev`, a PostHog managed proxy (Cloudflare) on Ovvi's domain, which passes it to PostHog Cloud
+EU. PostHog Cloud EU stores the events in the EU. The project discards client IP addresses and keeps no person
 profiles. To have your events deleted, open an issue at
 [github.com/hkandala/ovvi](https://github.com/hkandala/ovvi/issues) with the `distinct_id` from the log; turn the
 switch off first, so that no new events come.
