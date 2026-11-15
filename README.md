@@ -4,33 +4,14 @@
 
 Ovvi is a native macOS app for [herdr](https://github.com/herdrdev/herdr), the terminal multiplexer for AI
 coding agents. herdr keeps the spaces, tabs and panes; Ovvi shows them as live terminal cards in a
-Liquid Glass window and lets you drive them with the mouse, the trackpad and the keyboard.
-
-Website and docs: [ovvi.dev](https://ovvi.dev).
-
-## What it does
-
-- Sessions of This Mac and of remote machines over SSH, each session a page in the sidebar; several windows.
-- Spaces with their git branch, tabs in the title row, panes laid out as herdr splits them.
-- Split, zoom, resize, swap and drag panes; move them to another tab or space.
-- Each space's agents in the sidebar and who needs you, with notifications and a Dock badge; Archived Sessions
-  resumes closed agent sessions.
-- A chat view for Claude Code, Codex, Pi and OpenCode; browser, File Explorer and Git cards; plugins.
-- A Settings window (⌘,).
-- The overview of every tab, and panes that float in windows of their own.
-- Drop files on a pane to paste their paths (copied over first on a remote machine).
-- Find in a pane, ⌘-click links, the command palette (⌘K), and keys for everything.
+Liquid Glass window, on This Mac and on remote machines over SSH. It adds a chat view for agents, browser,
+File Explorer and Git cards, and plugins. Everything it does: [Features](https://ovvi.dev/docs/features).
 
 ## Requirements
 
-- macOS 26 or later.
-- herdr 0.9.3 or later on each machine, found by `command -v herdr` in the login shell (else
-  `~/.local/bin/herdr`). The Mac needs it only for its own sessions.
-- Perl on remote machines (the SSH relay is a small Perl script; nearly every Unix has it).
-- Dependencies: libghostty-spm (which brings DisplayLink), swift-markdown (which brings cmark-gfm) and Sparkle (the
-  updater), Swift packages at exact pins, and the system `ssh`; nothing else ships in the app.
-- To build: Xcode 27 and Homebrew (`make setup` installs SwiftFormat, SwiftLint, xcbeautify and Node from
-  the `Brewfile`). The docs site needs Node 22 and pnpm 10.
+- macOS 26 or later, on Apple silicon.
+- herdr 0.9.3 or later on each machine. The Mac needs it only for its own sessions.
+- Perl on remote machines (the SSH relay is a small Perl script).
 
 ## Install
 
@@ -38,45 +19,47 @@ Website and docs: [ovvi.dev](https://ovvi.dev).
 curl -fsSL https://github.com/hkandala/ovvi/releases/latest/download/install.sh | sh
 ```
 
-The script needs macOS 26 or later on Apple silicon. It checks the download against the release's `SHA256SUMS`,
-installs Ovvi in `/Applications` (`~/Applications` when that is not writable), asks before it links the `ovvi` skill
-for agents and before it installs herdr and herdr's integrations for Claude Code, Codex, Pi and OpenCode, and opens
-Ovvi. Add `-s -- --version 0.1.0` after `sh` for that release. The builds are not notarized yet: a zip downloaded in a
-browser opens only after System Settings ▸ Privacy & Security ▸ Open Anyway; the script needs no such step.
+Add `-s -- --version 0.1.0` after `sh` for one release. The script checks the download, installs Ovvi in
+`/Applications`, asks before it installs herdr and its agent integrations, and opens Ovvi. When a new release is out, Ovvi shows a
+notice, and it installs the update only when you say so. Details: [Install](https://ovvi.dev/docs/platform#install).
 
-For other agents, or without the script, `npx skills add hkandala/ovvi -g` installs the `ovvi` skill.
+## The ovvi skill
 
-## Build from source
+The `ovvi` skill teaches agents the `ovvi` command, which opens cards, floats panes and sends notifications from
+a pane. `install.sh` asks before it links the skill for Claude Code, Codex, Pi and OpenCode. For other agents, or
+on a remote machine:
 
 ```sh
-make setup      # Homebrew tools and the git hooks
-make install    # Ovvi Dev, a Release build of this checkout beside Ovvi, in ~/Applications; links the ovvi skill
-make app        # the Release app only
-make zip        # the release's zip and its SHA256SUMS (RELEASING.md)
-make run        # build and open the app (SESSION=<name> for one session; agents: ovvi-dev-* only)
-make format     # SwiftLint's fixes and SwiftFormat
-make lint build test   # checks, the build, the unit tests and the docs and license checks
-make e2e        # the UI tests against throwaway herdr sessions (ONLY=… for some), on this Mac's screen
-make vm-e2e ONLY=…   # the same in the Tart VM, off this Mac's screen (playbook/ci.md, The VM)
+npx skills add hkandala/ovvi -g
 ```
-
-Pass `DERIVED_DATA=/tmp/ovvi-dd-<name>` when several checkouts build at once.
-
-## Use it
-
-Install herdr and open Ovvi. In its first window, pick a session of This Mac or start a new one. Open more
-sessions with Open Session (⌥⌘T), add a remote machine from the machine button, and press ⌘/ for the
-keyboard shortcuts ([all of them](https://ovvi.dev/docs/ui/theme-and-accessibility#keyboard-shortcuts)).
 
 ## Privacy
 
-The released app sends anonymous usage counts once a day; Settings ▸ General turns them off
-([Usage data](https://ovvi.dev/docs/telemetry)).
+The released app sends one anonymous report a day: its version, macOS, and which features were used, as yes or no.
+Settings ▸ General ▸ Share anonymous usage data turns it off. Every field: [Usage data](https://ovvi.dev/docs/telemetry).
 
-## Future work
+## Build from source
 
-herdr inside the app, a notarized download, an iPhone and iPad app, image paste, floating status pills, a changes
-panel: [Future work](docs/content/docs/future-work/index.mdx).
+You need Xcode 27 and Homebrew.
+
+```sh
+make setup      # SwiftFormat, SwiftLint, xcbeautify and Node from the Brewfile, and the git hooks
+make install    # Ovvi Dev: this checkout as a second app beside Ovvi, in ~/Applications
+make run        # a Debug build (SESSION=<name> for one session; agents: ovvi-dev-* only)
+make lint build test   # the checks, the build and the unit tests
+make vm-e2e ONLY=…     # UI tests in the Tart VM (playbook/ci.md)
+```
+
+Ovvi Dev has its own name, settings and icon, and it gets no updates: run `git pull && make install` again.
+`make install` also links the `ovvi` skill to the checkout's `skills/ovvi`, unless a skill is already there.
+Pass `DERIVED_DATA=/tmp/ovvi-dd-<name>` when several checkouts build at once. Releases:
+[RELEASING.md](RELEASING.md).
+
+## Docs
+
+The design and the docs are in [`docs/content/docs/`](docs/content/docs/), published at
+[ovvi.dev/docs](https://ovvi.dev/docs) (`cd docs && pnpm install && pnpm dev` to run them; Node 22 and pnpm 10).
+How Ovvi is built, for agents: [`playbook/`](playbook/README.md).
 
 ## License
 
@@ -84,12 +67,3 @@ Copyright © 2026 Harish Kandala. Ovvi is free software under the GNU Affero Gen
 (`AGPL-3.0-only`): see [LICENSE](LICENSE). The plugin API's types (`web/ovvi`) and the plugin template
 (`plugins/builtin/template`) are MIT, so plugins you write can use any license. The third-party licenses are in
 [`Ovvi/Acknowledgements.txt`](Ovvi/Acknowledgements.txt).
-
-## Links
-
-- Design docs: [`docs/content/docs/`](docs/content/docs/), published at
-  [ovvi.dev](https://ovvi.dev) (`cd docs && pnpm install && pnpm dev` to run it).
-- How it is built, for agents: [`playbook/`](playbook/README.md).
-- Code: `Ovvi/` (the app), `Packages/HerdrKit/` (herdr calls, no UI), `OvviUITests/` (UI tests),
-  `web/` (the runtime of plugin pages), `plugins/` (the built-in and extra plugins), `skills/ovvi/` (the agent
-  skill), `scripts/`, `resources/` (the app icon, program icons and research notes).

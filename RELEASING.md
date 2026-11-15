@@ -67,23 +67,9 @@ this key is what the app trusts.
 curl -fsSL https://github.com/hkandala/ovvi/releases/latest/download/install.sh | sh
 ```
 
-Add `-s -- --version 0.2.0` after `sh` for one release. The script checks the zip against `SHA256SUMS`, puts
-`Ovvi.app` in `/Applications` (or `~/Applications`) in place of an old copy, and opens the app. It asks before it links
-the `ovvi` skill for Claude Code, Codex, Pi and OpenCode (to the app's own copy, so updates update it), and before it
-installs herdr and its agent integrations. curl adds no quarantine flag, so Gatekeeper never asks. Other agents, other
-machines: `npx skills add hkandala/ovvi -g` installs the skill.
-
-## Dev builds
-
-```sh
-git pull && make install
-```
-
-This builds **Ovvi Dev** from the checkout and puts it in `~/Applications`, beside Ovvi. Ovvi Dev has its own name,
-bundle id (`dev.ovvi.app.dev`), `ovvi-dev://` scheme, settings and folders (`~/.config/ovvi-dev`), and a blueprint
-icon (`AppIconDev`; `make icons` draws it with `scripts/dev-icon.swift`). It has no update feed: run the same line
-again to update it. `make install` also links the `ovvi` skill to the checkout's `skills/ovvi`, unless a skill is
-already there.
+Add `-s -- --version 0.2.0` after `sh` for one release, a pre-release too. curl adds no quarantine flag, so
+Gatekeeper never asks. What the script does: [Install](https://ovvi.dev/docs/platform#install). Dev builds
+(`make install`, Ovvi Dev): [README.md](README.md#build-from-source).
 
 ## Plugins
 
