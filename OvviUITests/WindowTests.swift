@@ -131,9 +131,10 @@ extension OvviUITests {
         XCTAssertTrue(element("terminal.w1:p1", in: app.windows[identifier]).exists)
         let screen = try XCTUnwrap(NSScreen.screens.first).visibleFrame, frame = try XCTUnwrap(window).frame
         XCTAssertEqual(frame.width, screen.width, accuracy: 2, "\(frame) in \(screen)")
-        // A window as tall as the screen comes out a few points taller, its bottom under the Dock's top edge: 677 and
-        // 679 in 674 on CI, the second window only (the first comes out at 674), from one run to the next.
-        XCTAssertTrue((screen.height - 2 ... screen.height + 8).contains(frame.height), "\(frame) in \(screen)")
+        // It takes the frame of the window last placed: the first, which filled the visible frame at launch. On CI the
+        // visible frame read now can differ from that by a few points (a window of 674 in 677).
+        let first = app.windows[identifier].frame
+        XCTAssertEqual(frame.height, first.height, accuracy: 2, "\(frame) after \(first) in \(screen)")
         XCTAssertEqual(frame.minX, screen.minX, accuracy: 2, "\(frame) in \(screen)")
 
         step("New window: the next one takes the size and place of the window last resized")
