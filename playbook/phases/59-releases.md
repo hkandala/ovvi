@@ -89,4 +89,9 @@ checkout: its own name, bundle id, scheme and folders, a badge, no update feed, 
 The icon: after two sets of options (an orange badge, then channel colours), the user picked "let's go with blueprint
 one": Xcode beta's blueprint style (a blue tile, a faint grid, white outlined cards).
 
+The user, later: "our install script should also install ovvi skill if not present, and updates should be able to
+update those skills too, we can ask confirmation in install script related to skills, should support claude code, pi,
+opencode and codex, i think .agents is supported by most expcet claude i guess which is .claude, we can isntall at one
+place in .agents and keep a symlink in .claude, and we should have a way to update during updates as well"
+
 ### Track D2 (one agent)
