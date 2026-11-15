@@ -213,8 +213,7 @@ extension OvviUITests {
             .exists(within: 10))
     }
 
-    private func end(_ kind: String = "") async throws -> [String] {
-        let killed = try await String(decoding: Self.post("\(one)/web-kill", Data(kind.utf8)), as: UTF8.self)
-        return killed.split(separator: "\n").map(String.init)
+    private func end(_ kind: String = "") async throws -> Set<String> {
+        try await web("web-kill", kind)
     }
 }

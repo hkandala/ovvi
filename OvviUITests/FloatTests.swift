@@ -343,8 +343,7 @@ extension OvviUITests {
     }
 
     func openFloatURL(_ query: String, path: String = "") async throws {
-        let ovvi = Self.devApp
-        _ = try await Self.post("\(one)/open-url", Data("\(ovvi)\novvi://float\(path)?\(query)".utf8))
+        _ = try await Self.post("\(one)/open-url", Data("\(Self.devApp)\novvi://float\(path)?\(query)".utf8))
     }
 
     func float(_ pane: String) -> XCUIElement {

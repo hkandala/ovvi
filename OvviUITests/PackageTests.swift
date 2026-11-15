@@ -197,7 +197,7 @@ extension OvviUITests {
         try await listsADefaultAgain(config: config, shell: shell)
     }
 
-    /// A default's folder with no source in settings.json (an older install, a rewritten file) is its npm install.
+    /// A default's folder with no source in settings.json (a rewritten file, say) is its npm install.
     private func listsADefaultAgain(config: String, shell: String) async throws {
         step("A launch lists a default's npm source again")
         try await send("clear; sed -i '' '/npm:@ovvi/d' \(config)/settings.json && test -d \(config)/plugins/explorer "

@@ -5,9 +5,7 @@ import XCTest
 /// (`scripts/e2e-helper.py`). xcodebuild strips the TEST_RUNNER_ prefix from the names.
 @MainActor
 final class OvviUITests: XCTestCase {
-    var one = ""
-    var two = ""
-    var three = "", four = "", five = "", six = "", seven = "", eight = ""
+    var one = "", two = "", three = "", four = "", five = "", six = "", seven = "", eight = ""
     let app = XCUIApplication()
     /// The app's first snapshot: login shell, herdr checks and a few herdr runs; slow on CI runners.
     let connect: TimeInterval = 30
@@ -49,10 +47,8 @@ final class OvviUITests: XCTestCase {
             try await Self.call(one, "workspace.create", ["label": "alpha", "cwd": "/tmp", "focus": false])
             try await Self.call(one, "pane.split", ["target_pane_id": "w1:p1", "direction": "right", "ratio": 0.6,
                                                     "cwd": "/tmp", "focus": false])
-            try await Self.call(one, "pane.split", ["target_pane_id": "w1:p2", "direction": "down",
-                                                    "cwd": "/tmp", "focus": false])
-            try await Self.call(one, "tab.create", ["workspace_id": "w1", "label": "second", "cwd": "/tmp",
-                                                    "focus": false])
+            try await split("w1:p2", "down")
+            _ = try await createTab(in: "w1", label: "second")
             try await Self.call(one, "workspace.create", ["label": "beta", "cwd": "/tmp", "focus": false])
             try await Self.call(two, "workspace.create", ["label": "gamma", "cwd": "/tmp", "focus": false])
         }
@@ -221,7 +217,7 @@ extension OvviUITests {
     static let fixtures = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "Fixtures").path
     static let devApp = Bundle.main.bundleURL.deletingLastPathComponent().appending(path: "Ovvi Debug.app").path
 
-    /// CI puts both folders on its login shell's PATH.
+    /// CI puts it and its codex folder on its login shell's PATH.
     static let agents = "\(fixtures)/agents"
 
     /// In this checkout, which the pane's shell reads: the runner is sandboxed.

@@ -85,10 +85,7 @@ extension OvviUITests {
         try await Task.sleep(for: .seconds(1))
         XCTAssertEqual(mainWindows.count, 0, "a saved window came back behind the welcome")
         // The panel is no window to XCUITest: the whole screen.
-        let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-        shot.name = "first launch"
-        shot.lifetime = .keepAlways
-        add(shot)
+        keepScreen("first launch")
 
         step("Welcome: Skip opens the new-window list; the next launch restores it, not the old window")
         XCTAssertTrue(element("welcome.intro").vanishes(within: 5), "the intro stays")

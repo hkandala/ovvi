@@ -209,7 +209,7 @@ extension OvviUITests {
 
     /// Through the workspace menu with the sidebar hidden, then onto the empty sidebar under the rows.
     private func toNewWorkspaces(_ back: String, _ terminal: String, _ layout: String) async throws {
-        step("With the sidebar hidden: onto the workspace menu's New Workspace")
+        step("With the sidebar hidden: onto the space menu's New Space")
         let workspaces = try await workspaceIDs()
         closeNew("workspace", besides: workspaces)
         XCTAssertTrue(element("tab.\(back)").has(\.isHittable, true, within: 3))
