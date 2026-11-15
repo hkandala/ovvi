@@ -1576,3 +1576,19 @@ The user's words (items 62–70):
 
 Tracks: O2 (62), S4 (63), Y2 (64–66). 67–69 wait on the user's choices. 70: every CI tag and the `tip` release are
 deleted (the repo keeps only `v*`); `v0.1.0` comes after round 5's final CI.
+
+### Track S4: Check Now beside the update setting (item 63)
+
+- **Fix.** Settings ▸ General ▸ Updates: the switch's line says "Ovvi asks before it installs one." (no "Once a day"),
+  and a row "Check for updates now" has Check Now, which calls the same `Updates.check()` as Ovvi ▸ Check for
+  Updates…. It is off while Sparkle's `canCheckForUpdates` is false (before Sparkle starts, during a check), read
+  through KVO into an observed property.
+- **Decisions.** The Updates section showed only in builds with a feed, so no UI test saw it. `Updates.checks` now
+  also reads `SUFeedURL` from the defaults, as Sparkle does first; the tests pass `-SUFeedURL file:///dev/null`
+  (testSettingsPagesSearchAndLook, and testSettingsScenes for the pictures). Sparkle then starts there: no prompt
+  (`SUEnableAutomaticChecks` is in Info.plist), and a failed scheduled check says nothing. The menu item stays always
+  on: SwiftUI refreshes the menu bar late, and a disabled item that never came back would be worse.
+- **Runs.** VM, testSettingsPagesSearchAndLook: red on the old app code ("Check Now missing or disabled"), green on
+  the new (plus a throwaway dark relaunch for the picture). Pictures in `~/Downloads/ovvi-research/p58s4/`.
+- **For the user.** In the installed app: the line under the switch, and Check Now opens Sparkle's window as the menu
+  item does, greyed while it checks.
