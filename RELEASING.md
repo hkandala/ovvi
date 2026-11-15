@@ -67,9 +67,9 @@ this key is what the app trusts.
 curl -fsSL https://github.com/hkandala/ovvi/releases/latest/download/install.sh | sh
 ```
 
-Add `-s -- --version 0.2.0` after `sh` for one release, a pre-release too. curl adds no quarantine flag, so
-Gatekeeper never asks. What the script does: [Install](https://ovvi.dev/docs/platform#install). Dev builds
-(`make install`, Ovvi Dev): [README.md](README.md#build-from-source).
+Add `-s -- --version 0.2.0` after `sh` for one release, a pre-release too. What the script does:
+[Install](https://ovvi.dev/docs/platform#install). Dev builds (`make install`, Ovvi Dev):
+[README.md](README.md#build-from-source).
 
 ## Plugins
 

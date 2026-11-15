@@ -20,8 +20,10 @@ curl -fsSL https://github.com/hkandala/ovvi/releases/latest/download/install.sh 
 ```
 
 Add `-s -- --version 0.1.0` after `sh` for one release. The script checks the download, installs Ovvi in
-`/Applications`, asks before it installs herdr and its agent integrations, and opens Ovvi. When a new release is out, Ovvi shows a
-notice, and it installs the update only when you say so. Details: [Install](https://ovvi.dev/docs/platform#install).
+`/Applications`, asks before it installs herdr and its agent integrations, and opens Ovvi. Ovvi is not notarized: a
+zip that you download in a browser opens only after System Settings ▸ Privacy & Security ▸ Open Anyway. The script
+needs no such step. When a new release is out, Ovvi shows a notice, and it installs the update only when you say so.
+Details: [Install](https://ovvi.dev/docs/platform#install).
 
 ## The ovvi skill
 
@@ -36,7 +38,8 @@ npx skills add hkandala/ovvi -g
 ## Privacy
 
 The released app sends one anonymous report a day: its version, macOS, and which features were used, as yes or no.
-Settings ▸ General ▸ Share anonymous usage data turns it off. Every field: [Usage data](https://ovvi.dev/docs/telemetry).
+Settings ▸ General ▸ Share anonymous usage data turns it off. Every field:
+[Usage data](https://ovvi.dev/docs/telemetry).
 
 ## Build from source
 
@@ -46,7 +49,8 @@ You need Xcode 27 and Homebrew.
 make setup      # SwiftFormat, SwiftLint, xcbeautify and Node from the Brewfile, and the git hooks
 make install    # Ovvi Dev: this checkout as a second app beside Ovvi, in ~/Applications
 make run        # a Debug build (SESSION=<name> for one session; agents: ovvi-dev-* only)
-make lint build test   # the checks, the build and the unit tests
+make format     # SwiftLint's fixes and SwiftFormat
+make lint build test   # the checks, the build, the unit tests and the repository's own checks
 make vm-e2e ONLY=…     # UI tests in the Tart VM (playbook/ci.md)
 ```
 
@@ -58,7 +62,8 @@ Pass `DERIVED_DATA=/tmp/ovvi-dd-<name>` when several checkouts build at once. Re
 ## Docs
 
 The design and the docs are in [`docs/content/docs/`](docs/content/docs/), published at
-[ovvi.dev/docs](https://ovvi.dev/docs) (`cd docs && pnpm install && pnpm dev` to run them; Node 22 and pnpm 10).
+[ovvi.dev/docs](https://ovvi.dev/docs). To run them, you need Node 22 and pnpm 10:
+`cd docs && pnpm install && pnpm dev`.
 How Ovvi is built, for agents: [`playbook/`](playbook/README.md).
 
 ## License
