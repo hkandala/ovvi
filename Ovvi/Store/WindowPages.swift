@@ -18,6 +18,8 @@ final class WindowPages {
     var overview = false
     /// The selected tab's tile zooms to its page (`Overview`); the overview closes as it lands.
     var leaving = false
+    /// e2e (`-recordMotion YES`): the page's shrinks into its tile as the overview opens.
+    var shrinks = 0
     /// Each tile's miniature in the overview, by page and tab.
     @ObservationIgnored var tileFrames: [String: CGRect] = [:]
     @ObservationIgnored var overviewTabs: [String: [String]] = [:]

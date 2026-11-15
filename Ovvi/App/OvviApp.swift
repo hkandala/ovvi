@@ -291,6 +291,7 @@ private struct WindowContent: View {
             }
             .testValue("overview.zoom", "Overview Zoom", "\(WindowPages.zooms)",
                        shown: SettlingHost.record)
+            .testValue("overview.shrink", "Overview Shrink", "\(pages.shrinks)", shown: SettlingHost.record)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .overlay {
                 if pages.overview {
