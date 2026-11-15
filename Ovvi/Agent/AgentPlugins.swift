@@ -10,8 +10,8 @@ extension AgentCommand {
         file, folder or URL, best first, the default marked, then a file's other Open With choices.
         new <name>: a plugin from the template in the plugins folder, built and confirmed (This Mac only). Pass a long \
         --timeout: it installs the template's dependencies and builds it.
-        reload [<id>]: builds one plugin, or every plugin with an open card, and loads its cards again (This Mac \
-        only). A card with unsaved edits stops it ("dirty"). Pass a long --timeout for a slow build.
+        reload [<id>]: builds one plugin, or every plugin, and loads its cards again (This Mac only); an npm install \
+        does not build again. A card with unsaved edits stops it ("dirty"). Pass a long --timeout for a slow build.
         install <source>: npm:<package>, git:<repository> or a folder, after the user allows it on the Mac (This \
         Mac only). Pass a long --timeout: it answers after the install and the build.
         """,
@@ -98,7 +98,6 @@ extension AgentCommand {
         let id = try call.optionalArgument()
         try call.done()
         Registry.reload()
-        var ids = Set(Plugin.cards.map(\.manifest.id)).sorted()
         if let id {
             guard let manifest = Registry.plugin(id) else {
                 throw AgentError.pluginNotFound(Registry.problem(id) ?? "no plugin \(id)")
@@ -109,8 +108,8 @@ extension AgentCommand {
             guard PluginTrust.shared.allows(manifest) else {
                 throw AgentError.failed("\(id) is not confirmed yet: its card asks the user first")
             }
-            ids = [manifest.id]
         }
+        let ids = id.map { [$0] } ?? Registry.all.filter { $0.entry != nil }.map(\.id).sorted()
         var results: [[String: Any]] = [], failures: [String] = []
         func stop(_ dirty: Plugin, _ more: String = "") -> AgentError {
             let done = results.map { "\($0["id"] ?? "")" }
@@ -122,8 +121,7 @@ extension AgentCommand {
             if let dirty = Plugin.cards.first(where: { ids[index...].contains($0.manifest.id) && $0.dirty }) {
                 throw stop(dirty)
             }
-            let start = ContinuousClock.now
-            let problem = await Plugin.reload(id, asked: true, keepEdits: true)
+            let start = ContinuousClock.now, problem = await Plugin.reload(id, asked: true, keepEdits: true)
             if let problem {
                 failures.append("\(problem.title):\n\(problem.text)")
             } else if let dirty = Plugin.cards.first(where: { $0.manifest.id == id && $0.dirty }) {
@@ -131,8 +129,9 @@ extension AgentCommand {
             }
             results.append([
                 "id": id,
-                // An unconfirmed plugin builds nothing: its cards ask the user.
-                "built": problem == nil && Registry.plugin(id).map(PluginTrust.shared.allows) == true,
+                // An unconfirmed plugin builds nothing (its cards ask the user), and an npm install never again.
+                "built": problem == nil && !Plugin.npm(id) && Registry.plugin(id).map(PluginTrust.shared.allows)
+                    == true,
                 "ms": Int((ContinuousClock.now - start) / .milliseconds(1)),
                 "cards": Plugin.cards.count { $0.manifest.id == id },
             ])
@@ -144,8 +143,9 @@ extension AgentCommand {
             return AgentOutput(result)
         }
         return AgentOutput(["plugins": results], text: results.map { result in
-            let built = result["built"] as? Bool == true ? "built" : "not built (not confirmed)"
-            return "\(result["id"] ?? "") \(built) in \(result["ms"] ?? 0) ms, \(result["cards"] ?? 0) card(s)\n"
+            let plugin = "\(result["id"] ?? "")", built = result["built"] as? Bool == true ? "built"
+                : Plugin.npm(plugin) ? "not built (an npm install)" : "not built (not confirmed)"
+            return "\(plugin) \(built) in \(result["ms"] ?? 0) ms, \(result["cards"] ?? 0) card(s)\n"
         }.joined())
     }
 

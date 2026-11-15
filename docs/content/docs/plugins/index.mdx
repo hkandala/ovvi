@@ -88,7 +88,6 @@ This Mac, or a remote machine over the relay
 | A plugin's build | its own folder, for example `dist/` |
 | The API's types | `~/.config/ovvi/plugins/node_modules/@ovvi/plugin-api/`, written at launch when the app's copy differs |
 | The confirmed plugins' ids | `~/.config/ovvi/trust.json` |
-| The defaults' install records | `~/.config/ovvi/plugins/.defaults.json` |
 | Build output, console lines, errors | `~/Library/Logs/Ovvi/plugins/<id>.log` ([Errors and logs](/docs/plugins/errors)) |
 | A card's state | in the app while it runs, and in the instance state file on the card's machine ([State](/docs/plugins/api#state)) |
 | What the app carries | `Ovvi.app/Contents/Resources/web/`: the runtime (`ovvi.js`), `card.css`, the types package (`plugin-api/`), the defaults' source (`defaults/<id>/`) and the template (`template/`) |
@@ -163,7 +162,7 @@ never changes the label, so the card comes back when the plugin does.
 
 ## Choices
 
-The decisions are D89 to D94, D96 to D100, D102, D103, D107 and D108 on the
+The decisions are D89 to D94, D96 to D100, D102, D103, D107, D108 and D114 on the
 [Decisions](/docs/decisions#pane-kinds) page. Research:
 [`plugins.md`](https://github.com/hkandala/ovvi/blob/main/resources/research/plugins/plugins.md),
 [`plugin-systems.md`](https://github.com/hkandala/ovvi/blob/main/resources/research/plugins/plugin-systems.md).

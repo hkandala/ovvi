@@ -58,11 +58,11 @@ struct PluginsPage: View {
                     }
                     Button("New Plugin…") { Task { await installs.create() } }.accessibilityIdentifier("plugins.new")
                     Button("Reload All", systemImage: "arrow.clockwise") { Task { await Plugin.reloadAll() } }
+                        .accessibilityIdentifier("plugins.reload-all")
                 }
                 .controlSize(.small)
             }
         }
-        .task { await DefaultPlugins.shared.check() }
     }
 
     private func install() {

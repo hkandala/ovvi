@@ -122,13 +122,13 @@ ovvi plugins install <source>
 ```sh
 $ ovvi plugins
 browser    Browser        urls                   app
-explorer   File Explorer  files,folders          app
-git        Git            git                    app
+explorer   File Explorer  files,folders          npm:@ovvi/explorer
+git        Git            git                    npm:@ovvi/git
 csv-table  CSV Table      files                  ~/.config/ovvi/plugins/csv-table
 broken     not loaded                            ~/.config/ovvi/plugins/broken   package.json: ovvi.entry is missing
 $ ovvi plugins --for data.csv       # the plugins that open this file, folder or URL, the default first
 csv-table  CSV Table      files                  ~/.config/ovvi/plugins/csv-table   default
-explorer   File Explorer  files,folders          app
+explorer   File Explorer  files,folders          npm:@ovvi/explorer
 csv-chart  CSV Chart      files                  ~/.config/ovvi/plugins/csv-chart
 ```
 
@@ -147,9 +147,9 @@ csv-chart  CSV Chart      files                  ~/.config/ovvi/plugins/csv-char
 - `id`, `name`, `icon`, `opens` and `chooser` are the manifest's fields, as
   written: `opens` has only the keys the manifest gives (`files`, `folders`,
   `git`, `urls`, `priority`). `description` and `version` are the package's.
-- `source` is the Plugins page's row text: `app` for the browser and the
-  default plugins (the row says "Comes with Ovvi"), the `npm:` or `git:`
-  source, the local path, or the folder
+- `source` is the Plugins page's row text: `app` for the browser and a
+  default plugin before its first install (the row says "Comes with Ovvi"),
+  the `npm:` or `git:` source, the local path, or the folder
   ([The Plugins page](/docs/plugins/packages#the-plugins-page)).
 - `log` is the full path of the plugin's log
   ([Errors and logs](/docs/plugins/errors)). It shows only for a pane on
@@ -187,8 +187,9 @@ Creating… meanwhile.
 ```sh
 $ ovvi plugins reload csv-table --json
 {"built":true,"cards":1,"id":"csv-table","ms":840}
-$ ovvi plugins reload                 # every plugin with an open card
+$ ovvi plugins reload                 # every plugin
 csv-table built in 840 ms, 1 card(s)
+explorer not built (an npm install) in 2 ms, 0 card(s)
 ```
 
 Reload Plugin for one id, or Reload Plugins with none
@@ -199,7 +200,8 @@ first, so a folder made by hand loads.
   windows counts twice). No id answers `{"plugins":[…]}`, one entry per
   plugin.
 - `built` is false for a plugin that the user did not confirm yet: it builds
-  nothing, and its cards still ask the user.
+  nothing, and its cards still ask the user. It is false for an npm install
+  too, which never builds again: its cards only load again.
 - A card with unsaved edits stops it with `dirty`, which names the pane.
   Ovvi never discards edits for an agent. It looks before anything builds
   and again before each plugin, and the message names the plugins reloaded

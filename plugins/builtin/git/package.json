@@ -1,8 +1,10 @@
 {
   "name": "@ovvi/git",
   "license": "AGPL-3.0-only",
-  "version": "1.10.13",
-  "private": true,
+  "version": "1.10.14",
+  "repository": { "type": "git", "url": "git+https://github.com/hkandala/ovvi.git", "directory": "plugins/builtin/git" },
+  "publishConfig": { "access": "public" },
+  "files": ["dist"],
   "description": "Changes and history",
   "keywords": ["diff", "changes", "commit", "uncommitted", "history"],
   "scripts": {

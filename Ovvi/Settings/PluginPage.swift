@@ -43,7 +43,7 @@ struct PluginPage: View {
                         Section { inOvvi(manifest) }
                     }
                 }
-                if row.kind != .bundled {
+                if !Registry.defaults.contains(id) {
                     PluginRemove(row: row, gone: { dismiss() })
                 }
             }
@@ -84,10 +84,20 @@ struct PluginPage: View {
 private struct PluginSummary: View {
     let row: InstalledPlugin
     let gone: () -> Void
+    /// npm's version for an npm install, read when the page opens.
+    @State private var latest: String?
 
     var body: some View {
-        let installs = PluginInstalls.shared, defaults = DefaultPlugins.shared, id = "plugins.\(row.id)"
+        let installs = PluginInstalls.shared, id = "plugins.\(row.id)"
         let manifest = row.manifest
+        let update: () -> Void = {
+            Task {
+                await installs.update(row)
+                if !installs.rows.contains(where: { $0.id == row.id }) {
+                    gone()
+                }
+            }
+        }
         let lines = [manifest?.description.shown ?? "", row.source]
         SettingsHeader(title: manifest?.name.shown ?? row.id, note: row.version, lines: lines) {
             ProgramTile(icon: manifest?.icon ?? Registry.missing).scaleEffect(2)
@@ -96,20 +106,13 @@ private struct PluginSummary: View {
                 ProgressView().controlSize(.small)
                 Text(busy).foregroundStyle(.secondary)
             } else {
-                if case .installed = row.kind {
-                    Button(manifest == nil ? "Install" : "Update") {
-                        Task {
-                            await installs.update(row)
-                            if !installs.rows.contains(where: { $0.id == row.id }) {
-                                gone()
-                            }
-                        }
-                    }
-                    .accessibilityIdentifier("\(id).update")
-                }
-                if row.kind == .bundled, let offer = defaults.offers[row.id] {
-                    Button(offer.map { "Update to Version \($0)" } ?? "Reset to Default") {
-                        Task { await defaults.reset(row.id) }
+                if case .installed = row.kind, manifest == nil {
+                    Button("Install") { update() }.accessibilityIdentifier("\(id).install")
+                } else if let latest, let manifest {
+                    if PluginPackages.newer(latest, than: manifest.version) {
+                        Button("Update to \(latest.shown)") { update() }.accessibilityIdentifier("\(id).update")
+                    } else {
+                        Text("Up to date").foregroundStyle(.secondary).accessibilityIdentifier("\(id).up-to-date")
                     }
                 }
                 if manifest?.entry != nil {
@@ -117,6 +120,10 @@ private struct PluginSummary: View {
                     Button("Reload") { Task { await Plugin.reload(row.id) } }
                 }
             }
+        }
+        .task(id: row.npm) {
+            guard let spec = row.npm else { return }
+            latest = try? await PluginPackages.latest(spec, exec: localExec.value)
         }
     }
 }

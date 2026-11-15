@@ -33,6 +33,15 @@ public enum PluginSource: Equatable, Sendable {
         }
     }
 
+    /// Only an npm source has a newer version to ask for: a clone's ref and a folder have none.
+    public var npm: String? {
+        if case let .npm(spec) = self {
+            spec
+        } else {
+            nil
+        }
+    }
+
     public var folder: String? {
         let name: Substring
         switch self {
@@ -71,12 +80,9 @@ public enum PluginPackages {
                 guard await exec.succeeds("command -v npm", []) else {
                     throw HerdrError.failed("Installing from npm needs npm on your PATH")
                 }
-                let packed = try await exec.checkedOutput(["npm", "pack", spec, "--pack-destination", staging.path,
-                                                           "--json", "--ignore-scripts"], timeout: .seconds(300))
-                let json = try? JSONSerialization.jsonObject(with: Data(packed.utf8)) as? [[String: Any]]
-                guard let file = json?.first?["filename"] as? String else {
-                    throw HerdrError.failed("npm pack printed no package")
-                }
+                guard let file = try await pack(spec, ["--pack-destination", staging.path], exec: exec)["filename"]
+                    as? String
+                else { throw HerdrError.failed("npm pack printed no package") }
                 // A scoped package's tarball name has no folder in it.
                 let tarball = staging.appending(path: (file as NSString).lastPathComponent).path
                 // The fetch's bound for each step: the default 10 s runs out on a loaded Mac.
@@ -100,14 +106,38 @@ public enum PluginPackages {
         }
     }
 
-    /// Builds it only with no built entry yet: a published package ships its build.
+    /// The version an install of the spec fetches now: the registry's newest in its range, or a tarball's own.
+    public static func latest(_ spec: String, exec: any Exec) async throws -> String {
+        guard let version = try await pack(spec, ["--dry-run"], exec: exec)["version"] as? String else {
+            throw HerdrError.failed("npm pack printed no package")
+        }
+        return version
+    }
+
+    public static func newer(_ version: String, than other: String) -> Bool {
+        version.compare(other, options: .numeric) == .orderedDescending
+    }
+
+    private static func pack(_ spec: String, _ options: [String], exec: any Exec) async throws -> [String: Any] {
+        let packed = try await exec.checkedOutput(["npm", "pack", spec, "--json", "--ignore-scripts"] + options,
+                                                  timeout: .seconds(300))
+        return (try? JSONSerialization.jsonObject(with: Data(packed.utf8)) as? [[String: Any]])?.first ?? [:]
+    }
+
+    /// An npm package that ships its build needs nothing more: an npm install never builds again. Any other builds
+    /// at Reload, so it gets its dependencies, and its build when none is there yet.
     public static func finish(_ staged: Staged, into plugins: URL, exec: any Exec) async throws
         -> (folder: URL, output: String)
     {
         defer { discard(staged) }
-        var output = try await dependencies(staged.folder, exec: exec)
-        if !FileManager.default.fileExists(atPath: staged.folder.appending(path: staged.manifest.entry ?? "").path) {
-            output += try await build(staged.folder, exec: exec) ?? ""
+        let built = { FileManager.default.fileExists(atPath: staged.folder.appending(path: staged.manifest.entry ?? "")
+                .path) }
+        var output = ""
+        if staged.source.npm == nil || !built() {
+            output = try await dependencies(staged.folder, exec: exec)
+            if !built() {
+                output += try await build(staged.folder, exec: exec) ?? ""
+            }
         }
         guard let name = staged.source.folder else { throw HerdrError.failed("A local path is not installed") }
         let target = plugins.appending(path: name)

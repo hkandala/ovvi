@@ -29,7 +29,8 @@ tail -f <log>                             # the plugin's log
 - If a card of the plugin has unsaved edits, `reload` stops with `dirty` and names the pane. Ask the user to
   save. Ovvi never discards edits.
 - `new` and `reload` install and build, so pass a long `--timeout`.
-- `ovvi plugins reload` with no id reloads every plugin that has an open card.
+- `ovvi plugins reload` with no id builds every plugin and reloads every open card. An npm install never builds
+  again: it answers `"built": false`.
 - `reload <id>` of a plugin the user did not confirm yet is `failed`: its card asks the user first.
 - A plugin can use the whole API on its card's machine: files, git, `run` and the clipboard. The manifest has
   no permissions.

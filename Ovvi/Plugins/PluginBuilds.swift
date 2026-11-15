@@ -71,6 +71,7 @@ struct PluginProblem {
     let text: String
     var button: String? = "Reload"
     var builds = false
+    var updatesOvvi = false
 
     @MainActor func toast(_ id: String) -> Toast {
         Toast(
@@ -152,7 +153,7 @@ extension Plugin {
         Registry.reload()
         guard let manifest = Registry.plugin(id), manifest.entry != nil else { return nil }
         let cards = cards.filter { $0.manifest == manifest }
-        guard build, let problem = await PluginBuilds.shared.build(manifest) else {
+        guard build, !npm(id), let problem = await PluginBuilds.shared.build(manifest) else {
             cards.filter { !keepEdits || !$0.dirty }.forEach { $0.web.reload() }
             return nil
         }
@@ -168,15 +169,20 @@ extension Plugin {
         return problem
     }
 
+    /// Every plugin with code, with or without a card: a git or local one builds, an npm install only loads again.
     static func reloadAll(asked: Bool = false) async {
         if !asked, let dirty = cards.first(where: \.dirty) {
             dirty.leave { _ in Task { await reloadAll(asked: true) } }
             return
         }
         Registry.reload()
-        for id in Set(cards.map(\.manifest.id)) {
-            await reload(id, asked: true)
+        for manifest in Registry.all where manifest.entry != nil {
+            await reload(manifest.id, asked: true)
         }
+    }
+
+    static func npm(_ id: String) -> Bool {
+        PluginInstalls.shared.rows.first { $0.id == id }?.npm != nil
     }
 }
 

@@ -4,8 +4,8 @@ description: "Where plugins come from: npm, git or a local path, the Plugins pag
 ---
 
 A plugin is a package, as a pi package is. Ovvi installs it,
-lists it in `~/.config/ovvi/settings.json`, and can update, reload and
-remove it. The app ships no package manager. It uses the npm, pnpm or bun on
+lists it in `~/.config/ovvi/settings.json`, and can reload and remove it,
+and update it when it comes from npm. The app ships no package manager. It uses the npm, pnpm or bun on
 the user's login `PATH`.
 
 ## Sources
@@ -16,6 +16,7 @@ entry is a source string, or an object with a `source` (pi's form):
 ```json
 {
   "packages": [
+    "npm:@ovvi/explorer",
     "npm:@acme/ovvi-csv@1.2.0",
     "git:github.com/acme/ovvi-kanban@v1",
     "~/code/my-plugin"
@@ -29,10 +30,17 @@ entry is a source string, or an object with a `source` (pi's form):
 | `git:<repository>[@ref]` | a git repository: `git:github.com/x/y@v1`, an `https://` or `ssh://` URL, `git@host:x/y`, or a local repository's path | `~/.config/ovvi/plugins/<repository name>/`: a clone at the ref |
 | a path that starts with `/`, `~` or `.` | a package on this Mac | nowhere: it loads in place. A relative path is from the folder of `settings.json` |
 
-- A versioned spec stays at its version. **Update** fetches the same source
-  again, so it gets the newest version that the spec allows.
-- A local path is never installed or changed. Its dependencies are its
-  author's: run `npm install` and `npm run build` in its folder.
+- Only an npm source updates. Its page asks npm for the newest version that
+  the spec allows, and **Update to ‹version›** installs it. A versioned spec
+  stays at its version.
+- A git source has no Update: to get a newer commit, remove the plugin and
+  install it again. A local path is never installed or changed. Its
+  dependencies are its author's: run `npm install` and `npm run build` in
+  its folder.
+- An npm install never builds again: Reload only loads its cards again. To
+  change one, edit its folder and build it there (`npm install`, then `npm
+  run build`), then press Reload. Update replaces the folder, edits
+  included, and asks nothing.
 - A folder that the user or an agent puts in `~/.config/ovvi/plugins/` by
   hand also loads. It is not in `settings.json`.
 - The repository's extra plugins, in `plugins/extra/` (Tart VM), are local
@@ -56,9 +64,10 @@ entry is a source string, or an object with a `source` (pi's form):
    package's own `node_modules`, from its lockfile when it has one, with that
    lockfile's manager. Without a lockfile it uses the first of npm, pnpm and
    bun on the `PATH`.
+   An npm package that ships its built entry skips this step and the next:
+   it needs nothing more, because an npm install never builds again.
 4. If the package has a `build` script and its built entry is missing, the
-   app runs `run build`. A published package that ships its `dist/` needs no
-   build.
+   app runs `run build`.
 5. It moves the package into place, over an older install, adds the source
    to `settings.json`, keeps its id in `trust.json`, and loads its open cards
    again.
@@ -73,8 +82,11 @@ The install commands:
 
 - No install script of a dependency runs (`--ignore-scripts`). Only the
   package's own `build` script runs, and only after the user confirms it.
-- No peer dependency installs. `@ovvi/plugin-api` is the app's, and it is
-  not on the npm registry ([Types](/docs/plugins/api#types)).
+- No peer dependency installs. `@ovvi/plugin-api` holds only types, and the
+  app writes its own copy ([Types](/docs/plugins/api#types)).
+- A package whose manifest's `api` is above the app's is refused: "‹name›
+  ‹version› needs a newer Ovvi: it is written for version ‹n› of the plugin
+  API; this Ovvi has version 3." The installed version stays.
 - A fetch (`npm pack`, `tar`, `git clone`, `git checkout`) stops after 5
   minutes, and an install or build command after 10 minutes. A failure shows its last 20
   lines, and the plugin's log has the whole output.
@@ -92,11 +104,13 @@ The install commands:
   shows on a red notice, with **Retry** when running it again can help.
 - **New Plugin…** asks for a name, then makes a plugin from the template
   ([Build a plugin](/docs/plugins/building#start-from-the-template)).
-- **Reload All** reads every package again and reloads every plugin with an
-  open card. ⌘K's **Reload Plugins** does the same.
+- **Reload All** reads every package again, builds every git and local
+  plugin, with or without an open card, and loads every open card again. An
+  npm install does not build. ⌘K's **Reload Plugins** does the same.
 - **A row per plugin**, the browser first: its icon, its name and version,
-  and its source under it: "Comes with Ovvi", the `npm:` or `git:` source,
-  the local path, or the folder. A source in `settings.json` whose folder is
+  and its source under it: "Comes with Ovvi" (the browser, and a default
+  plugin before its first install), the `npm:` or `git:` source, the local
+  path, or the folder. A source in `settings.json` whose folder is
   missing shows "Not installed". A row opens the plugin's page.
 - **An agent's work** shows on the page too: an agent on This Mac makes,
   reloads and installs plugins with the `ovvi` command
@@ -110,13 +124,18 @@ The install commands:
 
   | Button | On | Does |
   |---|---|---|
-  | Update | npm and git installs ("Install" while its folder is missing) | fetches the source again. It does not ask again, unless the new version has another id |
-  | Update to Version ‹x.y.z›, Reset to Default | the defaults, when the app offers it | [The default plugins](#the-default-plugins) |
+  | Update to ‹version› | npm installs, when npm has a newer version | installs it over the old one. It does not ask again, unless the new version has another id. With the newest installed, "Up to date" shows in its place |
+  | Install | npm and git installs whose folder is missing | fetches the source again |
   | Show Log | every installed plugin but the browser | opens `<id>.log` in the app for `.log` files (Console) |
-  | Reload | every installed plugin but the browser | runs its build script and loads its cards again ([Reload](/docs/plugins/building#reload)) |
+  | Reload | every installed plugin but the browser | runs its build script, except for an npm install, and loads its cards again ([Reload](/docs/plugins/building#reload)) |
+
+- **The update check** runs when the page opens: `npm pack <spec>
+  --dry-run --json`, the same fetch as an install without its files, so a
+  tarball's path works too. Nothing checks in the background. Offline, or
+  without npm, nothing shows.
 
 - **Remove…**, in a section of its own at the end of the page, "Remove
-  ‹name›" (every plugin but the defaults): asks, then takes it off the list,
+  ‹name›" (every plugin but the browser and the defaults): asks, then takes it off the list,
   takes its id out of `trust.json`, forgets its settings, and moves its
   folder to the Trash. A local path's folder stays where it is.
 
@@ -160,8 +179,8 @@ The registry reads the manifests at launch, and again after an install, an
 update, a removal and Reload Plugins. Nothing watches the folders. The first
 package of an id wins, in this order:
 1. The browser, whose manifest is written in Swift.
-2. The default plugins: their installed copies in the plugins folder, or the
-   app's own manifest while a copy is not installed yet.
+2. The default plugins: their installs in the plugins folder, or the app's
+   own manifest while one is not installed yet.
 3. The local paths in `settings.json`.
 4. Every folder in `~/.config/ovvi/plugins/` but hidden ones and
    `node_modules`.
@@ -173,32 +192,38 @@ also goes under the manifest's id when the id reads.
 ## The default plugins
 
 File Explorer (`explorer`) and Git (`git`) are packages, each with its
-`package.json`, lockfile, `src/` and build script. The app carries their
-source, without `node_modules` and `dist`, and nothing of theirs is in the
-app's own build.
+`package.json`, lockfile, `src/` and build script. They are on npm as
+`@ovvi/explorer` and `@ovvi/git`, with their `dist/`. The app also carries
+their source, without `node_modules` and `dist`, and nothing of theirs is in
+the app's own build.
 
-- **First launch.** When a default's folder is missing in the plugins
-  folder, the app copies its source there, runs `npm ci` from its lockfile,
-  then its build script (about 1 s each). Its cards show "Installing
-  ‹name›…" meanwhile. With no package manager, or offline, the card says what
-  failed, with **Try Again** ([Errors and logs](/docs/plugins/errors)).
-- **They are the user's.** The user or an agent can edit them, then press
-  Reload Plugin. They never ask for a confirmation.
-- **An app with a newer version** (the package's `version`) replaces an
-  unedited copy at launch. An older app never replaces a copy, so the installed
-  app and another Release build (`make app`) can share the folder.
-- **An edited copy**, or a copy whose source differs from the app's at the
-  same version, stays. Its page offers **Update to Version ‹x.y.z›**
-  (a newer version) or **Reset to Default**. For an edited copy it asks
-  first: "Replace your edited ‹name›?". The edited copy goes to the Trash.
-- `.defaults.json` in the plugins folder keeps each default's version, the
-  hash of the app's source, and the hash of the copy after its install. A
-  hash covers the files outside `node_modules` and `dist`, so a build does
-  not count as an edit.
+- **First install.** When a default's folder is missing in the plugins
+  folder (the first launch), the app copies its source there, runs `npm ci`
+  from its lockfile, then its build script (about 1 s each), and lists
+  `npm:@ovvi/<id>` in `settings.json`. So a first launch works offline. Its
+  cards show "Installing ‹name›…" meanwhile. With no package manager, the
+  card says what failed, with **Try Again**
+  ([Errors and logs](/docs/plugins/errors)).
+- **Then they are npm installs.** Each updates from its page, apart from the
+  app: a new Ovvi never replaces them. Update installs npm's version over the
+  folder, edits included, and asks nothing.
+- **They stay.** They have no Remove and never ask for a confirmation. A
+  default whose folder is gone installs again from the app's copy at the
+  next launch or card.
 - A quit during an install leaves a `.install-*` staging folder. The app
   removes it at the next launch.
 
+## Publishing
+
+`.github/workflows/plugins.yml` publishes `@ovvi/plugin-api` (`web/ovvi/`),
+`@ovvi/explorer` and `@ovvi/git` when main has a `version` in their
+`package.json` that npm does not have, apart from app releases. It builds the
+plugin (`npm ci`, `npm run build`), then runs `npm publish` with npm's
+trusted publishing: no token, and npm adds provenance. A change to a default
+plugin's source bumps its `version`, so the change reaches npm with the next
+push. The first publish of each name is by hand (RELEASING.md, Plugins).
+
 ## Choices
 
-The decisions are D96 and D100 on the
+The decisions are D96, D100 and D114 on the
 [Decisions](/docs/decisions#pane-kinds) page.

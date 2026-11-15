@@ -1,0 +1,48 @@
+name: plugins
+
+# Publishes the default plugins and the API's types to npm when main has a version npm does not, apart from app
+# releases. npm's trusted publishing: no token, provenance from this workflow (RELEASING.md, Plugins).
+on:
+  push:
+    branches: [main]
+    paths: [plugins/builtin/**, web/ovvi/package.json, web/ovvi/ovvi.d.ts, .github/workflows/plugins.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: plugins
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: Publish each new version
+        run: |
+          for dir in web/ovvi plugins/builtin/explorer plugins/builtin/git; do
+            name=$(node -p "require('./$dir/package.json').name")
+            version=$(node -p "require('./$dir/package.json').version")
+            # Trusted publishing cannot make a package: its first version is published by hand.
+            if ! npm view "$name" name >/dev/null 2>&1; then
+              echo "::warning::$name is not on npm yet: publish it once by hand (RELEASING.md, Plugins)"
+              continue
+            fi
+            # Empty for a version npm does not have.
+            if [ -n "$(npm view "$name@$version" version)" ]; then
+              echo "$name@$version is on npm"
+              continue
+            fi
+            if [ -f "$dir/package-lock.json" ]; then
+              npm ci --prefix "$dir" --no-audit --no-fund
+              npm run --prefix "$dir" build
+            fi
+            (cd "$dir" && npm publish)
+          done

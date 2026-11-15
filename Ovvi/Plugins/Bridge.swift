@@ -51,7 +51,7 @@ final class Bridge {
                 title: "\(plugin.manifest.name.shown) needs a newer Ovvi",
                 text: "It is written for version \(plugin.manifest.api) of "
                     + "the plugin API; this Ovvi has version \(Self.api).",
-                button: nil,
+                button: Updates.checks ? "Check for Updates…" : nil, updatesOvvi: true,
             ))
         }
     }

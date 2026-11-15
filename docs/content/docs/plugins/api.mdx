@@ -33,14 +33,14 @@ export default async function main(ovvi: Ovvi) {
 The API is host-provided, as pi's is for its packages. The app gives the
 `ovvi` object to the page at run time, so a plugin never bundles it:
 - A plugin lists `@ovvi/plugin-api` in `peerDependencies` as `"*"`, and
-  marks it `optional` in `peerDependenciesMeta`. The name is not on the npm
-  registry, and npm 7 or later installs a peer that is not
-  optional.
+  marks it `optional` in `peerDependenciesMeta`: npm 7 or later installs a
+  peer that is not optional, and the app installs none.
 - At launch the app writes the types package (`package.json` and
   `ovvi.d.ts`) to `~/.config/ovvi/plugins/node_modules/@ovvi/plugin-api/`
   when its copy differs. `tsc` finds it from any package in the plugins
   folder, so `npm run check` works there. A package elsewhere (a local path)
-  needs its own copy or link.
+  can install it from npm as a dev dependency: `npm install -D
+  @ovvi/plugin-api`.
 - `import type` goes away in the build, so nothing of the package is
   bundled.
 

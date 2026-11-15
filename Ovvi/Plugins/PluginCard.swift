@@ -107,7 +107,8 @@ private struct PluginFailure: View {
                 ProgressView().controlSize(.small)
             } else if let button = problem.button {
                 Button(button) { fix() }.buttonStyle(.glassProminent)
-                    .accessibilityIdentifier(problem.builds ? "\(id).build" : "\(id).reload")
+                    .accessibilityIdentifier(problem.builds ? "\(id).build" : problem.updatesOvvi ? "\(id).update"
+                        : "\(id).reload")
             }
             Button("Show Log") { PluginLog.show(plugin.manifest.id) }
         }
@@ -116,6 +117,9 @@ private struct PluginFailure: View {
     }
 
     private func fix() {
+        if problem.updatesOvvi {
+            return Updates.shared.check()
+        }
         guard problem.builds else { return plugin.web.reload() }
         building = true
         Task {

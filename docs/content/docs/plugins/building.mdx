@@ -237,14 +237,15 @@ relay, and the table draws on the Mac.
 Nothing watches the plugin's folder. After an edit, press **Reload Plugin**:
 ⌥⌘R over a card of the plugin, the card's menu, View ▸ Pane, ⌘K, or the
 plugin's page in Settings. **Reload Plugins** (⌘K, Reload All in Settings) does it
-for every plugin with an open card.
+for every plugin, with or without an open card.
 
 1. If a card of the plugin has unsaved edits, the card asks first:
    "‹name› has unsaved edits.", with Discard and **Keep Editing**. Discard
    covers every card of the plugin.
 2. The app reads every manifest again.
 3. It runs the package's `build` script, if it has one. Only a confirmed
-   plugin builds.
+   plugin builds, and never an npm install: it ships its build or built it
+   at install ([Sources](/docs/plugins/packages#sources)).
 4. It loads each card's page again. `main` gets the same state and header
    values, so the card comes back where it was. A card whose manifest
    changed is made again from the new one, with its new header.

@@ -14,12 +14,15 @@ final class PluginInstalls {
         let installed = Dictionary(pairs) { first, _ in first }
         let plugins = Registry.all.map { manifest -> InstalledPlugin in
             let folder = Registry.package(manifest.id)
-            let kind: InstalledPlugin.Kind = if Registry.defaults.contains(manifest.id) {
-                .bundled
-            } else if let folder, folder.deletingLastPathComponent().standardizedFileURL.path
+            let inPlugins = folder?.deletingLastPathComponent().standardizedFileURL.path
                 == Registry.plugins.standardizedFileURL.path
-            {
-                installed[folder.lastPathComponent].map(InstalledPlugin.Kind.installed) ?? .folder
+            // A default the app has not installed yet is the app's own.
+            let kind: InstalledPlugin.Kind = if inPlugins, let source = installed[folder?.lastPathComponent ?? ""] {
+                .installed(source)
+            } else if Registry.defaults.contains(manifest.id) {
+                .bundled
+            } else if inPlugins {
+                .folder
             } else {
                 .local(folder?.path ?? "")
             }
@@ -75,7 +78,7 @@ final class PluginInstalls {
     }
 
     func remove(_ row: InstalledPlugin) async {
-        guard row.kind != .bundled, await Self.ask(
+        guard !Registry.defaults.contains(row.id), await Self.ask(
             "Remove “\((row.manifest?.name ?? row.id).shown)”?",
             Self.removal(row),
             button: "Remove",
@@ -155,6 +158,11 @@ final class PluginInstalls {
         let exec = await localExec.value
         let staged = try await PluginPackages.fetch(source, into: Registry.plugins, exec: exec)
         do {
+            let manifest = staged.manifest
+            guard manifest.api <= Bridge.api else {
+                throw HerdrError.failed("\(manifest.name.shown) \(manifest.version) needs a newer Ovvi: it is written "
+                    + "for version \(manifest.api) of the plugin API; this Ovvi has version \(Bridge.api).")
+            }
             let folder = Registry.plugins.appending(path: source.folder ?? "")
             try free(staged.manifest.id, for: folder)
             try await trusts(staged.manifest, from: text, folder: folder, for: agent)
@@ -287,6 +295,15 @@ struct InstalledPlugin: Identifiable {
     let id: String
     let manifest: PluginManifest?
     let kind: Kind
+
+    /// Only an npm install updates, and it never builds again: npm ships its build or it builds at install.
+    var npm: String? {
+        if case let .installed(source) = kind {
+            PluginSource(source)?.npm
+        } else {
+            nil
+        }
+    }
 
     var version: String? {
         guard let manifest else { return "Not installed" }

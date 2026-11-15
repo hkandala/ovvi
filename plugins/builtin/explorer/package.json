@@ -1,8 +1,10 @@
 {
   "name": "@ovvi/explorer",
   "license": "AGPL-3.0-only",
-  "version": "1.15.4",
-  "private": true,
+  "version": "1.15.5",
+  "repository": { "type": "git", "url": "git+https://github.com/hkandala/ovvi.git", "directory": "plugins/builtin/explorer" },
+  "publishConfig": { "access": "public" },
+  "files": ["dist", "places.json"],
   "description": "Files and folders",
   "keywords": ["files", "tree", "folder", "finder"],
   "scripts": {

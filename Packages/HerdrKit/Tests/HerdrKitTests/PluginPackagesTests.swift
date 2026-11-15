@@ -94,6 +94,33 @@ private func package(_ folder: URL, version: String, extra: [String: Any] = [:])
     #expect(!FileManager.default.fileExists(atPath: folder.appending(path: "node_modules/@ovvi").path))
 }
 
+@Test func `an npm package that ships its build installs nothing more, and npm says its newest version`() async throws {
+    let scratch = try scratchFolder()
+    defer { try? FileManager.default.removeItem(at: scratch) }
+    let source = scratch.appending(path: "source"), plugins = scratch.appending(path: "plugins")
+    let tarball = scratch.appending(path: "csv.tgz").path
+    func pack(_ version: String) async throws {
+        try package(source, version: version, extra: ["dependencies": ["pad": "file:nowhere"]])
+        try FileManager.default.createDirectory(at: source.appending(path: "dist"), withIntermediateDirectories: true)
+        try Data().write(to: source.appending(path: "dist/main.js"))
+        _ = try await offline.checkedOutput(["sh", "-c", #"cd "$1" && npm pack --silent && mv csv-table-*.tgz "$2""#,
+                                             "sh", source.path, tarball], timeout: .seconds(300))
+    }
+    try await pack("1.0.0")
+    let spec = try #require(PluginSource("npm:\(tarball)")?.npm)
+    #expect(PluginSource("git:/tmp/repo")?.npm == nil && PluginSource("~/csv")?.npm == nil)
+    #expect(try await PluginPackages.latest(spec, exec: offline) == "1.0.0")
+    // A dependency that would not install: none is installed.
+    let staged = try await PluginPackages.fetch(PluginSource.npm(spec), into: plugins, exec: offline)
+    let folder = try await PluginPackages.finish(staged, into: plugins, exec: offline).folder
+    #expect(!FileManager.default.fileExists(atPath: folder.appending(path: "node_modules").path))
+
+    try await pack("1.10.0")
+    #expect(try await PluginPackages.latest(spec, exec: offline) == "1.10.0")
+    #expect(PluginPackages.newer("1.10.0", than: "1.9.2") && !PluginPackages.newer("1.0.0", than: "1.0.0"))
+    #expect(!PluginPackages.newer("0.9.0", than: "1.0.0"))
+}
+
 @Test func `a package that is not a plugin is left out of the plugins folder`() async throws {
     let scratch = try scratchFolder()
     defer { try? FileManager.default.removeItem(at: scratch) }

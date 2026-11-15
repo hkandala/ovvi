@@ -118,7 +118,9 @@ extension OvviUITests {
         XCTAssertTrue(installed.has(\.label, "CSV Git, 0.1.0, git:\(repo)@v1", within: 30), installed.label)
         XCTAssertTrue(element("plugins.ovvi-e2e-csv-table").label.hasSuffix(", /tmp/ovvi-e2e-csv"))
         installed.click()
-        XCTAssertTrue(element("plugins.ovvi-e2e-csv-git.update").exists(within: 3))
+        // No Update from git: a clone has no newer version to ask for.
+        XCTAssertTrue(element("plugins.ovvi-e2e-csv-git.remove").exists(within: 3))
+        XCTAssertFalse(element("plugins.ovvi-e2e-csv-git.update").exists)
         // Back to the list: a click on the selected row changes nothing.
         element("settings.page.general").click()
         element("settings.page.plugins").click()
@@ -131,10 +133,86 @@ extension OvviUITests {
         XCTAssertTrue(lines.has(\.label, "Ovvi E2E Lines, 0.1.0, \(config)/plugins/ovvi-e2e-lines", within: 30),
                       lines.label)
         keepScreenshot("plugins page")
+        // Reload All builds the plugins with no card too.
+        let builds = ["ovvi-e2e-csv-repo", "ovvi-e2e-lines"].map { "\(config)/plugins/\($0)/dist/main.js" }
+        try await send("rm \(builds.joined(separator: " ")) && clear && echo removed-$((6*7))\r", to: shell)
+        try await waitFor(shell) { $0.contains("removed-42") }
+        element("plugins.reload-all").click()
         settingsWindow.buttons["_XCUI:CloseWindow"].click()
         XCTAssertTrue(source.vanishes(within: 2))
-        try await send("clear; test -f \(config)/plugins/ovvi-e2e-csv-repo/dist/main.js && test -f "
-            + "\(config)/plugins/ovvi-e2e-lines/dist/main.js && echo built-$((6*7))\r", to: shell)
-        try await waitFor(shell) { $0.contains("built-42") }
+        try await send("clear; until test -f \(builds[0]) && test -f \(builds[1]); do sleep 0.2; done; "
+            + "echo built-$((6*7))\r", to: shell)
+        try await waitFor(shell, times: 300) { $0.contains("built-42") }
+    }
+
+    func testAnNPMPluginOffersTheUpdateThatNPMHas() async throws {
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        let (_, shell) = try await newTab("npm")
+        try await waitForPrompt(shell)
+        let config = "/tmp/ovvi-e2e-npm", made = "/tmp/ovvi-e2e-npm-made", tarball = "/tmp/ovvi-e2e-npm-csv.tgz"
+        // A package with its build in it, as a published plugin ships it: nothing builds or installs.
+        let pack = { (version: String, api: Int) in
+            "printf '%s' '{\"name\":\"ovvi-e2e-npm-csv\",\"version\":\"\(version)\",\"dependencies\":{\"pad\":"
+                + "\"file:nowhere\"},\"ovvi\":{\"id\":\"ovvi-e2e-npm-csv\",\"name\":\"CSV npm\",\"api\":\(api),"
+                + "\"entry\":\"dist/main.js\",\"icon\":\"tablecells\"}}' > \(made)/package.json && (cd \(made) && "
+                + "npm pack --silent >/dev/null) && mv \(made)/ovvi-e2e-npm-csv-\(version).tgz \(tarball) && clear && "
+                + "echo packed-\(version)\r"
+        }
+        try await send("rm -rf \(config) \(made) \(tarball) && mkdir -p \(config) \(made)/dist && "
+            + "echo 'export default () => {}' > \(made)/dist/main.js && " + pack("0.1.0", 3), to: shell)
+        try await waitFor(shell) { $0.contains("packed-0.1.0") }
+        sendAfter("rm -rf \(config) \(made) \(tarball)\r", to: shell)
+        relaunch(one, ["-configFolder", config])
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        openSettings("plugins")
+        let source = element("plugins.source", in: settingsWindow)
+        XCTAssertTrue(source.exists(within: 5))
+        source.click()
+        source.typeText("npm:\(tarball)\r")
+        XCTAssertTrue(app.sheets.buttons["Install"].exists(within: 10))
+        app.sheets.buttons["Install"].click()
+        let row = element("plugins.ovvi-e2e-npm-csv", in: settingsWindow)
+        XCTAssertTrue(row.has(\.label, "CSV npm, 0.1.0, npm:\(tarball)", within: 30), row.label)
+        let page = { () -> (update: XCUIElement, current: XCUIElement) in
+            element("settings.page.general").click()
+            element("settings.page.plugins").click()
+            row.click()
+            return (element("plugins.ovvi-e2e-npm-csv.update"), element("plugins.ovvi-e2e-npm-csv.up-to-date"))
+        }
+        var shown = page()
+        XCTAssertTrue(shown.current.exists(within: 30))
+        XCTAssertFalse(shown.update.exists)
+        keepScreenshot("npm plugin up to date", of: settingsWindow)
+
+        try await send(pack("0.2.0", 3), to: shell)
+        try await waitFor(shell) { $0.contains("packed-0.2.0") }
+        shown = page()
+        XCTAssertTrue(shown.update.has(\.label, "Update to 0.2.0", within: 30), shown.update.label)
+        keepScreenshot("npm plugin update", of: settingsWindow)
+        shown.update.click()
+        XCTAssertTrue(shown.current.exists(within: 30))
+        try await send("clear; grep -q '\"0.2.0\"' \(config)/plugins/ovvi-e2e-npm-csv/package.json && "
+            + "test ! -e \(config)/plugins/ovvi-e2e-npm-csv/node_modules && echo kept-$((6*7))\r", to: shell)
+        try await waitFor(shell) { $0.contains("kept-42") }
+
+        try await refusesANewerAPI(pack("0.3.0", 99), config: config, shell: shell, page: page)
+        settingsWindow.buttons["_XCUI:CloseWindow"].click()
+    }
+
+    private func refusesANewerAPI(_ pack: String, config: String, shell: String,
+                                  page: () -> (update: XCUIElement, current: XCUIElement)) async throws
+    {
+        step("A version this Ovvi cannot run is refused")
+        try await send(pack, to: shell)
+        try await waitFor(shell) { $0.contains("packed-0.3.0") }
+        let shown = page()
+        XCTAssertTrue(shown.update.has(\.label, "Update to 0.3.0", within: 30), shown.update.label)
+        shown.update.click()
+        let refused = settingsWindow.staticTexts.matching(NSPredicate(format: "value BEGINSWITH %@",
+                                                                      "CSV npm 0.3.0 needs a newer Ovvi")).firstMatch
+        XCTAssertTrue(refused.exists(within: 30))
+        try await send("clear; grep -q '\"0.2.0\"' \(config)/plugins/ovvi-e2e-npm-csv/package.json && "
+            + "echo still-$((6*7))\r", to: shell)
+        try await waitFor(shell) { $0.contains("still-42") }
     }
 }
