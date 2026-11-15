@@ -51,3 +51,8 @@ The plan the user approved ("plugin plan sounds good"):
   edit from an install is gone. Reload no longer builds a default: to change one, edit its folder, run `npm run build`
   there (a default from the app's copy has its `node_modules`), then Reload. A local copy of a default cannot load
   beside it (its id is taken).
+- **Runs.** VM: the npm test (Up to date, Update to 0.2.0, the refusal of API 99, a default listed again),
+  `testAPluginPackageAsksForTrustBuildsAndReloads` (git has no Update; Reload All rebuilds two plugins with no card),
+  `testAPluginCardAsksAndItsPageSetsItsSettings` (explorer's row is `npm:@ovvi/explorer`) and
+  `testTheOvviCommandListsAndInstallsPlugins`: green. Pictures: `~/Downloads/ovvi-research/p60n/npm-plugin-*.png`.
+  With three buttons the header wraps a short name to two lines (its title allows 2).
