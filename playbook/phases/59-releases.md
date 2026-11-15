@@ -75,3 +75,15 @@ Records the work as it lands: Findings, Runs, commits.
   Build Tips from main: a branch's commit count can pass later main Tips', and Sparkle then offers none of them. The
   curl install links no `ovvi` skill (only `make install` does). A pre-release cannot test the release app's feed:
   `releases/latest` finds nothing before `v0.1.0`.
+
+## Round 2: dev builds from the repo (items 68–70 of phase 58)
+
+The user's words are phase 58's items 68, 69 and 70, and their picks: "dev builds let's go with A", "Ovvi Dev sounds
+good, but i don't like the logo, can you give some 5 options to choose from", "yes for releasing md as well".
+
+Option A: `install.sh` installs only releases (the latest or `--version X`). `make install` builds Ovvi Dev from the
+checkout: its own name, bundle id, scheme and folders, a badge, no update feed, so it runs beside a released Ovvi.
+`tip.yml`, the `tip` release, `install.sh --dev` and Ovvi Tip go. `RELEASING.md` at the root replaces
+`playbook/release.md`.
+
+### Track D2 (one agent)

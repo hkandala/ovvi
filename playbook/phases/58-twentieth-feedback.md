@@ -1655,3 +1655,13 @@ deleted (the repo keeps only `v*`); `v0.1.0` comes after round 5's final CI.
 - **For the user.** ⇧⌘C on a pi pane, in its terminal and its chat view: the clipboard holds only the id, and
   `pi --session <id>` resumes it; the notice says Copied Session ID. A long URL: Copied URL. A failed Push: one line
   with the refused ref, the whole message on hover. A File not found for a deep path: one line ending in ….
+
+The user's words (items 71–72, after O2):
+
+71. "for overview, can we just make the animation simpler? like fade in stuff adn same when exiting overview as well?
+    so its simple, cleanup all code related to complex zoom animations etc and any workarounds related to that, keep it
+    very simple"
+72. "i am getting Update Error! when checking for updates? why? is it expected for now?" Answer: yes. The installed
+    app's feed is `releases/latest/download/appcast.xml`, a 404 until `v0.1.0`; Ovvi Dev (phase 59 round 2) has no feed.
+
+Track O3 (71). Items 67–70 moved: 68–70 to phase 59 round 2, 67 to phase 60.
