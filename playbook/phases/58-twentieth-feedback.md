@@ -1722,3 +1722,32 @@ Order: phases 59 round 2, 60 and 61 land; then a docs pass and a code pass at on
   RELEASING.md's Plugins ▸ Set up once before v0.1.0, or the Plugins page shows no updates and the defaults stay
   local copies. platform.mdx says notifications need a real signing identity, and every build is ad hoc: check that
   banners and the Dock badge show in the installed release.
+
+### Code pass
+
+- **Method.** Five read-only auditors, one per area (Views and Sidebar; Store, App, Settings and Agent; Plugins,
+  Chat, Terminal and Browser; HerdrKit, scripts, the Makefile, workflows, web and the plugins; the UI tests), each
+  grepping every declared name, launch argument and defaults key across the repo. No dead code turned up: every name,
+  argument and key has a reader. No leftovers of removed features (Ovvi Tip, the overview zoom, the defaults' hashes,
+  Reset to Default, Update to Version, an Ovvi Dev Debug build). The tree was lean already: -132 +54 lines.
+- **Fix.** The AppKit and Foundation imports beside SwiftUI (SwiftUI brings both), 35 files. Three hand-written polls
+  now wait with `settle`. Three copies of `reduced ? nil : .easeOut(duration: 0.2)` are `Animation.fade`; NewPane's
+  0.15 s fade is one `static`. One-caller wrappers inlined (`ExplorerPlace.init(_:)`, `Header.click`, `Look.grip`),
+  a shadowed `scale`, back-to-back extensions merged. UI tests reuse their helpers (`split`, `createTab`,
+  `keepScreen`, `mainWindows`, `web`). Comments: history and name-restating ones cut, an off-repo path dropped, "New
+  Workspace" in a comment and a test step is New Space; a gone test's row left `test-times.tsv`.
+- **Fix (Track N's open item).** npm offline still answers a package's versions from its cache, keyed by the
+  registry, so once the defaults are published a cached packument would show a real Update or Up to date in the
+  tests. The tests' launches (`relaunch`, and e2e-helper's `open`) set `npm_config_registry=http://127.0.0.1:9/`
+  beside `npm_config_offline`: a default's check answers nothing, always, while the defaults' first `npm ci` still
+  installs from the cache by integrity (checked by hand). Chosen over skipping the check in isolated runs: no special
+  case in the app.
+- **Skipped.** `floatPendingForAgent` into `floatPending`'s tuple (SwiftLint's `large_tuple`; the rule stays).
+  A TaskGroup `reduce` in ArchivedShelf (region isolation rejects it). Packing one-argument-per-line calls and lists
+  (formatting only). One `sessionList` for `HerdrClient.sessions` and `Exec.herdrSession`, one home-path helper in
+  `ProcessExec`, a shared SHA-256 short hash (small, cross-module, changes error paths). Dropping CI's `make build`
+  before `make build-tests` (a CI change). Splitting the non-Swift files over 400 lines (scene.py, record-onboarding.sh,
+  files.ts, diff.ts, e2e-helper.py, live.ts, runtime.ts, home.ts): a refactor. PathField and the browser's address
+  field share a pattern: a refactor.
+- **For the user.** `herdrVersion` (HerdrClient.swift) is 0.9.3 while the docs and `ci-herdr.sh` say 0.9.5: the
+  minimum the app accepts is older than the one it is tested with. Decide which one is right.
