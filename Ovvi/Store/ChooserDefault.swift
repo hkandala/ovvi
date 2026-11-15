@@ -35,11 +35,8 @@ extension HostStore {
         chooser.holding = true
         Task {
             // ponytail: polled every 50 ms for up to 10 s; a callback from the focus if the wait ever shows.
-            let clock = ContinuousClock(), begun = clock.now
-            while keyboardTerminal(chooser) == nil, clock.now - begun < .seconds(10),
-                  choosers.contains(where: { $0 === chooser })
-            {
-                try? await Task.sleep(for: .milliseconds(50))
+            try? await Ovvi.settle(for: .seconds(10)) {
+                keyboardTerminal(chooser) != nil || !choosers.contains { $0 === chooser }
             }
             if let command = chooser.cdCommand, let id = chooser.paneID, choosers.contains(where: { $0 === chooser }) {
                 await write { try await $0.sendInput(command, keys: ["enter"], pane: id) }

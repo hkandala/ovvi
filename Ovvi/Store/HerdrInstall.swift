@@ -60,9 +60,7 @@ final class HerdrInstall {
             await store.client?.refresh()
         }
         // Until the pages leave "not installed", so it never shows again between the install and their read.
-        for _ in 0 ..< 100 where stores.contains(where: { $0.state == .failed(.notFound) }) {
-            try? await Task.sleep(for: .milliseconds(100))
-        }
+        try? await settle(for: .seconds(10)) { !stores.contains { $0.state == .failed(.notFound) } }
         steps[machine.id] = nil
     }
 }

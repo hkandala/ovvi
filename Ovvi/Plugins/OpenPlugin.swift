@@ -20,11 +20,9 @@ extension Page {
                     store.drop(chooser)
                 }
             }
-            let clock = ContinuousClock(), begun = clock.now
-            while chooser.paneID.flatMap(store.pane).flatMap({ store.workspace(of: $0.tabID) }) == nil,
-                  clock.now - begun < .seconds(10), store.choosers.contains(where: { $0 === chooser })
-            {
-                try? await Task.sleep(for: .milliseconds(100))
+            try? await Ovvi.settle(for: .seconds(10)) {
+                chooser.paneID.flatMap(store.pane).flatMap { store.workspace(of: $0.tabID) } != nil
+                    || !store.choosers.contains { $0 === chooser }
             }
             if let id = chooser.paneID {
                 await replace(id, Replacement(plugin: plugin, folder: chooser.folder))
