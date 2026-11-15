@@ -1693,3 +1693,14 @@ Track O3 (71). Items 67–70 moved: 68–70 to phase 59 round 2, 67 to phase 60.
   VM recording), `sheet-all.png` (the test's two rounds).
 - **For the user.** Press ⌃⌘O: the page goes, the grid fades in. Click a tile, or Esc: the grid fades out as the page
   fades in. With Reduce Motion or Animations off, both are instant.
+
+### Before v0.1.0
+
+The user: "once all are done, do one docs pass, cleanup things, update where relevant, and update our readme files etc
+and make sure we don't refer anything old stuff also do one code cleanup pass as well on entire code, check for any
+simplocity opportunities, comments cleanup, no unnecesary comments, or unnecssary complex code or abstractions, don't
+do big refactors though, look for low effort high impact ones, and perfrom all cleanup, docs cleanup and once all of
+that are done, then we can do tag 0.1.0 and let me know next steps"
+
+Order: phases 59 round 2, 60 and 61 land; then a docs pass and a code pass at once; then the final CI round; then
+`v0.1.0`.
