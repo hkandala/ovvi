@@ -139,7 +139,7 @@ def usage(session, seconds):
 def app_pid():
     """Never the user's own Ovvi nor another run's."""
     names = "|".join(map(re.escape, sessions))
-    pattern = f"/Ovvi Dev.app/Contents/MacOS/Ovvi .*-(session|defaultSession) ({names})( |$)"
+    pattern = f"/Ovvi Debug.app/Contents/MacOS/Ovvi .*-(session|defaultSession) ({names})( |$)"
     found = subprocess.run(["pgrep", "-nf", pattern], capture_output=True, text=True)
     return found.stdout.strip()
 

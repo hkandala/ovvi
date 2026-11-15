@@ -66,12 +66,12 @@ done
 # This Mac's herdr sessions, not the sessions. A running herdr server goes on writing its log in ~/Library/Logs/Ovvi
 # to the deleted file until it restarts.
 case $id in
-dev.ovvi.app.debug) paths="$paths
+dev.ovvi.app.dev) paths="$paths
 $HOME/.config/ovvi-dev
 $L/Logs/Ovvi Dev" ;;
-dev.ovvi.app.tip) paths="$paths
-$HOME/.config/ovvi-tip
-$L/Logs/Ovvi Tip" ;;
+dev.ovvi.app.debug) paths="$paths
+$HOME/.config/ovvi-debug
+$L/Logs/Ovvi Debug" ;;
 dev.ovvi.app) paths="$paths
 $HOME/.config/ovvi
 $L/Logs/Ovvi

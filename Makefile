@@ -108,7 +108,7 @@ vm-e2e: build-tests
 	scripts/vm-test.sh $(DERIVED_DATA) $(TESTS) $(BEAUTIFY)
 
 run: build
-	open "$(DERIVED_DATA)/Build/Products/Debug/Ovvi Dev.app" $(if $(SESSION),--args -session $(SESSION))
+	open "$(DERIVED_DATA)/Build/Products/Debug/Ovvi Debug.app" $(if $(SESSION),--args -session $(SESSION))
 
 # The version people see: the nearest v* tag behind HEAD (release.yml passes its own tag); 0.1.0 before the first.
 # The build number, which Sparkle compares, is the commit count: it only grows on main.
@@ -116,44 +116,38 @@ VERSION ?= $(or $(patsubst v%,%,$(shell git describe --tags --abbrev=0 --match '
 BUILD ?= $(shell git rev-list --count HEAD)
 # Ad-hoc signed, with Hardened Runtime off: under it, an ad-hoc app cannot load Sparkle (dyld: "different Team IDs").
 # A copy that a browser downloaded opens only after System Settings > Privacy & Security > Open Anyway (curl adds no
-# quarantine, so install.sh skips that), and notifications need a real signing identity. Only install and zip get the
-# installed app's bundle id: macOS keys saved windows and defaults by it.
-# TIP=1: Ovvi Tip, the dev build of any commit (tip.yml), which runs beside Ovvi: its own name, bundle id, scheme and
-# folders (Registry.name), its own update feed, and a DEV badge on the icon. Only the installed app and Ovvi Tip have
-# a feed (FEED), so no other build checks for updates.
-ifdef TIP
-NAME := Ovvi Tip
-BUNDLE_ID := dev.ovvi.app.tip
-URL_SCHEME := ovvi-tip
-VERSION := $(VERSION)-tip.$(shell git rev-parse --short=7 HEAD)
-TIP_SETTINGS := OVVI_APP_NAME='$(NAME)' OVVI_CONDITIONS=TIP
-FEED := https://github.com/hkandala/ovvi/releases/download/tip/appcast.xml
-ZIP := Ovvi-Tip.zip
-else
-NAME := Ovvi
-BUNDLE_ID ?= dev.ovvi.app.release
-URL_SCHEME ?= ovvi-release
-install zip: BUNDLE_ID = dev.ovvi.app
-install zip: URL_SCHEME = ovvi
-install zip: FEED = https://github.com/hkandala/ovvi/releases/latest/download/appcast.xml
+# quarantine, so install.sh skips that), and notifications need a real signing identity. Only zip gets the released
+# app's bundle id and update feed: macOS keys saved windows and defaults by bundle id, so a measure's `make app` keeps
+# its own. install builds Ovvi Dev, which runs beside a released Ovvi: its own name, bundle id, scheme and folders
+# (Registry.name), a DEV mark on the icon, and no feed.
+NAME = Ovvi
+BUNDLE_ID = dev.ovvi.app.release
+URL_SCHEME = ovvi-release
+zip: BUNDLE_ID = dev.ovvi.app
+zip: URL_SCHEME = ovvi
+zip: FEED = https://github.com/hkandala/ovvi/releases/latest/download/appcast.xml
 # The released app's PostHog project key (docs/content/docs/telemetry.mdx): write only, public in every app by design.
 zip: POSTHOG_KEY = phc_ps745xJ4TP7eVs38Ugh8sUyG4ZWYBmnboY9YX4ZQTvxG
-ZIP = Ovvi-$(VERSION).zip
-endif
-APP := $(DERIVED_DATA)/Build/Products/Release/$(NAME).app
+install: NAME = Ovvi Dev
+install: BUNDLE_ID = dev.ovvi.app.dev
+install: URL_SCHEME = ovvi-dev
+install: CONDITIONS = DEV
+APP = $(DERIVED_DATA)/Build/Products/Release/$(NAME).app
 app: web
 	$(XCODEBUILD) $(MAC) -configuration Release PRODUCT_BUNDLE_IDENTIFIER=$(BUNDLE_ID) OVVI_URL_SCHEME=$(URL_SCHEME) \
-		MARKETING_VERSION=$(VERSION) CURRENT_PROJECT_VERSION=$(BUILD) OVVI_FEED_URL=$(FEED) OVVI_POSTHOG_KEY=$(POSTHOG_KEY) $(TIP_SETTINGS) build $(NOWARN) $(BEAUTIFY)
-	$(if $(TIP),swift scripts/tip-icon.swift Ovvi/Assets.xcassets/AppIcon.appiconset "$(APP)")
+		OVVI_APP_NAME='$(NAME)' OVVI_CONDITIONS=$(CONDITIONS) MARKETING_VERSION=$(VERSION) CURRENT_PROJECT_VERSION=$(BUILD) \
+		OVVI_FEED_URL=$(FEED) OVVI_POSTHOG_KEY=$(POSTHOG_KEY) build $(NOWARN) $(BEAUTIFY)
 	@echo "$(APP)"
 
 # ~/.agents/skills: pi and Codex; ~/.claude/skills: Claude Code. -f replaces a dangling link, for which -e is false.
 install: app
+	swift scripts/dev-icon.swift Ovvi/Assets.xcassets/AppIcon.appiconset "$(APP)"
 	rm -rf ~/Applications/"$(NAME).app"
 	cp -R "$(APP)" ~/Applications/
 	for d in ~/.agents/skills ~/.claude/skills; do mkdir -p $$d; [ -e $$d/ovvi ] || ln -sfn $(CURDIR)/skills/ovvi $$d/ovvi; done
 
-# A release's files (release.yml, tip.yml): the app zipped with the framework's symbolic links kept, and its checksum.
+# A release's files (release.yml): the app zipped with the framework's symbolic links kept, and its checksum.
+ZIP = Ovvi-$(VERSION).zip
 zip: app
 	rm -f .build/Ovvi-*.zip
 	ditto -c -k --sequesterRsrc --keepParent "$(APP)" .build/$(ZIP)

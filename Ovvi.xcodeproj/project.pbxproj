@@ -486,9 +486,9 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.1;
-				OVVI_URL_SCHEME = "ovvi-dev";
+				OVVI_URL_SCHEME = "ovvi-debug";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.ovvi.app.debug;
-				WRAPPER_NAME = "Ovvi Dev.app";
+				WRAPPER_NAME = "Ovvi Debug.app";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = macosx;

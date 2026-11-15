@@ -581,7 +581,7 @@ else
     mkdir /tmp/ovvi-gui.lock && echo "record-onboarding $(date +%H:%M)" >/tmp/ovvi-gui.lock/owner && lock=1
 fi
 preflight
-echo "Recording the welcome: about 25-30 minutes (build 4, clips 8, encoding 4, films 10). Quit Ovvi Dev if it runs."
+echo "Recording the welcome: about 25-30 minutes (build 4, clips 8, encoding 4, films 10). Quit Ovvi Debug if it runs."
 echo "Don't touch the mouse or the keyboard meanwhile; Ctrl-C stops it and cleans up."
 case $STEPS in
 clips) clips ;;

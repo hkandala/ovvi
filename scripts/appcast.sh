@@ -3,9 +3,9 @@
 # $SPARKLE_PRIVATE_KEY (Sparkle's base64 seed, as generate_keys exports it), and the notes as Markdown. Ed25519 signs
 # the same bytes the same way every time, so OpenSSL 3's signature is the one sign_update makes. Sparkle's Markdown
 # shows HTML as text: the folded fixes become a heading.
-# Usage: scripts/appcast.sh <name> <zip> <url> <version> <build> <notes.md>
+# Usage: scripts/appcast.sh <zip> <url> <version> <build> <notes.md>
 set -eu
-name=$1 zip=$2 url=$3 version=$4 build=$5 notes=$6
+zip=$1 url=$2 version=$3 build=$4 notes=$5
 key=$(mktemp)
 trap 'rm -f "$key" "$key.sig"' EXIT
 # A DER Ed25519 private key is a fixed 16-byte header, then the 32-byte seed.
@@ -19,9 +19,9 @@ cat <<EOF
 <?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
   <channel>
-    <title>$name</title>
+    <title>Ovvi</title>
     <item>
-      <title>$name $version</title>
+      <title>Ovvi $version</title>
       <pubDate>$(LC_ALL=C date -u '+%a, %d %b %Y %H:%M:%S +0000')</pubDate>
       <sparkle:version>$build</sparkle:version>
       <sparkle:shortVersionString>$version</sparkle:shortVersionString>

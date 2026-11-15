@@ -88,9 +88,9 @@ enum Registry {
     static let plugins = config.appending(path: "plugins")
 
     #if DEBUG
+        nonisolated static let name = "ovvi-debug", logs = "Ovvi Debug"
+    #elseif DEV
         nonisolated static let name = "ovvi-dev", logs = "Ovvi Dev"
-    #elseif TIP
-        nonisolated static let name = "ovvi-tip", logs = "Ovvi Tip"
     #else
         nonisolated static let name = "ovvi", logs = "Ovvi"
     #endif

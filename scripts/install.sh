@@ -1,7 +1,6 @@
 #!/bin/sh
 # Installs Ovvi, the macOS app for herdr, from its GitHub release:
 #   curl -fsSL https://github.com/hkandala/ovvi/releases/latest/download/install.sh | sh
-#   … | sh -s -- --dev              Ovvi Tip, the dev build (main's newest, unless a dispatch chose another commit)
 #   … | sh -s -- --version 0.1.0    that release
 # It checks the download against the release's SHA256SUMS, asks before it installs herdr and herdr's agent
 # integrations, and opens the app.
@@ -23,17 +22,15 @@ ask() {
 # All in one function, so sh has read the whole script before it runs any of it: a cut-off download runs nothing, and
 # no child reads the rest of the script from stdin.
 main() {
-    repo=https://github.com/hkandala/ovvi
-    base=$repo/releases/latest/download app=Ovvi id=dev.ovvi.app config=ovvi
+    base=https://github.com/hkandala/ovvi/releases/latest/download
     while [ $# -gt 0 ]; do
         case $1 in
-            --dev) base=$repo/releases/download/tip app="Ovvi Tip" id=dev.ovvi.app.tip config=ovvi-tip ;;
             --version)
                 [ $# -ge 2 ] || die "--version needs a version, such as 0.1.0"
-                base=$repo/releases/download/v${2#v} app=Ovvi id=dev.ovvi.app config=ovvi
+                base=https://github.com/hkandala/ovvi/releases/download/v${2#v}
                 shift
                 ;;
-            *) die "unknown option $1 (use --dev or --version <version>)" ;;
+            *) die "unknown option $1 (use --version <version>)" ;;
         esac
         shift
     done
@@ -58,7 +55,7 @@ main() {
     # writable.
     dest=
     for d in /Applications "$HOME/Applications"; do
-        if [ -d "$d/$app.app" ]; then
+        if [ -d "$d/Ovvi.app" ]; then
             dest=$d
             break
         fi
@@ -70,22 +67,22 @@ main() {
     [ -w "$dest" ] || die "$dest is not writable"
 
     # The user quits it: a quit sent from here would be an Apple event, which macOS asks the user to allow first.
-    if [ -n "$(lsappinfo find bundleid="$id")" ]; then
-        (: </dev/tty) 2>/dev/null || die "$app is running: quit it, then run this again"
-        echo "$app is running. Quit it (⌘Q) to go on, or press Ctrl-C to stop: herdr keeps your sessions and agents."
-        while [ -n "$(lsappinfo find bundleid="$id")" ]; do sleep 1; done
+    if [ -n "$(lsappinfo find bundleid=dev.ovvi.app)" ]; then
+        (: </dev/tty) 2>/dev/null || die "Ovvi is running: quit it, then run this again"
+        echo "Ovvi is running. Quit it (⌘Q) to go on, or press Ctrl-C to stop: herdr keeps your sessions and agents."
+        while [ -n "$(lsappinfo find bundleid=dev.ovvi.app)" ]; do sleep 1; done
     fi
 
     # Unpacked beside the old copy, so the swap is two renames on one volume.
     stage=$dest/.ovvi-install.$$
     ditto -x -k "$tmp/$zip" "$stage"
-    [ -d "$stage/$app.app" ] || die "$zip holds no $app.app"
-    if [ -e "$dest/$app.app" ]; then mv "$dest/$app.app" "$stage/old.app"; fi
-    mv "$stage/$app.app" "$dest/$app.app" || {
-        [ ! -e "$stage/old.app" ] || mv "$stage/old.app" "$dest/$app.app"
-        die "could not replace $dest/$app.app"
+    [ -d "$stage/Ovvi.app" ] || die "$zip holds no Ovvi.app"
+    if [ -e "$dest/Ovvi.app" ]; then mv "$dest/Ovvi.app" "$stage/old.app"; fi
+    mv "$stage/Ovvi.app" "$dest/Ovvi.app" || {
+        [ ! -e "$stage/old.app" ] || mv "$stage/old.app" "$dest/Ovvi.app"
+        die "could not replace $dest/Ovvi.app"
     }
-    echo "Installed $dest/$app.app"
+    echo "Installed $dest/Ovvi.app"
 
     # Where herdr's own installer puts it.
     bin=${HERDR_INSTALL_DIR:-$HOME/.local/bin}
@@ -112,11 +109,11 @@ main() {
         done
     fi
 
-    open "$dest/$app.app"
+    open "$dest/Ovvi.app"
     cat <<EOF
 
-To uninstall $app: quit it, then
-  rm -rf "$dest/$app.app" ~/.config/$config "\$HOME/Library/Logs/$app"; defaults delete $id
+To uninstall Ovvi: quit it, then
+  rm -rf "$dest/Ovvi.app" ~/.config/ovvi "\$HOME/Library/Logs/Ovvi"; defaults delete dev.ovvi.app
 herdr and its sessions stay; herdr's own docs say how to remove it.
 EOF
 }

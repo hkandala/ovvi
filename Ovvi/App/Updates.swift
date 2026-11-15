@@ -6,9 +6,9 @@ import SwiftUI
 @MainActor @Observable
 final class Updates: NSObject, SPUStandardUserDriverDelegate {
     static let shared = Updates()
-    /// Only builds with a feed check: the installed app and Ovvi Tip (`make install`, `make zip`), not Debug builds or
-    /// the measures' `make app`. Sparkle reads a feed in the defaults first, so a UI test that passes `-SUFeedURL` gets
-    /// the Updates settings.
+    /// Only the released app has a feed (`make zip`): not Ovvi Dev (`make install`), Debug builds or the measures'
+    /// `make app`. Sparkle reads a feed in the defaults first, so a UI test that passes `-SUFeedURL` gets the Updates
+    /// settings.
     static let checks = !(UserDefaults.standard.string(forKey: "SUFeedURL")
         ?? Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") as? String ?? "").isEmpty
 

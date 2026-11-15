@@ -11,19 +11,18 @@ One rule decides where each new thing goes (D57):
   only.
 - **Per-device settings** live in app storage.
 
-The installed app is `Ovvi.app`, `dev.ovvi.app`, which only `make install`
-and `make zip` build; any other Release build (`make app`, a measure) is
-`dev.ovvi.app.release`, with defaults and saved windows of its own, claiming
-`ovvi-release://`. A Debug build (`make run`,
-the UI tests, CI) is `Ovvi Dev.app`, `dev.ovvi.app.debug`, so it has its own
-defaults, saved windows, notifications, login item and browser data, and it
+The installed app is `Ovvi.app`, `dev.ovvi.app`, the release (`make zip`,
+[Install](/docs/platform#install)). Ovvi Dev, the dev build that `make
+install` puts beside it, is `Ovvi Dev.app`, `dev.ovvi.app.dev`, so it has its
+own defaults, saved windows, notifications, login item and browser data, and it
 claims the `ovvi-dev://` scheme, not `ovvi://`. Its folders on This Mac are
 `~/.config/ovvi-dev` and `~/Library/Logs/Ovvi Dev/plugins`. It never reads or
-writes the installed app's. Ovvi Tip, the dev build of any commit (`make zip
-TIP=1`, the `tip` release: [Install](/docs/platform#install)), is `Ovvi
-Tip.app`, `dev.ovvi.app.tip`, and keeps its own the same way: the
-`ovvi-tip://` scheme, `~/.config/ovvi-tip` and `~/Library/Logs/Ovvi
-Tip/plugins`. What the builds share are the files that belong to the sessions
+writes the installed app's. A Debug build (`make run`, the UI tests, CI) keeps
+its own the same way: `Ovvi Debug.app`, `dev.ovvi.app.debug`, the
+`ovvi-debug://` scheme, `~/.config/ovvi-debug` and `~/Library/Logs/Ovvi
+Debug/plugins`. Any other Release build (`make app`, a measure) is
+`dev.ovvi.app.release`, with defaults and saved windows of its own, claiming
+`ovvi-release://`, and the installed app's folders. What the builds share are the files that belong to the sessions
 and panes every build shows: `~/.cache/ovvi` and `~/.local/state/ovvi`
 on each machine, and on This Mac the herdr server jobs with their logs
 (`~/Library/Logs/Ovvi/<session>.log`) and `~/Library/Caches/ovvi`, whose SSH
@@ -36,8 +35,8 @@ is not running. Run it without `sudo`. macOS keeps an app's saved windows in
 the first launch after a reset closes them anyway
 ([Welcome](/docs/ui/welcome)). When macOS refuses to delete a folder (some
 WebKit caches), the script goes on, lists what it kept and exits with 1. For a
-Debug build it also deletes `~/.config/ovvi-dev` and `~/Library/Logs/Ovvi Dev`, for Ovvi Tip `~/.config/ovvi-tip`
-and `~/Library/Logs/Ovvi Tip`. For the installed app, and only while no Ovvi build
+Debug build it also deletes `~/.config/ovvi-debug` and `~/Library/Logs/Ovvi Debug`, for Ovvi Dev `~/.config/ovvi-dev`
+and `~/Library/Logs/Ovvi Dev`. For the installed app, and only while no Ovvi build
 runs, it also deletes `~/.config/ovvi`, `~/Library/Logs/Ovvi`,
 `~/Library/Caches/ovvi`, `~/.cache/ovvi` and `~/.local/state/ovvi`, which other
 builds share. It never touches herdr's sessions or the agents' files.
@@ -80,7 +79,7 @@ builds share. It never touches herdr's sessions or the agents' files.
 | The last 7 usage events sent | app, disk, This Mac | `~/Library/Logs/Ovvi/usage.log` ([Usage data](/docs/telemetry#see-what-it-sent)) |
 | Update checks: on or off (`SUEnableAutomaticChecks`), the last check (`SULastCheckTime`), a skipped version (`SUSkippedVersion`) | Sparkle, This Mac | app storage (`UserDefaults`); a download waits in `~/Library/Caches/<bundle id>/org.sparkle-project.Sparkle/` |
 
-The installed app and Ovvi Tip send one request a day of their own: an HTTPS
+The installed app sends one request a day of its own: an HTTPS
 GET of the app's update feed on github.com ([Updates](/docs/platform#install)), with the app's version
 in the User-Agent and no system profile. The released app also sends its
 anonymous usage counts, at most one request an hour

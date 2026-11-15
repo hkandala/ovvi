@@ -103,7 +103,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         return menu
     }
 
-    /// macOS hands each build only its own scheme (`ovvi://`, `ovvi-dev://`, `ovvi-release://`, `ovvi-tip://`), and
+    /// macOS hands each build only its own scheme (`ovvi://`, `ovvi-dev://`, `ovvi-debug://`, `ovvi-release://`), and
     /// files.
     func application(_: NSApplication, open urls: [URL]) {
         urls.filter { !$0.isFileURL }.forEach(WindowPages.float)

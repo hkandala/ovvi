@@ -1,6 +1,6 @@
 name: release
 
-# A version tag on main publishes a release (playbook/release.md); a tag with a suffix (v0.2.0-rc.1) a pre-release,
+# A version tag on main publishes a release (RELEASING.md); a tag with a suffix (v0.2.0-rc.1) a pre-release,
 # which GitHub's "latest" skips.
 on:
   push:
@@ -66,7 +66,7 @@ jobs:
         run: |
           version=${GITHUB_REF_NAME#v} zip=Ovvi-${GITHUB_REF_NAME#v}.zip
           url=https://github.com/hkandala/ovvi/releases/download/$GITHUB_REF_NAME
-          scripts/appcast.sh Ovvi ".build/$zip" "$url/$zip" "$version" "$(cat .build/build)" .build/notes.md \
+          scripts/appcast.sh ".build/$zip" "$url/$zip" "$version" "$(cat .build/build)" .build/notes.md \
             > .build/appcast.xml
           printf '\n---\n\nInstall it: `curl -fsSL %s/install.sh | sh -s -- --version %s`\n' "$url" "$version" |
             cat .build/notes.md - |

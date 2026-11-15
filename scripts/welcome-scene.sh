@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The welcome pictures' scene: Ovvi Dev on a herdr session full of plausible work, in a world of its own.
+# The welcome pictures' scene: Ovvi Debug on a herdr session full of plausible work, in a world of its own.
 #
 #   scripts/welcome-scene.sh up <world> <session> <dark|light> [WxH]  # 35-60 s; prints the app's pid and window id
 #   scripts/welcome-scene.sh click <world> <id> [n]  # a space (w2), a tab (w1:t3) or the n-th of an accessibility id
@@ -16,7 +16,7 @@
 # archived home, and bin/ with the repository's stand-ins as claude, codex and pi, which play scripted turns, and a
 # drawn OpenCode (welcome-scene/tui.py). Its home is /Users/Shared/welcome-scene/<world> (/tmp/<world>/home), for
 # herdr, the shells and the app: it holds the repositories (welcome-scene/scene.py) and the app shows it as ~ (prompts
-# `~/shortlink %`). Ovvi Dev comes from $OVVI_APP, else $DERIVED_DATA (default /tmp/ovvi-dd-<world>). Several worlds
+# `~/shortlink %`). Ovvi Debug comes from $OVVI_APP, else $DERIVED_DATA (default /tmp/ovvi-dd-<world>). Several worlds
 # run at once: each has its own herdr, home and dev server port.
 #
 # The scene (herdr ids, as `click` takes them):
@@ -67,7 +67,7 @@ listed() { env -u XDG_CONFIG_HOME "$HERDR" session list --json | grep -qF "\"nam
 up() {
     S=${1:?$usage} look=${2:?$usage} size=${3:-1440x900}
     [[ $S =~ ^[a-z][a-z0-9-]*$ && $look =~ ^(dark|light)$ && $size =~ ^[0-9]+x[0-9]+$ ]] || die "$usage"
-    R=$H APP=${OVVI_APP:-${DERIVED_DATA:-/tmp/ovvi-dd-$world}/Build/Products/Debug/Ovvi Dev.app}
+    R=$H APP=${OVVI_APP:-${DERIVED_DATA:-/tmp/ovvi-dd-$world}/Build/Products/Debug/Ovvi Debug.app}
     [ -d "$APP" ] || die "no $APP: build it (make build DERIVED_DATA=…) or set OVVI_APP"
     [ ! -e "$W" ] && [ ! -e "$H" ] || die "$W or $H exists: down it first"
     listed "$S" && die "the user's herdr has a session '$S'"
@@ -165,7 +165,7 @@ for port in random.sample(range(5173, 5300), 127):
         [ -n "$pid" ] && break
         sleep 0.2
     done
-    [ -n "$pid" ] || die "Ovvi Dev did not start"
+    [ -n "$pid" ] || die "Ovvi Debug did not start"
     printf 'pid=%q\n' "$pid" >>"$W/scene.env"
     wait "${builds[@]}"
     local wid=

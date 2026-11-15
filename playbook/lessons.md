@@ -48,10 +48,11 @@ Problems that came back, and the rule that stops each. How we work is in
   `.accessibilityLabel` from one string and read the label), hear an announcement, type through an input method
   (`typeText` skips marked text) or drive the Dock menu: check those by hand (`AXMenuItemMarkChar`, a screenshot).
   An ad-hoc build shows no Dock badge or banners: tests read the `app.badge` value.
-- **Debug builds are `Ovvi Dev.app`, `dev.ovvi.app.debug`, never the user's `Ovvi.app`, `dev.ovvi.app`.**
+- **Debug builds are `Ovvi Debug.app`, `dev.ovvi.app.debug`, never the user's `Ovvi.app` (`dev.ovvi.app`) or `Ovvi
+  Dev.app` (`dev.ovvi.app.dev`).**
   Anything keyed by the bundle id (defaults, saved windows, the URL scheme, notifications, Launch Services, an
   `XCUIApplication(bundleIdentifier:)`) once reached the user's own Ovvi; keep new keys on the bundle id. The
-  executable is `Ovvi` in both: never find the tests' app by its process name (`pgrep Ovvi`), find it by its
+  executable is `Ovvi` in each: never find the tests' app by its process name (`pgrep Ovvi`), find it by its
   session. An old Debug build on disk keeps its Launch Services registration (and `ovvi://`) until it is deleted
   or unregistered (`lsregister -u`). Tests still share defaults and saved windows with each other and with dev
   runs: pin settings with launch arguments, reset them in teardown, launch with `-ApplePersistenceIgnoreState`
@@ -67,8 +68,8 @@ Problems that came back, and the rule that stops each. How we work is in
   `-session` loaded the user's machines, and the new-window view tried their SSH.
 - **Every app with the installed bundle id shares its saved windows and defaults.** A Release build run by hand (a
   measure) quit with its throwaway session's window, and the user's next launch restored that window instead of
-  theirs. `make app` builds `dev.ovvi.app.release` (scheme `ovvi-release://`); only `make install` and `make zip`
-  build `dev.ovvi.app`. A measure still shares `~/.config/ovvi`: pass `-configFolder`.
+  theirs. `make app` builds `dev.ovvi.app.release` (scheme `ovvi-release://`); only `make zip` builds
+  `dev.ovvi.app` (`make install` builds Ovvi Dev, `dev.ovvi.app.dev`). A measure still shares `~/.config/ovvi`: pass `-configFolder`.
 - **Each test restores what it changes** (defaults, herdr focus, the pointer, leftover sessions) and reads
   fixture ids from herdr instead of assuming them; otherwise it passes alone and fails in its shard.
 - **Convert a screenshot to sRGB before you read its pixels.** Screenshots come in the display's profile

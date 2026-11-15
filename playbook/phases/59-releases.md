@@ -95,3 +95,24 @@ opencode and codex, i think .agents is supported by most expcet claude i guess w
 place in .agents and keep a symlink in .claude, and we should have a way to update during updates as well"
 
 ### Track D2 (one agent)
+
+- **Decisions.** The icon: the user picked the blueprint ("let's go with blueprint one"; Xcode beta's style: a blue
+  tile, a faint grid, the cards in white outline) from a second set of five, after "why this orange? can we try
+  something else? check how other apps do their dev or nightly build icons" on the first (sheets in
+  `~/Downloads/ovvi-research/p59d2/`). `scripts/dev-icon.swift` draws it on the 1024 px icon and scales it to each
+  size, as `scripts/app-icon.py` makes the app's own sizes.
+- **Decisions.** Ovvi Dev is `make install` alone: the badge step runs in its recipe, and its name, bundle id
+  (`dev.ovvi.app.dev`), scheme (`ovvi-dev`) and `OVVI_CONDITIONS=DEV` (Registry's folders) are `install`'s target
+  variables, as the release's are `zip`'s. No feed, so no Updates settings, Check for Updates or update errors.
+  `make app` stays `dev.ovvi.app.release` for the measures. Ovvi Dev shares what belongs to sessions
+  (`~/.local/state/ovvi`, `~/.cache/ovvi`), as Ovvi Tip did: the cards' state follows the panes, not the app.
+- **Decisions.** The Debug build was "Ovvi Dev": it is now **Ovvi Debug** (`Ovvi Debug.app`, `ovvi-debug://`,
+  `~/.config/ovvi-debug`, `~/Library/Logs/Ovvi Debug`; the bundle id stays `dev.ovvi.app.debug`), so each build's
+  name, scheme and folder match its bundle id's last word.
+- **Decisions.** `appcast.sh` lost its name argument (only Tip passed another). Ovvi Dev keeps the release's version
+  and build number: with no feed nothing compares them.
+- **For the user.** `~/Applications/Ovvi.app` (the old `make install`, `dev.ovvi.app`) is left alone: the `v0.1.0`
+  curl install finds it there and replaces it in place, keeping its settings (`~/.config/ovvi`, its defaults). After
+  this, `git pull && make install` gives `~/Applications/Ovvi Dev.app` beside it, with fresh settings in
+  `~/.config/ovvi-dev` (a Debug build's old `~/.config/ovvi-dev`, if any, becomes Ovvi Dev's). The `ovvi` skill
+  links stay as they were.
