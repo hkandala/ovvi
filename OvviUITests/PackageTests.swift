@@ -173,7 +173,7 @@ extension OvviUITests {
         app.sheets.buttons["Install"].click()
         let row = element("plugins.ovvi-e2e-npm-csv", in: settingsWindow)
         XCTAssertTrue(row.has(\.label, "CSV npm, 0.1.0, npm:\(tarball)", within: 30), row.label)
-        let page = { () -> (update: XCUIElement, current: XCUIElement) in
+        let page = { [self] () -> (update: XCUIElement, current: XCUIElement) in
             element("settings.page.general").click()
             element("settings.page.plugins").click()
             row.click()
