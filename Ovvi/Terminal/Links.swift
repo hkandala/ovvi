@@ -1,4 +1,3 @@
-import AppKit
 import GhosttyKit
 import GhosttyTerminal
 import HerdrKit

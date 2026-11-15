@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 /// A window macOS restores in full screen keeps AppKit's empty title bar over the title row (the toolbar's on-hover

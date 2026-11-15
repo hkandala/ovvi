@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 /// The registry owns the view and a host takes it (`adopt`), so that a page SwiftUI makes again never destroys the

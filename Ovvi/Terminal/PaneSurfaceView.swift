@@ -1,4 +1,3 @@
-import AppKit
 import Carbon.HIToolbox
 import GhosttyTerminal
 import HerdrKit

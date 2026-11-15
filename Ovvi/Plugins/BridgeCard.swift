@@ -1,4 +1,3 @@
-import AppKit
 import HerdrKit
 import SwiftUI
 import UniformTypeIdentifiers
