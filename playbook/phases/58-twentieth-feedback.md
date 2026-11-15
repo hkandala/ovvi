@@ -1617,3 +1617,41 @@ deleted (the repo keeps only `v*`); `v0.1.0` comes after round 5's final CI.
   (a terminal and a browser card, first and later open).
 - **For the user.** Press ⌃⌘O. The page should shrink into its tile while the other tiles fade in. Press Esc and it grows
   back. With Reduce Motion or Animations off, both should be instant.
+
+### Track Y2: Copy Address copies the id and names it; every notice is one line (items 64, 65, 66)
+
+- **Cause (64).** herdr reports pi's session as its file (`kind: "path"`, `…/<time>_<id>.jsonl`); Claude Code, Codex
+  and OpenCode report ids. Copy Address copied herdr's value as it came.
+- **Fix (64).** Copy Address takes the id out of pi's file name, `<time>_<id>.jsonl` (`AgentSession.id` in HerdrKit;
+  a pi `--session-id` of its own with `_` stays whole). A path of any other shape stays as it is: only the path resumes
+  it. The copy alone changes: Relaunch with Chat, the session's title and herdr's resume still get the file. The id is
+  what each agent resumes with: `claude --resume <id>`, `codex resume <id>`, `opencode --session <ses_…>`, and
+  `pi --session <path|id>` (a full or partial id; one stored for another folder, pi offers to fork). TUI and chat view
+  copy through the same `Page.address`, from herdr's report.
+- **Fix (65).** The notice says "Copied ‹kind›" with the menu item's own `kind` (Copy URL → Copied URL, Copied Path,
+  Copied Session ID, Copied Commit ID, Copied Title), never the value. This replaces Track Y's "Copied ‹address›".
+- **Fix (66).** The window notice is one line, as the toast already was: `lineLimit(1)` (a text of several lines shows
+  its first, ending in …), at most `Notice.width` 520 pt, the whole text on hover. Reconnecting's reason moves onto
+  the same line, smaller, and ends in … first. Pull and Push show one line of git's message that says why: a refused
+  ref's (`! [rejected] main -> main (fetch first)`), else its `error:` or `fatal:` line, else its last line but hints;
+  hover shows the whole message (`Notice.whole`). This replaces W4's two-line window notice. The "File not found"
+  notice the user saw on two lines is `HostStore.notFound` with a long path: now one line. 520 pt stays: in the VM the
+  longest notice is one line of about 60 characters, well inside a single card.
+- **Decisions.** Other multi-line errors (an ssh failure whose first line is a warning) show their first line; hover
+  has the rest. herdr takes `pane.report_agent_session` from a stand-in only for Claude Code's and Codex's ids: pi's
+  and OpenCode's reports (any path, any source, from inside the pane too) are dropped. So the UI test checks Claude
+  Code and Codex, and a HerdrKit test checks pi's file names; no test fails if `Page.address` stops calling
+  `AgentSession.id`.
+- **Tests.** testCopyAddressCopiesEachCardsAddress checks each card's notice words and a Codex pane's id beside
+  Claude Code's; testGoneFilesSayFileNotFound opens a 165-character name over two lines and checks one line of text
+  and the 520 pt cap; testWorkspaceRowsShowGitWorktreesAndSync checks the refused push's one line.
+- **Runs.** VM, new app: testCopyAddressCopiesEachCardsAddress, testGoneFilesSayFileNotFound,
+  testWorkspaceRowsShowGitWorktreesAndSync, testAnUnreachableMachineShowsConnectingThenReconnecting green. VM, old app
+  with the new tests: all three red (the notice said "Copied ‹the folder›"; the long notice's text 32 pt tall, two
+  lines; the push notice two lines with no refused-ref line first). testAReconnectingPageShowsItsStateOnce needs CI's
+  sshd: for the final round. HerdrKit's new id check passes in `make test`.
+- **Pictures.** `~/Downloads/ovvi-research/p58y2/`: before (the old app) and after, dark and light: a long File not
+  found notice, Copied URL, Copied Session ID.
+- **For the user.** ⇧⌘C on a pi pane, in its terminal and its chat view: the clipboard holds only the id, and
+  `pi --session <id>` resumes it; the notice says Copied Session ID. A long URL: Copied URL. A failed Push: one line
+  with the refused ref, the whole message on hover. A File not found for a deep path: one line ending in ….
