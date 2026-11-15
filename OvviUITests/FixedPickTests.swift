@@ -89,15 +89,18 @@ extension OvviUITests {
         app.menuBars.menuBarItems["View"].click()
         let submenu = app.menuBars.menuItems["Pane"]
         submenu.hover()
-        let alternate = submenu.menuItems["Split Right and Choose…"]
+        let alternate = submenu.menuItems["Split Down and Choose…"]
         XCTAssertTrue(alternate.exists(within: 2))
         let main = mainWindows.firstMatch
         XCUIElement.perform(withKeyModifiers: .option) {
             let shot = XCTAttachment(screenshot: main.screenshot())
             (shot.name, shot.lifetime) = ("split alternate", .keepAlways)
             add(shot)
-            alternate.click()
         }
+        // The alternate item by its key (macOS takes ⌥⌘D): XCUITest's pointer path into the submenu lost the submenu
+        // on CI once. One Esc closes every open menu.
+        app.typeKey(.escape, modifierFlags: [])
+        app.typeKey("d", modifierFlags: [.command, .option, .shift])
         let chooser = try await replaced(shell, in: tab, besides: [shell])
         XCTAssertTrue(element("pane.\(chooser).chooser.terminal").has(\.isSelected, true, within: 3))
         app.typeKey(.escape, modifierFlags: [])
