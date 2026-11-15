@@ -1704,3 +1704,21 @@ that are done, then we can do tag 0.1.0 and let me know next steps"
 
 Order: phases 59 round 2, 60 and 61 land; then a docs pass and a code pass at once; then the final CI round; then
 `v0.1.0`.
+
+### Docs pass
+
+- **Fix.** README.md is short: what Ovvi is, requirements, the curl install with `--version`, the `ovvi` skill
+  (`install.sh` asks; `npx skills add hkandala/ovvi -g`), Privacy, build from source (`make install` is Ovvi Dev),
+  docs and license. RELEASING.md links the install and dev builds instead of explaining them again. features.mdx has
+  Install and updates and every Settings page; future work no longer lists usage data, a `.dmg` or custom shortcuts;
+  architecture names `Updates` and `Telemetry`; ci.md names `plugins.yml` and every `make test` check.
+- **Cause.** Two decisions had the number D114. Usage data landed first and keeps it; the npm plugins are D115.
+  D106 said seven Settings pages (Shortcuts is the eighth). The manifest page still said an app update replaces the
+  default plugins, and the introduction said the app cannot install herdr.
+- **Runs.** Every relative link and anchor in the Markdown and MDX files resolves (a one-off script, not committed);
+  `cd docs && pnpm build` passes; every docs page answers 200 on ovvi.dev. The deploy of main was pending (its
+  10-minute wait), not broken.
+- **For the user.** The npm packages `@ovvi/explorer`, `@ovvi/git` and `@ovvi/plugin-api` are not on npm yet: do
+  RELEASING.md's Plugins ▸ Set up once before v0.1.0, or the Plugins page shows no updates and the defaults stay
+  local copies. platform.mdx says notifications need a real signing identity, and every build is ad hoc: check that
+  banners and the Dock badge show in the installed release.
