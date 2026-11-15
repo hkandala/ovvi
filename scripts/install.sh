@@ -125,7 +125,7 @@ main() {
 
 To uninstall Ovvi: quit it, then
   rm -rf "$dest/Ovvi.app" ~/.config/ovvi "\$HOME/Library/Logs/Ovvi"; defaults delete dev.ovvi.app
-  rm -f ~/.agents/skills/ovvi ~/.claude/skills/ovvi   # the skill's links
+  rm -f ~/.agents/skills/ovvi ~/.claude/skills/ovvi   # the skill's links, if they point into Ovvi.app
 herdr and its sessions stay; herdr's own docs say how to remove it.
 EOF
 }
