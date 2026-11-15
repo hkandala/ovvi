@@ -6,9 +6,11 @@ import SwiftUI
 @MainActor @Observable
 final class Updates: NSObject, SPUStandardUserDriverDelegate {
     static let shared = Updates()
-    /// Only builds with a feed check: the installed app and Ovvi Tip (`make install`, `make zip`), not Debug builds,
-    /// the UI tests or the measures' `make app`.
-    static let checks = !((Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") as? String) ?? "").isEmpty
+    /// Only builds with a feed check: the installed app and Ovvi Tip (`make install`, `make zip`), not Debug builds or
+    /// the measures' `make app`. Sparkle reads a feed in the defaults first, so a UI test that passes `-SUFeedURL` gets
+    /// the Updates settings.
+    static let checks = !(UserDefaults.standard.string(forKey: "SUFeedURL")
+        ?? Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") as? String ?? "").isEmpty
 
     /// Ovvi ▸ Check for Updates…, in the palette too.
     static var commands: [Command] {
@@ -19,17 +21,22 @@ final class Updates: NSObject, SPUStandardUserDriverDelegate {
 
     /// The version the notice offers; nil hides it.
     var available: String?
+    /// Sparkle's `canCheckForUpdates`: false before it starts and while a check runs (Settings' Check Now).
+    private(set) var canCheck = false
+    @ObservationIgnored private var canCheckObservation: NSKeyValueObservation?
     @ObservationIgnored private lazy var controller = SPUStandardUpdaterController(
         startingUpdater: false, updaterDelegate: nil, userDriverDelegate: self,
     )
 
     func start() {
-        if Self.checks {
-            controller.startUpdater()
+        guard Self.checks else { return }
+        controller.startUpdater()
+        canCheckObservation = controller.updater.observe(\.canCheckForUpdates, options: .initial) { _, _ in
+            MainActor.assumeIsolated { Updates.shared.canCheck = Updates.shared.controller.updater.canCheckForUpdates }
         }
     }
 
-    /// Check for Updates…, and the notice's Update…, which brings the update it found forward.
+    /// Check for Updates…, Settings' Check Now, and the notice's Update…, which brings the update it found forward.
     func check() {
         available = nil
         controller.checkForUpdates(nil)

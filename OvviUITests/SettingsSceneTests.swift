@@ -20,6 +20,7 @@ extension OvviUITests {
             + #""target":"ci@build-farm-us-east-1-primary-worker-07.example.internal","icon":"cpu"}]"#
         for appearance in ["dark", "light"] {
             relaunch(one, ["-configFolder", config, "-appearance", appearance, "-machines", machines,
+                           "-SUFeedURL", "file:///dev/null",
                            // Quoted: a bare value that starts with - is read as a flag.
                            "-agentArguments.claude", #""--model opus""#,
                            "-browserApprovals.local", #"("localhost:5173", "grafana.internal")"#,

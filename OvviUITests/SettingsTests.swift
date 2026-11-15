@@ -36,7 +36,8 @@ extension OvviUITests {
 
     func testSettingsPagesSearchAndLook() {
         // Light only: testSettingsScenes (on demand) shows the pages in both looks.
-        relaunch(one, ["-appearance", "light"])
+        // A feed shows Settings ▸ General ▸ Updates; a check of it finds nothing.
+        relaunch(one, ["-appearance", "light", "-SUFeedURL", "file:///dev/null"])
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         let controls = ["general": "settings.general.open-at-login", "appearance": "settings.style.glass",
                         "terminal": "settings.terminal.font", "agents": "settings.agents.view",
@@ -50,6 +51,8 @@ extension OvviUITests {
         openSettings("general")
         turn("settings.general.open-at-login", true)
         turn("settings.general.open-at-login", false)
+        let checkNow = element("settings.general.check-now", in: settingsWindow)
+        XCTAssertTrue(checkNow.has(\.isEnabled, true, within: 3), "Check Now missing or disabled")
         let search = settingsWindow.searchFields.firstMatch
         search.click()
         search.typeText("blink")

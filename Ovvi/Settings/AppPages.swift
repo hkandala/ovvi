@@ -44,9 +44,13 @@ struct GeneralPage: View {
                     @Bindable var updates = Updates.shared
                     Toggle(isOn: $updates.automatic) {
                         Text("Check for updates automatically")
-                        Text("Once a day. Ovvi asks before it installs one.")
+                        Text("Ovvi asks before it installs one.")
                     }
                     .identifiedSettingsRow("general.updates")
+                    LabeledContent("Check for updates now") {
+                        Button("Check Now") { updates.check() }.disabled(!updates.canCheck)
+                            .accessibilityIdentifier("settings.general.check-now")
+                    }
                 }
             }
             Section("Help") {
