@@ -10,6 +10,7 @@ extension WindowPages {
             closeOverview()
         } else {
             overview = true
+            Telemetry.used(.overview)
             terminals.takePictures(of: current?.shownTerminals.keys.map(\.self) ?? [])
             showTerminals()
         }

@@ -25,6 +25,7 @@ extension HostStore {
         }
         do {
             try await exec.answer(request: id, code: answer.code, out: answer.out, err: answer.err)
+            Telemetry.used(.cli)
         } catch {
             Self.log.error("answer to \(id) failed: \(error.localizedDescription)")
         }

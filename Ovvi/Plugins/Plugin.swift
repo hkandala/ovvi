@@ -98,6 +98,7 @@ final class Plugin {
         self.paneID = paneID
         self.label = label
         self.manifest = manifest
+        Telemetry.used(Usage.Feature(plugin: manifest.id))
         web = WebCard(plugin: manifest.id, arg: label.arg, place: place, store: store)
         header = Header(manifest: manifest)
         name()

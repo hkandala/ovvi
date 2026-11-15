@@ -21,6 +21,7 @@ struct ChatView: View {
             .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
             .focusEffectDisabled()
         }
+        .onAppear { Telemetry.used(.chatView) }
     }
 
     private var content: some View {

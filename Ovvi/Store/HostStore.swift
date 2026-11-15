@@ -186,6 +186,7 @@ final class HostStore {
                 let start = Latency.threadTime
                 balanceOthers(last, snapshot)
                 let changes = apply(snapshot)
+                Telemetry.saw(snapshot, remote: machine.isRemote)
                 state = .live
                 startProblem = nil
                 starting = false

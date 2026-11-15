@@ -22,6 +22,8 @@ struct AppSettings: DynamicProperty {
     @AppStorage("agentView") var agentView = AgentView.terminal
     @AppStorage("showArchivedSessions") var showArchived = true
     @AppStorage("spaceOrder") var spaceOrder = SpaceOrder.manual
+    /// Read by `Usage`.
+    @AppStorage("usageData") var usageData = true
 
     var terminal: [String] {
         [terminalFont, "\(fontSize)", cursorStyle.rawValue, "\(cursorBlink)", optionKey.rawValue, "\(copyOnSelect)"]

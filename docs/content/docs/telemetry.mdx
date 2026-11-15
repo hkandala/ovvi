@@ -1,0 +1,78 @@
+---
+title: "Usage data"
+description: "The anonymous usage counts the released app sends, every field, and how to turn them off"
+---
+
+The released Ovvi sends one small report for each day you use it: which version runs, on which macOS, and which
+features you used that day, each as yes or no (D114). It holds no names, paths, hosts, addresses, commands, text or
+error messages. The counts show how many people use Ovvi and which features matter, so the work goes where it helps.
+
+## When it sends
+
+- **One event a day of use**, `app_day`. A day counts when Ovvi runs on it. Ovvi keeps the day's yes or no flags in
+  its app storage and sends a day only after it has ended: at the next launch, or at the hourly check while Ovvi
+  runs. So each day goes once, with all its flags.
+- **One request** to PostHog Cloud EU, `https://eu.i.posthog.com/batch/`, over HTTPS, with a 10 s limit. It goes
+  from an ephemeral session: no cookies, no cache. A failed send keeps its days for the next launch or hour; a day
+  older than 7 days goes unsent.
+- **Only the released app sends** (the build of a release, `make zip`). Ovvi Dev, Debug builds, other Release builds,
+  the UI tests and any run with `-session` never send.
+
+## Every field
+
+Each event is the same set of fields. A feature counts once Ovvi used it that day.
+
+| Field | Value |
+|---|---|
+| `event` | `app_day` |
+| `distinct_id` | the install id: a random UUID, made at the first send and kept only in Ovvi's app storage |
+| `timestamp` | the day's date at 12:00 UTC: the date alone, no time of day or time zone |
+| `$process_person_profile` | `false`: PostHog keeps no person profile |
+| `$geoip_disable` | `true`: PostHog looks up no location |
+| `version` | Ovvi's version, as `0.2.0` |
+| `build` | Ovvi's build number |
+| `os` | macOS's major and minor version, as `26.1` |
+| `arch` | `arm64` or `x86_64` |
+| `remote_machines` | a session of a remote machine was open |
+| `browser_card` | a browser card showed |
+| `file_explorer` | a File Explorer card showed |
+| `git` | a Git card showed |
+| `plugin_card` | another plugin's card showed |
+| `chat_view` | an agent's chat view showed |
+| `palette` | the command palette opened |
+| `overview` | the overview opened |
+| `floating_window` | a pane floated in a window of its own |
+| `cli` | Ovvi answered an `ovvi` command |
+| `file_drop` | files were dropped on a pane |
+| `agent_claude` | herdr reported a Claude Code agent |
+| `agent_codex` | herdr reported a Codex agent |
+| `agent_opencode` | herdr reported an OpenCode agent |
+| `agent_pi` | herdr reported a Pi agent |
+| `agent_other` | herdr reported another agent |
+
+The request also carries the project's key (`api_key`), which can only write events.
+
+## What it never sends
+
+Your name, account, email, Mac's name, user name, IP address (PostHog's project discards it, and no field holds it),
+location, time zone, locale, screen size, hosts, sessions, paths, file names, URLs, commands, text you type,
+agents' work, error messages and crash reports.
+
+## Turn it off
+
+- **Settings ▸ General ▸ Share anonymous usage data**, on by default. Off deletes the install id and the days not
+  sent yet at once. On again makes a new id.
+- **`DO_NOT_TRACK=1`** (or `true`), or **`OVVI_TELEMETRY=0`**, in Ovvi's environment or in your login shell's
+  (`~/.zprofile`, `~/.zshrc`): Ovvi sends nothing and deletes the id and the days at each launch.
+
+## See what it sent
+
+Help ▸ Usage Data Log opens `~/Library/Logs/Ovvi/usage.log`: the last 7 events sent, one JSON line each, with your
+install id. The menu item is there once a send wrote the file.
+
+## Where it goes
+
+PostHog Cloud EU stores the events in the EU. The project discards client IP addresses and keeps no person
+profiles. To have your events deleted, open an issue at
+[github.com/hkandala/ovvi](https://github.com/hkandala/ovvi/issues) with the `distinct_id` from the log; turn the
+switch off first, so that no new events come.

@@ -66,6 +66,11 @@ Install herdr and open Ovvi. In its first window, pick a session of This Mac or 
 sessions with Open Session (⌥⌘T), add a remote machine from the machine button, and press ⌘/ for the
 keyboard shortcuts ([all of them](https://ovvi.dev/docs/ui/theme-and-accessibility#keyboard-shortcuts)).
 
+## Privacy
+
+The released app sends anonymous usage counts once a day; Settings ▸ General turns them off
+([Usage data](https://ovvi.dev/docs/telemetry)).
+
 ## Future work
 
 herdr inside the app, a notarized download, an iPhone and iPad app, image paste, floating status pills, a changes

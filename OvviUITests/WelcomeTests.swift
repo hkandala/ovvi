@@ -53,6 +53,7 @@ extension OvviUITests {
             XCTAssertFalse(element("welcome.herdr.install").exists, "a herdr step with herdr installed")
         }
         XCTAssertEqual(welcomeNext.label, "Get Started")
+        XCTAssertTrue(element("welcome.usage").exists, "no usage data line on the last page")
         welcomeNext.click()
         XCTAssertTrue(welcomeNext.vanishes(within: 3))
         XCTAssertTrue(element("titlebar.machine").exists(within: connect), "no window after Get Started")

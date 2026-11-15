@@ -25,6 +25,7 @@ struct FloatingWindow: View {
             }
         }
         .frame(minHeight: 200)
+        .onAppear { Telemetry.used(.floatingWindow) }
         .windowChrome(look)
         .environment(\.look, look)
         .navigationTitle(pane.map { pane in

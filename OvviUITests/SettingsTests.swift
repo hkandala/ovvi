@@ -49,6 +49,7 @@ extension OvviUITests {
         }
         // A run with a test config folder never registers the build for login.
         openSettings("general")
+        XCTAssertTrue(element("settings.general.usage", in: settingsWindow).has(\.isEnabled, true, within: 2))
         turn("settings.general.open-at-login", true)
         turn("settings.general.open-at-login", false)
         let checkNow = element("settings.general.check-now", in: settingsWindow)

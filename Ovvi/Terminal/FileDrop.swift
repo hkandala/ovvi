@@ -45,6 +45,7 @@ extension PaneSurfaceView {
     }
 
     private func drop(_ urls: [URL]) -> Bool {
+        Telemetry.used(.fileDrop)
         guard let store = store(), store.machine.isRemote else {
             return paste(text: urls.map { Self.escaped(Self.reachable($0).path(percentEncoded: false)) }
                 .joined(separator: " "))

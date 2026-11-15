@@ -53,7 +53,7 @@ builds share. It never touches herdr's sessions or the agents' files.
 | A machine's sessions | herdr | `herdr session list --json`, run on the machine |
 | The sessions each machine listed last, for the [new-window view](/docs/ui/window#new-window) | app, per device | memory, and `~/Library/Caches/<bundle id>/sessions.json` by SSH target (This Mac by its id); memory only with `-session`, `-defaultSession` or `-machines`. Removing a machine drops its entry |
 | Remote machines: name, SSH target, icon, id | app, disk | `UserDefaults`, JSON under `machines` |
-| Settings: appearance, interface style, text size, Animations (`animations`), Focus Follows Mouse, Balance splits automatically (`balanceSplits`), what a new pane opens (`newPaneOpens`), the notification switches, the terminal's font, cursor, Option key and copy on select, the first view of new agents and each agent's extra arguments (`agentArguments.<command>`), whether the sidebar shows Archived Sessions (`showArchivedSessions`), the Sort Spaces a session starts with (`spaceOrder`) ([Settings](/docs/ui/settings)) and whether the welcome is done (`welcomeDone`, [Welcome](/docs/ui/welcome)); a floating pane's window frame, per pane | app, disk | app storage (`UserDefaults`) |
+| Settings: appearance, interface style, text size, Animations (`animations`), Focus Follows Mouse, Balance splits automatically (`balanceSplits`), what a new pane opens (`newPaneOpens`), the notification switches, the terminal's font, cursor, Option key and copy on select, sharing anonymous usage data (`usageData`), the first view of new agents and each agent's extra arguments (`agentArguments.<command>`), whether the sidebar shows Archived Sessions (`showArchivedSessions`), the Sort Spaces a session starts with (`spaceOrder`) ([Settings](/docs/ui/settings)) and whether the welcome is done (`welcomeDone`, [Welcome](/docs/ui/welcome)); a floating pane's window frame, per pane | app, disk | app storage (`UserDefaults`) |
 | Per window: the machine's id (`machine`), the names of its open pages (`pages`), the page in view (`page`), each page's selected space and tabs and its floating panes with their Stay on Top (`selection`, one JSON string), whether it shows the new-window list (`picking`), sidebar shown or hidden (`sidebar`) and sidebar width (`sidebarWidth`) | app, disk | `@SceneStorage`, one set per window |
 | Per page of a window: the selected space, the tab per space, the keyboard card per tab, the zoomed card. Per open session: its `HostStore`, made on first use. Per session: which window controls it ([Control between windows](/docs/talking-to-herdr#control-between-windows)). | app, per device | memory |
 | Seen values, program icons, git state of each space, a divider's ratio while it is dragged | app, per device | memory |
@@ -76,11 +76,15 @@ builds share. It never touches herdr's sessions or the agents' files.
 | An agent's transcript, session record and server | the agent | its own files and server on the pane's machine; Archived Sessions reads them ([Archived Sessions](/docs/ui/window#archived-sessions)) |
 | An agent session's title | the agent; the app keeps the last one read per pane in memory | the agent's own files on the pane's machine ([Session titles](/docs/ui/chat-view#session-titles)) |
 | ControlMaster sockets | app | `~/Library/Caches/ovvi/`, while running |
+| Usage data: the install id (`usageID`) and the days not sent yet with their features (`usageDays`), deleted when the switch goes off ([Usage data](/docs/telemetry)) | app, disk, This Mac | app storage (`UserDefaults`) |
+| The last 7 usage events sent | app, disk, This Mac | `~/Library/Logs/Ovvi/usage.log` ([Usage data](/docs/telemetry#see-what-it-sent)) |
 | Update checks: on or off (`SUEnableAutomaticChecks`), the last check (`SULastCheckTime`), a skipped version (`SUSkippedVersion`) | Sparkle, This Mac | app storage (`UserDefaults`); a download waits in `~/Library/Caches/<bundle id>/org.sparkle-project.Sparkle/` |
 
 The installed app and Ovvi Tip send one request a day of their own: an HTTPS
 GET of the app's update feed on github.com ([Updates](/docs/platform#install)), with the app's version
-in the User-Agent and no system profile.
+in the User-Agent and no system profile. The released app also sends its
+anonymous usage counts, at most one request an hour
+([Usage data](/docs/telemetry)).
 
 <Callout title="Nothing the app saves describes herdr's state">
 The only exception is each window's restore state: the names of its pages.

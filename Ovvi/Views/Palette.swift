@@ -42,7 +42,10 @@ struct Palette: View {
             command?.menu.first { lit == Self.choiceID($0) }?.action()
         }
         // The first body's: later ones read no tab or pane.
-        .onAppear { self.made = made }
+        .onAppear {
+            self.made = made
+            Telemetry.used(.palette)
+        }
         .onDisappear { putBack() }
     }
 

@@ -136,12 +136,14 @@ URL_SCHEME ?= ovvi-release
 install zip: BUNDLE_ID = dev.ovvi.app
 install zip: URL_SCHEME = ovvi
 install zip: FEED = https://github.com/hkandala/ovvi/releases/latest/download/appcast.xml
+# The released app's PostHog project key (docs/content/docs/telemetry.mdx): write only, public in every app by design.
+zip: POSTHOG_KEY = phc_ps745xJ4TP7eVs38Ugh8sUyG4ZWYBmnboY9YX4ZQTvxG
 ZIP = Ovvi-$(VERSION).zip
 endif
 APP := $(DERIVED_DATA)/Build/Products/Release/$(NAME).app
 app: web
 	$(XCODEBUILD) $(MAC) -configuration Release PRODUCT_BUNDLE_IDENTIFIER=$(BUNDLE_ID) OVVI_URL_SCHEME=$(URL_SCHEME) \
-		MARKETING_VERSION=$(VERSION) CURRENT_PROJECT_VERSION=$(BUILD) OVVI_FEED_URL=$(FEED) $(TIP_SETTINGS) build $(NOWARN) $(BEAUTIFY)
+		MARKETING_VERSION=$(VERSION) CURRENT_PROJECT_VERSION=$(BUILD) OVVI_FEED_URL=$(FEED) OVVI_POSTHOG_KEY=$(POSTHOG_KEY) $(TIP_SETTINGS) build $(NOWARN) $(BEAUTIFY)
 	$(if $(TIP),swift scripts/tip-icon.swift Ovvi/Assets.xcassets/AppIcon.appiconset "$(APP)")
 	@echo "$(APP)"
 

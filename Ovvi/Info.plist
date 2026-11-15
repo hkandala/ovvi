@@ -35,6 +35,8 @@
 			</array>
 		</dict>
 	</array>
+	<key>OvviPostHogKey</key>
+	<string>$(OVVI_POSTHOG_KEY)</string>
 	<key>SUFeedURL</key>
 	<string>$(OVVI_FEED_URL)</string>
 	<key>SUPublicEDKey</key>

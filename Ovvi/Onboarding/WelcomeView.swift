@@ -164,6 +164,9 @@ struct WelcomeView: View {
             if !last || blocked {
                 Button("Skip", action: finish).buttonStyle(.plain).foregroundStyle(.primary.opacity(0.75))
                     .keyboardShortcut(.cancelAction).accessibilityIdentifier("welcome.skip")
+            } else {
+                Text("Ovvi sends anonymous usage counts. Turn it off in Settings.").font(.system(size: 12))
+                    .foregroundStyle(.secondary).accessibilityIdentifier("welcome.usage")
             }
             Spacer()
             if page > 0 {

@@ -29,6 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             .map(ObjectIdentifier.init))
         PluginBuilds.writeTypes()
         Updates.shared.start()
+        Telemetry.start()
         Task { await DefaultPlugins.shared.install() }
         // After restored windows made their cards and started their processes.
         Task {

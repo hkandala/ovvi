@@ -56,6 +56,7 @@ final class Browser: NSObject {
         // A claim held across a read is lost when the replaced pane's view leaves.
         reading = !label.arg.isEmpty
         self.store = store
+        Telemetry.used(.browserCard)
         let machine = store.machine
         remoteAlias = machine.isRemote ? Self.alias(machine.name) : nil
         let viaMac = machine.isRemote && Self.isViaMac(label, store)

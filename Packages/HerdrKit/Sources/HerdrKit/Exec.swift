@@ -88,7 +88,7 @@ public struct Channel: Sendable {
 }
 
 public final class ProcessExec: Exec {
-    let environment: [String: String]
+    public let environment: [String: String]
     private let lookup: Mutex<Lookup>
     /// herdr's socket path by session (`socket`).
     private let sockets = Mutex<[String: String]>([:])
@@ -108,7 +108,10 @@ public final class ProcessExec: Exec {
         Self.prepare()
         var env = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("HERDR_") }
         let found = await Self.loginShell(env)
-        env.merge((found?.vars ?? [:]).filter { Self.isUserKey($0.key) }) { $1 }
+        // The usage data's opt-outs too (Usage.optedOut).
+        env.merge((found?.vars ?? [:]).filter {
+            Self.isUserKey($0.key) || ["DO_NOT_TRACK", "OVVI_TELEMETRY"].contains($0.key)
+        }) { $1 }
         self.init(env, herdr: found?.herdr, asked: .now, late: found == nil)
     }
 
