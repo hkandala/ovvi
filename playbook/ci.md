@@ -54,6 +54,7 @@ How CI runs, how to run part of it, and how to keep it green and fast.
 | On-demand tests | `gh workflow run ci.yml --ref main -f on_demand=true` | 4 |
 | Same locally, to explore | `make vm-e2e ONLY=…` (in the Tart VM; busy: use CI); `make e2e ONLY=…` only under the GUI lock | the VM; this Mac |
 
+- **Tags:** a run on a pinned head uses a tag, deleted when its round ends. The repo keeps only release tags (`v*`).
 - **Find your run:** `gh run list --workflow ci.yml --limit 5 --json databaseId,headSha,event,createdAt`,
   the one on your commit (or created after your dispatch).
 - **Watch it** in a background command, not a polling loop: `gh run watch <id> >/dev/null; gh run view <id>
