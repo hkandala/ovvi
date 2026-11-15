@@ -37,9 +37,9 @@ custom_rules:
     regex: '^(?![^\n]*(\breduced\b|\.motion\())[^\n]*(\.(easeIn|easeOut|easeInOut|linear|spring|smooth|snappy|bouncy|timingCurve|interpolatingSpring|interactiveSpring)\(|withAnimation( \{|\(\))|\b(withAnimation|animation)\((Animation)?\.(easeIn|easeOut|easeInOut|linear|spring|smooth|snappy|bouncy|default)\b|(animation( =|:)|: Animation\??\s*=)\s*\.(easeIn|easeOut|easeInOut|linear|spring|smooth|snappy|bouncy)\b|\.(keyframe|phase)Animator\(|\b(Keyframe|Phase)Animator\(|\.symbolEffect\()'
     message: 'Wrap the animation in .motion(…), or gate it on Animation.reduced, on its line (Views/Motion.swift)'
     severity: error
-  core_animation: # these files gate their layer motion on Animation.reduced (CardMotion through TabPage's move, Overview's zoom through leaveOverview)
+  core_animation: # these files gate their layer motion on Animation.reduced (CardMotion through TabPage's move)
     included: '/Ovvi/'
-    excluded: 'Ovvi/(Views/CardMotion|Views/Overview|Terminal/TerminalDrawing|Terminal/TerminalCard)\.swift$'
+    excluded: 'Ovvi/(Views/CardMotion|Terminal/TerminalDrawing|Terminal/TerminalCard)\.swift$'
     regex: 'CA(Basic|Keyframe|Spring)Animation\(|CAAnimationGroup\(|CATransition\(|NSAnimationContext\.(runAnimationGroup|beginGrouping)|allowsImplicitAnimation|setAnimationDuration|\.animator\(\)'
     message: 'Gate layer motion on Animation.reduced and add its file to core_animation in .swiftlint.yml'
     severity: error

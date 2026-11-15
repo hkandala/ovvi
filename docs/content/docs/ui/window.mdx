@@ -189,7 +189,7 @@ One capsule per herdr tab of the selected space (D42).
 - **Selection.** One marker sits on the selected tab. It is 30 pt tall and
   fully round, 2 pt inside the track, as in Rex. Every switch (a click, +,
   ⌘T, ⌘1…⌘9, ⇧⌘[ and ⇧⌘], ⌃⇥, the palette, a close, an open from a card, the
-  overview after its zoom) shows the tab's page at once, and the marker jumps with it: no
+  overview after its fade) shows the tab's page at once, and the marker jumps with it: no
   slide, no fade. A new tab or a closed tab changes the bar at once too: no
   pill grows, shrinks or glides. A sideways swipe never changes the tab
   ([Swiping](/docs/ui/swiping)). Glass draws the marker as a Liquid Glass
@@ -1023,19 +1023,14 @@ agents at once.
   of each space has the keyboard card's look. On hover the title row
   shows × at its end (Close Tab, as the tab bar's ×: it asks only when a
   program runs).
+- **Opening and leaving.** The overview fades in over 0.2 s (ease out) while
+  the page, the sidebar and the title row fade out. Leaving is the same fade
+  the other way. Nothing else moves. Under Reduce Motion, or with Animations
+  off, both are at once. The page, the sidebar and the title row stay laid out
+  under the overview, hidden, so they come at once in a big session too.
 - **Click.** A click on a tile selects its space and tab and leaves the
-  overview: the tile's miniature grows to the tab's page over 0.18 s (ease
-  out), smoothly even while the app is busy (as the cards move), while the
-  other tiles fade out, and the sidebar and the title row fade
-  in over 0.12 s; then the page shows. The sidebar and the title row stay
-  laid out under the overview, hidden, so they come at once in a big session
-  too. Esc, the title row's × and ⌃⌘O leave the same way, on the selected
-  tab. The overview leaves at once under Reduce Motion, or when the selected
-  tab's tile is scrolled out of view. Opening mirrors it: the page shrinks
-  into its tile over 0.18 s while the other tiles fade in and the sidebar and
-  the title row fade out (only the tiles fade in when the tile is out of
-  view), at once under Reduce Motion. A notification or
-  Dock click leaves it at once and shows its pane. Other keys
+  overview. Esc, the title row's × and ⌃⌘O leave on the selected tab. A
+  notification or Dock click leaves it and shows its pane. Other keys
   and the palette act as usual and the overview stays: ⌘T adds a tile, a tab
   key moves the selected tile.
 - **Keyboard.** While the overview is open no terminal has the keyboard (a

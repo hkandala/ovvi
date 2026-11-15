@@ -4,13 +4,10 @@ import SwiftUI
 
 extension WindowPages {
     static let tile: CGFloat = 0.35
-    static let zoom = 0.18
-    /// e2e (`-recordMotion YES`): the zooms started.
-    static var zooms = 0
 
     func toggleOverview() {
         if overview {
-            leaveOverview()
+            closeOverview()
         } else {
             overview = true
             terminals.takePictures(of: current?.shownTerminals.keys.map(\.self) ?? [])
@@ -18,20 +15,9 @@ extension WindowPages {
         }
     }
 
-    func leaveOverview() {
-        // A second leave skips the zoom.
-        if Animation.reduced || current == nil || leaving {
-            closeOverview()
-        } else {
-            leaving = true
-        }
-    }
-
     func closeOverview() {
         guard overview else { return }
         overview = false
-        leaving = false
-        tileFrames = [:]
         overviewTabs = [:]
         overviewScrolling = false
         overviewSettling?.cancel()
@@ -84,7 +70,7 @@ extension WindowPages {
     /// 150 ms after the last change: each live tile is a new surface and stream on the main thread, so none turns live
     /// while tiles keep coming (a scroll).
     func settleOverview() {
-        guard overview, !leaving else { return }
+        guard overview else { return }
         overviewSettling?.cancel()
         // Not while the grid scrolls: its end settles (a surface made or freed mid-scroll drops frames).
         guard !overviewScrolling else { return }

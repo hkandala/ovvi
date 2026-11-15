@@ -80,25 +80,18 @@ extension OvviUITests {
         XCTAssertTrue(tabs.allSatisfy { record.contains("loader \($0)") }, record)
     }
 
-    /// The page shrinks into its tile as the overview opens, and the tile zooms to the page as it closes, in Core
-    /// Animation.
+    /// The overview fades in and out; a tile's click shows its tab's terminal, never a loading card after the fade.
     func testOverviewTileIntoAnUnshownTabShowsItSteadily() async throws {
         relaunch(one, ["-recordMotion", "YES", "-forceMotion", "YES"])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("unshown", in: "w1")
         try await send("seq 1 40\r", to: pane)
-        let shrinks = { Int(self.element("overview.shrink").stringValue) ?? 0 }
         for round in ["unshown", "shown"] {
-            let shrunk = shrinks()
             app.typeKey("o", modifierFlags: [.command, .control])
             let overview = element("overview"), tile = element("overview.tab.\(tab)")
             XCTAssertTrue(tile.has(\.isHittable, true, within: 3))
-            XCTAssertTrue(until(3) { shrinks() == shrunk + 1 }, "\(round): the page shrinks into its tile")
-            let zooms = Int(element("overview.zoom").stringValue) ?? 0
             tile.click()
             XCTAssertTrue(overview.vanishes(within: 2))
-            // Its frames are the render server's: this test's own queries hold the main thread for a moment.
-            XCTAssertEqual((Int(element("overview.zoom").stringValue) ?? 0) - zooms, 1, "\(round): the zoom")
             let card = element("pane.\(pane)")
             var values: [String] = []
             let end = Date.now + 1.5

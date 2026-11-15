@@ -283,20 +283,16 @@ private struct WindowContent: View {
                 }
                 // Kept under the overview, hidden, so its kept pages stay.
                 Detail(pages: pages, page: page).frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .opacity(pages.overview ? 0 : 1)
-                    .animation(nil, value: pages.overview)
+                    .animation(.fade) { $0.opacity(pages.overview ? 0 : 1) }
                     .allowsHitTesting(!pages.overview)
                     // Not `accessibilityHidden(false)`, which overrides the hidden ones inside.
                     .accessibilityElement(children: pages.overview ? .ignore : .contain)
             }
-            .testValue("overview.zoom", "Overview Zoom", "\(WindowPages.zooms)",
-                       shown: SettlingHost.record)
-            .testValue("overview.shrink", "Overview Shrink", "\(pages.shrinks)", shown: SettlingHost.record)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .overlay {
                 if pages.overview {
                     Overview(pages: pages, leading: sidebar ? sidebarWidth - gap : 0)
-                        .transition(.identity)
+                        .transition(.opacity.animation(.fade))
                 }
             }
         }

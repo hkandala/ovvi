@@ -1,8 +1,9 @@
 import XCTest
 
 extension OvviUITests {
-    /// Settings ▸ Appearance ▸ Animations, on by default. Off, a split and its close slide no card, the overview's page
-    /// and tile zoom in no frame and a reorder moves the spaces in no motion; it stays off after a relaunch.
+    /// Settings ▸ Appearance ▸ Animations, on by default. Off, a split and its close slide no card and a reorder moves
+    /// the
+    /// spaces in no motion; it stays off after a relaunch.
     func testAnimationsOffMakesTheMotionsInstant() async throws {
         // The switch's key unpinned: a pinned key would hide its write. Move Down and ⌘D need these two.
         let args = ["-recordMotion", "YES", "-forceMotion", "YES", "-spaceOrder", "manual", "-newPaneOpens", ""]
@@ -46,10 +47,9 @@ extension OvviUITests {
         try await motions(tab, pane, moving: false)
     }
 
-    /// A split and its close, the overview's shrink into a tile and its zoom out, and a reorder of the spaces and back:
-    /// each moves, or each lands at once.
+    /// A split and its close, and a reorder of the spaces and back: each moves, or each lands at once.
     private func motions(_ tab: String, _ pane: String, moving: Bool) async throws {
-        let card = element("motion.\(pane)"), zoom = element("overview.zoom"), moves = element("sidebar.moves")
+        let card = element("motion.\(pane)"), moves = element("sidebar.moves")
         XCTAssertTrue(card.exists(within: 3))
         func moved(_ what: String, _ count: () -> Int, from start: Int) {
             if moving {
@@ -69,16 +69,6 @@ extension OvviUITests {
         try await expect("the close") { try await order(tab) == [pane] }
         XCTAssertTrue(element("pane.\(new)").vanishes(within: 3))
         moved("the split and its close", slides, from: slid)
-
-        let zooms = { Int(zoom.stringValue) ?? 0 }, zoomed = zooms()
-        let shrinks = { Int(self.element("overview.shrink").stringValue) ?? 0 }, shrunk = shrinks()
-        app.typeKey("o", modifierFlags: [.command, .control])
-        let tile = element("overview.tab.\(tab)")
-        XCTAssertTrue(tile.has(\.isHittable, true, within: 3))
-        moved("the overview's shrink", shrinks, from: shrunk)
-        tile.click()
-        XCTAssertTrue(element("overview").vanishes(within: 2))
-        moved("the overview's zoom", zooms, from: zoomed)
 
         // The order's changes with a motion, and without.
         let counts = { moves.stringValue.split(separator: " ").compactMap { Int($0) } }, before = counts()
