@@ -53,10 +53,10 @@ struct OverviewPage: View, Equatable {
                 pages.settleOverview()
             }
         }
-        // Another session shows: its tiles report no leaving, and would stay live out of view; a scroll that goes with
-        // it never ends.
         // Recent's order holds still while the overview shows, as under the sidebar's pointer.
         .onAppear { page.holdSort() }
+        // Another session shows: its tiles report no leaving, and would stay live out of view; a scroll that goes with
+        // it never ends.
         .onDisappear {
             // An overview opened again during this one's fade-out shows the same page.
             guard !(pages.overview && pages.current === page) else { return }

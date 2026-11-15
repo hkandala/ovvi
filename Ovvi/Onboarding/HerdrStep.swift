@@ -13,7 +13,6 @@ struct HerdrStep: View {
         // The page's title and line say why (WelcomeView); this is the picture's place: herdr's logo and its install.
         VStack(spacing: 20) {
             if found {
-                // All set: a green check on the logo's tile.
                 tile(Image(systemName: "checkmark").font(.system(size: 34, weight: .semibold))
                     .foregroundStyle(look.finished))
                     .accessibilityHidden(true).transition(.scale(scale: 0.9).combined(with: .opacity))

@@ -310,7 +310,7 @@ private struct PaneItems: View {
     }
 }
 
-/// Move Pane to Tab ▸ flattened to New Tab and New Workspace: any accessibility client makes SwiftUI build them with
+/// Move Pane to Tab ▸ flattened to New Tab and New Space: any accessibility client makes SwiftUI build them with
 /// the card, and one per tab makes a switch to a big session 3 times slower.
 private struct PaneActions: View {
     let page: Page

@@ -103,8 +103,7 @@ struct ContentView: View {
                 WindowStart(pages: pages)
             }
         }
-        .animation(Animation.reduced ? nil : .easeOut(duration: 0.2),
-                   value: pages.current == nil && !picking)
+        .animation(.fade, value: pages.current == nil && !picking)
         .onChange(of: pages.current == nil && !picking) { WindowStart.started = true }
         .task {
             let opening = WindowPages.opening

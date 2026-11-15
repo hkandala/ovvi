@@ -5,7 +5,7 @@ enum SpaceOrder: String {
     case manual, recent
 }
 
-/// Once the menu has closed: its fade draws no animation frame, so a move started from it showed half done, then a
+/// Once the menu has closed: its fade draws no animation frame, so a move started from it would show half done, then
 /// jump.
 @MainActor func afterMenu(_ action: @escaping @MainActor () -> Void) {
     RunLoop.main.perform(inModes: [.default]) {

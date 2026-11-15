@@ -120,7 +120,7 @@ struct SidebarPage: View {
                         Task { animated ? (moves.animated += 1) : (moves.still += 1) }
                     }
                 }
-                .animation(motion, value: order)
+                .animation(.fade, value: order)
                 .padding(Sidebar.rowInsets)
                 .padding(.bottom, bottom)
                 // The content's own space, which a scroll does not move: no frame changes at every scroll frame.
@@ -207,7 +207,7 @@ private extension SidebarPage {
     /// At the drag image in the drop's update, outside the rows' motion; then to its place in that motion, so with the
     /// rows' own move it goes from the image to its new place on one curve.
     func land(_ ids: [String], _ offset: CGFloat) {
-        guard let motion else { return }
+        guard let motion = Animation.fade else { return }
         withTransaction(\.disablesAnimations, true) { landing = (ids, offset) }
         DispatchQueue.main.async {
             withAnimation(motion) { landing = nil }
@@ -311,7 +311,7 @@ private extension SidebarPage {
     }
 
     private func fold(_ workspace: String) {
-        withAnimation(motion) {
+        withAnimation(.fade) {
             opened = opened.togglingLine(page.foldKey(workspace))
         }
     }
@@ -333,7 +333,7 @@ private extension SidebarPage {
         Button("Open Session…", action: openSession)
         if settings.showArchived {
             Button(opened.hasLine(page.archivedKey) ? "Hide Archived Sessions" : "Show Archived Sessions") {
-                withAnimation(motion) {
+                withAnimation(.fade) {
                     opened = opened.togglingLine(page.archivedKey)
                 }
             }
@@ -345,13 +345,10 @@ private extension SidebarPage {
         Divider()
         Button("Detach Session") { pages.close(page) }.disabled(!pages.canDetach)
     }
-
-    var motion: Animation? {
-        Animation.reduced ? nil : .easeOut(duration: 0.2)
-    }
 }
 
-/// Its own view: inside the sidebar's body, each change there (an agent's state) made the menu again and closed it.
+/// Its own view: inside the sidebar's body, each change there (an agent's state) would make the menu again and close
+/// it.
 private struct SortMenu: View {
     let page: Page
     let order: SpaceOrder

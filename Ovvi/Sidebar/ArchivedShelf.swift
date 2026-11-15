@@ -106,7 +106,7 @@ struct ArchivedShelf: View {
     }
 
     private func toggle(_ key: String) {
-        withAnimation(Animation.reduced ? nil : .easeOut(duration: 0.2)) {
+        withAnimation(.fade) {
             opened = opened.togglingLine(key)
         }
         opening = opened.hasLine(key)

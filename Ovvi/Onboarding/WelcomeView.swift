@@ -123,7 +123,6 @@ struct WelcomeView: View {
             }
             .opacity(0).accessibilityHidden(true)
         }
-        // A click during the intro goes straight to the first page.
         .simultaneousGesture(TapGesture().onEnded { endIntro() }, isEnabled: !shown)
         .environment(\.look, look)
         .onChange(of: playing, initial: true) { reels.show(playing, at: still ? current.still : nil) }
