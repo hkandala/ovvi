@@ -1592,3 +1592,28 @@ deleted (the repo keeps only `v*`); `v0.1.0` comes after round 5's final CI.
   the new (plus a throwaway dark relaunch for the picture). Pictures in `~/Downloads/ovvi-research/p58s4/`.
 - **For the user.** In the installed app: the line under the switch, and Check Now opens Sparkle's window as the menu
   item does, greyed while it checks.
+
+### Track O2: the overview opens with a motion (item 62)
+
+- **Fix.** Opening mirrors leaving, with Track O's `Zoom`: the overview's first frame shows the selected tab's miniature at
+  the page's size, with the grid hidden. One turn later the grid has laid out its tiles, and the miniature shrinks into
+  its tile over 0.18 s in the render server while the tiles fade in and the sidebar and title row fade out (0.12 s).
+  `Zoom` takes the tile's rect late (`updateNSView`), runs either way and keeps its end until it is removed.
+- **Decisions.** The mirror, not the plain fade. It costs about 25 lines in the same view, and it shows where the page
+  went. The fade drops the page at once to a dark window and then fades the grid in. Both start the same turn after the
+  grid's first layout, one recorded frame after the overview's first frame (33 ms at the VM recording's 30 fps), so
+  building the tiles costs the two the same. The shrink's frames come from the render server, the fade's from the main
+  thread. A tile out of view gets the fade only. A leave during the shrink (Esc, ⌃⌘O, ×) closes at once. A click on a
+  tile during the shrink is swallowed by the shield, as during the leaving zoom. Reduce Motion and Animations off open
+  at once, as leaving does.
+- **Known limit.** On the first open after a web card shows, its picture is still on its way (WebKit's snapshot answers
+  later). The miniature then shows the card's symbol during the shrink, so a light page turns dark for 0.18 s. Later opens
+  shrink with the kept picture.
+- **Test.** `overview.shrink` counts shrinks that landed. The overview zoom test expects one per open, and the Animations
+  test expects one with Animations on and none with them off.
+- **Runs.** VM, the old code with the new tests: both red (no shrink). The new code: the overview zoom test and the
+  Animations test green, twice (before and after the review's fixes). The strips are in `~/Downloads/ovvi-research/p58o2/`:
+  `enter-shrink-strip` (the mirror), `enter-fade-strip` (the fade, built for the comparison only), `enter-browser-*`
+  (a terminal and a browser card, first and later open).
+- **For the user.** Press ⌃⌘O. The page should shrink into its tile while the other tiles fade in. Press Esc and it grows
+  back. With Reduce Motion or Animations off, both should be instant.

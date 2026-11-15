@@ -9,7 +9,6 @@ struct Overview: View {
     @State private var monitor: Any?
     /// No tile rect yet: the page entering waits for the grid's first layout.
     @State private var zoom: (tab: HostStore.Tab, from: CGRect?)?
-    @State private var entering: Bool
     @State private var faded: Bool
 
     nonisolated static let space = "overview"
@@ -20,7 +19,6 @@ struct Overview: View {
         self.leading = leading
         let tab = Animation.reduced ? nil : pages.current?.selectedTab
         _zoom = State(initialValue: tab.map { ($0, nil) })
-        _entering = State(initialValue: tab != nil)
         _faded = State(initialValue: tab != nil)
     }
 
@@ -49,12 +47,15 @@ struct Overview: View {
                 .overlay(alignment: .topLeading) {
                     if let zoom {
                         // Pictures only: a live terminal stays in its tile until the page takes it.
-                        Zoom(from: zoom.from, page: tabPage, entering: entering) {
-                            if entering {
-                                (self.zoom, entering) = (nil, false)
-                            } else if pages.leaving {
-                                // Not an overview opened again since a second leave closed this one.
+                        Zoom(from: zoom.from, page: tabPage, entering: !pages.leaving) {
+                            if pages.leaving {
                                 pages.closeOverview()
+                            } else {
+                                // Entering; or an overview opened again since a second leave closed this one.
+                                self.zoom = nil
+                                if SettlingHost.record {
+                                    pages.shrinks += 1
+                                }
                             }
                         } content: {
                             // In the host's own tree: a modifier on the host would not hide it.
@@ -104,14 +105,11 @@ struct Overview: View {
 
     /// The tiles fade in; the page shrinks with them unless its tile is out of view.
     private func enter() {
-        guard let tab = zoom?.tab, entering else { return }
+        guard let tab = zoom?.tab, !pages.leaving else { return }
         if let page = pages.current, let from = tile(page, tab) {
             zoom?.from = from
-            if SettlingHost.record {
-                pages.shrinks += 1
-            }
         } else {
-            (zoom, entering) = (nil, false)
+            zoom = nil
         }
         withAnimation(.motion(.easeOut(duration: WindowPages.zoom))) { faded = false }
     }
@@ -158,8 +156,7 @@ private struct Zoom<Content: View>: NSViewRepresentable {
 
     /// Once the tile's rect is known; kept at its end until `done` removes the view.
     private func run(_ host: NSHostingView<Content>) {
-        guard let from, host.layer?.animation(forKey: "zoom") == nil else { return }
-        guard let layer = host.layer else { return done() }
+        guard let from, let layer = host.layer, layer.animation(forKey: "zoom") == nil else { return }
         // The layer's y grows upward, as its superlayer's (`MovingCard`): the tile's rect in it, then scaled about the
         // anchor.
         let scale = CGSize(width: from.width / page.width, height: from.height / page.height)
