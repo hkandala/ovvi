@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 final class RowView: NSView {

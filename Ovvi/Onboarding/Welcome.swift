@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 /// The welcome panel (ui/welcome): a floating panel of its own, no title bar, over Ovvi's windows. It opens by itself

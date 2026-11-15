@@ -71,11 +71,6 @@ struct Look: Equatable {
         dark ? .white.opacity(0.255) : .black.opacity(0.187)
     }
 
-    /// 3.3:1 or more on the window.
-    var grip: Color {
-        paneButton
-    }
-
     /// The card shadow's color, at `dropRadius` and `dropDown` pt: Glass light only.
     var cardDrop: Color? {
         style == .glass && !dark ? .black.opacity(0.1) : nil
@@ -99,7 +94,7 @@ struct Look: Equatable {
         (dark ? Color.white : .black).opacity(contrast ? 1 : 0.9)
     }
 
-    /// 3.3:1 or more on the card.
+    /// 3.3:1 or more on the card and the window.
     var paneButton: Color {
         (dark ? Color.white : .black).opacity(dark ? (contrast ? 0.6 : 0.42) : (contrast ? 0.65 : 0.45))
     }

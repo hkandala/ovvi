@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 /// Every motion the app runs reads one of these (`make lint`'s `animations` rule): with Settings ▸ Appearance ▸

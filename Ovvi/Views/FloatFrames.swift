@@ -1,4 +1,3 @@
-import AppKit
 import HerdrKit
 import SwiftUI
 
@@ -25,7 +24,7 @@ enum FloatFrames {
         open?(id: WindowPages.floatScene, value: floating)
     }
 
-    static var quiet: [String: NSWindow?] = [:]
+    private static var quiet: [String: NSWindow?] = [:]
 
     static func keepKey(_ window: NSWindow, _ terminalID: String) {
         guard let previous = quiet.removeValue(forKey: terminalID) else { return }
@@ -56,7 +55,7 @@ enum FloatFrames {
         return WindowPlacement(frame.windowPosition(mainHeight: main.frame.height), size: frame.size)
     }
 
-    static func frame(over main: NSWindow) -> NSRect {
+    private static func frame(over main: NSWindow) -> NSRect {
         let width = max(720, main.frame.width * 0.6), height = max(460, main.frame.height * 0.75)
         let frame = NSRect(x: main.frame.midX - width / 2, y: main.frame.midY - height / 2, width: width,
                            height: height)

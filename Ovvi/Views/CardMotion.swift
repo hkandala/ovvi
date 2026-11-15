@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 /// Moved and sized by Core Animation: the motion runs in the render server, so a busy main thread (herdr's answer, a

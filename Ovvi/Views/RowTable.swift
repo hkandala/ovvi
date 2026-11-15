@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 /// Drawn by AppKit in a table that reuses the few row views in view: as SwiftUI views each typed key makes the rows in

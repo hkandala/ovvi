@@ -5,7 +5,7 @@ struct NewPane: View {
     let chooser: Chooser
     let page: Page
     let cardID: String
-    private var fade: Animation? {
+    static var fade: Animation? {
         Animation.reduced ? nil : .easeOut(duration: 0.15)
     }
 
@@ -38,9 +38,9 @@ struct NewPane: View {
             }
             .frame(width: size.width, height: size.height)
         }
-        .animation(fade, value: chooser.starting)
-        .animation(fade, value: chooser.open)
-        .animation(fade, value: chooser.opening)
+        .animation(Self.fade, value: chooser.starting)
+        .animation(Self.fade, value: chooser.open)
+        .animation(Self.fade, value: chooser.opening)
         .onAppear {
             focus = chooser.selected
             Latency.shared.step("list")
@@ -164,6 +164,6 @@ struct NewPaneOverlay: View {
                 NewPane(chooser: chooser, page: page, cardID: cardID).transition(.opacity)
             }
         }
-        .animation(Animation.reduced ? nil : .easeOut(duration: 0.15), value: chooser == nil)
+        .animation(NewPane.fade, value: chooser == nil)
     }
 }
