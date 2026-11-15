@@ -10,6 +10,8 @@ How CI runs, how to run part of it, and how to keep it green and fast.
 - **Releases.** `.github/workflows/release.yml` publishes a release from a version tag on main
   ([RELEASING.md](../RELEASING.md)): a build job on `xcode-27` with no secret, and a publish job on `ubuntu-latest`
   that signs the update feed with the `release` environment's key.
+- **Plugins.** `.github/workflows/plugins.yml` publishes the default plugins and the API's types to npm when main has
+  a version npm does not ([RELEASING.md](../RELEASING.md#plugins)).
 - **Docs site.** `.github/workflows/docs-deploy.yml` builds the docs and deploys them to the Vercel project
   `ovvi` when `docs/` changes; Vercel's own git deploys are off. Run the `vercel` CLI only from the repo
   root: in another folder `vercel pull --yes` creates and links a new project.
@@ -21,7 +23,8 @@ How CI runs, how to run part of it, and how to keep it green and fast.
   column. A second ⌃⌘F during the full-screen animation is lost.
 - **Checks** (a push or a pull request): one job, `checks`, runs `make lint`, `make build`,
   `make build-tests` (the UI tests compile), and `make test` (HerdrKit, the acknowledgements,
-  the Settings rows (`scripts/check-settings.py`) and the cli.mdx script checks). It takes about 3 minutes.
+  the Settings rows (`scripts/check-settings.py`), the UI tests' own launches (`scripts/check-launches.py`), the
+  plugins' versions (`scripts/check-plugin-versions.sh`) and the cli.mdx script checks). It takes about 3 minutes.
 - **Full run** (a dispatch): a `build` job (`make build-tests`, its products uploaded as a tar), then five jobs
   (`test (0)` to `test (4)`), each a shard of the UI tests, which run that build (`make e2e PREBUILT=1`:
   `test-without-building`) and reach their first test about a minute after they start, half of it the e2e helper's
