@@ -125,6 +125,14 @@ place in .agents and keep a symlink in .claude, and we should have a way to upda
   consent of its own per machine, and Ovvi and Ovvi Dev share `~/.cache/ovvi`, so the two would need a version rule
   to stop replacing each other's copy. Remote machines and other agents: `npx skills add hkandala/ovvi -g`
   (vercel-labs/skills; the README's skills.sh badge), which finds the repo's one skill with no file of its own.
+- **Runs.** Both flavours built on This Mac: `make zip`'s app is `dev.ovvi.app`, `ovvi://`, the feed, AppIcon;
+  Ovvi Dev (`make install`'s settings) is `dev.ovvi.app.dev`, `ovvi-dev://`, no feed, AppIconDev; both pass
+  `codesign --verify`. In the VM, terminal only, against `file://` copies of the zip: `--dev` is refused, `--version`
+  of a missing release stops; answering N links nothing; y links both, Claude's through `.agents`; a second build
+  (0.1.1, a marker file in its skill) replaced the first in place, asked nothing about the skill, and both links read
+  the new copy; no quarantine flag. Ovvi and Ovvi Dev ran side by side in the VM's Dock
+  (`~/Downloads/ovvi-research/p59d2/vm-dock.png`). The UI tests that launch the Debug build by its path (the Dock's
+  folder drop, two `ovvi://float` tests) passed in the VM as `Ovvi Debug.app`.
 - **For the user.** `~/Applications/Ovvi.app` (the old `make install`, `dev.ovvi.app`) is left alone: the `v0.1.0`
   curl install finds it there and replaces it in place, keeping its settings (`~/.config/ovvi`, its defaults). Then
   `git pull && make install` gives `~/Applications/Ovvi Dev.app` beside it, with its own settings in
