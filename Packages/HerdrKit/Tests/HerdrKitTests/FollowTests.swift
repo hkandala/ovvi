@@ -261,8 +261,7 @@ func `follow drops only what the parser skips`(name: String, unread: String, ext
     #expect(count <= lines.count - extra.count)
 }
 
-/// The shell loop the watch replaced (`tr` and `sleep 0.3`, two processes every 0.3 s): the reference for when a change
-/// shows.
+/// A shell loop (`tr` and `sleep 0.3`, two processes every 0.3 s): the reference for when a change shows.
 private let shellWatch = #"""
 o=x
 while :; do

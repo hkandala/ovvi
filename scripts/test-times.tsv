@@ -12,7 +12,6 @@
 112	testHundredsOfSpacesKeepTheSidebarQuick
 101	testATabComesIntoViewWithoutAFlicker
 78	testGitCardCommitsPushesAndOpensDiffs
-68	testALongChatShowsEarlierRowsInPlace
 66	testAReconnectingPageShowsItsStateOnce
 65	testOverviewCostsAndLetsGoAfter
 58	testSwitchesKeepHeavyCardsAsTheyWere
