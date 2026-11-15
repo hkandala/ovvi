@@ -34,7 +34,7 @@ struct CommandList {
         let live = page?.store.state == .live
         // A key only where its action works (Settings ▸ Shortcuts' scopes): a disabled item swallows it.
         let terminal = page?.keyboardPane.map { $0.plugin == nil } == true
-        let file = Updates.commands + Telemetry.commands + [
+        let file = Updates.commands + [
             Command(section: .app, title: "Plugins…", group: .plugins, symbol: SettingsPage.plugins.symbol,
                     keywords: "install update remove packages npm git settings",
                     action: { SettingsRoute.shared.open(.plugins) }),
@@ -106,7 +106,7 @@ struct CommandList {
         ] + Self.editorCommands(page: page, pane: nil, terminal: live && terminal && !chat) { [page] in page?.editor }
         let list = file + Self.pane(page, tabs: tabs) { [page] in page?.keyboardPane } + close + edit + Self
             .browser(browser, chooser: page?.keyCardID.flatMap { page?.store.chooser($0) })
-            + view + paneKeys
+            + view + Telemetry.commands + paneKeys
             + palette(page) + Self.opens(page) + window(page, pages)
         let all = list + Self.plugin(page?.keyboardPane?.terminalID.flatMap { page?.terminals.plugins[$0] },
                                      besides: list)

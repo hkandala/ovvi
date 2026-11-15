@@ -186,13 +186,13 @@ final class HostStore {
                 let start = Latency.threadTime
                 balanceOthers(last, snapshot)
                 let changes = apply(snapshot)
-                Telemetry.saw(snapshot, remote: machine.isRemote)
                 state = .live
                 startProblem = nil
                 starting = false
                 startStopped = false
                 snapshotted(changes)
                 Latency.shared.applied(since: start)
+                Telemetry.saw(snapshot, remote: machine.isRemote)
                 readViews(pruning: !loadedSessions)
                 // After the first snapshot, so the session list never delays the layout.
                 if !loadedSessions {

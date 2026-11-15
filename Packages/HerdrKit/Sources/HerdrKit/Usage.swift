@@ -22,14 +22,10 @@ public final class Usage {
         }
     }
 
-    public nonisolated static let endpoint = URL(string: "https://eu.i.posthog.com/batch/")
-    /// Ephemeral: no cookies, cache or credentials kept.
+    /// Ephemeral, with no cookie store: nothing kept between requests.
     private static let session = {
         let configuration = URLSessionConfiguration.ephemeral
-        configuration.httpCookieAcceptPolicy = .never
-        configuration.httpShouldSetCookies = false
         configuration.httpCookieStorage = nil
-        configuration.urlCache = nil
         configuration.timeoutIntervalForResource = 10
         return URLSession(configuration: configuration)
     }()
@@ -41,7 +37,12 @@ public final class Usage {
     /// Today's flags as stored: a feature used again costs no write.
     private var seen: (day: Int, features: Set<Feature>)?
 
-    public init(key: String, log: URL, defaults: UserDefaults = .standard, endpoint: URL? = Usage.endpoint) {
+    public init(
+        key: String,
+        log: URL,
+        defaults: UserDefaults = .standard,
+        endpoint: URL? = URL(string: "https://eu.i.posthog.com/batch/"),
+    ) {
         self.key = key
         self.log = log
         self.defaults = defaults
@@ -72,11 +73,9 @@ public final class Usage {
         }
     }
 
+    /// The Mac's date as days since 1970, by its offset from UTC at that moment: any calendar, DST too.
     static func day(_ date: Date) -> Int {
-        var utc = Calendar(identifier: .gregorian)
-        utc.timeZone = .gmt
-        let start = utc.date(from: Calendar.current.dateComponents([.year, .month, .day], from: date)) ?? date
-        return Int(start.timeIntervalSince1970 / 86400)
+        Int((date.timeIntervalSince1970 + Double(TimeZone.current.secondsFromGMT(for: date))) / 86400)
     }
 
     /// Today is a day of use; nil marks only that.
@@ -114,6 +113,8 @@ public final class Usage {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        // URLSession's own would tell the user's languages.
+        request.setValue("en", forHTTPHeaderField: "Accept-Language")
         request.httpBody = try? JSONSerialization.data(withJSONObject: ["api_key": key, "batch": events])
         guard let (_, response) = try? await Self.session.data(for: request),
               (response as? HTTPURLResponse).map({ (200 ..< 300).contains($0.statusCode) }) == true else { return }

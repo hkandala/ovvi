@@ -17,7 +17,7 @@ private final class Rig {
     let usage: Usage, defaults: UserDefaults, log: URL, server: NWListener
     let requests = Requests()
 
-    init(status: Int = 200, endpoint: URL? = nil) async throws {
+    init(status: Int = 200) async throws {
         let name = "usage-test-\(UUID().uuidString)"
         defaults = try #require(UserDefaults(suiteName: name))
         log = FileManager.default.temporaryDirectory.appending(path: "\(name)/usage.log")
@@ -54,7 +54,7 @@ private final class Rig {
         self.server = server
         let port = try #require(server.port?.rawValue)
         usage = Usage(key: "phc_test", log: log, defaults: defaults,
-                      endpoint: endpoint ?? URL(string: "http://127.0.0.1:\(port)/batch/"))
+                      endpoint: URL(string: "http://127.0.0.1:\(port)/batch/"))
     }
 
     var bodies: [[String: Any]] {

@@ -13,7 +13,7 @@ error messages. The counts show how many people use Ovvi and which features matt
   its app storage and sends a day only after it has ended: at the next launch, or at the hourly check while Ovvi
   runs. So each day goes once, with all its flags.
 - **One request** to PostHog Cloud EU, `https://eu.i.posthog.com/batch/`, over HTTPS, with a 10 s limit. It goes
-  from an ephemeral session: no cookies, no cache. A failed send keeps its days for the next launch or hour; a day
+  from an ephemeral session: no cookies, no cache, and `en` as its language, not yours. A failed send keeps its days for the next launch or hour; a day
   older than 7 days goes unsent.
 - **Only the released app sends** (the build of a release, `make zip`). Ovvi Dev, Debug builds, other Release builds,
   the UI tests and any run with `-session` never send.
@@ -68,7 +68,7 @@ agents' work, error messages and crash reports.
 ## See what it sent
 
 Help ▸ Usage Data Log opens `~/Library/Logs/Ovvi/usage.log`: the last 7 events sent, one JSON line each, with your
-install id. The menu item is there once a send wrote the file.
+install id. The menu item works once a send wrote the file.
 
 ## Where it goes
 

@@ -40,7 +40,7 @@ enum Telemetry {
         }
     }
 
-    /// Help ▸ Usage Data Log, once a send wrote it.
+    /// Help ▸ Usage Data Log, which works once a send wrote the log.
     static var commands: [Command] {
         guard usage != nil else { return [] }
         return [Command(section: .help, title: "Usage Data Log", symbol: "doc.text",

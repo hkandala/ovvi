@@ -52,5 +52,10 @@ the onboarding line, the log, the docs page and the PostHog steps for the user.
 - **Runs.** HerdrKit's `UsageTests`: a local NWListener takes the POST (no network): once a day, the 503 retry and the
   7-day drop, the switch's delete and new id, DO_NOT_TRACK, and the event's keys against the docs table.
   Nothing sends in UI tests: Debug builds have no key and `-session` runs make no `Usage` at all.
+- **Fix (review).** The day is the Mac's date from its UTC offset, not from `Calendar.current`: a Buddhist calendar
+  put the timestamp 543 years ahead. The request says `Accept-Language: en`: URLSession's own told the user's
+  languages. The onboarding line shows on the herdr step too, beside Skip.
+- **Open.** A login shell slower than its 3 s bound brings no rc-file variables, so a `DO_NOT_TRACK` set only there
+  is missed on that launch; the app's own environment always counts.
 - **For the user.** PostHog: in project 350784 (Cloud EU), Settings ▸ Project ▸ General ▸ "Discard client IP data"
   on. Insights in the reply. The welcome's films show the last page without the new line until the next recording.

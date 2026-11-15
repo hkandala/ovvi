@@ -142,6 +142,7 @@ extension OvviUITests {
         try launchWithoutHerdr(install: "\(Self.fixtures)/no-herdr/install")
         let install = try walkToTheHerdrStep()
         XCTAssertFalse(welcomeNext.isEnabled)
+        XCTAssertTrue(element("welcome.usage").exists, "no usage data line on the herdr step")
         install.click()
         XCTAssertTrue(element("welcome.herdr.progress").has(\.stringValue, "> downloading v9.9.9...", within: 3))
         XCTAssertTrue(welcomeNext.has(\.isEnabled, true, within: connect))
