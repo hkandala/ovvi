@@ -183,9 +183,7 @@ extension Plugin {
             }
         }
         // A plugin with no card has no toast: the Plugins page says it.
-        if !failed.isEmpty {
-            PluginInstalls.shared.failure = (failed.joined(separator: "; "), nil)
-        }
+        PluginInstalls.shared.failure = failed.isEmpty ? nil : (failed.joined(separator: "; "), nil)
     }
 
     static func npm(_ id: String) -> Bool {

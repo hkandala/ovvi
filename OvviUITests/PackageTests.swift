@@ -194,6 +194,21 @@ extension OvviUITests {
 
         try await refusesANewerAPI(pack("0.3.0", 99), config: config, shell: shell, page: page)
         settingsWindow.buttons["_XCUI:CloseWindow"].click()
+        try await listsADefaultAgain(config: config, shell: shell)
+    }
+
+    /// A default's folder with no source in settings.json (an older install, a rewritten file) is its npm install.
+    private func listsADefaultAgain(config: String, shell: String) async throws {
+        step("A launch lists a default's npm source again")
+        try await send("clear; sed -i '' '/npm:@ovvi/d' \(config)/settings.json && test -d \(config)/plugins/explorer "
+            + "&& ! grep -q npm:@ovvi \(config)/settings.json && echo dropped-$((6*7))\r", to: shell)
+        try await waitFor(shell) { $0.contains("dropped-42") }
+        relaunch(one, ["-configFolder", config])
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        openSettings("plugins")
+        let explorer = element("plugins.explorer", in: settingsWindow)
+        XCTAssertTrue(until(10) { explorer.label.hasSuffix(", npm:@ovvi/explorer") }, explorer.label)
+        settingsWindow.buttons["_XCUI:CloseWindow"].click()
     }
 
     private func installs(_ typed: String, as id: String, _ label: String) -> XCUIElement {
