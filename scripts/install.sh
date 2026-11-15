@@ -2,8 +2,8 @@
 # Installs Ovvi, the macOS app for herdr, from its GitHub release:
 #   curl -fsSL https://github.com/hkandala/ovvi/releases/latest/download/install.sh | sh
 #   … | sh -s -- --version 0.1.0    that release
-# It checks the download against the release's SHA256SUMS, asks before it installs herdr and herdr's agent
-# integrations, and opens the app.
+# It checks the download against the release's SHA256SUMS, asks before it links the ovvi skill for agents and before it
+# installs herdr and herdr's agent integrations, and opens the app.
 set -eu
 
 die() {
@@ -45,7 +45,7 @@ main() {
     stage=
     trap 'rm -rf "$tmp" ${stage:+"$stage"}' EXIT
     curl -fsSL -o "$tmp/SHA256SUMS" "$base/SHA256SUMS" || die "no release at $base"
-    zip=$(awk '$2 ~ /^Ovvi[A-Za-z0-9._-]*\.zip$/ { print $2; exit }' "$tmp/SHA256SUMS")
+    zip=$(awk '$2 ~ /^Ovvi-[A-Za-z0-9.-]+\.zip$/ { print $2; exit }' "$tmp/SHA256SUMS")
     [ -n "$zip" ] || die "the release's SHA256SUMS names no zip"
     echo "Downloading $zip"
     curl -fL --progress-bar -o "$tmp/$zip" "$base/$zip" || die "the download failed"
@@ -84,6 +84,17 @@ main() {
     }
     echo "Installed $dest/Ovvi.app"
 
+    # The ovvi skill teaches agents the `ovvi` command: pi, Codex and OpenCode read ~/.agents/skills, Claude Code
+    # ~/.claude/skills. A link to the app's own copy, so each update of the app updates the skill. A skill that is
+    # already there stays; a dangling link (the app moved) counts as none.
+    agents=$HOME/.agents/skills claude=$HOME/.claude/skills
+    if { [ ! -e "$agents/ovvi" ] || [ ! -e "$claude/ovvi" ]; } &&
+        ask "Install the ovvi skill, so Claude Code, Codex, Pi and OpenCode know Ovvi's ovvi command?"; then
+        mkdir -p "$agents" "$claude"
+        [ -e "$agents/ovvi" ] || ln -sfn "$dest/Ovvi.app/Contents/Resources/skills/ovvi" "$agents/ovvi"
+        [ -e "$claude/ovvi" ] || ln -sfn "$agents/ovvi" "$claude/ovvi"
+    fi
+
     # Where herdr's own installer puts it.
     bin=${HERDR_INSTALL_DIR:-$HOME/.local/bin}
     herdr=$(command -v herdr || true)
@@ -114,6 +125,7 @@ main() {
 
 To uninstall Ovvi: quit it, then
   rm -rf "$dest/Ovvi.app" ~/.config/ovvi "\$HOME/Library/Logs/Ovvi"; defaults delete dev.ovvi.app
+  rm -f ~/.agents/skills/ovvi ~/.claude/skills/ovvi   # the skill's links
 herdr and its sessions stay; herdr's own docs say how to remove it.
 EOF
 }

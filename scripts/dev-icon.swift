@@ -1,19 +1,9 @@
-// Marks a built Ovvi Dev.app: Ovvi's own 1024 px icon with the mark below, scaled to each size as the bundle's
-// AppIcon.icns, then signs the app again (ad hoc).
-// Usage: swift scripts/dev-icon.swift <AppIcon.appiconset> <app>
+// Draws Ovvi Dev's icon, the AppIconDev set beside AppIcon: Ovvi's own 1024 px icon redrawn as a blueprint, scaled to
+// each of AppIcon's sizes. Run from the repo root: swift scripts/dev-icon.swift (make icons runs it).
 import AppKit
 
-let args = CommandLine.arguments
-let source = URL(filePath: args[1]), app = URL(filePath: args[2])
-let iconset = FileManager.default.temporaryDirectory.appending(path: "ovvi-dev-\(getpid()).iconset")
-try FileManager.default.createDirectory(at: iconset, withIntermediateDirectories: true)
-defer { try? FileManager.default.removeItem(at: iconset) }
-
-func run(_ argv: String...) throws {
-    let process = try Process.run(URL(filePath: argv[0]), arguments: Array(argv.dropFirst()))
-    process.waitUntilExit()
-    guard process.terminationStatus == 0 else { throw CocoaError(.executableLoad, userInfo: ["argv": argv]) }
-}
+let source = URL(filePath: "Ovvi/Assets.xcassets/AppIcon.appiconset")
+let target = URL(filePath: "Ovvi/Assets.xcassets/AppIconDev.appiconset")
 
 func bitmap(_ side: Int, _ draw: () -> Void) -> NSBitmapImageRep {
     let rep = NSBitmapImageRep(
@@ -72,15 +62,10 @@ marked.addRepresentation(bitmap(1024) {
     original.draw(in: NSRect(x: 0, y: 0, width: 1024, height: 1024))
     mark()
 })
-// The catalog's own names and sizes, as iconutil wants them.
-for name in try FileManager.default.contentsOfDirectory(atPath: source.path) where name.hasSuffix(".png") {
-    guard let side = NSImageRep(contentsOf: source.appending(path: name))?.pixelsWide else { continue }
+try? FileManager.default.removeItem(at: target)
+try FileManager.default.copyItem(at: source, to: target)
+for name in try FileManager.default.contentsOfDirectory(atPath: target.path) where name.hasSuffix(".png") {
+    guard let side = NSImageRep(contentsOf: target.appending(path: name))?.pixelsWide else { continue }
     let rep = bitmap(side) { marked.draw(in: NSRect(x: 0, y: 0, width: side, height: side)) }
-    try rep.representation(using: .png, properties: [:])?.write(to: iconset.appending(path: name))
+    try rep.representation(using: .png, properties: [:])?.write(to: target.appending(path: name))
 }
-
-let contents = app.appending(path: "Contents")
-try run("/usr/bin/iconutil", "-c", "icns", "-o", contents.appending(path: "Resources/AppIcon.icns").path, iconset.path)
-// Without the asset catalog's icon name, macOS takes the bundle's .icns.
-try? run("/usr/libexec/PlistBuddy", "-c", "Delete :CFBundleIconName", contents.appending(path: "Info.plist").path)
-try run("/usr/bin/codesign", "--force", "--sign", "-", "--preserve-metadata=entitlements,flags", app.path)

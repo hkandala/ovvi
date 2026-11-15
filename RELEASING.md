@@ -37,8 +37,8 @@ A local `make zip` builds the same app, stamped with the nearest `v*` tag behind
 5. **Watch the run.**
    `gh run watch $(gh run list --workflow release.yml --limit 1 --json databaseId --jq '.[0].databaseId')`.
    Then open the release page and check the zip, `SHA256SUMS`, `appcast.xml` and the notes.
-6. **Check the install.** In the Tart VM (a clean Mac), run the curl line below. The app must open with no
-   Gatekeeper dialog.
+6. **Check the install.** In the Tart VM (a clean Mac), run the curl line below (with `-s -- --version <version>` for a
+   pre-release). The app must open with no Gatekeeper dialog.
 
 ## Fix a failed release
 
@@ -71,8 +71,9 @@ curl -fsSL https://github.com/hkandala/ovvi/releases/latest/download/install.sh 
 ```
 
 Add `-s -- --version 0.2.0` after `sh` for one release. The script checks the zip against `SHA256SUMS`, puts
-`Ovvi.app` in `/Applications` (or `~/Applications`) in place of an old copy, asks before it installs herdr and its
-agent integrations, and opens the app. curl adds no quarantine flag, so Gatekeeper never asks.
+`Ovvi.app` in `/Applications` (or `~/Applications`) in place of an old copy, and opens the app. It asks before it links
+the `ovvi` skill for Claude Code, Codex, Pi and OpenCode (to the app's own copy, so updates update it), and before it
+installs herdr and its agent integrations. curl adds no quarantine flag, so Gatekeeper never asks.
 
 ## Dev builds
 
@@ -81,8 +82,9 @@ git pull && make install
 ```
 
 This builds **Ovvi Dev** from the checkout and puts it in `~/Applications`, beside Ovvi. Ovvi Dev has its own name,
-bundle id (`dev.ovvi.app.dev`), `ovvi-dev://` scheme, settings and folders (`~/.config/ovvi-dev`), and a DEV mark on
-its icon (`scripts/dev-icon.swift`). It has no update feed: run the same line again to update it. `make install` also
-links the `ovvi` skill for agents.
+bundle id (`dev.ovvi.app.dev`), `ovvi-dev://` scheme, settings and folders (`~/.config/ovvi-dev`), and a blueprint
+icon (`AppIconDev`; `make icons` draws it with `scripts/dev-icon.swift`). It has no update feed: run the same line
+again to update it. `make install` also links the `ovvi` skill to the checkout's `skills/ovvi`, unless a skill is
+already there.
 
 ## Plugins

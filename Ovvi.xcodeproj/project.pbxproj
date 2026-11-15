@@ -13,6 +13,7 @@
 		5A1C3E7B9D2F4A6C8E0B1D3F /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 7C3E5A9B1D4F6C8E0A2B3D5F /* Sparkle */; };
 		D5B2F3C4E5061728394A5B6C /* catalog.json in Resources */ = {isa = PBXBuildFile; fileRef = C4A1E2B3D4F5061728394A5B /* catalog.json */; };
 		7E44A1B2C3D4E5F60718293A /* web in Resources */ = {isa = PBXBuildFile; fileRef = 7E44A1B2C3D4E5F60718293B /* web */; };
+		5D1E7A0B2C3D4E5F60718295 /* skills in Resources */ = {isa = PBXBuildFile; fileRef = 5D1E7A0B2C3D4E5F60718294 /* skills */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -27,6 +28,7 @@
 
 /* Begin PBXFileReference section */
 		7E44A1B2C3D4E5F60718293B /* web */ = {isa = PBXFileReference; lastKnownFileType = folder; name = web; path = .build/web; sourceTree = "<group>"; };
+		5D1E7A0B2C3D4E5F60718294 /* skills */ = {isa = PBXFileReference; lastKnownFileType = folder; path = skills; sourceTree = "<group>"; };
 		C4A1E2B3D4F5061728394A5B /* catalog.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = catalog.json; path = resources/icons/catalog.json; sourceTree = "<group>"; };
 		21288B51504EFA0EF1A20CCE /* Ovvi.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ovvi.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		383C6A9484A91F97C24CC84E /* OvviUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OvviUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -129,6 +131,7 @@
 				E5E33E2A6BF50261E7A42524 /* OvviUITests */,
 				C4A1E2B3D4F5061728394A5B /* catalog.json */,
 				7E44A1B2C3D4E5F60718293B /* web */,
+				5D1E7A0B2C3D4E5F60718294 /* skills */,
 				108494E918F2B6D742A8C165 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -237,6 +240,7 @@
 			files = (
 				D5B2F3C4E5061728394A5B6C /* catalog.json in Resources */,
 				7E44A1B2C3D4E5F60718293A /* web in Resources */,
+				5D1E7A0B2C3D4E5F60718295 /* skills in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -278,7 +282,7 @@
 		210F57DA54389B35A00C8967 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "$(OVVI_APP_ICON)";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
@@ -291,6 +295,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 0.1;
+				OVVI_APP_ICON = AppIcon;
 				OVVI_APP_NAME = Ovvi;
 				OVVI_URL_SCHEME = ovvi;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.ovvi.app;

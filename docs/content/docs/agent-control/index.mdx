@@ -46,9 +46,13 @@ One file per topic loads only when the agent needs it:
 
 Every herdr detail points to the herdr skill (`herdr --skill`).
 
-- **On This Mac,** `make install` links the folder to
-  `~/.agents/skills/ovvi` (pi and Codex) and `~/.claude/skills/ovvi`
-  (Claude Code). It leaves an `ovvi` skill that is already there alone.
+- **On This Mac,** the app carries the skill (`Contents/Resources/skills/ovvi`).
+  `install.sh` asks once, then links `~/.agents/skills/ovvi` (pi, Codex and
+  OpenCode) to the app's copy and `~/.claude/skills/ovvi` (Claude Code) to
+  that link. An update replaces the app in place, so it updates the skill
+  too. `make install` links both to the checkout's `skills/ovvi` instead.
+  Both leave an `ovvi` skill that is already there alone, and replace a
+  dangling link (an app that moved).
 - **On a remote machine,** copy the folder to the same places, for example
   `ssh <machine> mkdir -p .agents/skills && scp -r skills/ovvi
   <machine>:.agents/skills/`. Ovvi does not install

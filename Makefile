@@ -18,9 +18,10 @@ setup:
 	brew bundle
 	git config core.hooksPath .githooks
 
-# Needs Pillow, which setup does not install.
+# Needs Pillow, which setup does not install. Then Ovvi Dev's icon from the app's.
 icons:
 	python3 scripts/app-icon.py
+	swift scripts/dev-icon.swift
 
 format:
 	swiftlint lint --fix --quiet
@@ -119,10 +120,11 @@ BUILD ?= $(shell git rev-list --count HEAD)
 # quarantine, so install.sh skips that), and notifications need a real signing identity. Only zip gets the released
 # app's bundle id and update feed: macOS keys saved windows and defaults by bundle id, so a measure's `make app` keeps
 # its own. install builds Ovvi Dev, which runs beside a released Ovvi: its own name, bundle id, scheme and folders
-# (Registry.name), a DEV mark on the icon, and no feed.
+# (Registry.name), the blueprint icon (AppIconDev, `make icons`), and no feed.
 NAME = Ovvi
 BUNDLE_ID = dev.ovvi.app.release
 URL_SCHEME = ovvi-release
+ICON = AppIcon
 zip: BUNDLE_ID = dev.ovvi.app
 zip: URL_SCHEME = ovvi
 zip: FEED = https://github.com/hkandala/ovvi/releases/latest/download/appcast.xml
@@ -132,16 +134,16 @@ install: NAME = Ovvi Dev
 install: BUNDLE_ID = dev.ovvi.app.dev
 install: URL_SCHEME = ovvi-dev
 install: CONDITIONS = DEV
+install: ICON = AppIconDev
 APP = $(DERIVED_DATA)/Build/Products/Release/$(NAME).app
 app: web
 	$(XCODEBUILD) $(MAC) -configuration Release PRODUCT_BUNDLE_IDENTIFIER=$(BUNDLE_ID) OVVI_URL_SCHEME=$(URL_SCHEME) \
-		OVVI_APP_NAME='$(NAME)' OVVI_CONDITIONS=$(CONDITIONS) MARKETING_VERSION=$(VERSION) CURRENT_PROJECT_VERSION=$(BUILD) \
-		OVVI_FEED_URL=$(FEED) OVVI_POSTHOG_KEY=$(POSTHOG_KEY) build $(NOWARN) $(BEAUTIFY)
+		OVVI_APP_NAME='$(NAME)' OVVI_CONDITIONS=$(CONDITIONS) OVVI_APP_ICON=$(ICON) OVVI_FEED_URL=$(FEED) \
+		OVVI_POSTHOG_KEY=$(POSTHOG_KEY) MARKETING_VERSION=$(VERSION) CURRENT_PROJECT_VERSION=$(BUILD) build $(NOWARN) $(BEAUTIFY)
 	@echo "$(APP)"
 
-# ~/.agents/skills: pi and Codex; ~/.claude/skills: Claude Code. -f replaces a dangling link, for which -e is false.
+# ~/.agents/skills: pi, Codex and OpenCode; ~/.claude/skills: Claude Code. -f replaces a dangling link, for which -e is false.
 install: app
-	swift scripts/dev-icon.swift Ovvi/Assets.xcassets/AppIcon.appiconset "$(APP)"
 	rm -rf ~/Applications/"$(NAME).app"
 	cp -R "$(APP)" ~/Applications/
 	for d in ~/.agents/skills ~/.claude/skills; do mkdir -p $$d; [ -e $$d/ovvi ] || ln -sfn $(CURDIR)/skills/ovvi $$d/ovvi; done

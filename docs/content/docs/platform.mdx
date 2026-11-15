@@ -38,7 +38,9 @@ description: "The codebase, dependencies, swipes and views, the tab bar and test
   (`sh -s -- --version 0.1.0` for one release). It
   checks for macOS 26 and Apple silicon, checks the zip against `SHA256SUMS`,
   puts the app in `/Applications` (else `~/Applications`) in place of an old
-  copy, asks to quit a running one, asks before it installs herdr (herdr's
+  copy, asks to quit a running one, asks before it links the `ovvi` skill
+  for agents ([The ovvi skill](/docs/agent-control#the-ovvi-skill)), asks
+  before it installs herdr (herdr's
   own install, as the welcome's) and herdr's integrations for Claude Code,
   Codex, Pi and OpenCode (`herdr integration install`), skips what is there,
   and opens the app. curl adds no quarantine flag, so Gatekeeper never asks; a
@@ -47,8 +49,9 @@ description: "The codebase, dependencies, swipes and views, the tab bar and test
   macOS 15).
 - **Ovvi Dev**, the dev build: `make install` builds the checkout as `Ovvi
   Dev.app`, `dev.ovvi.app.dev`, in `~/Applications`. It runs beside Ovvi with
-  settings of its own ([Data](/docs/data)) and a mark on its icon, which the
-  build draws from the app's own (`scripts/dev-icon.swift`). It has no update
+  settings of its own ([Data](/docs/data)) and a blueprint icon (Xcode beta's
+  style), the asset set `AppIconDev`, which `make icons` draws from the app's
+  own (`scripts/dev-icon.swift`). It has no update
   feed: `git pull && make install` updates it.
 - **Updates** (D112): Sparkle checks a feed once a day,
   `releases/latest/download/appcast.xml` (GitHub's newest release that is not

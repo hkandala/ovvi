@@ -96,23 +96,36 @@ place in .agents and keep a symlink in .claude, and we should have a way to upda
 
 ### Track D2 (one agent)
 
-- **Decisions.** The icon: the user picked the blueprint ("let's go with blueprint one"; Xcode beta's style: a blue
+- **Decisions (icon).** The user picked the blueprint ("let's go with blueprint one"; Xcode beta's style: a blue
   tile, a faint grid, the cards in white outline) from a second set of five, after "why this orange? can we try
   something else? check how other apps do their dev or nightly build icons" on the first (sheets in
-  `~/Downloads/ovvi-research/p59d2/`). `scripts/dev-icon.swift` draws it on the 1024 px icon and scales it to each
-  size, as `scripts/app-icon.py` makes the app's own sizes.
-- **Decisions.** Ovvi Dev is `make install` alone: the badge step runs in its recipe, and its name, bundle id
-  (`dev.ovvi.app.dev`), scheme (`ovvi-dev`) and `OVVI_CONDITIONS=DEV` (Registry's folders) are `install`'s target
-  variables, as the release's are `zip`'s. No feed, so no Updates settings, Check for Updates or update errors.
-  `make app` stays `dev.ovvi.app.release` for the measures. Ovvi Dev shares what belongs to sessions
-  (`~/.local/state/ovvi`, `~/.cache/ovvi`), as Ovvi Tip did: the cards' state follows the panes, not the app.
-- **Decisions.** The Debug build was "Ovvi Dev": it is now **Ovvi Debug** (`Ovvi Debug.app`, `ovvi-debug://`,
-  `~/.config/ovvi-debug`, `~/Library/Logs/Ovvi Debug`; the bundle id stays `dev.ovvi.app.debug`), so each build's
-  name, scheme and folder match its bundle id's last word.
-- **Decisions.** `appcast.sh` lost its name argument (only Tip passed another). Ovvi Dev keeps the release's version
-  and build number: with no feed nothing compares them.
+  `~/Downloads/ovvi-research/p59d2/`). It is a second asset set, `AppIconDev`, that `make icons` draws
+  (`scripts/dev-icon.swift`, from AppIcon's 1024 px image), chosen at build time (`OVVI_APP_ICON`): no icon swap and
+  re-signing after the build, as Ovvi Tip's `.icns` had.
+- **Cause (icon).** A swapped `.icns` showed the old icon on This Mac for the build's own path (the icon cache keeps
+  it); a fresh copy showed the new one. macOS 26 also drew Ovvi Tip's `.icns` on a light plate in the VM's Dock,
+  where the asset catalog's icon has none.
+- **Decisions (builds).** Ovvi Dev is `make install` alone: its name, bundle id (`dev.ovvi.app.dev`), scheme
+  (`ovvi-dev`), icon and `OVVI_CONDITIONS=DEV` (Registry's folders) are `install`'s target variables, as the release's
+  are `zip`'s. No feed, so no Updates settings, Check for Updates or update errors. `make app` stays
+  `dev.ovvi.app.release` for the measures. Ovvi Dev shares what belongs to sessions (`~/.local/state/ovvi`,
+  `~/.cache/ovvi`), as Ovvi Tip did: the cards' state follows the panes, not the app. The Debug build was "Ovvi Dev":
+  it is now **Ovvi Debug** (`ovvi-debug://`, `~/.config/ovvi-debug`; the bundle id stays `dev.ovvi.app.debug`), so
+  each build's name, scheme and folder match its bundle id. `appcast.sh` lost its name argument (only Tip passed
+  another).
+- **Decisions (skill).** The user: "our install script should also install ovvi skill if not present, and updates
+  should be able to update those skills too, we can ask confirmation in install script related to skills, should
+  support claude code, pi, opencode and codex". pi, Codex and OpenCode read `~/.agents/skills` (OpenCode also
+  `~/.claude/skills`), Claude Code `~/.claude/skills`; all follow a linked folder (each one's skills docs). The app
+  carries `skills/ovvi`; `install.sh` asks once and links `~/.agents/skills/ovvi` to the installed app's copy and
+  `~/.claude/skills/ovvi` to that link. Sparkle replaces the app in place, so each update updates the skill with no
+  step of its own. A skill already there stays (`make install`'s link to the checkout); a dangling link counts as none.
+- **Decisions (skill, remote machines).** The app writes no skill on the machines where it puts its `ovvi` command:
+  it writes nothing into an agent's own folders anywhere (its side files stay in `~/.cache/ovvi`), it would need a
+  consent of its own per machine, and Ovvi and Ovvi Dev share `~/.cache/ovvi`, so the two would need a version rule
+  to stop replacing each other's copy. Remote machines keep the documented copy.
 - **For the user.** `~/Applications/Ovvi.app` (the old `make install`, `dev.ovvi.app`) is left alone: the `v0.1.0`
-  curl install finds it there and replaces it in place, keeping its settings (`~/.config/ovvi`, its defaults). After
-  this, `git pull && make install` gives `~/Applications/Ovvi Dev.app` beside it, with fresh settings in
-  `~/.config/ovvi-dev` (a Debug build's old `~/.config/ovvi-dev`, if any, becomes Ovvi Dev's). The `ovvi` skill
-  links stay as they were.
+  curl install finds it there and replaces it in place, keeping its settings (`~/.config/ovvi`, its defaults). Then
+  `git pull && make install` gives `~/Applications/Ovvi Dev.app` beside it, with its own settings in
+  `~/.config/ovvi-dev` (the old Debug folder, which holds only the default plugins: Ovvi Dev takes it over). The
+  existing `ovvi` skill links to the checkout stay, so the curl install asks nothing about the skill.

@@ -37,8 +37,9 @@ curl -fsSL https://github.com/hkandala/ovvi/releases/latest/download/install.sh 
 ```
 
 The script needs macOS 26 or later on Apple silicon. It checks the download against the release's `SHA256SUMS`,
-installs Ovvi in `/Applications` (`~/Applications` when that is not writable), asks before it installs herdr and
-herdr's integrations for Claude Code, Codex, Pi and OpenCode, and opens Ovvi. Add `-s -- --version 0.1.0` after `sh`
+installs Ovvi in `/Applications` (`~/Applications` when that is not writable), asks before it links the `ovvi` skill
+for agents and before it installs herdr and herdr's integrations for Claude Code, Codex, Pi and OpenCode, and opens
+Ovvi. Add `-s -- --version 0.1.0` after `sh`
 for that release. The builds are not notarized yet: a zip downloaded in a browser opens only after System
 Settings ▸ Privacy & Security ▸ Open Anyway; the script needs no such step.
 
