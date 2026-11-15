@@ -97,9 +97,10 @@ extension OvviUITests {
                 .matching(NSPredicate(format: "identifier == %@ AND value == %@", kind, text)).firstMatch
             try moves.append(Int(XCTUnwrap(steady(3) { same.frame.minY }) - place))
         }
-        // A swipe's travel: 20 moves of 25 pt and a momentum of 25 pt × 0.9ⁿ, about 750 pt; less where it meets the
-        // loaded rows' top before the next block comes (the first swipe too). A block is thousands of points.
-        XCTAssertFalse(moves.contains { $0 > 790 || $0 < -40 }, "a jump: \(moves) at \(counts)")
+        // A swipe's travel: 20 moves of 25 pt, then AppKit's momentum, 36–116 pt; less where it meets the loaded rows'
+        // top before the next block comes (the first swipe too). Moves that come late in one burst (on CI, 13 of them
+        // after a 1.1 s gap) make a momentum of 439 pt. A block is thousands of points.
+        XCTAssertFalse(moves.contains { $0 > 1200 || $0 < -40 }, "a jump: \(moves) at \(counts)")
         XCTAssertTrue(first.isHittable && !loader.exists, "\(counts) \(loader.exists)")
         // After 10 s at the exact bottom, the stack is the newest block again, and the bottom row stays where it was. A
         // scroll up meanwhile starts the wait again.
