@@ -39,18 +39,16 @@ curl -fsSL https://github.com/hkandala/ovvi/releases/latest/download/install.sh 
 The script needs macOS 26 or later on Apple silicon. It checks the download against the release's `SHA256SUMS`,
 installs Ovvi in `/Applications` (`~/Applications` when that is not writable), asks before it installs herdr and
 herdr's integrations for Claude Code, Codex, Pi and OpenCode, and opens Ovvi. Add `-s -- --version 0.1.0` after `sh`
-for that release, or `-s -- --dev` for Ovvi Tip, the newest dev build (of main, unless a build chose another commit),
-which installs beside Ovvi. The builds are not notarized yet: a zip downloaded in a browser opens only after System
+for that release. The builds are not notarized yet: a zip downloaded in a browser opens only after System
 Settings ▸ Privacy & Security ▸ Open Anyway; the script needs no such step.
 
 ## Build from source
 
 ```sh
 make setup      # Homebrew tools and the git hooks
-make install    # a Release build copied to ~/Applications, and the ovvi skill linked for agents
+make install    # Ovvi Dev, a Release build of this checkout beside Ovvi, in ~/Applications; links the ovvi skill
 make app        # the Release app only
-make zip        # the release's zip of it and its SHA256SUMS (playbook/release.md)
-make install TIP=1   # Ovvi Tip, the dev build, beside Ovvi
+make zip        # the release's zip and its SHA256SUMS (RELEASING.md)
 make run        # build and open the app (SESSION=<name> for one session; agents: ovvi-dev-* only)
 make format     # SwiftLint's fixes and SwiftFormat
 make lint build test   # checks, the build, the unit tests and the docs and license checks

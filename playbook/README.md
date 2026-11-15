@@ -1,14 +1,13 @@
 # Playbook
 
 How Ovvi is built, for the agents that build it. What the app does is in `docs/content/docs/`; how to build,
-run and test it is in the root `README.md`.
+run and test it is in the root `README.md`; how to release it is in the root `RELEASING.md`.
 
 | File | What it holds |
 |---|---|
 | [workflow.md](workflow.md) | How we work |
 | [lessons.md](lessons.md) | Problems that came back, and the rule for each |
 | [ci.md](ci.md) | How CI runs, and how to run, watch and read it |
-| [release.md](release.md) | How a version tag becomes a release, and the steps before one |
 | [phases/](phases/) | One file per phase: its tracks, what was asked and its Findings; a new phase adds a row below |
 
 ## Phases
