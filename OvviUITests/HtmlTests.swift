@@ -69,6 +69,16 @@ extension OvviUITests {
         try await send("clear; \(Self.ovviCommand) open gone.md\r", to: shell)
         notFound(notice, "gone.md")
 
+        // A long name over two lines: one line, ending in …, no wider than the cap.
+        let long = String(repeating: "far-", count: 40) + "gone"
+        try await send("clear; \(Self.ovviCommand) open \(long)$'\\n'next.md\r", to: shell)
+        XCTAssertTrue(notice.staticTexts.matching(NSPredicate(format: "value ENDSWITH 'next.md'")).firstMatch
+            .exists(within: 10), notice.debugDescription)
+        XCTAssertLessThanOrEqual(notice.frame.height, 36.5)
+        XCTAssertLessThanOrEqual(notice.frame.width, 520.5)
+        keepScreenshot("a long file not found notice")
+        notFound(notice, "next.md")
+
         let (_, notes) = try await newCard("ovvi:explorer#e2egn1 \(folder)/notes.md")
         let gone = element("markdown.\(notes).page").links["Gone"]
         XCTAssertTrue(gone.exists(within: 10))

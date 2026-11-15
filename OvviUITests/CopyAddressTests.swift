@@ -2,7 +2,7 @@ import XCTest
 
 extension OvviUITests {
     /// ⇧⌘C copies the keyboard card's address: a terminal's folder, a browser's URL, File Explorer's open file, Git's
-    /// commit and an agent's session id.
+    /// commit and an agent's session id. The notice names what it copied, in the menu item's words, never the value.
     func testCopyAddressCopiesEachCardsAddress() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, shell) = try await newTab("copy")
@@ -19,14 +19,14 @@ extension OvviUITests {
         }
         try await show(tab)
         let browser = try await split(shell), explorer = try await split(browser, "down")
-        let git = try await split(shell, "down")
+        let git = try await split(shell, "down"), codex = try await split(browser, "down")
         try await relabel(browser, "ovvi:browser#e2ecpb file://\(root)/page.html")
         try await relabel(explorer, "ovvi:explorer#e2ecpe \(root)/a.txt")
         try await relabel(git, "ovvi:git#e2ecpg \(root)/ \(hash)")
         XCTAssertTrue(pageText("ovvi-copy-page").exists(within: 10))
 
-        func copies(_ card: String, _ expected: (String) -> Bool) {
-            let target = element(card == shell ? "terminal.\(card)" : "pane.\(card).title")
+        func copies(_ card: String, _ kind: String, _ expected: (String) -> Bool) {
+            let target = element([shell, codex].contains(card) ? "terminal.\(card)" : "pane.\(card).title")
             XCTAssertTrue(target.has(\.isHittable, true, within: 5), "\(card) is not drawn")
             target.click()
             // Again until it holds: the app's snapshot can still lack a session herdr took.
@@ -35,19 +35,25 @@ extension OvviUITests {
                 app.typeKey("c", modifierFlags: [.command, .shift])
                 return until(1) { NSPasteboard.general.string(forType: .string).map(expected) == true }
             }, "\(card): \(NSPasteboard.general.string(forType: .string) ?? "nothing copied")")
+            let notice = element("detail.notice")
+            let copied = notice.staticTexts.matching(NSPredicate(format: "value == %@", "Copied \(kind)"))
+            XCTAssertTrue(copied.firstMatch.exists(within: 2), "\(card): \(notice.debugDescription)")
         }
-        copies(shell) { $0.hasSuffix("/tmp/ovvi-e2e-copy") }
-        copies(browser) { $0 == "file://\(root)/page.html" }
-        copies(explorer) { $0 == "\(root)/a.txt" }
-        copies(git) { $0 == hash }
+        copies(shell, "Path") { $0.hasSuffix("/tmp/ovvi-e2e-copy") }
+        copies(browser, "URL") { $0 == "file://\(root)/page.html" }
+        copies(explorer, "Path") { $0 == "\(root)/a.txt" }
+        copies(git, "Commit ID") { $0 == hash }
         try await relabel(git, "ovvi:git#e2ecpg \(root)/ uncommitted")
-        copies(git) { $0 == root }
+        copies(git, "Path") { $0 == root }
 
-        let id = UUID().uuidString.lowercased()
-        // The state ahead of the session: herdr takes no state report after it.
-        try await report(shell, "working", agent: "claude")
-        try await Self.call(one, "pane.report_agent_session", ["pane_id": shell, "source": "herdr:claude",
-                                                               "agent": "claude", "agent_session_id": id])
-        copies(shell) { $0 == id }
+        // The state ahead of the session: herdr takes no state report after it. herdr takes pi's and OpenCode's
+        // sessions only from their own plugins: DecodingTests checks pi's file.
+        for (pane, agent) in [(shell, "claude"), (codex, "codex")] {
+            let id = UUID().uuidString.lowercased()
+            try await report(pane, "working", agent: agent)
+            try await Self.call(one, "pane.report_agent_session", ["pane_id": pane, "source": "herdr:\(agent)",
+                                                                   "agent": agent, "agent_session_id": id])
+            copies(pane, "Session ID") { $0 == id }
+        }
     }
 }

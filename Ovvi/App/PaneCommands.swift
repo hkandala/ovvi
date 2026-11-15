@@ -71,7 +71,7 @@ extension CommandList {
                            guard let page, let pane = target(), let address = page.address(pane) else { return }
                            NSPasteboard.general.clearContents()
                            NSPasteboard.general.setString(address.text, forType: .string)
-                           page.store.show(Notice(text: "Copied \(address.text)", tone: .success), for: .seconds(1.5))
+                           page.store.show(Notice(text: "Copied \(address.kind)", tone: .success), for: .seconds(1.5))
                        })
     }
 
@@ -186,7 +186,7 @@ extension Page {
             return [shown, label.arg].first { !$0.isEmpty }.map { ("URL", $0) }
         }
         guard let label = pane.plugin else {
-            return pane.session.map { (kind: "Session ID", text: $0) } ?? folder
+            return pane.session.map { (kind: "Session ID", text: AgentSession.id($0)) } ?? folder
         }
         let card = pane.terminalID.flatMap { terminals.plugins[$0] }
         let arg = card?.web.arg ?? label.arg

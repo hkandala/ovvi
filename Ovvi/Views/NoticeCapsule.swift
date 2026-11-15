@@ -4,7 +4,9 @@ struct NoticeCapsule<Action: View>: View {
     let tone: Notice.Tone
     let text: String
     var symbol: String?
-    /// A smaller second line, such as the reason a machine is reconnecting.
+    /// The whole text, on hover, when `text` is one line of it.
+    var whole: String?
+    /// A smaller text after it, such as the reason a machine is reconnecting.
     var detail = ""
     @ViewBuilder var action: Action
     @Environment(\.look) private var look
@@ -28,10 +30,11 @@ struct NoticeCapsule<Action: View>: View {
                 }
                 .accessibilityLabel(label)
                 .accessibilityIdentifier("notice.symbol")
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(text).lineLimit(2).help(text)
+                // One line: what is longer ends in … and shows whole on hover.
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(text).lineLimit(1).help(whole ?? text).accessibilityLabel(whole ?? text).layoutPriority(1)
                     if !detail.isEmpty {
-                        Text(detail).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(2).help(detail)
+                        Text(detail).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1).help(detail)
                             .accessibilityIdentifier("notice.detail")
                     }
                 }
@@ -39,7 +42,6 @@ struct NoticeCapsule<Action: View>: View {
             }
             .buttonBorderShape(.capsule)
             .padding(.horizontal, 14)
-            .padding(.vertical, detail.isEmpty ? 0 : 8)
         }
         .frame(minHeight: 36)
         .floatingGlass(in: .capsule)

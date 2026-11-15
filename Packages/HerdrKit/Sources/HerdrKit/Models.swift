@@ -110,6 +110,13 @@ struct Tokens: Decodable {
 public struct AgentSession: Decodable, Sendable {
     public let agent: String?
     public let value: String?
+
+    /// The id a session resumes with. pi's file is `<time>_<id>.jsonl`, and `pi --session` takes the id too.
+    public static func id(_ value: String) -> String {
+        guard value.hasPrefix("/") else { return value }
+        let name = ((value as NSString).lastPathComponent as NSString).deletingPathExtension
+        return name.firstIndex(of: "_").map { String(name[name.index(after: $0)...]) } ?? name
+    }
 }
 
 public struct PaneScroll: Decodable, Sendable {

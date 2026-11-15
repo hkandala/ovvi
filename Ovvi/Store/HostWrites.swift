@@ -83,9 +83,12 @@ extension HostStore {
         do {
             try await Git.run(root, sync.arguments, exec: exec)
         } catch {
-            // The notice shows two lines: git's error comes last, after its hints.
-            let lines = error.localizedDescription.split(separator: "\n").filter { !$0.hasPrefix("hint:") }
-            done = Notice(text: lines.suffix(2).joined(separator: "\n"))
+            // The notice is one line: git's `error:` or `fatal:` line, else its last one but hints.
+            let whole = error.localizedDescription
+            let lines = whole.split(whereSeparator: \.isNewline).map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty && !$0.hasPrefix("hint:") }
+            let line = lines.first { $0.hasPrefix("error:") || $0.hasPrefix("fatal:") } ?? lines.last ?? whole
+            done = Notice(text: line, whole: whole)
         }
         workspace.git = await GitStatus.of(root, exec: exec)
         let failed = done.tone == .error

@@ -108,7 +108,7 @@ struct Detail: View {
     private func notices(_ store: HostStore, reconnecting: String?) -> some View {
         VStack(spacing: gap) {
             if let notice = store.notice {
-                NoticeCapsule(tone: notice.tone, text: notice.text) {
+                NoticeCapsule(tone: notice.tone, text: notice.text, whole: notice.whole) {
                     if let id = notice.show {
                         Button("Show") {
                             store.notice = nil
