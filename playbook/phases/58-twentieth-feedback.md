@@ -1539,3 +1539,40 @@ Round 4's tracks (T3, E7, N4, V3, Y, U, W4) and this round's fixes; head p58r4-f
   chat-made-again, heavy-switch, reveal and kept-chats tests green. CI on f66a3eeb: the zoom test and the other 5 OverviewTests green
   (43615993258, 6 executed).
 - **For the user.** Click a tile in the overview, with VoiceOver on too: the tile should grow smoothly into the page.
+
+## Round 5
+
+The user's words (items 62–70):
+
+62. "for overview, we currently don't have any animation when entering overview mode, we have animation when leaving
+    though, let's have similar animation or may be just simpler fade in animation would be enough"
+63. "in settings, for check for updates, don't say once a day, also have an option to check now"
+64. "for agent sessions, when cmd+shift+c, only session id should be copied not entire path to jsonl, i think for pi at
+    least i see full jsonl is being copied, for claude it works fine, jsut verify for all agents we copy just the
+    session id"
+65. "and one more thing for the toast we show, we should not show what is copied, like right now if its a long url, the
+    entire url is showed in toast, instead show something like copied session id, copied url, copied file path etc.
+    based on the plugin or pane, i think we already show something like that in right click menu, just use that"
+66. "and this toast thing, let's make it something generic, we should show ellipsis if something crosses certain
+    length, let's ahve some max length, like for example, i saw for some file not found it went multiple lines, it
+    should not go multiple lines, and shouldn't be too long, have a decent max lenght and anything more show ellipsis,
+    make this change for all toasts we show"
+67. "for the plugins, we should publish each default plugin as npm packages as well, so plugins can update
+    indepentally, and individual plugin should have update option as well, which basically runs npm upgrade, and for
+    plugins, right reload all doesn't do build right, i think it should also rebuild them when reload all is pressed,
+    so for plugins this is how it works right, user can eitehr install from npm package, if they install from npm
+    package we downlaod it, build it and then have options to updarte which checks the npm package verisons, if they
+    install through other sources like git repo or file path, then we build it, but won't show update options"
+68. "all the releases flow thing we should document somewhere in one md file based on general recommendation on where
+    to keep, so it has all process for releases, and keep the doc concise and simple, with clear steps"
+69. "right now how does dev build works? like does it clone repo and do it? basically dev build be from repo using some
+    make scripts is also fine, doesn't necessarilty need to be from curl coz what if install script itself has udates,
+    imo dev builds should be from some make scripts within, may be we can upgrade make install itself to have
+    different options etc. and keep install script exclusively for installing specific release tag or latest release
+    yk, but check what's the general process many open source repos do follow, we can do something along those lines,
+    may be give me some options and recommended option for this"
+70. "there are so many release tags created, and alsoo something called tip, why? clean all that up and create one
+    after all the fixes and clean ci, and let's start the first one as 0.1.0"
+
+Tracks: O2 (62), S4 (63), Y2 (64–66). 67–69 wait on the user's choices. 70: every CI tag and the `tip` release are
+deleted (the repo keeps only `v*`); `v0.1.0` comes after round 5's final CI.
