@@ -44,10 +44,8 @@ never calls herdr's focus methods. A design gets decision numbers on the
 - **herdr inside the app** (herdr-core), so the user never installs herdr or
   needs to know about it: no mention of herdr anywhere in the app's UI.
 - **A notarized download:** with a Developer ID, the release job signs,
-  notarizes and staples the app, adds a `.dmg`, and a Homebrew cask follows
-  (signed ad hoc now: [Install](/docs/platform#install)).
-- **Anonymous telemetry:** daily users, error reports and other usage
-  numbers, sent to a hosted analytics service.
+  notarizes and staples the app, and a Homebrew cask follows (signed ad hoc
+  now: [Install](/docs/platform#install)).
 - **Richer agent notifications** than the needs-you and finished banners
   ([Status](/docs/status)).
 - **Local Network privacy** (macOS 15 and later). An `ssh` that the app starts
@@ -196,9 +194,8 @@ never calls herdr's focus methods. A design gets decision numbers on the
   (`setCustomTitlebarHeight:`).
 - Jump to prompt: needs OSC 133 marks, and herdr's frames carry none.
 - A font size per pane (one text size for the app), paste confirmation
-  (small; on request), an installer for agent integrations (herdr's own
-  installer writes the agents' config files; it belongs with the Settings
-  window).
+  (small; on request), an installer for agent integrations in the app
+  (`install.sh` asks for them, and herdr writes the agents' config files).
 - Many themes and a theme editor: the user wants only light, dark, Glass and
   Classic. A compact density: the user dropped it.
 - A menu bar status item: the floating pills would cover it.

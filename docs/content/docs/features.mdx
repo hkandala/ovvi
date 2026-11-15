@@ -70,13 +70,14 @@ Each part of the window has its own page under UI design.
   in the background, and the same three in the right-click menu. Back and Forward show the last five places at once, as you left
   them. Open With shows each app's icon.
 - Plugins as packages, as pi's: install from npm, git or a local path on the
-  Plugins page in Settings, make a new one from the template (New Plugin…), edit it,
+  Plugins page in Settings, update an npm one from its page, make a new one from the template (New Plugin…), edit it,
   and press Reload Plugin (⌥⌘R) to build it with its own script and reload
   its cards with their state. A plugin's card says in plain words why it
   does not load (no Node.js, a failed build, not built), with the fix as a
   button and its log one click away. A plugin asks once before its code first
   runs, and says plainly that plugins run code as you. A plugin can declare settings, which its page in Settings
-  draws. File Explorer and Git are plugins the user can edit too.
+  draws. File Explorer and Git are plugins the user can edit too, and they
+  update from npm apart from the app.
 - Layout changes animate.
 - Zoom a pane to fill the window, then return.
 - Drag a pane to swap it, place it beside another card, split it into
@@ -146,3 +147,13 @@ Each part of the window has its own page under UI design.
   arguments, notifications, machines, plugins with their own settings, and
   approved websites. The menu bar keeps the quick switches
   ([Settings](/docs/ui/settings)).
+
+## Install and updates
+
+- One `curl` line installs Ovvi, and asks before it installs herdr, its
+  agent integrations and the `ovvi` skill ([Install](/docs/platform#install)).
+- Ovvi checks for a new release once a day and shows a notice; it installs
+  only when you say so.
+- `make install` builds Ovvi Dev, a second app from a checkout, beside Ovvi.
+- The released app sends one anonymous report a day, which Settings turns off
+  ([Usage data](/docs/telemetry)).
