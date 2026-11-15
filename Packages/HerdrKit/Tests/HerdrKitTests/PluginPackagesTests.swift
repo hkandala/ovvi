@@ -41,7 +41,7 @@ private func package(_ folder: URL, version: String, extra: [String: Any] = [:])
     }
 }
 
-@Test func `a git source installs at its ref, and an update puts the new clone over the old`() async throws {
+@Test func `a git source installs at its ref, and an install again puts the new clone over the old`() async throws {
     let scratch = try scratchFolder()
     defer { try? FileManager.default.removeItem(at: scratch) }
     let repo = scratch.appending(path: "csv-table"), plugins = scratch.appending(path: "plugins")

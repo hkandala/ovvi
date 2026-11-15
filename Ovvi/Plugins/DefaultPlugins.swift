@@ -1,8 +1,8 @@
 import HerdrKit
 import SwiftUI
 
-/// A default plugin installs from the app's copy only while its folder is missing, so a first launch works offline.
-/// From then on it is an npm install like any other: it updates from npm, never with the app.
+/// A default plugin installs from the app's copy only while its folder is missing: a first launch needs no published
+/// package. From then on it is an npm install like any other: it updates from npm, never with the app.
 @MainActor @Observable
 final class DefaultPlugins {
     static let shared = DefaultPlugins()
@@ -22,10 +22,26 @@ final class DefaultPlugins {
     }
 
     func install() async {
-        for id in Registry.bundled.keys.sorted()
-            where !FileManager.default.fileExists(atPath: Registry.plugins.appending(path: id).path)
-        {
-            await put(id)
+        for id in Registry.bundled.keys.sorted() {
+            if FileManager.default.fileExists(atPath: Registry.plugins.appending(path: id).path) {
+                list(id)
+            } else {
+                await put(id)
+            }
+        }
+    }
+
+    /// Its npm source in `settings.json`, also when the file lost its line or did not read at the install.
+    private func list(_ id: String) {
+        guard !PluginPackages.sources(Registry.settings).contains(where: { PluginSource($0)?.folder == id }),
+              let file = Registry.defaultSources?.appending(path: "\(id)/package.json"),
+              let package = try? JSONSerialization.jsonObject(with: Data(contentsOf: file)) as? [String: Any],
+              let name = package["name"] as? String
+        else { return }
+        do {
+            try PluginPackages.list("npm:" + name, in: Registry.settings, add: true)
+        } catch {
+            PluginInstalls.shared.couldNotSave(error)
         }
     }
 
@@ -61,14 +77,10 @@ final class DefaultPlugins {
         do {
             try FileManager.default.createDirectory(at: staging, withIntermediateDirectories: true)
             try FileManager.default.copyItem(at: source, to: copy)
-            let file = copy.appending(path: "package.json")
-            let package = try JSONSerialization.jsonObject(with: Data(contentsOf: file)) as? [String: Any]
             let output = try await PluginPackages.prepare(copy, exec: localExec.value)
             PluginLog.add(id, "installed", output: output)
             try PluginPackages.place(copy, at: plugins.appending(path: id), keeping: staging)
-            if let name = package?["name"] as? String {
-                try PluginPackages.list("npm:" + name, in: Registry.settings, add: true)
-            }
+            list(id)
             Registry.reload()
         } catch {
             if let manifest = Registry.bundled[id] {

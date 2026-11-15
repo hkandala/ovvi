@@ -75,6 +75,7 @@ test:
 			if f.read_text().strip() not in texts] or None)'
 	python3 scripts/check-settings.py
 	python3 scripts/check-launches.py
+	scripts/check-plugin-versions.sh
 	python3 -c 'import pathlib, sys; sys.exit("```sh\n" + pathlib.Path("Ovvi/Agent/ovvi.sh").read_text() + "```" not in \
 		pathlib.Path("docs/content/docs/agent-control/cli.mdx").read_text() and "cli.mdx: The script differs from Ovvi/Agent/ovvi.sh")'
 

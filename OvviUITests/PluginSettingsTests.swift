@@ -108,7 +108,9 @@ extension OvviUITests {
         // Back to the list: a click on the selected row changes nothing.
         element("settings.page.general").click()
         page.click()
-        element("plugins.explorer").click()
+        let explorer = element("plugins.explorer")
+        XCTAssertTrue(until(10) { explorer.label.hasSuffix(", npm:@ovvi/explorer") }, explorer.label)
+        explorer.click()
         XCTAssertTrue(element("plugins.explorer.setting.markdown").exists(within: 5))
         XCTAssertTrue(element("plugins.explorer.setting.hidden-files").exists)
         keepScreenshot("plugin page dark", of: settings)

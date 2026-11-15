@@ -130,12 +130,12 @@ public enum PluginPackages {
         -> (folder: URL, output: String)
     {
         defer { discard(staged) }
-        let built = { FileManager.default.fileExists(atPath: staged.folder.appending(path: staged.manifest.entry ?? "")
-                .path) }
+        let built = FileManager.default.fileExists(atPath: staged.folder.appending(path: staged.manifest.entry ?? "")
+            .path)
         var output = ""
-        if staged.source.npm == nil || !built() {
+        if staged.source.npm == nil || !built {
             output = try await dependencies(staged.folder, exec: exec)
-            if !built() {
+            if !built {
                 output += try await build(staged.folder, exec: exec) ?? ""
             }
         }

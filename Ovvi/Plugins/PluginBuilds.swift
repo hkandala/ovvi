@@ -176,8 +176,15 @@ extension Plugin {
             return
         }
         Registry.reload()
+        var failed: [String] = []
         for manifest in Registry.all where manifest.entry != nil {
-            await reload(manifest.id, asked: true)
+            if let problem = await reload(manifest.id, asked: true) {
+                failed.append(problem.title)
+            }
+        }
+        // A plugin with no card has no toast: the Plugins page says it.
+        if !failed.isEmpty {
+            PluginInstalls.shared.failure = (failed.joined(separator: "; "), nil)
         }
     }
 

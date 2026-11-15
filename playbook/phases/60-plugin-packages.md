@@ -27,13 +27,18 @@ The plan the user approved ("plugin plan sounds good"):
 
 - **Decisions.** The npm names stay the packages' own: `@ovvi/explorer` and `@ovvi/git` (folder = id = the name's
   last part, so no path changed), and `@ovvi/plugin-api` from `web/ovvi` (only `ovvi.d.ts`). A default installs from
-  the app's copy only while its folder is missing (first launch, offline), and lists `npm:@ovvi/<id>` in
-  `settings.json`: from then on it is an npm install like any other, with no Remove.
+  the app's copy only while its folder is missing (first launch; `npm ci` from the network or npm's cache), and each
+  launch lists `npm:@ovvi/<id>` in `settings.json` when no source of its folder is there: so an existing copy, or a
+  rewritten `settings.json`, is an npm install too. No Remove.
 - **Deleted.** The defaults' version and hash records (`.defaults.json`, SHA-256 of source and copy), the launch-time
   replace, Update to Version, Reset to Default, the edited-copy prompt and Trash, and git's Update.
 - **The check.** `npm pack <spec> --dry-run --json` when a plugin's page opens: the same resolve as the install, and
-  it works for a tarball's path, so tests stay offline (`npm view` answers nothing for a tarball). "Up to date" shows
-  when npm has nothing newer, so a test can tell a finished check from a running one.
+  it works for a tarball's path, so the npm test stays offline (`npm view` answers nothing for a tarball). "Up to
+  date" shows when npm has nothing newer, so a test can tell a finished check from a running one. Tests that open a
+  default's page (`npm:@ovvi/explorer`) ask the real registry once it is published; offline they show nothing.
+- **Versions.** With the hash check gone, a change that keeps its version never reaches npm: `make test` runs
+  `scripts/check-plugin-versions.sh`, which fails for a published package changed since origin/main at its old
+  version. Reload All puts failed builds on the Plugins page's notice (a plugin with no card has no toast).
 - **npm installs never build again.** An npm package that ships its built entry installs no dependencies (npm packs no
   lockfile, so `npm install` would fetch every dev dependency); Reload and Reload All only load its cards again.
   Reload All builds every other plugin with code, with or without a card; `ovvi plugins reload` with no id too.

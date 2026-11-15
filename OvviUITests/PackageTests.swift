@@ -164,15 +164,7 @@ extension OvviUITests {
         sendAfter("rm -rf \(config) \(made) \(tarball)\r", to: shell)
         relaunch(one, ["-configFolder", config])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        openSettings("plugins")
-        let source = element("plugins.source", in: settingsWindow)
-        XCTAssertTrue(source.exists(within: 5))
-        source.click()
-        source.typeText("npm:\(tarball)\r")
-        XCTAssertTrue(app.sheets.buttons["Install"].exists(within: 10))
-        app.sheets.buttons["Install"].click()
-        let row = element("plugins.ovvi-e2e-npm-csv", in: settingsWindow)
-        XCTAssertTrue(row.has(\.label, "CSV npm, 0.1.0, npm:\(tarball)", within: 30), row.label)
+        let row = installs("npm:\(tarball)", as: "plugins.ovvi-e2e-npm-csv", "CSV npm, 0.1.0, npm:\(tarball)")
         let page = { [self] () -> (update: XCUIElement, current: XCUIElement) in
             element("settings.page.general").click()
             element("settings.page.plugins").click()
@@ -182,13 +174,18 @@ extension OvviUITests {
         var shown = page()
         XCTAssertTrue(shown.current.exists(within: 30))
         XCTAssertFalse(shown.update.exists)
-        keepScreenshot("npm plugin up to date", of: settingsWindow)
+        keepScreenshot("npm plugin up to date dark", of: settingsWindow)
+        addTeardownBlock { @MainActor [self] in pick("Appearance", "Dark") }
+        pick("Appearance", "Light")
+        keepScreenshot("npm plugin up to date light", of: settingsWindow)
 
         try await send(pack("0.2.0", 3), to: shell)
         try await waitFor(shell) { $0.contains("packed-0.2.0") }
         shown = page()
         XCTAssertTrue(shown.update.has(\.label, "Update to 0.2.0", within: 30), shown.update.label)
-        keepScreenshot("npm plugin update", of: settingsWindow)
+        keepScreenshot("npm plugin update light", of: settingsWindow)
+        pick("Appearance", "Dark")
+        keepScreenshot("npm plugin update dark", of: settingsWindow)
         shown.update.click()
         XCTAssertTrue(shown.current.exists(within: 30))
         try await send("clear; grep -q '\"0.2.0\"' \(config)/plugins/ovvi-e2e-npm-csv/package.json && "
@@ -197,6 +194,19 @@ extension OvviUITests {
 
         try await refusesANewerAPI(pack("0.3.0", 99), config: config, shell: shell, page: page)
         settingsWindow.buttons["_XCUI:CloseWindow"].click()
+    }
+
+    private func installs(_ typed: String, as id: String, _ label: String) -> XCUIElement {
+        openSettings("plugins")
+        let source = element("plugins.source", in: settingsWindow)
+        XCTAssertTrue(source.exists(within: 5))
+        source.click()
+        source.typeText("\(typed)\r")
+        XCTAssertTrue(app.sheets.buttons["Install"].exists(within: 10))
+        app.sheets.buttons["Install"].click()
+        let row = element(id, in: settingsWindow)
+        XCTAssertTrue(row.has(\.label, label, within: 30), row.label)
+        return row
     }
 
     private func refusesANewerAPI(_ pack: String, config: String, shell: String,

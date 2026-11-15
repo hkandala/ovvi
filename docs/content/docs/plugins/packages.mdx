@@ -200,8 +200,9 @@ the app's own build.
 - **First install.** When a default's folder is missing in the plugins
   folder (the first launch), the app copies its source there, runs `npm ci`
   from its lockfile, then its build script (about 1 s each), and lists
-  `npm:@ovvi/<id>` in `settings.json`. So a first launch works offline. Its
-  cards show "Installing ‹name›…" meanwhile. With no package manager, the
+  `npm:@ovvi/<id>` in `settings.json` (again at each launch if the line is
+  gone). `npm ci` needs the network or npm's cache. Its cards show
+  "Installing ‹name›…" meanwhile. With no package manager, or offline, the
   card says what failed, with **Try Again**
   ([Errors and logs](/docs/plugins/errors)).
 - **Then they are npm installs.** Each updates from its page, apart from the

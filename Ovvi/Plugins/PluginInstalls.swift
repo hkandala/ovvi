@@ -29,7 +29,9 @@ final class PluginInstalls {
             return InstalledPlugin(id: manifest.id, manifest: manifest, kind: kind)
         }
         let present = Set((try? FileManager.default.contentsOfDirectory(atPath: Registry.plugins.path)) ?? [])
-        let missing = installed.filter { !present.contains($0.key) }.sorted { $0.key < $1.key }
+        // A default's missing folder installs again from the app's copy.
+        let missing = installed.filter { !present.contains($0.key) && Registry.bundled[$0.key] == nil }
+            .sorted { $0.key < $1.key }
         return plugins + missing.map { InstalledPlugin(id: $0.value, manifest: nil, kind: .installed($0.value)) }
     }
 

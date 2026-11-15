@@ -36,7 +36,7 @@ jobs:
               continue
             fi
             # Empty for a version npm does not have.
-            if [ -n "$(npm view "$name@$version" version)" ]; then
+            if [ -n "$(npm view "$name@$version" version 2>/dev/null)" ]; then
               echo "$name@$version is on npm"
               continue
             fi
