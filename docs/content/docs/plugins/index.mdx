@@ -19,7 +19,7 @@ Every plugin is made the same way, as a pi package is:
   ([Build a plugin](/docs/plugins/building)).
 - Ovvi installs packages from npm, from git or from a local path. Settings
   ▸ Plugins lists them, and each plugin has its own page there: its settings,
-  **Show Log**, **Reload** and **Remove**
+  **Update** for an npm install, **Show Log**, **Reload** and **Remove**
   ([Packages and installs](/docs/plugins/packages#the-plugins-page)).
 - A plugin can declare settings in its manifest. The app draws them on the
   plugin's page and gives their values to its cards
@@ -27,7 +27,8 @@ Every plugin is made the same way, as a pi package is:
 - Each card is a web view of its own. Its page calls the app through one
   typed object, `ovvi` ([The plugin API](/docs/plugins/api)).
 - The two default plugins, File Explorer and Git, are packages too. The app
-  installs them on first launch, and they use only the public API
+  installs them on first launch, they update from npm, and they use only the
+  public API
   ([File Explorer and Git](/docs/plugins/default-plugins)).
 - The browser is a native web view. It is a kind in the same registry, with a
   manifest written in Swift ([The browser](/docs/plugins/browser)).
