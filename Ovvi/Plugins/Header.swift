@@ -64,10 +64,6 @@ final class Header {
         changed?()
     }
 
-    func click(_ id: String, part: Int) {
-        send?(["id": id, "part": part])
-    }
-
     func pick(_ id: String, _ value: PluginManifest.Value?, submit: Bool = false) {
         guard let index = controls.firstIndex(where: { $0.id == id }) else { return }
         let control = controls[index], value = submit ? control.value : value

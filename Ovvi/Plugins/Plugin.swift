@@ -5,7 +5,8 @@ import SwiftUI
 enum ExplorerPlace: String, CaseIterable {
     case files, file, preview, markdown
 
-    init(_ arg: String) {
+    init?(plugin: String, _ arg: String) {
+        guard plugin == "explorer" else { return nil }
         let ext = (arg as NSString).pathExtension.lowercased(), places = Registry.places
         if arg.hasSuffix("/") {
             self = .files
@@ -15,11 +16,6 @@ enum ExplorerPlace: String, CaseIterable {
             self = ["image", "pdf", "audio", "video", "binary"].contains { places[$0, default: []].contains(ext) }
                 ? .preview : .file
         }
-    }
-
-    init?(plugin: String, _ arg: String) {
-        guard plugin == "explorer" else { return nil }
-        self.init(arg)
     }
 
     var symbol: String {

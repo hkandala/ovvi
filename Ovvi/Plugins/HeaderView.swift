@@ -1,4 +1,3 @@
-import AppKit
 import HerdrKit
 import SwiftUI
 
@@ -164,10 +163,11 @@ private struct HeaderItem: View {
         if links == 0 {
             rest
         } else {
-            // A folder's part is a button, with the buttons' hover: 3 pt around its text, so the text sits as before.
+            // A folder's part is a button, with the buttons' hover: 3 pt around its text, so the text sits where a
+            // plain part's does.
             HStack(spacing: 0) {
                 ForEach(0 ..< links, id: \.self) { index in
-                    Button { plugin.header.click(control.id ?? "", part: index) } label: {
+                    Button { plugin.header.send?(["id": control.id ?? "", "part": index]) } label: {
                         Text(parts[index]).foregroundStyle(index == 0 ? .secondary : .primary).lineLimit(1)
                             .truncationMode(.middle).padding(.horizontal, 3).padding(.vertical, 2)
                     }

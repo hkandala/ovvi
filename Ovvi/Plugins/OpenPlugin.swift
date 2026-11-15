@@ -41,7 +41,7 @@ extension Page {
     }
 
     func openFromPlugin(_ plugin: PluginManifest, arg: String, at place: String? = nil, from source: String,
-                        how: Opening, background: Bool = false) async
+                        how: Opening, background: Bool) async
     {
         // As a terminal's link: a path, or an address the Mac has an app for.
         if how == .mac {
