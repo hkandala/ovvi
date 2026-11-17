@@ -22,7 +22,11 @@ extension OvviUITests {
         try await relabel(browser, "ovvi:browser#e2eunb file://\(folder)/light.html")
         try await relabel(plugin, "ovvi:explorer#e2eunp /private\(folder)/notes.md")
 
-        let before = try await measure("before the overview", seconds: 1)
+        // Once WebKit's GPU and network processes and the two warm views (`Browser.prewarm`) run.
+        let before = try await poll("WebKit's shared processes") { () async throws -> String? in
+            let usage = try await measure("before the overview", seconds: 1)
+            return webPages(usage) >= 4 ? usage : nil
+        }
         app.typeKey("o", modifierFlags: [.command, .control])
         let tile = element("overview.tab.\(tab)")
         XCTAssertTrue(tile.exists(within: 3))
@@ -37,11 +41,10 @@ extension OvviUITests {
         // The chat's rows, light on the dark card: a blank picture has no light pixel.
         let light = Self.brightness(element("overview.card.\(chat)").screenshot().image).count { $0 > 150 }
         XCTAssertGreaterThan(light, 20, "the chat's picture")
-        // The web cards made for their pictures go with their page processes: WebKit's GPU and network processes and
-        // the two warm views (a browser's and a plugin's, `BrowserView.take`) stay.
+        // The web cards made for their pictures go with their page processes (a warm view taken starts another).
         try await poll("the photos' web views to go") { () async throws -> Int? in
             let count = try await webPages(measure("overview", seconds: 1))
-            return count <= webPages(before) + 4 ? count : nil
+            return count <= webPages(before) ? count : nil
         }
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(element("overview").vanishes(within: 2))

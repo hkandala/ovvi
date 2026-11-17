@@ -21,7 +21,7 @@ extension WindowPages {
         overviewTabs = [:]
         overviewScrolling = false
         overviewSettling?.cancel()
-        overviewPhotographed = []
+        (overviewPhotographed, overviewLater) = ([], [])
         showTerminals()
         // After the show: a card of the tab the overview opens stays.
         endPhoto()
@@ -85,6 +85,7 @@ extension WindowPages {
         overviewSettling = Task {
             try? await Task.sleep(for: .milliseconds(150))
             if !Task.isCancelled, !overviewScrolling {
+                overviewLater = []
                 showTerminals()
             }
         }
@@ -99,7 +100,7 @@ extension WindowPages {
             page.store.state != .live ? [] : (overviewTabs[page.id] ?? []).reversed().flatMap { tab in
                 tilePanes(page, tab).compactMap { pane in
                     pane.terminalID.flatMap { id in
-                        !overviewPhotographed.contains(id) && terminals.picture(id) == nil
+                        !overviewPhotographed.union(overviewLater).contains(id) && terminals.picture(id) == nil
                             && (pane.browser != nil || pane.plugin?.manifest?.entry != nil
                                 || page.shownChat(pane) != nil) ? id : nil
                     }
@@ -130,18 +131,26 @@ extension WindowPages {
     func photographed(_ id: String) {
         guard overviewPhoto == id else { return }
         overviewPhotographed.insert(id)
-        endPhoto(pictured: true)
+        endPhoto()
         photographNext()
     }
 
-    /// Its tile scrolled out, another session shows or the overview closes: a card made only for its picture goes,
-    /// with no picture unless it took one (one taken out of a window may be blank, and its tile would not try again).
-    private func endPhoto(pictured: Bool = false) {
+    /// Its tile is not whole in the window: again once a scroll rests.
+    func photoLater(_ id: String) {
+        guard overviewPhoto == id else { return }
+        overviewLater.insert(id)
+        endPhoto()
+        photographNext()
+    }
+
+    /// Its picture taken, or its tile scrolled out, another session shows or the overview closes: a card made only
+    /// for its picture goes, and keeps no picture it did not take (one taken out of a window may be blank).
+    private func endPhoto() {
         guard let id = overviewPhoto else { return }
         overviewPhoto = nil
         overviewPhotoTimeout?.cancel()
         guard terminals.droppable(id) else { return }
-        if pictured {
+        if terminals.picture(id) != nil {
             terminals.drop(id)
         } else {
             (terminals.browsers[id], terminals.plugins[id]) = (nil, nil)

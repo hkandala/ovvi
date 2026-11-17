@@ -117,14 +117,13 @@ private struct TilePhoto: View {
             } else if let plugin, plugin.web.bridge?.failure == nil {
                 plugin.web.view.takePicture()
             } else if let chat, chat.problem == nil, let view = place.view {
-                // Once the whole tile is in the window: out of it, the picture comes blank.
-                while !Task.isCancelled {
-                    if let window = view.window, window.contentLayoutRect.contains(view.convert(view.bounds, to: nil)),
-                       let picture = ChatProbe.picture(at: view)
-                    {
-                        return page.terminals.keep(id, picture)
-                    }
-                    try? await Task.sleep(for: .milliseconds(250))
+                // Out of the window, the picture comes blank.
+                if let window = view.window, window.contentLayoutRect.contains(view.convert(view.bounds, to: nil)),
+                   let picture = ChatProbe.picture(at: view, slack: 1)
+                {
+                    page.terminals.keep(id, picture)
+                } else {
+                    page.terminals.pages?.photoLater(id)
                 }
             } else {
                 // A card that cannot load keeps its symbol.

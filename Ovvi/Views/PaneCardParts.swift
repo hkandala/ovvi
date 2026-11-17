@@ -60,14 +60,13 @@ struct ChatProbe: NSViewRepresentable {
     }
 
     /// The window's layers at the view's place, at the size the deepest of them has it: a tile's chat gives its
-    /// card's full size.
-    static func picture(at view: NSView) -> CGImage? {
+    /// card's full size. A tile's scaled chat is a fraction of a point off its place: `slack` 1.
+    static func picture(at view: NSView, slack: CGFloat = 0) -> CGImage? {
         guard let root = view.window?.contentView?.superview?.layer, !view.visibleRect.isEmpty else { return nil }
-        // The deepest layer that holds the chat's place (its rows, under 1 ms), not the window's (120 ms). Within a
-        // point: a tile's scaled chat is a fraction of a point off its place.
+        // The deepest layer that holds the chat's place (its rows, under 1 ms), not the window's (120 ms).
         var layer = root, area = view.convert(view.bounds, to: nil)
         while let next = layer.sublayers?.last(where: {
-            !$0.isHidden && $0.opacity > 0 && $0.frame.insetBy(dx: -1, dy: -1).contains(area)
+            !$0.isHidden && $0.opacity > 0 && $0.frame.insetBy(dx: -slack, dy: -slack).contains(area)
         }) {
             area = next.convert(area, from: layer)
             layer = next
