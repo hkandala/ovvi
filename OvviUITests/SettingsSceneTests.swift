@@ -58,7 +58,9 @@ extension OvviUITests {
             field.click()
             scene("\(appearance) 3 keys recording", window)
             window.typeKey(.escape, modifierFlags: [])
+            // A move inside the row, as a hand makes: a jump in from outside the window gets no hover.
             let add = element("keys.tab.new.add", in: window)
+            field.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5)).hover()
             field.hover()
             XCTAssertTrue(add.exists(within: 2))
             scene("\(appearance) 3a keys add", window, hovering: field)
