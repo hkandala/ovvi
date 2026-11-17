@@ -102,6 +102,9 @@ class Gap extends WidgetType {
   toDOM() {
     return Object.assign(document.createElement("div"), { className: "cm-md-gap" })
   }
+  ignoreEvent() {
+    return false
+  }
 }
 const gap = Decoration.widget({ widget: new Gap(), block: true, side: -1 })
 
@@ -120,6 +123,8 @@ function blocks(state: EditorState): DecorationSet {
   let skip = -1
   /** Lines with a gap above them: one between two blocks in a row. */
   const gaps = new Set<number>()
+  /** The hidden comments and definitions just passed: a gap looks past them. */
+  let hidden = { from: -1, to: -2 }
   syntaxTree(state).iterate({
     enter(node) {
       const name = node.name
@@ -150,7 +155,9 @@ function blocks(state: EditorState): DecorationSet {
       if (name === "LinkReference" && footnote.test(state.sliceDoc(from, to))) return false
       if (name === "CommentBlock" || name === "LinkReference") {
         to = blank(to)
-        if (!touches(lines, from, to)) ranges.push(Decoration.replace({ block: true }).range(from, to))
+        if (touches(lines, from, to)) return false
+        ranges.push(Decoration.replace({ block: true }).range(from, to))
+        hidden = { from: hidden.to + 1 === from ? hidden.from : from, to }
         return false
       }
       if (/^SetextHeading\d$/.test(name)) {
@@ -174,12 +181,13 @@ function blocks(state: EditorState): DecorationSet {
       }
       if (name === "FencedCode" || name === "CodeBlock") {
         // Not in a quote: the gap would break its bars.
-        let quoted = false
-        for (let at = node.node.parent; at; at = at.parent) quoted ||= at.name === "Blockquote"
+        if (inQuote(node.node.parent)) return false
         const first = doc.lineAt(node.from).number, last = doc.lineAt(node.to).number
         const text = (n: number) => /[^\s>]/.test(doc.line(n).text)
-        if (!quoted && first > 1 && text(first - 1)) gaps.add(first)
-        if (!quoted && last < doc.lines && text(last + 1)) gaps.add(last + 1)
+        let above = first - 1
+        if (above && doc.line(above).to === hidden.to) above = doc.lineAt(hidden.from).number - 1
+        if (above && text(above)) gaps.add(first)
+        if (last < doc.lines && text(last + 1)) gaps.add(last + 1)
         return false
       }
       return containers.includes(name)
@@ -247,6 +255,7 @@ function target(raw: string) {
   const url = raw.replace(/^<(.*)>$/s, "$1")
   return /^www\./i.test(url) ? `http://${url}` : /^[^\s/:@<>]+@[^\s/@<>]+\.[^\s/@<>]+$/.test(url) ? `mailto:${url}` : url
 }
+const inQuote = (node: SyntaxNode | null): boolean => !!node && (node.name === "Blockquote" || inQuote(node.parent))
 function depth(item: SyntaxNode) {
   let n = 0
   for (let at: SyntaxNode | null = item; at; at = at.parent) n += Number(/^(Bullet|Ordered)List$/.test(at.name))
@@ -348,8 +357,7 @@ function preview(view: EditorView): DecorationSet {
           const first = doc.lineAt(node.from).number, last = doc.lineAt(node.to).number
           // A block not closed has only its opening fence.
           const fences = new Set(node.node.getChildren("CodeMark").map((mark) => doc.lineAt(mark.from).number))
-          let quoted = false
-          for (let at = parent; at; at = at.parent) quoted ||= at.name === "Blockquote"
+          const quoted = inQuote(parent)
           for (const each of shown(node)) {
             const n = each.number, fence = fences.has(n) && !raw(each.from)
             const edge = `${n === first ? " cm-md-pre-first" : ""}${n === last ? " cm-md-pre-last" : ""}`
@@ -401,8 +409,7 @@ function preview(view: EditorView): DecorationSet {
           const nested = [...node.node.getChildren("BulletList"), ...node.node.getChildren("OrderedList")]
           const code = [...node.node.getChildren("FencedCode"), ...node.node.getChildren("CodeBlock")]
           const quotes = node.node.getChildren("Blockquote")
-          let quoted = false
-          for (let at = node.node.parent; at; at = at.parent) quoted ||= at.name === "Blockquote"
+          const quoted = inQuote(node.node.parent)
           for (const each of shown(node)) {
             if (each.number <= head.number || nested.some((list) => within(list, each.from))) continue
             // A quote's empty line keeps its bar under the others.
