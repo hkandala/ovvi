@@ -68,6 +68,6 @@ git diff | ovvi copy                      # the Mac's clipboard, at most 1 MiB
 - [agents.md](agents.md): start an agent with the chat view, relaunch an agent with chat, switch a card
   between chat and TUI.
 - [remote.md](remote.md): what is different on a remote machine.
-- Every command, option and answer: https://ovvi.dev/docs/agent-control/cli
+- Every command, option and answer: https://ovvi.dev/docs/reference/ovvi-command
 - herdr (tabs, splits, terminals, running a command, reading output, agent status): the herdr skill. Run
   `herdr --skill` to print it.

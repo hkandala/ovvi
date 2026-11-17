@@ -1,7 +1,7 @@
 import HerdrKit
 import SwiftUI
 
-/// Anonymous usage data ([Usage data](/docs/telemetry)). Only the released app has the key (`make zip`); Debug builds,
+/// Anonymous usage data (HerdrKit `Usage`). Only the released app has the key (`make zip`); Debug builds,
 /// Ovvi Dev, the measures' `make app` and runs with `-session` (the UI tests) record and send nothing.
 enum Telemetry {
     static let log = URL.homeDirectory.appending(path: "Library/Logs/\(Registry.logs)/usage.log")
@@ -55,7 +55,7 @@ struct UsageSwitch: View {
     var body: some View {
         Toggle(isOn: settings.$usageData) {
             Text("Share anonymous usage data")
-            Text("Counts of features used, no names or paths. [What it sends](https://ovvi.dev/docs/telemetry)")
+            Text("Counts of features used, no names or paths.")
         }
         .identifiedSettingsRow("general.usage")
         .onChange(of: settings.usageData) {

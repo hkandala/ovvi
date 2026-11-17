@@ -165,15 +165,16 @@ private final class Rig {
     #expect(Usage.Feature(plugin: "my-plugin") == .pluginCard)
 }
 
-/// Every key the event sends is a row of the docs page's field table, and every row a key; only `version`, `os` and
-/// `arch` are strings, of fixed shapes.
-@MainActor @Test func `the event's keys are the docs table's`() throws {
+/// The event sends exactly these keys, so a new one is a deliberate change here; only `version`, `os` and `arch` are
+/// strings, of fixed shapes.
+@MainActor @Test func `the event sends only the listed keys`() throws {
     let event = Usage.event(day: 20000, features: [.chatView], id: UUID().uuidString)
     let properties = try #require(event["properties"] as? [String: Any])
-    let docs = try String(contentsOf: URL(filePath: #filePath).deletingLastPathComponent()
-        .appending(path: "../../../../docs/content/docs/telemetry.mdx"), encoding: .utf8)
-    let rows = Set(docs.matches(of: /\n\| `([^`]+)` \|/).map { String($0.1) })
-    #expect(rows == Set(properties.keys).union(event.keys).subtracting(["properties"]))
+    let keys: Set = ["event", "distinct_id", "timestamp", "$process_person_profile", "$geoip_disable", "version",
+                     "build", "os", "arch", "remote_machines", "browser_card", "file_explorer", "git", "plugin_card",
+                     "chat_view", "palette", "overview", "floating_window", "cli", "file_drop", "agent_claude",
+                     "agent_codex", "agent_opencode", "agent_pi", "agent_other"]
+    #expect(keys == Set(properties.keys).union(event.keys).subtracting(["properties"]))
     for (key, value) in properties {
         switch key {
         case "version": #expect((value as? String)?.wholeMatch(of: /(\d+(\.\d+)*(-[a-z0-9.]+)?)?/) != nil)

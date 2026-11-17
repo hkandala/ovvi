@@ -34,7 +34,7 @@ tail -f <log>                             # the plugin's log
 - `reload <id>` of a plugin the user did not confirm yet is `failed`: its card asks the user first.
 - A plugin can use the whole API on its card's machine: files, git, `run` and the clipboard. The manifest has
   no permissions.
-- The manifest, the API and the template: https://ovvi.dev/docs/plugins/building
+- The manifest, the API and the template: https://ovvi.dev/docs/plugins/create
 
 ## Install a plugin
 

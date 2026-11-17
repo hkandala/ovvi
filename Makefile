@@ -79,8 +79,6 @@ test:
 	python3 scripts/check-settings.py
 	python3 scripts/check-launches.py
 	scripts/check-plugin-versions.sh
-	python3 -c 'import pathlib, sys; sys.exit("```sh\n" + pathlib.Path("Ovvi/Agent/ovvi.sh").read_text() + "```" not in \
-		pathlib.Path("docs/content/docs/agent-control/cli.mdx").read_text() and "cli.mdx: The script differs from Ovvi/Agent/ovvi.sh")'
 
 # ONLY=OvviUITests/OvviUITests/testA,OvviUITests/OvviUITests/testB runs just those.
 # SHARD=i/n runs shard i (0-based) of n, split by the tests' measured times (scripts/shard.py, scripts/test-times.tsv).
@@ -132,7 +130,7 @@ ICON = AppIcon
 zip: BUNDLE_ID = dev.ovvi.app
 zip: URL_SCHEME = ovvi
 zip: FEED = https://github.com/hkandala/ovvi/releases/latest/download/appcast.xml
-# The released app's PostHog project key (docs/content/docs/telemetry.mdx): write only, public in every app by design.
+# The released app's PostHog project key: write only, public in every app by design.
 zip: POSTHOG_KEY = phc_ps745xJ4TP7eVs38Ugh8sUyG4ZWYBmnboY9YX4ZQTvxG
 install: NAME = Ovvi Dev
 install: BUNDLE_ID = dev.ovvi.app.dev

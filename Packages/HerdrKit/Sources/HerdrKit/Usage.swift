@@ -1,6 +1,6 @@
 import Foundation
 
-/// Anonymous usage data (docs/content/docs/telemetry.mdx): one `app_day` event per day of use, with yes or no for each
+/// Anonymous usage data: one `app_day` event per day of use, with yes or no for each
 /// feature used that day. The event holds only fixed values, numbers and booleans: nothing of the user's can reach it.
 /// A day goes once it has ended, at the next launch or hourly send, so its flags are complete and it counts once.
 @MainActor

@@ -1,7 +1,7 @@
 #!/bin/sh
 # ovvi-cli 1.2
 # Written by Ovvi: asks the Ovvi that follows this herdr session. Ovvi parses the arguments.
-# https://ovvi.dev/docs/agent-control/cli
+# https://ovvi.dev/docs/reference/ovvi-command
 herdr=${HERDR_BIN_PATH:-herdr} session=${HERDR_SESSION:-default} pane=${HERDR_PANE_ID:-} timeout=10 json= j=
 dir=$HOME/.cache/ovvi/rpc
 for a; do [ "$a" = --json ] && json=1; done
