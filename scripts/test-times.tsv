@@ -111,6 +111,7 @@
 24	testScenesClassicLight
 24	testSwitchingTabsShowsOnlyTheirPage
 24	testTheSidebarFootSumsUpTheAgentsAndItsPanelGoesToOne
+40	testTheAgentsPanelScrollsAndClearsItsDoneAgents
 23	testCommandDSplitsInTheKeyWindowOnly
 23	testEveryReorderOfTheSpacesMoves
 23	testOpenSessionListsSessionsAndOpensAPage

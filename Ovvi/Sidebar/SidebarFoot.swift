@@ -4,7 +4,8 @@ import SwiftUI
 /// Under Archived Sessions: the agents' summary, which opens the Agents panel, then Keyboard Shortcuts, Command
 /// Palette, a line and Settings.
 struct SidebarFoot: View {
-    static let height: CGFloat = 28, box: CGFloat = 22
+    static let box: CGFloat = 22
+    private static let height: CGFloat = 28
     /// The box's left edge from the window's, on Archived Sessions' text; its bottom sits as far over the window's.
     static let inset = Sidebar.rowInsets.leading + WorkspaceRow.textInset
 
@@ -30,8 +31,10 @@ struct SidebarFoot: View {
             .accessibilityIdentifier("sidebar.settings")
         }
         .frame(height: Self.height)
+        .padding(.leading, WorkspaceRow.textInset)
         // The gear's ink right-aligned with Archived Sessions' chevron.
-        .padding(.leading, WorkspaceRow.textInset).padding(.trailing, 4)
+        .padding(.trailing, 4)
+        // The sidebar ends gap over the window's bottom.
         .padding(.bottom, Self.inset - gap - (Self.height - Self.box) / 2)
     }
 }
@@ -125,7 +128,7 @@ struct AgentsPanel: View {
                                 .accessibilityIdentifier("agents.panel.group.\(state.title)")
                                 .overlay(alignment: .trailing) {
                                     if state == .finishedUnseen {
-                                        clearAll(rows.map { ($0.1, $0.2) })
+                                        clearAll
                                     }
                                 }
                                 .padding(.horizontal, 8).padding(.top, 6).padding(.bottom, 4)
@@ -151,10 +154,10 @@ struct AgentsPanel: View {
         .accessibilityIdentifier("agents.panel")
     }
 
-    private func clearAll(_ rows: [(HostStore, HostStore.Pane)]) -> some View {
+    private var clearAll: some View {
         Button {
             for store in pages.machineStores {
-                store.clear(rows.filter { $0.0 === store }.map(\.1))
+                store.clear(store.agentPanes.filter { $0.state == .finishedUnseen })
             }
         } label: {
             Text("Clear All").font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
@@ -199,6 +202,7 @@ private struct AgentRow: View {
         .buttonStyle(ChromeStyle(selected: hovering, radius: 10, tint: .accentColor))
         .accessibilityLabel("\(title), \(place)")
         .accessibilityValue(pane.state?.title ?? "")
+        .accessibilityAddTraits(hovering ? .isSelected : [])
         .accessibilityActions {
             if clears {
                 Button("Clear") { store.clear([pane]) }

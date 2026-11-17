@@ -355,6 +355,7 @@ extension HostStore {
     func clear(_ panes: [Pane]) {
         seen.clear(Set(panes.map { Seen.key(terminalID: $0.terminalID, paneID: $0.id) }))
         showStates()
+        Notifications.remove(panes, of: self)
     }
 
     static func look(_ pane: Pane?, in store: HostStore) {

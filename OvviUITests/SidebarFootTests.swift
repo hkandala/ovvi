@@ -83,6 +83,10 @@ extension OvviUITests {
     /// The foot's buttons name their keys and open what those keys open.
     func testTheSidebarFootsButtonsOpenTheirPanels() {
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
+        // On Archived Sessions' text, and as far over the window's bottom.
+        let summary = element("sidebar.agents"), window = mainWindows.firstMatch
+        XCTAssertEqual(summary.frame.minX - window.frame.minX, 18, accuracy: 0.5, "\(summary.frame)")
+        XCTAssertEqual(window.frame.maxY - summary.frame.maxY, 18, accuracy: 0.5, "\(summary.frame) in \(window.frame)")
         let tip = element("tooltip")
         for (button, text) in [("shortcuts", "Keyboard Shortcuts ⌘/"), ("palette", "Command Palette ⌘K"),
                                ("settings", "Settings ⌘,")]
@@ -112,15 +116,16 @@ extension OvviUITests {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let summary = element("sidebar.agents"), panel = element("agents.panel")
 
-        step("One agent needs you and 30 are done")
+        step("One agent needs you and 11 are done")
         var done: [String] = []
-        for index in 0 ..< 31 {
+        // Over the list's 440 pt.
+        for index in 0 ..< 12 {
             let made = try await createTab(in: "w2", label: "clear-\(index)")
             closeAfter("tab", made.tab)
             try await report(made.pane, "working")
             done.append(made.pane)
         }
-        XCTAssertTrue(summary.has(\.stringValue, "31 working", within: 10), summary.stringValue)
+        XCTAssertTrue(summary.has(\.stringValue, "12 working", within: 10), summary.stringValue)
         let needs = done.removeFirst()
         try await report(needs, "blocked")
         for pane in done {
@@ -128,19 +133,19 @@ extension OvviUITests {
         }
         summary.click()
         let header = element("agents.panel.group.Done")
-        XCTAssertTrue(header.has(\.stringValue, "Done · 30", within: 5), header.stringValue)
+        XCTAssertTrue(header.has(\.stringValue, "Done · 11", within: 5), header.stringValue)
 
         step("The list scrolls inside the panel")
         let prefix = "agents.panel.\(one)."
         // Ids, not the bound elements: a removed row shifts their indexes.
         let order = panel.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", prefix))
             .allElementsBoundByIndex.sorted { $0.frame.minY < $1.frame.minY }.map(\.identifier)
-        XCTAssertEqual(order.count, 31)
+        XCTAssertEqual(order.count, 12)
         XCTAssertEqual(order.first, prefix + needs)
-        XCTAssertLessThan(panel.frame.height, 600, "\(panel.frame)")
-        let last = element(order[30])
+        XCTAssertLessThanOrEqual(panel.frame.height, 440 + 60, "\(panel.frame)")
+        let last = element(order[11])
         XCTAssertFalse(last.isHittable, "the last row shows unscrolled: \(last.frame) in \(panel.frame)")
-        keepScreenshot("agents panel, 31 agents")
+        keepScreenshot("agents panel, 12 agents")
         panel.scroll(byDeltaX: 0, deltaY: -3000)
         XCTAssertTrue(last.has(\.isHittable, true, within: 2), "\(last.frame) in \(panel.frame)")
         keepScreenshot("agents panel, scrolled to the end")
@@ -151,22 +156,27 @@ extension OvviUITests {
     private func clearsDone(_ order: [String], needs: String) {
         let panel = element("agents.panel"), header = element("agents.panel.group.Done")
         let prefix = "agents.panel.\(one).", clearPrefix = "agents.panel.clear.\(one)."
-        let last = element(order[30]), clearLast = element(order[30].replacing(prefix, with: clearPrefix))
-        step("A done row's × clears it; a row that needs you has none")
+        let last = element(order[11]), clearLast = element(order[11].replacing(prefix, with: clearPrefix))
+        step("A done row under the pointer lights and shows its ×, which clears it")
         last.hover()
         XCTAssertTrue(clearLast.exists(within: 2), "no × on a done row under the pointer")
+        XCTAssertTrue(last.isSelected, "a done row under the pointer is not lit")
         keepScreenshot("agents panel, a done row under the pointer")
         clearLast.click()
         XCTAssertTrue(last.vanishes(within: 2))
-        XCTAssertTrue(header.has(\.stringValue, "Done · 29", within: 2), header.stringValue)
+        XCTAssertTrue(header.has(\.stringValue, "Done · 10", within: 2), header.stringValue)
+        // At the list's end the row above slides under the resting pointer.
+        XCTAssertTrue(element(order[10].replacing(prefix, with: clearPrefix)).exists(within: 2),
+                      "the row that came under the pointer shows no ×")
+
+        step("A row that needs you lights with no ×")
         panel.scroll(byDeltaX: 0, deltaY: 3000)
-        let needsRow = element(prefix + needs), firstDone = element(order[1])
+        let needsRow = element(prefix + needs)
         XCTAssertTrue(needsRow.has(\.isHittable, true, within: 2))
-        firstDone.hover()
-        let clearFirst = element(order[1].replacing(prefix, with: clearPrefix))
-        XCTAssertTrue(clearFirst.exists(within: 2))
+        XCTAssertEqual(needsRow.frame.minX - panel.frame.minX, 8, accuracy: 0.5, "the rows' side inset")
+        XCTAssertEqual(panel.frame.maxX - needsRow.frame.maxX, 8, accuracy: 0.5, "the rows' side inset")
         needsRow.hover()
-        XCTAssertTrue(clearFirst.vanishes(within: 2))
+        XCTAssertTrue(needsRow.has(\.isSelected, true, within: 2), "a row under the pointer is not lit")
         XCTAssertFalse(element(clearPrefix + needs).exists, "a × on a row that needs you")
         keepScreenshot("agents panel, a row that needs you under the pointer")
 
@@ -182,6 +192,6 @@ extension OvviUITests {
         XCTAssertTrue(panel.vanishes(within: 2))
         element("sidebar.agents").hover()
         let tip = element("tooltip")
-        XCTAssertTrue(tip.has(\.stringValue, "1 needs you · 30 idle", within: 3), tip.stringValue)
+        XCTAssertTrue(tip.has(\.stringValue, "1 needs you · 11 idle", within: 3), tip.stringValue)
     }
 }
