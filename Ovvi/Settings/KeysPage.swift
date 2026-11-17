@@ -121,7 +121,7 @@ struct KeysPage: View {
         }
     }
 
-    /// The key fields, stacked, with the reset button before the first and ⊕ before the last.
+    /// The key fields, stacked, with the reset button next to the first and ⊕ before the last.
     private func fields(_ hotkey: Hotkey, _ shown: [KeyboardShortcut?], recorded: Int?,
                         asked: Clash?, hovered: Bool) -> some View
     {
@@ -132,17 +132,16 @@ struct KeysPage: View {
             ForEach(shown.indices, id: \.self) { index in
                 HStack(spacing: 8) {
                     // Before the fields, so every field ends at the row's edge.
-                    if index == 0 {
+                    if adds, index == shown.count - 1 {
+                        Button("Add Shortcut", systemImage: "plus.circle", action: add)
+                            .labelStyle(.iconOnly).buttonStyle(.borderless).help("Add Shortcut")
+                            .accessibilityIdentifier("keys.\(hotkey.id).add")
+                    }
+                    if index == 0, changed {
                         Button("Reset", systemImage: "arrow.uturn.backward") { hotkeys.set(hotkey, hotkey.keys) }
                             .labelStyle(.iconOnly).buttonStyle(.borderless).help("Reset")
-                            .opacity(changed ? 1 : 0).disabled(!changed).accessibilityHidden(!changed)
                             .accessibilityIdentifier("keys.\(hotkey.id).reset")
                     }
-                    let last = adds && index == shown.count - 1
-                    Button("Add Shortcut", systemImage: "plus.circle", action: add)
-                        .labelStyle(.iconOnly).buttonStyle(.borderless).help("Add Shortcut")
-                        .opacity(last ? 1 : 0).disabled(!last).accessibilityHidden(!last)
-                        .accessibilityIdentifier("keys.\(hotkey.id).add")
                     let slot = Slot(id: hotkey.id, index: index)
                     KeyField(id: "keys.\(hotkey.id)", index: index, title: hotkey.title, key: shown[index],
                              recording: recorded == index, asked: asked?.index == index, add: add,
