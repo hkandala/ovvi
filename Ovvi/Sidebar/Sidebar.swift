@@ -7,7 +7,7 @@ struct Sidebar: View {
 
     let pages: WindowPages
     @Binding var width: Double
-    let openSession: () -> Void
+    @Binding var panel: WindowPanel?
     @State private var filter = ""
     @State private var swipe = Swipe()
     private var settings = AppSettings()
@@ -63,6 +63,9 @@ struct Sidebar: View {
                     .padding(.leading, Sidebar.rowInsets.leading).padding(.trailing, Sidebar.rowInsets.trailing)
                     .padding(.top, 2)
             }
+            SidebarFoot(pages: pages, panel: $panel)
+                .padding(.leading, Sidebar.rowInsets.leading).padding(.trailing, Sidebar.rowInsets.trailing)
+                .padding(.top, 8)
         }
         // The whole sidebar swipes its pages, the header and the filter too.
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { area = $0 }
@@ -100,6 +103,10 @@ private struct ResizeHandle: View {
 }
 
 extension Sidebar {
+    private func openSession() {
+        panel = .openSession
+    }
+
     /// Not under a panel (the palette, Open Session), which would then act on another page.
     private func drag(_ delta: Double, first: Bool) {
         guard !pages.panelOpen else { return }

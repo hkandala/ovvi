@@ -48,9 +48,7 @@ struct AgentsWatch: ViewModifier {
     @Environment(\.appearsActive) private var appearsActive
 
     func body(content: Content) -> some View {
-        // This window's list is read too, so a page it opens or closes counts.
-        // ponytail: `HostStore.all` is not observed, so this window's `app.badge` may lag a store only another window
-        // shows until one of this window's own changes; the Dock tile is right (the last writer counts all).
+        // A window with no page shows no badge.
         let needsYou = pages.list.isEmpty ? 0 : HostStore.needsYou
         let card = page.keyboardCard(page.selectedTab?.id)
         let looked = [page.id, page.selectedTab?.id ?? "", card?.id ?? ""]

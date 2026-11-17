@@ -21,7 +21,8 @@ final class HostStore {
     private(set) var panes: [Pane] = []
     /// Set only when it changes: a view of one tab reads its own.
     private(set) var tabPanes: [String: [Pane]] = [:]
-    private(set) var waiting = 0
+    /// The agents by state, written only when a count changes: every window's sidebar foot reads every session's.
+    private(set) var stateCounts: [AgentState: Int] = [:]
     private(set) var focusedWorkspaceID: String?
     var notice: Notice?
     /// Set by the notice's own hover: a notice under the pointer stays.
@@ -125,7 +126,11 @@ final class HostStore {
         onlyPinned = !Self.saved("only", session, machine).isEmpty
     }
 
-    private(set) static var open: [String: HostStore] = [:]
+    /// Observed, so a count over every session sees one open or close.
+    private(set) static var open: [String: HostStore] {
+        get { OpenStores.shared.stores }
+        set { OpenStores.shared.stores = newValue }
+    }
 
     static func key(_ session: String, _ machine: Machine) -> String {
         "\(machine.id) \(session)"
@@ -328,7 +333,7 @@ extension HostStore {
             }
             workspace.state = workspace.tabs.compactMap { $0.agent?.state }.max()
         }
-        waiting = panes.count { $0.state == .needsYou }
+        stateCounts = Dictionary(grouping: panes.compactMap(\.state), by: \.self).mapValues(\.count)
     }
 
     private static func marksKey(_ session: String, _ machine: Machine) -> String {

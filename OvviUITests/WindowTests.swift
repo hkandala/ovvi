@@ -95,12 +95,12 @@ extension OvviUITests {
         keepScreenshot("window 2 on session two", of: second)
     }
 
-    func newWindow() throws -> (XCUIElement, XCUIElement) {
+    func newWindow(session: String? = nil) throws -> (XCUIElement, XCUIElement) {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         let first = app.windows.firstMatch
         let identifier = first.identifier
         app.typeKey("n", modifierFlags: .command)
-        let pick = element("picker.local.\(one)")
+        let pick = element("picker.local.\(session ?? one)")
         XCTAssertTrue(pick.exists(within: connect))
         pick.click()
         return try (app.windows[identifier], otherWindow(than: identifier))

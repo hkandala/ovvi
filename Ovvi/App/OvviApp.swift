@@ -239,7 +239,7 @@ private struct WindowContent: View {
     let page: Page
     @Binding var sidebar: Bool
     @Binding var sidebarWidth: Double
-    @State private var panel: Panel?
+    @State private var panel: WindowPanel?
     @State private var workspaceButtonX: CGFloat = 0
     @State private var fullScreen = false
     @State private var lightsOff = 0
@@ -270,7 +270,7 @@ private struct WindowContent: View {
             HStack(spacing: 0) {
                 if sidebar {
                     // The cards start at the sidebar's width: its handle lies over the page's 8 pt gap.
-                    Sidebar(pages: pages, width: $sidebarWidth) { panel = .openSession }
+                    Sidebar(pages: pages, width: $sidebarWidth, panel: $panel)
                         .padding(.bottom, gap)
                         // The session header and first row sit 3 pt lower than the page's 4 pt room.
                         .padding(.top, 7)
@@ -317,6 +317,12 @@ private struct WindowContent: View {
             if panel == .shortcuts {
                 Shortcuts().floatingPanel(open: open(.shortcuts), alignment: .center)
             }
+            if panel == .agents {
+                // Over the sidebar's foot, from its agents' summary up.
+                AgentsPanel(pages: pages) { panel = nil }
+                    .padding(.leading, Sidebar.rowInsets.leading).padding(.bottom, gap + SidebarFoot.height + 6)
+                    .floatingPanel(open: open(.agents), alignment: .bottomLeading)
+            }
         }
         .modifier(CloseDialog(page: page))
         .overlay {
@@ -349,7 +355,8 @@ private struct WindowContent: View {
         .navigationTitle(page.selectedTab.map { "\(page.titleText($0)) - \(page.store.title)" } ?? page.store.name)
         .menuBar(commands)
         .onChange(of: sidebar) {
-            if sidebar, panel == .workspaces {
+            // The workspace menu stands in for the sidebar; the Agents panel stands over its foot.
+            if sidebar && panel == .workspaces || !sidebar && panel == .agents {
                 panel = nil
             }
         }
@@ -357,11 +364,11 @@ private struct WindowContent: View {
         .onChange(of: page.zoomedPaneID) { pages.markShown() }
     }
 
-    enum Panel {
-        case workspaces, palette, openSession, shortcuts
-    }
-
-    private func open(_ which: Panel) -> Binding<Bool> {
+    private func open(_ which: WindowPanel) -> Binding<Bool> {
         Binding { panel == which } set: { panel = $0 ? which : panel == which ? nil : panel }
     }
+}
+
+enum WindowPanel {
+    case workspaces, palette, openSession, shortcuts, agents
 }

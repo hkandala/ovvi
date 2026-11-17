@@ -1,6 +1,6 @@
 ---
 title: "Main window"
-description: "Windows, the title row, tab bar, sidebar pages with spaces and their agents, the session header and Archived Sessions, Open Session, hover card, tab page, pane cards, zoom, overview, floating panes, find bar, notices and the palette"
+description: "Windows, the title row, tab bar, sidebar pages with spaces and their agents, the session header, Archived Sessions, the sidebar foot and its Agents panel, Open Session, hover card, tab page, pane cards, zoom, overview, floating panes, find bar, notices and the palette"
 ---
 
 ## Windows
@@ -388,14 +388,13 @@ stay still.
   whose name or branch matches, and the rows with an agent whose name, agent, space or tab matches, unfolded to
   those agents (a row kept by its branch alone stays folded). A matching worktree also keeps its repository's row.
   With none, the compact empty state says "No matching spaces" (`magnifyingglass`). Archived Sessions has its own
-  search field. The sidebar's foot has no buttons: the session header has `+` and Open Session…, and the machine
-  menu has Add Machine.
+  search field.
 - **Width.** 300 pt in a new window, from the window's edge to the cards: the rows sit 10 pt in from the window's
   edge, and the 8 pt handle lies over the gap before the cards. Drag the
   handle to resize it between 227 and 480 pt. Each window keeps its own
   width, also after a relaunch.
 
-The sidebar never shows tabs, and its bottom never shows agent activity.
+The sidebar never shows tabs. Its [foot](#sidebar-foot) sums up the machine's agents.
 
 ## Space rows
 
@@ -553,6 +552,26 @@ nothing is read.
   leaves the shelf until its start ends. A folder that is gone says "‹folder› is gone" in a notice
   (Pi resumes in the home folder: it keeps its own folder), and an agent the machine does not have
   says "‹Agent› is not on ‹machine›".
+
+## Sidebar foot
+
+The sidebar's last row, 28 pt tall, 8 pt under Archived Sessions, on the rows' edges. It does not slide with the pages.
+- **Agents' summary.** At the left, a state box with words (22 pt tall, radius 6, 11 pt semibold, the state's color
+  at 14 % fill and 45 % rim, as an agent row's box): "‹n› need you" ("1 needs you") when an agent needs you, else
+  "‹n› done" for unseen finishes, else "‹n› working". With every agent idle, or none, it says "All caught up" in
+  gray, in a box with only a gray rim. It counts the agents of every session attached in any window on this window's
+  machine. Its tooltip lists every count ("2 need you · 3 done · 2 working · 1 idle"; "No agents" with none).
+- **Buttons.** At the right, 28 pt icon buttons with a rounded-rectangle fill under the pointer: Keyboard Shortcuts
+  (`keyboard`, ⌘/), Command Palette (`command`, ⌘K), a 1 × 14 pt line, then Settings (`gearshape`, ⌘,). Each opens what
+  its key opens, and its tooltip shows the key.
+- **Agents panel.** A click on the summary opens it, 6 pt over the foot at the sidebar's left edge: 320 pt of
+  floating glass, radius 12. "Agents · ‹machine›" (This Mac, or the remote's name) heads it, then the agents that
+  need you, then those done, each group under its label ("Needs you · 2", 11 pt semibold, gray) with a line between
+  the groups; working and idle agents are not listed. Newest change first in each group. A row is 48 pt: the
+  agent's tile, its title, and under it session · space. It scrolls past 440 pt. A pick shows that agent's tab, in
+  the window that has its session, and brings that window forward, as a notification's click does. With none it
+  says "All caught up" and "Agents that need you or finish show here." Esc, a pick or a click outside closes it; a
+  collapsed sidebar closes it too.
 
 ## Open Session
 

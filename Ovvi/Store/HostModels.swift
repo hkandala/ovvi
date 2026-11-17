@@ -141,6 +141,10 @@ extension HostStore {
 }
 
 extension HostStore {
+    var waiting: Int {
+        stateCounts[.needsYou] ?? 0
+    }
+
     var agentPanes: [Pane] {
         workspaces.flatMap(\.tabs).flatMap { panes(in: $0.id).filter { $0.state != nil } }
     }
@@ -268,4 +272,10 @@ extension [String?] {
     var plainTitle: String {
         compactMap(\.self).filter { !$0.isEmpty }.joined(separator: " | ")
     }
+}
+
+@MainActor @Observable
+final class OpenStores {
+    static let shared = OpenStores()
+    var stores: [String: HostStore] = [:]
 }
