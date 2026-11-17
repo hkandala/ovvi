@@ -123,7 +123,7 @@ struct AgentsPanel: View {
                 }
                 .scrollBounceBehavior(.basedOnSize)
                 .fadesScrolledEdges()
-                .frame(maxHeight: min(440, height - TitleBar.height - 100))
+                .frame(maxHeight: max(0, min(440, height - TitleBar.height - 100)))
                 .fixedSize(horizontal: false, vertical: true)
             }
         }
