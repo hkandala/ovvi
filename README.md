@@ -5,7 +5,7 @@
 Ovvi is a native macOS app for [herdr](https://github.com/herdrdev/herdr), the terminal multiplexer for AI
 coding agents. herdr keeps the spaces, tabs and panes; Ovvi shows them as live terminal cards in a
 Liquid Glass window, on This Mac and on remote machines over SSH. It adds a chat view for agents, browser,
-File Explorer and Git cards, and plugins. Everything it does: [Features](https://ovvi.dev/docs/features).
+File Explorer and Git cards, and plugins. Everything it does: [the docs](https://ovvi.dev/docs).
 
 ## Requirements
 
@@ -23,7 +23,7 @@ Add `-s -- --version 0.1.0` after `sh` for one release. The script checks the do
 `/Applications`, asks before it installs herdr and its agent integrations, and opens Ovvi. Ovvi is not notarized: a
 zip that you download in a browser opens only after System Settings ▸ Privacy & Security ▸ Open Anyway. The script
 needs no such step. When a new release is out, Ovvi shows a notice, and it installs the update only when you say so.
-Details: [Install](https://ovvi.dev/docs/platform#install).
+Details: [Install](https://ovvi.dev/docs#install).
 
 ## The ovvi skill
 
@@ -35,12 +35,6 @@ on a remote machine:
 npx skills add hkandala/ovvi -g
 ```
 
-## Privacy
-
-The released app sends one anonymous report a day: its version, macOS, and which features were used, as yes or no.
-Settings ▸ General ▸ Share anonymous usage data turns it off. Every field:
-[Usage data](https://ovvi.dev/docs/telemetry).
-
 ## Build from source
 
 You need Xcode 27 and Homebrew.
@@ -48,10 +42,10 @@ You need Xcode 27 and Homebrew.
 ```sh
 make setup      # SwiftFormat, SwiftLint, xcbeautify and Node from the Brewfile, and the git hooks
 make install    # Ovvi Dev: this checkout as a second app beside Ovvi, in ~/Applications
-make run        # a Debug build (SESSION=<name> for one session; agents: ovvi-dev-* only)
+make run        # a Debug build (SESSION=<name> for one session)
 make format     # SwiftLint's fixes and SwiftFormat
 make lint build test   # the checks, the build, the unit tests and the repository's own checks
-make vm-e2e ONLY=…     # UI tests in the Tart VM (playbook/ci.md)
+make vm-e2e ONLY=…     # UI tests in the Tart VM ovvi-test, which you make first (playbook/ci.md#the-vm)
 ```
 
 Ovvi Dev has its own name, settings and icon, and it gets no updates: run `git pull && make install` again.
@@ -61,7 +55,7 @@ Pass `DERIVED_DATA=/tmp/ovvi-dd-<name>` when several checkouts build at once. Re
 
 ## Docs
 
-The design and the docs are in [`docs/content/docs/`](docs/content/docs/), published at
+The user docs are in [`docs/content/docs/`](docs/content/docs/), published at
 [ovvi.dev/docs](https://ovvi.dev/docs). To run them, you need Node 22 and pnpm 10:
 `cd docs && pnpm install && pnpm dev`.
 How Ovvi is built, for agents: [`playbook/`](playbook/README.md).

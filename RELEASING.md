@@ -55,7 +55,7 @@ A local `make zip` builds the same app, stamped with the nearest `v*` tag behind
 Sparkle checks each update's EdDSA signature before it installs it. Ad-hoc apps have no stable code signature, so
 this key is what the app trusts.
 
-- **Private key:** the GitHub secret `SPARKLE_PRIVATE_KEY` of the `release` environment, and a copy in the user's
+- **Private key:** the GitHub secret `SPARKLE_PRIVATE_KEY` of the `release` environment, and a copy in the maintainer's
   password manager. Only the publish job reads it.
 - **Public key:** `SUPublicEDKey` in `Ovvi/Info.plist`.
 - If the private key is lost, installed apps can take no more updates. Make a new key pair, put the new public key in
@@ -68,7 +68,7 @@ curl -fsSL https://github.com/hkandala/ovvi/releases/latest/download/install.sh 
 ```
 
 Add `-s -- --version 0.2.0` after `sh` for one release, a pre-release too. What the script does:
-[Install](https://ovvi.dev/docs/platform#install). Dev builds (`make install`, Ovvi Dev):
+[Install](https://ovvi.dev/docs#install). Dev builds (`make install`, Ovvi Dev):
 [README.md](README.md#build-from-source).
 
 ## Plugins

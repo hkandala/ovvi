@@ -25,10 +25,12 @@ the card, with its keyboard and pointer, scaled to the card.
 
 An extra plugin of Ovvi's repository: not in the app, installed from its folder, where it builds and loads.
 
+From your checkout:
+
 ```sh
-cd ~/code/ovvi/plugins/extra/tart-vm && npm ci && npm run build
-ovvi plugins install ~/code/ovvi/plugins/extra/tart-vm   # from a pane in Ovvi, or paste the path in Settings ▸ Plugins
-ln -sfn ~/code/ovvi/plugins/extra/tart-vm/bin/ovvi-tart ~/.local/bin/ovvi-tart   # optional, for scripts
+(cd plugins/extra/tart-vm && npm ci && npm run build)
+ovvi plugins install ./plugins/extra/tart-vm   # from a pane in Ovvi, or paste the full path in Settings ▸ Plugins
+ln -sfn "$PWD/plugins/extra/tart-vm/bin/ovvi-tart" ~/.local/bin/ovvi-tart   # optional, for scripts
 ```
 
 After a change to `bridge.mjs`, restart the bridge: `launchctl kickstart -k gui/$(id -u)/dev.ovvi.tart-bridge`.
