@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - 'docs/**'
+      - 'web/ovvi/ovvi.d.ts'
       - '.github/workflows/docs-deploy.yml'
   pull_request:
     paths:
       - 'docs/**'
+      - 'web/ovvi/ovvi.d.ts'
       - '.github/workflows/docs-deploy.yml'
   workflow_dispatch:
 
