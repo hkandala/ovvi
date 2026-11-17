@@ -223,14 +223,21 @@ struct Pill: View {
 
     var body: some View {
         switch (look.style, look.dark) {
-        case (.glass, _):
+        case (.glass, true):
             Color.clear.glassEffect(.regular, in: shape)
         case (.classic, true):
             shape.fill(.white.opacity(0.07)).overlay(shape.strokeBorder(.white.opacity(0.12)))
-        case (.classic, false):
-            shape.fill(.white)
-                .overlay(shape.strokeBorder(.black.opacity(0.1)))
-                .shadow(color: .black.opacity(0.15), radius: 3.5, y: 1.5)
+        case (let style, false):
+            // Light glass alone is barely lighter than a light sidebar: it takes classic's rim and shadow.
+            Group {
+                if style == .glass {
+                    Color.clear.glassEffect(.regular, in: shape)
+                } else {
+                    shape.fill(.white)
+                }
+            }
+            .overlay(shape.strokeBorder(.black.opacity(0.1)))
+            .shadow(color: .black.opacity(0.15), radius: 3.5, y: 1.5)
         }
     }
 }
