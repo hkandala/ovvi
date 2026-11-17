@@ -77,6 +77,8 @@ struct ArchivedShelf: View {
                 RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(.primary.opacity(0.14))
             }
         }
+        // Open, its border stands a row gap under the list's cut rows; the dots' band keeps them away already.
+        .padding(.top, open && pages.list.count < 2 ? WorkspaceRow.gap : 2)
         .onChange(of: open) {
             if !open {
                 search = ""

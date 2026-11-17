@@ -65,7 +65,6 @@ struct Sidebar: View {
             if settings.showArchived, let page = pages.current {
                 ArchivedShelf(pages: pages, page: page)
                     .padding(.leading, Sidebar.rowInsets.leading).padding(.trailing, Sidebar.rowInsets.trailing)
-                    .padding(.top, 2)
             }
             SidebarFoot(pages: pages, panel: $panel)
                 .padding(.leading, Sidebar.rowInsets.leading).padding(.trailing, Sidebar.rowInsets.trailing)
