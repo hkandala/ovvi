@@ -313,7 +313,7 @@ extension CommandList {
                             // `isARepeat` raises on a click (the palette, the menu bar).
                             let event = NSApp.currentEvent
                             if let page = pages?.current, let pane = page.keyboardPane,
-                               !page.store.writing || event?.type != .keyDown || event?.isARepeat != true
+                               !page.store.writes.busy || event?.type != .keyDown || event?.isARepeat != true
                             {
                                 Task.immediate { await act(page, pane, heading) }
                             }

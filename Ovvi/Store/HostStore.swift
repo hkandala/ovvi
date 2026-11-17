@@ -22,7 +22,7 @@ final class HostStore {
     /// Set only when it changes: a view of one tab reads its own.
     private(set) var tabPanes: [String: [Pane]] = [:]
     /// The agents by state. Observation skips an equal value: every window's sidebar foot reads every session's.
-    private(set) var stateCounts: [AgentState: Int] = [:]
+    var stateCounts: [AgentState: Int] = [:]
     private(set) var focusedWorkspaceID: String?
     var notice: Notice?
     /// Set by the notice's own hover: a notice under the pointer stays.
@@ -67,15 +67,12 @@ final class HostStore {
     /// Not observed: an observed write (`program`, `choosers`) follows each change.
     @ObservationIgnored var launches: [String: Launch] = [:]
     @ObservationIgnored let writes = Gate(1)
-    var writing: Bool {
-        writes.busy
-    }
 
     @ObservationIgnored var ahead = Ahead()
     @ObservationIgnored private(set) var last: Snapshot?
     @ObservationIgnored private(set) var parked: [String: Pane] = [:]
     @ObservationIgnored var lookingTabID: String?
-    @ObservationIgnored private var lookingKey: String? {
+    @ObservationIgnored var lookingKey: String? {
         didSet {
             if lookingKey != oldValue {
                 seen.look(looking)
@@ -112,8 +109,8 @@ final class HostStore {
     @ObservationIgnored var gitFollowers = 0
     /// 8 at most: a 600-pane session's first snapshot makes 600 herdr runs.
     @ObservationIgnored let asks = Gate(8)
-    @ObservationIgnored private var seen: Seen
-    @ObservationIgnored private var marks: [String: Seen.Mark]
+    @ObservationIgnored var seen: Seen
+    @ObservationIgnored var marks: [String: Seen.Mark]
 
     private init(session: String, machine: Machine) {
         self.session = session
@@ -299,70 +296,6 @@ final class HostStore {
         closeArrived()
         Task { await updateGit(all: false) }
         return changes
-    }
-}
-
-extension HostStore {
-    private var looking: Set<String> {
-        Set([lookingKey].compactMap(\.self))
-    }
-
-    /// A space Show Only Pinned Spaces hides shows no state, as if it were not there.
-    func showStates() {
-        let hidden = hidden
-        let hiddenTabs = Set(workspaces.filter { hidden.contains($0.id) }.flatMap(\.tabs).map(\.id))
-        for pane in panes {
-            let key = Seen.key(terminalID: pane.terminalID, paneID: pane.id)
-            pane.state = hiddenTabs.contains(pane.tabID) ? nil : seen.states[key]
-            pane.since = seen.since[key]
-        }
-        showStrongest()
-        keepMarks()
-    }
-
-    /// Kept here: views that read every pane's state redraw on any agent's change, every capsule and sidebar row.
-    private func showStrongest() {
-        for workspace in workspaces {
-            for tab in workspace.tabs {
-                let tabAgents = panes(in: tab.id).filter { $0.state != nil }
-                let strongest = tabAgents.max { $0.state ?? .idle < $1.state ?? .idle }
-                // Observation skips an equal value, but not an identical object.
-                if tab.agent !== strongest {
-                    tab.agent = strongest
-                }
-            }
-            workspace.state = workspace.tabs.compactMap { $0.agent?.state }.max()
-        }
-        stateCounts = Dictionary(grouping: panes.compactMap(\.state), by: \.self).mapValues(\.count)
-    }
-
-    private static func marksKey(_ session: String, _ machine: Machine) -> String {
-        "agentMarks.\(machine.id) \(session)"
-    }
-
-    /// Only once a snapshot comes: until then they are empty.
-    private func keepMarks() {
-        guard last != nil, seen.marks != marks else { return }
-        marks = seen.marks
-        let key = Self.marksKey(session, machine)
-        if marks.isEmpty {
-            UserDefaults.sidebar.removeObject(forKey: key)
-        } else {
-            UserDefaults.sidebar.set(try? JSONEncoder().encode(marks), forKey: key)
-        }
-    }
-
-    func clear(_ panes: [Pane]) {
-        seen.clear(Set(panes.map { Seen.key(terminalID: $0.terminalID, paneID: $0.id) }))
-        showStates()
-        Notifications.remove(panes, of: self)
-    }
-
-    static func look(_ pane: Pane?, in store: HostStore) {
-        let key = pane.map { Seen.key(terminalID: $0.terminalID, paneID: $0.id) }
-        for other in all {
-            other.lookingKey = other === store ? key : nil
-        }
     }
 }
 

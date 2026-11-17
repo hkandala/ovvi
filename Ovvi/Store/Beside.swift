@@ -98,18 +98,26 @@ extension HostStore {
         var moved: HerdrKit.Pane?
         await write { client in
             // In the write's turn, as `newPane`: a queued ⌘T's tab is no tab of this move's.
-            let placing = placeBeside(tabID, in: workspaceID)
-            do {
-                guard let pane = try await client.move(pane: paneID, to: .newTab(workspaceID: workspaceID))
-                else { throw HerdrError.failed("herdr named no pane") }
-                moved = pane
-                await moveBeside(placing, pane.tabID, after: tabID, in: workspaceID, client)
-            } catch {
-                dropBeside(placing)
-                throw error
+            moved = try await beside(tabID, in: workspaceID, client) {
+                try await client.move(pane: paneID, to: .newTab(workspaceID: workspaceID))
             }
         }
         return moved
+    }
+
+    /// The tab `make` adds, moved right after `after`.
+    private func beside(_ after: String, in workspaceID: String, _ client: any Multiplexer,
+                        _ make: () async throws -> HerdrKit.Pane?) async throws -> HerdrKit.Pane
+    {
+        let placing = placeBeside(after, in: workspaceID)
+        do {
+            guard let pane = try await make() else { throw HerdrError.failed("herdr named no pane") }
+            await moveBeside(placing, pane.tabID, after: after, in: workspaceID, client)
+            return pane
+        } catch {
+            dropBeside(placing)
+            throw error
+        }
     }
 
     func dropBeside(_ id: UUID) {
@@ -129,14 +137,12 @@ extension HostStore {
     {
         switch place {
         case let .tab(after):
-            let placing = placeBeside(after, in: workspaceID)
-            do {
-                let pane = try await newTab(client, in: workspaceID, cwd: cwd, label: label)
-                await moveBeside(placing, pane.tabID, after: after, in: workspaceID, client)
-                return pane
-            } catch {
-                dropBeside(placing)
-                throw error
+            return try await beside(after, in: workspaceID, client) {
+                if let label {
+                    try await client.pane(labeledTab(client, in: workspaceID, cwd: cwd, label: label))
+                } else {
+                    try await client.newTab(workspace: workspaceID, cwd: cwd)
+                }
             }
         case let .split(tabID, target, direction):
             guard let label else {
@@ -173,19 +179,7 @@ extension HostStore {
         }
     }
 
-    private func newTab(_ client: any Multiplexer, in workspaceID: String, cwd: String, label: PaneLabel?)
-        async throws -> HerdrKit.Pane
-    {
-        let pane = if let label {
-            try await client.pane(labeledTab(client, in: workspaceID, cwd: cwd, label: label))
-        } else {
-            try await client.newTab(workspace: workspaceID, cwd: cwd)
-        }
-        guard let pane else { throw HerdrError.failed("herdr named no pane") }
-        return pane
-    }
-
-    private func labeledTab(_ client: any Multiplexer, in workspaceID: String, cwd: String, label: PaneLabel)
+    func labeledTab(_ client: any Multiplexer, in workspaceID: String, cwd: String, label: PaneLabel)
         async throws -> String
     {
         // The label's path's folder survives a restart better than the folder it is asked from.

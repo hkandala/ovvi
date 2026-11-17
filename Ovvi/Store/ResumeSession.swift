@@ -2,6 +2,15 @@ import AppKit
 import HerdrKit
 
 extension Page {
+    func resume(_ session: ClosedSession) {
+        resume(session, beside: NSEvent.modifierFlags.contains(.option))
+    }
+
+    var liveSessions: Set<String> {
+        let stores = HostStore.all.filter { $0.machine.id == store.machine.id }
+        return Set(stores.flatMap(\.agentPanes).compactMap(\.session)).union(stores.flatMap(\.resuming))
+    }
+
     /// Claude Code refuses a session from another folder; pi keeps its folder in its file, so it resumes in the home
     /// folder. Once: a second click ahead of herdr's report of the session would start a second agent on it.
     func resume(_ session: ClosedSession, beside: Bool) {
@@ -62,16 +71,5 @@ extension Page {
 extension HostStore {
     func root(of workspace: Workspace) -> String? {
         workspace.worktree?.checkoutPath ?? workspace.tabs.first.flatMap { panes(in: $0.id).first?.cwd }
-    }
-}
-
-extension Page {
-    func resume(_ session: ClosedSession) {
-        resume(session, beside: NSEvent.modifierFlags.contains(.option))
-    }
-
-    var liveSessions: Set<String> {
-        let stores = HostStore.all.filter { $0.machine.id == store.machine.id }
-        return Set(stores.flatMap(\.agentPanes).compactMap(\.session)).union(stores.flatMap(\.resuming))
     }
 }

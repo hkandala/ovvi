@@ -44,8 +44,7 @@ final class WindowPages {
     }
 
     func returned(_ terminalID: String) {
-        guard let page = current, let pane = page.store.terminalPane(terminalID)
-        else { return }
+        guard let page = current, let pane = page.store.terminalPane(terminalID) else { return }
         let store = page.store
         if page.find?.paneID == pane.id {
             page.find?.stale = true

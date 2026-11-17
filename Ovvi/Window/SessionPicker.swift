@@ -108,14 +108,8 @@ struct SessionPicker: View {
         let fallback = Self.throwaway ?? Session.defaultName
         switch read[machine.id] ?? KnownSessions.of(machine).map(Result.success) {
         case nil:
-            var reading = row(
-                machine,
-                "+reading",
-                machine.icon,
-                "",
-                title: slow ? "Reading sessions…" : "",
-                busy: slow,
-            ) {}
+            var reading = row(machine, "+reading", machine.icon, "", title: slow ? "Reading sessions…" : "",
+                              busy: slow) {}
             reading.symbol = slow ? machine.icon : nil
             return ([reading], [])
         case let .failure(error):

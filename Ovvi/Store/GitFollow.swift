@@ -1,9 +1,8 @@
 import HerdrKit
 
 extension HostStore {
-    /// While a visible window shows the session: each root's git files are followed (`GitStatus.follow`, the same on
-    /// every machine), and every root is read again each 60 s, which covers what a watch cannot see (a root that
-    /// became a repository).
+    /// While a visible window shows the session: each root's git files are watched (`GitStatus.follow`), and every
+    /// root is read again each 60 s for what a watch misses (a folder that became a repository).
     func followGit() async {
         gitFollowers += 1
         repeat {

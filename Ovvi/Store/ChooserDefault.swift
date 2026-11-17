@@ -47,7 +47,7 @@ extension HostStore {
     }
 
     /// All as herdr's keys, characters too, in order: text goes by the terminal's stream and keys by herdr's API, so
-    /// a key sent right after text could pass it (CI: arrows held after a typed line landed on the empty prompt).
+    /// a key sent right after text could pass it.
     func release(_ chooser: Chooser) {
         drop(chooser)
         let held = chooser.held

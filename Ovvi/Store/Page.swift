@@ -37,7 +37,6 @@ final class Page: Identifiable {
     @ObservationIgnored private var tabOrder: [String: [String]] = [:]
     /// Each tab's zoomed card: tab id to pane id.
     var zoomedPanes: [String: String] = [:]
-    /// The selected tab's zoomed card.
     var zoomedPaneID: String? {
         selectedTab.flatMap { zoomedPanes[$0.id] }
     }

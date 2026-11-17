@@ -70,7 +70,7 @@ struct SplitDivider: View {
         let change = asked
         Task {
             // After a write in flight (a quick second change), not refused as busy.
-            while page.store.writing {
+            while page.store.writes.busy {
                 try? await Task.sleep(for: .milliseconds(50))
             }
             guard change == asked else { return }

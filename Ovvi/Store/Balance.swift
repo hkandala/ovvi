@@ -1,9 +1,8 @@
 import Foundation
 import HerdrKit
 
-/// Settings ▸ General ▸ Balance splits automatically: on (the default), each run of side-by-side or stacked panes a
-/// pane opens or closes in gets equal shares, as Balance Splits gives them; off, herdr halves a split pane and a
-/// closed pane's neighbor takes its place. Best effort: a balance herdr refuses never fails the open or the close.
+/// Settings ▸ General ▸ Balance splits automatically: a pane's open or close evens its run, as Balance Splits does.
+/// Best effort: a balance herdr refuses never fails the open or the close.
 extension HostStore {
     static var balances: Bool {
         // `bool(forKey:)` reads a launch argument's "NO" too.

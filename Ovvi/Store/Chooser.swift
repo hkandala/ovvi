@@ -19,10 +19,6 @@ final class Chooser {
         case terminal, agent, plugin(String), start(Int)
     }
 
-    static var plugins: [Row] {
-        Registry.all.filter(Registry.inNewPane).map { Row.plugin($0.id) }
-    }
-
     @ObservationIgnored let standIn: String?
     @ObservationIgnored let token = UUID().uuidString.lowercased()
     var paneID: String?
@@ -57,7 +53,8 @@ final class Chooser {
 
     static func rows(open: Bool) -> [Row] {
         let agents = shownAgents
-        return [.terminal] + (agents.isEmpty ? [] : [.agent]) + (open ? agents : []) + plugins
+        return [.terminal] + (agents.isEmpty ? [] : [.agent]) + (open ? agents : [])
+            + Registry.all.filter(Registry.inNewPane).map { Row.plugin($0.id) }
     }
 
     func made(_ pane: HerdrKit.Pane) {

@@ -189,13 +189,19 @@ extension HostStore {
                 redraw()
             }
         }
+        reorder(\.order, asked) { try await $0.move(tab: tabID, to: index) }
+    }
+
+    /// Lets go of the order shown ahead once herdr has it, unless a later move's order replaced it.
+    private func reorder(_ order: WritableKeyPath<Ahead, Ahead.NewOrder?>, _ asked: [String]?,
+                         _ action: @escaping (any Multiplexer) async throws -> Void)
+    {
         Task {
-            let done = await write { try await $0.move(tab: tabID, to: index) }
-            // Not a later move's order.
-            guard let asked, ahead.order?.ids == asked else { return }
-            ahead.order?.after = 0
+            let done = await write(action)
+            guard let asked, ahead[keyPath: order]?.ids == asked else { return }
+            ahead[keyPath: order]?.after = 0
             if !done {
-                ahead.order = nil
+                ahead[keyPath: order] = nil
                 redraw()
             }
         }
@@ -216,16 +222,7 @@ extension HostStore {
         let asked = ids
         ahead.rows = Ahead.NewOrder(workspaceID: nil, ids: ids)
         redraw()
-        Task {
-            let done = await write { try await $0.move(workspaces: workspaceIDs, before: workspaceID) }
-            // Not a later move's order.
-            guard ahead.rows?.ids == asked else { return }
-            ahead.rows?.after = 0
-            if !done {
-                ahead.rows = nil
-                redraw()
-            }
-        }
+        reorder(\.rows, asked) { try await $0.move(workspaces: workspaceIDs, before: workspaceID) }
     }
 }
 

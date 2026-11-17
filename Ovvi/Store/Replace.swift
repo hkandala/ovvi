@@ -51,16 +51,12 @@ extension HostStore {
             }
             if let label {
                 ahead.replacing[paneID]?.label = label.text
-                // The label's path's folder survives a restart better than the folder it is asked from.
-                if let tab = try await client.newTab(workspace: workspace.id, cwd: label.folder ?? cwd,
-                                                     label: label.text, command: label.placeholder)
-                {
-                    do {
-                        new = try await client.move(pane: tab, to: .tab(old.tabID, beside: paneID))
-                    } catch {
-                        try? await client.close(pane: tab)
-                        throw error
-                    }
+                let tab = try await labeledTab(client, in: workspace.id, cwd: cwd, label: label)
+                do {
+                    new = try await client.move(pane: tab, to: .tab(old.tabID, beside: paneID))
+                } catch {
+                    try? await client.close(pane: tab)
+                    throw error
                 }
             } else {
                 new = try await client.split(paneID, .right, cwd: nil)

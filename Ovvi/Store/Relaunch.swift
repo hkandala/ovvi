@@ -51,9 +51,8 @@ extension HostStore {
         return line
     }
 
-    /// ⌃C clears the prompt; alone it ends OpenCode with an empty prompt. 30 s: an agent runs its exit hooks first
-    /// (Claude Code's SessionEnd ones, up to 8 s each in a company setup), and on a busy Mac each herdr call here can
-    /// take a second.
+    /// ⌃C clears the prompt; alone it ends OpenCode with an empty prompt. 30 s: exit hooks run first (Claude Code's
+    /// SessionEnd ones take up to 8 s each), and each herdr call here can take a second on a busy Mac.
     private func quit(_ paneID: String, _ agent: Chooser.Agent, _ chooser: Chooser) async -> Bool {
         guard let client else { return false }
         let adapter = agent.adapter
