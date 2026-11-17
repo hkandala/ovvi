@@ -86,6 +86,7 @@ struct Composer: View {
     var composing: FocusState<Bool>.Binding
     /// The empty chat's, with its greeting.
     var placeholder: String?
+    @Environment(\.look) private var look
     static let inset: CGFloat = 18
 
     var body: some View {
@@ -135,7 +136,7 @@ struct Composer: View {
         Button(action: action) {
             Image(systemName: symbol).font(.system(size: 10, weight: .bold)).foregroundStyle(Look.onAccent)
                 .frame(width: 22, height: 22)
-                .background(.tint, in: .rect(cornerRadius: 5.5))
+                .background(look.sentBubble, in: .circle)
         }
         .buttonStyle(.plain)
         .tip(help, key: key)
