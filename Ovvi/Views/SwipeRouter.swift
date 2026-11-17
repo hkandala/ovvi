@@ -22,7 +22,7 @@ enum SwipeRouter {
     }
 
     fileprivate static let anchors = NSHashTable<PagesAnchor.Anchor>.weakObjects()
-    fileprivate static let strips = NSHashTable<StripAnchor.Anchor>.weakObjects()
+    fileprivate static let strips = NSHashTable<NSView>.weakObjects()
     private weak static var pager: PagesAnchor.Anchor?
     private static var lifted = false
     private static var picked = false
@@ -112,16 +112,21 @@ enum SwipeRouter {
             turn({ take(across ? .session($0) : .row($0), event) }, across ? deltaX : up(event))
             return true
         }
-        // A mouse's wheel turns only up and down: over the tab strip, it scrolls the strip sideways.
+        // A mouse's wheel turns only up and down: over the tab strip, it scrolls the strip sideways. Not under a
+        // panel or the overview, which leaves the strip in the window, unseen.
         if abs(deltaY) > abs(deltaX),
+           let pages = WindowPages.windows.first(where: { $0.window === event.window }), !pages.panelOpen,
+           !pages.overview,
            let strip = strips.allObjects.lazy.compactMap(\.enclosingScrollView).first(where: {
                $0.window === event.window && $0.bounds.contains($0.convert(event.locationInWindow, from: nil))
            })
         {
-            let clip = strip.contentView, end = max((strip.documentView?.frame.width ?? 0) - clip.bounds.width, 0)
             let step = event.hasPreciseScrollingDeltas ? deltaY : deltaY * strip.horizontalLineScroll
-            clip.scroll(to: NSPoint(x: min(max(clip.bounds.minX - step, 0), end), y: clip.bounds.minY))
-            strip.reflectScrolledClipView(clip)
+            // `scroll(_:)` keeps the clip inside the tabs.
+            strip.documentView?.scroll(NSPoint(
+                x: strip.contentView.bounds.minX - step,
+                y: strip.contentView.bounds.minY,
+            ))
             return true
         }
         guard abs(deltaX) > abs(deltaY),
@@ -188,27 +193,17 @@ struct PagesAnchor: NSViewRepresentable {
 
 /// In the tab strip's scroll content: its scroll view is the strip's.
 struct StripAnchor: NSViewRepresentable {
-    func makeNSView(context _: Context) -> Anchor {
-        Anchor()
+    func makeNSView(context _: Context) -> NSView {
+        let view = NSView()
+        SwipeRouter.strips.add(view)
+        return view
     }
 
-    func updateNSView(_: Anchor, context _: Context) {}
+    func updateNSView(_: NSView, context _: Context) {}
 
-    func sizeThatFits(_: ProposedViewSize, nsView _: Anchor, context _: Context) -> CGSize? {
+    /// No size, as `PagesAnchor`.
+    func sizeThatFits(_: ProposedViewSize, nsView _: NSView, context _: Context) -> CGSize? {
         .zero
-    }
-
-    final class Anchor: NSView {
-        override func viewDidMoveToWindow() {
-            super.viewDidMoveToWindow()
-            if window != nil {
-                SwipeRouter.strips.add(self)
-            }
-        }
-
-        override func hitTest(_: NSPoint) -> NSView? {
-            nil
-        }
     }
 }
 

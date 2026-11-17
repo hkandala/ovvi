@@ -113,13 +113,13 @@ extension OvviUITests {
         let first = element("tab.\(tabs[0])"), last = element("tab.\(tabs[11])"), fades = element("tabs.fades")
         XCTAssertTrue(fades.has(\.stringValue, "trailing", within: 2))
         // XCUITest's scroll is a wheel with no phases. Natural scrolling sets which sign turns it down (one way
-        // here, the other on CI), and a turn up stays at the first tab. On CI a wheel once moved nothing: each sign
-        // goes twice.
-        XCTAssertTrue([-1.0, 1, -1, 1].contains { sign in
+        // here, the other on CI); a turn up leaves the strip at its first tab.
+        for sign in [-1.0, 1] where !fades.stringValue.contains("leading") {
             first.scroll(byDeltaX: 0, deltaY: 3000 * sign)
-            return last.has(\.isHittable, true, within: 1)
-        }, "the last tab stayed out of view: \(fades.stringValue)")
-        XCTAssertTrue(fades.has(\.stringValue, "leading", within: 2), fades.stringValue)
+            _ = fades.has(\.stringValue, "leading", within: 3)
+        }
+        XCTAssertEqual(fades.stringValue, "leading", "a vertical wheel left the strip at its first tab")
+        XCTAssertTrue(last.has(\.isHittable, true, within: 5))
     }
 
     func testClosingTheSelectedTabGoesToTheOneUsedBefore() async throws {
