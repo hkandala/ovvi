@@ -35,9 +35,14 @@ extension OvviUITests {
             }
             try await waitForPrompt("w1:p1")
             element("terminal.w1:p1").click()
-            app.typeKey("c", modifierFlags: [.command, .shift])
             let notice = element("detail.notice")
-            XCTAssertTrue(notice.exists(within: 3))
+            // Again until it shows: the app's snapshot can still lack the pane's folder, and the key does nothing.
+            XCTAssertTrue(until(10) {
+                app.typeKey("c", modifierFlags: [.command, .shift])
+                return notice.exists(within: 1)
+            })
+            // A notice under the pointer stays past its 1.5 s.
+            notice.coordinate(withNormalizedOffset: CGVector(dx: 0.04, dy: 0.5)).hover()
             let (centre, right, window) = (notice.frame, update.frame, mainWindows.firstMatch.frame)
             let rims = (centre: Self.topSaturation(notice), update: Self.topSaturation(update))
             keepScreenshot("\(look) \(width) pt: notice \(centre), update \(right), top saturation \(rims)")
