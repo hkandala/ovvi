@@ -106,6 +106,7 @@ struct TabBar: View {
                 .background {
                     Capsule().fill(look.track).opacity(tabs.count > 1 ? 1 : 0)
                 }
+                .background(StripAnchor())
                 // Room for the Classic pill's shadow (radius 3.5, y 1.5): the scroll view clips.
                 .padding(.vertical, 5)
             }

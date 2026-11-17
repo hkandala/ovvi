@@ -108,6 +108,20 @@ extension OvviUITests {
         XCTAssertTrue(capsule.isSelected)
     }
 
+    func testAMouseWheelScrollsTheTabStripSideways() async throws {
+        let tabs = try await newWorkspace("wheel", tabs: 12).tabs
+        let first = element("tab.\(tabs[0])"), last = element("tab.\(tabs[11])"), fades = element("tabs.fades")
+        XCTAssertTrue(fades.has(\.stringValue, "trailing", within: 2))
+        // XCUITest's scroll is a wheel with no phases. Natural scrolling sets which sign turns it down (one way
+        // here, the other on CI), and a turn up stays at the first tab. On CI a wheel once moved nothing: each sign
+        // goes twice.
+        XCTAssertTrue([-1.0, 1, -1, 1].contains { sign in
+            first.scroll(byDeltaX: 0, deltaY: 3000 * sign)
+            return last.has(\.isHittable, true, within: 1)
+        }, "the last tab stayed out of view: \(fades.stringValue)")
+        XCTAssertTrue(fades.has(\.stringValue, "leading", within: 2), fades.stringValue)
+    }
+
     func testClosingTheSelectedTabGoesToTheOneUsedBefore() async throws {
         let tabs = try await newWorkspace("used", tabs: 5).tabs
         let capsules = tabs.map { element("tab.\($0)") }

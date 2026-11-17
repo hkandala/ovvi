@@ -22,6 +22,7 @@ enum SwipeRouter {
     }
 
     fileprivate static let anchors = NSHashTable<PagesAnchor.Anchor>.weakObjects()
+    fileprivate static let strips = NSHashTable<StripAnchor.Anchor>.weakObjects()
     private weak static var pager: PagesAnchor.Anchor?
     private static var lifted = false
     private static var picked = false
@@ -111,6 +112,18 @@ enum SwipeRouter {
             turn({ take(across ? .session($0) : .row($0), event) }, across ? deltaX : up(event))
             return true
         }
+        // A mouse's wheel turns only up and down: over the tab strip, it scrolls the strip sideways.
+        if abs(deltaY) > abs(deltaX),
+           let strip = strips.allObjects.lazy.compactMap(\.enclosingScrollView).first(where: {
+               $0.window === event.window && $0.bounds.contains($0.convert(event.locationInWindow, from: nil))
+           })
+        {
+            let clip = strip.contentView, end = max((strip.documentView?.frame.width ?? 0) - clip.bounds.width, 0)
+            let step = event.hasPreciseScrollingDeltas ? deltaY : deltaY * strip.horizontalLineScroll
+            clip.scroll(to: NSPoint(x: min(max(clip.bounds.minX - step, 0), end), y: clip.bounds.minY))
+            strip.reflectScrolledClipView(clip)
+            return true
+        }
         guard abs(deltaX) > abs(deltaY),
               let pages = anchors.allObjects.first(where: { $0.contains(event) }) else { return false }
         turn(pages.marks.step, deltaX)
@@ -164,6 +177,32 @@ struct PagesAnchor: NSViewRepresentable {
             super.viewDidMoveToWindow()
             if window != nil {
                 SwipeRouter.anchors.add(self)
+            }
+        }
+
+        override func hitTest(_: NSPoint) -> NSView? {
+            nil
+        }
+    }
+}
+
+/// In the tab strip's scroll content: its scroll view is the strip's.
+struct StripAnchor: NSViewRepresentable {
+    func makeNSView(context _: Context) -> Anchor {
+        Anchor()
+    }
+
+    func updateNSView(_: Anchor, context _: Context) {}
+
+    func sizeThatFits(_: ProposedViewSize, nsView _: Anchor, context _: Context) -> CGSize? {
+        .zero
+    }
+
+    final class Anchor: NSView {
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if window != nil {
+                SwipeRouter.strips.add(self)
             }
         }
 
