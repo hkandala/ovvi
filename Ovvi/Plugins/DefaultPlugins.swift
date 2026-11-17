@@ -1,8 +1,9 @@
 import HerdrKit
 import SwiftUI
 
-/// A default plugin installs from the app's copy only while its folder is missing: a first launch needs no published
-/// package. From then on it is an npm install like any other: it updates from npm, never with the app.
+/// A default plugin installs from the app's copy while its folder is missing or holds an older version: a launch needs
+/// no published package. In between it is an npm install like any other: it updates from npm, and a copy that npm made
+/// newer stays.
 @Observable
 final class DefaultPlugins {
     static let shared = DefaultPlugins()
@@ -22,8 +23,12 @@ final class DefaultPlugins {
     }
 
     func install() async {
-        for id in Registry.bundled.keys.sorted() {
-            if FileManager.default.fileExists(atPath: Registry.plugins.appending(path: id).path) {
+        for (id, bundled) in Registry.bundled.sorted(by: { $0.key < $1.key }) {
+            // An npm update under way decides the version.
+            if PluginInstalls.shared.busy[id] != nil
+                || FileManager.default.fileExists(atPath: Registry.plugins.appending(path: id).path)
+                && !PluginPackages.newer(bundled.version, than: Registry.plugin(id)?.version ?? bundled.version)
+            {
                 list(id)
             } else {
                 await put(id)
@@ -81,7 +86,7 @@ final class DefaultPlugins {
             PluginLog.add(id, "installed", output: output)
             try PluginPackages.place(copy, at: plugins.appending(path: id), keeping: staging)
             list(id)
-            Registry.reload()
+            await Plugin.reload(id, build: false)
         } catch {
             if let manifest = Registry.bundled[id] {
                 failures[id] = .failed(manifest, "could not install", error)

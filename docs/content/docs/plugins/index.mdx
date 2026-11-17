@@ -23,7 +23,11 @@ File Explorer (`explorer`) and Git (`git`) are plugins that use the same API as 
 ([Files and Git](/docs/guide/files-and-git)).
 
 - Ovvi installs them at its first launch, from the copy inside the app.
-- After that, each one updates from npm on its page in Settings ▸ Plugins. A new Ovvi does not replace them.
+- After that, each one updates from npm on its page in Settings ▸ Plugins.
+- When a new Ovvi comes with a newer version than the installed one, Ovvi installs that version at launch, from the
+  copy inside the app. It replaces the folder, edits included, and never replaces a version that is the same or
+  newer. The plugin's open cards load again. If the install fails, the installed version stays, and Ovvi tries again at
+  the next launch.
 - They do not ask for a confirmation, and they have no Remove. If you delete one's folder, Ovvi installs it again at the next launch, or when a card of it
   opens.
 

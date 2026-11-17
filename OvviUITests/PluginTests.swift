@@ -127,6 +127,12 @@ extension OvviUITests {
         try await waitFor(pane) { $0.contains("made-42") }
         relaunch(one, ["-configFolder", config])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        // The app's newer git replaces the older one, after the explorer newer than the app's stayed.
+        let git = "\(config)/plugins/git/package.json"
+        try await send("clear; for i in $(seq 240); do grep -q @ovvi/git \(git) && break; sleep 0.5; done; "
+            + "grep -q @ovvi/git \(git) && grep -q 999.0.0 \(config)/plugins/explorer/package.json "
+            + "&& echo updated-$((6*7))\r", to: pane)
+        try await waitFor(pane, times: 1300) { $0.contains("updated-42") }
         element("workspace.w2").click()
 
         let before = try await tabIDs()
@@ -190,6 +196,9 @@ extension OvviUITests {
             ("plugins/notes", package("notes", #","opens":{"folders":true},"chooser":"Notes""#)),
             ("plugins/broken", #"{"version":"1.0.0","ovvi":{"id":"broken","chooser":"Broken"}}"#),
             ("plugins/twin", package("explorer", #","chooser":"Twin""#)),
+            ("plugins/explorer",
+             package("explorer", #","chooser":"File Explorer""#).replacing("1.0.0", with: "999.0.0")),
+            ("plugins/git", package("git", #","chooser":"Git""#).replacing("1.0.0", with: "0.0.1")),
             ("local/kanban", package("kanban", #","chooser":"Kanban""#)),
         ]
         var script = "rm -rf \(config)"

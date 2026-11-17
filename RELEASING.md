@@ -86,8 +86,9 @@ It runs on a push to main that touches `plugins/builtin/**` or the types, and on
 no token, and npm adds provenance. A package that is not on npm at all is skipped with a warning.
 
 **Release a plugin:** bump its `version` in its `package.json` (every change to a plugin's source does) and push to
-main. Users see "Update to ‹version›" on the plugin's page in Settings ▸ Plugins. A version for a newer plugin API
-(`ovvi.api`) is refused by older apps, so bump `api` only with the app release that brings it.
+main. Users see "Update to ‹version›" on the plugin's page in Settings ▸ Plugins, and an app built with the newer
+version installs it from its own copy at launch. A version for a newer plugin API (`ovvi.api`) is refused by older
+apps, so bump `api` only with the app release that brings it.
 
 **Set up once.** Trusted publishing cannot make a package, and `npm trust` needs the package to exist, so each name gets
 one placeholder by hand:

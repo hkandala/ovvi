@@ -48,6 +48,8 @@ allows. If npm has a newer one, the page shows Update to ‹version›. Otherwis
 - Update replaces the plugin's folder, edits included, and does not ask again. It asks only when the new version
   has another id.
 - A source with a version (`npm:name@1.2.0`) stays at that version.
+- A default plugin also updates when a new Ovvi comes with a newer version of it, a source with a version too
+  ([The plugins that come with Ovvi](/docs/plugins#the-plugins-that-come-with-ovvi)).
 - Nothing checks for updates in the background.
 - A plugin from git does not update. To get a newer commit, remove the plugin and install it again.
 - Ovvi does not install the dependencies of a plugin from a folder. Run `npm install` in that folder yourself.
