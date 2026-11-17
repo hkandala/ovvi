@@ -69,11 +69,7 @@ extension OvviUITests {
         element("tab.\(tab)").click()
         let asking = try await split(pane)
         closeAfter("pane", asking)
-        try await Self.call(
-            one,
-            "pane.rename",
-            ["pane_id": asking, "label": "ovvi:ovvi-e2e-agent#e2eagq \(folder)/a.txt"],
-        )
+        try await rename(asking, "ovvi:ovvi-e2e-agent#e2eagq \(folder)/a.txt")
         let toast = element("pane.\(asking).toast")
         XCTAssertTrue(toast.has(\.stringValue, "asked", within: 10), toast.stringValue)
         try await run("echo 'export default {' >> \(made)/src/main.ts", in: pane, "broke", 0)
@@ -89,7 +85,7 @@ extension OvviUITests {
         element("workspace.w2").click()
         element("tab.\(tab)").click()
         let card = try await split(pane)
-        try await Self.call(one, "pane.rename", ["pane_id": card, "label": "ovvi:explorer#e2eagt \(folder)/a.txt"])
+        try await rename(card, "ovvi:explorer#e2eagt \(folder)/a.txt")
         let editor = element("file.\(card).page").textViews.firstMatch, dirty = element("pane.\(card).dirty")
         XCTAssertTrue(until(10) { editor.exists && editor.stringValue.contains("one") })
         editor.click()

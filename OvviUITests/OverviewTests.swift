@@ -261,8 +261,7 @@ extension OvviUITests {
             to: browser)
         try await waitFor(browser) { !$0.contains("printf") }
         let iid = String(format: "e2e%03x", Int.random(in: 0 ..< 4096)), title = element("pane.\(browser).title")
-        try await Self.call(one, "pane.rename", ["pane_id": browser,
-                                                 "label": "ovvi:browser#\(iid) file://\(folder)/light.html"])
+        try await rename(browser, "ovvi:browser#\(iid) file://\(folder)/light.html")
         XCTAssertTrue(title.has(\.stringValue, "Light", within: connect))
         // The web view's focus is not in the accessibility tree: the page's title shows it has the keyboard.
         element("browser.\(browser)").click()

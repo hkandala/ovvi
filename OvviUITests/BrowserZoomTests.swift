@@ -6,7 +6,7 @@ extension OvviUITests {
         try await waitForPrompt(shell)
         let page = try await writePages(from: shell)
         let browser = try await split(shell)
-        try await Self.call(one, "pane.rename", ["pane_id": browser, "label": "ovvi:browser#e2epin \(page)"])
+        try await rename(browser, "ovvi:browser#e2epin \(page)")
         try await show(tab)
         let text = pageText("ovvi-page-one")
         XCTAssertTrue(text.exists(within: 15))

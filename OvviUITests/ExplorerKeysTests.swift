@@ -36,7 +36,7 @@ extension OvviUITests {
 
         step("⌘⌥-click on a Git change row opens its file in the Mac's app for it")
         let git = try await split(card)
-        try await Self.call(one, "pane.rename", ["pane_id": git, "label": "ovvi:git#e2ekgt \(root)/"])
+        try await rename(git, "ovvi:git#e2ekgt \(root)/")
         let changed = element("git.\(git).page").buttons["Modified: a.txt"]
         XCTAssertTrue(changed.exists(within: 10))
         XCUIElement.perform(withKeyModifiers: [.command, .option]) { changed.click() }

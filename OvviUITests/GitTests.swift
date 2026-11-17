@@ -10,7 +10,7 @@ extension OvviUITests {
         let hash = try await makeRepo(repo, in: left)
         try await show(tab)
         let card = try await split(left)
-        try await Self.call(one, "pane.rename", ["pane_id": card, "label": "ovvi:git#e2egit \(root)/"])
+        try await rename(card, "ovvi:git#e2egit \(root)/")
 
         let home = element("git.\(card).page")
         XCTAssertTrue(commit("on the side", in: home).exists(within: 10))
@@ -68,7 +68,7 @@ extension OvviUITests {
         try await waitFor(left) { $0.contains("ready-42") }
         try await show(tab)
         let card = try await split(left)
-        try await Self.call(one, "pane.rename", ["pane_id": card, "label": "ovvi:git#e2enew \(root)/"])
+        try await rename(card, "ovvi:git#e2enew \(root)/")
         let home = element("git.\(card).page")
         let initialize = home.buttons["Initialize Repository"]
         XCTAssertTrue(initialize.has(\.isHittable, true, within: 10))

@@ -13,7 +13,7 @@ extension OvviUITests {
         try await waitFor(left) { $0.contains("ready-42") }
         try await show(tab)
         let card = try await split(left)
-        try await Self.call(one, "pane.rename", ["pane_id": card, "label": "ovvi:git#e2ekey \(root)/ uncommitted"])
+        try await rename(card, "ovvi:git#e2ekey \(root)/ uncommitted")
         let page = element("git.\(card).page")
         let line = { (value: String) in self.text(value, in: page) }
         // The first card of a run waits for the default plugins to install and build.

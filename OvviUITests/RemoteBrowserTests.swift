@@ -52,11 +52,7 @@ extension OvviUITests {
         let port = Int.random(in: 47100 ... 47900)
         try await serveWho(port, from: left)
         let browser = try await split(left)
-        try await Self.call(
-            one,
-            "pane.rename",
-            ["pane_id": browser, "label": "ovvi:browser#e2erem http://localhost:\(port)/"],
-        )
+        try await rename(browser, "ovvi:browser#e2erem http://localhost:\(port)/")
         XCTAssertTrue(whoText("via=com.apple.WebKit", in: first).exists(within: 10))
         XCTAssertFalse(element("browser.\(browser).machine", in: first).exists)
 

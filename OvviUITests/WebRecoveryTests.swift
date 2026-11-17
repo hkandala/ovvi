@@ -14,10 +14,8 @@ extension OvviUITests {
             to: shell)
         try await waitFor(shell) { $0.contains("ready-42") }
         let browser = try await split(shell), markdown = try await split(browser)
-        try await Self.call(one, "pane.rename", ["pane_id": browser,
-                                                 "label": "ovvi:browser#e2eend file://\(folder)/long.html"])
-        try await Self.call(one, "pane.rename", ["pane_id": markdown,
-                                                 "label": "ovvi:explorer#e2emde \(folder)/notes.md"])
+        try await rename(browser, "ovvi:browser#e2eend file://\(folder)/long.html")
+        try await rename(markdown, "ovvi:explorer#e2emde \(folder)/notes.md")
         try await show(tab)
         let notes = element("markdown.\(markdown).page")
         let heading = notes.staticTexts.matching(NSPredicate(format: "value == 'Notes'")).firstMatch
@@ -64,8 +62,7 @@ extension OvviUITests {
             + "src=\"http://127.0.0.1:\(port)/x.png\">' >\(folder)/hang.html && clear && "
             + "while nc -l 127.0.0.1 \(port) >/dev/null; do :; done\r", to: shell)
         let browser = try await split(shell)
-        try await Self.call(one, "pane.rename", ["pane_id": browser,
-                                                 "label": "ovvi:browser#e2etwc file://\(folder)/hang.html"])
+        try await rename(browser, "ovvi:browser#e2etwc file://\(folder)/hang.html")
         try await show(tab)
         XCTAssertTrue(pageText("ovvi-hang").exists(within: 15))
         _ = try await end()
@@ -120,7 +117,7 @@ extension OvviUITests {
         for (pane, label) in [(browser, "browser#e2ehng file://\(folder)/long.html"),
                               (markdown, "explorer#e2ehmd \(folder)/notes.md"), (git, "git#e2ehgt /private\(folder)/")]
         {
-            try await Self.call(one, "pane.rename", ["pane_id": pane, "label": "ovvi:\(label)"])
+            try await rename(pane, "ovvi:\(label)")
         }
         try await show(tab)
         XCTAssertTrue(pageText("Paragraph 1").exists(within: 15))

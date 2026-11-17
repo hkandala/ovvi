@@ -7,7 +7,7 @@ extension OvviUITests {
         // A split, not a fourth tab in w1: 220 pt tabs, and only 3 fit on CI's window.
         let working = try await split(idle)
         try await report(working, "working")
-        try await Self.call(one, "pane.rename", ["pane_id": working, "label": "fixer"])
+        try await rename(working, "fixer")
         let blocked = try await newTab("deploy").pane
         try await report(blocked, "blocked", agent: "claude")
         let docs = try await newTab("docs")

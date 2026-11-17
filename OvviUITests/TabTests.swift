@@ -89,7 +89,7 @@ extension OvviUITests {
             + "document.title = \\x27x \\x27 + scrollX</script>' >\(file) && clear\r", to: pane)
         try await waitFor(pane) { !$0.contains("printf") }
         let iid = String(format: "e2e%03x", Int.random(in: 0 ..< 4096)), title = element("pane.\(pane).title")
-        try await Self.call(one, "pane.rename", ["pane_id": pane, "label": "ovvi:browser#\(iid) file://\(file)"])
+        try await rename(pane, "ovvi:browser#\(iid) file://\(file)")
         XCTAssertTrue(title.has(\.stringValue, "x 0", within: connect))
         let page = element("browser.\(pane)"), capsule = element("tab.\(tab)")
         XCTAssertTrue(page.has(\.isHittable, true, within: 5))

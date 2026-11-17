@@ -119,10 +119,6 @@ extension OvviUITests {
         String(UUID().uuidString.lowercased().filter(\.isHexDigit).prefix(6))
     }
 
-    private func rename(_ pane: String, _ label: String) async throws {
-        try await Self.call(one, "pane.rename", ["pane_id": pane, "label": label])
-    }
-
     /// Acts, then waits for each card's track (published 0.4 s after its last change) and 1 s more, which catches a
     /// second motion herdr's answer starts.
     private func moves(_ step: String, in tab: String, curve: Bool = true, seen: inout Seen,

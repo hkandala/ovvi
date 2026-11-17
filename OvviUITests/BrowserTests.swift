@@ -208,15 +208,11 @@ extension OvviUITests {
         let page = try await writePages(from: shell, in: five)
         let pane = try await split(shell, in: five)
         closeAfter("pane", pane, in: five)
-        try await Self.call(five, "pane.rename", ["pane_id": pane, "label": "ovvi:browser#e2e5ab \(page)"])
+        try await rename(pane, "ovvi:browser#e2e5ab \(page)", in: five)
         // `.invalid`: approvals live in the defaults the tests share with the user's Ovvi.
         let site = try await split(pane, "down", in: five)
         closeAfter("pane", site, in: five)
-        try await Self.call(
-            five,
-            "pane.rename",
-            ["pane_id": site, "label": "ovvi:browser#e2e5ac https://ovvi.invalid/"],
-        )
+        try await rename(site, "ovvi:browser#e2e5ac https://ovvi.invalid/", in: five)
         let tab = try await tabOf(pane, in: five)
         relaunch(five, ["-appearance", "light"])
         XCTAssertTrue(element("browser.\(site).open").exists(within: connect))
@@ -266,11 +262,7 @@ extension OvviUITests {
             + ">\(folder)/light.html && clear\r", to: pane)
         try await waitFor(pane) { !$0.contains("printf") }
         let iid = String(format: "e2e%03x", Int.random(in: 0 ..< 4096)), title = element("pane.\(pane).title")
-        try await Self.call(
-            one,
-            "pane.rename",
-            ["pane_id": pane, "label": "ovvi:browser#\(iid) file://\(folder)/light.html"],
-        )
+        try await rename(pane, "ovvi:browser#\(iid) file://\(folder)/light.html")
         try await show(tab)
         XCTAssertTrue(until(connect) { title.stringValue.hasPrefix("Light ") }, title.stringValue)
         let first = title.stringValue

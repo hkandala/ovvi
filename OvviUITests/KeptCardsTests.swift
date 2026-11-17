@@ -119,8 +119,7 @@ extension OvviUITests {
                     "command": ["sh", "-c", "cat", "sh"]]
         }
         let browser = try await split(shell)
-        try await Self.call(one, "pane.rename", ["pane_id": browser,
-                                                 "label": leaf("browser", "file://\(folder)/0.html")["label"] ?? ""])
+        try await rename(browser, leaf("browser", "file://\(folder)/0.html")["label"] as? String ?? "")
         var opened = [(first, browser)], titles: [String: String] = [:]
         for index in 1 ... 2 * kept {
             let web = index.isMultiple(of: 2), page = (index + 1) / 2
