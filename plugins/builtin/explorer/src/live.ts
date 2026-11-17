@@ -384,13 +384,15 @@ function preview(view: EditorView): DecorationSet {
           let quoted = false
           for (let at = node.node.parent; at; at = at.parent) quoted ||= at.name === "Blockquote"
           for (const each of shown(node)) {
-            if (each.number <= head.number || !/[^\s>]/.test(each.text)) continue
-            if (nested.some((list) => within(list, each.from))) continue
-            const own = raw(each.from), hang = `${own ? width - 1 : width}em`
+            if (each.number <= head.number || nested.some((list) => within(list, each.from))) continue
+            // A quote's empty line keeps its bar under the others.
             const quote = quotes.some((block) => within(block, each.from))
+            if (!quote && !/[^\s>]/.test(each.text)) continue
             const inCode = !quoted && code.some((block) => within(block, each.from))
+            // The cursor's line shows its indent; a code line keeps its box in place and shows it inside.
+            const own = raw(each.from), hang = `${own && !inCode ? width - 1 : width}em`
             ranges.push((quote || inCode
-              ? Decoration.line({ attributes: { style: inCode ? `--hang: ${hang}` : `margin-left: ${hang}` } })
+              ? Decoration.line({ attributes: { style: `--indent: ${hang}` } })
               : Decoration.line({ class: "cm-md-hang", attributes: { style: `--hang: ${hang}` } })).range(each.from))
             const lead = quote ? /^()([ \t]*)/ : /^((?:[ \t]*>[ \t]?)*)([ \t]*)/
             const [, marks = "", spaces = ""] = lead.exec(each.text) ?? []

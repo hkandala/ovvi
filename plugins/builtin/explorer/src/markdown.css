@@ -75,11 +75,6 @@ nav button:hover {
   font: 0.9em ui-monospace, monospace;
   background: color-mix(in srgb, var(--text) 6%, transparent);
 }
-/* The block starts at the text's edge: a list item's hang plus the lines' 6px. The line's em is 0.9 of the text's.
-   A quote's code keeps its place under the bars. */
-.cm-line.cm-md-pre:not(.cm-md-quote) {
-  margin-left: calc(var(--hang, 0em) / 0.9 + 6px);
-}
 .cm-md-pre-first {
   border-radius: 8px 8px 0 0;
 }
@@ -109,6 +104,20 @@ nav button:hover {
   background-position: 6px 0;
   background-size: calc(var(--quotes) * 12px) 100%;
   background-repeat: no-repeat;
+}
+/* A block in a list item moves by the item's indent. Code starts at the text's edge, the lines' 6px in: its line's em
+   is 0.9 of the text's. A list item that opens with a fence keeps its first line under the other items' marks. */
+.cm-line.cm-md-quote {
+  margin-left: var(--indent, 0em);
+}
+.cm-line.cm-md-pre:not(.cm-md-hang),
+.cm-line.cm-md-pre.cm-md-quote {
+  margin-left: calc(var(--indent, 0em) / 0.9 + 6px);
+}
+/* Its fill starts at the first bar, and its text stays in the quote's column. */
+.cm-line.cm-md-pre.cm-md-quote {
+  background-position: 0 0;
+  padding-left: calc(var(--quotes) * 12px + var(--hang, 0em) / 0.9);
 }
 .cm-md-bullet {
   display: inline-block;
