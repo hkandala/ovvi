@@ -4,20 +4,21 @@
 # sessions), films each page's change in the whole main window (2x, 60 fps, the window's rect only, over a plain
 # black or white backdrop: scripts/onboarding/film.swift) in dark and light, encodes the clips into
 # Ovvi/Onboarding/Clips, then films the whole welcome (testWelcomeFilm: the panel only, dark and light) and writes
-# everything to ~/Downloads/ovvi-research/onboarding-v4/.
+# everything to .build/onboarding/. Everything films on a 4K display made for the run (scripts/hidpi-display.m),
+# the main display while it runs, so the films are 2x on any Mac.
 # Usage: scripts/record-onboarding.sh [clips|encode|films|all] [dark|light|both]   (default: all both)
 # Takes the GUI lock (or runs under the user's own hold); Ctrl-C stops it and cleans up what it started.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 REPO=$PWD WORLD=onboarding S=workbench SIZE=1200x800
-W=/tmp/$WORLD C=/tmp/$WORLD-clips CLIPS=$REPO/Ovvi/Onboarding/Clips OUT=$HOME/Downloads/ovvi-research/onboarding-v4
+W=/tmp/$WORLD C=/tmp/$WORLD-clips CLIPS=$REPO/Ovvi/Onboarding/Clips OUT=$REPO/.build/onboarding
 export DERIVED_DATA=${DERIVED_DATA:-/tmp/ovvi-dd-$WORLD}
 export OVVI_APP=$DERIVED_DATA/Build/Products/Release/Ovvi.app
 STEPS=${1:-all} LOOKS=${2:-both} PAGES=${PAGES:-running layout agents plugins machines}
 [ "$LOOKS" = both ] && LOOKS="dark light"
 unset "${!HERDR_@}"
 HERDR=$(command -v herdr) CLAUDE=$(command -v claude || true)
-started=$SECONDS lock= REC= up= BACKDROP= FILM=
+started=$SECONDS lock= REC= up= BACKDROP= FILM= SCREEN=
 say() { printf '\n[%s +%dm%02ds] %s\n' "$(date +%H:%M:%S)" $(((SECONDS - started) / 60)) $(((SECONDS - started) % 60)) "$*"; }
 
 cleanup() {
@@ -25,6 +26,11 @@ cleanup() {
     if [ -n "$BACKDROP" ] && ps -p "$BACKDROP" -o command= | grep -qF "$C/backdrop"; then kill "$BACKDROP" || true; fi
     # A take that did not end well keeps no film: it was not checked.
     [ -n "$FILM" ] && rm -f "$FILM"
+    # The 4K display ends when its stdin closes, and macOS puts the screens back.
+    if [ -n "$SCREEN" ]; then
+        exec 4>&-
+        wait "$SCREEN" 2>/dev/null || true
+    fi
     if [ -n "$up" ] && [ -d "$W" ]; then scene down "$S" >/dev/null 2>&1 || true; fi
     [ -n "$lock" ] && rm -rf /tmp/ovvi-gui.lock
     return 0
@@ -454,6 +460,8 @@ encode() {
     under=$(ffmpeg -loglevel error -ss 0.5 -i "$film" -frames:v 1 -vf \
         "crop=2:2:$(((wx + 60) * 2)):$(((wy + 44) * 2)),scale=1:1" -f rawvideo -pix_fmt rgb24 - | xxd -p)
     mkdir -p "$CLIPS"
+    # The welcome shows a clip at 960 x 640 pt: 1920 x 1280 pixels on a 2x screen, a 4K one too. CRF 18 keeps the
+    # terminals' text sharp.
     ffmpeg -loglevel error -y -i "$film" -i "$C/buttons-$2.png" -filter_complex "[0:v]fps=60,\
 crop=$((ww * 2)):$((wh * 2)):$((wx * 2)):$((wy * 2)),drawbox=12:8:180:76:0x$under:t=fill[w];\
 [1:v]crop=200:88:0:0,format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':\
@@ -462,7 +470,7 @@ a='255*clip(16.5-min(min(hypot(X-45.5,Y-45.5),hypot(X-91.5,Y-45.5)),hypot(X-137.
 [f]trim=end_frame=1,loop=loop=60:size=1,setpts=N/60/TB,fps=60[s];\
 [a][s]xfade=transition=fade:duration=0.5:offset=$(python3 -c "print(round($length - 0.6, 2))"),format=yuv420p,\
 setparams=color_primaries=bt709:color_trc=iec61966-2-1:colorspace=bt709[v]" \
-        -map "[v]" -c:v libx265 -tag:v hvc1 -crf "${CRF:-24}" -preset slow -an -movflags +faststart \
+        -map "[v]" -c:v libx265 -tag:v hvc1 -crf "${CRF:-18}" -preset slow -an -movflags +faststart \
         -x265-params log-level=error:colorprim=bt709:transfer=iec61966-2-1:colormatrix=bt709 "$CLIPS/welcome-$1-$2.mp4"
 }
 
@@ -546,9 +554,18 @@ publish() {
     for clip in "$CLIPS"/welcome-*.mp4; do
         ffmpeg -loglevel error -y -ss 3 -i "$clip" -frames:v 1 "$OUT/clips/$(basename "${clip%.mp4}").png"
     done
-    local report=$HOME/Downloads/ovvi-research/onboarding-src/v4/report.py
-    [ -f "$report" ] && python3 "$report"
-    return 0
+}
+
+# The 4K display (3840 x 2160 pixels at 2x) as the main display, until cleanup closes its stdin.
+screen() {
+    clang -fobjc-arc -framework Foundation -framework CoreGraphics "$REPO/scripts/hidpi-display.m" -o "$C/display"
+    rm -f "$C/screen"
+    mkfifo "$C/screen"
+    "$C/display" 1920 1080 <"$C/screen" >"$C/display.log" 2>&1 &
+    SCREEN=$!
+    exec 4>"$C/screen"
+    for _ in $(seq 100); do grep -q ready "$C/display.log" && return; sleep 0.1; done
+    echo "no 4K display: $(cat "$C/display.log")" && exit 1
 }
 
 # The tools, and the two permissions the terminal that runs this needs: Screen Recording (the films) and Accessibility
@@ -584,12 +601,13 @@ preflight
 echo "Recording the welcome: about 25-30 minutes (build 4, clips 8, encoding 4, films 10). Quit Ovvi Debug if it runs."
 echo "Don't touch the mouse or the keyboard meanwhile; Ctrl-C stops it and cleans up."
 case $STEPS in
-clips) clips ;;
+clips) screen && clips ;;
 encode) encode_all ;;
-films) films && publish ;;
+films) screen && films && publish ;;
 all)
     say "Building the Release app (about 4 min)"
     make app DERIVED_DATA="$DERIVED_DATA" >"/tmp/$WORLD-build.log" 2>&1 || { tail -20 "/tmp/$WORLD-build.log"; exit 1; }
+    screen
     clips
     encode_all
     films
