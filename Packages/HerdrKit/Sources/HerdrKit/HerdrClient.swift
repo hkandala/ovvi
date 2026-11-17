@@ -101,10 +101,7 @@ public actor HerdrClient {
 
     public nonisolated func snapshot() async throws -> Snapshot {
         var snapshot = try await (call("session.snapshot") as SnapshotResult).snapshot
-        let numbers = { (version: String) in
-            version.split(separator: ".").map { Int($0.prefix(while: \.isNumber)) ?? 0 }
-        }
-        if let version = snapshot.version, numbers(version).lexicographicallyPrecedes(numbers(herdrVersion)) {
+        if let version = snapshot.version, version.compare(herdrVersion, options: .numeric) == .orderedAscending {
             throw HerdrError.unsupported("herdr \(version) is too old; \(herdrVersion) or newer needed")
         }
         for layout in snapshot.layouts {

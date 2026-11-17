@@ -337,12 +337,9 @@ public extension TerminalLink {
     static func line(at row: Int, rows: Int, cells: (Int) -> [String]) -> (text: String, places: [Place]) {
         var read: [Int: [String]] = [:]
         func cellsOf(_ index: Int) -> [String] {
-            if let cached = read[index] {
-                return cached
-            }
-            let cells = cells(index)
-            read[index] = cells
-            return cells
+            let row = read[index] ?? cells(index)
+            read[index] = row
+            return row
         }
         // A last cell with text, or an escaped space (`my\ file` wrapped after its space).
         func full(_ index: Int) -> Bool {
