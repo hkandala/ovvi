@@ -122,7 +122,6 @@ def cpu_seconds(pids):
 
 
 def usage(session, seconds):
-    builds["usage"].wait()
     pid = app_pid()
     pattern = f"^[^ ]*herdr --session {session} terminal session"
     helpers = subprocess.run(["pgrep", "-f", pattern], capture_output=True, text=True).stdout.split()
@@ -262,14 +261,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif action == "record" and os.environ.get("CI") == "true":
             status, reply = 403, b"local only: it needs the screen recording permission"
         elif action == "record":
-            builds["record-window"].wait()
             if session in recordings:  # an earlier film never stopped
                 old = recordings.pop(session)
                 old.kill()
                 old.wait()
             run = subprocess.Popen([f"{tools}/record-window", app_pid(), body.decode()], stdin=subprocess.PIPE,
                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            if run.stdout.readline():  # "recording WxH"
+            if run.stdout.readline():  # "recording"
                 recordings[session] = run
                 status, reply = 200, b""
             else:
@@ -277,7 +275,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif action == "record-stop":
             run = recordings.pop(session, None)
             try:
-                _, error = run.communicate(b"", timeout=110) if run else (b"", b"no recording")  # the crop's encode
+                _, error = run.communicate(b"", timeout=110) if run else (b"", b"no recording")  # the file's finish
                 status, reply = (200, b"") if run and run.returncode == 0 else (500, error)
             except subprocess.TimeoutExpired:
                 run.kill()
@@ -324,8 +322,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             status, reply = 200, plugin_logs(int(body))
         elif action == "forget-windows":
             shutil.rmtree(os.path.join(tempfile.gettempdir(), "dev.ovvi.app.debug.savedState"), ignore_errors=True)
-            # Since macOS 15 a normal launch saves them in talagentd's container: [{protected: {signingIdentifier}},
-            # folder name, ...].
+            # A normal launch saves them in talagentd's container: [{protected: {signingIdentifier}}, folder name, ...].
             for mapping in glob.glob(os.path.expanduser(
                     "~/Library/Daemon Containers/*/Data/Library/Saved Application State/ApplicationMapping.plist")):
                 with contextlib.suppress(OSError, plistlib.InvalidFileException):
