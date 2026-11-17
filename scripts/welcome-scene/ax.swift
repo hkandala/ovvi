@@ -47,10 +47,6 @@ func windows(panels: Bool = false) -> [(id: Int, frame: CGRect)] {
     }.sorted { $0.1.width * $0.1.height > $1.1.width * $1.1.height }
 }
 
-func mainWindow() -> (id: Int, frame: CGRect)? {
-    windows().first
-}
-
 switch arguments[2] {
 case "front":
     // In front, so clicks reach it: a launch behind the app in front stays behind on macOS 26.
@@ -88,7 +84,7 @@ case "window":
         AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, AXValueCreate(.cgSize, &size)!)
         Thread.sleep(forTimeInterval: 0.5)
     }
-    guard let window = mainWindow() else { exit(1) }
+    guard let window = windows().first else { exit(1) }
     print(window.id, show(window.frame))
 case "find", "press":
     let wanted = arguments[3], press = arguments[2] == "press"

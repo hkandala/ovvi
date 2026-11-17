@@ -457,6 +457,9 @@ document.querySelector("#theme").addEventListener("click", () => {
 });
 '''
 
+APP_V1 = APP.replace("      ${left(link)}\n", "")
+TESTS_V1 = "\ntest(".join(TESTS.split("\ntest(")[:7])
+
 repo("shortlink", [
     (24, 10, 0, "Initial commit", {"package.json": PACKAGE, ".gitignore": "node_modules/\n.DS_Store\n",
                                    "README.md": README.split("## API")[0]}),
@@ -464,11 +467,11 @@ repo("shortlink", [
     (22, 11, 1, "Serve the page and the API", {"server.js": SERVER.replace("import { seed } from \"./lib/seed.js\";\n", "")
                                                 .replace("seed(links);\n", ""), "public/index.html": INDEX,
                                                 "public/style.css": STYLE}),
-    (20, 16, 0, "Show recent links with their clicks", {"public/app.js": APP.replace("      ${left(link)}\n", "")}),
+    (20, 16, 0, "Show recent links with their clicks", {"public/app.js": APP_V1}),
     (17, 9, 1, "Seed a few links in development", {"lib/seed.js": SEED.replace("import { DAY } from \"./links.js\";\n",
                                                                               "const DAY = 24 * 60 * 60 * 1000;\n"),
                                                   "server.js": SERVER}),
-    (13, 14, 0, "Test the store with node's test runner", {"test/links.test.js": "\ntest(".join(TESTS.split("\ntest(")[:7])}),
+    (13, 14, 0, "Test the store with node's test runner", {"test/links.test.js": TESTS_V1}),
     (8, 10, 1, "Document the API", {"README.md": README}),
     (1, 17, 0, "Expire links after 30 days by default", {"lib/links.js": LINKS, "lib/seed.js": SEED,
                                                          "public/app.js": APP, "test/links.test.js": TESTS}),
@@ -706,6 +709,12 @@ func TestAMinuteLater(t *testing.T) {
 }
 '''
 
+GO_MAIN_LIMIT = GO_MAIN.replace('"example.com/api/internal/links"',
+                                '"example.com/api/internal/links"\n\t"example.com/api/internal/ratelimit"') \
+    .replace('mux.HandleFunc("POST /links", store.Create)',
+             'limit := ratelimit.New(10, time.Minute)\n\tmux.HandleFunc("POST /links", limit.Wrap(store.Create))') \
+    .replace('"os"\n', '"os"\n\t"time"\n')
+
 repo("api", [
     (30, 11, 1, "Start the links service", {"go.mod": "module example.com/api\n\ngo 1.22\n",
                                             "main.go": GO_MAIN.replace('\tlog.Printf("api listening on %s", addr)\n', ""),
@@ -715,11 +724,7 @@ repo("api", [
     (19, 10, 0, "Test creating links", {"internal/links/links_test.go": GO_LINKS_TEST}),
     (6, 16, 1, "Log the address on start", {"main.go": GO_MAIN}),
 ], uncommitted={"internal/ratelimit/ratelimit.go": GO_LIMIT, "internal/ratelimit/ratelimit_test.go": GO_LIMIT_TEST,
-                "main.go": GO_MAIN.replace('"example.com/api/internal/links"',
-                                           '"example.com/api/internal/links"\n\t"example.com/api/internal/ratelimit"')
-                .replace('mux.HandleFunc("POST /links", store.Create)',
-                         'limit := ratelimit.New(10, time.Minute)\n\tmux.HandleFunc("POST /links", limit.Wrap(store.Create))')
-                .replace('"os"\n', '"os"\n\t"time"\n')})
+                "main.go": GO_MAIN_LIMIT})
 
 # docs: the user guide, which pi is writing a page of.
 
@@ -936,7 +941,6 @@ NPM_TEST = """
 ℹ fail 0
 ℹ duration_ms 96.4"""
 
-TESTS_V1 = "\ntest(".join(TESTS.split("\ntest(")[:7])
 EXPIRY_REPLY = """Links expire now. A new link lives **30 days** unless you pick another time, and `days: 0` keeps it.
 
 - **lib/links.js**: `create` stores `expiresAt`, and `open` refuses an expired code, so it counts no click.
@@ -964,7 +968,7 @@ claude = {
         {"text": "Links carry no time yet. I'll add `expiresAt` to the store, refuse expired codes in `open`, and "
                  "show the days left in the list.", "secs": 9},
         edit("shortlink", "lib/links.js", LINKS_V1, LINKS, secs=21),
-        edit("shortlink", "public/app.js", APP.replace("      ${left(link)}\n", ""), APP, secs=13),
+        edit("shortlink", "public/app.js", APP_V1, APP, secs=13),
         edit("shortlink", "test/links.test.js", TESTS_V1, TESTS, secs=17),
         {"tool": "Bash", "input": {"command": "npm test", "description": "Run the tests"}, "secs": 6,
          "output": NPM_TEST.strip()},
@@ -984,12 +988,6 @@ claude = {
             {"tool": "Bash", "input": {"command": "npm test", "description": "Run the tests"}, "secs": 2},
         ]},
 }
-
-GO_MAIN_LIMIT = GO_MAIN.replace('"example.com/api/internal/links"',
-                                '"example.com/api/internal/links"\n\t"example.com/api/internal/ratelimit"') \
-    .replace('mux.HandleFunc("POST /links", store.Create)',
-             'limit := ratelimit.New(10, time.Minute)\n\tmux.HandleFunc("POST /links", limit.Wrap(store.Create))') \
-    .replace('"os"\n', '"os"\n\t"time"\n')
 
 
 def shell(script, output, secs, read_path=None):
