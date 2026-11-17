@@ -280,6 +280,19 @@ Report: `~/Downloads/ovvi-research/p62-footer/index.html`.
 - **For the user.** The tabs start 64 pt further right. Check a long press on Back with a real mouse and trackpad (the
   menu shows when you let go, not while you hold), and a pick from Forward's menu after a few Backs.
 
+### Track R (cleanup: the repo outside docs/)
+
+- **Cause (4K).** This Mac's only screen is a 1x monitor (3440 x 1440), so a recording here comes out at 1x; the
+  clips were also HEVC at CRF 24, soft on terminal text.
+- **Fix (4K).** `scripts/hidpi-display.m` makes a software display drawn at 2x (1920 x 1080 pt, 3840 x 2160 px) the
+  main display for the recording's life; `record-onboarding.sh` films on it, encodes the clips at CRF 18, writes to
+  `.build/onboarding/`. Checked in the Tart VM (main 3840 px wide, screens back after, gone with its parent); never
+  run on the Mac, nothing recorded.
+- **Decisions.** Clips stay 1920 x 1280: that is the welcome's clip size at 2x, a 4K screen included. Films are
+  2048 x 1408 (the panel at 2x): macOS draws at 2x at most, so no 3840-wide film of the panel exists.
+- **For the user.** The re-record: `scripts/record-onboarding.sh` (scripts/README.md, Record the welcome); the menu
+  bar and Dock move to the software display while it runs. The README screenshot waits for D4.
+
 ## Round 3: the picks
 
 The user, word for word: "F1 D ("D but bunch of changes, move settings to right side, add a line separator, then
