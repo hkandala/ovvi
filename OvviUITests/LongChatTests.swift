@@ -150,7 +150,7 @@ extension OvviUITests {
         stack.click()
         let tool = app.descendants(matching: .any).matching(identifier: "chat.\(pane).tool").firstMatch
         XCTAssertTrue(tool.exists(within: 3))
-        XCTAssertEqual(stack.frame.minX, last.frame.minX - 18, accuracy: 1, "\(stack.frame) \(last.frame)")
+        XCTAssertEqual(stack.frame.minX, last.frame.minX - 12, accuracy: 1, "\(stack.frame) \(last.frame)")
         XCTAssertEqual(stack.frame.maxX, user.frame.maxX - 48, accuracy: 1, "\(stack.frame) \(user.frame)")
         XCTAssertEqual(tool.frame.maxX, stack.frame.maxX, accuracy: 1, "\(tool.frame) \(stack.frame)")
 
