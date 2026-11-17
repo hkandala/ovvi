@@ -50,7 +50,7 @@ extension OvviUITests {
         let search = element("agents.archived.search"), window = app.windows.firstMatch
         let shelf = element("agents.shelf.Archived Sessions"), top = shelf.frame.minY
         search.typeText("no such session")
-        XCTAssertTrue(window.staticTexts["No sessions found."].exists(within: 10))
+        XCTAssertTrue(window.staticTexts["No sessions found"].exists(within: 10))
         XCTAssertEqual(shelf.frame.minY, top, "no match moved the header")
         keepScreenshot("archived search, no match")
         search.typeKey("a", modifierFlags: .command)
@@ -98,7 +98,7 @@ extension OvviUITests {
     func showsTheOthersPastAStuckAgent(on machine: String) {
         let shelf = openArchived(), top = shelf.frame.minY, window = app.windows.firstMatch
         let row = element("agents.archived.pi.stuck.jsonl")
-        let failure = window.staticTexts["Could not read Claude Code sessions on \(machine)."]
+        let failure = window.staticTexts["Could not read Claude Code sessions on \(machine)"]
         XCTAssertTrue(row.exists(within: 15))
         XCTAssertEqual(shelf.frame.minY, top, "the rows moved the header")
         XCTAssertFalse(failure.exists, "the rows waited for Claude Code's 10 s")

@@ -171,7 +171,7 @@ struct ArchivedShelf: View {
 
     private func problem(_ shown: [String]) -> String? {
         shown.lazy.compactMap { agent in
-            list.agents[agent]?.problem.map { "\(Chooser.name(agent)) \($0) on \(page.store.machine.name)." }
+            list.agents[agent]?.problem.map { "\(Chooser.name(agent)) \($0) on \(page.store.machine.name)" }
         }.first
     }
 
@@ -181,8 +181,8 @@ struct ArchivedShelf: View {
             let names = shown.filter(failed.contains).map(Chooser.name).formatted(.list(type: .and))
             EmptyState(
                 symbol: "exclamationmark.triangle",
-                title: failed.isSuperset(of: shown) ? "Could not read \(machine)'s sessions."
-                    : "Could not read \(names) sessions on \(machine).",
+                title: failed.isSuperset(of: shown) ? "Could not read \(machine)'s sessions"
+                    : "Could not read \(names) sessions on \(machine)",
                 compact: true,
             ) {
                 Button("Retry") { attempt += 1 }
@@ -193,14 +193,14 @@ struct ArchivedShelf: View {
             if !reading.isDisjoint(with: shown) || !next.isEmpty && !bounded(shown) {
                 Loader(text: "Searching older sessions…", delay: .milliseconds(300)).padding(12)
             } else if !rows {
-                EmptyState(symbol: "magnifyingglass", title: next.isEmpty ? "No sessions found."
-                    : "No matches in the last \(list.sessions(of: shown).count) sessions.", compact: true)
+                EmptyState(symbol: "magnifyingglass", title: next.isEmpty ? "No sessions found"
+                    : "No matches in the last \(list.sessions(of: shown).count) sessions", compact: true)
             }
         } else if !next.isEmpty || !reading.isDisjoint(with: shown) {
             Loader(text: "Reading sessions…", delay: .milliseconds(300)).padding(12)
         } else {
-            EmptyState(symbol: "archivebox", title: agent.isEmpty ? "No closed sessions on \(machine)."
-                : "No \(Chooser.name(agent)) sessions.", compact: true)
+            EmptyState(symbol: "archivebox", title: agent.isEmpty ? "No closed sessions on \(machine)"
+                : "No \(Chooser.name(agent)) sessions", compact: true)
         }
     }
 

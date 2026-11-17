@@ -116,13 +116,9 @@ struct AgentsPanel: View {
                 .padding(.horizontal, 8).padding(.top, 6).padding(.bottom, 2)
                 .accessibilityIdentifier("agents.panel.header")
             if groups.isEmpty {
-                VStack(spacing: 4) {
-                    Text("All caught up").font(.system(size: 13, weight: .medium)).foregroundStyle(.secondary)
-                    Text("Agents that need you or finish show here.").font(.system(size: 11)).foregroundStyle(.tertiary)
-                }
-                .frame(maxWidth: .infinity).padding(.top, 16).padding(.bottom, 18)
-                .accessibilityElement(children: .combine)
-                .accessibilityIdentifier("agents.panel.empty")
+                Text("All caught up").font(.system(size: 13, weight: .medium)).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity).padding(.top, 18).padding(.bottom, 14)
+                    .accessibilityIdentifier("agents.panel.empty")
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
