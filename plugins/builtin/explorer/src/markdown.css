@@ -75,6 +75,11 @@ nav button:hover {
   font: 0.9em ui-monospace, monospace;
   background: color-mix(in srgb, var(--text) 6%, transparent);
 }
+/* The block starts at the text's edge: a list item's hang plus the lines' 6px. The line's em is 0.9 of the text's.
+   A quote's code keeps its place under the bars. */
+.cm-line.cm-md-pre:not(.cm-md-quote) {
+  margin-left: calc(var(--hang, 0em) / 0.9 + 6px);
+}
 .cm-md-pre-first {
   border-radius: 8px 8px 0 0;
 }
@@ -101,7 +106,7 @@ nav button:hover {
 .cm-line.cm-md-quote {
   color: var(--dim);
   background-image: repeating-linear-gradient(to right, var(--divider) 0 3px, transparent 3px 12px);
-  background-position: 3px 0;
+  background-position: 6px 0;
   background-size: calc(var(--quotes) * 12px) 100%;
   background-repeat: no-repeat;
 }

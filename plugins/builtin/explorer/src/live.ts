@@ -388,8 +388,9 @@ function preview(view: EditorView): DecorationSet {
             if (nested.some((list) => within(list, each.from))) continue
             const own = raw(each.from), hang = `${own ? width - 1 : width}em`
             const quote = quotes.some((block) => within(block, each.from))
-            ranges.push((quote || (!quoted && code.some((block) => within(block, each.from)))
-              ? Decoration.line({ attributes: { style: `margin-left: ${hang}` } })
+            const inCode = !quoted && code.some((block) => within(block, each.from))
+            ranges.push((quote || inCode
+              ? Decoration.line({ attributes: { style: inCode ? `--hang: ${hang}` : `margin-left: ${hang}` } })
               : Decoration.line({ class: "cm-md-hang", attributes: { style: `--hang: ${hang}` } })).range(each.from))
             const lead = quote ? /^()([ \t]*)/ : /^((?:[ \t]*>[ \t]?)*)([ \t]*)/
             const [, marks = "", spaces = ""] = lead.exec(each.text) ?? []
