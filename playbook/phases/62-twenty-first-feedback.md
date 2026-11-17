@@ -82,3 +82,50 @@ The screenshots are in `.build/fb59/r1-1.png` to `r1-7.png` (not committed):
 
 `~/Downloads/ovvi-research/p62-options/index.html`. Each question has an id; the user's picks come back as a short
 line such as `Q1 B, Q2 D, …`.
+
+## Round 2: the picks
+
+The user's picks, word for word: "Q1 D, Q2 F ("but no animated ones, we need to have still ones all the time"), Q3 B
+("don’t show agent status indicators in sessions, also we show only attached session, so running/stopped doesn’t make
+sense as well. so list attached sessions, and open session and open session basically opens up anyway showing list of
+detached sessions and manage them"), Q4 A, Q5 A, Q6 A ("few more things: that confirmation use here or cancel should
+show as regular confimration dialog instead of showing inline, and instead of remove shortcut we should show + icon
+again there to add more shortcuts if eneded, and to remove shortcuts, one should be able to click to type and there we
+shuld show cross icon to remove it"), Q7 B, Q8 C ("also on hover we or active we show circular padded one right, let’s
+change that to rectangular one, no circular ones"), Q9 B, Q9 delay B ("oh also for float pane, can we add default
+shortcut as cmd+opt+enter"), Home name ("sounds good"), Session slide ("looks good"), Markdown ("love it"), Logos
+("sounds good"), Wheel ("sounds good")
+
+go with these options and implement evrything, whatever can be parallelised, work on them in parallel"
+
+What they mean:
+
+- Q1 D: the update notice moves to the bottom right, with a still accent-to-green gradient ring and one sweep when it
+  appears (none with Reduce Motion).
+- Q2 F, still: the working icon is a ring with a centre dot, never animated.
+- Q3 B: the session title is a quiet dropdown (⌄ on hover). It opens a bordered shelf, like Archived Sessions, with
+  the window's attached sessions (no state dots, no running/stopped) and Open Session at the end. Open Session opens
+  the full panel for detached sessions and managing them. The filter moves under the header; the old Open Session
+  button at the foot goes. The top right shows only +. Overview moves beside Sort; the ⌘K button goes.
+- Q4 A: the filter says "Find a space or agent".
+- Q5 A: the Interface Style choice becomes one switch, "Liquid Glass", on by default. Its description: "The desktop
+  shows softly through the window. Off, the window is solid." Off is today's Classic look.
+- Q6 A: shortcuts stack like fields. On hover, ⊕ adds one, and stays the only button (no ⊖). To remove a shortcut,
+  click it to record, and an × in the field removes it. A conflict asks in a standard dialog, not inline.
+- Q7 B: floating panels use glass with ultraThinMaterial, the same level everywhere (see 2-look.html's table).
+- Q8 C: the float button is macwindow.on.rectangle. The order is split right, split down, float, zoom, close; every
+  glyph has the same visual size. Hover and active backgrounds are rounded rectangles, never circles.
+- Q9 B with delay B: tooltips are a solid panel with an outlined key cap, shown after 0.5 s and at once when moving
+  to the next button. Float Pane gets the default shortcut ⌥⌘↩.
+- Plans: home name, session slide, markdown, logos and wheel, as written in the report.
+
+## Round 2: tracks
+
+| Track | Items | Worktree |
+|---|---|---|
+| S | Q3, Q4, home name, session slide | ../ovvi-p62s |
+| G | Q1, Q5, Q7 | ../ovvi-p62g |
+| I | Q2, Q8, logos | ../ovvi-p62i |
+| T | Q9 and the ⌥⌘↩ default | ../ovvi-p62t |
+| K | Q6 | ../ovvi-p62k |
+| M | markdown, wheel | ../ovvi-p62m |
