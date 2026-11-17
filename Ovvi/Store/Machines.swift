@@ -57,7 +57,7 @@ extension Machine {
 }
 
 /// A run with `-session` (the tests, a run against a throwaway session) never sees the user's machines.
-@MainActor @Observable
+@Observable
 final class MachineList {
     static let shared = MachineList()
 

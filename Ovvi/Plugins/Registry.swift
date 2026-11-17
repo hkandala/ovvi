@@ -2,7 +2,6 @@ import Foundation
 import HerdrKit
 import os
 
-@MainActor
 enum Registry {
     static let browser = PluginManifest(
         id: "browser", name: "Browser", icon: "globe", description: "Web page", keywords: ["web", "url", "localhost"],

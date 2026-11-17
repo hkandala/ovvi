@@ -352,7 +352,6 @@ private struct ScrolledFades: ViewModifier {
 
 /// Measured on the palette's glass, where SwiftUI's hierarchical styles are fuller than AppKit's label colors, but with
 /// Increase Contrast.
-@MainActor
 enum RowInk {
     static let primary = ink(1, 1, .labelColor), secondary = ink(0.4, 0.42, .secondaryLabelColor),
                tertiary = ink(0.27, 0.31, .tertiaryLabelColor)

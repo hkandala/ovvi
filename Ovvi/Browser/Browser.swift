@@ -4,7 +4,7 @@ import HerdrKit
 import Observation
 import WebKit
 
-@MainActor @Observable
+@Observable
 final class Browser: NSObject {
     let terminalID: String
     var paneID: String

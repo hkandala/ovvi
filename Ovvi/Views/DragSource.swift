@@ -3,7 +3,6 @@ import UniformTypeIdentifiers
 
 /// An AppKit session from the window's content view, which outlives the view that started it: spring-loading drops the
 /// dragged card, and a `DragGesture` would be cancelled.
-@MainActor
 final class DragSource: NSObject, NSDraggingSource {
     private static let shared = DragSource()
     private weak var page: Page?

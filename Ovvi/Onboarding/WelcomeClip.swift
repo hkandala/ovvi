@@ -24,7 +24,6 @@ struct WelcomeClip: NSViewRepresentable {
     }
 
     /// Every page's player, made once when the panel opens, so a page's first frame is ready before it shows.
-    @MainActor
     final class Reels {
         private var reels: [String: (AVQueuePlayer, AVPlayerLooper)] = [:]
 

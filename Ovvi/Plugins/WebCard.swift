@@ -3,7 +3,7 @@ import Observation
 import SwiftUI
 import WebKit
 
-@MainActor @Observable
+@Observable
 final class WebCard {
     let plugin: String
 
@@ -99,7 +99,6 @@ final class WebCard {
 
 /// The content controller keeps its handler for good: a strong `card` would keep the card, its web view and its
 /// process.
-@MainActor
 private final class Relay: NSObject, WKScriptMessageHandlerWithReply, WKNavigationDelegate {
     weak var card: WebCard?
     private var reloaded = false

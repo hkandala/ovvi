@@ -3,7 +3,7 @@ import SwiftUI
 
 /// A default plugin installs from the app's copy only while its folder is missing: a first launch needs no published
 /// package. From then on it is an npm install like any other: it updates from npm, never with the app.
-@MainActor @Observable
+@Observable
 final class DefaultPlugins {
     static let shared = DefaultPlugins()
 

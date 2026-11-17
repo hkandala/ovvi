@@ -179,7 +179,6 @@ private struct Dim: ViewModifier {
 }
 
 /// Not observed: it changes at every scroll frame.
-@MainActor
 final class Tops {
     var places: [String: CGFloat] = [:]
     var held: (id: String, by: CGFloat)?

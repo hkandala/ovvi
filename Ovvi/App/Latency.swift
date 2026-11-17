@@ -16,7 +16,7 @@ func afterCommit(_ extra: CFRunLoopActivity = [], _ body: @escaping @MainActor (
     return observer!
 }
 
-@MainActor @Observable
+@Observable
 final class Latency {
     static let shared = Latency()
     static let isOn = UserDefaults.standard.bool(forKey: "recordLatency")
@@ -202,7 +202,6 @@ final class Latency {
     }
 }
 
-@MainActor
 private final class FrameMeter: NSObject {
     let record: (String) -> Void
     private var link: CADisplayLink?

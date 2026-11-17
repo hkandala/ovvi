@@ -88,7 +88,6 @@ struct RowTable: NSViewRepresentable {
         }
     }
 
-    @MainActor
     final class Coordinator: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         var parent: RowTable
         var spans: [CGFloat] = []

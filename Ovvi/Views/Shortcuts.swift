@@ -64,7 +64,7 @@ struct Shortcuts: View {
     }
 
     /// A family shows as one row while each of its actions keeps its default keys.
-    @MainActor private static func rows() -> [Row] {
+    private static func rows() -> [Row] {
         let hotkeys = Hotkeys.shared
         var rows: [Row] = []
         for hotkey in Hotkeys.app where hotkey.top {

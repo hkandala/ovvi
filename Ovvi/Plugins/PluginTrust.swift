@@ -1,7 +1,7 @@
 import HerdrKit
 import SwiftUI
 
-@MainActor @Observable
+@Observable
 final class PluginTrust {
     static let shared = PluginTrust()
     private var trusted: Set<String>

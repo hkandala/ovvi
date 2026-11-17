@@ -94,7 +94,6 @@ private struct MenuBar: ViewModifier {
     }
 }
 
-@MainActor
 extension CommandList {
     /// Made when the key is pressed: the menu bar's list may still be another window's.
     static var keyWindow: [Command]? {

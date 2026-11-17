@@ -212,7 +212,7 @@ struct OpenCode: ChatAdapter {
     }
 }
 
-@MainActor private final class Waits {
+private final class Waits {
     var dialog = false
     var busy: Bool?
     var fresh = false

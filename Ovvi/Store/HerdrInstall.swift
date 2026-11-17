@@ -2,7 +2,7 @@ import Foundation
 import HerdrKit
 import Observation
 
-@MainActor @Observable
+@Observable
 final class HerdrInstall {
     static let shared = HerdrInstall()
 

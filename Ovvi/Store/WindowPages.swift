@@ -1,7 +1,7 @@
 import HerdrKit
 import SwiftUI
 
-@MainActor @Observable
+@Observable
 final class WindowPages {
     var machine = Machine.thisMac
     private(set) var list: [Page] = []

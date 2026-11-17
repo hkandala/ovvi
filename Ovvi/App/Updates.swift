@@ -3,7 +3,7 @@ import SwiftUI
 
 /// Sparkle's updater. A daily check that finds an update shows the window's update notice, not Sparkle's window
 /// (gentle reminders); Update… opens Sparkle's.
-@MainActor @Observable
+@Observable
 final class Updates: NSObject, SPUStandardUserDriverDelegate {
     static let shared = Updates()
     /// Only the released app has a feed (`make zip`): not Ovvi Dev (`make install`), Debug builds or the measures'

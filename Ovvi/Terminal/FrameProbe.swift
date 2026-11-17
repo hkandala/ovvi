@@ -5,7 +5,7 @@ import Observation
 /// Each sample is drawn at the commit: a display link's frames miss commits. Not seen: commits off the main thread or
 /// from a flush within a turn, and a card's own SwiftUI opacity. libghostty sets a new picture on the main thread, so
 /// each is a turn's commit.
-@MainActor @Observable
+@Observable
 final class FrameProbe {
     static let shared = FrameProbe()
     static let isOn = UserDefaults.standard.bool(forKey: "recordFrames")

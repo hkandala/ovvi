@@ -9,7 +9,7 @@ class BrowserView: WKWebView {
     /// WebKit asks for the picked link's new window next (`createWebViewWith`).
     var opens: Opening?
     let shot = Shot()
-    @MainActor @Observable final class Shot {
+    @Observable final class Shot {
         var image: CGImage?
     }
 

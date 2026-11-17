@@ -3,7 +3,6 @@ import SwiftUI
 
 /// SwiftUI places a new floating window at the frame asked for with it (`defaultWindowPlacement`): a frame set once the
 /// window shows can lose to SwiftUI's default size, which sometimes comes after it (46 pt short on CI).
-@MainActor
 enum FloatFrames {
     static let windows = NSMapTable<NSString, NSWindow>.strongToWeakObjects()
     private static var next: NSRect?

@@ -8,7 +8,6 @@ import WebKit
 /// "Operation not permitted"): the stuck one lives on and keeps every page's drawing connection, so every web card
 /// stays blank, Reload too. Once the app ends it, the pages connect to the new one and draw again. WebKit has no public
 /// word of its GPU process: its pid is `WKProcessPool._gpuProcessIdentifier` (0 while none).
-@MainActor
 enum GPUProcess {
     /// ponytail: one dropped process per pool and check; two swaps inside one check (WebKit waits seconds to give up)
     /// would leave the first.

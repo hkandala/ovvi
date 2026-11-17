@@ -1,7 +1,7 @@
 import HerdrKit
 import SwiftUI
 
-@MainActor @Observable
+@Observable
 final class Header {
     private(set) var controls: [PluginManifest.Control]
     private(set) var focus: [String: Int] = [:]

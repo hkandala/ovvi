@@ -25,7 +25,7 @@ enum SettingsDetail: Hashable {
     case machine(String), plugin(String)
 }
 
-@MainActor @Observable
+@Observable
 final class SettingsRoute {
     static let shared = SettingsRoute()
     var page: SettingsPage? = .general

@@ -1,7 +1,7 @@
 import AppKit
 import HerdrKit
 
-@MainActor @Observable
+@Observable
 final class PluginInstalls {
     static let shared = PluginInstalls()
 

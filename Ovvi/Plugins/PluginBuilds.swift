@@ -1,7 +1,6 @@
 import HerdrKit
 import WebKit
 
-@MainActor
 final class PluginBuilds {
     static let shared = PluginBuilds()
 

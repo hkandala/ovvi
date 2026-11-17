@@ -25,7 +25,7 @@ extension HostStore {
         var replace: Replacement?
     }
 
-    @MainActor @Observable
+    @Observable
     final class Workspace: Identifiable {
         let id: String
         var label = ""
@@ -41,7 +41,7 @@ extension HostStore {
         }
     }
 
-    @MainActor @Observable
+    @Observable
     final class Tab: Identifiable {
         let id: String
         var label = ""
@@ -53,7 +53,7 @@ extension HostStore {
         }
     }
 
-    @MainActor @Observable
+    @Observable
     final class Pane: Identifiable {
         let id: String
         var label: String?
@@ -238,7 +238,6 @@ extension HostStore {
 }
 
 /// Replaces the list only when its ids change, so views of the list redraw only then.
-@MainActor
 func reuse<Owner: AnyObject, Object: Identifiable<String>, Item: Identifiable<String>>(
     _ owner: Owner,
     _ list: ReferenceWritableKeyPath<Owner, [Object]>,
@@ -270,7 +269,7 @@ extension [String?] {
     }
 }
 
-@MainActor @Observable
+@Observable
 final class OpenStores {
     static let shared = OpenStores()
     var stores: [String: HostStore] = [:]

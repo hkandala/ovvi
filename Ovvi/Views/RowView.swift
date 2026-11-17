@@ -251,7 +251,6 @@ final class RowView: NSView {
     }
 }
 
-@MainActor
 private enum Tile {
     private static var images: [String: NSImage] = [:]
 

@@ -2,7 +2,7 @@ import AppKit
 import HerdrKit
 import Observation
 
-@MainActor @Observable
+@Observable
 final class Page: Identifiable {
     let store: HostStore
     let terminals: PaneViewRegistry

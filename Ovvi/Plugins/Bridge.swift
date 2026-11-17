@@ -3,7 +3,7 @@ import HerdrKit
 import Observation
 import WebKit
 
-@MainActor @Observable
+@Observable
 final class Bridge {
     @ObservationIgnored private(set) weak var plugin: Plugin?
     private(set) var commands: [String: [String: Any]] = [:]

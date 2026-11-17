@@ -1,6 +1,5 @@
 import SwiftUI
 
-@MainActor
 enum SwipeRouter {
     static func install() {
         NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { event in
@@ -202,7 +201,7 @@ struct StripAnchor: NSViewRepresentable {
 
 /// `slide` is observed only by `Pager`, so a swipe's moves redraw nothing else; `moving` by the sidebar, which lays out
 /// the other pages only then.
-@MainActor @Observable
+@Observable
 final class Swipe {
     var slide = 0.0
     @ObservationIgnored var drawn = 0.0

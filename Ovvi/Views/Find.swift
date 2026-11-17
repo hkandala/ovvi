@@ -2,7 +2,7 @@ import HerdrKit
 import SwiftUI
 
 /// A match scrolls herdr's viewport to it, which every client of the pane shares.
-@MainActor @Observable
+@Observable
 final class Find {
     let paneID: String
     var query = "" {

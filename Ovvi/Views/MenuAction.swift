@@ -16,7 +16,6 @@ final class MenuAction: NSObject {
 /// For a nested run loop (a menu, a modal alert) in async code: no other main actor job runs inside a job, so it runs
 /// from a run-loop block instead, in the default mode so it waits out another menu's tracking. Returns its result once
 /// it ended.
-@MainActor
 func outsideMainQueue<T: Sendable>(_ run: @escaping () -> T) async -> T {
     await withCheckedContinuation { done in
         CFRunLoopPerformBlock(CFRunLoopGetMain(), CFRunLoopMode.defaultMode.rawValue) { done.resume(returning: run()) }

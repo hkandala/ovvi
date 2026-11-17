@@ -79,7 +79,6 @@ private extension HostStore.Close {
     }
 }
 
-@MainActor
 extension NSWindow {
     /// AppKit draws a destructive button red only while it is not the default button, and then gives it no Return. Not
     /// in a sheet with a default button: AppKit's Return goes there.

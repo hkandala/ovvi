@@ -3,7 +3,7 @@ import GhosttyTerminal
 import HerdrKit
 import Observation
 
-@MainActor @Observable
+@Observable
 final class PaneTerminal {
     private(set) var state = State.idle {
         // A failure is the connection's until a try made while the page answers fails too (`show`): it reads at once.

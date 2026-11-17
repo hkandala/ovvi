@@ -160,7 +160,6 @@ extension AgentCommand {
     }
 }
 
-@MainActor
 private struct AgentPluginRows {
     let sources: [String: String]
     /// The log is a file on the Mac: only an agent there can read it.

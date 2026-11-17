@@ -353,13 +353,12 @@ private extension ChatMessages {
     }
 }
 
-@MainActor
 private final class Height {
     var value: CGFloat = 0
 }
 
 /// Observed by `Filler` alone: a resize lays out the stack again, and builds no rows.
-@MainActor @Observable
+@Observable
 private final class ViewHeight {
     var value: CGFloat = 0
 }

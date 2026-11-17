@@ -5,7 +5,6 @@ import HerdrKit
 /// Keyed by `terminal_id`, so that SwiftUI never destroys a terminal when its tab goes out of view.
 /// ponytail: keyed by terminal id alone; herdr's ids (`term_` and 14 hex digits, from the clock) do not
 /// repeat across sessions. Key by session too if they ever do.
-@MainActor
 final class PaneViewRegistry {
     /// Each terminal kept out of view keeps its surface, about 6 MB (libghostty frees the swap chain while it does not
     /// draw and makes it again in under a millisecond when shown), a copy of its last picture (17 MB for a full-window

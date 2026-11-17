@@ -2,7 +2,7 @@ import Foundation
 import HerdrKit
 import Observation
 
-@MainActor @Observable
+@Observable
 final class Chat {
     enum Phase: Equatable {
         case starting, ready, working, waiting

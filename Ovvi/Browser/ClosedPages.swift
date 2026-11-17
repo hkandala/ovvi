@@ -31,7 +31,6 @@ nonisolated struct ClosedBrowserPage {
     }
 }
 
-@MainActor
 enum ClosedPages {
     static let path = ".local/state/ovvi/closed-pages.json"
     static let most = 20

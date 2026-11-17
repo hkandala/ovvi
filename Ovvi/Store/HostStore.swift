@@ -4,7 +4,7 @@ import Observation
 
 /// Snapshots land on stable objects keyed by id: Observation skips fields that do not change, so one status change
 /// redraws one row.
-@MainActor @Observable
+@Observable
 final class HostStore {
     enum State: Equatable {
         case connecting, live

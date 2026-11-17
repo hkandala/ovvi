@@ -75,7 +75,7 @@ extension NSImage {
     }
 }
 
-@MainActor @Observable
+@Observable
 final class Plugin {
     let terminalID: String
     var paneID: String {

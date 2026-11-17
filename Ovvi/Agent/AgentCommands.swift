@@ -9,7 +9,6 @@ struct AgentCommand {
     let run: @MainActor (inout AgentCall) async throws -> AgentOutput
 }
 
-@MainActor
 enum AgentCommands {
     static let all: [AgentCommand] = [.help, .info, .float, .unfloat, .copy, .plugins, .open, .reveal, .card, .shown,
                                       .notify, .agent, .chat, .view, .balance]
@@ -101,7 +100,6 @@ struct AgentOutput {
     }
 }
 
-@MainActor
 struct AgentCall {
     let store: HostStore
     let pane: String
@@ -167,7 +165,6 @@ struct AgentCall {
     }
 }
 
-@MainActor
 struct PaneTarget {
     let session: String
     let id: String

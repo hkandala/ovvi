@@ -40,7 +40,7 @@ struct Hotkey: Identifiable {
 
 /// Every action's keys, and the user's changes to them: `keys` in settings.json, chords per action id (an empty list
 /// is no key).
-@MainActor @Observable
+@Observable
 final class Hotkeys {
     static let shared = Hotkeys()
     private(set) var saved = (PluginPackages.value("keys", in: Registry.settings) as? [String: Any])?

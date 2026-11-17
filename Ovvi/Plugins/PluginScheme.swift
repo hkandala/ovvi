@@ -4,7 +4,6 @@ import UniformTypeIdentifiers
 import WebKit
 
 /// `loadFileURL` runs no module scripts.
-@MainActor
 final class PluginScheme: NSObject, WKURLSchemeHandler {
     static let shared = PluginScheme()
     static let name = "ovvi-plugin"

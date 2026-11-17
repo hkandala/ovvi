@@ -4,7 +4,7 @@ import HerdrKit
 import Observation
 
 /// The app's own state: herdr sees a plain shell.
-@MainActor @Observable
+@Observable
 final class Chooser {
     static var shownAgents: [Row] {
         agents.indices.filter { !Registry.hiddenInNewPane(agents[$0].command) }.map(Row.start)

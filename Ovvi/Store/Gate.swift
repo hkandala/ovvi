@@ -1,6 +1,5 @@
 import Foundation
 
-@MainActor
 final class Gate {
     private var free: Int
     private var waiting: [CheckedContinuation<Void, Never>] = []

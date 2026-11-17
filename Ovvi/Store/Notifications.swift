@@ -2,7 +2,6 @@ import AppKit
 import HerdrKit
 import UserNotifications
 
-@MainActor
 enum Notifications {
     static let agent = "agent|"
 

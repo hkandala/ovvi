@@ -41,7 +41,7 @@ extension View {
 
 /// Not a preference: one that every tab capsule writes is combined at every update of the window, 100–150 ms of the
 /// main thread in a pass of tab switches, swipes and overview opens.
-@MainActor @Observable
+@Observable
 final class HoverPanels {
     var open: OpenPanel?
     var tip: Tip?

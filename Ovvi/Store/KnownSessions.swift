@@ -1,7 +1,6 @@
 import Foundation
 import HerdrKit
 
-@MainActor
 enum KnownSessions {
     private static let file = URL.cachesDirectory.appending(path: Bundle.main.bundleIdentifier ?? "ovvi")
         .appending(path: "sessions.json")

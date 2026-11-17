@@ -2,7 +2,7 @@ import HerdrKit
 import SwiftUI
 
 /// Only the values that differ from the default: a new default reaches whoever never changed it.
-@MainActor @Observable
+@Observable
 final class PluginSettings {
     static let shared = PluginSettings()
     private var saved: [String: [String: PluginSetting.Value]] = [:]
