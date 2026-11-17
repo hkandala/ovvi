@@ -180,3 +180,22 @@ Report: `~/Downloads/ovvi-research/p62-footer/index.html`.
 - **For the user.** The floating window's labels match their keys: Close Pane ⇧⌘W, Detach Pane ⌘W. Check by hand:
   a sweep across the pane header's buttons (each tip at once after the first), the flip above a button at the
   window's bottom, and the look over a bright and a dark page.
+
+### Track I
+
+- **Cause (blurry logos).** The "Starting …" loader and a plugin's Settings header drew the 22 × 18 pt program tile
+  and scaled the drawn picture 2× (`scaleEffect`): Core Animation stretched a 17 pt layer's pixels, worst on a 1×
+  screen. Every logo was already a vector SVG.
+- **Fix.** `ProgramTile(scale:)` draws the tile at its size (glyph, corner and highlight scale; the outer edge stays
+  one pixel). No other view scales a logo up: the tab bounce and the overview's miniatures scale on purpose, and the
+  palette renders its tiles at the window's backing scale.
+- **Fix (Q2 F, still).** The working icon is a ring with a filled 4 pt dot, drawn like the other state icons, never
+  animated; the colors stay.
+- **Fix (Q8 C).** Pane header: split right, split down, float (`macwindow.on.rectangle`), zoom, close; glyphs at
+  11, 11, 10, 10, 10 pt so their ink matches. The lit float and zoom fill a rounded rectangle. Every circle behind an
+  icon button went: the tab's × hover, the chat's Send/Stop and Scroll to Bottom.
+- **Decisions.** The palette's Float Pane takes the new symbol; Open Commit moved off `smallcircle.filled.circle`
+  (it read as the Working icon) to `circle.and.line.horizontal`. Detach keeps `pip.exit`. The sidebar's page dots
+  stay round: they are dots, not button backgrounds.
+- **For the user.** On the ultrawide monitor: start an agent and look at the logo; hover the pane buttons and float a
+  pane (rounded square, no circle); a working agent's ring and dot in a tab, a space row and the palette.

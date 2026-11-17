@@ -40,11 +40,7 @@ struct IconButton: View {
                 .font(size < 28 ? .system(size: glyph) : .body.weight(.medium))
                 .foregroundStyle(accent ? AnyShapeStyle(.tint.opacity(0.6)) : AnyShapeStyle(.primary))
                 .frame(width: size, height: size)
-                .background {
-                    if accent {
-                        RoundedRectangle(cornerRadius: size / 4, style: .continuous).fill(.tint.opacity(0.07))
-                    }
-                }
+                .background(.tint.opacity(accent ? 0.07 : 0), in: .rect(cornerRadius: size / 4, style: .continuous))
         }
         .buttonStyle(ChromeStyle(radius: size / 4))
         .tip(help, key: key)
