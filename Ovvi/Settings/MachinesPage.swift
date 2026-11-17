@@ -70,6 +70,7 @@ struct PrivacyPage: View {
     var body: some View {
         let _ = version // swiftlint:disable:this redundant_discardable_let
         Form {
+            Section("Analytics") { UsageSwitch() }
             ForEach(MachineList.shared.all) { machine in
                 let sites = Browser.approvals(machine.id)
                 Section {

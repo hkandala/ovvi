@@ -53,7 +53,6 @@ struct GeneralPage: View {
                     }
                 }
             }
-            Section("Analytics") { UsageSwitch() }
             Section("Help") {
                 LabeledContent("Keyboard shortcuts") {
                     Button("Show Shortcuts") { CommandList.runInMainWindow("app.shortcuts") }

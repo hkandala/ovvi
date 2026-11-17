@@ -41,15 +41,15 @@ extension OvviUITests {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         let controls = ["general": "settings.general.open-at-login", "appearance": "settings.appearance.liquid-glass",
                         "terminal": "settings.terminal.font", "agents": "settings.agents.view",
-                        "machines": "settings.machines.add", "plugins": "plugins.source"]
-        for page in ["general", "appearance", "terminal", "agents", "machines", "plugins"] {
+                        "machines": "settings.machines.add", "plugins": "plugins.source",
+                        "privacy": "settings.privacy.usage"]
+        for page in ["general", "appearance", "terminal", "agents", "machines", "plugins", "privacy"] {
             openSettings(page)
             XCTAssertTrue(element(controls[page] ?? "", in: settingsWindow).exists(within: 3), page)
             keepScreenshot("settings \(page) light", of: settingsWindow)
         }
         // A run with a test config folder never registers the build for login.
         openSettings("general")
-        XCTAssertTrue(element("settings.general.usage", in: settingsWindow).has(\.isEnabled, true, within: 2))
         turn("settings.general.open-at-login", true)
         turn("settings.general.open-at-login", false)
         let checkNow = element("settings.general.check-now", in: settingsWindow)

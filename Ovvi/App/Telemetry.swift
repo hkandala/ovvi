@@ -48,7 +48,7 @@ enum Telemetry {
     }
 }
 
-/// Settings ▸ General.
+/// Settings ▸ Privacy.
 struct UsageSwitch: View {
     private var settings = AppSettings()
 
@@ -57,7 +57,7 @@ struct UsageSwitch: View {
             Text("Share anonymous usage data")
             Text("Counts of features used, no names or paths.")
         }
-        .identifiedSettingsRow("general.usage")
+        .identifiedSettingsRow("privacy.usage")
         .onChange(of: settings.usageData) {
             if !settings.usageData {
                 Telemetry.usage?.forget()

@@ -218,8 +218,6 @@ struct SettingsSearch: Identifiable {
         SettingsSearch(id: "general.shortcuts", title: "Keyboard shortcuts", page: .general, words: "keys help"),
         SettingsSearch(id: "general.welcome", title: "Welcome to Ovvi", page: .general,
                        words: "onboarding intro tour help getting started herdr install"),
-        SettingsSearch(id: "general.usage", title: "Share anonymous usage data", page: .general,
-                       words: "telemetry analytics privacy tracking statistics"),
     ] + (Updates.checks ? [
         SettingsSearch(id: "general.updates", title: "Check for updates automatically", page: .general,
                        words: "update version release new sparkle"),
@@ -251,6 +249,8 @@ struct SettingsSearch: Identifiable {
         SettingsSearch(id: "agents.from-agents", title: "When an agent sends one", page: .agents,
                        words: "notifications notify"),
         SettingsSearch(id: "machines.list", title: "Machines", page: .machines, words: "remote ssh host add"),
+        SettingsSearch(id: "privacy.usage", title: "Share anonymous usage data", page: .privacy,
+                       words: "telemetry analytics tracking statistics"),
         SettingsSearch(id: "privacy.websites", title: "Approved websites", page: .privacy,
                        words: "browser sites privacy allowlist add"),
         SettingsSearch(id: "keys.search", title: "Shortcuts", page: .shortcuts,

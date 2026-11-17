@@ -54,7 +54,7 @@ public final class Usage {
         ["1", "true"].contains(environment["DO_NOT_TRACK"]?.lowercased()) || environment["OVVI_TELEMETRY"] == "0"
     }
 
-    /// Settings ▸ General ▸ Share anonymous usage data (`usageData` in AppSettings).
+    /// Settings ▸ Privacy ▸ Share anonymous usage data (`usageData` in AppSettings).
     private var sharing: Bool {
         defaults.object(forKey: "usageData") as? Bool ?? true
     }
