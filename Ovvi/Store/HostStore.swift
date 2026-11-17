@@ -352,6 +352,11 @@ extension HostStore {
         }
     }
 
+    func clear(_ panes: [Pane]) {
+        seen.clear(Set(panes.map { Seen.key(terminalID: $0.terminalID, paneID: $0.id) }))
+        showStates()
+    }
+
     static func look(_ pane: Pane?, in store: HostStore) {
         let key = pane.map { Seen.key(terminalID: $0.terminalID, paneID: $0.id) }
         for other in all {

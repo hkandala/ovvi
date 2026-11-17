@@ -41,6 +41,21 @@ private func agent(_ status: AgentStatus, _ completion: Int? = nil, pane: String
     #expect(seen.update([agent(.idle, 3)], looking: []).map(\.state) == [.idle])
 }
 
+@Test func `a cleared finish is seen at once, and only that one`() {
+    var seen = Seen()
+    let working = [agent(.working), agent(.working, pane: "w1:p2"), agent(.working, pane: "w1:p3")]
+    _ = seen.update(working, looking: [])
+    let finished = [agent(.idle, 1), agent(.idle, 1, pane: "w1:p2"), agent(.blocked, pane: "w1:p3")]
+    _ = seen.update(finished, looking: ["w1:p2"])
+    seen.clear(["w1:p2", "w1:p3"])
+    #expect(seen.states == ["w1:p1": .finishedUnseen, "w1:p2": .idle, "w1:p3": .needsYou])
+    #expect(seen.update(finished, looking: []).isEmpty)
+    // The next finish is Done again.
+    _ = seen.update([agent(.working), agent(.working, pane: "w1:p2")], looking: [])
+    let again = seen.update([agent(.idle, 1), agent(.idle, 2, pane: "w1:p2")], looking: [])
+    #expect(again.map(\.state) == [.finishedUnseen, .finishedUnseen])
+}
+
 @Test func `blocked needs you and its end is a finish`() {
     var seen = Seen()
     _ = seen.update([agent(.idle)], looking: [])

@@ -320,7 +320,7 @@ private struct WindowContent: View {
             if panel == .agents {
                 // Over the sidebar's foot, from its agents' summary up.
                 AgentsPanel(pages: pages, height: height) { panel = nil }
-                    .padding(.leading, Sidebar.rowInsets.leading).padding(.bottom, gap + SidebarFoot.height + 6)
+                    .padding(.leading, SidebarFoot.inset).padding(.bottom, SidebarFoot.inset + SidebarFoot.box + 9)
                     .floatingPanel(open: open(.agents), alignment: .bottomLeading)
             }
         }

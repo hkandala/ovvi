@@ -4,7 +4,9 @@ import SwiftUI
 /// Under Archived Sessions: the agents' summary, which opens the Agents panel, then Keyboard Shortcuts, Command
 /// Palette, a line and Settings.
 struct SidebarFoot: View {
-    static let height: CGFloat = 28
+    static let height: CGFloat = 28, box: CGFloat = 22
+    /// The box's left edge from the window's, on Archived Sessions' text; its bottom sits as far over the window's.
+    static let inset = Sidebar.rowInsets.leading + WorkspaceRow.textInset
 
     let pages: WindowPages
     @Binding var panel: WindowPanel?
@@ -28,6 +30,9 @@ struct SidebarFoot: View {
             .accessibilityIdentifier("sidebar.settings")
         }
         .frame(height: Self.height)
+        // The gear's ink right-aligned with Archived Sessions' chevron.
+        .padding(.leading, WorkspaceRow.textInset).padding(.trailing, 4)
+        .padding(.bottom, Self.inset - gap - (Self.height - Self.box) / 2)
     }
 }
 
@@ -57,7 +62,7 @@ private struct AgentsSummary: View {
             }
             .lineLimit(1)
             .font(.system(size: 11, weight: state == nil ? .medium : .semibold)).foregroundStyle(color)
-            .padding(.horizontal, 8).frame(height: 22)
+            .padding(.horizontal, 8).frame(height: SidebarFoot.box)
             .background(color.opacity(state == nil ? 0 : open ? 0.24 : 0.14), in: shape)
             .overlay(shape.strokeBorder(state == nil ? look.divider : color.opacity(0.45)))
         }
@@ -80,6 +85,7 @@ private struct AgentsSummary: View {
 
 /// The agents of every session attached on this window's machine that need you or finished unseen, newest change
 /// first in each group. A pick shows its tab, in whichever window has its session, as a notification's click does.
+/// Clear All and a done row's × mark finishes seen, as a look at them does.
 struct AgentsPanel: View {
     let pages: WindowPages
     /// The window's: the list stays under the title row.
@@ -96,7 +102,7 @@ struct AgentsPanel: View {
         }.filter { !$0.1.isEmpty }
         VStack(alignment: .leading, spacing: 2) {
             Text("Agents · \(pages.machine.name)").font(.system(size: 11)).foregroundStyle(.secondary)
-                .padding(.horizontal, 8).padding(.bottom, 2)
+                .padding(.horizontal, 8).padding(.top, 6).padding(.bottom, 2)
                 .accessibilityIdentifier("agents.panel.header")
             if groups.isEmpty {
                 VStack(spacing: 4) {
@@ -115,9 +121,15 @@ struct AgentsPanel: View {
                             }
                             Text("\(state.title) · \(rows.count)").font(.system(size: 11, weight: .semibold))
                                 .foregroundStyle(.secondary)
-                                .padding(.horizontal, 8).padding(.top, 6).padding(.bottom, 4)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                                 .accessibilityIdentifier("agents.panel.group.\(state.title)")
-                            ForEach(rows, id: \.id) { row($0.1, $0.2) }
+                                .overlay(alignment: .trailing) {
+                                    if state == .finishedUnseen {
+                                        clearAll(rows.map { ($0.1, $0.2) })
+                                    }
+                                }
+                                .padding(.horizontal, 8).padding(.top, 6).padding(.bottom, 4)
+                            ForEach(rows, id: \.id) { AgentRow(store: $0.1, pane: $0.2, close: close) }
                         }
                     }
                 }
@@ -127,9 +139,10 @@ struct AgentsPanel: View {
                 .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(8)
+        // The text 16 pt from each edge.
+        .padding([.horizontal, .top], 8).padding(.bottom, 7.5)
         .frame(width: 320, alignment: .leading)
-        .floatingGlass(in: .rect(cornerRadius: 12))
+        .floatingGlass(in: .rect(cornerRadius: 12), material: nil)
         .focusable()
         .focusEffectDisabled()
         .focused($focused)
@@ -138,10 +151,32 @@ struct AgentsPanel: View {
         .accessibilityIdentifier("agents.panel")
     }
 
-    private func row(_ store: HostStore, _ pane: HostStore.Pane) -> some View {
+    private func clearAll(_ rows: [(HostStore, HostStore.Pane)]) -> some View {
+        Button {
+            for store in pages.machineStores {
+                store.clear(rows.filter { $0.0 === store }.map(\.1))
+            }
+        } label: {
+            Text("Clear All").font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                .padding(.horizontal, 6).frame(height: 20)
+        }
+        .buttonStyle(ChromeStyle(radius: 6))
+        .accessibilityIdentifier("agents.panel.clearAll")
+    }
+}
+
+/// Lit as the palette's rows are under the pointer; a done one shows its × there.
+private struct AgentRow: View {
+    let store: HostStore
+    let pane: HostStore.Pane
+    let close: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
         let title = pane.agentTitle ?? "agent"
         let place = [store.title, store.workspace(of: pane.tabID)?.label].compactMap(\.self).joined(separator: " · ")
-        return Button {
+        let clears = pane.state == .finishedUnseen
+        Button {
             close()
             WindowPages.go(to: Notifications.id(pane, of: store))
         } label: {
@@ -149,19 +184,42 @@ struct AgentsPanel: View {
                 ProgramTile(icon: pane.iconID, letter: pane.letter).padding(.top, 1)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title).font(.system(size: 13, weight: .medium)).frame(height: 18)
-                    Text(place).font(.system(size: 11)).foregroundStyle(.secondary)
+                    Text(place).font(.system(size: 11)).foregroundStyle(
+                        hovering ? AnyShapeStyle(Look.onAccent.opacity(0.75)) : AnyShapeStyle(.secondary),
+                    )
                 }
                 .lineLimit(1)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 8).padding(.top, 7)
+            .foregroundStyle(hovering ? AnyShapeStyle(Look.onAccent) : AnyShapeStyle(.primary))
+            .padding(.leading, 8).padding(.trailing, clears && hovering ? 32 : 8).padding(.top, 7)
             .frame(height: 48, alignment: .top)
             .contentShape(.rect)
         }
-        .buttonStyle(ChromeStyle(radius: 10))
+        .buttonStyle(ChromeStyle(selected: hovering, radius: 10, tint: .accentColor))
         .accessibilityLabel("\(title), \(place)")
         .accessibilityValue(pane.state?.title ?? "")
+        .accessibilityActions {
+            if clears {
+                Button("Clear") { store.clear([pane]) }
+            }
+        }
         .accessibilityIdentifier("agents.panel.\(store.session).\(pane.id)")
+        .overlay(alignment: .trailing) {
+            if clears, hovering {
+                Button {
+                    store.clear([pane])
+                } label: {
+                    Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(Look.onAccent)
+                        .frame(width: 20, height: 20)
+                }
+                .buttonStyle(ChromeStyle(radius: 6))
+                .padding(.trailing, 8)
+                .accessibilityLabel("Clear")
+                .accessibilityIdentifier("agents.panel.clear.\(store.session).\(pane.id)")
+            }
+        }
+        .onHover { hovering = $0 }
     }
 }
 

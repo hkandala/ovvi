@@ -104,3 +104,84 @@ extension OvviUITests {
         XCTAssertTrue(settingsWindow.exists(within: 3))
     }
 }
+
+extension OvviUITests {
+    /// The panel scrolls past its most height. Clear All on Done and a done row's × mark finishes seen, so those agents
+    /// turn idle; an agent that needs you has neither.
+    func testTheAgentsPanelScrollsAndClearsItsDoneAgents() async throws {
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        let summary = element("sidebar.agents"), panel = element("agents.panel")
+
+        step("One agent needs you and 30 are done")
+        var done: [String] = []
+        for index in 0 ..< 31 {
+            let made = try await createTab(in: "w2", label: "clear-\(index)")
+            closeAfter("tab", made.tab)
+            try await report(made.pane, "working")
+            done.append(made.pane)
+        }
+        XCTAssertTrue(summary.has(\.stringValue, "31 working", within: 10), summary.stringValue)
+        let needs = done.removeFirst()
+        try await report(needs, "blocked")
+        for pane in done {
+            try await report(pane, "idle")
+        }
+        summary.click()
+        let header = element("agents.panel.group.Done")
+        XCTAssertTrue(header.has(\.stringValue, "Done · 30", within: 5), header.stringValue)
+
+        step("The list scrolls inside the panel")
+        let prefix = "agents.panel.\(one)."
+        // Ids, not the bound elements: a removed row shifts their indexes.
+        let order = panel.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", prefix))
+            .allElementsBoundByIndex.sorted { $0.frame.minY < $1.frame.minY }.map(\.identifier)
+        XCTAssertEqual(order.count, 31)
+        XCTAssertEqual(order.first, prefix + needs)
+        XCTAssertLessThan(panel.frame.height, 600, "\(panel.frame)")
+        let last = element(order[30])
+        XCTAssertFalse(last.isHittable, "the last row shows unscrolled: \(last.frame) in \(panel.frame)")
+        keepScreenshot("agents panel, 31 agents")
+        panel.scroll(byDeltaX: 0, deltaY: -3000)
+        XCTAssertTrue(last.has(\.isHittable, true, within: 2), "\(last.frame) in \(panel.frame)")
+        keepScreenshot("agents panel, scrolled to the end")
+        clearsDone(order, needs: needs)
+    }
+
+    /// `order`: the panel's rows from the top, scrolled to the end; the first needs you.
+    private func clearsDone(_ order: [String], needs: String) {
+        let panel = element("agents.panel"), header = element("agents.panel.group.Done")
+        let prefix = "agents.panel.\(one).", clearPrefix = "agents.panel.clear.\(one)."
+        let last = element(order[30]), clearLast = element(order[30].replacing(prefix, with: clearPrefix))
+        step("A done row's × clears it; a row that needs you has none")
+        last.hover()
+        XCTAssertTrue(clearLast.exists(within: 2), "no × on a done row under the pointer")
+        keepScreenshot("agents panel, a done row under the pointer")
+        clearLast.click()
+        XCTAssertTrue(last.vanishes(within: 2))
+        XCTAssertTrue(header.has(\.stringValue, "Done · 29", within: 2), header.stringValue)
+        panel.scroll(byDeltaX: 0, deltaY: 3000)
+        let needsRow = element(prefix + needs), firstDone = element(order[1])
+        XCTAssertTrue(needsRow.has(\.isHittable, true, within: 2))
+        firstDone.hover()
+        let clearFirst = element(order[1].replacing(prefix, with: clearPrefix))
+        XCTAssertTrue(clearFirst.exists(within: 2))
+        needsRow.hover()
+        XCTAssertTrue(clearFirst.vanishes(within: 2))
+        XCTAssertFalse(element(clearPrefix + needs).exists, "a × on a row that needs you")
+        keepScreenshot("agents panel, a row that needs you under the pointer")
+
+        step("Clear All is on Done only and clears every done agent")
+        let all = panel.descendants(matching: .any).matching(identifier: "agents.panel.clearAll")
+        XCTAssertEqual(all.count, 1)
+        XCTAssertEqual(all.firstMatch.frame.midY, header.frame.midY, accuracy: 2)
+        all.firstMatch.click()
+        XCTAssertTrue(header.vanishes(within: 2))
+        XCTAssertTrue(needsRow.exists)
+        keepScreenshot("agents panel, cleared")
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(panel.vanishes(within: 2))
+        element("sidebar.agents").hover()
+        let tip = element("tooltip")
+        XCTAssertTrue(tip.has(\.stringValue, "1 needs you · 30 idle", within: 3), tip.stringValue)
+    }
+}

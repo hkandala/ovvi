@@ -51,6 +51,17 @@ public struct Seen: Sendable {
         return look(looking, now: now)
     }
 
+    /// As the end of a look at them: their finishes are seen, so Done turns idle.
+    public mutating func clear(_ ids: Set<String>) {
+        for agent in agents {
+            let id = Self.key(terminalID: agent.terminalID, paneID: agent.paneID)
+            if ids.contains(id) {
+                seen[id] = .some(agent.completionSeq)
+            }
+        }
+        look(looking)
+    }
+
     @discardableResult
     public mutating func look(_ looking: Set<String>, now: Date = .now) -> [Change] {
         var states: [String: AgentState] = [:]
