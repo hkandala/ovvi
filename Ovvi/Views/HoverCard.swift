@@ -6,11 +6,14 @@ struct PanelPlace {
     let trigger: UnitPoint
     let panel: UnitPoint
     let offset: CGSize
+    /// Above the trigger when there is no room under it.
+    var flips = false
 
     static let under = PanelPlace(trigger: .bottom, panel: .top,
                                   offset: CGSize(width: 0, height: (TitleBar.height - TabBar.height) / 2 + 6))
     static let beside = PanelPlace(trigger: .topTrailing, panel: .topLeading,
                                    offset: CGSize(width: 4 + Sidebar.rowInsets.trailing + gap + 6, height: 0))
+    static let tip = PanelPlace(trigger: .bottom, panel: .top, offset: CGSize(width: 0, height: 6), flips: true)
 }
 
 extension View {
@@ -41,6 +44,11 @@ extension View {
 @MainActor @Observable
 final class HoverPanels {
     var open: OpenPanel?
+    var tip: Tip?
+    @ObservationIgnored var waiting: Tip?
+    @ObservationIgnored var wait: Task<Void, Never>?
+    @ObservationIgnored var tipEnded: ContinuousClock.Instant?
+    @ObservationIgnored var monitor: Any?
 }
 
 private struct HoverPanelHost: ViewModifier {
@@ -59,6 +67,15 @@ private struct HoverPanelHost: ViewModifier {
                             insertion: .opacity.combined(with: Animation.reduced ? .identity
                                 : .scale(scale: 0.97, anchor: open.place.panel))
                                 .animation(.motion(.easeOut(duration: 0.13))),
+                            removal: .identity,
+                        ))
+                    }
+                }
+                let tipTrigger = panels.tip?.trigger.offsetBy(dx: -origin.x, dy: -origin.y) ?? .zero
+                PanelLayout(trigger: tipTrigger, place: .tip) {
+                    if let tip = panels.tip {
+                        TipView(tip: tip).id(tip.owner).transition(.asymmetric(
+                            insertion: .opacity.animation(tip.fades ? .motion(.easeOut(duration: 0.1)) : nil),
                             removal: .identity,
                         ))
                     }
@@ -85,10 +102,14 @@ private struct PanelLayout: Layout {
 
     func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
         guard let panel = subviews.first else { return }
-        let size = panel.sizeThatFits(.unspecified)
+        // The window's width: a long tooltip wraps.
+        let size = panel.sizeThatFits(ProposedViewSize(width: bounds.width - 2 * gap, height: nil))
         let left = trigger.minX + trigger.width * place.trigger.x - size.width * place.panel.x + place.offset.width
-        let top = trigger.minY + trigger.height * place.trigger.y - size.height * place.panel.y + place.offset
+        var top = trigger.minY + trigger.height * place.trigger.y - size.height * place.panel.y + place.offset
             .height
+        if place.flips, top + size.height > bounds.height - gap {
+            top = trigger.minY - place.offset.height - size.height
+        }
         panel.place(at: CGPoint(x: bounds.minX + min(max(left, gap), bounds.width - gap - size.width),
                                 y: bounds.minY + min(max(top, gap), bounds.height - gap - size.height)),
                     proposal: ProposedViewSize(size))

@@ -373,7 +373,7 @@ private struct SortMenu: View {
         .menuIndicator(.hidden)
         .buttonStyle(ChromeStyle(radius: 7))
         .fixedSize()
-        .help("Sort Spaces")
+        .tip("Sort Spaces")
         .accessibilityLabel("Sort Spaces")
         .accessibilityValue(order == .manual ? "Manual" : "Recent")
         .accessibilityIdentifier("sidebar.sort")

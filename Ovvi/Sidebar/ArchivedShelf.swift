@@ -152,7 +152,7 @@ struct ArchivedShelf: View {
         .buttonStyle(.plain)
         .menuIndicator(.hidden)
         .fixedSize()
-        .help("Show Agent")
+        .tip("Show Agent")
         .accessibilityLabel("Show Agent")
         .accessibilityValue(agent.isEmpty ? "All Agents" : Chooser.name(agent))
         .accessibilityIdentifier("agents.archived.filter")

@@ -17,7 +17,7 @@ struct PathField: View {
                 Image(symbol: control.symbol ?? "folder").foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
-            .help("Choose Folder…")
+            .tip("Choose Folder…")
             .accessibilityLabel("Choose Folder…")
             .accessibilityIdentifier("\(identifier).choose")
             TextField(control.label ?? "", text: $draft)

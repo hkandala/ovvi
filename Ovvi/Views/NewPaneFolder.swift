@@ -109,7 +109,7 @@ struct NewPaneFolder: View {
             Image(systemName: "folder")
         }
         .buttonStyle(.plain)
-        .help("Choose Folder…")
+        .tip("Choose Folder…")
         .accessibilityLabel("Choose Folder…")
         .accessibilityIdentifier("pane.\(cardID).chooser.folder.choose")
     }

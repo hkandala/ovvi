@@ -149,7 +149,7 @@ struct WorkspaceRow: View, Equatable {
             .disabled(fold == nil)
             .frame(height: 30)
             .padding(.trailing, 4)
-            .help(open ? "Hide Agents" : "Show Agents")
+            .tip(open ? "Hide Agents" : "Show Agents")
             .accessibilityLabel(open ? "Hide Agents" : "Show Agents")
             .accessibilityValue(open ? "expanded" : "collapsed")
             .accessibilityIdentifier("fold.\(workspace.id)")

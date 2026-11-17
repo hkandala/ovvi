@@ -164,3 +164,17 @@ Report: `~/Downloads/ovvi-research/p62-footer/index.html`.
 - **For the user:** the update notice stays until Update… or ×, now over the bottom-right card's last 40 pt (a chat
   card's send button); × clears it. Also check the real ring and sweep (only the released app gets an update)
   and the panels' transparency over a busy page on your desktop.
+
+### Track T
+
+- **Fix.** One tooltip for every icon button in the main and floating windows (`.tip`, in place of `.help`): a
+  solid panel with a rim and the key in one outlined cap, drawn by the window's hover host (`HoverPanelHost`), so it
+  never takes the keyboard. 0.5 s to show, at once within 0.5 s of the last one, hidden by a click, a scroll or a key.
+  Under the button, above it at the window's bottom. The Settings window and text that only shows a cut-off line keep
+  the system tooltip.
+- **Decisions.** Float Pane gets ⌥⌘↩ (free in the registry, and libghostty has no binds, so the menu takes it over a
+  terminal). Browser Back and Forward get a plugin card's keys, ⌃- and ⌃⇧-: ⌘← would take the caret's key from the
+  address field. Find Previous shows ⇧↩ and the find bar's Close ⎋, the keys the field takes. A disabled button's
+  tooltip shows dimmed.
+- **For the user.** The floating window's labels match their keys: Close Pane ⇧⌘W, Detach Pane ⌘W. Check the
+  tooltip's look over a bright and a dark page, and the flip above a button at the window's bottom.

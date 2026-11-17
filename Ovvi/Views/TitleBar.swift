@@ -131,7 +131,7 @@ private struct MachineButton: View {
         .menuIndicator(.hidden)
         .buttonStyle(ChromeStyle(radius: 7))
         .fixedSize()
-        .help("Machine")
+        .tip("Machine")
         .accessibilityLabel("Machine: \(current.name)")
         .accessibilityValue(current.icon)
         .accessibilityIdentifier("titlebar.machine")
@@ -172,7 +172,7 @@ private struct WorkspaceButton: View {
         }
         .onDisappear { spring?.cancel() }
         .accessibilityIdentifier("titlebar.workspace")
-        .help("Space")
+        .tip("Space")
         .accessibilityLabel("Space")
         .accessibilityValue("\(page.store.title) | \(workspace)")
     }

@@ -138,6 +138,14 @@ struct Look: Equatable {
         .black.opacity(dark ? 0.35 : 0.08)
     }
 
+    /// Solid in every look, to read over anything.
+    var tip: (fill: Color, rim: Color, text: Color, cap: Color, shadow: Color) { // swiftlint:disable:this large_tuple
+        dark ? (Color(hex: 0x202022), .white.opacity(0.09), .white.opacity(contrast ? 0.85 : 0.6), .white.opacity(0.18),
+                .black.opacity(0.35))
+            : (Color(hex: 0xFDFDFD), .black.opacity(0.07), .black.opacity(contrast ? 0.85 : 0.7), .black.opacity(0.16),
+               .black.opacity(0.14))
+    }
+
     var receivedBubble: Color {
         dark ? Color(hex: 0x3B3B3D) : Color(hex: 0xE5E5EA)
     }

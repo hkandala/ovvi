@@ -76,8 +76,9 @@ struct TabButton: View {
                         .frame(width: 22, height: 22)
                 }
                 .buttonStyle(ChromeStyle(radius: 11))
-                .help("Close Tab")
-                .accessibilityLabel("Close Tab")
+                .tip("Close Tab", key: .hotkey("tab.close"))
+                .accessibilityLabel(KeyboardShortcut.hotkey("tab.close").map { "Close Tab \($0.glyphs)" }
+                    ?? "Close Tab")
                 .accessibilityIdentifier("tab.\(tab.id).close")
                 .padding(.trailing, 6)
             }

@@ -316,7 +316,7 @@ struct ChatMessages: View, Equatable {
                 .glassEffect(.regular.interactive(), in: .circle)
         }
         .buttonStyle(.plain)
-        .help("Scroll to Bottom")
+        .tip("Scroll to Bottom")
         .accessibilityLabel("Scroll to Bottom")
         .accessibilityIdentifier("chat.\(chat.paneID).bottom")
         .padding(.bottom, 10)

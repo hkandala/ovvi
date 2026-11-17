@@ -26,14 +26,17 @@ struct FindBar: View {
                 .foregroundStyle(.secondary)
                 .frame(width: 72, alignment: .trailing)
                 .accessibilityIdentifier("find.count")
-            IconButton(symbol: "chevron.up", help: "Find Previous", size: 22) { Task { await find.step(-1) } }
+            IconButton(symbol: "chevron.up", help: "Find Previous", key: KeyboardShortcut(.return, modifiers: .shift),
+                       size: 22) { Task { await find.step(-1) } }
                 .accessibilityIdentifier("find.previous")
             IconButton(symbol: "chevron.down", help: "Find Next", key: .hotkey("edit.find-next"), size: 22) {
                 Task { await find.step(1) }
             }
             .accessibilityIdentifier("find.next")
-            IconButton(symbol: "xmark", help: "Close", size: 22) { page.closeFind() }
-                .accessibilityIdentifier("find.close")
+            IconButton(symbol: "xmark", help: "Close", key: KeyboardShortcut(.escape, modifiers: []), size: 22) {
+                page.closeFind()
+            }
+            .accessibilityIdentifier("find.close")
         }
         .padding(.leading, 12)
         .padding(.trailing, 6)

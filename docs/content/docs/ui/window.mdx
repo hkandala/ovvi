@@ -102,9 +102,22 @@ start, also during a resize. From left to right:
 While the overview is open the row shows only the traffic lights and one ×
 that leaves it ([Overview](#overview)).
 
-Each title-row button shows the system tooltip with
-the action's name and its shortcut, for example "New Tab ⌘T". So do the page
-header's `+`, the footer's Open Session button and each card header button.
+### Tooltips
+
+Every icon button in a main or floating window shows the app's tooltip: the
+action's name, then its shortcut in one outlined key cap, for example "New Tab
+⌘T". The key comes from the key registry, so it is the key the user set.
+- **Look.** A solid panel in every look (dark `#202022`, light `#FDFDFD`) with
+  a fine rim and a soft shadow, radius 9 pt, 12 pt text, 6 pt of padding above
+  and below and 12 pt at the sides. A disabled button's tooltip shows dimmed.
+- **Place.** Centered under the button, 6 pt below it, and 8 pt inside the
+  window; above the button when there is no room under it.
+- **Timing.** It shows after the pointer rests 0.5 s on the button, and at
+  once when the pointer moves to the next button within 0.5 s. A click, a
+  scroll or a key hides it, and the next one waits again. It fades in over
+  0.1 s, with no fade when Animations are off.
+- It is drawn inside the window, not in a window of its own, so it never takes
+  the keyboard from a terminal. The Settings window keeps the system tooltip.
 
 The window title is "‹tab title› - ‹page title›" (the page in view's sidebar title: the machine's name for
 `default`), so the
@@ -1069,8 +1082,8 @@ A pane can float in a small window of its own, above the main window or, kept
 on top, above other apps (D50). herdr has no floating pane, so this is
 Ovvi's own: the pane stays in its herdr tab, and other devices and herdr
 clients see it there.
-- **Float Pane** (the `pip.enter` button in the card header, the pane's menus,
-  View ▸ Pane and the palette) opens the window. Several can be open. On a
+- **Float Pane** (⌥⌘↩, the `pip.enter` button in the card header, the pane's
+  menus, View ▸ Pane and the palette) opens the window. Several can be open. On a
   floated pane's card the button is lit, and it brings the window to the
   front.
 - **The window** has no tab bar and no sidebar. Its title row is the main

@@ -135,7 +135,7 @@ struct Composer: View {
                 .background(.tint, in: .circle)
         }
         .buttonStyle(.plain)
-        .help(help)
+        .tip(help)
         .accessibilityLabel(help)
         .accessibilityIdentifier(id)
     }

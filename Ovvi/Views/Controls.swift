@@ -33,7 +33,6 @@ struct IconButton: View {
     let action: () -> Void
 
     var body: some View {
-        let help = key.map { "\(help) \($0.glyphs)" } ?? help
         Button(action: action) {
             Image(symbol: symbol)
                 .font(size < 28 ? .system(size: 11) : .body.weight(.medium))
@@ -46,8 +45,8 @@ struct IconButton: View {
                 }
         }
         .buttonStyle(ChromeStyle(radius: size / 4))
-        .help(help)
-        .accessibilityLabel(help)
+        .tip(help, key: key)
+        .accessibilityLabel(key.map { "\(help) \($0.glyphs)" } ?? help)
     }
 }
 
@@ -79,7 +78,7 @@ struct Segments<Value: Hashable>: View {
                     }
                 }
                 .buttonStyle(ChromeStyle(selected: selection == value, radius: 6))
-                .help(symbols[title] == nil ? "" : title)
+                .tip(symbols[title] == nil ? "" : title)
                 .accessibilityLabel(title)
                 .accessibilityAddTraits(selection == value ? .isSelected : [])
                 .accessibilityIdentifier("\(id).\(title.lowercased())")

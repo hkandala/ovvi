@@ -119,7 +119,7 @@ struct NewPane: View {
         }
         .buttonStyle(ChromeStyle(selected: selected, tint: .accentColor))
         .disabled(missing)
-        .help(missing ? "Install \(name): \(agent?.install ?? "")" : "")
+        .tip(missing ? "Install \(name): \(agent?.install ?? "")" : "")
         .onContinuousHover { phase in
             if case .active = phase, !missing, NSEvent.mouseLocation != pointer {
                 chooser.selected = row

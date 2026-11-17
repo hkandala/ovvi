@@ -85,7 +85,7 @@ private struct HeaderItem: View {
                 labeled(id, icon: true).buttonStyle(ChromeStyle(radius: 5.5)).foregroundStyle(look.paneButton)
             }
         }
-        .help(title)
+        .tip(title)
         // In the label: XCUITest reads no button's value.
         .accessibilityLabel(control.label ?? control.badge.map { "\(title), \($0)" } ?? title)
     }
@@ -122,7 +122,7 @@ private struct HeaderItem: View {
                         .foregroundStyle(isOn ? AnyShapeStyle(.primary) : AnyShapeStyle(look.paneButton))
                 }
                 .buttonStyle(ChromeStyle(selected: isOn, radius: 6))
-                .help(control.title ?? "")
+                .tip(control.title ?? "")
                 .padding(2)
                 .background(look.track, in: .rect(cornerRadius: 8))
             } else {
@@ -235,7 +235,7 @@ private struct HeaderMenu: View {
                 menu.buttonStyle(.borderless)
             }
         }
-        .help(control.style == "icon" ? shown : "")
+        .tip(control.style == "icon" ? shown : "")
         .fixedSize()
         .accessibilityLabel(control.label ?? control.title ?? "")
         .accessibilityValue(shown)
@@ -297,7 +297,7 @@ private struct OpenWith: View {
                     NSWorkspace.shared.open([url], withApplicationAt: main,
                                             configuration: NSWorkspace.OpenConfiguration())
                 }
-                .help("Open with \(FileManager.default.displayName(atPath: main.path))")
+                .tip("Open with \(FileManager.default.displayName(atPath: main.path))")
             } else {
                 Menu("Open With") { OpenWithItems(url: apps ? url : nil, plugins: plugins, pick: pick) }
             }

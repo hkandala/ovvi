@@ -15,11 +15,15 @@ struct BrowserToolbar: View {
         let id = "browser.\(browser.paneID)"
         HStack(spacing: 6) {
             HStack(spacing: 0) {
-                IconButton(symbol: "chevron.left", help: "Back", size: 22) { browser.view.goBack() }
-                    .disabled(!browser.canGoBack)
-                    .accessibilityIdentifier("\(id).back")
-                IconButton(symbol: "chevron.right", help: "Forward", size: 22) { browser.view.goForward() }
-                    .disabled(!browser.canGoForward)
+                IconButton(symbol: "chevron.left", help: "Back", key: .hotkey("browser.back"), size: 22) {
+                    browser.view.goBack()
+                }
+                .disabled(!browser.canGoBack)
+                .accessibilityIdentifier("\(id).back")
+                IconButton(symbol: "chevron.right", help: "Forward", key: .hotkey("browser.forward"), size: 22) {
+                    browser.view.goForward()
+                }
+                .disabled(!browser.canGoForward)
                 let loading = browser.loading
                 IconButton(symbol: loading ? "xmark" : "arrow.clockwise", help: loading ? "Stop" : "Reload",
                            key: loading ? nil : .hotkey("browser.reload"), size: 22,
@@ -122,7 +126,7 @@ struct BrowserToolbar: View {
         .buttonStyle(.plain)
         .pointerStyle(.default)
         .fixedSize()
-        .help(mac ? "Load through \(name)" : "Load through This Mac's network")
+        .tip(mac ? "Load through \(name)" : "Load through This Mac's network")
     }
 
     /// A first responder set during an update is undone, and a card just made is not in its window yet.

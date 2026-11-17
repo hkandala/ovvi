@@ -24,6 +24,7 @@ struct FloatingWindow: View {
             }
         }
         .frame(minHeight: 200)
+        .hoverPanelHost()
         .onAppear { Telemetry.used(.floatingWindow) }
         .windowChrome(look)
         .environment(\.look, look)

@@ -133,6 +133,37 @@ extension OvviUITests {
         XCTAssertEqual(element("sidebar.open-session").label, "Open Session ⌥⌘T")
     }
 
+    func testIconButtonsShowTheAppsTooltipAndFloatPaneHasAKey() async throws {
+        step("A rest shows the tooltip under the button, with its key")
+        let (_, pane) = try await newTab("tips")
+        let tip = element("tooltip"), split = element("pane.\(pane).split-down"), zoom = element("pane.\(pane).zoom")
+        hoverHeader(pane)
+        XCTAssertTrue(split.exists(within: 3))
+        split.hover()
+        XCTAssertTrue(tip.has(\.label, "Split Down ⇧⌘D", within: 3))
+        XCTAssertEqual(tip.frame.minY - split.frame.maxY, 6, accuracy: 1, "\(tip.frame) under \(split.frame)")
+        XCTAssertTrue((tip.frame.minX ... tip.frame.maxX).contains(split.frame.midX), "\(tip.frame)")
+        keepScreenshot("tooltip")
+
+        step("The next button's follows at once, a disabled one's too; a click hides it until the pointer comes back")
+        XCTAssertFalse(zoom.isEnabled)
+        zoom.hover()
+        XCTAssertTrue(tip.has(\.label, "Zoom Pane ⇧⌘↩", within: 1))
+        zoom.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
+        XCTAssertTrue(tip.vanishes(within: 1))
+        XCTAssertFalse(tip.exists(within: 1.5))
+
+        step("⌥⌘↩ floats the terminal that has the keys; the floating window shows tooltips too")
+        XCTAssertTrue(hasKeyboard("terminal.\(pane)"))
+        app.typeKey(.return, modifierFlags: [.option, .command])
+        let window = app.windows.containing(.any, identifier: "float.\(pane)").firstMatch
+        XCTAssertTrue(window.exists(within: 5))
+        element("float.\(pane).pin", in: window).hover()
+        XCTAssertTrue(element("tooltip", in: window).has(\.label, "Stay on Top", within: 3))
+        app.typeKey("w", modifierFlags: .command)
+        XCTAssertTrue(window.vanishes(within: 3))
+    }
+
     private func rows(of card: XCUIElement) -> [XCUIElement] {
         card.descendants(matching: .button)
             .matching(NSPredicate(format: "identifier BEGINSWITH 'hovercard.' AND identifier != 'hovercard.title'"))

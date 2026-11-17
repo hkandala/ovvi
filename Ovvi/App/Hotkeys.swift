@@ -168,7 +168,7 @@ extension Hotkeys {
         Hotkey("pane.split-left", "Split Left", "Panes"),
         Hotkey("pane.split-up", "Split Up", "Panes"),
         Hotkey("pane.zoom", "Zoom Pane", "Panes", "shift+cmd+return", top: true),
-        Hotkey("pane.float", "Float Pane", "Panes"),
+        Hotkey("pane.float", "Float Pane", "Panes", "option+cmd+return", top: true),
         Hotkey("pane.close", "Close Pane", "Panes", "cmd+w", top: true),
         Hotkey("pane.replace", "Replace Pane", "Panes", "shift+cmd+r"),
         Hotkey("pane.copy-address", "Copy Address", "Panes", "shift+cmd+c", top: true),
@@ -200,6 +200,9 @@ extension Hotkeys {
         Hotkey("browser.reload", "Reload Page", "Browser", "cmd+r", scope: "browser"),
         Hotkey("browser.location", "Open Location", "Browser", "cmd+l", scope: "browser"),
         Hotkey("browser.inspector", "Show Web Inspector", "Browser", "option+cmd+i", scope: "browser"),
+        // A plugin card's Back and Forward keys; ⌘← would take the caret's key from the address field.
+        Hotkey("browser.back", "Back", "Browser", "ctrl+-", scope: "browser"),
+        Hotkey("browser.forward", "Forward", "Browser", "ctrl+shift+-", scope: "browser"),
     ]
 
     private static let plugins = [

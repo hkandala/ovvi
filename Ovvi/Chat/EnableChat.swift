@@ -29,7 +29,7 @@ struct EnableChat: View {
         .padding(2)
         .background(look.track, in: .rect(cornerRadius: 8))
         .fixedSize()
-        .help("Restart \(name) with chat, in the same session")
+        .tip("Restart \(name) with chat, in the same session")
         .accessibilityIdentifier("pane.\(pane.id).enable-chat")
         .alert("Restart \(name)?", isPresented: $asking) {
             Button("Restart", role: .destructive) { page.store.enableChat(pane) }

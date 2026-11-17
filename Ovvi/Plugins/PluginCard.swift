@@ -198,7 +198,7 @@ struct DirtyDot: View {
         Circle().fill(.secondary).frame(width: 7, height: 7)
             .alignmentGuide(VerticalAlignment.center) { $0[VerticalAlignment.center] - Self.drop }
             .padding(.horizontal, 3)
-            .help("Edited")
+            .tip("Edited")
             .accessibilityElement()
             .accessibilityAddTraits(.isStaticText)
             .accessibilityLabel("Edited")
