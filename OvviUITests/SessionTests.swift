@@ -158,36 +158,71 @@ extension OvviUITests {
         try await type("next", into: theirs, of: two)
     }
 
-    func testTheSessionTitleListsTheWindowsOtherSessions() {
+    func testTheSessionTitleListsTheWindowsOtherSessions() async throws {
+        try await running(five)
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         openPage(two)
         let title = element("sidebar.header"), mine = element("sidebar.session.\(one)")
         XCTAssertTrue(title.has(\.stringValue, two, within: 3))
+        let keys = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier BEGINSWITH 'terminal.' AND hasKeyboardFocus == true")).firstMatch
+        XCTAssertTrue(keys.exists(within: 3))
+        let card = keys.identifier
         title.click()
         XCTAssertTrue(mine.exists(within: 2))
-        XCTAssertFalse(element("sidebar.session.\(two)").exists)
-        XCTAssertFalse(element("sidebar.session.\(three)").exists)
+        XCTAssertTrue(until(2) { !keys.exists }, "the shelf took no keys")
+        // Only this window's other pages: not the one in view, a stopped one or a running one not open here.
+        for session in [two, three, five] {
+            XCTAssertFalse(element("sidebar.session.\(session)").exists, session)
+        }
         XCTAssertLessThan(mine.frame.maxY, element("sidebar.open-session").frame.minY)
         XCTAssertGreaterThan(element("sidebar.filter").frame.minY, element("sidebar.open-session").frame.maxY)
         keepScreenshot("session shelf")
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(mine.vanishes(within: 2))
+        XCTAssertTrue(hasKeyboard(card))
 
-        step("The arrows and Return pick a session; the shelf folds")
-        let place = title.frame
+        step("The arrows and Return pick a session; the shelf folds and the keys go to its card")
         title.click()
         XCTAssertTrue(mine.exists(within: 2))
         app.typeKey(.downArrow, modifierFlags: [])
         app.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(title.has(\.stringValue, one, within: 3))
         XCTAssertTrue(mine.vanishes(within: 2))
-        XCTAssertEqual(title.frame.minY, place.minY, accuracy: 0.5)
+        XCTAssertTrue(keys.exists(within: 3))
 
-        step("A click on a card folds it")
+        step("A click elsewhere that takes the keys folds it")
         title.click()
         XCTAssertTrue(element("sidebar.session.\(two)").exists(within: 2))
-        element("terminal.w1:p1").click()
+        element("workspace.w2").click()
         XCTAssertTrue(element("sidebar.session.\(two)").vanishes(within: 2))
+        try await expectOnlyTheSpacesSlide()
+    }
+
+    /// Held a third of the way to the next page: the rows follow the fingers, the header and the filter stay.
+    private func expectOnlyTheSpacesSlide() async throws {
+        step("Held mid-swipe, only the spaces move")
+        let title = element("sidebar.header"), filter = element("sidebar.filter"), sidebar = element("sidebar").frame
+        let row = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'workspace.'"))
+            .firstMatch
+        let (titleX, filterX, rowX) = (title.frame.minX, filter.frame.minX, row.frame.minX)
+        var moved = false
+        // The other way if natural scrolling is off.
+        for sign in [-1.0, 1.0] where !moved {
+            let swipe = Data("\(sidebar.midX) \(sidebar.midY) \(10 * sign) \(Int(sidebar.width / 30)) 3000".utf8)
+            async let swiped = Self.post("\(one)/swipe", swipe)
+            try await Task.sleep(for: .seconds(1.5))
+            moved = abs(row.frame.minX - rowX) > 20
+            if moved {
+                XCTAssertEqual(title.frame.minX, titleX, accuracy: 0.5)
+                XCTAssertEqual(filter.frame.minX, filterX, accuracy: 0.5)
+                keepScreenshot("held mid-swipe")
+            }
+            _ = try await swiped
+            try await Task.sleep(for: .seconds(1))
+        }
+        XCTAssertTrue(moved, "no swipe moved the rows")
+        XCTAssertEqual(title.stringValue, one)
     }
 
     private func type(_ word: String, into pane: String, of session: String) async throws {
@@ -239,6 +274,7 @@ extension OvviUITests {
     @discardableResult
     func openSessionPanel(in window: XCUIElement? = nil) -> XCUIElement {
         element("sidebar.header", in: window).click()
+        XCTAssertTrue(element("sidebar.open-session", in: window).exists(within: 2))
         element("sidebar.open-session", in: window).click()
         let filter = element("open-session.filter", in: window)
         XCTAssertTrue(hasKeyboard(filter))

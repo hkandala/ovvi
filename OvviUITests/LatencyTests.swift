@@ -154,7 +154,8 @@ extension OvviUITests {
         XCTAssertGreaterThan((early[1] - offsets[0]) / max(early[0], 1) * 1000, speed / 2, "\(swipe)")
         XCTAssertLessThan((early[1] - offsets[0]) / max(early[0], 1) * 1000, speed * 3, "\(swipe)")
 
-        let name = element("sidebar.header"), place = name.frame.minX
+        // A row of the page in view: at rest only its rows are made. The header stays still.
+        let name = spaceRows.firstMatch, place = name.frame.minX
         try await Self.post("\(one)/swipe", Data("\(center) \(-10 * forward) 4 200".utf8))
         try await Task.sleep(for: .seconds(1))
         XCTAssertEqual(header, two)
@@ -171,10 +172,14 @@ extension OvviUITests {
         try await expectAFlickLandsInStep(center, forward)
     }
 
+    var spaceRows: XCUIElementQuery {
+        app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'workspace.'"))
+    }
+
     /// From page one at rest, the way the swipe went forward.
     private func expectAFlickLandsInStep(_ center: String, _ forward: Double) async throws {
         step("A quick flick lands on the next page in step")
-        let width = element("sidebar").frame.width, name = element("sidebar.header")
+        let width = element("sidebar").frame.width, name = spaceRows.firstMatch
         // At rest: the pages arrive 0.2 s after the click (read mid-slide, 1 pt short, on CI).
         let rest = try XCTUnwrap(steady(3) { name.frame.minX })
         try await Self.post("\(one)/swipe", Data("\(center) \(20 * forward) 3".utf8))

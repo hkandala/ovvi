@@ -233,6 +233,8 @@ Report: `~/Downloads/ovvi-research/p62-footer/index.html`.
   that names a space shows it; herdr keeps `~` and its own folder naming. A tab's `zsh ~` keeps its `~`.
 - **For the user:** hover the session title (⌄), open the shelf, pick with the arrows and Return, click a card to
   fold it; switch sessions and watch only the spaces slide; a new space shows your user name and renames as before.
+- **For the user:** with the sidebar collapsed, no button opens the overview (its button is in the session header):
+  ⌃⌘O, View ▸ Show Overview and the palette still do, and Open Session stays in the machine menu.
 
 ## Round 3: the picks
 

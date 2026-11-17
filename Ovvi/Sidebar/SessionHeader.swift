@@ -27,7 +27,7 @@ struct SessionHeader: View {
                 SortMenu(page: page)
                 newSpace
             }
-            .padding(.top, open ? 1 : 0).padding(.trailing, open ? 3 : 0)
+            .padding(.trailing, open ? 3 : 0)
             if open {
                 shelf(others)
             }
@@ -65,6 +65,12 @@ struct SessionHeader: View {
             return .handled
         }
         .onExitCommand { close() }
+        // The overview hides the sidebar but keeps it, keys and all.
+        .onChange(of: pages.overview) {
+            if pages.overview {
+                open = false
+            }
+        }
     }
 
     private var title: some View {
@@ -90,7 +96,6 @@ struct SessionHeader: View {
         .buttonStyle(ChromeStyle(radius: 7))
         .onHover { over = $0 }
         .contextMenu { SessionMenu(page: page, pages: pages, openSession: openSession) }
-        .help("Sessions")
         .accessibilityLabel("Sessions")
         .accessibilityValue(page.store.title)
         .accessibilityIdentifier("sidebar.header")
@@ -168,45 +173,10 @@ struct SessionHeader: View {
     }
 }
 
-struct SessionMenu: View {
-    let page: Page
-    let pages: WindowPages
-    let openSession: () -> Void
-    @AppStorage(Page.foldsAndShelves, store: .sidebar) private var opened = ""
-    private var settings = AppSettings()
-
-    init(page: Page, pages: WindowPages, openSession: @escaping () -> Void) {
-        (self.page, self.pages, self.openSession) = (page, pages, openSession)
-    }
-
-    var body: some View {
-        Button("New Space") { Task { await page.newWorkspace() } }
-            .disabled(page.store.state != .live)
-        Button("Open Session…", action: openSession)
-        if settings.showArchived {
-            Button(opened.hasLine(page.archivedKey) ? "Hide Archived Sessions" : "Show Archived Sessions") {
-                withAnimation(.fade) {
-                    opened = opened.togglingLine(page.archivedKey)
-                }
-            }
-        }
-        Button(page.store.onlyPinned ? "Show All Spaces" : "Show Only Pinned Spaces") {
-            afterMenu { page.store.onlyPinned.toggle() }
-        }
-        .disabled(page.store.pins.isEmpty)
-        Divider()
-        Button("Detach Session") { pages.close(page) }.disabled(!pages.canDetach)
-    }
-}
-
 /// Its own view: inside the header's body, each change there would make the menu again and close it.
 private struct SortMenu: View {
     let page: Page
     private var settings = AppSettings()
-
-    init(page: Page) {
-        self.page = page
-    }
 
     var body: some View {
         // `Page.spaceOrder`, read through the view's own settings so a change in Settings redraws the menu.

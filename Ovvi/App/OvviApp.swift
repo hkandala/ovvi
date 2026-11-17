@@ -272,7 +272,7 @@ private struct WindowContent: View {
                     // The cards start at the sidebar's width: its handle lies over the page's 8 pt gap.
                     Sidebar(pages: pages, width: $sidebarWidth) { panel = .openSession }
                         .padding(.bottom, gap)
-                        // Rex's page header and first row sit 3 pt lower than the page's 4 pt room.
+                        // The session header and first row sit 3 pt lower than the page's 4 pt room.
                         .padding(.top, 7)
                         .padding(.trailing, -gap)
                         .underOverview(pages)

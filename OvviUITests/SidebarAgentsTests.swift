@@ -184,6 +184,7 @@ extension OvviUITests {
         XCTAssertTrue(element("agents.archived.search").exists(within: 2))
         XCTAssertTrue(element("agents.archived.filter").exists)
         element("sidebar.header").click()
+        XCTAssertTrue(element("sidebar.session.\(one)").exists(within: 2))
         element("sidebar.session.\(one)").click()
         XCTAssertTrue(until(3) { header == one })
         XCTAssertEqual(shelf.value as? String, "expanded")
