@@ -22,14 +22,12 @@ public struct TabHistory: Equatable, Sendable {
     }
 
     /// The places that Go Back (-1) or Go Forward (1) lands on, press after press, nearest first: past the tabs no
-    /// longer `open` and the tab each press leaves.
+    /// longer `open` and the tab shown.
     public func trail(_ offset: Int, from shown: String?, max: Int, open: (String) -> Bool) -> [Int] {
-        var steps: [Int] = [], shown = shown, index = place + offset
+        var steps: [Int] = [], index = place + offset
         while steps.count < max, ids.indices.contains(index) {
-            let id = ids[index]
-            if id != shown, open(id) {
+            if ids[index] != shown, open(ids[index]) {
                 steps.append(index)
-                shown = id
             }
             index += offset
         }
