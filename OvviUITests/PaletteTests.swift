@@ -22,7 +22,12 @@ extension OvviUITests {
         XCTAssertFalse(element("palette.section.Panes").exists)
         keepScreenshot("palette filtered")
         app.typeKey(.return, modifierFlags: [])
-        let other = try await sidePane(in: tab, besides: [pane])
+        let panes = try await poll("a second pane in the tab") { () async throws -> [[String: Any]]? in
+            let panes = try await (snapshot()["panes"] as? [[String: Any]] ?? [])
+                .filter { $0["tab_id"] as? String == tab }
+            return panes.count == 2 ? panes : nil
+        }
+        let other = try XCTUnwrap(panes.compactMap { $0["pane_id"] as? String }.first { $0 != pane })
         XCTAssertTrue(element("pane.\(other)").exists(within: 2))
         XCTAssertLessThan(element("pane.\(pane)").frame.maxX, element("pane.\(other)").frame.minX)
     }

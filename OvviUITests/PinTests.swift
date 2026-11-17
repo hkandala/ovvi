@@ -280,7 +280,6 @@ extension OvviUITests {
         lightsEach("an unpin")
     }
 
-    /// Two agent lines in each space.
     /// w1 back above w2 after a test that moves the spaces.
     func restoreSpaceOrderAfter() {
         addTeardownBlock { [one] in
@@ -292,6 +291,7 @@ extension OvviUITests {
         }
     }
 
+    /// Two agent lines in each space.
     private func agents(in spaces: [String]) async throws -> [(String, XCUIElement)] {
         var agents: [(String, XCUIElement)] = []
         for space in spaces {
