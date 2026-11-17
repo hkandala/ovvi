@@ -75,7 +75,7 @@ each remote machine where you open a session:
 
 | Folder | What is in it |
 |---|---|
-| `~/.cache/ovvi` | The `ovvi` command for agents, and small helper files for the chat view. Helper files that are not used for 30 days are deleted. |
+| `~/.cache/ovvi` | The `ovvi` command for agents, and small helper files for the chat view. Ovvi deletes old helper files by itself. |
 | `~/.local/state/ovvi` | The state of each browser and plugin card: its page, its history and its settings, and whether each agent card shows the chat or the terminal. |
 
 Because this state is on the machine, a card shows the same page in every Ovvi that opens the session.
@@ -103,7 +103,7 @@ A browser card is a web page in its own web view. Each machine has its own websi
 does not carry over to another.
 
 A plugin card is a web page too. The page comes from the plugin's package, which Ovvi installs and builds in
-`~/.config/ovvi/plugins`. The page runs in its own web view and uses the plugin API to work with the card's machine:
+`~/.config/ovvi/plugins`. The page runs in its own web view. It uses the plugin API to work with the card's machine:
 it reads and saves files, runs `git` and other commands, and keeps its state. File Explorer and Git are plugins of
 this kind.
 

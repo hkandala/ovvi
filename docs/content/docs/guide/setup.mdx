@@ -27,8 +27,7 @@ curl -fsSL https://herdr.dev/install.sh | sh
 - You can run the command yourself in a terminal on the machine.
 
 herdr installs to `~/.local/bin`. Ovvi finds herdr through your login shell, and it also looks in `~/.local/bin` when
-your shell does not put that folder on `PATH`. If you install herdr while Ovvi runs, Ovvi finds it by itself within
-30 seconds.
+your shell does not put that folder on `PATH`. If you install herdr while Ovvi runs, Ovvi finds it by itself.
 
 ### Agent integrations
 
@@ -51,8 +50,8 @@ the app on each. No window opens until the welcome closes.
 2. If This Mac has no herdr, the last page installs it. Click Install herdr and wait for "herdr is installed".
 3. Click Get Started on the last page.
 
-To close the welcome at any time, click Skip or press Esc. Next on the herdr page waits until Ovvi finds herdr, but
-Skip still closes the welcome. To see the welcome again, open Settings ▸ General and click Show Welcome.
+To close the welcome at any time, click Skip or press Esc. On the herdr page, Get Started waits until Ovvi finds
+herdr. Skip still closes the welcome. To see the welcome again, open Settings ▸ General and click Show Welcome.
 
 When the welcome closes, the first window opens. It shows a list of the sessions on each machine. This is the same
 list that File ▸ New Window (⌘N) shows:
@@ -75,7 +74,7 @@ This Mac is always the first machine in the list. You need herdr on This Mac onl
 3. Click a session under This Mac, or click New Session.
 
 If the session is stopped, Ovvi starts it. A session is one herdr server, so it keeps running after you quit Ovvi.
-If a session stops later, the window shows "‹session› is not running" with a Start button.
+If a session stops later, the window shows "‹session› is not running" with Start ‹session›.
 
 A new session has no spaces yet. A space is a project folder with its own tabs and terminals. Click New Space
 (⌃⌘T) or Open Folder… to make the first one. [Basics](/docs/guide/basics) explains sessions, spaces, tabs and panes.

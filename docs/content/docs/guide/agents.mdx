@@ -48,8 +48,8 @@ needs you first, then done, then working.
 
 ### Where states show
 
-- The tab: one still icon at the end of the tab. If an agent in a tab that you do not look at needs you or
-  finishes, the tab bounces its icons and its title says so ("codex needs you") for a few seconds.
+- The tab: one still icon at the end of the tab. An agent can need you or finish in a tab that you do not look
+  at. Then the tab bounces its icons, and its title says so for a few seconds ("codex needs you").
 - The hover card: rest the pointer on a tab to see its panes, with the last lines of an agent that needs you.
 - The space row in the sidebar: the strongest state of the space, as an icon at the end of the row.
 - The agent rows in the sidebar: under each space, one row per agent, with its icon, its title and its state.
@@ -65,18 +65,7 @@ Each space lists its agents under its row, by tab and by place in the tab.
 - Click the chevron of a space row (Hide Agents or Show Agents) to fold or show its agent rows.
 - Type in the sidebar's filter field ("Find a space or agent") to find a space or an agent by name.
 
-### Sort spaces by agent activity
-
-The Sort Spaces menu in the sidebar header has two orders:
-
-- Manual: the spaces stay where you put them.
-- Recent: the space whose agent changed state last goes first, under the pinned spaces.
-
-Each session keeps its own order. Settings ▸ Agents ▸ Sort spaces sets the order for a session where you did not
-pick one.
-
-To see only your pinned spaces, right-click the session title in the sidebar and choose Show Only Pinned Spaces.
-Ovvi then shows no state, no notification and no Dock count for the agents in the hidden spaces.
+To put the space whose agent changed last first, read [Sort and pin spaces](/docs/guide/basics#sort-and-pin-spaces).
 
 ## Chat view
 
@@ -95,6 +84,7 @@ The second row of an agent card's header has a Chat | TUI switch. TUI is the age
 floating window, the switch is in the window's title row.
 
 - Settings ▸ Agents ▸ Open new agents in sets the view of a new agent: Terminal or Chat.
+  Terminal is the default.
 - After Relaunch with Chat, and for an agent that another agent started with `ovvi agent`, the card opens on the
   chat.
 - Each pane keeps its view in every window of the session and after Ovvi starts again.
@@ -144,8 +134,9 @@ option to answer.
 
 If you answer in the TUI first, the question card goes away.
 
-When the agent asks anything else (a tool approval, a picker, an extension dialog, a question with several
-answers), the bottom of the card shows the agent's live terminal in place of the reply box. Its header says
+The agent can also ask something that the chat cannot answer: a tool approval, a picker, an extension dialog or a
+question with several answers. Then the bottom of the card shows the agent's live terminal in place of the reply
+box. Its header says
 "Claude Code is asking in the terminal". Answer there, or click Open TUI to switch the whole card. When the agent
 goes on, the reply box comes back.
 

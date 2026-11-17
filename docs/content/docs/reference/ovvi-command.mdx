@@ -4,8 +4,8 @@ description: "The ovvi command and skill let an agent in a herdr pane open cards
 ---
 
 An agent in a herdr pane can do everything that herdr does: make tabs and splits, run commands, read output. The
-`ovvi` command gives it the things that only Ovvi has: browser and plugin cards, floating windows, Mac
-notifications, the Mac's clipboard, agents with the chat view, and plugins. The command works the same on This Mac
+`ovvi` command gives it what only Ovvi has: browser and plugin cards, floating windows, Mac notifications, the
+Mac's clipboard, agents with the chat view, and plugins. The command works the same on This Mac
 and on every remote machine that Ovvi connects to.
 
 An agent never moves your view. It can add a card beside itself, or a card out of view with a notice that offers
@@ -41,8 +41,8 @@ ovvi [--pane <pane>] [--timeout <seconds>] <command> [<args>] [--json]
 - `--json` prints one JSON value, also for an error. It works anywhere in the arguments.
 - Without `--json`, a command prints text, or its fields as `name: value` lines.
 
-A `<pane>` is a pane id of the asking session, for example `w1:p3`, or `<session>/<pane>` for a pane of another
-session on the same machine, for example `pi-herd/w1:p1`.
+A `<pane>` is a pane id of the asking session, for example `w1:p3`. For a pane of another session on the same
+machine, write `<session>/<pane>`, for example `work/w1:p1`.
 
 ### Exit codes
 
@@ -281,7 +281,7 @@ it.
 
 ```sh
 ovvi float w1:p3
-ovvi float pi-herd/w1:p1 --on-top
+ovvi float work/w1:p1 --on-top
 ```
 
 Floats a pane in a window of its own, over the Ovvi window where you last worked in that session. The window
@@ -416,11 +416,8 @@ Puts its standard input on the Mac's clipboard, at most 1 MiB. It never reads th
 
 ## How a request travels
 
-The command and Ovvi talk through herdr. The command writes its arguments to a file in `~/.cache/ovvi/rpc/` on its
-own machine and sets a short-lived herdr token on its pane. Each Ovvi that follows the session hears the token on
-the herdr connection that it already has. One Ovvi takes the request, acts and writes the answer back as files,
-which the command prints. Nothing listens on a network port. A request acts only on its own machine and reads
-nothing on your Mac ([How it works](/docs/reference/how-it-works)).
+The command talks to Ovvi through herdr. Nothing listens on a network port, and a request acts only on its own
+machine ([How it works](/docs/reference/how-it-works)).
 
 On a remote machine, the command, its files and herdr are all on that machine. Ovvi reaches them over the SSH
 connection that it already holds, so the command works with no setup there. Paths and `localhost` are the remote

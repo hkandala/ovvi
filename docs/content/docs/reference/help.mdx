@@ -16,7 +16,7 @@ If herdr is installed but Ovvi does not find it:
 - Ovvi asks your login shell where herdr is (`command -v herdr`), and it also looks in `~/.local/bin`. Make sure
   that a login shell on that machine finds `herdr`. If herdr is somewhere else, add its folder to `PATH` in your
   shell's login configuration.
-- Ovvi asks again every 30 seconds while herdr is missing, so the window clears by itself after you fix it.
+- Ovvi asks again while herdr is missing, so the window clears by itself after you fix it.
 
 This Mac needs herdr only for its own sessions. Remote machines work without herdr on the Mac.
 
@@ -48,8 +48,8 @@ Some common causes:
 - The network is down or the machine is off. The window shows "Reconnecting to ‹machine›…" and Ovvi tries again by
   itself. Its cards dim and take no clicks until the machine answers.
 - A machine on your local network fails with "No route to host". macOS controls which apps can reach the local
-  network. If Ovvi is in System Settings ▸ Privacy & Security ▸ Local Network, turn it on. Addresses on a VPN, such
-  as Tailscale, are not affected.
+  network. If Ovvi is in System Settings ▸ Privacy & Security ▸ Local Network, turn it on. Addresses on a VPN are not
+  affected.
 
 To change a machine's SSH target, open Settings ▸ Machines, click the machine, edit SSH target and click Save
 ([Setup](/docs/guide/setup#edit-or-remove-a-machine)).
@@ -71,7 +71,7 @@ The window shows "herdr is too old" with the version that runs. Ovvi needs herdr
    - Or, in a terminal on the machine, run `herdr session stop <session>`.
 3. Click Start ‹session› in the window.
 
-Ovvi asks herdr again every 2 seconds, so the window clears by itself when a newer server runs.
+Ovvi asks herdr again by itself, so the window clears when a newer server runs.
 
 ## Perl is missing on a remote machine
 
@@ -127,8 +127,8 @@ What to do depends on the kind of card.
 
 ### A plugin card
 
-A plugin card, such as File Explorer or Git, says why it does not load, with a button that fixes it and a Show Log
-button that opens its log.
+A plugin card, such as File Explorer or Git, says why it does not load. It shows a button that fixes the problem,
+and Show Log, which opens the plugin's log.
 
 | The card says | What to do |
 |---|---|

@@ -19,7 +19,7 @@ You can open File Explorer or Git in these ways:
 2. Choose File ▸ Open File Explorer Here or File ▸ Open Git Here. The card's own menu and the command palette have
    the same commands. The pane you are in changes into the new card.
 3. In the command palette, choose Open File… and type a path, Open Working Tree, or Open Commit… and type a hash.
-4. Command-click a path in a terminal ([Links and paths](/docs/guide/navigate#links-and-paths)).
+4. ⌘-click a path in a terminal ([Links and paths](/docs/guide/navigate#links-and-paths)).
 
 Open File Explorer Here and Open Git Here open the root of the git repository that holds the pane's folder. Outside a
 repository, they open the pane's folder.
@@ -28,17 +28,12 @@ Agents can open these cards too, with the `ovvi` command ([The ovvi command](/do
 
 ## Open links and files
 
-A click on a file, a folder, a commit or a link opens it the same way in both cards:
+A file, a folder, a commit or a link opens as in every card ([Links and paths](/docs/guide/navigate#links-and-paths)).
+A click opens it in the same card, as its next place. These cards differ in three ways:
 
-| You do | It opens |
-|---|---|
-| Click (a double-click in the tree) | In the same card, as its next place. If the card cannot show it, in a new tab. |
-| ⌘-click | In a new tab, in the background |
-| ⌥-click | In a new pane beside the card, in the background |
-| ⌘⌥-click | In the default Mac app for the file, folder or link |
-
-A right-click shows the same choices: Open (Open as Root on a folder), Open in New Tab and Open to the Side. A file
-from a Git diff always opens in a new tab or to the side, because File Explorer shows it.
+- In the tree, a double-click opens a row.
+- On a folder, the right-click menu has Open as Root.
+- A file from a Git diff always opens in a new tab or to the side, because File Explorer shows it.
 
 ## Back and Forward
 

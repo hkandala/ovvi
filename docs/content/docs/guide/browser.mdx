@@ -41,7 +41,7 @@ The card header has two rows. The first row shows the page's icon and its title.
 |---|---|
 | Back and Forward | Go through the card's history. |
 | Reload | Loads the page again. Stop while a page loads. |
-| The address field | Shows the address. On a remote machine, it ends with the machine's chip. |
+| The address field | Shows the address. On a remote machine, it ends with a chip that names the machine. |
 | Recently Closed | Lists the pages that you closed on this machine. |
 | Web Inspector | Shows Web Inspector, docked at the bottom of the card. |
 
@@ -58,7 +58,7 @@ These shortcuts work while a browser card has the keyboard:
 | ⌃⇧- | Forward | View |
 | ⌘L | Open Location | Edit |
 | ⌥⌘I | Show Web Inspector | Edit |
-| ⌘+ and ⌘− | Zoom the page in or out, from 50 to 300 % | View |
+| ⌘+ and ⌘- | Zoom the page in or out, from 50 to 300 % | View |
 | ⌘0 | Actual size of the page | View |
 | ⇧⌘R | Replace Pane: a new shell with the New Pane chooser | File |
 
@@ -166,8 +166,9 @@ Click the machine's chip in the address field to load the card through This Mac'
 
 A switch starts the card's history again. The card keeps its choice after Ovvi starts again.
 
-To pick the network for new cards, open Settings ▸ Plugins ▸ Browser and set "Web pages on remote machines load
-through" to The Machine or This Mac ([Settings](/docs/reference/settings#plugins)). This setting changes no open
+To pick the network for new cards, open Settings ▸ Plugins ▸ Browser
+([Settings](/docs/reference/settings#plugins)). Set "Web pages on remote machines load through" to The Machine or
+This Mac. This setting changes no open
 card.
 
 ## Agents open pages
@@ -188,4 +189,4 @@ approved or safe waits for you to click Open. Every option is in
 ## Security
 
 - A web page gets no access to Ovvi. It cannot run commands on your machines.
-- A local file page can show any file that you can read, as in Safari. Its scripts cannot read other files.
+- A local file page can show any file that you can read. Its scripts cannot read other files.

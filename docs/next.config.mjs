@@ -9,7 +9,7 @@ const moved = {
   'future-work/:path*': '',
   ui: '/guide/basics',
   'ui/window': '/guide/basics',
-  'ui/program-icons': '/guide/basics',
+  'ui/program-icons': '/guide/basics#tabs',
   'ui/drag-and-drop': '/guide/basics#drag-and-drop',
   'ui/new-pane': '/guide/basics#new-pane',
   'ui/swiping': '/guide/navigate',
