@@ -54,6 +54,26 @@ def key(timeout=None):
     return data.replace("\x1b[200~", "").replace("\x1b[201~", "")
 
 
+def lines(echo=True):
+    """The typed lines, stripped, empty ones skipped, until Ctrl-C or Ctrl-D; `echo` shows the keys."""
+    line = ""
+    while True:
+        data = key()
+        if "\x03" in data or "\x04" in data:
+            return
+        line += data.replace("\x1b", "")
+        if "\r" not in line:
+            if echo:
+                sys.stdout.write(data.replace("\x1b", ""))
+                sys.stdout.flush()
+            continue
+        text, line = line.split("\r", 1)
+        if echo:
+            say("")
+        if text.strip():
+            yield text.strip()
+
+
 @contextlib.contextmanager
 def terminal(cleanup):
     """The terminal raw with bracketed paste on, as the agents have it: herdr's agent.prompt pastes, then presses Enter.

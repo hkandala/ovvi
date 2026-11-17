@@ -155,17 +155,9 @@ def main():
         else:
             box()
         stand_in.report("idle")
-        line = ""
-        while True:
-            data = key()
-            if "\x03" in data or "\x04" in data:
-                break
-            line += data.replace("\x1b", "")
-            if "\r" not in line:
-                continue
-            text, line = line.split("\r", 1)
-            if trusts and text.strip():
-                prompt(text.strip(), time.time())
+        for text in stand_in.lines(echo=False):
+            if trusts:
+                prompt(text, time.time())
 
 
 main()

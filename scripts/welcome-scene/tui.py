@@ -7,16 +7,10 @@ import subprocess
 import sys
 import tty
 
-folder = os.path.join(os.environ.get("TMPDIR", "/tmp"), "ovvi-stand-in")
-os.makedirs(folder, exist_ok=True)
-agent, state, screen = sys.argv[1:4]
-if os.environ.get("OVVI_STAND_IN") != "1":
-    os.environ["OVVI_STAND_IN"] = "1"
-    app = os.path.join(sys.base_prefix, "Resources/Python.app/Contents/MacOS/Python")
-    link = os.path.join(folder, agent)
-    if not os.path.islink(link):
-        os.symlink(app if os.path.exists(app) else os.path.realpath(sys.executable), link)
-    os.execv(link, [link, os.path.abspath(__file__)] + sys.argv[1:])
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import stand_in  # noqa: E402
+
+agent, state, screen = stand_in.run_as(sys.argv[1], __file__)[:3]
 tty.setraw(0)
 with open(screen) as file:
     # `\e` is an escape, as in printf.

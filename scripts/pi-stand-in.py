@@ -181,21 +181,8 @@ def main():
         line(state, {"type": "session", "path": transcript})
         say("pi stand-in " + state)
         stand_in.report("idle")
-        text = ""
-        while True:
-            data = key()
-            if "\x03" in data or "\x04" in data:
-                break
-            text += data.replace("\x1b", "")
-            if "\r" not in text:
-                sys.stdout.write(data.replace("\x1b", ""))
-                sys.stdout.flush()
-                continue
-            text, rest = text.split("\r", 1)
-            say("")
-            if text.strip():
-                prompt(text.strip())
-            text = rest
+        for text in stand_in.lines():
+            prompt(text)
 
 
 main()
