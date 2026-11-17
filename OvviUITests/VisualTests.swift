@@ -68,7 +68,7 @@ extension OvviUITests {
 
     private func scenes(_ style: String, _ appearance: String) async throws {
         // Rex's window (1180 × 760 pt) in the argument domain, over any frame an earlier run saved.
-        relaunch(one, ["-appearance", appearance, "-interfaceStyle", style,
+        relaunch(one, ["-appearance", appearance, "-liquidGlass", style == "glass" ? "YES" : "NO",
                        "-NSWindow Frame main-AppWindow-1", "100 100 1180 760 0 0 1728 1084"])
         let look = "\(style) \(appearance)"
         XCTAssertTrue(element("window.look").has(\.stringValue, look, within: connect))

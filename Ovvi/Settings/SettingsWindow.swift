@@ -226,8 +226,8 @@ struct SettingsSearch: Identifiable {
     ] : []) + [
         SettingsSearch(id: "appearance.appearance", title: "Appearance", page: .appearance,
                        words: "auto light dark theme mode"),
-        SettingsSearch(id: "appearance.style", title: "Interface style", page: .appearance,
-                       words: "glass classic"),
+        SettingsSearch(id: "appearance.liquid-glass", title: "Liquid Glass", page: .appearance,
+                       words: "glass classic solid transparent interface style"),
         SettingsSearch(id: "appearance.font-size", title: "Text size", page: .appearance, words: "font bigger"),
         SettingsSearch(id: "appearance.animations", title: "Animations", page: .appearance,
                        words: "motion slide fade zoom instant reduce"),

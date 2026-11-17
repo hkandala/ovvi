@@ -5,7 +5,7 @@ extension OvviUITests {
     /// menu then writes the persistent domain, which the argument domain hides.
     func testLaunchesInEachLook() async throws {
         for (appearance, style) in [("light", "glass"), ("dark", "classic"), ("light", "classic"), ("dark", "glass")] {
-            relaunch(one, ["-appearance", appearance, "-interfaceStyle", style])
+            relaunch(one, ["-appearance", appearance, "-liquidGlass", style == "glass" ? "YES" : "NO"])
             expectLook("\(style) \(appearance)")
             try await expectPTYSize("w1:p1")
         }
@@ -22,7 +22,7 @@ extension OvviUITests {
 
         // CI's VM draws the glass backdrop opaque whatever the desktop shows (a runner window under Ovvi in black,
         // white and blue changed no pixel of it), so a desktop's effect is not checked here.
-        pick("Interface Style", "Glass")
+        liquidGlass(true)
         addTeardownBlock { @MainActor [self] in pick("Appearance", "Dark") }
         for appearance in ["Dark", "Light"] {
             step("Glass \(appearance.lowercased()): the cards look alike")
@@ -45,7 +45,7 @@ extension OvviUITests {
     /// macOS draws Liquid Glass grey and faint in an inactive window.
     func testGlassLooksTheSameInAnInactiveWindow() {
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
-        pick("Interface Style", "Glass")
+        liquidGlass(true)
         let row = element("workspace.w2")
         let active = median(row)
         app.typeKey(",", modifierFlags: .command)
@@ -73,17 +73,12 @@ extension OvviUITests {
         )
         try await waitFor("w1:p1") { $0.contains("\novvi-42") }
         // Settings persist across runs in the app's own defaults: go back to the defaults even when a step fails.
-        addTeardownBlock { @MainActor [self] in
-            pick("Interface Style", "Glass")
-            pick("Appearance", "Dark")
-        }
-        // One pick a step: each switches the look on its own.
-        pick("Interface Style", "Glass")
-        let steps = [("Appearance", "Dark", "glass dark"), ("Appearance", "Light", "glass light"),
-                     ("Interface Style", "Classic", "classic light"), ("Appearance", "Dark", "classic dark")]
-        for (menu, item, look) in steps {
-            step("View menu: \(item) makes it \(look), its selected text readable")
-            pick(menu, item)
+        addTeardownBlock { @MainActor [self] in setLook("glass dark") }
+        // One change a step: each switches the look on its own.
+        liquidGlass(true)
+        for look in ["glass dark", "glass light", "classic light", "classic dark"] {
+            step("View menu: \(look), its selected text readable")
+            setLook(look)
             expectLook(look)
             terminal.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.01))
                 .click(
@@ -166,6 +161,19 @@ extension OvviUITests {
         let submenu = app.menuBars.menuItems[menu]
         submenu.hover()
         submenu.menuItems[item].click()
+    }
+
+    /// View ▸ Liquid Glass, read from the look: XCUITest cannot read a menu checkmark.
+    func liquidGlass(_ isOn: Bool) {
+        guard element("window.look").stringValue.hasPrefix("glass") != isOn else { return }
+        app.menuBars.menuBarItems["View"].click()
+        app.menuBars.menuItems["Liquid Glass"].click()
+    }
+
+    /// "glass dark", "classic light": View ▸ Liquid Glass and View ▸ Appearance.
+    func setLook(_ look: String) {
+        liquidGlass(look.hasPrefix("glass"))
+        pick("Appearance", look.hasSuffix("dark") ? "Dark" : "Light")
     }
 
     private func expectLook(_ look: String) {

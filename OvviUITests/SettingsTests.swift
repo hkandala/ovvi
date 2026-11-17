@@ -39,7 +39,7 @@ extension OvviUITests {
         // A feed shows Settings ▸ General ▸ Updates; a check of it finds nothing.
         relaunch(one, ["-appearance", "light", "-SUFeedURL", "file:///dev/null"])
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
-        let controls = ["general": "settings.general.open-at-login", "appearance": "settings.style.glass",
+        let controls = ["general": "settings.general.open-at-login", "appearance": "settings.appearance.liquid-glass",
                         "terminal": "settings.terminal.font", "agents": "settings.agents.view",
                         "machines": "settings.machines.add", "plugins": "plugins.source"]
         for page in ["general", "appearance", "terminal", "agents", "machines", "plugins"] {
@@ -70,11 +70,11 @@ extension OvviUITests {
         openSettings("appearance")
         addTeardownBlock { @MainActor [self] in
             openSettings("appearance")
-            element("settings.style.glass", in: settingsWindow).click()
+            turn("settings.appearance.liquid-glass", true)
         }
-        element("settings.style.glass", in: settingsWindow).click()
+        turn("settings.appearance.liquid-glass", true)
         XCTAssertTrue(element("window.look").has(\.stringValue, "glass light", within: 3))
-        element("settings.style.classic", in: settingsWindow).click()
+        turn("settings.appearance.liquid-glass", false)
         XCTAssertTrue(element("window.look").has(\.stringValue, "classic light", within: 3))
         settingsWindow.typeKey("w", modifierFlags: .command)
         XCTAssertTrue(settingsWindow.vanishes(within: 2))

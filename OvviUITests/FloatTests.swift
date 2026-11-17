@@ -212,15 +212,9 @@ extension OvviUITests {
         element("float.\(second).pin").click()
         XCTAssertTrue(element("float.\(second).pin").has(\.stringValue, "on", within: 2))
         element("tab.\(tab)").click()
-        addTeardownBlock { @MainActor [self] in
-            pick("Interface Style", "Glass")
-            pick("Appearance", "Dark")
-        }
-        for (menu, item, look) in [("Interface Style", "Glass", "glass dark"), ("Appearance", "Light", "glass light"),
-                                   ("Interface Style", "Classic", "classic light"),
-                                   ("Appearance", "Dark", "classic dark")]
-        {
-            pick(menu, item)
+        addTeardownBlock { @MainActor [self] in setLook("glass dark") }
+        for look in ["glass dark", "glass light", "classic light", "classic dark"] {
+            setLook(look)
             XCTAssertTrue(element("window.look").has(\.stringValue, look, within: 3))
             XCTAssertTrue(window.isHittable)
             keepScreen("floating window, \(look)")

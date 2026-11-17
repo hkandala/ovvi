@@ -13,7 +13,7 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-UNPINNED = {"fontSize", "appearance", "interfaceStyle", "focusFollowsMouse"}
+UNPINNED = {"fontSize", "appearance", "liquidGlass", "focusFollowsMouse"}
 
 
 def swift(folder):

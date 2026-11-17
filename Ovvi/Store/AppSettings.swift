@@ -3,7 +3,7 @@ import SwiftUI
 
 struct AppSettings: DynamicProperty {
     @AppStorage("appearance") var appearance = Appearance.dark
-    @AppStorage("interfaceStyle") var style = InterfaceStyle.glass
+    @AppStorage("liquidGlass") var liquidGlass = true
     @AppStorage("fontSize") var fontSize = PaneTerminal.fontSize
     /// Read by `Animation.off`.
     @AppStorage("animations") var animations = true
@@ -24,6 +24,10 @@ struct AppSettings: DynamicProperty {
     @AppStorage("spaceOrder") var spaceOrder = SpaceOrder.manual
     /// Read by `Usage`.
     @AppStorage("usageData") var usageData = true
+
+    var style: InterfaceStyle {
+        liquidGlass ? .glass : .classic
+    }
 
     var terminal: [String] {
         [terminalFont, "\(fontSize)", cursorStyle.rawValue, "\(cursorBlink)", optionKey.rawValue, "\(copyOnSelect)"]

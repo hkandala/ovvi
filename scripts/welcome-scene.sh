@@ -154,7 +154,7 @@ for port in random.sample(range(5173, 5300), 127):
     open -n "$APP" --env HOME="$H" --env CFFIXED_USER_HOME="$H" --env XDG_CONFIG_HOME="$W/xdg" --env ZDOTDIR="$W/zdot" \
         --env npm_config_cache="$HOME/.npm" --env npm_config_prefer_offline=true \
         --args -session "$S" -configFolder "$W/config" -archivedHome "$W/archived" -welcomeDone YES \
-        -appearance "$look" -interfaceStyle glass -machines "$(cat "$kit/machines.json")" \
+        -appearance "$look" -liquidGlass YES -machines "$(cat "$kit/machines.json")" \
         -ApplePersistenceIgnoreState YES -NSQuitAlwaysKeepsWindows NO -notifyNeedsYou NO -notifyFinished NO \
         -notifyFromAgents NO -terminalFont "" -cursorStyle block -cursorBlink NO
     local pid=

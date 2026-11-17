@@ -127,7 +127,6 @@ private struct OpenAtLogin: View {
 
 struct AppearancePage: View {
     private var settings = AppSettings()
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         Form {
@@ -137,27 +136,17 @@ struct AppearancePage: View {
                         ForEach([Appearance.auto, .light, .dark], id: \.self) { value in
                             LookTile(title: value.rawValue.capitalized, selected: settings.appearance == value,
                                      id: "settings.appearance.\(value.rawValue)",
-                                     picture: LookPicture(dark: value == .dark, split: value == .auto, glass: false),
+                                     picture: LookPicture(dark: value == .dark, split: value == .auto),
                                      action: { settings.appearance = value })
                         }
                     }
                 }
                 .settingsRow("appearance.appearance")
-                LabeledContent {
-                    HStack(spacing: 14) {
-                        ForEach([InterfaceStyle.glass, .classic], id: \.self) { value in
-                            LookTile(title: value.rawValue.capitalized, selected: settings.style == value,
-                                     id: "settings.style.\(value.rawValue)",
-                                     picture: LookPicture(dark: colorScheme == .dark, split: false,
-                                                          glass: value == .glass),
-                                     action: { settings.style = value })
-                        }
-                    }
-                } label: {
-                    Text("Interface style")
-                    Text("Glass lets the desktop show through softly. Classic is an opaque window.")
+                Toggle(isOn: settings.$liquidGlass) {
+                    Text("Liquid Glass")
+                    Text("The desktop shows softly through the window. Off, the window is solid.")
                 }
-                .settingsRow("appearance.style")
+                .identifiedSettingsRow("appearance.liquid-glass")
             }
             Section {
                 LabeledContent {
@@ -207,15 +196,11 @@ private struct LookTile: View {
 }
 
 private struct LookPicture: View {
-    let dark: Bool, split: Bool, glass: Bool
+    let dark: Bool, split: Bool
 
     var body: some View {
         ZStack {
-            if glass {
-                LinearGradient(colors: [.accentColor, .accentColor.opacity(0.2)], startPoint: .topLeading,
-                               endPoint: .bottomTrailing)
-            }
-            window(dark: dark).opacity(glass ? 0.55 : 1)
+            window(dark: dark)
             if split {
                 window(dark: true).mask(LinearGradient(stops: [.init(color: .clear, location: 0.5),
                                                                .init(color: .black, location: 0.5)],

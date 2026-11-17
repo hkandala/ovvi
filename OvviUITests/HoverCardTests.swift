@@ -89,17 +89,10 @@ extension OvviUITests {
         let line = String(repeating: "@#W", count: 60)
         try await send("clear; yes '\(line)' | head -300\r", to: pane)
         try await waitFor(pane) { $0.components(separatedBy: "@#W@#W@#W").count > 50 }
-        pick("Interface Style", "Glass")
-        addTeardownBlock { @MainActor [self] in
-            pick("Interface Style", "Glass")
-            pick("Appearance", "Dark")
-        }
+        addTeardownBlock { @MainActor [self] in setLook("glass dark") }
         let card = element("hovercard")
-        for (menu, item, look) in [("Appearance", "Dark", "glass dark"), ("Appearance", "Light", "glass light"),
-                                   ("Interface Style", "Classic", "classic light"),
-                                   ("Appearance", "Dark", "classic dark")]
-        {
-            pick(menu, item)
+        for look in ["glass dark", "glass light", "classic light", "classic dark"] {
+            setLook(look)
             element("workspace.w1").hover()
             XCTAssertTrue(card.vanishes(within: 2), look)
             element("tab.\(tab)").hover()

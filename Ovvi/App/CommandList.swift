@@ -147,11 +147,9 @@ struct CommandList {
                         Command(section: .view, title: value.rawValue.capitalized,
                                 checked: settings.appearance == value) { settings.appearance = value }
                     }, previews: true),
-            Command(section: .view, title: "Interface Style", symbol: "paintbrush", keywords: "glass classic theme",
-                    menu: [InterfaceStyle.glass, .classic].map { value in
-                        Command(section: .view, title: value.rawValue.capitalized,
-                                checked: settings.style == value) { settings.style = value }
-                    }, previews: true),
+            Command(section: .view, title: "Liquid Glass", symbol: "paintbrush",
+                    keywords: "glass classic solid transparent interface style theme",
+                    checked: settings.liquidGlass) { settings.liquidGlass.toggle() },
             Command(section: .size, title: "Increase Font Size", id: "app.bigger", key: .hotkey("app.bigger"),
                     symbol: "textformat.size.larger", keywords: "bigger text",
                     enabled: size < sizes.upperBound || page != nil, action: zoom(1) { PaneTerminal.stepFontSize(1) }),

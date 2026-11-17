@@ -14,8 +14,8 @@ extension OvviUITests {
                               ("classic dark", ["explorer"]), ("classic light", ["terminal"])]
         {
             let words = look.split(separator: " ").map(String.init)
-            relaunch(one, ["-recordMotion", "YES", "-forceMotion", "YES", "-interfaceStyle", words[0],
-                           "-appearance", words[1]])
+            relaunch(one, ["-recordMotion", "YES", "-forceMotion", "YES",
+                           "-liquidGlass", words[0] == "glass" ? "YES" : "NO", "-appearance", words[1]])
             XCTAssertTrue(element("workspace.w2").exists(within: connect))
             for kind in kinds {
                 try await problems += splits("\(look) \(kind)", kind)
