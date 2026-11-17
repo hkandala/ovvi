@@ -55,6 +55,7 @@ needs you first, then done, then working.
 - The agent rows in the sidebar: under each space, one row per agent, with its icon, its title and its state.
   A working agent also shows how long it works ("12m").
 - The card header of a chat card: the state as an icon and a word.
+- The foot of the sidebar: a summary of every agent on the machine ([The Agents panel](#the-agents-panel)).
 - The Dock: see [Notifications](#notifications).
 
 ### Agent rows in the sidebar
@@ -66,6 +67,25 @@ Each space lists its agents under its row, by tab and by place in the tab.
 - Type in the sidebar's filter field ("Find a space or agent") to find a space or an agent by name.
 
 To put the space whose agent changed last first, read [Sort and pin spaces](/docs/guide/basics#sort-and-pin-spaces).
+
+### The Agents panel
+
+The foot of the sidebar sums up the agents of every session that a window on this machine shows. It says one of
+these, in this order:
+
+1. How many agents need you, for example "1 needs you".
+2. Else, how many agents finished and you did not look yet, for example "3 done".
+3. Else, how many agents work, for example "2 working".
+4. Else, "All caught up".
+
+Rest the pointer on it to see every count. Click it to open the Agents panel. The panel lists the agents that need
+you, then the agents that are done, newest first. Each row shows the agent's icon, its title, and its session and
+space. Working and idle agents are not in the list.
+
+- Click a row to go to that agent's tab. Ovvi brings the window that shows its session to the front.
+- Press Esc, or click outside the panel, to close it.
+
+With no agent to list, the panel says "All caught up".
 
 ## Chat view
 
@@ -201,9 +221,8 @@ This works for every agent pane, with or without a chat view.
 
 ## Archived Sessions
 
-{/* TRACK-F: foot */}
-Archived Sessions is a list at the foot of the sidebar. It shows the closed sessions of Claude Code, Codex, Pi and
-OpenCode on the machine of the current session: the sessions that no pane runs.
+Archived Sessions is a list near the bottom of the sidebar, above its foot. It shows the closed sessions of Claude
+Code, Codex, Pi and OpenCode on the machine of the current session: the sessions that no pane runs.
 
 - To show the list, turn on Settings ▸ Agents ▸ Show closed sessions.
 - To open or close the list, click Archived Sessions, or right-click the session title in the sidebar and choose

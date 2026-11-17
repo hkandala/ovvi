@@ -2,6 +2,8 @@
 
 [![skills.sh](https://skills.sh/b/hkandala/ovvi)](https://skills.sh/hkandala/ovvi)
 
+![The Ovvi window: spaces and their agents in the sidebar, an agent's chat and a browser card](docs/public/images/window.png)
+
 Ovvi is a native macOS app for [herdr](https://github.com/herdrdev/herdr), the terminal multiplexer for AI
 coding agents. herdr keeps the spaces, tabs and panes; Ovvi shows them as live terminal cards in a
 Liquid Glass window, on This Mac and on remote machines over SSH. It adds a chat view for agents, browser,
