@@ -311,7 +311,8 @@ private struct WindowContent: View {
             }
             if panel == .agents {
                 // Over the sidebar's foot, from its agents' summary up.
-                AgentsPanel(pages: pages, height: height) { panel = nil }
+                let width = SidebarFoot.width(sidebar: sidebarWidth)
+                AgentsPanel(pages: pages, height: height, width: width) { panel = nil }
                     .padding(.leading, SidebarFoot.inset).padding(.bottom, SidebarFoot.inset + SidebarFoot.box + 9)
                     .floatingPanel(open: open(.agents), alignment: .bottomLeading)
             }

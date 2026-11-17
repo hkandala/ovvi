@@ -8,6 +8,12 @@ struct SidebarFoot: View {
     private static let height: CGFloat = 28
     /// The box's left edge from the window's, on Archived Sessions' text; its bottom sits as far over the window's.
     static let inset = Sidebar.rowInsets.leading + WorkspaceRow.textInset
+    private static let end: CGFloat = 4
+
+    /// The Agents panel's: from the box's left edge to the gear's right edge.
+    static func width(sidebar: Double) -> CGFloat {
+        sidebar - gap - Sidebar.rowInsets.trailing - end - inset
+    }
 
     let pages: WindowPages
     @Binding var panel: WindowPanel?
@@ -34,7 +40,7 @@ struct SidebarFoot: View {
         .frame(height: Self.height)
         .padding(.leading, WorkspaceRow.textInset)
         // The gear's ink right-aligned with Archived Sessions' chevron.
-        .padding(.trailing, 4)
+        .padding(.trailing, Self.end)
         // The sidebar ends gap over the window's bottom.
         .padding(.bottom, Self.inset - gap - (Self.height - Self.box) / 2)
     }
@@ -94,6 +100,7 @@ struct AgentsPanel: View {
     let pages: WindowPages
     /// The window's: the list stays under the title row.
     let height: CGFloat
+    let width: CGFloat
     let close: () -> Void
     @FocusState private var focused: Bool
 
@@ -105,7 +112,7 @@ struct AgentsPanel: View {
             }.sorted { $0.2.since ?? .distantPast > $1.2.since ?? .distantPast })
         }.filter { !$0.1.isEmpty }
         VStack(alignment: .leading, spacing: 2) {
-            Text("Agents · \(pages.machine.name)").font(.system(size: 11)).foregroundStyle(.secondary)
+            Text("Agents · \(pages.machine.name)").font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
                 .padding(.horizontal, 8).padding(.top, 6).padding(.bottom, 2)
                 .accessibilityIdentifier("agents.panel.header")
             if groups.isEmpty {
@@ -146,7 +153,7 @@ struct AgentsPanel: View {
         }
         // The text 16 pt from each edge.
         .padding([.horizontal, .top], 8).padding(.bottom, 7.5)
-        .frame(width: 320, alignment: .leading)
+        .frame(width: width, alignment: .leading)
         .floatingGlass(in: .rect(cornerRadius: 12), material: nil)
         .focusable()
         .focusEffectDisabled()

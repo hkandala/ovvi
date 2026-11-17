@@ -104,6 +104,14 @@ extension OvviUITests {
         XCTAssertTrue(element("palette.filter").exists(within: 2))
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(element("palette.filter").vanishes(within: 2))
+        summary.click()
+        let panel = element("agents.panel")
+        XCTAssertTrue(panel.exists(within: 2))
+        XCTAssertEqual(panel.frame.minX, summary.frame.minX, accuracy: 0.5, "the panel on the summary's left edge")
+        XCTAssertEqual(panel.frame.maxX, element("sidebar.settings").frame.maxX, accuracy: 0.5,
+                       "the panel on the gear's right edge")
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(panel.vanishes(within: 2))
         element("sidebar.settings").click()
         XCTAssertTrue(settingsWindow.exists(within: 3))
     }
