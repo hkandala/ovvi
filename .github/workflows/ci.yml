@@ -3,7 +3,7 @@ name: ci
 on:
   push:
     branches: [main]
-    paths-ignore: &docs-only [playbook/**, docs/**, resources/**, '**/*.md']
+    paths-ignore: &docs-only [playbook/**, docs/**, '**/*.md']
   pull_request:
     paths-ignore: *docs-only
   # Ad-hoc UI tests: gh workflow run ci.yml --ref main -f only_testing=OvviUITests/OvviUITests/testA,...
