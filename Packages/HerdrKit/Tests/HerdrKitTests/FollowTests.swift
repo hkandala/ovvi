@@ -18,17 +18,31 @@ private func lineByLine(_ path: String, from mark: FileMark,
     return stream
 }
 
+private func append(_ text: String, to file: URL) throws {
+    let handle = try FileHandle(forWritingTo: file)
+    try handle.seekToEnd()
+    try handle.write(contentsOf: Data(text.utf8))
+    try handle.close()
+}
+
+/// No process has `name` in its argv within `failureBound`; else it kills them.
+private func noProcess(_ name: String) async throws -> Bool {
+    let end = ContinuousClock.now + failureBound
+    while case let pids = try await localExec.output(["pgrep", "-f", name], timeout: failureBound), !pids.isEmpty {
+        guard ContinuousClock.now < end else {
+            _ = try? await localExec.output(["kill"] + pids.split(separator: "\n").map(String.init))
+            return false
+        }
+        try await Task.sleep(for: .milliseconds(50))
+    }
+    return true
+}
+
 @Test func `follow reads whole lines and goes on from its mark`() async throws {
     let folder = FileManager.default.temporaryDirectory.appending(path: "ovvi-follow-\(UUID().uuidString)")
     try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
     defer { try? FileManager.default.removeItem(at: folder) }
     let file = folder.appending(path: "t.jsonl")
-    func append(_ text: String) throws {
-        let handle = try FileHandle(forWritingTo: file)
-        try handle.seekToEnd()
-        try handle.write(contentsOf: Data(text.utf8))
-        try handle.close()
-    }
 
     var lines = try await lineByLine(file.path, from: FileMark()).makeAsyncIterator()
     // A file not written yet says so, then is waited for.
@@ -39,12 +53,12 @@ private func lineByLine(_ path: String, from mark: FileMark,
     guard case .line("a", _)? = await lines.next(), case .loaded? = await lines.next() else {
         Issue.record("no a"); return
     }
-    try append("2}\n")
+    try append("2}\n", to: file)
     guard case let .line(line, mark)? = await lines.next() else { Issue.record("no b"); return }
     #expect(line == #"{"b":2}"#)
     #expect(mark.offset == 10)
 
-    try append("c\n")
+    try append("c\n", to: file)
     var again = try await lineByLine(file.path, from: mark).makeAsyncIterator()
     guard case .opened(_, false)? = await again.next(), case .line("c", _)? = await again.next() else {
         Issue.record("no resume"); return
@@ -74,10 +88,7 @@ private func lineByLine(_ path: String, from mark: FileMark,
     guard case .opened? = await lines.next(), case let .line(#"{"keep":1}"#, mark)? = await lines.next(),
           case .loaded? = await lines.next() else { Issue.record("not skipped"); return }
     #expect(mark.offset == 34)
-    let handle = try FileHandle(forWritingTo: file)
-    try handle.seekToEnd()
-    try handle.write(contentsOf: Data(#"ep":2}\#n"#.utf8))
-    try handle.close()
+    try append(#"ep":2}\#n"#, to: file)
     guard case let .line(#"{"keep":2}"#, last)? = await lines.next() else { Issue.record("no last"); return }
     #expect(last.offset == 61)
 }
@@ -104,17 +115,8 @@ private func lineByLine(_ path: String, from mark: FileMark,
             try input.fileHandleForWriting.close()
             closed = true
             // Reads on once the kill landed: no process has the file in its argv.
-            let end = ContinuousClock.now + failureBound
-            while case let pids = try await localExec.output(["pgrep", "-f", file.lastPathComponent],
-                                                             timeout: failureBound), !pids.isEmpty
-            {
-                guard ContinuousClock.now < end else {
-                    _ = try? await localExec.output(["kill"] + pids.split(separator: "\n").map(String.init))
-                    Issue.record("the follow's processes outlived the kill")
-                    return
-                }
-                try await Task.sleep(for: .milliseconds(50))
-            }
+            guard try await noProcess(file.lastPathComponent)
+            else { Issue.record("the follow's processes outlived the kill"); return }
         }
         after += 1
     }
@@ -137,17 +139,8 @@ func `a dropped follow leaves no process`(awk: Bool) async throws {
             }
         }
         // A left process lives forever; the wait covers a starved Mac, where a retry's `sleep` takes seconds to start.
-        let end = ContinuousClock.now + failureBound
-        while case let pids = try await localExec.output(["pgrep", "-f", file.lastPathComponent],
-                                                         timeout: failureBound), !pids.isEmpty
-        {
-            guard ContinuousClock.now < end else {
-                _ = try? await localExec.output(["kill"] + pids.split(separator: "\n").map(String.init))
-                Issue.record("the follow's processes outlived the drop")
-                return
-            }
-            try await Task.sleep(for: .milliseconds(50))
-        }
+        guard try await noProcess(file.lastPathComponent)
+        else { Issue.record("the follow's processes outlived the drop"); return }
     }
 }
 
@@ -174,10 +167,7 @@ func `a dropped follow leaves no process`(awk: Bool) async throws {
             } else if case .line = line {
                 lines += 1
             } else if case .loaded = line {
-                let handle = try FileHandle(forWritingTo: file)
-                try handle.seekToEnd()
-                try handle.write(contentsOf: Data("y\n".utf8))
-                try handle.close()
+                try append("y\n", to: file)
             }
         }
     }
@@ -203,11 +193,7 @@ func `a dropped follow leaves no process`(awk: Bool) async throws {
             }
         }) ?? 0
     }
-    let handle = try FileHandle(forWritingTo: file)
-    try handle.seekToEnd()
-    try handle.write(contentsOf: Data(String(repeating: #"{"type":"user","message":{"content":"Question"}}"# + "\n",
-                                             count: 600).utf8))
-    try handle.close()
+    try append(String(repeating: #"{"type":"user","message":{"content":"Question"}}"# + "\n", count: 600), to: file)
     var count = 0
     // Without batches, one per line: stop at the third.
     while lines < 601, count < 3, let batch = try await batches.next() {

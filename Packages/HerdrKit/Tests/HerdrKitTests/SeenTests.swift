@@ -3,10 +3,10 @@ import Foundation
 import Testing
 
 private func agent(_ status: AgentStatus, _ completion: Int? = nil, pane: String = "w1:p1",
-                   terminal: String? = nil) -> Agent
+                   terminal: String? = nil, seq: Int? = nil) -> Agent
 {
     Agent(paneID: pane, terminalID: terminal, agent: "codex", displayAgent: nil, status: status,
-          completionSeq: completion)
+          completionSeq: completion, stateChangeSeq: seq)
 }
 
 @Test func `the first sighting counts as seen and reports nothing`() {
@@ -117,15 +117,11 @@ private func agent(_ status: AgentStatus, _ completion: Int? = nil, pane: String
 @Test func `a relaunch keeps an agent's time while its state_change_seq is the same`() {
     let then = Date(timeIntervalSince1970: 100), now = Date(timeIntervalSince1970: 900)
     var before = Seen()
-    _ = before.update([Agent(paneID: "w1:p1", terminalID: "t1", agent: "codex", displayAgent: nil, status: .working,
-                             completionSeq: nil, stateChangeSeq: 4),
-                       Agent(paneID: "w1:p2", terminalID: "t2", agent: "codex", displayAgent: nil, status: .idle,
-                             completionSeq: 2, stateChangeSeq: 2)], looking: [], now: then)
+    _ = before.update([agent(.working, terminal: "t1", seq: 4), agent(.idle, 2, pane: "w1:p2", terminal: "t2", seq: 2)],
+                      looking: [], now: then)
     #expect(before.marks == ["t1": .init(seq: 4, since: then), "t2": .init(seq: 2, since: then)])
     var after = Seen(marks: before.marks)
-    _ = after.update([Agent(paneID: "w1:p1", terminalID: "t1", agent: "codex", displayAgent: nil, status: .idle,
-                            completionSeq: 5, stateChangeSeq: 5),
-                      Agent(paneID: "w1:p2", terminalID: "t2", agent: "codex", displayAgent: nil, status: .idle,
-                            completionSeq: 2, stateChangeSeq: 2)], looking: [], now: now)
+    _ = after.update([agent(.idle, 5, terminal: "t1", seq: 5), agent(.idle, 2, pane: "w1:p2", terminal: "t2", seq: 2)],
+                     looking: [], now: now)
     #expect(after.since == ["t1": now, "t2": then])
 }
