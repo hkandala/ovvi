@@ -244,8 +244,8 @@ struct AgentLine: View {
 }
 
 private extension View {
-    /// In its row: an offset's change (a drop's landing, a drag's slide) is not always reported once it ends, and a hit
-    /// frame with the offset in it lit the row 50 pt under the pointer after a drag.
+    /// In its row: an offset's change (a drop's landing, a drag's slide) is not always reported once it ends, so a hit
+    /// frame with the offset in it would light the row 50 pt under the pointer after a drag.
     func target(_ id: String, in row: String, _ frames: SidebarPage.RowFrames) -> some View {
         onGeometryChange(for: CGRect.self) { $0.frame(in: .named(WorkspaceRow.space)) } action: {
             frames.targets[id] = (row, $0)

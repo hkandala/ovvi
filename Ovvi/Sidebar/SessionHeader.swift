@@ -27,8 +27,8 @@ struct SessionHeader: View {
                 SortMenu(page: page)
                 newSpace
             }
-            // A dropdown: its room opens at once and only the shelf slides, inside the clip. Moving the space list's
-            // top over an animation left it scrolled a few points. It folds at once.
+            // A dropdown: its room opens at once and only the shelf slides, inside the clip (the space list's top moved
+            // over an animation would end scrolled a few points). It folds at once.
             VStack(spacing: 0) {
                 if open {
                     shelf(others).transition(.move(edge: .top))
