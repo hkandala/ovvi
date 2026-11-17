@@ -208,7 +208,7 @@ private struct AgentRow: View {
             .frame(height: 48, alignment: .top)
             .contentShape(.rect)
         }
-        .buttonStyle(ChromeStyle(selected: hovering, radius: 10, tint: .accentColor))
+        .buttonStyle(ChromeStyle(selected: hovering, radius: 8, tint: .accentColor))
         .accessibilityLabel("\(title), \(place)")
         .accessibilityValue(pane.state?.title ?? "")
         .accessibilityAddTraits(hovering ? .isSelected : [])

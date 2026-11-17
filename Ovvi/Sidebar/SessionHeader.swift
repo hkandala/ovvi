@@ -148,7 +148,7 @@ struct SessionHeader: View {
             .padding(.horizontal, 4)
             .frame(height: 28)
         }
-        .buttonStyle(ChromeStyle(radius: 7, hovered: lit == index))
+        .buttonStyle(ChromeStyle(radius: 6, hovered: lit == index))
         .onHover { inside in
             if inside {
                 lit = index

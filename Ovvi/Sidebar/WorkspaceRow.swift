@@ -233,7 +233,7 @@ struct AgentLine: View {
             .padding(.horizontal, 4)
             .frame(height: 28)
         }
-        .buttonStyle(ChromeStyle(selected: lit, radius: 7, tint: .primary.opacity(0.08), light: light))
+        .buttonStyle(ChromeStyle(selected: lit, radius: 6, tint: .primary.opacity(0.08), light: light))
         .target(pane.id, in: row, frames)
         .accessibilityIdentifier("agent.\(pane.id)")
         .accessibilityLabel("\(title), \(page.place(pane))")
