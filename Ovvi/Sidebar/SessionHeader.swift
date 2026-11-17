@@ -44,7 +44,7 @@ struct SessionHeader: View {
         // A click elsewhere (a card, a row, another field) takes the keys, and the shelf folds.
         .onChange(of: focused) {
             if !focused, open {
-                withAnimation(.fade) { open = false }
+                open = false
             }
         }
         .onMoveCommand { direction in
@@ -79,7 +79,8 @@ struct SessionHeader: View {
                 close()
             } else {
                 lit = nil
-                withAnimation(.fade) { open = true }
+                // At once: the space list's top moving over an animation left it scrolled a few points.
+                open = true
             }
         } label: {
             HStack(spacing: 5) {
@@ -162,13 +163,13 @@ struct SessionHeader: View {
     }
 
     private func openPanel() {
-        withAnimation(.fade) { open = false }
+        open = false
         openSession()
     }
 
     /// Folded by the keys or a pick: the keys go back to the page's card.
     private func close() {
-        withAnimation(.fade) { open = false }
+        open = false
         pages.current?.focusKeyboardCard()
     }
 }
