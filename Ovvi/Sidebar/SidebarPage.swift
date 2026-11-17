@@ -237,7 +237,8 @@ private extension SidebarPage {
     @ViewBuilder
     func pins(region: Bool) -> some View {
         if region {
-            DropRow(title: "Pin Space", lit: drop.region)
+            // Lit, it has no words: the dragged row's image lies over them.
+            DropRow(title: drop.region ? "" : "Pin Space", lit: drop.region)
                 .accessibilityElement(children: .ignore)
                 .accessibilityAddTraits(.isStaticText)
                 .accessibilityLabel("Pin Space")
