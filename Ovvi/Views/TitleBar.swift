@@ -73,6 +73,7 @@ struct TitleBar: View {
                 HistoryButton(page: page, offset: -1)
                 HistoryButton(page: page, offset: 1)
             }
+            .id(page.id)
             TabBar(workspace: workspace, page: page, plus: plus)
                 // Made anew per session: herdr's ids repeat across sessions ("w1:t1").
                 .id(page.id)
@@ -94,40 +95,76 @@ struct TitleBar: View {
     }
 }
 
-/// Go Back or Go Forward. A right-click or a long press lists the tabs that presses would step through.
+/// Go Back or Go Forward. A right-click, or a press held for half a second, lists the tabs that presses would step
+/// through.
 private struct HistoryButton: View {
     let page: Page
     let offset: Int
+    @State private var pressed: Date?
 
     var body: some View {
-        let back = offset < 0, title = back ? "Go Back" : "Go Forward"
-        Menu {
-            steps
+        let back = offset < 0, title = back ? "Go Back" : "Go Forward", steps = page.trail(offset)
+        let key = KeyboardShortcut.hotkey(back ? "tab.back" : "tab.forward")
+        Button {
+            let held = pressed.map { Date.now.timeIntervalSince($0) >= 0.5 } == true
+            pressed = nil
+            if held {
+                Task { await popUp(steps) }
+            } else {
+                page.goInHistory(offset)
+            }
         } label: {
             Image(systemName: back ? "chevron.left" : "chevron.right").fontWeight(.medium)
                 .frame(width: 28, height: 28)
-        } primaryAction: {
-            page.goInHistory(offset)
         }
-        .menuStyle(.button)
-        .menuIndicator(.hidden)
-        .buttonStyle(ChromeStyle(radius: 7))
-        .fixedSize()
-        .contextMenu { steps }
-        .disabled(page.trail(offset, max: 1).isEmpty)
-        .tip(title, key: .hotkey(back ? "tab.back" : "tab.forward"))
-        .accessibilityLabel(title)
+        // Not `Menu(primaryAction:)`: on macOS 27 it takes a long press for a click.
+        .buttonStyle(HeldStyle(pressed: $pressed))
+        .contextMenu {
+            ForEach(Array(rows(steps).enumerated()), id: \.offset) { _, row in
+                Button(row.title, action: row.go)
+            }
+        }
+        .disabled(steps.isEmpty)
+        .tip(title, key: key)
+        .accessibilityLabel(key.map { "\(title) \($0.glyphs)" } ?? title)
         .accessibilityIdentifier(back ? "titlebar.back" : "titlebar.forward")
     }
 
-    /// Text only: macOS 27 draws no images in these menus.
-    private var steps: some View {
-        ForEach(page.trail(offset), id: \.self) { index in
+    /// Text only: macOS 27 draws no images in these menus. A row goes nowhere if the history changed under the open
+    /// menu.
+    private func rows(_ steps: [Int]) -> [(title: String, go: () -> Void)] {
+        steps.compactMap { [page] index in
             let id = page.history.ids[index]
-            if let workspace = page.store.workspace(of: id), let tab = page.store.tab(id) {
-                Button("\(page.titleText(tab)) — \(workspace.label)") { page.goInHistory(to: index) }
-            }
+            guard let workspace = page.store.workspace(of: id), let tab = page.store.tab(id) else { return nil }
+            return ("\(page.titleText(tab)) — \(workspace.label)", { page.goInHistory(to: index, id) })
         }
+    }
+
+    /// At the pointer, once the press ended.
+    private func popUp(_ steps: [Int]) async {
+        guard let window = NSApp.keyWindow, let view = window.contentView else { return }
+        let menu = NSMenu()
+        for row in rows(steps) {
+            let action = MenuAction(row.go)
+            let entry = menu.addItem(withTitle: row.title, action: #selector(MenuAction.fire), keyEquivalent: "")
+            entry.target = action
+            entry.representedObject = action
+        }
+        await menu.popUp(at: view.convert(window.mouseLocationOutsideOfEventStream, from: nil), in: view)
+    }
+}
+
+/// The title row's button look, and when the press began.
+private struct HeldStyle: ButtonStyle {
+    @Binding var pressed: Date?
+
+    func makeBody(configuration: Configuration) -> some View {
+        ChromeStyle(radius: 7).makeBody(configuration: configuration)
+            .onChange(of: configuration.isPressed) { _, down in
+                if down {
+                    pressed = .now
+                }
+            }
     }
 }
 

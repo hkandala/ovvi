@@ -100,17 +100,17 @@ final class Page: Identifiable {
 
     /// -1 back, 1 forward, past the tabs closed since.
     func goInHistory(_ offset: Int) {
-        trail(offset, max: 1).first.map(goInHistory(to:))
+        trail(offset, max: 1).first.map { goInHistory(to: $0) }
     }
 
     func trail(_ offset: Int, max: Int = 10) -> [Int] {
         history.trail(offset, from: selectedTab?.id, max: max) { store.workspace(of: $0) != nil }
     }
 
-    /// Straight to a place of `trail`, as that many presses would.
-    func goInHistory(to index: Int) {
-        guard history.ids.indices.contains(index), let workspace = store.workspace(of: history.ids[index])
-        else { return }
+    /// Straight to a place of `trail`, as that many presses would; none if the history changed under an open menu.
+    func goInHistory(to index: Int, _ id: String? = nil) {
+        guard history.ids.indices.contains(index), id.map({ history.ids[index] == $0 }) ?? true,
+              let workspace = store.workspace(of: history.ids[index]) else { return }
         history.go(to: index)
         select(workspace, tab: history.ids[index])
     }
@@ -125,7 +125,9 @@ final class Page: Identifiable {
         let arrived = store.ahead.arrived
         if !arrived.isEmpty {
             usedTabIDs = usedTabIDs.mapValues { $0.map { arrived[$0] ?? $0 } }
-            history.rename(arrived)
+            // Assigned, not changed in place: Observation skips an equal value, so Back, Forward and the menu
+            // bar redraw only for a real rename.
+            history = history.renamed(arrived)
             // Only a change: each set notifies every observer of the selection.
             let selected = selectedTabIDs.mapValues { arrived[$0] ?? $0 }
             if selected != selectedTabIDs {

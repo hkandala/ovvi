@@ -11,8 +11,10 @@ struct TabHistory: Equatable {
         place = ids.count - 1
     }
 
-    mutating func rename(_ arrived: [String: String]) {
-        ids = ids.map { arrived[$0] ?? $0 }
+    func renamed(_ arrived: [String: String]) -> Self {
+        var renamed = self
+        renamed.ids = ids.map { arrived[$0] ?? $0 }
+        return renamed
     }
 
     /// The places that Go Back (-1) or Go Forward (1) lands on, press after press, nearest first: past the tabs no

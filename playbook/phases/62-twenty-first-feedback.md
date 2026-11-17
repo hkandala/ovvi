@@ -261,6 +261,25 @@ Report: `~/Downloads/ovvi-research/p62-footer/index.html`.
 - **For the user:** hover a row: ⊕ shows; click it, type a key; click a field, the × removes that key; give a field a
   key that another action has: the dialog asks.
 
+### Track B
+
+- **Fix (F2 C, shown A).** Go Back and Go Forward sit at the tab strip's left end, where the cards start (after the
+  space button with the sidebar closed), 8 pt before the first tab: `chevron.left`/`chevron.right` in the title row's
+  28 pt buttons, `ChromeStyle`'s rounded hover, `.tip` with the registry's ⌃⇧[ and ⌃⇧]. Always there beside the tabs,
+  dimmed at 40 % with nowhere to go.
+- **Fix (history menu).** A right-click (`.contextMenu`) or a press held 0.5 s (the same rows in an `NSMenu` at the
+  pointer, opened at the release) lists up to 10 steps, nearest first, as "‹tab title› — ‹space›", text only; a pick
+  jumps there as that many presses would, and does nothing if the history changed under the open menu.
+  `Menu(primaryAction:)` took a long press for a click on macOS 27.
+- **Decisions.** The history moved into a small `TabHistory` value (Page.swift was at its 400-line limit), observed;
+  `trail` is the one walk that Go Back, the buttons' state, the menus and the Window menu and palette items use, so
+  those items now dim too. A step lands past closed tabs and past the tab each press leaves, so the menu lists exactly
+  what repeated presses would show.
+- **Runs.** VM: the history test (enabled states, a click, a held press, both menus, a pick) and the sidebar handle's
+  alignment (Back now starts where the cards start) green.
+- **For the user.** The tabs start 64 pt further right. Check a long press on Back with a real mouse and trackpad (the
+  menu shows when you let go, not while you hold), and a pick from Forward's menu after a few Backs.
+
 ## Round 3: the picks
 
 The user, word for word: "F1 D ("D but bunch of changes, move settings to right side, add a line separator, then

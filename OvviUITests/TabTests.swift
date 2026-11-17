@@ -267,6 +267,12 @@ extension OvviUITests {
         let steps = { (space: String) in
             self.app.menuItems.matching(NSPredicate(format: "title ENDSWITH %@", " — \(space)"))
         }
+        // XCUITest's `press(forDuration:)` makes no click on macOS: a held click that ends where it began.
+        back.click(forDuration: 1, thenDragTo: back)
+        XCTAssertTrue(steps("history").firstMatch.exists(within: 2), "Back's menu on a long press")
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(steps("history").firstMatch.vanishes(within: 2))
+        try await expectShown(tabs[2], "a long press goes nowhere")
         back.rightClick()
         XCTAssertTrue(steps("history").firstMatch.exists(within: 2), "Back's menu")
         keepScreenshot("Back's menu")

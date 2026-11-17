@@ -268,11 +268,11 @@ extension OvviUITests {
     }
 
     func testSidebarHandleResizesWithinItsBounds() {
-        step("Sidebar handle: the first tab lines up with its card")
+        step("Sidebar handle: the tab strip's Go Back lines up with its card")
         let sidebar = element("sidebar"), handle = element("sidebar.resize")
-        let tab = element("tab.w1:t1"), card = element("pane.w1:p1")
+        let back = element("titlebar.back"), card = element("pane.w1:p1")
         XCTAssertTrue(card.exists(within: connect))
-        XCTAssertEqual(tab.frame.minX, card.frame.minX, accuracy: 1)
+        XCTAssertEqual(back.frame.minX, card.frame.minX, accuracy: 1)
         let start = sidebar.frame.width
         let drag = { (offset: CGFloat) in
             let width = sidebar.frame.width, left = card.frame.minX
@@ -281,10 +281,10 @@ extension OvviUITests {
             // At rest: a read during the drag's last frame would be stale.
             let moved = (steady(2) { sidebar.frame.width } ?? sidebar.frame.width) - width
             XCTAssertTrue(until(1) { abs(card.frame.minX - left - moved) <= 2 }, "the card did not move by \(moved)")
-            XCTAssertTrue(until(1) { abs(tab.frame.minX - card.frame.minX) <= 1 }, "\(tab.frame) \(card.frame)")
+            XCTAssertTrue(until(1) { abs(back.frame.minX - card.frame.minX) <= 1 }, "\(back.frame) \(card.frame)")
         }
 
-        step("Sidebar handle: drags resize within 227 and 480, and the tabs follow the card")
+        step("Sidebar handle: drags resize within 227 and 480, and the tab strip follows the card")
         drag(60)
         XCTAssertEqual(sidebar.frame.width, start + 60, accuracy: 2)
         drag(-600)

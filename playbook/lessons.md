@@ -43,7 +43,8 @@ Problems that came back, and the rule that stops each. How we work is in
   began, or 0.5 s after a spring-load (likely while it built the page), left a session that never ended. Release
   after `willBeginAt` or once the test saw the hold's effect (the helper's `press` and `release`).
 - **Know XCUITest's input gaps on macOS.** Drags need `click(forDuration:thenDragTo:)`; scroll is a wheel
-  with no phases; a ⌘ key whose menu item is disabled is never delivered. Real trackpad gestures go
+  with no phases; a ⌘ key whose menu item is disabled is never delivered; `press(forDuration:)` makes no click on a
+  SwiftUI button (hold one with `click(forDuration:thenDragTo:)` to itself). Real trackpad gestures go
   through the e2e helper as HID events. It cannot read a menu checkmark (`isSelected` is false) or a tooltip (build `.help` and
   `.accessibilityLabel` from one string and read the label), hear an announcement, type through an input method
   (`typeText` skips marked text) or drive the Dock menu: check those by hand (`AXMenuItemMarkChar`, a screenshot).
