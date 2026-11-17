@@ -11,23 +11,8 @@ struct AgentCommand {
 
 @MainActor
 enum AgentCommands {
-    static let all: [AgentCommand] = [
-        .help,
-        .info,
-        .float,
-        .unfloat,
-        .copy,
-        .plugins,
-        .open,
-        .reveal,
-        .card,
-        .shown,
-        .notify,
-        .agent,
-        .chat,
-        .view,
-        .balance,
-    ]
+    static let all: [AgentCommand] = [.help, .info, .float, .unfloat, .copy, .plugins, .open, .reveal, .card, .shown,
+                                      .notify, .agent, .chat, .view, .balance]
 
     static let script = Bundle.main.url(forResource: "ovvi", withExtension: "sh").flatMap { try? Data(contentsOf: $0) }
 
