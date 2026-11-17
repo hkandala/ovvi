@@ -253,35 +253,43 @@ the tooltips and the text that names a key.
   whose title, group or keys hold every word typed (`tab`, `⌘T`, `cmd+t`), or
   shows No Results.
 - **Rows.** As System Settings' keyboard shortcuts: the action's title on the
-  left, its keys on the right in a key field, with the reset button before
-  it. The key field is one size on every row (128 × 24 pt, 6 pt corners, a
-  fine edge) and ends at the row's edge, so the fields line up, and shows the
-  keys as glyphs with 8 pt on each side: `⌘T`, or None.
-- **Two keys.** A few actions have two default keys: Command Palette (⌘K,
-  ⇧⌘P), Show Previous Tab (⇧⌘[, ⌃⇧⇥), Show Next Tab (⇧⌘], ⌃⇥), and a plugin
-  card's Back (⌃-, ⌘←) and Forward (⌃⇧-, ⌘→). The field shows both, comma
-  separated. The user cannot add a second key: a recorded key replaces both.
-  Increase Font Size shows one key, ⌘+, which ⌘= also runs: on a US layout
-  they are one key.
+  left, its keys on the right, one key field each, stacked 6 pt apart, with
+  the reset button before the first. A key field is one size on every row
+  (128 × 24 pt, 6 pt corners, a fine edge) and ends at the row's edge, so the
+  fields line up, and shows one key as glyphs with 8 pt on each side: `⌘T`,
+  or None for an action with no key. The first key is the one the menu bar,
+  the palette and the tooltips show; every key runs the action.
+- **More keys.** With the pointer over a row that has a key, a ⊕ (Add
+  Shortcut) shows before its last field. A click adds a new field under it,
+  which records at once; ⎋ or a click elsewhere drops the new field. A few
+  actions have two default keys: Command Palette (⌘K, ⇧⌘P), Show Previous Tab
+  (⇧⌘[, ⌃⇧⇥), Show Next Tab (⇧⌘], ⌃⇥), and a plugin card's Back (⌃-, ⌘←) and
+  Forward (⌃⇧-, ⌘→). Increase Font Size shows one key, ⌘+, which ⌘= also
+  runs: on a US layout they are one key.
 - **Groups.** App, Sessions, Spaces, Tabs, Panes, Terminal, Edit, Browser and
   Plugins (what works over any plugin card: Back, Forward, Reload Plugin),
   then one group per plugin with keys, named as the plugin.
-- **Recording.** A click on the key field asks for a new key: the field
-  gets a 2 pt accent ring and says "Type shortcut…". The next key with ⌘, ⌃
-  or ⌥ becomes the action's only key. ⎋ cancels, ⌫ clears the key, a click
-  anywhere (the field too) only cancels, and a key with no ⌘, ⌃ or ⌥ beeps
-  and waits. Keys the app uses (⌘W, ⌘,) record too.
+- **Recording.** A click on a key field asks for a new key for that field
+  only: the field gets a 2 pt accent ring, says "Type shortcut…" and shows an
+  × (Remove Shortcut) at its end. The next key with ⌘, ⌃ or ⌥ replaces that
+  field's key. The × or ⌫ removes that key (the last one leaves None), ⎋
+  cancels, a click anywhere else (the field too) only cancels, and a key with
+  no ⌘, ⌃ or ⌥ beeps and waits. Keys the app uses (⌘W, ⌘,) record too. A key
+  the action has already changes nothing.
 - **Conflicts.** A key another action already has where this one works asks
-  first. The key field shows the new key with a 2 pt warning-orange ring.
-  Under the row, on one baseline, the question "⌥⌘Y is New Space's key." on
-  the left and small Cancel and Swap buttons on the right, which end where the
-  key field ends. Cancel keeps the old key. Swap gives the other action this
-  one's old key. Two actions only conflict where both work: a browser's ⌘R and
+  first, in a standard dialog, while the key field shows the new key with a
+  2 pt warning-orange ring. The dialog asks "⌥⌘Y is New Space's key." with
+  Cancel and, for a changed key, Swap ("New Space gets ⌘T in its place."),
+  which gives the other action the key this field gave up; for an added key,
+  Use Here ("New Space loses it."), which takes the key from the other
+  action. Return picks Swap or Use Here, ⎋ cancels and keeps the old keys.
+  Two actions only conflict where both work: a browser's ⌘R and
   a terminal's ⌥⌘R never meet, and neither do two plugins' keys. So each such
   action has its key only where it works: Reload Page only over a browser
   card, Insert Path only over a terminal, as Save and Find Previous only over
   an editor. macOS's own keys (⌘Q, ⌘H, ⌥⌘H, ⌘M, ⌘Z, ⇧⌘Z, ⌘X, ⌘C, ⌘V, ⌘A, ⌃⌘F,
-  ⌘`, ⌃⌘Space) are never an action's: the question has Cancel only. A row
+  ⌘`, ⌃⌘Space) are never an action's: the dialog says "macOS keeps it." and
+  has OK only. A row
   whose key another action holds (a plugin's key that the app uses) shows a
   warning symbol that names the other action; the app's action keeps the key.
 - **Reset.** A changed row shows its reset button, which gives back its

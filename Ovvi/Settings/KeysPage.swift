@@ -1,16 +1,30 @@
 import SwiftUI
 
-/// Settings ▸ Shortcuts: every action's keys, the app's and each plugin's. A click on the keys records new
-/// ones: ⎋ cancels, ⌫ clears, a key another action has asks first.
+/// Settings ▸ Shortcuts: every action's keys, the app's and each plugin's, one field each. A click on a field records
+/// a new key: ⎋ cancels, ⌫ or the field's × removes that key, a key another action has asks first. ⊕ adds a field.
 struct KeysPage: View {
     @State private var search = ""
-    @State private var recording: String?
+    @State private var recording: Slot?
+    @State private var hovered: String?
+    /// Kept after the question closes, so its words stay while it fades.
     @State private var clash: Clash?
+    @State private var asking = false
+    /// The recording field's ×, in the window: the monitor lets a click on it through.
+    @State private var remove: (slot: Slot, frame: CGRect)?
     @State private var monitor: Any?
     @Environment(\.look) private var look
 
+    /// One of an action's keys; the index past its last key is a new one.
+    struct Slot: Equatable {
+        let id: String, index: Int
+    }
+
+    /// `old`: the key that the new one replaces, none for an added key.
     struct Clash {
-        let hotkey: Hotkey, key: KeyboardShortcut, other: Hotkey
+        let hotkey: Hotkey, key: KeyboardShortcut, other: Hotkey, index: Int, old: KeyboardShortcut?
+        var fixed: Bool {
+            Hotkeys.fixed.contains { $0.id == other.id }
+        }
     }
 
     var body: some View {
@@ -26,13 +40,13 @@ struct KeysPage: View {
                 groups.append(group)
             }
         }
+        let question = clash.map { "\($0.key.glyphs) is \($0.other.title)’s key." } ?? ""
         Form {
             Section {
                 HStack(spacing: 8) {
                     FilterField(prompt: "Search", text: $search, identifier: "keys.search", symbol: "magnifyingglass")
                         .labelsHidden()
                     Button("Reset All") {
-                        clash = nil
                         hotkeys.resetAll()
                     }.disabled(hotkeys.saved.isEmpty)
                         .accessibilityIdentifier("keys.reset-all")
@@ -60,13 +74,38 @@ struct KeysPage: View {
             recording = nil
             listen()
         }
+        .alert(question, isPresented: $asking, presenting: clash) { clash in
+            if clash.fixed {
+                Button("OK", role: .cancel) {}
+            } else {
+                Button("Cancel", role: .cancel) {}
+                Button(clash.old == nil ? "Use Here" : "Swap") { take(clash) }.keyboardShortcut(.defaultAction)
+            }
+        } message: { clash in
+            Text(clash.fixed ? "macOS keeps it."
+                : clash.old.map { "\(clash.other.title) gets \($0.glyphs) in its place." }
+                ?? "\(clash.other.title) loses it.")
+        }
     }
 
     private func row(_ hotkey: Hotkey, _ all: [Hotkey]) -> some View {
         let hotkeys = Hotkeys.shared, keys = hotkeys.keys(hotkey)
         let taken = keys.lazy.compactMap { hotkeys.clash($0, for: hotkey, in: all) }.first
-        let asking = clash?.hotkey.id == hotkey.id ? clash : nil, changed = hotkeys.changed(hotkey)
-        return VStack(alignment: .leading, spacing: 8) {
+        let recorded = recording?.id == hotkey.id ? recording?.index : nil
+        let asked = asking && clash?.hotkey.id == hotkey.id ? clash : nil
+        // The asked key in its field, a new field while one records or asks, None for no key.
+        var shown = keys.map(Optional.some)
+        if let asked {
+            if asked.index < shown.count {
+                shown[asked.index] = asked.key
+            } else {
+                shown.append(asked.key)
+            }
+        }
+        if recorded == shown.count || shown.isEmpty {
+            shown.append(nil)
+        }
+        return HStack(alignment: .top, spacing: 8) {
             HStack(spacing: 8) {
                 Text(hotkey.title)
                 if let taken {
@@ -75,79 +114,109 @@ struct KeysPage: View {
                         .help(note).accessibilityLabel(note)
                         .accessibilityIdentifier("keys.\(hotkey.id).clash")
                 }
-                Spacer(minLength: 12)
-                // Before the field, so every field ends at the row's edge.
-                Button("Reset", systemImage: "arrow.uturn.backward") {
-                    clash = nil
-                    hotkeys.set(hotkey, hotkey.keys)
-                }
-                .labelStyle(.iconOnly).buttonStyle(.borderless).help("Reset")
-                .opacity(changed ? 1 : 0).disabled(!changed).accessibilityHidden(!changed)
-                .accessibilityIdentifier("keys.\(hotkey.id).reset")
-                KeyField(title: hotkey.title, keys: keys, recording: recording == hotkey.id, asking: asking?.key) {
-                    clash = nil
-                    recording = hotkey.id
-                }
-                .accessibilityIdentifier("keys.\(hotkey.id)")
             }
-            if let asking {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(look.needsYou)
-                        Text("\(asking.key.glyphs) is \(asking.other.title)’s key.").foregroundStyle(.secondary)
+            .frame(height: 24)
+            Spacer(minLength: 12)
+            fields(hotkey, keys, shown, recorded: recorded, asked: asked)
+        }
+        .contentShape(Rectangle())
+        .onHover { hovered = $0 ? hotkey.id : hovered == hotkey.id ? nil : hovered }
+    }
+
+    /// The key fields, stacked, with the reset button before the first and ⊕ before the last.
+    private func fields(_ hotkey: Hotkey, _ keys: [KeyboardShortcut], _ shown: [KeyboardShortcut?], recorded: Int?,
+                        asked: Clash?) -> some View
+    {
+        let hotkeys = Hotkeys.shared, changed = hotkeys.changed(hotkey)
+        let adds = hovered == hotkey.id && recorded == nil && asked == nil && !keys.isEmpty
+        let add = { recording = Slot(id: hotkey.id, index: keys.count) }
+        return VStack(alignment: .trailing, spacing: 6) {
+            ForEach(shown.indices, id: \.self) { index in
+                HStack(spacing: 8) {
+                    // Before the fields, so every field ends at the row's edge.
+                    if index == 0 {
+                        Button("Reset", systemImage: "arrow.uturn.backward") { hotkeys.set(hotkey, hotkey.keys) }
+                            .labelStyle(.iconOnly).buttonStyle(.borderless).help("Reset")
+                            .opacity(changed ? 1 : 0).disabled(!changed).accessibilityHidden(!changed)
+                            .accessibilityIdentifier("keys.\(hotkey.id).reset")
                     }
-                    .font(.system(size: 11))
-                    .accessibilityElement(children: .combine)
-                    .accessibilityIdentifier("keys.\(hotkey.id).question")
-                    Spacer(minLength: 8)
-                    Button("Cancel") { clash = nil }.accessibilityIdentifier("keys.\(hotkey.id).cancel")
-                    if !Hotkeys.fixed.contains(where: { $0.id == asking.other.id }) {
-                        Button("Swap") { swap(asking) }.buttonStyle(.borderedProminent)
-                            .accessibilityIdentifier("keys.\(hotkey.id).swap")
-                    }
+                    let last = adds && index == shown.count - 1
+                    Button("Add Shortcut", systemImage: "plus.circle", action: add)
+                        .labelStyle(.iconOnly).buttonStyle(.borderless).help("Add Shortcut")
+                        .opacity(last ? 1 : 0).disabled(!last).accessibilityHidden(!last)
+                        .accessibilityIdentifier("keys.\(hotkey.id).add")
+                    let slot = Slot(id: hotkey.id, index: index)
+                    KeyField(id: "keys.\(hotkey.id)", index: index, title: hotkey.title, key: shown[index],
+                             recording: recorded == index, asked: asked?.index == index, add: add,
+                             action: { recording = slot },
+                             remove: {
+                                 hotkeys.set(hotkey, keys.enumerated().filter { $0.offset != index }.map(\.element))
+                                 recording = nil
+                             },
+                             removeAt: { remove = (slot, $0) })
                 }
-                .controlSize(.small)
             }
         }
     }
 
-    /// The other action takes this one's first key in place of the one it gives up.
-    private func swap(_ clash: Clash) {
-        let hotkeys = Hotkeys.shared, old = hotkeys.keys(clash.hotkey).first
-        hotkeys.set(clash.other, hotkeys.keys(clash.other).compactMap { $0.runs(clash.key) ? old : $0 })
-        hotkeys.set(clash.hotkey, [clash.key])
-        self.clash = nil
+    /// Swap: the other action takes the key this one gives up. Use Here: the other action loses it.
+    private func take(_ clash: Clash) {
+        let hotkeys = Hotkeys.shared
+        hotkeys.set(clash.other, hotkeys.keys(clash.other).compactMap { $0.runs(clash.key) ? clash.old : $0 })
+        put(clash.key, at: clash.index, of: clash.hotkey)
+    }
+
+    private func put(_ key: KeyboardShortcut, at index: Int, of hotkey: Hotkey) {
+        var keys = Hotkeys.shared.keys(hotkey)
+        if index < keys.count {
+            keys[index] = key
+        } else {
+            keys.append(key)
+        }
+        Hotkeys.shared.set(hotkey, keys)
     }
 
     /// A monitor sees a key ahead of the menu bar, so ⌘W records instead of closing the window. A click ends the
-    /// recording and does nothing else, so a click on the field stops it too.
+    /// recording and does nothing else, so a click on the field stops it too; only the field's × takes its click.
     private func listen() {
         monitor.map(NSEvent.removeMonitor)
         monitor = nil
-        guard let id = recording, let window = NSApp.keyWindow else { return }
+        guard let slot = recording, let window = NSApp.keyWindow else { return }
         monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .leftMouseDown]) { event in
-            MainActor.assumeIsolated { record(event, id, in: window) } ? nil : event
+            MainActor.assumeIsolated { record(event, slot, in: window) } ? nil : event
         }
     }
 
     /// True when it took the event.
-    private func record(_ event: NSEvent, _ id: String, in window: NSWindow) -> Bool {
+    private func record(_ event: NSEvent, _ slot: Slot, in window: NSWindow) -> Bool {
         let hotkeys = Hotkeys.shared, plain = event.modifierFlags.isDisjoint(with: [.command, .control, .option])
         guard event.window === window, event.type == .keyDown,
-              let hotkey = hotkeys.all.first(where: { $0.id == id })
+              let hotkey = hotkeys.all.first(where: { $0.id == slot.id })
         else {
+            if event.window === window, let remove, remove.slot == slot, let view = window.contentView {
+                var point = view.convert(event.locationInWindow, from: nil)
+                point.y = view.isFlipped ? point.y : view.bounds.height - point.y
+                if remove.frame.contains(point) {
+                    return false
+                }
+            }
             recording = nil
             return event.window === window
         }
+        let keys = hotkeys.keys(hotkey)
         if plain, event.specialKey == .delete || event.specialKey == .deleteForward {
-            hotkeys.set(hotkey, [])
+            hotkeys.set(hotkey, keys.enumerated().filter { $0.offset != slot.index }.map(\.element))
         } else if plain, event.charactersIgnoringModifiers == "\u{1B}" {
             // Esc: no change.
         } else if let key = KeyboardShortcut(event: event) {
-            if let other = hotkeys.clash(key, for: hotkey) {
-                clash = Clash(hotkey: hotkey, key: key, other: other)
+            if keys.contains(where: { $0.runs(key) }) {
+                // This action's key already.
+            } else if let other = hotkeys.clash(key, for: hotkey) {
+                clash = Clash(hotkey: hotkey, key: key, other: other, index: slot.index,
+                              old: keys.indices.contains(slot.index) ? keys[slot.index] : nil)
+                asking = true
             } else {
-                hotkeys.set(hotkey, [key])
+                put(key, at: slot.index, of: hotkey)
             }
         } else {
             NSSound.beep()
@@ -158,26 +227,32 @@ struct KeysPage: View {
     }
 }
 
-/// The action's keys, comma separated, in a field of one size for every row: accent ringed while it records, ringed
-/// as a warning with the key it asks about.
+/// One key in a field of one size for every row: accent ringed while it records, with an × that removes the key it
+/// had; ringed as a warning while it asks about its key.
 private struct KeyField: View {
+    /// The first field's is the action's; the others' end in their index.
+    let id: String, index: Int
     let title: String
-    let keys: [KeyboardShortcut]
+    let key: KeyboardShortcut?
     let recording: Bool
-    let asking: KeyboardShortcut?
+    let asked: Bool
+    let add: () -> Void
     let action: () -> Void
+    let remove: () -> Void
+    /// Where the ×, which the key monitor would take, is in the window.
+    let removeAt: (CGRect) -> Void
     @Environment(\.look) private var look
 
     var body: some View {
-        let shown = asking.map { [$0] } ?? keys, plain = recording || shown.isEmpty
-        let text = recording ? "Type shortcut…" : shown.isEmpty ? "None" : shown.map(\.glyphs).joined(separator: ", ")
-        let ring = recording ? Color.accentColor : asking == nil ? nil : look.needsYou
+        let removes = recording && key != nil
+        let text = recording ? "Type shortcut…" : key?.glyphs ?? "None", plain = recording || key == nil
+        let ring = recording ? Color.accentColor : asked ? look.needsYou : nil
         let shape = RoundedRectangle(cornerRadius: 6, style: .continuous)
         Button(action: action) {
             Text(text).tracking(plain ? 0 : 1)
                 .foregroundStyle(plain ? .secondary : .primary)
                 .lineLimit(1).minimumScaleFactor(0.8)
-                .padding(.horizontal, 8)
+                .padding(.leading, 8).padding(.trailing, removes ? 22 : 8)
                 .frame(width: 128, height: 24)
                 .background(.quaternary.opacity(0.5), in: shape)
                 .overlay {
@@ -192,5 +267,16 @@ private struct KeyField: View {
         .buttonStyle(.plain)
         .accessibilityLabel(title)
         .accessibilityValue(text)
+        .accessibilityIdentifier(index == 0 ? id : "\(id).\(index)")
+        .accessibilityAction(named: "Add Shortcut", add)
+        .overlay(alignment: .trailing) {
+            if removes {
+                Button("Remove Shortcut", systemImage: "xmark.circle.fill", action: remove)
+                    .labelStyle(.iconOnly).buttonStyle(.borderless).foregroundStyle(.secondary).help("Remove Shortcut")
+                    .padding(.trailing, 5)
+                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { removeAt($0) }
+                    .accessibilityIdentifier("\(id).remove")
+            }
+        }
     }
 }

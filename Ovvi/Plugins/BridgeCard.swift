@@ -129,7 +129,8 @@ extension CommandList {
         let taken = Set(list.compactMap(\.key))
         return plugin.manifest.commands.map { command in
             let change = bridge.commands[command.id] ?? [:]
-            var key = Hotkeys.shared.keys(Hotkey(plugin.manifest, command)).first
+            let hotkey = Hotkey(plugin.manifest, command)
+            var key = Hotkeys.shared.keys(hotkey).first
             if let shown = key, taken.contains(shown) {
                 key = nil
                 if logged.insert("\(plugin.manifest.id) \(command.id)").inserted {
@@ -148,7 +149,7 @@ extension CommandList {
             let pick = { bridge.event("control", ["id": command.id]) }
             // A disabled item would swallow its key.
             let enabled = change["enabled"] as? Bool ?? true
-            return Command(section: section, title: change["title"] as? String ?? command.title,
+            return Command(section: section, title: change["title"] as? String ?? command.title, id: hotkey.id,
                            key: enabled ? key : nil, symbol: command.symbol,
                            keywords: (command.keywords ?? []).joined(separator: " "), enabled: enabled,
                            checked: change["checked"] as? Bool ?? command.checked, action: pick)

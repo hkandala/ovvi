@@ -35,13 +35,21 @@ extension KeyboardShortcut {
 
     /// An action's second key, and ⌘= for ⌘+ (`twin`). Takes the key even when the command is disabled, and in a
     /// text field too: else ⌃⇥ goes on to AppKit's key view loop, which steps the panes. Only a command's keys: Back's
-    /// ⌘← stays the page's.
+    /// ⌘← stays the page's. A plugin's command is found by its id: its first key may be the app's, and left off.
     @MainActor static func second(_ event: NSEvent) -> Bool {
-        guard let first = Hotkeys.app.lazy.map(Hotkeys.shared.keys)
-            .first(where: { $0.dropFirst().contains { $0.matches(event) } || $0.first?.twin?.matches(event) == true })?
-            .first,
-            let commands = CommandList.keyWindow, commands.contains(where: { $0.key == first }) else { return false }
-        commands.run { $0 == first }
+        let hotkeys = Hotkeys.shared
+        let matched = hotkeys.all.filter { hotkey in
+            let keys = hotkeys.keys(hotkey)
+            return keys.dropFirst().contains { $0.matches(event) } || keys.first?.twin?.matches(event) == true
+        }
+        guard !matched.isEmpty, let commands = CommandList.keyWindow,
+              let command = matched.lazy.compactMap({ hotkey in
+                  hotkey.scope?.hasPrefix("plugin.") == true ? commands.first { $0.id == hotkey.id }
+                      : hotkeys.keys(hotkey).first.flatMap { first in commands.first { $0.key == first } }
+              }).first else { return false }
+        if command.enabled {
+            command.action()
+        }
         return true
     }
 }

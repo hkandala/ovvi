@@ -54,11 +54,19 @@ extension OvviUITests {
             let window = settingsWindow, field = element("keys.tab.new", in: window)
             XCTAssertTrue(field.exists(within: 3))
             scene("\(appearance) 2 keys", window)
+            scene("\(appearance) 2b keys add", window, hovering: field)
             field.click()
             scene("\(appearance) 3 keys recording", window)
+            window.typeKey(.escape, modifierFlags: [])
+            field.hover()
+            element("keys.tab.new.add", in: window).click()
+            XCTAssertTrue(element("keys.tab.new.1", in: window).has(\.stringValue, "Type shortcut…", within: 2))
+            scene("\(appearance) 3b keys adding", window)
             window.typeKey("w", modifierFlags: .command)
-            XCTAssertTrue(element("keys.tab.new.question", in: window).exists(within: 2))
+            XCTAssertTrue(window.sheets.buttons["Use Here"].exists(within: 2))
             scene("\(appearance) 4 keys conflict", window)
+            window.sheets.buttons["Cancel"].click()
+            XCTAssertTrue(window.sheets.firstMatch.vanishes(within: 2))
             field.click()
             window.typeKey("y", modifierFlags: [.command, .option])
             XCTAssertTrue(field.has(\.stringValue, "⌥⌘Y", within: 2))
@@ -77,8 +85,10 @@ extension OvviUITests {
         }
     }
 
-    fileprivate func scene(_ name: String, _ window: XCUIElement) {
-        window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1.3)).hover()
+    /// The pointer off the window, or over `hovering`.
+    fileprivate func scene(_ name: String, _ window: XCUIElement, hovering: XCUIElement? = nil) {
+        (hovering?.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            ?? window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1.3))).hover()
         Thread.sleep(forTimeInterval: 0.4)
         // A closed menu is still there with an empty frame.
         let menus = app.menus.allElementsBoundByIndex.filter { $0.frame.width > 1 }
