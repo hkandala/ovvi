@@ -128,8 +128,7 @@ private struct HeaderItem: View {
                 .background(look.track, in: .rect(cornerRadius: 8))
             } else {
                 IconButton(symbol: symbol, help: control.title ?? "", size: 22, action: pick)
-                    .foregroundStyle(isOn && control
-                        .onSymbol == nil ? AnyShapeStyle(.tint) : AnyShapeStyle(look.paneButton))
+                    .foregroundStyle(isOn && onSymbol == nil ? AnyShapeStyle(.tint) : AnyShapeStyle(look.paneButton))
             }
         }
         .accessibilityAddTraits(isOn ? .isSelected : [])

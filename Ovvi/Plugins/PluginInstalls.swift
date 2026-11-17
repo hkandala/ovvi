@@ -107,8 +107,14 @@ final class PluginInstalls {
     }
 
     func create() async {
-        guard let typed = await askName() else { return }
-        _ = try? await create(named: typed)
+        let alert = NSAlert(), field = NSTextField(string: "")
+        field.frame.size.width = 260
+        alert.accessoryView = field
+        alert.window.initialFirstResponder = field
+        guard await Self.ask("New Plugin",
+                             "Ovvi copies its template into the plugins folder, then installs and builds it.",
+                             button: "Create", alert: alert) else { return }
+        _ = try? await create(named: field.stringValue)
     }
 
     /// Trusted: the user, or their agent on This Mac, made it.
@@ -144,16 +150,6 @@ final class PluginInstalls {
             Registry.reload()
             return folder
         }
-    }
-
-    private func askName() async -> String? {
-        let alert = NSAlert(), field = NSTextField(string: "")
-        field.frame.size.width = 260
-        alert.accessoryView = field
-        alert.window.initialFirstResponder = field
-        return await Self.ask("New Plugin",
-                              "Ovvi copies its template into the plugins folder, then installs and builds it.",
-                              button: "Create", alert: alert) ? field.stringValue : nil
     }
 
     private func fetch(_ source: PluginSource, _ text: String, for agent: Asker?) async throws -> PluginManifest {

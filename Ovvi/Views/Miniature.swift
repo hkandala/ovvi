@@ -98,7 +98,7 @@ private struct TilePhoto: View {
         let settled = browser?.ready ?? plugin?.web.ready ?? chat.map { $0.current || $0.problem != nil } ?? false
         Group {
             if let browser {
-                BrowserCard(browser: browser, page: page)
+                BrowserCard(browser: browser)
             } else if let plugin {
                 PluginCard(plugin: plugin, page: page)
             } else if let chat {

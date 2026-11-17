@@ -32,10 +32,9 @@ class BrowserView: WKWebView {
 
     private static var warmViews: [ObjectIdentifier: BrowserView] = [:]
 
-    /// A web view starts its page process at its first load: 0.1 s to seconds on a busy Mac, 1.4 s on CI, under the
-    /// new card's loader. So a new card takes a warm view, whose process already runs, and the next one starts. A
-    /// script, not a load, starts it: the view keeps no history, and its next load keeps the process. Only after a
-    /// warm one was taken: the first ones start with `Browser.prewarm`, after the restored cards' own processes.
+    /// A page process starts at a web view's first load (up to seconds on a busy Mac, under the new card's loader), so
+    /// a new card takes a warm view and the next one starts, by a script, not a load: it keeps no history, and its
+    /// next load keeps the process. The first ones come from `Browser.prewarm`, after the restored cards' processes.
     static func take<View: BrowserView>(_ make: @escaping @MainActor @Sendable () -> View) -> View {
         guard let view = warmViews.removeValue(forKey: ObjectIdentifier(View.self)) as? View else { return make() }
         Task { warm(make) }

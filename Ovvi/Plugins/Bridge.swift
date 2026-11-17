@@ -89,9 +89,8 @@ final class Bridge {
     }
 
     func event(_ name: String, _ data: Any) {
-        plugin?.web.view.callAsyncJavaScript("window.ovvi_receive?.(name, data)", arguments: ["name": name,
-                                                                                              "data": data],
-                                             in: nil, in: .page)
+        plugin?.web.view.callAsyncJavaScript("window.ovvi_receive?.(name, data)",
+                                             arguments: ["name": name, "data": data], in: nil, in: .page)
     }
 
     func place(_ arg: String, at landing: String?) {
@@ -258,16 +257,12 @@ final class Bridge {
 
     private func serial(_ body: @escaping () async throws -> Data) async throws -> Data {
         let previous = writes
-        let write = Task { () -> Result<Data, any Error> in
+        let write = Task {
             await previous?.value
-            do {
-                return try await .success(body())
-            } catch {
-                return .failure(error)
-            }
+            return try await body()
         }
-        writes = Task { _ = await write.value }
-        return try await write.value.get()
+        writes = Task { _ = try? await write.value }
+        return try await write.value
     }
 
     func reset() {

@@ -61,7 +61,6 @@ extension CommandList {
 
 struct BrowserCard: View {
     let browser: Browser
-    let page: Page
     @Environment(\.pageHidden) private var hidden
 
     var body: some View {
@@ -202,7 +201,7 @@ struct FloatingBrowser: View {
         VStack(spacing: 0) {
             BrowserToolbar(browser: browser, page: page).padding(.horizontal, 11).frame(height: PaneCard.header)
                 .padding(.vertical, PaneCard.floatingTop)
-            BrowserCard(browser: browser, page: page)
+            BrowserCard(browser: browser)
         }
         .onAppear { browser.takeKeyboard() }
     }

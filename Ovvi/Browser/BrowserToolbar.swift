@@ -38,7 +38,7 @@ struct BrowserToolbar: View {
             }
             .accessibilityIdentifier("\(id).closed")
             .foregroundStyle(look.paneButton)
-            // By item: a first popover's content with `isPresented` had the list from before the read.
+            // By item: with `isPresented`, a first popover's content shows the list from before the read.
             .popover(item: $closed, arrowEdge: .bottom) { shown in
                 ClosedPagesPopover(pages: shown.pages) { picked, how in
                     closed = nil

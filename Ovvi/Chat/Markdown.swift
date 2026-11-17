@@ -73,8 +73,8 @@ private struct Block: View {
             // As a web page lays one out: wider than the reply, it scrolls sideways in its own box.
             ViewThatFits(in: .horizontal) {
                 TableGrid(table: table)
-                // At its own height: the scroll view offers more, and the rows, which fill their height, took it and
-                // spilled past the box.
+                // At its own height: the rows fill their height, so they would take the scroll view's larger offer and
+                // spill past the box.
                 ScrollView(.horizontal) { TableGrid(table: table).fixedSize(horizontal: false, vertical: true) }
             }
         case is ThematicBreak:
@@ -171,17 +171,12 @@ private enum Inline {
             case is Emphasis: result += styled(child, size, .emphasized)
             case is Strong: result += styled(child, size, .stronglyEmphasized)
             case is Strikethrough: result += styled(child, size, .strikethrough)
-            case let link as Markdown::Link:
-                var label = Self.text(link, size: size)
-                if let url = ChatLinks.markdown(link.destination) {
-                    label.link = url
-                }
-                result += label
-            case let image as Markdown::Image:
-                // Its description, a link to it: loaded on its own, a reply could send what the agent read to any
-                // server.
-                var label = Self.text(image, size: size)
-                if let url = ChatLinks.markdown(image.source) {
+            // An image is its description, linked: loaded on its own, a reply could send what the agent read to any
+            // server.
+            case is Markdown::Link, is Markdown::Image:
+                var label = Self.text(child, size: size)
+                let target = (child as? Markdown::Link)?.destination ?? (child as? Markdown::Image)?.source
+                if let url = ChatLinks.markdown(target) {
                     label.link = url
                 }
                 result += label

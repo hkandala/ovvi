@@ -108,8 +108,8 @@ private final class Relay: NSObject, WKScriptMessageHandlerWithReply, WKNavigati
         self.card = card
     }
 
-    /// Not the `async` form: WebKit starts each of its calls as a task off the main actor, and those reached the main
-    /// actor out of order (a page's two `controls.set` of one control, the older one last). A task made here keeps
+    /// Not the `async` form: WebKit starts each of its calls as a task off the main actor, and those can reach the
+    /// main actor out of order (a page's two `controls.set` of one control, the older one last). A task made here keeps
     /// the page's order.
     func userContentController(_: WKUserContentController, didReceive message: WKScriptMessage,
                                replyHandler: @escaping @MainActor @Sendable (Any?, String?) -> Void)

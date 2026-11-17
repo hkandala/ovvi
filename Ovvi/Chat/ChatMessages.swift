@@ -38,10 +38,8 @@ struct ChatMessages: View, Equatable {
     ]
     private static let end = "end"
     nonisolated static let space = "chat.messages"
-    /// About two views of text, at most `block` rows. Each time the card is made it lays them out: 31 rows of long
-    /// replies, 383 Markdown blocks, took 394 ms of main thread, and 120 lines (5 rows) 124 ms, against 34 ms for a
-    /// terminal tab. A split lays them out once, at its end: 40 rows of long replies took one frame of 40–50 ms, 100
-    /// rows one of 110–160 ms.
+    /// About two views of text, at most `block` rows: the card lays out all its rows each time it is made (31 long
+    /// replies: 394 ms, a terminal tab: 34 ms) and at a split's end (100 rows: one 110–160 ms frame).
     private static let block = 34
     private static let budget = 120
     private static let earlierRow: CGFloat = 28, gap: CGFloat = 10
@@ -71,7 +69,7 @@ struct ChatMessages: View, Equatable {
                 empty(loading: reading)
             } else {
                 // Also while the transcript a sent message starts loads (Claude Code and pi write it with the first
-                // message): a spinner in its place took the message away right after it rose.
+                // message): a spinner in its place would take the message away right after it rises.
                 messages
             }
         }
@@ -107,10 +105,8 @@ struct ChatMessages: View, Equatable {
                 }
             }
         }
-        // A lone new width (a split's motion gives the card its final size once) lays the rows and the reply box out
-        // at once; one in a run of them (a drag) waits for the run's end, so the rows wrap once, not at every frame,
-        // and the box waits with them. At once while the reading column keeps its width.
-        // Not the empty chat's, which has no rows to wrap.
+        // A drag's run of widths applies once, at its end, so the rows and the reply box lay out once; a lone width (a
+        // split's), one the reading column absorbs, and the empty chat (no rows to wrap) take it at once.
         .frame(width: reading || welcome ? nil : width)
         .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { new in
@@ -169,7 +165,7 @@ struct ChatMessages: View, Equatable {
             ScrollView {
                 // As tall as the view at least, its rows at the top: a short chat is then at its exact bottom, and the
                 // bottom anchor follows it as its rows pass the view. A shorter stack, held at the top by the `.top`
-                // alignment, kept its top.
+                // alignment, would keep its top.
                 ZStack(alignment: .top) {
                     Filler(height: viewHeight)
                     // Not lazy: a lazy stack guesses the height of the rows it has not built, by up to four times,

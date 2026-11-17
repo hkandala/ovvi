@@ -173,8 +173,8 @@ extension HostStore {
                     }
                 }
                 var pages: [ClosedBrowserPage] = []
-                for await page in group {
-                    pages += page.map { [$0] } ?? []
+                for await case let page? in group {
+                    pages.append(page)
                 }
                 return pages
             }
