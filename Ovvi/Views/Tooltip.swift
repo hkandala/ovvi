@@ -132,6 +132,8 @@ struct TipView: View {
         }
         .font(.system(size: 12))
         .foregroundStyle(colors.text)
+        // The key cap's height: a tip without one is as tall, so a tip that follows another does not jump.
+        .frame(minHeight: 16)
         .padding(.leading, 12).padding(.trailing, tip.key == nil ? 12 : 7).padding(.vertical, 6)
         .background(colors.fill, in: shape)
         .overlay(shape.strokeBorder(colors.rim))
