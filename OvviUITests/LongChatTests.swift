@@ -244,6 +244,7 @@ extension OvviUITests {
         XCTAssertTrue(until(5) { card.frame.width < 340 }, "\(card.frame)")
         XCTAssertNotNil(steady(3) { [card.frame, send.frame] })
         XCTAssertEqual(chat.frame.width, 360, accuracy: 1)
+        onBubbles(element("chat.\(pane).composer").frame.insetBy(dx: -17, dy: 0), pane, reply: "Done.", user: "steps")
         XCTAssertGreaterThan(send.frame.maxX, card.frame.maxX)
         // The wheel turns at the card's middle, over the chat, with the pointer warped there first: on CI, XCUITest's
         // move to the point played a step of its path last, and the wheel went to the card beside.
@@ -316,6 +317,17 @@ extension OvviUITests {
     func row(_ pane: String, _ kind: String, _ value: String) -> XCUIElement {
         app.descendants(matching: .any)
             .matching(NSPredicate(format: "identifier == %@ AND value == %@", "chat.\(pane).\(kind)", value)).firstMatch
+    }
+
+    /// The reply box (or what stands in its place) as wide as the messages: its edges on the received bubble's left
+    /// and the sent one's right, 12 pt past their text. The reply box's text field is 17 pt inside its frame.
+    func onBubbles(_ box: CGRect, _ pane: String, reply: String? = nil, user: String) {
+        let sent = row(pane, "user", user).frame
+        XCTAssertEqual(box.maxX, sent.maxX + 12, accuracy: 1, "\(box) \(sent)")
+        if let reply {
+            let received = row(pane, "reply", reply).frame
+            XCTAssertEqual(box.minX, received.minX - 12, accuracy: 1, "\(box) \(received)")
+        }
     }
 
     func atTop(of chat: XCUIElement, _ pane: String) -> Set<String> {

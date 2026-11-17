@@ -113,8 +113,7 @@ extension OvviUITests {
         let reply = row(pane, "reply", "Echo: **hello**")
         XCTAssertTrue(reply.exists(within: 5))
         XCTAssertEqual(composer.placeholderValue, "Ask Anything")
-        // The box's text about 10 pt inside the messages' edge (9 pt from the reply's frame).
-        XCTAssertEqual(composer.frame.minX - reply.frame.minX, 9, accuracy: 1, "\(composer.frame) \(reply.frame)")
+        onBubbles(composer.frame.insetBy(dx: -17, dy: 0), pane, reply: "Echo: **hello**", user: "hello")
         for _ in 1 ... 4 {
             app.typeKey(.return, modifierFlags: .shift)
         }
@@ -183,6 +182,7 @@ extension OvviUITests {
         XCTAssertTrue(row(pane, "tool.input", "command: echo hello").exists(within: 2))
         XCTAssertTrue(row(pane, "tool.output", "hello").exists)
         let composer = element("chat.\(pane).composer")
+        onBubbles(composer.frame.insetBy(dx: -17, dy: 0), pane, reply: "Echo: **hello**", user: "hello")
         let one = composer.frame.height
         var heights: [Int: CGFloat] = [:]
         app.typeText("1")
@@ -225,6 +225,7 @@ extension OvviUITests {
         let drawer = element("chat.\(pane).drawer")
         XCTAssertTrue(drawer.exists(within: 5))
         XCTAssertFalse(element("chat.\(pane).composer").exists)
+        onBubbles(drawer.frame, pane, user: "wait")
         let state = element("pane.\(pane).state")
         XCTAssertEqual(state.stringValue, "Needs you")
         XCTAssertGreaterThanOrEqual(state.frame.minY, element("pane.\(pane).title").frame.maxY)
@@ -241,6 +242,7 @@ extension OvviUITests {
         try await say("ask", in: pane)
         let pear = element("chat.\(pane).option.Pear")
         XCTAssertTrue(pear.exists(within: 5))
+        onBubbles(element("chat.\(pane).question").frame, pane, reply: "Allowed.", user: "ask")
         keepScreenshot("question")
         pear.click()
         XCTAssertTrue(row(pane, "reply", "You chose Pear.").exists(within: 5))

@@ -7,6 +7,10 @@ struct ChatView: View {
     let terminal: PaneTerminal?
     static let column: CGFloat = 760
     static let gutter: CGFloat = 48
+    /// The messages' text sits this far in from the column's sides.
+    static let margin: CGFloat = 32
+    /// The reply box's and the waiting drawer's: their edges on the bubbles'.
+    static let boxMargin = margin - Bubble.inset
     /// Narrower, the chat keeps this width and scrolls sideways: under it the bubbles, tool rows and reply box crowd.
     static let minWidth: CGFloat = 360
     @State private var height: CGFloat = 0
@@ -30,7 +34,7 @@ struct ChatView: View {
                          composing: $composing).equatable()
             if chat.drawer, let terminal {
                 WaitingDrawer(chat: chat, page: page, terminal: terminal).frame(height: max(160, height * 0.45))
-                    .padding(.bottom, 14).padding(.top, 4).readingColumn()
+                    .padding(.bottom, 14).padding(.top, 4).readingColumn(margin: Self.boxMargin)
             }
         }
         .onExitCommand(perform: chat.stop)
@@ -75,7 +79,7 @@ struct ChatView: View {
 }
 
 extension View {
-    func readingColumn(margin: CGFloat = 32) -> some View {
+    func readingColumn(margin: CGFloat = ChatView.margin) -> some View {
         padding(.horizontal, margin).frame(maxWidth: ChatView.column).frame(maxWidth: .infinity)
     }
 }
