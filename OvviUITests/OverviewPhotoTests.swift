@@ -22,10 +22,11 @@ extension OvviUITests {
         try await relabel(browser, "ovvi:browser#e2eunb file://\(folder)/light.html")
         try await relabel(plugin, "ovvi:explorer#e2eunp /private\(folder)/notes.md")
 
-        // Once WebKit's GPU and network processes and the two warm views (`Browser.prewarm`) run.
-        let before = try await poll("WebKit's shared processes") { () async throws -> String? in
-            let usage = try await measure("before the overview", seconds: 1)
-            return webPages(usage) >= 4 ? usage : nil
+        // Once the two warm views' (`Browser.prewarm`) page processes run. Page processes only: CI's virtual Mac
+        // runs WebKit with no GPU process.
+        let before = try await poll("the warm views' page processes") { () async throws -> Int? in
+            let count = try await web("web-pids", "").count
+            return count >= 2 ? count : nil
         }
         app.typeKey("o", modifierFlags: [.command, .control])
         let tile = element("overview.tab.\(tab)")
@@ -41,16 +42,11 @@ extension OvviUITests {
         let light = Self.brightness(element("overview.card.\(chat)").screenshot().image).count { $0 > 150 }
         XCTAssertGreaterThan(light, 20, "the chat's picture")
         // The web cards made for their pictures go with their page processes (a warm view taken starts another).
-        try await poll("the photos' web views to go") { () async throws -> Int? in
-            let count = try await webPages(measure("overview", seconds: 1))
-            return count <= webPages(before) ? count : nil
+        try await poll("the photos' web views to go (to \(before))", times: 300) { () async throws -> Int? in
+            let count = try await web("web-pids", "").count
+            return count <= before ? count : nil
         }
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(element("overview").vanishes(within: 2))
-    }
-
-    func webPages(_ usage: String) -> Int {
-        usage.split(separator: "\n").first { $0.hasPrefix("webkit ") }.flatMap { Int($0.split(separator: " ")[1]) }
-            ?? .max
     }
 }

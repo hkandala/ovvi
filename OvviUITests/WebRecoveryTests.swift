@@ -178,7 +178,7 @@ extension OvviUITests {
         }
     }
 
-    private func web(_ action: String, _ kind: String = "GPU") async throws -> Set<String> {
+    func web(_ action: String, _ kind: String = "GPU") async throws -> Set<String> {
         let pids = try await Self.post("\(one)/\(action)", Data(kind.utf8))
         return Set(String(decoding: pids, as: UTF8.self).split(separator: "\n").map(String.init))
     }
