@@ -294,7 +294,7 @@ private struct WindowContent: View {
                 }
             }
         }
-        // Rex's collapse time.
+        // The sidebar's collapse time, tuned by eye.
         .animation(Animation.reduced ? nil : .easeInOut(duration: 0.3), value: sidebar)
         .hoverPanelHost()
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }

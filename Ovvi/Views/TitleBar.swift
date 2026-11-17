@@ -4,7 +4,7 @@ import SwiftUI
 struct TitleBar: View {
     static let height: CGFloat = 46
 
-    /// Rex's sidebar toggle is centered 82 pt right of the red light's center.
+    /// The sidebar toggle is centered 82 pt right of the red light's center.
     static func inset(fullScreen: Bool) -> CGFloat {
         fullScreen ? gap : 91
     }

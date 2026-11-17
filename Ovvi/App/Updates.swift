@@ -1,7 +1,7 @@
 import Sparkle
 import SwiftUI
 
-/// Sparkle's updater (D112). A daily check that finds an update shows the window's update notice, not Sparkle's window
+/// Sparkle's updater. A daily check that finds an update shows the window's update notice, not Sparkle's window
 /// (gentle reminders); Update… opens Sparkle's.
 @MainActor @Observable
 final class Updates: NSObject, SPUStandardUserDriverDelegate {

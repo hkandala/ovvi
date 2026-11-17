@@ -105,7 +105,7 @@ extension View {
     }
 }
 
-/// Rex's traffic lights: 23, 46 and 69 pt from the left, centered on the title row. Public AppKit: plain frame
+/// The window buttons: 23, 46 and 69 pt from the left, centered on the title row. Public AppKit: plain frame
 /// changes of the standard buttons.
 class TrafficLights: NSView {
     var observers: [NSObjectProtocol] = []

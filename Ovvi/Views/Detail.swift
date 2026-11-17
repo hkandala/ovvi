@@ -220,7 +220,7 @@ private struct TabPages: View {
             id != tab?.id && all.contains { $0.id == id }
         } + [tab?.id].compactMap(\.self))
             .suffix(Self.kept)
-        // A chat card's page stays while the app keeps the card's terminal (D46): a chat's view lives in its page, and
+        // A chat card's page stays while the app keeps the card's terminal: a chat's view lives in its page, and
         // one made again builds its rows and fades them in, at the bottom.
         let made = { (tab: HostStore.Tab) in
             current && recent.contains(tab.id) || page.store.panes(in: tab.id).contains(where: page.keepsChat)

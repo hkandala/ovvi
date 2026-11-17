@@ -41,7 +41,7 @@ extension Animation {
 }
 
 extension UnitCurve {
-    /// Rex's "production" curve.
+    /// A quick start and a long, soft landing, tuned by eye.
     static let slide = UnitCurve.bezier(startControlPoint: UnitPoint(x: 0.2, y: 0.9),
                                         endControlPoint: UnitPoint(x: 0.3, y: 1))
 }

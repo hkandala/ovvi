@@ -7,7 +7,7 @@ extension Exec {
     }
 
     /// herdr's own rule for the path (its config folder from `XDG_CONFIG_HOME` or the platform's, a session's folder in
-    /// it), from herdr itself, in the environment its server and CLI share (D47).
+    /// it), from herdr itself, in the environment its server and CLI share, so both find one path.
     func herdrSocket(_ session: String) async throws -> String {
         guard let path = try await herdrSession(session).socketPath else {
             throw HerdrError.failed("herdr gives no socket for \(session)")

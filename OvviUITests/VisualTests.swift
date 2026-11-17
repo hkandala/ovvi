@@ -25,7 +25,7 @@ extension OvviUITests {
             .map { window.buttons[$0] }
         func placed() -> Bool {
             lights.enumerated().allSatisfy { index, light in
-                // Rex's accessibility frames: 16 pt at x 15, 38, 61 and y 15.
+                // The window buttons' frames: 16 pt at x 15, 38, 61 and y 15.
                 abs(light.frame.minX - window.frame.minX - (15 + CGFloat(index) * 23)) < 1
                     && abs(light.frame.minY - window.frame.minY - 15) < 1
             }
@@ -67,7 +67,7 @@ extension OvviUITests {
     }
 
     private func scenes(_ style: String, _ appearance: String) async throws {
-        // Rex's window (1180 × 760 pt) in the argument domain, over any frame an earlier run saved.
+        // A 1180 × 760 pt window in the argument domain, over any frame an earlier run saved.
         relaunch(one, ["-appearance", appearance, "-liquidGlass", style == "glass" ? "YES" : "NO",
                        "-NSWindow Frame main-AppWindow-1", "100 100 1180 760 0 0 1728 1084"])
         let look = "\(style) \(appearance)"

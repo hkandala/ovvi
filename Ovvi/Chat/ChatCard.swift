@@ -93,7 +93,7 @@ extension Page {
         return chat
     }
 
-    /// A card showing its chat whose terminal the app keeps (D46): its tab's page stays made (`TabPages`). Only while
+    /// A card showing its chat whose terminal the app keeps: its tab's page stays made (`TabPages`). Only while
     /// the session answers, so that a kept chat follows nothing on a machine that is down. The terminals' bound is not
     /// observed: a page whose terminal the app let go goes at the next switch.
     func keepsChat(_ pane: HostStore.Pane) -> Bool {

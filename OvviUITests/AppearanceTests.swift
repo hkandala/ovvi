@@ -101,7 +101,7 @@ extension OvviUITests {
             step("Glass \(appearance.lowercased()): the other card's top rim is brighter than its side")
             let rim = rim(other)
             keepScreenshot("glass \(appearance.lowercased()) rim over the fill (top, side): \(rim)")
-            // Rex's dark rim: the top line about 40 steps over the fill at 1x, the sides about 10.
+            // The dark rim: the top line about 40 steps over the fill at 1x, the sides about 10.
             XCTAssertTrue(appearance == "Light" || rim.top - rim.side >= 12 && rim.top >= 25, "\(rim)")
         }
     }

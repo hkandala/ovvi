@@ -15,7 +15,7 @@ custom_rules:
     included: '/Ovvi/'
     excluded: 'Ovvi/Views/(Style|ProgramIcons)\.swift$' # the tiles' highlight and outline, the same in every look
     regex: 'Color\((red|white|hue|srgbRed|calibratedRed|calibratedWhite|deviceRed|deviceWhite):|Color\((\.sRGB|\.displayP3|nsColor|uiColor|cgColor)|Color\.(white|black|gray|red|green|blue|orange|yellow|pink|purple|mint|teal|cyan|indigo|brown)\b|[(\[ ]\.(white|black|gray|red|green|blue|orange|yellow|pink|purple|mint|teal|cyan|indigo|brown)(\.opacity|\.withAlphaComponent|\))'
-    message: 'Draw with the Look tokens in Style.swift (D44)'
+    message: 'Draw with the Look tokens in Style.swift'
     severity: error
   system_tooltip: # the app's tooltip shows the key and waits 0.5 s; Settings is its own window
     included: '/Ovvi/'

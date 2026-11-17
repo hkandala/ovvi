@@ -3,7 +3,7 @@ import SwiftUI
 
 nonisolated let gap: CGFloat = 8
 
-/// Values from Rex's Glass (Modern) and Classic (System) material files, tuned by eye.
+/// Every color of the Glass and Classic looks, tuned by eye.
 struct Look: Equatable {
     let style: InterfaceStyle
     let dark: Bool
@@ -50,7 +50,7 @@ struct Look: Equatable {
         pick(.white.opacity(0.02), .white.opacity(0.25), .black.opacity(0.1), .white.opacity(0.5))
     }
 
-    /// Dark matches Rex's Retina pixels: the line about 45 steps over the card, the sides 15.
+    /// Dark, on a Retina screen: the top line about 45 steps over the card, the sides 15.
     var rim: (all: Color, top: Color) {
         pick(
             (.white.opacity(0.06), .white.opacity(0.09)),
@@ -99,7 +99,7 @@ struct Look: Equatable {
         (dark ? Color.white : .black).opacity(dark ? (contrast ? 0.6 : 0.42) : (contrast ? 0.65 : 0.45))
     }
 
-    /// The states' colors are t3code's (Tailwind's blue, orange and emerald).
+    /// The states' colors are Tailwind's blue, orange and emerald.
     var working: Color {
         dark ? Color(hex: 0x60A5FA) : Color(hex: 0x3B82F6)
     }

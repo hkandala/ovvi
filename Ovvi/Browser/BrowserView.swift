@@ -202,7 +202,7 @@ class BrowserView: WKWebView {
 }
 
 extension WKWebView {
-    /// No public API shows it; cmux ships this.
+    /// WebKit's private inspector object: no public API shows it.
     var inspector: NSObject? {
         let selector = NSSelectorFromString("_inspector")
         return responds(to: selector) ? perform(selector)?.takeUnretainedValue() as? NSObject : nil

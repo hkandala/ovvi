@@ -256,7 +256,7 @@ down() {
     fi
     h session stop "$S" >/dev/null 2>&1 || true
     env -i HOME="$HOME" PATH=/usr/bin:/bin XDG_CONFIG_HOME="$W/xdg" "$HERDR" session delete "$S" >/dev/null 2>&1 || true
-    # A server the app started itself (D47) is a launchd job by the session's name: only if it is this world's.
+    # A server the app started itself is a launchd job by the session's name: only if it is this world's.
     local job=gui/$(id -u)/dev.ovvi.app.herdr.$S
     launchctl print "$job" 2>/dev/null | grep -qF "$W/" && launchctl bootout "$job" 2>/dev/null || true
     rm -rf "$HOME/.local/state/ovvi/$S"
