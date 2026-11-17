@@ -83,15 +83,18 @@ nav button:hover {
 .cm-md-pre-first.cm-md-pre-last {
   border-radius: 8px;
 }
-/* A hidden fence's line is as tall as a shown first or last line's padding. */
 .cm-md-pre-first:not(.cm-md-fence) {
-  padding-top: 18px;
+  padding-top: 5px;
 }
 .cm-md-pre-last:not(.cm-md-fence) {
-  padding-bottom: 18px;
+  padding-bottom: 5px;
 }
 .cm-line.cm-md-fence {
-  line-height: 18px;
+  line-height: 10px;
+}
+/* A blank line's height: a code block keeps a paragraph's gap from text that touches it. */
+.cm-md-gap {
+  height: 1lh;
 }
 .cm-line.cm-md-quote,
 .cm-line.cm-md-hang {

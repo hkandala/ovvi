@@ -98,6 +98,13 @@ class Html extends WidgetType {
 }
 const space = Decoration.replace({ widget: new Html(" ") })
 
+class Gap extends WidgetType {
+  toDOM() {
+    return Object.assign(document.createElement("div"), { className: "cm-md-gap" })
+  }
+}
+const gap = Decoration.widget({ widget: new Gap(), block: true, side: -1 })
+
 /** Block widgets and replaced line breaks must live in the state, not a plugin.
  *  ponytail: walks the document's blocks at each change of the caret; per viewport if long files lag. */
 function blocks(state: EditorState): DecorationSet {
@@ -111,6 +118,8 @@ function blocks(state: EditorState): DecorationSet {
   /** An HTML element opened in one top-level block and closed in a later one (`<details>`, a blank line, then text)
    *  draws whole, up to here. */
   let skip = -1
+  /** Lines with a gap above them: one between two blocks in a row. */
+  const gaps = new Set<number>()
   syntaxTree(state).iterate({
     enter(node) {
       const name = node.name
@@ -163,9 +172,20 @@ function blocks(state: EditorState): DecorationSet {
         }
         return false
       }
+      if (name === "FencedCode" || name === "CodeBlock") {
+        // Not in a quote: the gap would break its bars.
+        let quoted = false
+        for (let at = node.node.parent; at; at = at.parent) quoted ||= at.name === "Blockquote"
+        const first = doc.lineAt(node.from).number, last = doc.lineAt(node.to).number
+        const text = (n: number) => /[^\s>]/.test(doc.line(n).text)
+        if (!quoted && first > 1 && text(first - 1)) gaps.add(first)
+        if (!quoted && last < doc.lines && text(last + 1)) gaps.add(last + 1)
+        return false
+      }
       return containers.includes(name)
     },
   })
+  for (const n of gaps) ranges.push(gap.range(doc.line(n).from))
   return Decoration.set(ranges, true)
 }
 const blockField = StateField.define<DecorationSet>({
