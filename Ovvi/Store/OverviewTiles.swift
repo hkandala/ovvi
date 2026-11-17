@@ -130,17 +130,21 @@ extension WindowPages {
     func photographed(_ id: String) {
         guard overviewPhoto == id else { return }
         overviewPhotographed.insert(id)
-        endPhoto()
+        endPhoto(pictured: true)
         photographNext()
     }
 
-    /// Its tile scrolled out, another session shows or the overview closes: a card made only for its picture goes.
-    private func endPhoto() {
+    /// Its tile scrolled out, another session shows or the overview closes: a card made only for its picture goes,
+    /// with no picture unless it took one (one taken out of a window may be blank, and its tile would not try again).
+    private func endPhoto(pictured: Bool = false) {
         guard let id = overviewPhoto else { return }
         overviewPhoto = nil
         overviewPhotoTimeout?.cancel()
-        if terminals.droppable(id) {
+        guard terminals.droppable(id) else { return }
+        if pictured {
             terminals.drop(id)
+        } else {
+            (terminals.browsers[id], terminals.plugins[id]) = (nil, nil)
         }
     }
 }

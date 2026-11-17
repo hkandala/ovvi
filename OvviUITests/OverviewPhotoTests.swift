@@ -5,23 +5,22 @@ extension OvviUITests {
     /// draws live in it, one at a time, until it has one.
     func testOverviewPicturesCardsNeverDrawn() async throws {
         // Dark: the light page's picture is told from the card's fill.
-        relaunch(one, ["-agentView", "chat", "-appearance", "dark"])
+        let (tab, chat) = try await startChat(["-appearance", "dark"])
+        try await say("hello", in: chat)
+        XCTAssertTrue(row(chat, "reply", "Echo: **hello**").exists(within: 5))
+        // The pictures live in memory: after a relaunch no card of the tab was drawn (herdr's focused space shows).
+        relaunch(one, ["-appearance", "dark"])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        let (tab, chat) = try await createTab(in: "w2")
-        closeAfter("tab", tab)
-        try await waitForPrompt(chat)
-        let folder = "/tmp/ovvi-e2e-unseen", standIn = Self.scripts.appending(path: "claude-stand-in.py").path
-        addTeardownBlock { try? FileManager.default.removeItem(atPath: folder) }
+        XCTAssertFalse(element("tab.\(tab)").exists, "w2's tabs never show")
+        let folder = "/tmp/ovvi-e2e-unseen", browser = try await split(chat)
+        try await waitForPrompt(browser)
         try await send("mkdir -p \(folder) && printf '<title>Light</title><body style=\"background:white\">' "
-            + ">\(folder)/light.html && printf '# Unseen\\n' >\(folder)/notes.md && "
-            + "function claude { python3 '\(standIn)' \"$@\"; } && clear && claude\r", to: chat)
-        try await waitFor(chat, toShow: "Claude Code stand-in")
-        try await Self.call(one, "agent.prompt", ["target": chat, "text": "hello"])
-        try await waitFor(chat, toShow: "Echo")
-        let browser = try await split(chat), plugin = try await split(browser, "down")
+            + ">\(folder)/light.html && printf '# Unseen\\n' >\(folder)/notes.md && clear\r", to: browser)
+        try await waitFor(browser) { !$0.contains("printf") }
+        sendAfter("rm -rf \(folder)\r", to: browser)
+        let plugin = try await split(browser, "down")
         try await relabel(browser, "ovvi:browser#e2eunb file://\(folder)/light.html")
         try await relabel(plugin, "ovvi:explorer#e2eunp /private\(folder)/notes.md")
-        XCTAssertFalse(element("tab.\(tab)").exists, "w2's tabs never show")
 
         let before = try await measure("before the overview", seconds: 1)
         app.typeKey("o", modifierFlags: [.command, .control])
@@ -35,10 +34,14 @@ extension OvviUITests {
         }
         keepScreenshot("overview, cards never drawn")
         XCTAssertGreaterThan(mean(element("overview.card.\(browser)")), 150, "the light page's picture")
-        // The web cards made for their pictures go: WebKit's shared processes may stay (and one it starts ahead).
+        // The chat's rows, light on the dark card: a blank picture has no light pixel.
+        let light = Self.brightness(element("overview.card.\(chat)").screenshot().image).count { $0 > 150 }
+        XCTAssertGreaterThan(light, 20, "the chat's picture")
+        // The web cards made for their pictures go with their page processes: WebKit's GPU and network processes and
+        // the two warm views (a browser's and a plugin's, `BrowserView.take`) stay.
         try await poll("the photos' web views to go") { () async throws -> Int? in
             let count = try await webPages(measure("overview", seconds: 1))
-            return count <= webPages(before) + 3 ? count : nil
+            return count <= webPages(before) + 4 ? count : nil
         }
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(element("overview").vanishes(within: 2))

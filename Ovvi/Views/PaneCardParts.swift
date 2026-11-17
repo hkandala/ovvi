@@ -59,13 +59,16 @@ struct ChatProbe: NSViewRepresentable {
         return probe
     }
 
-    /// The window's layers at the view's place, at the size the deepest of them has it: a tile's place gives its
+    /// The window's layers at the view's place, at the size the deepest of them has it: a tile's chat gives its
     /// card's full size.
     static func picture(at view: NSView) -> CGImage? {
         guard let root = view.window?.contentView?.superview?.layer, !view.visibleRect.isEmpty else { return nil }
-        // The deepest layer that holds the chat's place (its rows, under 1 ms), not the window's (120 ms).
+        // The deepest layer that holds the chat's place (its rows, under 1 ms), not the window's (120 ms). Within a
+        // point: a tile's scaled chat is a fraction of a point off its place.
         var layer = root, area = view.convert(view.bounds, to: nil)
-        while let next = layer.sublayers?.last(where: { !$0.isHidden && $0.opacity > 0 && $0.frame.contains(area) }) {
+        while let next = layer.sublayers?.last(where: {
+            !$0.isHidden && $0.opacity > 0 && $0.frame.insetBy(dx: -1, dy: -1).contains(area)
+        }) {
             area = next.convert(area, from: layer)
             layer = next
         }
@@ -92,8 +95,8 @@ struct ChatProbe: NSViewRepresentable {
     }
 }
 
-/// A view's place in its window, from AppKit: a SwiftUI global frame inside a Form row did not match the pointer. It
-/// takes no clicks.
+/// A view's place in its window, from AppKit, where SwiftUI's frames can be off (inside a Form row). It takes no
+/// clicks.
 final class Place {
     weak var view: NSView?
 }
