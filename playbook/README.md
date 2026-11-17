@@ -1,24 +1,12 @@
 # Playbook
 
-How Ovvi is built, for the agents that build it. What the app does is in `docs/content/docs/`; how to build,
-run and test it is in the root `README.md`; how to release it is in the root `RELEASING.md`.
+How Ovvi is built, for the agents that build it. What the app does is in the docs (`docs/content/docs/`); how to
+build, run and test it is in the root `README.md`; how to release it is in the root `RELEASING.md`.
 
 | File | What it holds |
 |---|---|
 | [workflow.md](workflow.md) | How we work |
 | [lessons.md](lessons.md) | Problems that came back, and the rule for each |
 | [ci.md](ci.md) | How CI runs, and how to run, watch and read it |
-| [phases/](phases/) | One file per phase: its tracks, what was asked and its Findings; a new phase adds a row below |
 
-## Phases
-
-Finished phases are in git history.
-
-| # | Phase | File |
-|---|---|---|
-| 57 | Nineteenth feedback: empty states, a simpler sidebar, cards that survive idle | [57-nineteenth-feedback.md](phases/57-nineteenth-feedback.md) |
-| 58 | Twentieth feedback: clicks that always land, balanced splits, a smoother chat | [58-twentieth-feedback.md](phases/58-twentieth-feedback.md) |
-| 59 | Releases: a curl install, Sparkle updates, dev builds | [59-releases.md](phases/59-releases.md) |
-| 60 | The default plugins on npm, updates per plugin | [60-plugin-packages.md](phases/60-plugin-packages.md) |
-| 61 | Anonymous usage data: one daily event to PostHog | [61-telemetry.md](phases/61-telemetry.md) |
-| 62 | Twenty-first feedback: a look of our own | [62-twenty-first-feedback.md](phases/62-twenty-first-feedback.md) |
+Phase files and reports live outside the repo, in `~/ovvi-docs/` ([Files outside the repo](workflow.md#files-outside-the-repo)).

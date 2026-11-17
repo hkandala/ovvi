@@ -1,13 +1,14 @@
 # How we work
 
 The one way of working for Ovvi, for every agent. Read it with [lessons.md](lessons.md) before you start.
-The design in `docs/content/docs/` wins on any conflict about what the app does.
+The docs in `docs/content/docs/` say what the app does. They win on behavior. Finer detail (sizes, timings,
+identifiers, herdr calls) lives in the code and its tests.
 
 ## Pick the size of the job
 
 | Job | How |
 |---|---|
-| Tiny (a color, a wording, a one-liner) | One agent in a worktree. Change it, and its line in the design pages if it has one, in the same commit. `make lint build test`, push to main, report. No new test, no review. The user tests it by hand. |
+| Tiny (a color, a wording, a one-liner) | One agent in a worktree. Change it, and its docs page when users would notice, in the same commit. `make lint build test`, push to main, report. No new test, no review. The user tests it by hand. |
 | Small fix (a bug) | As Tiny, pushed straight to main, plus a test that fails on the old code when one is cheap to write, and the root cause in the commit message. A review only when the change is risky (concurrency, data loss, more than one area). |
 | Feature (one track) | One agent on its local branch, committing locally. One code review, then fixes, then the merge. No push before the review. |
 | Project (several tracks) | [The whole run](#a-project): a plan, tracks in parallel, a review per track, merges one by one, a docs pass, one final review, fixes, the full UI suite, the report. |
@@ -18,22 +19,22 @@ A track is one agent's part of a phase: a set of items and the files they touch.
 
 | Role | Does | Never |
 |---|---|---|
-| Orchestrator (the main agent) | plans with the user, writes the phase files, starts and briefs agents, answers their questions from the design, says when each track merges, watches CI, reports | writes app code; asks the user what the design or the rules already answer |
+| Orchestrator (the main agent) | plans with the user, writes the phase files, starts and briefs agents, answers their questions from the docs, says when each track merges, watches CI, reports | writes app code; asks the user what the docs or the rules already answer |
 | Track agent | builds its items in its own worktree and files, self-reviews, starts its code reviewer, fixes, merges when told, writes Findings | edits another track's files; asks the user; starts the next phase |
 | Reviewer | read only; reports a numbered list: file:line, severity (blocker / should / nit), the concrete fix; says what is clean; ends with a verdict | edits, commits |
 | Helper | read only, does a piece of reading for an agent and writes a report file | edits the repo |
 
 ## A project
 
-1. **Plan (orchestrator, with the user).** Write down the target behavior once (the design pages). Write one
-   phase file `playbook/phases/NN-name.md` (template below) with a row in [README.md](README.md). Cut the
+1. **Plan (orchestrator, with the user).** Write down the target behavior once (the docs). Write
+   `~/ovvi-docs/phases/<phase>/phase.md` ([template](#phase-file-template)). Cut the
    work into tracks of 1–3 hours each, so no two tracks edit the same files. Name the owner of any shared
    file in both briefs. A track that others depend on (a removal, a rename) goes first and merges early.
 2. **Tracks, in parallel.** One agent each, on its own branch ([the track loop](#the-track-loop)). Tracks do
-   not edit the design pages.
+   not edit the docs.
 3. **A code review per track** ([Reviews](#reviews)), then the track's fixes.
 4. **Merge one track at a time**, when the orchestrator says so ([Branches](#worktrees-branches-and-merging)).
-5. **Docs pass.** One agent updates the design pages from the merged code and the Findings.
+5. **Docs pass.** One agent updates the docs from the merged code and the Findings.
 6. **Final review** ([Reviews](#the-final-review)). One fixer, or the owning track agents, apply it.
 7. **Full CI.** The orchestrator dispatches the full UI suite once ([CI](#ci)).
 8. **Report** to the user: what was built, what to check by hand, what is left to decide.
@@ -42,9 +43,9 @@ A track is one agent's part of a phase: a set of items and the files they touch.
 
 The user tries the app and sends a list, screenshots or a Scrawl capture (screen, voice and red marks). Read
 a capture fully, every frame, before acting. The orchestrator numbers the items, passes each track the
-user's exact words and repro, decides the open points itself, and groups the items into tracks in one phase
-file. Items that come in during the round become new tracks in the same file, above `## Findings`. Each
-track writes only under its own heading. On a merge conflict in the phase file, keep both sides. Before the
+user's exact words and repro, decides the open points itself, and groups the items into tracks in the phase's
+`phase.md`. Items that come in during the round become new tracks there. Each track writes its own
+`<track>.md` beside it, and no other agent edits that file. Before the
 report, the orchestrator checks that each numbered item landed: the user must never ask twice. When the user
 asks "why", explain and change nothing.
 
@@ -53,13 +54,25 @@ reading of them as a before/after sketch (for example `logo / [spinner] Starting
 words allow two readings, ask the user or show a quick mock-up before the agent builds; never pass on a
 paraphrase.
 
+## Files outside the repo
+
+Phase files, reports for the user and temporary files live in `~/ovvi-docs/`, never in the repo:
+
+- `~/ovvi-docs/phases/<phase>/`: one folder per phase. Its name says what the phase does, in two to four
+  words (`own-look`, `releases-and-updates`), never a number. `phase.md` holds the user's words, the picks and
+  the tracks; each track writes its Findings in `<track>.md`; reports for the user sit beside them.
+- `~/ovvi-docs/scratch/<agent>/`: screenshots, logs, mock-ups and other temporary files. The orchestrator
+  empties it when the phase ends.
+
+If a folder is missing, create it. The brief names any other file an agent needs.
+
 ## Mechanics
 
 ### Worktrees, branches and merging
 
-- **One worktree per agent:** `git fetch origin && git worktree add ../ovvi-NN<track> origin/main -b
-  wt-NN<track>`. Work and commit there. When done, `git worktree remove ../ovvi-NN<track>` and
-  `git branch -D wt-NN<track>`. Never run git in a checkout another agent uses.
+- **One worktree per agent:** `git fetch origin && git worktree add ../ovvi-<phase>-<track> origin/main -b
+  wt-<phase>-<track>`. Work and commit there. When done, `git worktree remove ../ovvi-<phase>-<track>` and
+  `git branch -D wt-<phase>-<track>`. Never run git in a checkout another agent uses.
 - **Tracks and features commit on their local branch.** No remote branches, no PRs, no push before the
   review.
 - **Merge when the orchestrator says so,** one track at a time. Rebase the branch on the latest main
@@ -73,7 +86,7 @@ paraphrase.
   `git checkout <file>` to drop debug lines in a dirty tree (it reverts your other work in that file).
 - **Code that moves between two owners' files** is one atomic commit by one agent. Tracks can agree on a
   shared API directly with each other (`agent_send`). One owner writes it.
-- **Own DerivedData per worktree:** `DERIVED_DATA=/tmp/ovvi-dd-NN<track>` (the Makefile honors it).
+- **Own DerivedData per worktree:** `DERIVED_DATA=/tmp/ovvi-dd-<phase>-<track>` (the Makefile honors it).
   Never build into the DerivedData a running test suite uses.
 - **Commits:** small and atomic, one logical change with its tests. `type(scope): summary`, imperative,
   ≤ 72 characters (`feat`, `fix`, `chore`, `test`, `docs`, `refactor`, `perf`, `ci`, `build`). The hooks in
@@ -93,7 +106,7 @@ user works on. An agent has two places:
   or look at by hand ([how it works](ci.md#the-vm)). When the VM is busy, use CI.
 
 ```sh
-OWNER=<your agent name> make vm-e2e DERIVED_DATA=/tmp/ovvi-dd-NN<track> ONLY=…
+OWNER=<your agent name> make vm-e2e DERIVED_DATA=/tmp/ovvi-dd-<phase>-<track> ONLY=…
 ```
 
 - `make vm-e2e` builds the tests on the Mac, then runs them in the VM with the Mac's build and Xcode, shared read
@@ -123,7 +136,7 @@ make (the Mac's own GPU or display, a measure the user asked for on this Mac). N
 ```sh
 ( mkdir /tmp/ovvi-gui.lock || exit 1; trap 'rm -rf /tmp/ovvi-gui.lock' EXIT
   echo "<your agent name> $(date +%H:%M)" > /tmp/ovvi-gui.lock/owner
-  make e2e DERIVED_DATA=/tmp/ovvi-dd-NN<track> ONLY=… )
+  make e2e DERIVED_DATA=/tmp/ovvi-dd-<phase>-<track> ONLY=… )
 ```
 
 - Take the lock only if it is free. If it is not, work on and try later. One run per hold, released by the trap,
@@ -136,7 +149,7 @@ make (the Mac's own GPU or display, a measure the user asked for on this Mac). N
 - On the Mac, never send keys with `osascript` or System Events: when Ovvi loses focus, the keys land in the
   user's apps. Keys go through XCUITest only.
 - Screenshots on the Mac: `screencapture -x -l <windowid>`, the xcresult's attachments, or frames of a CI
-  recording. Put the ones you report in `/tmp/ovvi-shots/`.
+  recording. Put the ones you report in `~/ovvi-docs/scratch/<agent>/`.
 
 ### herdr safety
 
@@ -164,9 +177,9 @@ make (the Mac's own GPU or display, a measure the user asked for on this Mac). N
 
 ### Agents
 
-- **Start** an agent with `agent_start`, a brief with everything it needs (below) and a name: track agents
-  `tNN-<track>`, feature agents `pNN-<name>`, their reviewers and helpers `<agent>-<role>`
-  (`t33-docs-review`). A track agent starts its own reviewer and helpers.
+- **Start** an agent with `agent_start`, a brief with everything it needs (below) and a name: track and
+  feature agents `<phase>-<track>`, their reviewers and helpers `<agent>-<role>`
+  (`own-look-s-review`). A track agent starts its own reviewer and helpers.
 - **Ask** with `needsReply: true` when you want an answer. You are woken when it replies or stops. FYIs go
   with `needsReply: false`. Never send acknowledgements.
 - **Wait** without polling: watch every agent you start (`agent_watch` with no timeout for one already
@@ -177,14 +190,14 @@ make (the Mac's own GPU or display, a measure the user asked for on this Mac). N
 - **New work: start or resume.** Resume an agent only when it is recent and has used little of its
   context: it has the files read already, so that is cheaper. Start a fresh agent for anything else, small
   jobs included: a long context costs more to resume and works worse.
-- An agent asks the orchestrator only when the design and these rules do not answer it. The orchestrator
+- An agent asks the orchestrator only when the docs and these rules do not answer it. The orchestrator
   decides open points itself and does not ask the user.
 
 ## The track loop
 
 A feature runs the same loop.
 
-1. Pull. Read `AGENTS.md`, this file, [lessons.md](lessons.md), the phase file and its Findings, the design pages it names, and the ponytail skill (path under Code).
+1. Pull. Read `AGENTS.md`, this file, [lessons.md](lessons.md), the phase's `phase.md` and its track files, the docs pages it names, and the ponytail skill ([Code](#code)).
 2. Spike herdr (and any API) for five minutes in a throwaway session: the exact calls the code will send,
    their results and side effects ([lessons.md](lessons.md#herdr)).
 3. Build the parts that cannot change first (menus, keys, herdr calls), then the look. A new window or
@@ -192,10 +205,10 @@ A feature runs the same loop.
    against the design bar and settles order and wording then.
 4. Small commits on your branch, `make lint build test` green on each.
 5. Run only the UI tests you add or change, on CI or in the VM ([UI tests run in the VM or on CI](#ui-tests-run-in-the-vm-or-on-ci)).
-6. Self-review the diff against the phase file and the ponytail rules. Write your Findings.
+6. Self-review the diff against `phase.md` and the ponytail rules. Write your Findings in `<track>.md`.
 7. Start your code reviewer on the branch's head ([Reviews](#reviews)). Fix every blocker and should in one
    commit. Answer each nit with a fix or a one-line reason.
-8. A feature updates its design pages on its branch. A track leaves them to the docs pass.
+8. A feature updates its docs pages on its branch. A track leaves them to the docs pass.
 9. Report when the branch is reviewed and fixed: what was built, the commits, the tests, screenshot paths
    (a new window or panel only), anything open, and the id of any CI run still going. Never wait on CI, chosen-tests runs included. At 2 hours, report progress anyway.
 10. Merge when the orchestrator says so, and report the push.
@@ -230,45 +243,43 @@ removal that changes behavior) goes on a list for the user with the reason, the 
 ## Phase file template
 
 ```markdown
-# Phase NN: <name>
+# <Name>
 
-Goal: <what the user gets, in two or three sentences>.
+Started <date>. Goal: <what the user gets, in two or three sentences>.
 
 ## Track A: <area> (items n–m)
-1. **<item>.** <what, where, the design page that rules it, the test that proves it>.
-
-## Findings
+1. **<item>.** <what, where, the docs page that rules it, the test that proves it>.
 ```
 
-Each track writes its Findings under `### Track X` at the end.
+Each track writes its Findings in `<track>.md` beside `phase.md`.
 
 **Findings:** at most about 8 bullets per track, each with a bold lead: **Cause**, **Fix**, **Decisions**
-(choices the design did not make), **Runs** (a red run on the old code and a green one, when there are any),
+(choices the docs did not make), **Runs** (a red run on the old code and a green one, when there are any),
 **For the user** (what to check by hand). No test-name, file or run-id inventories. A lesson that will come
 back goes to [lessons.md](lessons.md), not into the phase.
 
 ## Briefs
 
-**Track agent.** "You are the agent for track ‹X, items› of phase NN of Ovvi. Read `AGENTS.md` and
+**Track agent.** "You are the agent for track ‹X, items› of the phase ‹phase› of Ovvi. Read `AGENTS.md` and
 `playbook/workflow.md` and follow the track loop. Build everything in your section of
-`playbook/phases/NN-*.md`. The design pages win. Worktree `../ovvi-NN<track>`, branch `wt-NN<track>`,
-`DERIVED_DATA=/tmp/ovvi-dd-NN<track>`. Your files: ‹list›; ‹owner of shared files›. Commit on your branch
-and do not push until I say merge. Start your code reviewer yourself. Decide open points yourself. Write
-Findings under `### Track X`. Reply when the branch is reviewed and fixed, with what you fixed, the causes,
-the tests, and anything the user must decide or check by hand."
+`~/ovvi-docs/phases/<phase>/phase.md`. The docs win. Worktree `../ovvi-<phase>-<track>`, branch
+`wt-<phase>-<track>`, `DERIVED_DATA=/tmp/ovvi-dd-<phase>-<track>`. Your files: ‹list›; ‹owner of shared files›.
+Commit on your branch and do not push until I say merge. Start your code reviewer yourself. Decide open points
+yourself. Write Findings in `~/ovvi-docs/phases/<phase>/<track>.md`. Reply when the branch is reviewed and fixed,
+with what you fixed, the causes, the tests, and anything the user must decide or check by hand."
 
 **Code reviewer.** "Read-only code review of ‹track› at ‹sha›, in a clean copy
 (`git worktree add --detach /tmp/ovvi-rev-<name> <sha>`, `DERIVED_DATA=/tmp/ovvi-dd-rev-<name>`, removed
-after), against the phase file, the design pages and `playbook/workflow.md`. Cover every side: bugs, races,
+after), against `phase.md`, the docs and `playbook/workflow.md`. Cover every side: bugs, races,
 leaks, error paths, edge cases; does it do what the user asked; what can be deleted or made simpler (the
 ponytail-review skill); herdr safety; accessibility identifiers; tests that assert nothing real, sleep,
 duplicate others, mock herdr where it is cheap, or would pass without the feature. Run UI tests only on CI or in
 the VM ([UI tests run in the VM or on CI](#ui-tests-run-in-the-vm-or-on-ci)). Write a numbered list to ‹path›: file:line, severity, the concrete fix.
 Say what is clean. End with a verdict."
 
-**Final reviewer.** "Read-only final review of phase NN at ‹sha› (main after every track and the docs pass),
+**Final reviewer.** "Read-only final review of the phase ‹phase› at ‹sha› (main after every track and the docs pass),
 in a clean copy as above. Read the whole change since ‹base sha›: bugs between tracks, duplicated code,
-consistency, comments, and design pages that match the code. Write a numbered list to ‹path› with the owner
+consistency, comments, and docs that match the code. Write a numbered list to ‹path› with the owner
 track of each finding. End with a verdict."
 
 ## Code
@@ -276,10 +287,9 @@ track of each finding. End with a verdict."
 Tools enforce what they can (SwiftFormat, SwiftLint, the compiler in Swift 6 mode with strict
 concurrency). The rest:
 
-- **Ponytail.** Read `/Users/hkandala/code/pi-hkandala/extensions/pi-ponytail/skills/ponytail/SKILL.md`
-  before writing code. Does it need to exist? Is it already here? Does the stdlib, SwiftUI, AppKit or an
+- **Ponytail.** Read the ponytail skill before writing code. Does it need to exist? Is it already here? Does the stdlib, SwiftUI, AppKit or an
   installed package do it? Only then the minimum. No protocol with one conformer except `Exec` and
-  `Multiplexer` (D49). No factories, managers, coordinators or service layers; no scaffolding for later. A
+  `Multiplexer` (one named seam keeps herdr's JSON and argv out of the views). No factories, managers, coordinators or service layers; no scaffolding for later. A
   deliberate shortcut gets a `// ponytail:` comment with its ceiling and upgrade path. A type gets its own
   file when more than one file uses it or it passes about 200 lines; a family of small related types (a model
   and its parts, an error enum) may share one file. No backward-compatibility or migration
@@ -289,7 +299,7 @@ concurrency). The rest:
   `@Observable` classes on the main actor; no Combine or `ObservableObject`. `async`/`await`, `AsyncStream`,
   structured tasks; cancel what you start. Errors: `throws` with a small enum per module, shown in the UI as
   text; never crash on bad input from herdr; no `try!` or force unwraps outside tests. Decoding: hand-written lenient `Decodable` models with only the fields the app uses.
-  Names follow the design's words (machine, session, page, window, space, tab, pane, card; a space is
+  Names follow the docs' words (machine, session, page, window, space, tab, pane, card; a space is
   `Workspace` in code, herdr's API word, and the UI always says "space"). Comments only for assumptions and
   implicit facts, never about old code or history; no commented-out code.
 - **Design bar.** Every new or changed surface (window, panel, dialog, sheet, popover, About, a menu we
@@ -299,8 +309,7 @@ concurrency). The rest:
   Session, the remote machine dialogs).
 - **Look.** Views draw only with the `Look` tokens in `Style.swift`, read from the environment; no color
   literal outside it. Glass is one behind-window `NSVisualEffectView` under a tint plus the system glass APIs;
-  Classic is opaque; pane cards are never glass. No hardcoded sizes where layout can decide; the fixed sizes
-  are written down in the design pages. Every control and region a test touches has an
+  Classic is opaque; pane cards are never glass. No hardcoded sizes where layout can decide. Every control and region a test touches has an
   `accessibilityIdentifier`. No hint text in the UI, and never send the user to herdr: the app shows the
   button that does it.
 - **herdr in code.** Never patch local state after a write: read the snapshot again (the one exception is
@@ -311,7 +320,7 @@ concurrency). The rest:
   pixels. Unit tests (`swift test` in `Packages/HerdrKit`) only for logic with branches, with recorded herdr
   JSON next to them. App logic no UI test can drive gets a small check script that `make test` runs. No
   mocks of herdr where the real one is cheap; one `Exec` fake for pacing tests is fine.
-- **Docs.** Plain English, following `/Users/hkandala/code/pi-hkandala/skills/simple-english/SKILL.md`:
+- **Docs.** Plain English, following the simple-english skill:
   short sentences, active voice, every term defined at first use. Docs describe the app as it is now: no
   dates, no history, no company names. A change to the `ovvi` command updates the `ovvi` skill in the same
   commit, in its topic file under `skills/ovvi/`; the skill stays brief and leaves herdr to herdr's skill.

@@ -93,7 +93,7 @@ Problems that came back, and the rule that stops each. How we work is in
 - **A test never starts a real agent on the Mac.** A pane's shell finds the real `claude`, which writes `~/.claude`:
   a test that types an agent's name skips that part where the agent is installed and leaves it to CI's stand-in.
 - **A plugin label written by hand needs an iid of exactly 6 `[a-z0-9]` characters,** or the pane stays a terminal
-  with no error ([Labels](../docs/content/docs/plugins/labels.mdx)).
+  with no error ([the plugin API](../docs/content/docs/plugins/api.mdx)).
 - **Never assert wall-clock time.** In unit tests compare against a ten times larger input or count the
   work.
 - **A pane's row that wraps at a space drops it.** herdr's `pane.read` keeps no trailing spaces, so a typed line
@@ -131,7 +131,7 @@ Problems that came back, and the rule that stops each. How we work is in
 - **Spike each herdr call in the exact shape the code sends, and check its side effects** on focus, folders
   and defaults: `pane.swap` moves focus despite `focus:false`; `pane.move` without a target splits the
   focused pane; some calls write outside the throwaway session (`worktree.create` writes to
-  `~/.herdr/worktrees/`, so tests never call it). Trust the spike over the design pages.
+  `~/.herdr/worktrees/`, so tests never call it). Trust the spike over the docs.
 - **Control keys go through `pane.send_keys`, never in `pane.send_input`'s text.** herdr pastes text into a
   program that turned bracketed paste on (zsh, bash 5.1+, fish at their prompt), and a pasted ⌃U or ⌃C is a plain
   character. Spike a typed line against a shell at its prompt, not only one still starting.
@@ -195,10 +195,10 @@ Problems that came back, and the rule that stops each. How we work is in
   25–28 ms drawn in a reused `NSTableView`. Time a list with its rows hidden first: that is its floor.
 - **A lazy stack's height is a guess** from the rows it built, often 2–3× off, and it changes as it measures more.
   Anchored at the bottom, a resize jumps to the end, or past it to a blank view: lay out a short plain stack instead
-  (the chat, D95), and test a one-step resize too (Reduce Motion). Fed back into its own frame (`onGeometryChange` into
-  the list's height), it made the palette's list 45 times in one turn for one typed key (300 ms): clamp the
-  read to the most the frame shows. Give each `ForEach` element one view: a header beside its row made the stack make
-  5 to 8 times as many rows. Count bodies per key before you guess.
+  (the chat's newest rows, so every row's height is real), and test a one-step resize too (Reduce Motion). Fed back
+  into its own frame (`onGeometryChange` into the list's height), it made the palette's list 45 times in one turn for
+  one typed key (300 ms): clamp the read to the most the frame shows. Give each `ForEach` element one view: a header
+  beside its row made the stack make 5 to 8 times as many rows. Count bodies per key before you guess.
 - **An environment change alone does not call `updateNSView`.** A representable that reads a value from
   `context.environment` there misses its changes (kept pages' hosts never hid or showed again). Pass the value as a
   stored property, read in a view's body.
@@ -265,4 +265,4 @@ Problems that came back, and the rule that stops each. How we work is in
   Write the test after the bug is found.
 - **Never make artificial load to reproduce a flake.** 150 `yes` processes at load 250, beside builds, the VM and a
   Blender render, crashed the Mac. Starve only the test process instead (`taskpolicy -c background <cmd>`, `nice`),
-  and run heavy jobs through the shared load gate.
+  and run heavy jobs through the load gate, `~/ovvi-docs/heavy.sh`.
