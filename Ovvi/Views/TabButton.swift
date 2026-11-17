@@ -75,7 +75,7 @@ struct TabButton: View {
                     Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(.secondary)
                         .frame(width: 22, height: 22)
                 }
-                .buttonStyle(ChromeStyle(radius: 11))
+                .buttonStyle(ChromeStyle(radius: 5.5))
                 .tip("Close Tab", key: .hotkey("tab.close"))
                 .accessibilityLabel(KeyboardShortcut.hotkey("tab.close").map { "Close Tab \($0.glyphs)" }
                     ?? "Close Tab")

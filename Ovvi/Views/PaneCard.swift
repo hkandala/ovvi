@@ -259,30 +259,31 @@ struct PaneCard: View {
 private extension PaneCard {
     func buttons(zoomed: Bool) -> some View {
         let store = page.store
+        // Each glyph at the size that gives it the splits' ink height, about 10 pt.
         return HStack(spacing: 2) {
             if !zoomed {
-                IconButton(symbol: "pip.enter", help: "Float Pane", key: .hotkey("pane.float"), size: 22,
-                           accent: store.pane(id).map(page.floats) == true, action: {
-                               if let pane = store.pane(id) {
-                                   page.float(pane)
-                               }
-                           })
-                           .accessibilityIdentifier("pane.\(id).float")
                 IconButton(symbol: "rectangle.split.2x1", help: "Split Right", key: .hotkey("pane.split-right"),
                            size: 22, action: { Task { await page.split(id, .right) } })
                     .accessibilityIdentifier("pane.\(id).split-right")
                 IconButton(symbol: "rectangle.split.1x2", help: "Split Down", key: .hotkey("pane.split-down"),
                            size: 22, action: { Task { await page.split(id, .down) } })
                     .accessibilityIdentifier("pane.\(id).split-down")
+                IconButton(symbol: "macwindow.on.rectangle", help: "Float Pane", key: .hotkey("pane.float"),
+                           size: 22, glyph: 10, accent: store.pane(id).map(page.floats) == true, action: {
+                               if let pane = store.pane(id) {
+                                   page.float(pane)
+                               }
+                           })
+                           .accessibilityIdentifier("pane.\(id).float")
             }
             IconButton(symbol: zoomed ? "arrow.down.right.and.arrow.up.left"
                 : "arrow.up.left.and.arrow.down.right", help: zoomed ? "Restore Pane" : "Zoom Pane",
                 key: .hotkey("pane.zoom"),
-                size: 22,
+                size: 22, glyph: 10,
                 accent: zoomed) { page.zoom(id) }
                 .accessibilityIdentifier("pane.\(id).zoom")
                 .disabled(!page.canZoom(id))
-            IconButton(symbol: "xmark", help: "Close Pane", key: .hotkey("pane.close"), size: 22) {
+            IconButton(symbol: "xmark", help: "Close Pane", key: .hotkey("pane.close"), size: 22, glyph: 10) {
                 page.close(.pane(id))
             }
             .accessibilityIdentifier("pane.\(id).close")

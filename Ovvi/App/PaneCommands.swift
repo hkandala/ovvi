@@ -31,7 +31,7 @@ extension CommandList {
             }
         }
         return [
-            act("Float Pane", "pane.float", symbol: "pip.enter") { $0.float($1) },
+            act("Float Pane", "pane.float", symbol: "macwindow.on.rectangle") { $0.float($1) },
             act("Split Right", "pane.split-right", symbol: "rectangle.split.2x1") { await $0.split($1.id, .right) },
             act("Split Down", "pane.split-down", symbol: "rectangle.split.1x2") { await $0.split($1.id, .down) },
             act("Split Left", "pane.split-left", symbol: "rectangle.lefthalf.inset.filled") {

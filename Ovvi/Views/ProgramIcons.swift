@@ -17,19 +17,21 @@ let programIcons: [ProgramIcon] = {
 struct ProgramTile: View {
     let icon: String
     var letter: String?
-    @Environment(\.displayScale) private var scale
+    /// Drawn at this multiple of 22 × 18 pt, never scaled as a picture: a scaled layer stretches its pixels.
+    var scale: CGFloat = 1
+    @Environment(\.displayScale) private var displayScale
 
     var body: some View {
         let colors = programIcons.first { $0.id == (Registry.symbols.contains(icon) ? "terminal" : icon) }?.tile
-        let shape = RoundedRectangle(cornerRadius: 5, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: 5 * scale, style: .continuous)
         // The glyphs carry their own padding in a 24 pt box.
-        ProgramMark(icon: icon, letter: letter, size: 17)
+        ProgramMark(icon: icon, letter: letter, size: 17 * scale)
             .foregroundStyle(Color(hex: colors?.glyph))
-            .frame(width: 22, height: 18)
+            .frame(width: 22 * scale, height: 18 * scale)
             .background(Color(hex: colors?.background), in: shape)
             .overlay(shape.strokeBorder(LinearGradient(colors: [.white.opacity(0.12), .clear], startPoint: .top,
-                                                       endPoint: .center), lineWidth: 1))
-            .overlay(shape.inset(by: -0.5 / scale).stroke(.black.opacity(0.45), lineWidth: 1 / scale))
+                                                       endPoint: .center), lineWidth: scale))
+            .overlay(shape.inset(by: -0.5 / displayScale).stroke(.black.opacity(0.45), lineWidth: 1 / displayScale))
             .saturation(0.82)
             .brightness(-0.04)
             .accessibilityHidden(true)

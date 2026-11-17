@@ -29,18 +29,20 @@ struct IconButton: View {
     let help: String
     var key: KeyboardShortcut?
     var size: CGFloat = 28
+    /// The glyph's size in a small button: symbols differ in ink, so a row can even them out.
+    var glyph: CGFloat = 11
     var accent = false
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             Image(symbol: symbol)
-                .font(size < 28 ? .system(size: 11) : .body.weight(.medium))
+                .font(size < 28 ? .system(size: glyph) : .body.weight(.medium))
                 .foregroundStyle(accent ? AnyShapeStyle(.tint.opacity(0.6)) : AnyShapeStyle(.primary))
                 .frame(width: size, height: size)
                 .background {
                     if accent {
-                        Circle().fill(.tint.opacity(0.07))
+                        RoundedRectangle(cornerRadius: size / 4, style: .continuous).fill(.tint.opacity(0.07))
                     }
                 }
         }

@@ -100,7 +100,7 @@ private struct PluginSummary: View {
         }
         let lines = [manifest?.description.shown ?? "", row.source]
         SettingsHeader(title: manifest?.name.shown ?? row.id, note: row.version, lines: lines) {
-            ProgramTile(icon: manifest?.icon ?? Registry.missing).scaleEffect(2)
+            ProgramTile(icon: manifest?.icon ?? Registry.missing, scale: 2)
         } actions: {
             if let busy = row.busy {
                 ProgressView().controlSize(.small)

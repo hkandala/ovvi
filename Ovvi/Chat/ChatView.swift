@@ -135,7 +135,7 @@ struct Composer: View {
         Button(action: action) {
             Image(systemName: symbol).font(.system(size: 10, weight: .bold)).foregroundStyle(Look.onAccent)
                 .frame(width: 22, height: 22)
-                .background(.tint, in: .circle)
+                .background(.tint, in: .rect(cornerRadius: 5.5))
         }
         .buttonStyle(.plain)
         .tip(help, key: key)

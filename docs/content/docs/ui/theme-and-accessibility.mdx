@@ -77,14 +77,15 @@ the agent rows, the hover card, notifications):
 
 | Shown as | Word | Dark | Light | herdr status |
 |---|---|---|---|---|
-| a dashed circle (lucide's `circle-dashed`) and "Working" | working | `#60a5fa` | `#3b82f6` | `working` |
+| a ring with a dot in its middle and "Working" | working | `#60a5fa` | `#3b82f6` | `working` |
 | a circle with an exclamation mark (`circle-alert`) and "Needs you" | needs you | `#fb923c` | `#ea580c` | `blocked` |
 | a circle with a check (`circle-check`) and "Done" | finished | `#34d399` | `#10b981` | finished and not yet seen by this device |
 | ↓behind on a space row, the error tone of a notice; an alert circle and "Error" on a chat card | error | `#f85149` | `#cf222e` | — |
 
-- **Icons.** The icons and colors are t3code's: lucide's round shapes, drawn
-  by the app with strokes of 2 units in 24 and round ends, in the status
-  color. No state icon moves: no spinner and no dots for a state. They are 12 pt
+- **Icons.** Round shapes on lucide's 24-unit grid (Needs you and Done are
+  lucide's), drawn by the app with strokes of 2 units in 24 and round ends, in
+  the status color. Working's dot is 8 units wide. No state icon moves: no
+  spinner, no pulse. They are 12 pt
   everywhere: a space row, a tab, an agent row's box, the hover card, a
   state label, a menu row and the chat's loader.
 - **Priority.** A tab or a space with several agents shows one icon, its

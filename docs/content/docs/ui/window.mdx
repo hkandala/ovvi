@@ -669,9 +669,11 @@ How it works: [Layout and sizing](/docs/layout).
   (16 pt, secondary), 3 pt before herdr's pane label if set, else the
   program's name and the folder in secondary text, for example "vim ~/code" or
   "zsh ~" ([Program icons](/docs/ui/program-icons)). 8 pt in from the trailing
-  edge, five 22 × 22 pt buttons, 2 pt apart: Float Pane, Split Right, Split
-  Down, Zoom and Close, with 11 pt regular glyphs, dimmer than the title row's buttons (white
-  0.42 or black 0.45, at least 3:1 on the card). Zoom is disabled when the tab has one pane.
+  edge, five 22 × 22 pt buttons, 2 pt apart: Split Right, Split Down, Float Pane
+  (`macwindow.on.rectangle`), Zoom and Close. The glyphs are regular weight, each at the size that makes its ink
+  about 10 pt tall: 11 pt for the splits, 10 pt for the others. They are dimmer than the title row's buttons (white
+  0.42 or black 0.45, at least 3:1 on the card). A button's hover, and the lit float and zoom buttons, fill a
+  rounded rectangle (radius 5.5), never a circle. Zoom is disabled when the tab has one pane.
   A zoomed card shows only Restore Pane and Close.
   While the [New pane](/docs/ui/new-pane) chooser shows, the header says "New
   Pane".
@@ -996,7 +998,7 @@ How it works: [Scrolling, queries and links](/docs/talking-to-herdr#scrolling-qu
   card closes, floats, moves to another tab or is alone in its tab, when its
   tab moves to another space, and when another card moves into its tab.
 - A zoomed card shows only two buttons: Restore (the accent at 0.6 on an
-  accent circle at 0.07, as in Rex; no saturated blue) and Close.
+  accent rounded rectangle at 0.07; no saturated blue) and Close.
 - A split from the zoomed card restores the layout first, so the new pane
   shows. Moving the keyboard to a hidden card restores it too.
 - Restore or ⇧⌘↩ restores the layout. Esc is not used, because the program in
@@ -1086,7 +1088,7 @@ A pane can float in a small window of its own, above the main window or, kept
 on top, above other apps (D50). herdr has no floating pane, so this is
 Ovvi's own: the pane stays in its herdr tab, and other devices and herdr
 clients see it there.
-- **Float Pane** (⌥⌘↩, the `pip.enter` button in the card header, the pane's
+- **Float Pane** (⌥⌘↩, the `macwindow.on.rectangle` button in the card header, the pane's
   menus, View ▸ Pane and the palette) opens the window. Several can be open. On a
   floated pane's card the button is lit, and it brings the window to the
   front.

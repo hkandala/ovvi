@@ -148,7 +148,7 @@ struct NewPane: View {
 
     private func loader(_ agent: Chooser.Agent) -> some View {
         Loader(text: "Starting \(agent.name)…", id: "pane.\(cardID).loader") {
-            ProgramTile(icon: agent.command).scaleEffect(2).frame(width: 44, height: 36)
+            ProgramTile(icon: agent.command, scale: 2)
         }
     }
 }
