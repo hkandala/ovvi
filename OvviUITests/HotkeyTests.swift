@@ -137,7 +137,7 @@ extension OvviUITests {
         search.click()
         search.typeText("lock editing")
         let id = "keys.plugin.explorer.lock-editing", first = element(id, in: settingsWindow)
-        let second = element("\(id).1", in: settingsWindow), third = element("\(id).2", in: settingsWindow)
+        let second = element("\(id).1", in: settingsWindow)
         XCTAssertTrue(first.has(\.stringValue, "⌘E", within: 2))
         let add = element("\(id).add", in: settingsWindow)
         first.hover()
@@ -148,17 +148,7 @@ extension OvviUITests {
         XCTAssertTrue(second.has(\.stringValue, "⌥⌘Y", within: 2))
         XCTAssertEqual(first.stringValue, "⌘E")
 
-        // An added key that another action has: Use Here, or Cancel, which drops the new field.
-        second.hover()
-        add.click()
-        XCTAssertTrue(third.has(\.stringValue, "Type shortcut…", within: 2))
-        settingsWindow.typeKey("t", modifierFlags: .command)
-        XCTAssertTrue(settingsWindow.sheets.staticTexts["⌘T is New Tab’s key."].exists(within: 2))
-        XCTAssertTrue(settingsWindow.sheets.buttons["Use Here"].exists)
-        XCTAssertEqual(third.stringValue, "⌘T")
-        settingsWindow.sheets.buttons["Cancel"].click()
-        XCTAssertTrue(third.vanishes(within: 2))
-        XCTAssertEqual(second.stringValue, "⌥⌘Y")
+        useHere(id)
 
         // The second key runs the command over its card.
         settingsWindow.typeKey("w", modifierFlags: .command)
@@ -172,6 +162,34 @@ extension OvviUITests {
         removeTheSecondKey(id)
     }
 
+    /// An added key that another action has: Cancel drops the new field, Use Here takes the key.
+    private func useHere(_ id: String) {
+        let second = element("\(id).1", in: settingsWindow), third = element("\(id).2", in: settingsWindow)
+        let add = element("\(id).add", in: settingsWindow), search = element("keys.search", in: settingsWindow)
+        second.hover()
+        add.click()
+        XCTAssertTrue(third.has(\.stringValue, "Type shortcut…", within: 2))
+        settingsWindow.typeKey("t", modifierFlags: .command)
+        XCTAssertTrue(settingsWindow.sheets.staticTexts["⌘T is New Tab’s key."].exists(within: 2))
+        XCTAssertTrue(settingsWindow.sheets.buttons["Use Here"].exists)
+        XCTAssertEqual(third.stringValue, "⌘T")
+        settingsWindow.sheets.buttons["Cancel"].click()
+        XCTAssertTrue(third.vanishes(within: 2))
+        XCTAssertEqual(second.stringValue, "⌥⌘Y")
+        second.hover()
+        add.click()
+        settingsWindow.typeKey("t", modifierFlags: .command)
+        settingsWindow.sheets.buttons["Use Here"].click()
+        XCTAssertTrue(third.has(\.stringValue, "⌘T", within: 2))
+        search.click()
+        search.typeKey("a", modifierFlags: .command)
+        search.typeText("new tab")
+        XCTAssertTrue(element("keys.tab.new", in: settingsWindow).has(\.stringValue, "None", within: 2))
+        search.typeKey("a", modifierFlags: .command)
+        search.typeText("lock editing")
+        XCTAssertTrue(third.has(\.stringValue, "⌘T", within: 2))
+    }
+
     /// A click on a field records into it; its × removes that key only.
     private func removeTheSecondKey(_ id: String) {
         let first = element(id, in: settingsWindow), second = element("\(id).1", in: settingsWindow)
@@ -181,7 +199,8 @@ extension OvviUITests {
         let remove = element("\(id).remove", in: settingsWindow)
         XCTAssertTrue(remove.exists(within: 2))
         remove.click()
-        XCTAssertTrue(second.vanishes(within: 2))
+        XCTAssertTrue(element("\(id).2", in: settingsWindow).vanishes(within: 2))
+        XCTAssertEqual(second.stringValue, "⌘T")
         XCTAssertEqual(first.stringValue, "⌘E")
         let search = element("keys.search", in: settingsWindow)
         search.click()

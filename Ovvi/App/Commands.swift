@@ -42,9 +42,11 @@ extension KeyboardShortcut {
             let keys = hotkeys.keys(hotkey)
             return keys.dropFirst().contains { $0.matches(event) } || keys.first?.twin?.matches(event) == true
         }
+        // A menu item's own key stays the menu's.
         guard !matched.isEmpty, let commands = CommandList.keyWindow,
+              !commands.contains(where: { $0.key?.matches(event) == true }),
               let command = matched.lazy.compactMap({ hotkey in
-                  hotkey.scope?.hasPrefix("plugin.") == true ? commands.first { $0.id == hotkey.id }
+                  hotkey.scope?.hasPrefix("plugin.") == true ? commands.first { $0.id == hotkey.id && $0.enabled }
                       : hotkeys.keys(hotkey).first.flatMap { first in commands.first { $0.key == first } }
               }).first else { return false }
         if command.enabled {

@@ -5,7 +5,6 @@ import SwiftUI
 struct KeysPage: View {
     @State private var search = ""
     @State private var recording: Slot?
-    @State private var hovered: String?
     /// Kept after the question closes, so its words stay while it fades.
     @State private var clash: Clash?
     @State private var asking = false
@@ -59,7 +58,8 @@ struct KeysPage: View {
             ForEach(groups, id: \.self) { group in
                 Section(group) {
                     ForEach(shown.filter { $0.group == group }) { hotkey in
-                        row(hotkey, all)
+                        // A row of its own: the pointer over it runs only its body.
+                        Hovering { row(hotkey, all, hovered: $0) }
                     }
                 }
             }
@@ -88,7 +88,7 @@ struct KeysPage: View {
         }
     }
 
-    private func row(_ hotkey: Hotkey, _ all: [Hotkey]) -> some View {
+    private func row(_ hotkey: Hotkey, _ all: [Hotkey], hovered: Bool) -> some View {
         let hotkeys = Hotkeys.shared, keys = hotkeys.keys(hotkey)
         let taken = keys.lazy.compactMap { hotkeys.clash($0, for: hotkey, in: all) }.first
         let recorded = recording?.id == hotkey.id ? recording?.index : nil
@@ -117,18 +117,16 @@ struct KeysPage: View {
             }
             .frame(height: 24)
             Spacer(minLength: 12)
-            fields(hotkey, keys, shown, recorded: recorded, asked: asked)
+            fields(hotkey, shown, recorded: recorded, asked: asked, hovered: hovered)
         }
-        .contentShape(Rectangle())
-        .onHover { hovered = $0 ? hotkey.id : hovered == hotkey.id ? nil : hovered }
     }
 
     /// The key fields, stacked, with the reset button before the first and ⊕ before the last.
-    private func fields(_ hotkey: Hotkey, _ keys: [KeyboardShortcut], _ shown: [KeyboardShortcut?], recorded: Int?,
-                        asked: Clash?) -> some View
+    private func fields(_ hotkey: Hotkey, _ shown: [KeyboardShortcut?], recorded: Int?,
+                        asked: Clash?, hovered: Bool) -> some View
     {
-        let hotkeys = Hotkeys.shared, changed = hotkeys.changed(hotkey)
-        let adds = hovered == hotkey.id && recorded == nil && asked == nil && !keys.isEmpty
+        let hotkeys = Hotkeys.shared, changed = hotkeys.changed(hotkey), keys = hotkeys.keys(hotkey)
+        let adds = hovered && recorded == nil && asked == nil && !keys.isEmpty
         let add = { recording = Slot(id: hotkey.id, index: keys.count) }
         return VStack(alignment: .trailing, spacing: 6) {
             ForEach(shown.indices, id: \.self) { index in
@@ -150,7 +148,7 @@ struct KeysPage: View {
                              recording: recorded == index, asked: asked?.index == index, add: add,
                              action: { recording = slot },
                              remove: {
-                                 hotkeys.set(hotkey, keys.enumerated().filter { $0.offset != index }.map(\.element))
+                                 drop(index, of: hotkey)
                                  recording = nil
                              },
                              removeAt: { remove = (slot, $0) })
@@ -164,6 +162,14 @@ struct KeysPage: View {
         let hotkeys = Hotkeys.shared
         hotkeys.set(clash.other, hotkeys.keys(clash.other).compactMap { $0.runs(clash.key) ? clash.old : $0 })
         put(clash.key, at: clash.index, of: clash.hotkey)
+    }
+
+    private func drop(_ index: Int, of hotkey: Hotkey) {
+        var keys = Hotkeys.shared.keys(hotkey)
+        if keys.indices.contains(index) {
+            keys.remove(at: index)
+            Hotkeys.shared.set(hotkey, keys)
+        }
     }
 
     private func put(_ key: KeyboardShortcut, at index: Int, of hotkey: Hotkey) {
@@ -205,7 +211,7 @@ struct KeysPage: View {
         }
         let keys = hotkeys.keys(hotkey)
         if plain, event.specialKey == .delete || event.specialKey == .deleteForward {
-            hotkeys.set(hotkey, keys.enumerated().filter { $0.offset != slot.index }.map(\.element))
+            drop(slot.index, of: hotkey)
         } else if plain, event.charactersIgnoringModifiers == "\u{1B}" {
             // Esc: no change.
         } else if let key = KeyboardShortcut(event: event) {
@@ -265,7 +271,7 @@ private struct KeyField: View {
                 .contentShape(shape)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(title)
+        .accessibilityLabel(index == 0 ? title : "\(title), shortcut \(index + 1)")
         .accessibilityValue(text)
         .accessibilityIdentifier(index == 0 ? id : "\(id).\(index)")
         .accessibilityAction(named: "Add Shortcut", add)
@@ -273,10 +279,21 @@ private struct KeyField: View {
             if removes {
                 Button("Remove Shortcut", systemImage: "xmark.circle.fill", action: remove)
                     .labelStyle(.iconOnly).buttonStyle(.borderless).foregroundStyle(.secondary).help("Remove Shortcut")
-                    .padding(.trailing, 5)
                     .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { removeAt($0) }
+                    .onDisappear { removeAt(.null) }
+                    .padding(.trailing, 5)
                     .accessibilityIdentifier("\(id).remove")
             }
         }
+    }
+}
+
+/// Whether the pointer is over the content.
+private struct Hovering<Content: View>: View {
+    @ViewBuilder let content: (Bool) -> Content
+    @State private var hovered = false
+
+    var body: some View {
+        content(hovered).contentShape(Rectangle()).onHover { hovered = $0 }
     }
 }
