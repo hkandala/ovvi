@@ -113,7 +113,9 @@ extension OvviUITests {
         let first = element("tab.\(tabs[0])"), last = element("tab.\(tabs[11])"), fades = element("tabs.fades")
         XCTAssertTrue(fades.has(\.stringValue, "trailing", within: 2))
         // XCUITest's scroll is a wheel with no phases. Natural scrolling sets which sign turns it down (one way
-        // here, the other on CI); a turn up leaves the strip at its first tab.
+        // here, the other on CI); a turn up leaves the strip at its first tab. The pointer is warped onto the tab
+        // first: on CI, XCUITest's move there played a step of its path last and left the pointer under the strip.
+        CGWarpMouseCursorPosition(first.center.screenPoint)
         for sign in [-1.0, 1] where !fades.stringValue.contains("leading") {
             first.scroll(byDeltaX: 0, deltaY: 3000 * sign)
             _ = fades.has(\.stringValue, "leading", within: 3)

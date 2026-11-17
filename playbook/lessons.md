@@ -42,6 +42,10 @@ Problems that came back, and the rule that stops each. How we work is in
   late moves on a busy runner shorten its hold (a spring-load missed). A release posted before the app's drag session
   began, or 0.5 s after a spring-load (likely while it built the page), left a session that never ended. Release
   after `willBeginAt` or once the test saw the hold's effect (the helper's `press` and `release`).
+- **XCUITest's pointer move can end short on CI.** It played a step of its path last, and the pointer stayed on
+  the path short of the point. A click carries its own location, but a wheel goes where the pointer is: it went to the
+  view under a tab strip, and to the card beside. Warp the pointer onto the point (`CGWarpMouseCursorPosition`)
+  before a wheel.
 - **Know XCUITest's input gaps on macOS.** Drags need `click(forDuration:thenDragTo:)`; scroll is a wheel
   with no phases; a ⌘ key whose menu item is disabled is never delivered; `press(forDuration:)` makes no click on a
   SwiftUI button (hold one with `click(forDuration:thenDragTo:)` to itself). Real trackpad gestures go
