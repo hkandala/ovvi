@@ -2,7 +2,7 @@ import HerdrKit
 import SwiftUI
 
 struct Sidebar: View {
-    static let widths: ClosedRange<Double> = 227 ... 480
+    static let widths: ClosedRange<Double> = 244 ... 480
     static let rowInsets = EdgeInsets(top: 0, leading: 10, bottom: 8, trailing: 3)
 
     let pages: WindowPages

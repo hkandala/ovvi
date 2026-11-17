@@ -267,7 +267,7 @@ extension OvviUITests {
         XCTAssertEqual(row.label, "beta")
     }
 
-    func testSidebarHandleResizesWithinItsBounds() {
+    func testSidebarHandleResizesWithinItsBounds() async throws {
         step("Sidebar handle: the tab strip's Go Back lines up with its card")
         let sidebar = element("sidebar"), handle = element("sidebar.resize")
         let back = element("titlebar.back"), card = element("pane.w1:p1")
@@ -284,14 +284,25 @@ extension OvviUITests {
             XCTAssertTrue(until(1) { abs(back.frame.minX - card.frame.minX) <= 1 }, "\(back.frame) \(card.frame)")
         }
 
-        step("Sidebar handle: drags resize within 227 and 480, and the tab strip follows the card")
+        step("Sidebar handle: drags resize within 244 and 480, and the tab strip follows the card")
         drag(60)
         XCTAssertEqual(sidebar.frame.width, start + 60, accuracy: 2)
         drag(-600)
-        XCTAssertEqual(sidebar.frame.width, 227, accuracy: 1)
+        XCTAssertEqual(sidebar.frame.width, 244, accuracy: 1)
         drag(600)
         XCTAssertEqual(sidebar.frame.width, 480, accuracy: 1)
         drag(start - 480)
+
+        step("Sidebar handle: at its narrowest the foot's summary keeps all its words")
+        try await report(newTab("narrow-foot").pane, "blocked")
+        let summary = element("sidebar.agents")
+        XCTAssertTrue(summary.has(\.stringValue, "1 needs you", within: 5), summary.stringValue)
+        let words = summary.frame.width
+        let from = handle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        from.click(forDuration: 0.2, thenDragTo: from.withOffset(CGVector(dx: -600, dy: 0)))
+        XCTAssertTrue(until(2) { abs(sidebar.frame.width - 244) <= 1 }, "\(sidebar.frame)")
+        XCTAssertEqual(summary.frame.width, words, accuracy: 0.5, "the summary's words are cut")
+        from.click(forDuration: 0.2, thenDragTo: from.withOffset(CGVector(dx: start - 244, dy: 0)))
     }
 
     func testTheSelectedRowScrollsIntoView() async throws {

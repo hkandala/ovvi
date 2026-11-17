@@ -17,6 +17,7 @@ struct SidebarFoot: View {
     var body: some View {
         HStack(spacing: 0) {
             AgentsSummary(stores: pages.machineStores, open: panel == .agents) { panel = .agents }
+                .layoutPriority(1)
             Spacer(minLength: gap)
             IconButton(symbol: "keyboard", help: "Keyboard Shortcuts", key: .hotkey("app.shortcuts")) {
                 panel = .shortcuts
