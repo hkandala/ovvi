@@ -298,7 +298,7 @@ extension OvviUITests {
     /// that.
     func testEnableChatStartsAnAgentAgainInItsSession() async throws {
         let (tab, pane) = try await startChat(["-appearance", "dark"], environment: "OVVI_STAND_IN_EXIT_HOOKS=12 ",
-                                              chat: false, plain: true)
+                                              plain: true)
         let enable = element("pane.\(pane).enable-chat")
         XCTAssertTrue(enable.exists(within: 10))
         XCTAssertEqual(enable.label, "Relaunch with Chat")
@@ -317,7 +317,7 @@ extension OvviUITests {
 
     /// A floating pane's title row has the same agent control: Relaunch with Chat there brings its chat into the float.
     func testRelaunchWithChatFromAFloatingPane() async throws {
-        let pane = try await startChat(chat: false, plain: true).pane
+        let pane = try await startChat(plain: true).pane
         XCTAssertTrue(element("pane.\(pane).enable-chat").exists(within: 10))
         let window = float(pane)
         XCTAssertTrue(element("float.\(pane).info", in: window).exists(within: 5))
@@ -338,7 +338,7 @@ extension OvviUITests {
         let failed = NSTemporaryDirectory() + "ovvi-fail-resume-" + UUID().uuidString
         defer { try? FileManager.default.removeItem(atPath: failed) }
         let environment = "OVVI_STAND_IN_TITLE=1 OVVI_STAND_IN_FAIL_RESUME=\(failed) "
-        let pane = try await startChat(environment: environment, chat: false, plain: true).pane
+        let pane = try await startChat(environment: environment, plain: true).pane
         let enable = element("pane.\(pane).enable-chat")
         XCTAssertTrue(enable.exists(within: 10))
         try await send("hello\r", to: pane)

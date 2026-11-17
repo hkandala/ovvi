@@ -50,7 +50,7 @@ extension OvviUITests {
         let home = Self.archivedHome + "/.codex"
         try? FileManager.default.removeItem(atPath: home)
         defer { try? FileManager.default.removeItem(atPath: home) }
-        let pane = try await startChat(agent: 1, environment: "CODEX_HOME=\(home) ", chat: false, plain: true).pane
+        let pane = try await startChat(agent: 1, environment: "CODEX_HOME=\(home) ", plain: true).pane
         try await waitFor(pane) { $0.contains("Ask Codex") }
         try await send("hello\r", to: pane)
         try await waitFor(pane) { $0.contains("• done") }

@@ -60,7 +60,7 @@ extension OvviUITests {
     /// Relaunch with Chat of a session that has a history: the agent runs its SessionStart hooks 6 s after it shows,
     /// and meanwhile the chat shows a loader, not the empty chat of a new conversation.
     func testAResumedChatShowsALoaderUntilItsHistoryIsIn() async throws {
-        let pane = try await startChat(environment: "OVVI_STAND_IN_SLOW_START=6 ", chat: false, plain: true).pane
+        let pane = try await startChat(environment: "OVVI_STAND_IN_SLOW_START=6 ", plain: true).pane
         let enable = element("pane.\(pane).enable-chat")
         XCTAssertTrue(enable.exists(within: 10))
         try await send("hello\r", to: pane)

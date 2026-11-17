@@ -49,7 +49,7 @@ extension OvviUITests {
     }
 
     func testChatRelaunchesAnIdleAgentOnly() async throws {
-        let (_, agent) = try await startChat(chat: false, plain: true)
+        let (_, agent) = try await startChat(plain: true)
         let asking = try await split(agent)
         let busy = try await split(asking, "down")
         try await waitForPrompt(busy)
