@@ -65,8 +65,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         ])
         let center = UNUserNotificationCenter.current()
         center.delegate = self
-        // The Dock badge needs `.badge`. The UI tests pass `-askNotifications NO`: macOS's unanswered ask would sit
-        // over the window's top right and take their clicks.
+        // macOS asks once; later calls answer at once. The Dock badge needs `.badge`. The UI tests pass
+        // `-askNotifications NO`: macOS's unanswered ask would sit over the window's top right and take their clicks.
         if UserDefaults.standard.bool(forKey: "askNotifications") {
             center.requestAuthorization(options: [.alert, .badge]) { _, _ in }
         }

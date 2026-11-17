@@ -22,7 +22,7 @@ final class HostStore {
     /// Set only when it changes: a view of one tab reads its own.
     private(set) var tabPanes: [String: [Pane]] = [:]
     /// The agents by state. Observation skips an equal value: every window's sidebar foot reads every session's.
-    var stateCounts: [AgentState: Int] = [:]
+    private(set) var stateCounts: [AgentState: Int] = [:]
     private(set) var focusedWorkspaceID: String?
     var notice: Notice?
     /// Set by the notice's own hover: a notice under the pointer stays.
@@ -296,6 +296,24 @@ final class HostStore {
         closeArrived()
         Task { await updateGit(all: false) }
         return changes
+    }
+}
+
+extension HostStore {
+    /// Kept here: views that read every pane's state redraw on any agent's change, every capsule and sidebar row.
+    func showStrongest() {
+        for workspace in workspaces {
+            for tab in workspace.tabs {
+                let tabAgents = panes(in: tab.id).filter { $0.state != nil }
+                let strongest = tabAgents.max { $0.state ?? .idle < $1.state ?? .idle }
+                // Observation skips an equal value, but not an identical object.
+                if tab.agent !== strongest {
+                    tab.agent = strongest
+                }
+            }
+            workspace.state = workspace.tabs.compactMap { $0.agent?.state }.max()
+        }
+        stateCounts = Dictionary(grouping: panes.compactMap(\.state), by: \.self).mapValues(\.count)
     }
 }
 

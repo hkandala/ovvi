@@ -1,7 +1,8 @@
 import Foundation
 import HerdrKit
 
-/// Settings ▸ General ▸ Balance splits automatically: a pane's open or close evens its run, as Balance Splits does.
+/// Settings ▸ General ▸ Balance splits automatically: a pane's open or close evens the side-by-side or stacked panes
+/// it opens or closes in, as Balance Splits does.
 /// Best effort: a balance herdr refuses never fails the open or the close.
 extension HostStore {
     static var balances: Bool {

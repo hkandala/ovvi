@@ -6,7 +6,8 @@ import HerdrKit
 /// A plain left drag goes to the program and selects in the card. A mouse program (pi) selects both end cells in
 /// reverse video (herdr draws black on white), but libghostty takes an end cell only past its 60 % point, and a cell
 /// only the program took shows white beside the card's blue: so libghostty gets points at the cells' edges. A ⇧, ⌥ or
-/// ⌃ drag and a double or triple click select in the card alone; the program gets such a single click on its release
+/// ⌃ drag and a double or triple click select in the card alone (their cells differ from the program's); the program
+/// gets such a single click on its release
 /// when the pointer stayed in its cell. ponytail: the program's cells show white for a frame after each move or click
 /// (its selection comes back through herdr) and when its text scrolls under the selection. Once herdr reports the
 /// mouse mode, follow Ghostty (a drag to a mouse program only, a ⇧-drag to the card).

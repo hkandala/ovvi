@@ -27,7 +27,7 @@ struct OvviApp: App {
             ContentView()
         }
         .windowToolbarStyle(.unifiedCompact)
-        // `WindowReader.lastFrame`, which AppKit cascades; with none, the screen's visible frame.
+        // AppKit cascades from `WindowReader.lastFrame`; with none, the screen's visible frame.
         .defaultWindowPlacement { _, context in
             WindowReader.lastFrame.map(FloatFrames.placement)
                 ?? WindowPlacement(.center, size: context.defaultDisplay.visibleRect.size)

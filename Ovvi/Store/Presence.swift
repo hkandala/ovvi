@@ -48,8 +48,8 @@ extension HostStore {
         openMarked = open
         guard !changes.isEmpty || !opens.isEmpty else { return }
         // Panes first: a tool reads `ovvi-shown` at each click, and each workspace's mark is one herdr call (an ssh
-        // trip remote). At quit all at once, or the 1 s wait cuts the rest; an earlier batch then sends only its
-        // unmarks, and the quit's batch unmarks the rest after it.
+        // trip remote). At quit all at once, or the 1 s wait cuts the rest; at the quit, an earlier batch sends
+        // only its unmarks, and the quit's batch unmarks the rest after it.
         let quitting = Self.quitting
         marking = Task { [marking] in
             await marking?.value
