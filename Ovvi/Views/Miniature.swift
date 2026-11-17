@@ -83,8 +83,8 @@ private struct MiniCard: View {
     }
 }
 
-/// A card with no picture yet, live in its tile until it takes one (`WindowPages.photographNext`). One that does not
-/// settle in 10 s (a page that never loads, a machine away) keeps its symbol.
+/// A card with no picture yet, live in its tile until it takes one (`WindowPages.photographNext`); its picture comes
+/// through `noted`.
 private struct TilePhoto: View {
     let pane: HostStore.Pane
     let page: Page
@@ -106,40 +106,23 @@ private struct TilePhoto: View {
             }
         }
         .tile(content, scale)
-        .background(PlaceView(place: place))
+        .background(WindowPlace(place: place))
         .task(id: settled) {
-            // Settled, after its first paint and the chat's rows' fade in.
-            try? await Task.sleep(for: settled ? .milliseconds(500) : .seconds(10))
-            guard !Task.isCancelled, let id = pane.terminalID else { return }
-            if settled, let browser, browser.loaded, browser.failure == nil, browser.asking == nil {
+            guard settled, let id = pane.terminalID else { return }
+            // After its first paint and the chat's rows' fade in.
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            if let browser, browser.loaded, browser.failure == nil, browser.asking == nil {
                 browser.view.takePicture()
-            } else if settled, let plugin, plugin.web.bridge?.failure == nil {
+            } else if let plugin, plugin.web.bridge?.failure == nil {
                 plugin.web.view.takePicture()
-            } else if settled, chat != nil, let picture = place.view.flatMap(ChatProbe.picture) {
+            } else if let chat, chat.problem == nil, let picture = place.view.flatMap(ChatProbe.picture) {
                 page.terminals.keep(id, picture)
-            }
-            // A picture comes through `noted`, which ends this view.
-            try? await Task.sleep(for: .seconds(10))
-            if !Task.isCancelled {
+            } else {
+                // A card that cannot load keeps its symbol.
                 page.terminals.pages?.photographed(id)
             }
         }
-    }
-
-    final class Place {
-        weak var view: NSView?
-    }
-
-    private struct PlaceView: NSViewRepresentable {
-        let place: Place
-
-        func makeNSView(context _: Context) -> NSView {
-            let view = NSView()
-            place.view = view
-            return view
-        }
-
-        func updateNSView(_: NSView, context _: Context) {}
     }
 }
 

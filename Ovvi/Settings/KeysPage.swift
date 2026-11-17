@@ -295,29 +295,6 @@ private struct Hovering<Content: View>: View {
     }
 }
 
-/// A view's place in its window, from AppKit: a SwiftUI global frame inside a Form row did not match the pointer.
-private final class Place {
-    weak var view: NSView?
-}
-
-private struct WindowPlace: NSViewRepresentable {
-    let place: Place
-
-    func makeNSView(context _: Context) -> NSView {
-        let view = ClickThrough()
-        place.view = view
-        return view
-    }
-
-    func updateNSView(_: NSView, context _: Context) {}
-
-    private final class ClickThrough: NSView {
-        override func hitTest(_: NSPoint) -> NSView? {
-            nil
-        }
-    }
-}
-
 private struct PointerOver: NSViewRepresentable {
     let action: (Bool) -> Void
 

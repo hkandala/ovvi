@@ -21,6 +21,7 @@ final class WindowPages {
     /// The card drawn live in its tile for its first picture, and those done (`photographNext`).
     var overviewPhoto: String?
     @ObservationIgnored var overviewPhotographed: Set<String> = []
+    @ObservationIgnored var overviewPhotoTimeout: Task<Void, Never>?
     @ObservationIgnored var tileScale = tile
     @ObservationIgnored var overviewScrolling = false
     @ObservationIgnored var panelOpen = false

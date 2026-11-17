@@ -187,7 +187,7 @@ class BrowserView: WKWebView {
             DispatchQueue.main.async {
                 if pages.panelOpen {
                     NotificationCenter.default.post(name: FilterField.panelKeysTaken, object: nil)
-                } else {
+                } else if !pages.overview {
                     pages.current?.focusKeyboardCard()
                 }
             }

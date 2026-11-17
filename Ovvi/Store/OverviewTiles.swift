@@ -21,8 +21,10 @@ extension WindowPages {
         overviewTabs = [:]
         overviewScrolling = false
         overviewSettling?.cancel()
-        (overviewPhoto, overviewPhotographed) = (nil, [])
+        overviewPhotographed = []
         showTerminals()
+        // After the show: a card of the tab the overview opens stays.
+        endPhoto()
         current?.focusKeyboardCard()
     }
 
@@ -55,10 +57,15 @@ extension WindowPages {
         return Dictionary(kept) { first, _ in first }
     }
 
-    func tileCards(_ page: Page, _ tab: String) -> [(String, String)] {
+    /// The panes a tile draws: its zoomed one, else all but the floated ones.
+    func tilePanes(_ page: Page, _ tab: String) -> [HostStore.Pane] {
         let panes = (page.store.tabPanes[tab] ?? []).filter { !page.floats($0) }
         let zoomed = panes.filter { $0.id == page.zoomedPanes[tab] }
-        return (zoomed.isEmpty ? panes : zoomed).compactMap { pane in
+        return zoomed.isEmpty ? panes : zoomed
+    }
+
+    func tileCards(_ page: Page, _ tab: String) -> [(String, String)] {
+        tilePanes(page, tab).compactMap { pane in
             (pane.plugin == nil || pane.placeholder) && page.shownChat(pane) == nil ? pane.terminalID
                 .map { ($0, pane.id) } : nil
         }
@@ -84,43 +91,56 @@ extension WindowPages {
     }
 
     /// One at a time, in the tiles in view: a browser, plugin or chat card with no picture draws live in its tile
-    /// until it takes one (`TilePhoto`), and a web card made for it goes after. One already made takes its picture
-    /// where it is: in a tile, its web view would leave its card.
+    /// until it takes one (`TilePhoto`), at most 10 s, and a web card made for it goes after. One already laid out
+    /// takes its picture where it is: in a tile, its web view would leave its card.
     func photographNext() {
-        guard overview, !overviewScrolling, let page = current, page.store.state == .live else { return }
-        let waiting = (overviewTabs[page.id] ?? []).reversed().flatMap { tab in
-            let panes = (page.store.tabPanes[tab] ?? []).filter { !page.floats($0) }
-            let zoomed = panes.filter { $0.id == page.zoomedPanes[tab] }
-            return (zoomed.isEmpty ? panes : zoomed).compactMap { pane in
-                pane.terminalID.flatMap { id in
-                    !overviewPhotographed.contains(id) && terminals.picture(id) == nil
-                        && (pane.browser != nil || pane.plugin?.manifest?.entry != nil || page.shownChat(pane) != nil)
-                        ? id : nil
+        guard overview, !overviewScrolling else { return }
+        let waiting = current.map { page in
+            page.store.state != .live ? [] : (overviewTabs[page.id] ?? []).reversed().flatMap { tab in
+                tilePanes(page, tab).compactMap { pane in
+                    pane.terminalID.flatMap { id in
+                        !overviewPhotographed.contains(id) && terminals.picture(id) == nil
+                            && (pane.browser != nil || pane.plugin?.manifest?.entry != nil
+                                || page.shownChat(pane) != nil) ? id : nil
+                    }
                 }
             }
-        }
+        } ?? []
         if let photo = overviewPhoto, waiting.contains(photo) {
             return
         }
+        endPhoto()
         for id in waiting {
-            guard let view = terminals.webView(id) else {
+            guard let view = terminals.webView(id), !view.bounds.isEmpty else {
                 overviewPhoto = id
+                overviewPhotoTimeout = Task {
+                    try? await Task.sleep(for: .seconds(10))
+                    if !Task.isCancelled {
+                        photographed(id)
+                    }
+                }
                 return
             }
             overviewPhotographed.insert(id)
             view.takePicture()
         }
-        overviewPhoto = nil
     }
 
     /// Its picture taken, or none in time.
     func photographed(_ id: String) {
         guard overviewPhoto == id else { return }
         overviewPhotographed.insert(id)
+        endPhoto()
+        photographNext()
+    }
+
+    /// Its tile scrolled out, another session shows or the overview closes: a card made only for its picture goes.
+    private func endPhoto() {
+        guard let id = overviewPhoto else { return }
         overviewPhoto = nil
+        overviewPhotoTimeout?.cancel()
         if terminals.droppable(id) {
             terminals.drop(id)
         }
-        photographNext()
     }
 }

@@ -92,6 +92,30 @@ struct ChatProbe: NSViewRepresentable {
     }
 }
 
+/// A view's place in its window, from AppKit: a SwiftUI global frame inside a Form row did not match the pointer. It
+/// takes no clicks.
+final class Place {
+    weak var view: NSView?
+}
+
+struct WindowPlace: NSViewRepresentable {
+    let place: Place
+
+    func makeNSView(context _: Context) -> NSView {
+        let view = ClickThrough()
+        place.view = view
+        return view
+    }
+
+    func updateNSView(_: NSView, context _: Context) {}
+
+    private final class ClickThrough: NSView {
+        override func hitTest(_: NSPoint) -> NSView? {
+            nil
+        }
+    }
+}
+
 struct PaneTitle: View {
     let pane: HostStore.Pane?
 

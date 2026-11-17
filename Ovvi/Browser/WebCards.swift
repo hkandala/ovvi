@@ -74,7 +74,6 @@ extension PaneViewRegistry {
     }
 
     func noted(_ id: String) {
-        pages?.photographed(id)
         Self.pictured.removeAll { $0.registry === self && $0.id == id }
         Self.pictured.append(Kept(registry: self, id: id))
         let bytes = { (kept: Kept) in kept.registry?.picture(kept.id).map { $0.bytesPerRow * $0.height } ?? 0 }
@@ -86,6 +85,7 @@ extension PaneViewRegistry {
             oldest.registry?.webView(oldest.id)?.shot.image = nil
             oldest.registry?.pictures.removeAll { $0.id == oldest.id }
         }
+        pages?.photographed(id)
     }
 
     func keptPicture(_ id: String) -> CGImage? {
