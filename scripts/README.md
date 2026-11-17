@@ -25,7 +25,8 @@ Run them from the repository root. When a Makefile target runs a script, use the
   and runs `usage.swift`, `record-window.swift` and `stress.py` for the tests.
 - `stand_in.py` and the `*-stand-in.py` agents play Claude Code, Codex, OpenCode and pi in the chat tests and the
   welcome scene.
-- `welcome-scene.sh`, `welcome-scene/` and `onboarding/` build the scene that `record-onboarding.sh` films.
+- `welcome-scene.sh`, `welcome-scene/` and `onboarding/` build the scene that `record-onboarding.sh` films, on the
+  2x display of `hidpi-display.m`.
 
 ## CI and releases
 
@@ -42,14 +43,14 @@ the pointer and the keyboard of the Mac that runs it. Record when no one uses th
 Before you record:
 
 1. Install `herdr`, `node`, `ffmpeg`, `claude` and Xcode.
-2. Start the script from an agent pane that has `ANTHROPIC_*` in its environment. Claude Code in the scene signs in
-   only with those variables, never with `~/.claude`.
+2. Start the script from an agent's pane: it has `ANTHROPIC_API_KEY` or `ANTHROPIC_BASE_URL` in its environment.
+   Claude Code in the scene signs in only with those variables, never with `~/.claude`.
 3. Give the terminal app Screen Recording and Accessibility access (System Settings ▸ Privacy & Security). The script
    stops and names the one that is missing.
 4. Quit Ovvi Debug.
 
 Then run `scripts/record-onboarding.sh`. It takes the GUI lock (`/tmp/ovvi-gui.lock`) and frees it at the end. The
-clips go into `Ovvi/Onboarding/Clips`; the films, and a copy of the clips with a still of each, go into
+clips go into `Ovvi/Onboarding/Clips`. The films, and a copy of the clips with a still of each, go into
 `.build/onboarding/`. Commit the clips.
 
 The pictures are sharp on a 4K screen because the script films at 2x on any Mac:
@@ -60,6 +61,7 @@ The pictures are sharp on a 4K screen because the script films at 2x on any Mac:
   the end the display goes, and macOS puts the screens back as they were.
 - Each clip films the 1200 x 800 pt window at 2400 x 1600 pixels. The welcome shows it at 960 x 640 pt, which is
   1920 x 1280 pixels on a 2x screen (a 4K screen at its default size too), so the clip is encoded at that size.
-  HEVC at CRF 18 keeps the text of the terminals sharp (about 15 MB for the ten clips). `CRF=<n>` changes it.
+  HEVC at CRF 18 keeps the text of the terminals sharp, at about 1.6 times the size of CRF 24. `CRF=<n>` changes
+  it.
 - The films show the welcome panel at 2x (2048 x 1408 pixels, 60 fps): sharp at their own size on a 4K screen. A
   film at full screen on a 4K screen is enlarged, and not sharp: macOS draws at 2x at most.

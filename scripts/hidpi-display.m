@@ -1,7 +1,7 @@
 // A display that exists only in software, drawn at 2x, 60 Hz, sRGB, made the main display: pictures and films come out
 // at 2x whatever screen the Mac has (on a 1x monitor they come out at 1x, and look soft on a Retina or 4K screen).
 // record-onboarding.sh films on a 4K one (1920 x 1080 pt, the default). Prints "ready" when it is the main display,
-// and ends when stdin closes; the display goes with the process, and macOS puts the screens back as they were.
+// and ends when the process that started it ends. The display goes with it, and macOS puts the screens back.
 // CGVirtualDisplay is private API in CoreGraphics.
 // Build: clang -fobjc-arc -framework Foundation -framework CoreGraphics hidpi-display.m -o hidpi-display
 // Usage: hidpi-display [<width> <height>]   (in points)
@@ -35,11 +35,13 @@ static int fail(NSString *text) {
 
 int main(int argc, char **argv) {
     @autoreleasepool {
-        unsigned int width = argc == 3 ? (unsigned)atoi(argv[1]) : 1920;
-        unsigned int height = argc == 3 ? (unsigned)atoi(argv[2]) : 1080;
-        if (width < 640 || height < 480) return fail(@"usage: hidpi-display [<width> <height>]");
+        int asked[2] = {argc == 3 ? atoi(argv[1]) : 1920, argc == 3 ? atoi(argv[2]) : 1080};
+        if ((argc != 1 && argc != 3) || asked[0] < 640 || asked[1] < 480 || asked[0] > 4096 || asked[1] > 4096)
+            return fail(@"usage: hidpi-display [<width> <height>]   (in points)");
+        unsigned int width = (unsigned)asked[0], height = (unsigned)asked[1];
         CGVirtualDisplayDescriptor *descriptor = [NSClassFromString(@"CGVirtualDisplayDescriptor") new];
-        if (!descriptor) return fail(@"no CGVirtualDisplay in this macOS");
+        if (!descriptor || !NSClassFromString(@"CGVirtualDisplayMode"))
+            return fail(@"no CGVirtualDisplay in this macOS");
         descriptor.queue = dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0);
         descriptor.name = @"Ovvi HiDPI";
         // About 163 pixels per inch, as a 27-inch 4K panel.
@@ -62,11 +64,11 @@ int main(int argc, char **argv) {
                                                                                      height:height
                                                                                 refreshRate:60]];
         if (![display applySettings:settings]) return fail(@"the display took no 2x mode");
-        CGDirectDisplayID id = display.displayID;
+        CGDirectDisplayID made = display.displayID;
         // The main display is the one at (0, 0). Moving only this one is undone: every display moves by its offset.
         CGRect at = CGRectNull;
         for (int i = 0; i < 50 && CGRectIsNull(at); i++) {
-            CGRect bounds = CGDisplayBounds(id);
+            CGRect bounds = CGDisplayBounds(made);
             if (bounds.size.width == width) at = bounds;
             else [NSThread sleepForTimeInterval:0.1];
         }
@@ -75,7 +77,7 @@ int main(int argc, char **argv) {
         uint32_t count = 0;
         CGDisplayConfigRef change;
         CGGetOnlineDisplayList(16, online, &count);
-        CGBeginDisplayConfiguration(&change);
+        if (CGBeginDisplayConfiguration(&change) != kCGErrorSuccess) return fail(@"the screens cannot change now");
         for (uint32_t i = 0; i < count; i++) {
             if (CGDisplayMirrorsDisplay(online[i]) != kCGNullDirectDisplay) continue;
             CGRect bounds = CGDisplayBounds(online[i]);
@@ -84,16 +86,16 @@ int main(int argc, char **argv) {
         }
         // Only while this process runs.
         if (CGCompleteDisplayConfiguration(change, kCGConfigureForAppOnly) != kCGErrorSuccess ||
-            CGMainDisplayID() != id)
+            CGMainDisplayID() != made)
             return fail(@"the display did not become the main display");
-        CGDisplayModeRef mode = CGDisplayCopyDisplayMode(id);
+        CGDisplayModeRef mode = CGDisplayCopyDisplayMode(made);
         size_t pixels = CGDisplayModeGetPixelWidth(mode);
         CGDisplayModeRelease(mode);
         if (pixels != width * 2) return fail([NSString stringWithFormat:@"the display runs %zu pixels wide", pixels]);
         printf("ready\n");
         fflush(stdout);
-        char line[256];
-        while (fgets(line, sizeof line, stdin)) {}
+        // Also after a kill -9 of the script: it then has a new parent.
+        for (pid_t parent = getppid(); getppid() == parent;) sleep(1);
     }
     return 0;
 }

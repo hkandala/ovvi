@@ -26,12 +26,12 @@ cleanup() {
     if [ -n "$BACKDROP" ] && ps -p "$BACKDROP" -o command= | grep -qF "$C/backdrop"; then kill "$BACKDROP" || true; fi
     # A take that did not end well keeps no film: it was not checked.
     [ -n "$FILM" ] && rm -f "$FILM"
-    # The 4K display ends when its stdin closes, and macOS puts the screens back.
-    if [ -n "$SCREEN" ]; then
-        exec 4>&-
+    if [ -n "$up" ] && [ -d "$W" ]; then scene down "$S" >/dev/null 2>&1 || true; fi
+    # The 4K display goes, and macOS puts the screens back.
+    if [ -n "$SCREEN" ] && ps -p "$SCREEN" -o command= | grep -qF "$C/display"; then
+        kill "$SCREEN"
         wait "$SCREEN" 2>/dev/null || true
     fi
-    if [ -n "$up" ] && [ -d "$W" ]; then scene down "$S" >/dev/null 2>&1 || true; fi
     [ -n "$lock" ] && rm -rf /tmp/ovvi-gui.lock
     return 0
 }
@@ -299,7 +299,7 @@ pictures() {
 [0:v]trim=end_frame=1,loop=loop=239:size=1,setpts=N/60/TB,fps=60[a];\
 [1:v]trim=end_frame=1,loop=loop=245:size=1,setpts=N/60/TB,fps=60[b];\
 [a][b]xfade=transition=fade:duration=0.5:offset=3.5" \
-        -c:v libx264 -crf 8 -preset slow -pix_fmt yuv420p "${film%.mp4}-pictures.mp4" || exit 1
+        -c:v libx264 -threads 4 -crf 8 -preset slow -pix_fmt yuv420p "${film%.mp4}-pictures.mp4" || exit 1
     mv "${film%.mp4}-pictures.mp4" "$film"
 }
 
@@ -403,7 +403,7 @@ print(flat[0], flat[-1] + 1 / 60) if flat else print(0, 0)")
     ffmpeg -loglevel error -y -ss "$start" -t "$(python3 -c "print($tab + 1)")" -i "$film" \
         -ss "$(python3 -c "print($start + $settled + 0.3)")" -i "$film" -filter_complex "$cut;\
 [1:v]trim=end_frame=1,loop=loop=275:size=1,setpts=N/60/TB,fps=60[b];[a][b]concat=n=2:v=1" \
-        -c:v libx264 -crf 8 -preset slow -pix_fmt yuv420p "${film%.mp4}-reply.mp4" || exit 1
+        -c:v libx264 -threads 4 -crf 8 -preset slow -pix_fmt yuv420p "${film%.mp4}-reply.mp4" || exit 1
     mv "${film%.mp4}-reply.mp4" "$film"
 }
 
@@ -471,7 +471,7 @@ a='255*clip(16.5-min(min(hypot(X-45.5,Y-45.5),hypot(X-91.5,Y-45.5)),hypot(X-137.
 [a][s]xfade=transition=fade:duration=0.5:offset=$(python3 -c "print(round($length - 0.6, 2))"),format=yuv420p,\
 setparams=color_primaries=bt709:color_trc=iec61966-2-1:colorspace=bt709[v]" \
         -map "[v]" -c:v libx265 -tag:v hvc1 -crf "${CRF:-18}" -preset slow -an -movflags +faststart \
-        -x265-params log-level=error:colorprim=bt709:transfer=iec61966-2-1:colormatrix=bt709 "$CLIPS/welcome-$1-$2.mp4"
+        -x265-params log-level=error:pools=4:colorprim=bt709:transfer=iec61966-2-1:colormatrix=bt709 "$CLIPS/welcome-$1-$2.mp4"
 }
 
 clips() {
@@ -543,7 +543,7 @@ edge = subprocess.run(["ffmpeg", "-loglevel", "error", "-i", sys.argv[1], "-fram
 sys.exit(0 if edge and max(abs(b - 128) for b in edge) <= 12 else 1)
 EOF
         ffmpeg -loglevel error -y -ss "$(python3 -c "print(max(0, $first - 0.5))")" -i "$film" -vf fps=60 \
-            -c:v libx264 -crf 14 -preset slow -pix_fmt yuv420p -movflags +faststart "$OUT/film-$look.mp4"
+            -c:v libx264 -threads 4 -crf 14 -preset slow -pix_fmt yuv420p -movflags +faststart "$OUT/film-$look.mp4"
         rm -f "$film"
     done
 }
@@ -556,15 +556,18 @@ publish() {
     done
 }
 
-# The 4K display (3840 x 2160 pixels at 2x) as the main display, until cleanup closes its stdin.
-screen() {
+# The 4K display (3840 x 2160 pixels at 2x) as the main display, until this script ends.
+hidpi() {
+    mkdir -p "$C"
+    rm -f "$C/display"
     clang -fobjc-arc -framework Foundation -framework CoreGraphics "$REPO/scripts/hidpi-display.m" -o "$C/display"
-    rm -f "$C/screen"
-    mkfifo "$C/screen"
-    "$C/display" 1920 1080 <"$C/screen" >"$C/display.log" 2>&1 &
+    "$C/display" 1920 1080 >"$C/display.log" 2>&1 &
     SCREEN=$!
-    exec 4>"$C/screen"
-    for _ in $(seq 100); do grep -q ready "$C/display.log" && return; sleep 0.1; done
+    for _ in $(seq 100); do
+        grep -q ready "$C/display.log" && return
+        kill -0 "$SCREEN" 2>/dev/null || break
+        sleep 0.1
+    done
     echo "no 4K display: $(cat "$C/display.log")" && exit 1
 }
 
@@ -601,13 +604,20 @@ preflight
 echo "Recording the welcome: about 25-30 minutes (build 4, clips 8, encoding 4, films 10). Quit Ovvi Debug if it runs."
 echo "Don't touch the mouse or the keyboard meanwhile; Ctrl-C stops it and cleans up."
 case $STEPS in
-clips) screen && clips ;;
+clips)
+    hidpi
+    clips
+    ;;
 encode) encode_all ;;
-films) screen && films && publish ;;
+films)
+    hidpi
+    films
+    publish
+    ;;
 all)
     say "Building the Release app (about 4 min)"
     make app DERIVED_DATA="$DERIVED_DATA" >"/tmp/$WORLD-build.log" 2>&1 || { tail -20 "/tmp/$WORLD-build.log"; exit 1; }
-    screen
+    hidpi
     clips
     encode_all
     films

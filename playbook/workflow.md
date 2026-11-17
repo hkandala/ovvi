@@ -60,11 +60,11 @@ Phase files, reports for the user and temporary files live in `~/ovvi-docs/`, ne
 
 - `~/ovvi-docs/phases/<phase>/`: one folder per phase. Its name says what the phase does, in two to four
   words (`own-look`, `releases-and-updates`), never a number. `phase.md` holds the user's words, the picks and
-  the tracks; each track writes its Findings in `<track>.md`; reports for the user sit beside them.
+  the tracks. Each track writes its Findings in `<track>.md`. Reports for the user sit beside them.
 - `~/ovvi-docs/scratch/<agent>/`: screenshots, logs, mock-ups and other temporary files. The orchestrator
   empties it when the phase ends.
 
-If a folder is missing, create it. The brief names any other file an agent needs.
+If a folder is missing, create it. `~/ovvi-docs/brief.md` or the agent's brief names any other file it needs.
 
 ## Mechanics
 
@@ -130,8 +130,9 @@ OWNER=<your agent name> make vm-e2e DERIVED_DATA=/tmp/ovvi-dd-<phase>-<track> ON
 ### The GUI lock
 
 Only what must run on the Mac itself takes the GUI lock, `/tmp/ovvi-gui.lock`: **the onboarding recordings** (the
-welcome film and its retakes, which need the Mac's display for full quality), and a check that the VM cannot
-make (the Mac's own GPU or display, a measure the user asked for on this Mac). No other UI test run holds it.
+welcome film and its retakes, which run the real Claude Code with the credentials of an agent's pane on this Mac),
+and a check that the VM cannot make (the Mac's own GPU or display, a measure the user asked for on this Mac). No
+other UI test run holds it.
 
 ```sh
 ( mkdir /tmp/ovvi-gui.lock || exit 1; trap 'rm -rf /tmp/ovvi-gui.lock' EXIT
@@ -287,9 +288,10 @@ track of each finding. End with a verdict."
 Tools enforce what they can (SwiftFormat, SwiftLint, the compiler in Swift 6 mode with strict
 concurrency). The rest:
 
-- **Ponytail.** Read the ponytail skill before writing code. Does it need to exist? Is it already here? Does the stdlib, SwiftUI, AppKit or an
-  installed package do it? Only then the minimum. No protocol with one conformer except `Exec` and
-  `Multiplexer` (one named seam keeps herdr's JSON and argv out of the views). No factories, managers, coordinators or service layers; no scaffolding for later. A
+- **Ponytail.** Read the ponytail skill before writing code. Does it need to exist? Is it already here? Does the
+  stdlib, SwiftUI, AppKit or an installed package do it? Only then the minimum. No protocol with one conformer
+  except `Exec` (the one fake, for pacing tests) and `Multiplexer` (one named seam keeps herdr's JSON and argv out
+  of the views). No factories, managers, coordinators or service layers; no scaffolding for later. A
   deliberate shortcut gets a `// ponytail:` comment with its ceiling and upgrade path. A type gets its own
   file when more than one file uses it or it passes about 200 lines; a family of small related types (a model
   and its parts, an error enum) may share one file. No backward-compatibility or migration
