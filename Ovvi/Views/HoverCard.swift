@@ -55,7 +55,11 @@ private struct HoverPanelHost: ViewModifier {
     @State private var panels = HoverPanels()
 
     func body(content: Content) -> some View {
-        content.environment(panels).onDisappear { panels.monitor.map(NSEvent.removeMonitor) }.overlay {
+        content.environment(panels).onDisappear {
+            panels.monitor.map(NSEvent.removeMonitor)
+            panels.monitor = nil
+        }
+        .overlay {
             // Always here, so the panel is the view inserted and scales about its own edge, not the window's.
             GeometryReader { proxy in
                 let open = panels.open, origin = proxy.frame(in: .global).origin
