@@ -92,8 +92,8 @@ Ovvi posts a notification when an agent needs you, when an agent finishes, and w
 1. Make sure that Ovvi can post notifications. macOS asks once, at the first launch. If you clicked Don't Allow, open
    System Settings ▸ Notifications ▸ Ovvi and turn on Allow notifications. The link Notification Settings… in
    Settings ▸ Agents opens the same page.
-2. Make sure that the switch for that kind is on in Settings ▸ Agents: When an agent needs you, When an agent
-   finishes and When an agent sends one ([Settings](/docs/reference/settings#agents)).
+2. Make sure that the switch for that kind is on in Settings ▸ Agents ([Settings](/docs/reference/settings#agents)).
+   The switches are When an agent needs you, When an agent finishes and When an agent sends one.
 3. Make sure that herdr's integration for the agent is installed on its machine
    ([Agent integrations](/docs/guide/setup#agent-integrations)). Without it, herdr does not know the agent's state.
 
@@ -176,8 +176,8 @@ It also deletes `~/.cache/ovvi` and `~/.local/state/ovvi` on This Mac. Ovvi keep
 machine too. To delete them there, run `rm -rf ~/.cache/ovvi ~/.local/state/ovvi` on the machine.
 
 If macOS blocks the terminal from a folder, the script lists what it kept and exits with an error. To delete those
-folders too, turn on your terminal app in System Settings ▸ Privacy & Security ▸ Full Disk Access, open the terminal
-again, and run the script again.
+folders too, turn on your terminal app in System Settings ▸ Privacy & Security ▸ Full Disk Access. Then open the
+terminal again, and run the script again.
 
 ## FAQ
 

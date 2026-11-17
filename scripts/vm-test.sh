@@ -63,7 +63,7 @@ tart exec "$vm" git --version >/dev/null
 # APFS clones: instant, and the next build cannot change a run under way.
 cp -cR "$dd/Build/Products" scripts OvviUITests/Fixtures "$run/"
 # The guest's own display is 1x (Tart takes the Mac's main screen's scale): the tests run on a 2x display of 1024 x 768
-# points that it mirrors (scripts/hidpi-display.m), which ends with the run.
+# points that it mirrors (scripts/hidpi-display.m), which ends with the run. Without one, they run at 1x.
 clang -fobjc-arc -framework Foundation -framework CoreGraphics scripts/hidpi-display.m -o "$run/hidpi-display"
 mkdir "$run/bin"
 cp -c "$(command -v herdr)" "$run/bin/"
@@ -84,7 +84,7 @@ xctestrun=$(cd "$run/Products" && ls -t ./*.xctestrun | head -1)
 status=0
 tart exec "$vm" zsh -c "cd '$guest/runs/$$' && { ./hidpi-display 1024 768 mirror >hidpi.log 2>&1 & } &&
     for _ in {1..50}; do grep -q . hidpi.log && break; sleep 0.2; done &&
-    { grep -q ready hidpi.log || { cat hidpi.log >&2; exit 1; } } &&
+    { grep -q ready hidpi.log || { echo 'no 2x display, the tests run at 1x:'; cat hidpi.log; } >&2; } &&
     PATH=\$PWD/bin:\$PATH scripts/e2e.sh xcodebuild test-without-building \
     -xctestrun Products/$xctestrun -destination platform=macOS -resultBundlePath vm.xcresult $(printf '%q ' "$@")" ||
     status=$?

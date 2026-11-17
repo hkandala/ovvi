@@ -4,38 +4,47 @@
 #
 #   scripts/docs-pictures.sh [<derived data>]   # after `make build DERIVED_DATA=…`; about 3 minutes
 #
-# It takes the VM lock for the run (playbook/workflow.md), waiting up to 30 minutes for a run that holds it.
+# It takes the VM lock for the run (playbook/workflow.md). Unlike a test run, it waits up to 30 minutes for a run that
+# holds it: the pictures are taken by hand, rarely. The guest is set up as `make vm-e2e` leaves it (the shared Xcode).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 world=docs-pictures
 
 if [[ ${1:-} != --in-vm ]]; then
-    dd=${1:-${DERIVED_DATA:-/tmp/ovvi-dd-docs}} vm=ovvi-test runs=/tmp/ovvi-vm/runs locks=~/.config/ovvi-tart/locks
+    locks=~/.config/ovvi-tart/locks
+    [[ -n ${DOCS_LOCKED:-} ]] || DOCS_LOCKED=1 exec lockf -k -t 1800 "$locks/ovvi-test.lock" "$0" "$@"
+    dd=${1:-${DERIVED_DATA:-/tmp/ovvi-dd-docs}} vm=ovvi-test runs=/tmp/ovvi-vm/runs
     app="$dd/Build/Products/Debug/Ovvi Debug.app"
     [ -d "$app" ] || { echo "no $app: make build DERIVED_DATA=$dd" >&2; exit 1; }
-    run=$runs/docs-$$
-    trap 'rm -rf "$run"' EXIT
+    echo "${OWNER:-$USER} docs-pictures $(date +%H:%M)" >"$locks/ovvi-test.owner"
+    run=$runs/docs-$$ guest="/Volumes/My Shared Files"
+    trap 'rm -rf "$run" "$locks/ovvi-test.owner"' EXIT
     mkdir -p "$run/bin" "$run/shots"
     cp -cR "$app" scripts "$run/"
     cp -c "$(command -v herdr)" "$run/bin/"
+    clang -fobjc-arc -framework Foundation -framework CoreGraphics scripts/hidpi-display.m -o "$run/bin/hidpi-display"
+    # As vm-test.sh: the VM up, and its shares mounted again when a resume left them stale.
     plugins/extra/tart-vm/bin/ovvi-tart start "$vm" "--dir=xcode:$(dirname "$(dirname "$(xcode-select -p)")"):ro" \
         "--dir=runs:$runs" >/dev/null
-    lockf -k -t 1800 "$locks/ovvi-test.lock" sh -c "echo '${OWNER:-$USER} docs-pictures' >'$locks/ovvi-test.owner'
-        tart exec $vm zsh -lc \"cd '/Volumes/My Shared Files/runs/docs-$$' && PATH=\\\$PWD/bin:\\\$PATH \
-            scripts/docs-pictures.sh --in-vm\"" || status=$?
+    for _ in $(seq 60); do tart exec "$vm" true 2>/dev/null && break; sleep 1; done
+    tart exec "$vm" test -d "$guest/runs/docs-$$" || tart exec "$vm" zsh -c "sudo /sbin/umount -f '$guest' 2>/dev/null
+        sudo mkdir -p '$guest' && sudo /sbin/mount_virtiofs com.apple.virtio-fs.automount '$guest'"
+    status=0
+    tart exec "$vm" zsh -lc "cd '$guest/runs/docs-$$' && PATH=\$PWD/bin:\$PATH scripts/docs-pictures.sh --in-vm" ||
+        status=$?
     cp "$run"/shots/*.png docs/public/images/ 2>/dev/null || true
-    exit "${status:-0}"
+    exit $status
 fi
 
 # In the guest.
 scene=scripts/welcome-scene.sh W=/tmp/$world
 shot() {
+    ax front
     "$scene" shot "$world" "$1" >/dev/null
     cp "$W/shots/$1-dark.png" "shots/$1.png"
 }
 # The display ends with this script.
-clang -fobjc-arc -framework Foundation -framework CoreGraphics scripts/hidpi-display.m -o /tmp/hidpi-display
-/tmp/hidpi-display 1280 800 >/tmp/docs-hidpi.log 2>&1 &
+hidpi-display 1280 800 >/tmp/docs-hidpi.log 2>&1 &
 trap 'source "$W/scene.env" 2>/dev/null && "$scene" down "$world" "$S"' EXIT
 for _ in $(seq 50); do grep -q . /tmp/docs-hidpi.log && break; sleep 0.2; done
 grep -q ready /tmp/docs-hidpi.log || { cat /tmp/docs-hidpi.log >&2; exit 1; }
@@ -45,18 +54,18 @@ source "$W/scene.env"
 ax() { "$W/tools/ax" "$pid" "$@"; }
 sleep 3
 shot window
-# A card alone: a click on its title makes it the active pane, then Zoom Pane fills the tab with it.
+# A card alone: a click on its title makes it the active pane, which shows its buttons; its zoom fills the tab.
 zoom() {
     "$scene" click "$world" "pane.$1.title"
-    ax press 'title:Zoom Pane'
+    ax press "pane.$1.zoom"
     sleep 1
 }
 zoom "$c1"
 shot chat-view
-ax press 'title:Restore Pane'
+ax press "pane.$c1.zoom"
 zoom "$b"
 shot browser
-ax press 'title:Restore Pane'
+ax press "pane.$b.zoom"
 # The tabs of w1 do not all fit: a press needs no place on screen. The overview shows a snapshot of each tab seen.
 for tab in t2 t3 t4; do
     ax press "tab.w1:$tab"
@@ -66,7 +75,7 @@ zoom "$g"
 ax press 'title:Git Home'
 sleep 2
 shot git
-ax press 'title:Restore Pane'
+ax press "pane.$g.zoom"
 # The tab's one card: File Explorer.
 ax press tab.w1:t5
 sleep 1
@@ -75,8 +84,9 @@ ax press 'title:File Tree'
 sleep 1
 shot file-explorer
 "$scene" click "$world" w5
-"$scene" click "$world" titlebar.new-tab
-sleep 1
+ax press titlebar.new-tab
+for _ in $(seq 50); do ax find 'pane.*' | grep -q '\.chooser\.' && break; sleep 0.2; done
+ax find 'pane.*' | grep -q '\.chooser\.' || { echo "no New Pane list" >&2; exit 1; }
 shot new-pane
 "$scene" click "$world" w1
 "$scene" click "$world" sidebar.overview

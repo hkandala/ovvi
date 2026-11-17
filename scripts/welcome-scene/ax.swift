@@ -106,7 +106,8 @@ case "find", "press":
         if press, matches(element) != nil {
             exit(AXUIElementPerformAction(element, kAXPressAction as CFString) == .success ? 0 : 1)
         }
-        if let id = matches(element), let rect = frame(element) {
+        // An element out of the layout (a new card's, for a moment) can have an infinite frame.
+        if let id = matches(element), let rect = frame(element), rect.minX.isFinite, rect.minY.isFinite {
             print(id, show(rect), value(element, kAXValueAttribute) as? String ?? "")
         }
         guard depth < 60 else { return }

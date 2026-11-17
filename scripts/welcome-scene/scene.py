@@ -214,7 +214,7 @@ INDEX = '''
 <body>
   <header>
     <a class="brand" href="/">shortlink</a>
-    <nav><a href="/" class="here">Links</a><a href="/">Analytics</a><a href="/">Settings</a></nav>
+    <nav><a href="/" class="here">Links</a><a href="/">Stats</a><a href="/">Settings</a></nav>
   </header>
   <main>
     <div class="title"><h1>Links</h1><span id="total"></span></div>
@@ -440,8 +440,8 @@ Links expire after 30 days by default. `days: 0` keeps a link.
 '''
 
 INDEX_THEME = INDEX.replace(
-    '<nav><a href="/" class="here">Links</a><a href="/">Analytics</a><a href="/">Settings</a></nav>',
-    '<nav><a href="/" class="here">Links</a><a href="/">Analytics</a><a href="/">Settings</a>\n'
+    '<nav><a href="/" class="here">Links</a><a href="/">Stats</a><a href="/">Settings</a></nav>',
+    '<nav><a href="/" class="here">Links</a><a href="/">Stats</a><a href="/">Settings</a>\n'
     '      <button class="theme" id="theme" title="Switch appearance">◐</button></nav>')
 
 APP_THEME = APP + '''\
@@ -850,7 +850,7 @@ ROADMAP = '''
 - [ ] Custom domains guide
 
 ## Next
-- [ ] Analytics: clicks per day, per country
+- [ ] Stats: clicks per day, per country
 - [ ] QR codes for each link
 - [ ] Teams: shared links and roles
 

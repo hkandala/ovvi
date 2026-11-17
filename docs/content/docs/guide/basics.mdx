@@ -15,7 +15,7 @@ Ovvi shows what herdr runs. herdr keeps your terminals alive in four levels:
 Everything you do in Ovvi changes herdr. herdr's own terminal UI and other herdr clients see the same sessions,
 spaces, tabs and panes.
 
-![The Ovvi window with the sidebar, the tab strip and two panes](/images/window.png)
+![The Ovvi window with the sidebar, the tab strip and two cards](/images/window.png)
 
 ## The window
 
@@ -64,9 +64,9 @@ A pane that another herdr client uses shows "In use elsewhere · Take Back" in i
 
 ### Notices
 
-A short message shows at the bottom of the window after an action fails, when a move is not possible, or when an
-agent points you to a pane. It goes away after a few seconds. It stays while the pointer is over it. Some notices have
-a button, for example Show or Retry.
+A notice is a short message at the bottom of the window. It shows after an action fails or a move is not possible, and
+when an agent points you to a pane. It goes away after a few seconds. It stays while the pointer is over it. Some
+notices have a button, for example Show or Retry.
 
 ## The sidebar
 
@@ -78,15 +78,15 @@ The sidebar lists the sessions that you opened in this window, one page per sess
 - Archived Sessions, the closed sessions of your agents ([Archived Sessions](/docs/guide/agents#archived-sessions)).
 - The foot.
 
+Drag the sidebar's right edge to make it wider or narrower.
+
 ### The foot
 
 The last row of the sidebar has these items:
 
-- At the left, a summary of the agents on this machine, for example "2 need you". Click it to open the Agents panel
-  ([The Agents panel](/docs/guide/agents#the-agents-panel)).
+- At the left, a summary of the agents in the sessions that your windows show on this machine, for example "2 need
+  you". Click it to open the Agents panel ([The Agents panel](/docs/guide/agents#the-agents-panel)).
 - At the right, three buttons: Keyboard Shortcuts (⌘/), Command Palette (⌘K) and Settings (⌘,).
-
-Drag the sidebar's right edge to make it wider or narrower.
 
 ### Sessions
 
@@ -315,9 +315,16 @@ the menus show Split Right and Choose… and the other splits, and New Space and
 
 ### Change a pane's kind
 
-Five commands replace the active pane with another kind, in the same place and folder: Open Terminal Here, Start
-Agent Here, Open Browser Here, Open File Explorer Here and Open Git Here. They are in the File menu, the pane menu and the command
-palette. Each asks first if a program other than the shell runs.
+These commands replace the active pane with another kind, in the same place and folder:
+
+- Open Terminal Here
+- Start Agent Here
+- Open Browser Here
+- Open File Explorer Here
+- Open Git Here
+
+They are in the File menu, the pane menu and the command palette. Each asks first if a program other than the shell
+runs.
 
 Replace Pane (⇧⌘R) on an agent, browser or plugin pane gives a new shell with the New Pane list.
 

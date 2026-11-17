@@ -10,6 +10,7 @@ Run them from the repository root. When a Makefile target runs a script, use the
 | `stress.py <session>` | fill a throwaway session with hundreds of tabs and panes, to check speed |
 | `reset-app-data.sh [--dry-run] [bundle id]` | delete the local data of one Ovvi build, to start as on a fresh install |
 | `record-onboarding.sh [clips\|encode\|films\|all] [dark\|light\|both]` | record the welcome's clips and films again after the look changes ([below](#record-the-welcome)) |
+| `docs-pictures.sh [derived data]` | take the docs' ten pictures again (`docs/public/images`), at 2x, in the Tart VM, after `make build` |
 
 ## Run by make
 
@@ -25,8 +26,9 @@ Run them from the repository root. When a Makefile target runs a script, use the
   and runs `usage.swift`, `record-window.swift` and `stress.py` for the tests.
 - `stand_in.py` and the `*-stand-in.py` agents play Claude Code, Codex, OpenCode and pi in the chat tests and the
   welcome scene.
-- `welcome-scene.sh`, `welcome-scene/` and `onboarding/` build the scene that `record-onboarding.sh` films, on the
-  2x display of `hidpi-display.m`.
+- `welcome-scene.sh`, `welcome-scene/` and `onboarding/` build the scene that `record-onboarding.sh` films and
+  `docs-pictures.sh` takes, on the 2x display of `hidpi-display.m`. `vm-test.sh` runs the VM's tests on one too
+  (`mirror`, so the VM's own screen shows them).
 
 ## CI and releases
 
