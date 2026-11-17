@@ -83,6 +83,7 @@ private struct TipTrigger: ViewModifier {
     let text: String
     let key: String?
     @Environment(HoverPanels.self) private var panels: HoverPanels?
+    @Environment(\.isEnabled) private var enabled
     @State private var id = UUID()
     /// Not observed: a write at every move would redraw the trigger.
     @State private var frame = Frame()
@@ -92,6 +93,7 @@ private struct TipTrigger: ViewModifier {
 
     func body(content: Content) -> some View {
         content
+            .environment(\.isEnabled, enabled)
             .onHover { over in
                 guard let panels else { return }
                 if over, !text.isEmpty {
@@ -100,6 +102,8 @@ private struct TipTrigger: ViewModifier {
                     panels.leave(id)
                 }
             }
+            // SwiftUI sends a disabled view no hover: the button stays disabled, and its tip still shows.
+            .environment(\.isEnabled, true)
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { rect in
                 frame.rect = rect
                 panels?.move(id, to: rect)
