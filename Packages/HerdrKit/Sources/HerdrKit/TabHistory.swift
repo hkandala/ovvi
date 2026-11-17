@@ -2,7 +2,7 @@
 /// Each tab has one entry, at its latest visit.
 public struct TabHistory: Equatable, Sendable {
     public private(set) var ids: [String] = []
-    public private(set) var place = -1
+    public var place = -1
 
     public init() {}
 
@@ -32,9 +32,5 @@ public struct TabHistory: Equatable, Sendable {
             index += offset
         }
         return steps
-    }
-
-    public mutating func go(to index: Int) {
-        place = index
     }
 }

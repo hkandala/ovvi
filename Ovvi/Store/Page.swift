@@ -110,7 +110,7 @@ final class Page: Identifiable {
     func goInHistory(to index: Int, _ id: String? = nil) {
         guard history.ids.indices.contains(index), id.map({ history.ids[index] == $0 }) ?? true,
               let workspace = store.workspace(of: history.ids[index]) else { return }
-        history.go(to: index)
+        history.place = index
         select(workspace, tab: history.ids[index])
     }
 

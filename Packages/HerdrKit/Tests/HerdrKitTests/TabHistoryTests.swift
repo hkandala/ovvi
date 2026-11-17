@@ -15,13 +15,13 @@ private func shown(_ ids: String...) -> TabHistory {
 
 @Test func `a step adds nothing; a show after Back drops the tabs ahead`() {
     var history = shown("a", "b", "c", "d")
-    history.go(to: 1)
+    history.place = 1
     history.show("b")
     #expect(history.ids == ["a", "b", "c", "d"] && history.place == 1)
     #expect(history.trail(1, from: "b", max: 10) { _ in true } == [2, 3])
     history.show("d")
     #expect(history.ids == ["a", "b", "d"] && history.place == 2)
-    history.go(to: 0)
+    history.place = 0
     history.show("e")
     #expect(history.ids == ["a", "e"])
 }

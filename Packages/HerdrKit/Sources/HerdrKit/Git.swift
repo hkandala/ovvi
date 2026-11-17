@@ -50,24 +50,19 @@ public extension GitStatus {
         return [lines[0] + "/HEAD"] + ["refs", "packed-refs", "reftable", "config"].map { common + "/" + $0 }
     }
 
-    /// Follows `files`: a change to one makes the head and counts read again.
-    static func watch(_ root: String, exec: any Exec) async -> AsyncStream<Void>? {
-        guard let files = await files(root, exec: exec) else { return nil }
-        return Files.watch(paths: files, exec: exec)
-    }
-
-    /// `watch`, tried again each 60 s while the root is no repository (a `git init` comes later) or after a watch
-    /// ended (a dropped link); a later one yields once, for what came meanwhile. None without `git`.
+    /// A change to one of `files` makes the head and counts read again. Tried again each 60 s while the root is no
+    /// repository (a `git init` comes later) or after a watch ended (a dropped link); a later one yields once, for
+    /// what came meanwhile. None without `git`.
     static func follow(_ root: String, git: Bool, exec: any Exec) -> AsyncStream<Void> {
         let (stream, continuation) = AsyncStream<Void>.makeStream(bufferingPolicy: .bufferingNewest(1))
         let task = Task {
             var tried = false
             while git, !Task.isCancelled {
-                if let changes = await watch(root, exec: exec) {
+                if let paths = await files(root, exec: exec) {
                     if tried {
                         continuation.yield()
                     }
-                    for await _ in changes {
+                    for await _ in Files.watch(paths: paths, exec: exec) {
                         continuation.yield()
                     }
                 }

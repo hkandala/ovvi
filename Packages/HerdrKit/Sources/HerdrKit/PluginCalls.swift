@@ -96,12 +96,7 @@ public struct PluginCalls: Sendable {
             let git = gitRuns ? await Git.root(path, exec: exec) != nil : false
             return try await Files.paths(path, git: git, exec: exec)
         case "files.write":
-            let data = if let base64 = args.base64 {
-                try Data(base64Encoded: base64) ?? args.notBase64()
-            } else {
-                try Data(args.need(\.text, "text").utf8)
-            }
-            return try await ["hash": Files.save(data, to: path, replacing: args.over, exec: exec)]
+            return try await ["hash": Files.save(args.data(), to: path, replacing: args.over, exec: exec)]
         case "files.move":
             _ = try await exec.checkedOutput(["sh", "-c", Self.moveScript, "sh", path, args.path(\.target, "target")])
             return nil
@@ -248,8 +243,11 @@ private struct Args: Decodable {
     let paths, argv: [String]?
     let limit, timeout: Int?
 
-    func notBase64() throws -> Data {
-        throw PluginError("failed", "base64 is not base64")
+    /// `base64`'s bytes, else `text`'s.
+    func data() throws -> Data {
+        guard let base64 else { return try Data(need(\.text, "text").utf8) }
+        guard let data = Data(base64Encoded: base64) else { throw PluginError("failed", "base64 is not base64") }
+        return data
     }
 
     func need(_ key: KeyPath<Self, String?>, _ name: String) throws -> String {

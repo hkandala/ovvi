@@ -227,15 +227,7 @@ public actor SSHExec: Exec {
         }
         connection = await pid()
         guard connection != nil else { throw failed(0, "The SSH connection did not start") }
-        started()
-    }
-
-    private func started() {
-        blocked = nil
-        retry = nil
-        failures = 0
-        lookup = nil
-        relay = nil
+        (blocked, retry, failures, lookup, relay) = (nil, nil, 0, nil, nil)
     }
 
     private func failed(_ status: Int32, _ text: String) -> HerdrError {
