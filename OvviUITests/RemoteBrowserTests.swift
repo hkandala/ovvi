@@ -111,28 +111,18 @@ extension OvviUITests {
 
     /// Each time a new name: WebKit keeps a spare connection to the last one.
     private func reloadsAfterTheForwardEnds(_ browser: String, _ port: Int, in remote: XCUIElement) async throws {
-        let ports = try await Self.post("\(one)/ssh-unforward", Data("ovvi-key".utf8))
-        XCTAssertFalse(ports.isEmpty)
-        open("healed.localhost:\(port)", in: browser, remote)
-        XCTAssertTrue(
-            page(from: "healed.localhost:\(port)", in: remote).exists(within: connect),
-            shown(browser, remote),
-        )
-        let pids = try await Self.post("\(one)/ssh-drop", Data("ovvi-key".utf8))
-        XCTAssertFalse(pids.isEmpty)
-        open("dropped.localhost:\(port)", in: browser, remote)
-        XCTAssertTrue(
-            page(from: "dropped.localhost:\(port)", in: remote).exists(within: connect),
-            shown(browser, remote),
-        )
-        addTeardownBlock { [one] in _ = try? await Self.post("\(one)/ssh-drop", Data("ovvi-key".utf8)) }
-        let stopped = try await Self.post("\(one)/ssh-stop", Data("ovvi-key".utf8))
-        XCTAssertFalse(stopped.isEmpty)
-        open("stopped.localhost:\(port)", in: browser, remote)
-        XCTAssertTrue(
-            page(from: "stopped.localhost:\(port)", in: remote).exists(within: connect),
-            shown(browser, remote),
-        )
+        for (end, name) in [("ssh-unforward", "healed"), ("ssh-drop", "dropped"), ("ssh-stop", "stopped")] {
+            if end == "ssh-stop" {
+                addTeardownBlock { [one] in _ = try? await Self.post("\(one)/ssh-drop", Data("ovvi-key".utf8)) }
+            }
+            let ended = try await Self.post("\(one)/\(end)", Data("ovvi-key".utf8))
+            XCTAssertFalse(ended.isEmpty, end)
+            open("\(name).localhost:\(port)", in: browser, remote)
+            XCTAssertTrue(
+                page(from: "\(name).localhost:\(port)", in: remote).exists(within: connect),
+                shown(browser, remote),
+            )
+        }
     }
 
     /// The who page through the machine for `host` (sshd's process may be `sshd-session`).
