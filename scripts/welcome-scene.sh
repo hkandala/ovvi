@@ -9,7 +9,8 @@
 # Hold the GUI lock (playbook/workflow.md) from `up` to `down`: the app runs and takes clicks meanwhile. Copy the shots
 # out before `down`. Example: `up demo work light`, `shot demo chat`, `click demo w1:t2`, `shot demo git`,
 # `click demo titlebar.machine`, `shot demo machines`, `down demo work`. `click` brings the app in front first and
-# clicks only into its window; source /tmp/<world>/scene.env for the agents' panes (c1 c2 cx pi), e.g.
+# clicks only into its window; source /tmp/<world>/scene.env for the agents' panes (c1 c2 cx pi) and the browser,
+# Git and File Explorer cards of w1 (b g f), e.g.
 # `click demo "pane.$c1.zoom"` to show the chat alone.
 #
 # The world /tmp/<world>/ holds its own herdr (XDG_CONFIG_HOME), a clean zsh (ZDOTDIR), Ovvi's config folder and
@@ -180,13 +181,13 @@ for port in random.sample(range(5173, 5300), 127):
     for _ in $(seq 60); do o "$w1" "$R/shortlink" info --json >/dev/null 2>&1 && break; sleep 1; done
 
     # The plugins and the agents, through Ovvi; then each agent's prompt once it is up.
-    local c1 c2 cx pi g
+    local c1 c2 cx pi b g f
     c1=$(o "$w1" "$R/shortlink" agent claude --json | pane)
-    o "$w1" "$R/shortlink" open browser "http://localhost:$port/" --beside "$c1" >/dev/null
+    b=$(o "$w1" "$R/shortlink" open browser "http://localhost:$port/" --beside "$c1" --json | pane)
     c2=$(o "$t2" "$R/shortlink" agent claude --json | pane)
     o "$t2" "$R/shortlink" open git . uncommitted --beside "$c2" >/dev/null
-    o "$t4" "$R/shortlink" open git . "$(git -C "$R/shortlink" rev-parse --short HEAD)" --beside "$t4" >/dev/null
-    o "$t5" "$R/shortlink" open ./README.md --beside "$t5" >/dev/null
+    g=$(o "$t4" "$R/shortlink" open git . "$(git -C "$R/shortlink" rev-parse --short HEAD)" --beside "$t4" --json | pane)
+    f=$(o "$t5" "$R/shortlink" open ./README.md --beside "$t5" --json | pane)
     cx=$(o "$w2" "$R/api" agent codex --json | pane)
     o "$w2" "$R/api" open git . uncommitted --beside "$cx" >/dev/null
     pi=$(o "$w3" "$R/docs" agent pi --json | pane)
@@ -200,7 +201,7 @@ for port in random.sample(range(5173, 5300), 127):
     h pane rename "$cx" "Rate limit" >/dev/null
     h pane rename "$pi" "Custom domains guide" >/dev/null
     h pane rename "$w4" "Publish 0.3.0" >/dev/null
-    printf 'c1=%q\nc2=%q\ncx=%q\npi=%q\n' "$c1" "$c2" "$cx" "$pi" >>"$W/scene.env"
+    printf 'c1=%q\nc2=%q\ncx=%q\npi=%q\nb=%q\ng=%q\nf=%q\n' "$c1" "$c2" "$cx" "$pi" "$b" "$g" "$f" >>"$W/scene.env"
     for p in "$c1" "$c2" "$cx" "$pi"; do
         h pane wait-output "$p" --match "stand-in" --timeout 30000 >/dev/null
     done

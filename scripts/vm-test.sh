@@ -62,6 +62,9 @@ tart exec "$vm" git --version >/dev/null
 
 # APFS clones: instant, and the next build cannot change a run under way.
 cp -cR "$dd/Build/Products" scripts OvviUITests/Fixtures "$run/"
+# The guest's own display is 1x (Tart takes the Mac's main screen's scale): the tests run on a 2x display of 1024 x 768
+# points that it mirrors (scripts/hidpi-display.m), which ends with the run.
+clang -fobjc-arc -framework Foundation -framework CoreGraphics scripts/hidpi-display.m -o "$run/hidpi-display"
 mkdir "$run/bin"
 cp -c "$(command -v herdr)" "$run/bin/"
 # The tests find their fixtures and scripts by this checkout's path (#filePath): the same path in the guest leads to the
@@ -79,7 +82,10 @@ rm -rf "$dd/vm.xcresult"
 # The newest: an Xcode or SDK update leaves the old one beside it.
 xctestrun=$(cd "$run/Products" && ls -t ./*.xctestrun | head -1)
 status=0
-tart exec "$vm" zsh -c "cd '$guest/runs/$$' && PATH=\$PWD/bin:\$PATH scripts/e2e.sh xcodebuild test-without-building \
+tart exec "$vm" zsh -c "cd '$guest/runs/$$' && { ./hidpi-display 1024 768 mirror >hidpi.log 2>&1 & } &&
+    for _ in {1..50}; do grep -q . hidpi.log && break; sleep 0.2; done &&
+    { grep -q ready hidpi.log || { cat hidpi.log >&2; exit 1; } } &&
+    PATH=\$PWD/bin:\$PATH scripts/e2e.sh xcodebuild test-without-building \
     -xctestrun Products/$xctestrun -destination platform=macOS -resultBundlePath vm.xcresult $(printf '%q ' "$@")" ||
     status=$?
 mv "$run/vm.xcresult" "$dd/" 2>/dev/null && echo "result: $dd/vm.xcresult" >&2

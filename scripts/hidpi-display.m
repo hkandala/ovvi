@@ -1,10 +1,11 @@
 // A display that exists only in software, drawn at 2x, 60 Hz, sRGB, made the main display: pictures and films come out
 // at 2x whatever screen the Mac has (on a 1x monitor they come out at 1x, and look soft on a Retina or 4K screen).
-// record-onboarding.sh films on a 4K one (1920 x 1080 pt, the default). Prints "ready" when it is the main display,
-// and ends when the process that started it ends. The display goes with it, and macOS puts the screens back.
+// record-onboarding.sh films on a 4K one (1920 x 1080 pt, the default). With `mirror`, the other displays mirror it
+// instead, so a Tart VM's own screen still shows everything (vm-test.sh, docs-pictures.sh). Prints "ready" when it is
+// the main display, and ends when the process that started it ends. The display goes with it, and macOS puts the screens back.
 // CGVirtualDisplay is private API in CoreGraphics.
 // Build: clang -fobjc-arc -framework Foundation -framework CoreGraphics hidpi-display.m -o hidpi-display
-// Usage: hidpi-display [<width> <height>]   (in points)
+// Usage: hidpi-display [<width> <height> [mirror]]   (in points)
 #import <CoreGraphics/CoreGraphics.h>
 #import <Foundation/Foundation.h>
 
@@ -35,9 +36,10 @@ static int fail(NSString *text) {
 
 int main(int argc, char **argv) {
     @autoreleasepool {
-        int asked[2] = {argc == 3 ? atoi(argv[1]) : 1920, argc == 3 ? atoi(argv[2]) : 1080};
-        if ((argc != 1 && argc != 3) || asked[0] < 640 || asked[1] < 480 || asked[0] > 4096 || asked[1] > 4096)
-            return fail(@"usage: hidpi-display [<width> <height>]   (in points)");
+        bool mirror = argc == 4 && strcmp(argv[3], "mirror") == 0;
+        int asked[2] = {argc >= 3 ? atoi(argv[1]) : 1920, argc >= 3 ? atoi(argv[2]) : 1080};
+        if ((argc != 1 && argc != 3 && !mirror) || asked[0] < 640 || asked[1] < 480 || asked[0] > 4096 || asked[1] > 4096)
+            return fail(@"usage: hidpi-display [<width> <height> [mirror]]   (in points)");
         unsigned int width = (unsigned)asked[0], height = (unsigned)asked[1];
         CGVirtualDisplayDescriptor *descriptor = [NSClassFromString(@"CGVirtualDisplayDescriptor") new];
         if (!descriptor || !NSClassFromString(@"CGVirtualDisplayMode"))
@@ -80,6 +82,10 @@ int main(int argc, char **argv) {
         if (CGBeginDisplayConfiguration(&change) != kCGErrorSuccess) return fail(@"the screens cannot change now");
         for (uint32_t i = 0; i < count; i++) {
             if (CGDisplayMirrorsDisplay(online[i]) != kCGNullDirectDisplay) continue;
+            if (mirror) {
+                if (online[i] != made) CGConfigureDisplayMirrorOfDisplay(change, online[i], made);
+                continue;
+            }
             CGRect bounds = CGDisplayBounds(online[i]);
             CGConfigureDisplayOrigin(change, online[i], (int32_t)(bounds.origin.x - at.origin.x),
                                      (int32_t)(bounds.origin.y - at.origin.y));

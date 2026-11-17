@@ -183,7 +183,9 @@ another login session, with its own pointer, keyboard and screen.
   Mac's disk holds only what the guest wrote (37 GB). Each run removes what it left in the guest (its processes and
   xcodebuild's folder), also after a kill, and stops under 8 GB free. Only the links at the checkout's path stay; the
   next run points them at its own copies.
-- **Its screen.** 1024 × 768 points at 2x, not CI's 1x 1024 × 674. The user watches it in an Ovvi pane: New pane ▸
+- **Its screen.** 1024 × 768 points at 2x during a run, not CI's 1x 1024 × 674. Tart gives a headless guest the scale of
+  the Mac's main screen (1x on a monitor), so each run mirrors the guest's own display to a 2x display of its own
+  (`scripts/hidpi-display.m`, which ends with the run). The user watches it in an Ovvi pane: New pane ▸
   Tart VM (the plugin's README installs it). The VM runs `--suspendable`: the card's **Open in Tart** suspends it and
   resumes it in Tart's window (about 8 s, refused while a run holds the lock); closing that window suspends it, and the
   next run resumes it headless. A resumed guest keeps its old lookups in the shares, and the files it saw before

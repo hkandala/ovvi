@@ -1,9 +1,10 @@
 // The scene's window, read and placed through accessibility (no events): `ax.swift <pid> window [x y w h]` prints the
 // main window's id and frame, after moving it when a frame is given; `screen` prints the main display's size; `close`
-// closes the app's other windows; `windows` prints each window's id and frame, largest first; `front` brings the app
-// in front; `park` moves the pointer off it; `find <id>` prints the screen frame of each element with that
-// accessibility identifier (a prefix with a trailing `*`, or `title:<title>` for a button or a menu's item); `set
-// <text>` puts text in the focused field, as typing leaves it.
+// closes the app's other windows; `windows` prints each window's id and frame, largest first, panels too; `front`
+// brings the app in front; `park` moves the pointer off it; `find <id>` prints the screen frame of each element with
+// that accessibility identifier (a prefix with a trailing `*`, or `title:<title>` for a button or a menu's item);
+// `press <id>` presses the first such element, a menu's item too, with no click; `set <text>` puts text in the focused
+// field, as typing leaves it.
 import ApplicationServices
 import Foundation
 
@@ -31,13 +32,16 @@ func show(_ rect: CGRect) -> String {
     "\(Int(rect.minX)) \(Int(rect.minY)) \(Int(rect.width)) \(Int(rect.height))"
 }
 
-/// The normal windows of the pid, by the window server's list (its number is screencapture's id), largest first.
-func windows() -> [(id: Int, frame: CGRect)] {
+/// The normal windows of the pid, by the window server's list (its number is screencapture's id), largest first;
+/// `panels` adds the floating ones (the welcome).
+func windows(panels: Bool = false) -> [(id: Int, frame: CGRect)] {
     let list = CGWindowListCopyWindowInfo(.optionAll, kCGNullWindowID) as? [[String: Any]] ?? []
     return list.compactMap { window -> (Int, CGRect)? in
-        guard window[kCGWindowOwnerPID as String] as? Int32 == pid, window[kCGWindowLayer as String] as? Int == 0,
+        guard window[kCGWindowOwnerPID as String] as? Int32 == pid,
+              panels || window[kCGWindowLayer as String] as? Int == 0,
               let bounds = (window[kCGWindowBounds as String] as? NSDictionary)
-                  .flatMap({ CGRect(dictionaryRepresentation: $0 as CFDictionary) }), bounds.width > 400
+                  .flatMap({ CGRect(dictionaryRepresentation: $0 as CFDictionary) }), bounds.width > 400,
+              bounds.height > 100
         else { return nil }
         return (window[kCGWindowNumber as String] as? Int ?? 0, bounds)
     }.sorted { $0.1.width * $0.1.height > $1.1.width * $1.1.height }
@@ -56,7 +60,7 @@ case "front":
     }
     Thread.sleep(forTimeInterval: 0.3)
 case "windows":
-    for window in windows() {
+    for window in windows(panels: true) {
         print(window.id, show(window.frame))
     }
 case "screen":
@@ -86,8 +90,8 @@ case "window":
     }
     guard let window = mainWindow() else { exit(1) }
     print(window.id, show(window.frame))
-case "find":
-    let wanted = arguments[3]
+case "find", "press":
+    let wanted = arguments[3], press = arguments[2] == "press"
     func matches(_ element: AXUIElement) -> String? {
         if wanted.hasPrefix("title:") {
             // One word: callers split the line at spaces.
@@ -99,6 +103,9 @@ case "find":
         return (wanted.hasSuffix("*") ? id.hasPrefix(wanted.dropLast()) : id == wanted) ? id : nil
     }
     func walk(_ element: AXUIElement, depth: Int) {
+        if press, matches(element) != nil {
+            exit(AXUIElementPerformAction(element, kAXPressAction as CFString) == .success ? 0 : 1)
+        }
         if let id = matches(element), let rect = frame(element) {
             print(id, show(rect), value(element, kAXValueAttribute) as? String ?? "")
         }
@@ -108,6 +115,9 @@ case "find":
         }
     }
     walk(app, depth: 0)
+    if press {
+        exit(1)
+    }
 case "set":
     // The focused field: no walk of the tree, which holds the app's main thread while a film runs.
     guard let focused = value(app, kAXFocusedUIElementAttribute),

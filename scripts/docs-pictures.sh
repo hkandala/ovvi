@@ -4,7 +4,7 @@
 #
 #   scripts/docs-pictures.sh [<derived data>]   # after `make build DERIVED_DATA=…`; about 3 minutes
 #
-# It takes the VM lock for the run (playbook/workflow.md) and stops at once when another run holds it.
+# It takes the VM lock for the run (playbook/workflow.md), waiting up to 30 minutes for a run that holds it.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 world=docs-pictures
@@ -20,65 +20,74 @@ if [[ ${1:-} != --in-vm ]]; then
     cp -c "$(command -v herdr)" "$run/bin/"
     plugins/extra/tart-vm/bin/ovvi-tart start "$vm" "--dir=xcode:$(dirname "$(dirname "$(xcode-select -p)")"):ro" \
         "--dir=runs:$runs" >/dev/null
-    lockf -k -t 0 "$locks/ovvi-test.lock" sh -c "echo '${OWNER:-$USER} docs-pictures' >'$locks/ovvi-test.owner'
+    lockf -k -t 1800 "$locks/ovvi-test.lock" sh -c "echo '${OWNER:-$USER} docs-pictures' >'$locks/ovvi-test.owner'
         tart exec $vm zsh -lc \"cd '/Volumes/My Shared Files/runs/docs-$$' && PATH=\\\$PWD/bin:\\\$PATH \
-            scripts/docs-pictures.sh --in-vm\"" || { echo "the VM is busy or the run failed" >&2; exit 1; }
-    cp "$run"/shots/*.png docs/public/images/
-    exit
+            scripts/docs-pictures.sh --in-vm\"" || status=$?
+    cp "$run"/shots/*.png docs/public/images/ 2>/dev/null || true
+    exit "${status:-0}"
 fi
 
 # In the guest.
 scene=scripts/welcome-scene.sh W=/tmp/$world
-key() { osascript -e "tell application \"System Events\" to $1"; }
 shot() {
     "$scene" shot "$world" "$1" >/dev/null
     cp "$W/shots/$1-dark.png" "shots/$1.png"
 }
+# The display ends with this script.
 clang -fobjc-arc -framework Foundation -framework CoreGraphics scripts/hidpi-display.m -o /tmp/hidpi-display
-rm -f /tmp/docs-hidpi && mkfifo /tmp/docs-hidpi
-/tmp/hidpi-display 1280 800 </tmp/docs-hidpi >/tmp/docs-hidpi.log 2>&1 &
-exec 3>/tmp/docs-hidpi
-trap 'source "$W/scene.env" 2>/dev/null && "$scene" down "$world" "$S"; exec 3>&-' EXIT
-for _ in $(seq 50); do grep -q ready /tmp/docs-hidpi.log && break; sleep 0.2; done
+/tmp/hidpi-display 1280 800 >/tmp/docs-hidpi.log 2>&1 &
+trap 'source "$W/scene.env" 2>/dev/null && "$scene" down "$world" "$S"' EXIT
+for _ in $(seq 50); do grep -q . /tmp/docs-hidpi.log && break; sleep 0.2; done
 grep -q ready /tmp/docs-hidpi.log || { cat /tmp/docs-hidpi.log >&2; exit 1; }
 
-OVVI_APP="$PWD/Ovvi Debug.app" "$scene" up "$world" docs dark 1200x720
+OVVI_APP="$PWD/Ovvi Debug.app" "$scene" up "$world" docs dark 1200x680
 source "$W/scene.env"
 ax() { "$W/tools/ax" "$pid" "$@"; }
 sleep 3
 shot window
-"$scene" click "$world" "pane.$c1.zoom"
-sleep 1
+# A card alone: a click on its title makes it the active pane, then Zoom Pane fills the tab with it.
+zoom() {
+    "$scene" click "$world" "pane.$1.title"
+    ax press 'title:Zoom Pane'
+    sleep 1
+}
+zoom "$c1"
 shot chat-view
-key 'keystroke return using {shift down, command down}'
-browser=$(ax find 'pane.w1:p*' | cut -d' ' -f1 | grep -xE 'pane\.w1:p[0-9]+' | grep -vx "pane.$c1" | head -1)
-"$scene" click "$world" "$browser"
-key 'keystroke return using {shift down, command down}'
-sleep 1
+ax press 'title:Restore Pane'
+zoom "$b"
 shot browser
-key 'keystroke return using {shift down, command down}'
-"$scene" click "$world" w1:t4
+ax press 'title:Restore Pane'
+# The tabs of w1 do not all fit: a press needs no place on screen. The overview shows a snapshot of each tab seen.
+for tab in t2 t3 t4; do
+    ax press "tab.w1:$tab"
+    sleep 1
+done
+zoom "$g"
+ax press 'title:Git Home'
 sleep 2
 shot git
-"$scene" click "$world" w1:t5
-sleep 2
+ax press 'title:Restore Pane'
+# The tab's one card: File Explorer.
+ax press tab.w1:t5
+sleep 1
+"$scene" click "$world" "pane.$f.title"
+ax press 'title:File Tree'
+sleep 1
 shot file-explorer
 "$scene" click "$world" w5
 "$scene" click "$world" titlebar.new-tab
 sleep 1
 shot new-pane
-key 'key code 53'
 "$scene" click "$world" w1
 "$scene" click "$world" sidebar.overview
 sleep 2
 shot overview
-key 'key code 53'
+"$scene" click "$world" overview.close
 sleep 1
-key 'keystroke "k" using command down'
+ax press 'title:Command Palette'
 sleep 1
 shot palette
-key 'key code 53'
-key 'keystroke "," using command down'
+ax press 'title:Settings…'
 "$scene" click "$world" settings.page.appearance
 ax park
 sleep 1
