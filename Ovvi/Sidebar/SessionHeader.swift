@@ -27,15 +27,15 @@ struct SessionHeader: View {
                 SortMenu(page: page)
                 newSpace
             }
-            .padding(.trailing, open ? 3 : 0)
-            if open {
-                shelf(others)
+            // A dropdown: its room opens at once and only the shelf slides, inside the clip. Moving the space list's
+            // top over an animation left it scrolled a few points. It folds at once.
+            VStack(spacing: 0) {
+                if open {
+                    shelf(others).transition(.move(edge: .top))
+                }
             }
-        }
-        .background {
-            if open {
-                RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(.primary.opacity(0.14))
-            }
+            .animation(open ? .slide : nil, value: open)
+            .clipped()
         }
         .focusable(open)
         .focusEffectDisabled()
@@ -79,7 +79,6 @@ struct SessionHeader: View {
                 close()
             } else {
                 lit = nil
-                // At once: the space list's top moving over an animation left it scrolled a few points.
                 open = true
             }
         } label: {
@@ -130,7 +129,10 @@ struct SessionHeader: View {
                 action: openPanel)
                 .accessibilityIdentifier("sidebar.open-session")
         }
-        .padding(.horizontal, 4).padding(.bottom, 4)
+        .padding(4)
+        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(.primary.opacity(0.14)))
+        // As far under the header as the filter is under it.
+        .padding(.top, 8)
     }
 
     private func row(_ index: Int, symbol: String, _ title: String, key: String = "",

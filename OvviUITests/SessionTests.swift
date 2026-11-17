@@ -168,15 +168,23 @@ extension OvviUITests {
             .matching(NSPredicate(format: "identifier BEGINSWITH 'terminal.' AND hasKeyboardFocus == true")).firstMatch
         XCTAssertTrue(keys.exists(within: 3))
         let card = keys.identifier
+        let buttons = ["sidebar.header", "sidebar.overview", "sidebar.sort", "sidebar.new-workspace"]
+            .map { element($0) }
+        let still = buttons.map(\.frame)
         title.click()
         XCTAssertTrue(mine.exists(within: 2))
+        XCTAssertEqual(buttons.map(\.frame), still, "the header moved")
+        // The dropdown sits as far under the header as the filter under it: 8 pt, then its 4 pt inset.
+        XCTAssertTrue(until(2) { abs(mine.frame.minY - title.frame.maxY - 12) < 0.5 }, "\(mine.frame) \(title.frame)")
         XCTAssertTrue(until(2) { !keys.exists }, "the shelf took no keys")
         // Only this window's other pages: not the one in view, a stopped one or a running one not open here.
         for session in [two, three, five] {
             XCTAssertFalse(element("sidebar.session.\(session)").exists, session)
         }
         XCTAssertLessThan(mine.frame.maxY, element("sidebar.open-session").frame.minY)
-        XCTAssertGreaterThan(element("sidebar.filter").frame.minY, element("sidebar.open-session").frame.maxY)
+        // As far over the filter: its 4 pt inset, then 8 pt.
+        let bottom = element("sidebar.filter").frame.minY - element("sidebar.open-session").frame.maxY
+        XCTAssertEqual(bottom, 12, accuracy: 0.5)
         keepScreenshot("session shelf")
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(mine.vanishes(within: 2))
@@ -275,8 +283,10 @@ extension OvviUITests {
     @discardableResult
     func openSessionPanel(in window: XCUIElement? = nil) -> XCUIElement {
         element("sidebar.header", in: window).click()
-        XCTAssertTrue(element("sidebar.open-session", in: window).exists(within: 2))
-        element("sidebar.open-session", in: window).click()
+        // Still: the shelf slides in with motion on.
+        let row = element("sidebar.open-session", in: window)
+        XCTAssertNotNil(steady(2) { row.exists ? row.frame : nil })
+        row.click()
         let filter = element("open-session.filter", in: window)
         XCTAssertTrue(hasKeyboard(filter))
         return filter
