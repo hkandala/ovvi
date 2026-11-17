@@ -144,3 +144,23 @@ Screenshot r3-1 (`.build/fb59/r3-1.png`): another app's sidebar foot, with three
 branch-like icon, a bar chart) and "⌘Z to undo" with a circled arrow on the right.
 
 Report: `~/Downloads/ovvi-research/p62-footer/index.html`.
+
+## Findings
+
+### Track G
+
+- **Decisions (Q5):** the key is `liquidGlass` (a Bool, on); `AppSettings.style` makes `InterfaceStyle` from it, so
+  `Look`, the views and the plugin API's `theme.style` did not change. View ▸ Liquid Glass is one checked item; the
+  Appearance tiles' `LookPicture` lost its glass form. UI tests set the look with `setLook("classic light")`, which
+  reads `window.look` first (XCUITest cannot read a menu checkmark).
+- **Decisions (Q7):** `floatingGlass` takes `.ultraThinMaterial` for every panel; the ssh question dialog passes
+  `.thinMaterial` (it may ask for a password). The plugin card's toast moved to `floatingGlass`; Recently Closed's
+  popover takes `.ultraThinMaterial`. Chat boxes, pills, keycaps and the window background stay as they were.
+- **Decisions (Q1):** a small `Layout` (`NoticePlaces`) places the centre notices and the update notice from their
+  measured sizes: on one line when the update notice clears the centre one by 8 pt, else 8 pt over it. No width
+  threshold. The sweep turns the ring's gradient once (1.4 s, ease out); Update… is the filled accent button.
+  `-updateAvailable <version>` shows the notice in UI tests. The icon keeps the information tone (the mockup drew it in
+  the accent): the ring and Update… carry the accent.
+- **For the user:** the update notice stays until Update… or ×, now over the bottom-right card's last 40 pt (a chat
+  card's send button); × clears it. Also check the real ring and sweep (only the released app gets an update)
+  and the panels' transparency over a busy page on your desktop.
