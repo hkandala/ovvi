@@ -101,16 +101,14 @@ extension OvviUITests {
         try await release()
         try await expectOrder([third, beta, alpha], "pinned last of the pinned ones")
 
-        during(beta.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
-               to: third.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.1)))
+        during(beta.center, to: third.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.1)))
         try await expectOrder([beta, third, alpha], "placed among the pinned ones")
         try await expect("herdr's order") {
             let ids = try await workspaceIDs()
             return ids.firstIndex(of: "w2") ?? 0 < ids.firstIndex(of: gamma) ?? 0
         }
         // Under the region (which takes the line's place and pushes alpha down while beta is dragged).
-        during(beta.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
-               to: alpha.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1)).withOffset(CGVector(dx: 0, dy: 40)))
+        during(beta.center, to: alpha.below(40))
         try await expectOrder([third, alpha, beta], "dropped under the region, unpinned")
         XCTAssertLessThan(element("sidebar.pinned-line").frame.midY, alpha.frame.minY)
     }
@@ -139,8 +137,7 @@ extension OvviUITests {
         let unpinned = { [beta, fourth].sorted { $0.frame.minY < $1.frame.minY } }
         try await expectOrder([alpha, third, unpinned()[0]], "pinned onto the region, in herdr's order")
 
-        during(third.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
-               to: alpha.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.1)))
+        during(third.center, to: alpha.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.1)))
         try await expectOrder([third, alpha], "the pinned ones reordered in Recent")
         try await expect("herdr's order") {
             let ids = try await workspaceIDs()
@@ -149,19 +146,12 @@ extension OvviUITests {
 
         // Anywhere under the region (it takes the line's place and pushes the unpinned ones down while one is dragged).
         let ids = try await workspaceIDs(), rows = unpinned()
-        during(rows[1].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
-               to: rows[0].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1)).withOffset(CGVector(
-                   dx: 0,
-                   dy: 10,
-               )))
+        during(rows[1].center, to: rows[0].below(10))
         XCTAssertFalse(until(1) { rows[1].frame.minY < rows[0].frame.minY }, "Recent's unpinned ones reordered")
         let after = try await workspaceIDs()
         XCTAssertEqual(after, ids)
 
-        during(third.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
-               to: unpinned()[1].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1)).withOffset(
-                   CGVector(dx: 0, dy: 40),
-               ))
+        during(third.center, to: unpinned()[1].below(40))
         try await expect("unpinned, under the line") {
             element("sidebar.pinned-line").frame.midY < third.frame.minY && alpha.frame.minY < third.frame.minY
         }
@@ -289,8 +279,7 @@ extension OvviUITests {
         try await expectOrder([beta, third, alpha], "pinned from the menu")
         lightsEach("a pin from the menu")
         // Onto third's last agent line: past the middle of its block, the header and its agents.
-        during(beta.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2)),
-               to: rows[rows.count - 1].1.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
+        during(beta.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2)), to: rows[rows.count - 1].1.center)
         try await expectOrder([third, beta, alpha], "reordered among the pinned ones")
         lightsEach("a drag among the pinned ones")
         beta.rightClick()

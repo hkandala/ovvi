@@ -193,7 +193,7 @@ extension OvviUITests {
         let first = element("tab.\(tabs[0])")
         let rowEnd = element("titlebar.new-tab").frame.minX - 8
         XCTAssertTrue(element("tabs.fades").has(\.stringValue, "trailing", within: 2))
-        let from = first.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let from = first.center
         during(from, to: from.withOffset(CGVector(dx: rowEnd - 5 - first.frame.midX, dy: 0)), hold: 6)
         try await expect("the first tab past the third") {
             try await tabIDs().filter { $0.hasPrefix("\(workspace(of: tabs[0])):") }.firstIndex(of: tabs[0]) ?? 0 > 3

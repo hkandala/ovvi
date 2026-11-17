@@ -147,7 +147,7 @@ extension OvviUITests {
         XCTAssertFalse(zoom.isEnabled)
         zoom.hover()
         XCTAssertTrue(tip.has(\.stringValue, "Zoom Pane ⇧⌘↩", within: 3))
-        zoom.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
+        zoom.center.click()
         XCTAssertTrue(tip.vanishes(within: 1))
         XCTAssertFalse(tip.exists(within: 1.5))
 

@@ -91,7 +91,7 @@ extension OvviUITests {
 
     /// The pointer off the window, or over `hovering`.
     fileprivate func scene(_ name: String, _ window: XCUIElement, hovering: XCUIElement? = nil) {
-        (hovering?.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        (hovering?.center
             ?? window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1.3))).hover()
         Thread.sleep(forTimeInterval: 0.4)
         // A closed menu is still there with an empty frame.

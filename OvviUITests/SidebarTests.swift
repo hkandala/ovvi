@@ -8,7 +8,7 @@ extension OvviUITests {
             shelf.click()
             addTeardownBlock { @MainActor in shelf.click() }
         }
-        let below = element("workspace.w2").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let below = element("workspace.w2").center
             .withOffset(CGVector(dx: 0, dy: 120))
         below.rightClick()
         let menu = app.windows.firstMatch.menuItems
@@ -18,7 +18,7 @@ extension OvviUITests {
         keepScreenshot("sidebar menu")
         menu["Show Archived Sessions"].click()
         XCTAssertTrue(shelf.has(\.stringValue, "expanded", within: 2))
-        element("sidebar.header").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).rightClick()
+        element("sidebar.header").center.rightClick()
         menu["Hide Archived Sessions"].click()
         XCTAssertTrue(shelf.has(\.stringValue, "collapsed", within: 2))
         below.rightClick()
@@ -276,7 +276,7 @@ extension OvviUITests {
         let start = sidebar.frame.width
         let drag = { (offset: CGFloat) in
             let width = sidebar.frame.width, left = card.frame.minX
-            let from = handle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            let from = handle.center
             from.click(forDuration: 0.2, thenDragTo: from.withOffset(CGVector(dx: offset, dy: 0)))
             // At rest: a read during the drag's last frame would be stale.
             let moved = (steady(2) { sidebar.frame.width } ?? sidebar.frame.width) - width

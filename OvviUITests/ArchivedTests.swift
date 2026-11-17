@@ -32,7 +32,7 @@ extension OvviUITests {
         XCTAssertEqual(first.label, "Page 1, /tmp")
         let rows = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'agents.archived.pi.page-'"))
         XCTAssertLessThan(rows.count, 20, "the lazy shelf built every row")
-        let inside = shelf.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let inside = shelf.center
             .withOffset(CGVector(dx: 0, dy: 100))
         XCTAssertTrue(until(20) {
             inside.scroll(byDeltaX: 0, deltaY: -2000)

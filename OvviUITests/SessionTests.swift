@@ -261,7 +261,7 @@ extension OvviUITests {
         showPage(session, in: window)
         XCTAssertTrue(element("sidebar.header", in: window).has(\.stringValue, session, within: 3))
         // At its center: the page that slid away may leave it unhittable for a moment.
-        element("sidebar.header", in: window).coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).rightClick()
+        element("sidebar.header", in: window).center.rightClick()
         (window ?? app.windows.firstMatch).menuItems["Detach Session"].click()
         XCTAssertTrue(until(3) { !pageList(in: window).contains(session) })
     }

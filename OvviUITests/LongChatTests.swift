@@ -203,7 +203,7 @@ extension OvviUITests {
         XCTAssertTrue(divider.exists(within: 3))
         let rest = try XCTUnwrap(steady(3) { [card.frame.width, chat.frame.width - box.frame.width] })
         let (narrow, gap) = (Int(rest[0]), Int(rest[1]))
-        let from = divider.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).screenPoint
+        let from = divider.center.screenPoint
         let path = (1 ... 6).map { "\(from.x + CGFloat($0) * 10) \(from.y)" }.joined(separator: " 0.05 ")
         let drag = Task.detached { [one] in
             try await Self.post("\(one)/press", Data("\(from.x) \(from.y) \(path)".utf8))
@@ -248,7 +248,7 @@ extension OvviUITests {
         XCTAssertGreaterThan(send.frame.maxX, card.frame.maxX)
         // The wheel turns at the card's middle, over the chat, with the pointer warped there first: on CI, XCUITest's
         // move to the point played a step of its path last, and the wheel went to the card beside.
-        let spot = card.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let spot = card.center
         XCTAssertTrue([-600.0, 600].contains { step in
             CGWarpMouseCursorPosition(spot.screenPoint)
             spot.scroll(byDeltaX: step, deltaY: 0)

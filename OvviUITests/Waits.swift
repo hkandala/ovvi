@@ -21,6 +21,15 @@ extension XCUIElement {
     var stringValue: String {
         value as? String ?? ""
     }
+
+    var center: XCUICoordinate {
+        coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+    }
+
+    /// A point `distance` under the middle of the element's bottom edge.
+    func below(_ distance: CGFloat) -> XCUICoordinate {
+        coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1)).withOffset(CGVector(dx: 0, dy: distance))
+    }
 }
 
 func steady<Value: Equatable>(_ timeout: TimeInterval, _ value: () -> Value?) -> Value? {

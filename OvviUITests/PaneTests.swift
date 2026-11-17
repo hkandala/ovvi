@@ -15,7 +15,7 @@ extension OvviUITests {
         XCTAssertTrue(divider.has(\.stringValue, "33%", within: 3), divider.stringValue)
 
         let total = element("page.\(tab)").frame.width - 3 * 8
-        let center = divider.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let center = divider.center
         center.hover()
         keepScreenshot("three panes, grip")
         center.click(forDuration: 0.2, thenDragTo: center.withOffset(CGVector(dx: total * 0.15, dy: 0)))

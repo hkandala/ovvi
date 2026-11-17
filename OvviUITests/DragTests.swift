@@ -19,7 +19,7 @@ extension OvviUITests {
 
         // Writes go one at a time, so the drop below checks that nothing moved.
         let before = try await tabIDs()
-        drag(third, to: element("tab.\(tab)").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
+        drag(third, to: element("tab.\(tab)").center)
         XCTAssertFalse(element("detail.notice").exists(within: 1))
 
         drag(third, to: card(second, 0.1, 0.6))
@@ -78,7 +78,7 @@ extension OvviUITests {
         element("workspace.\(workspace(of: tab))").click()
         element("tab.\(tab)").click()
         XCTAssertTrue(element("pane.\(second)").exists(within: 3))
-        drag(second, to: capsule.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
+        drag(second, to: capsule.center)
         try await expect("the pane split right in that tab") { try await order(other) == [third, fourth, second] }
         XCTAssertTrue(capsule.has(\.isSelected, true, within: 2))
         XCTAssertTrue(element("drop.indicator").vanishes(within: 2))
@@ -102,8 +102,7 @@ extension OvviUITests {
 
         let betaTabs = try await tabIDs().filter { $0.hasPrefix("w2:") }
         try await closeNew("tab", besides: tabIDs())
-        drag(second, to: element("workspace.w2").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
-             hold: 0.3)
+        drag(second, to: element("workspace.w2").center, hold: 0.3)
         let inBeta = try await poll("the pane in a new tab of beta") { () async throws -> String? in
             let place = try await place(of: terminal)
             return place.map { $0.tab.hasPrefix("w2:") && !betaTabs.contains($0.tab) } == true ? place?.pane : nil
@@ -126,7 +125,7 @@ extension OvviUITests {
 
         let before = try await workspaceIDs()
         XCTAssertTrue(element("pane.\(away)").exists(within: 3))
-        drag(away, to: element("sidebar.new-workspace").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
+        drag(away, to: element("sidebar.new-workspace").center)
         try await expect("the pane in another new workspace") {
             let place = try await place(of: terminal)
             return place.map { !before.contains(workspace(of: $0.tab)) } == true
@@ -145,7 +144,7 @@ extension OvviUITests {
         try await expectStack(tab, [first, second])
 
         let terminal = try await terminalID(second)
-        drag(second, to: element("titlebar.new-tab").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
+        drag(second, to: element("titlebar.new-tab").center)
         try await expect("the pane in a new tab of its workspace") {
             try await place(of: terminal).map { $0.tab != tab && workspace(of: $0.tab) == workspace(of: tab) } == true
         }
@@ -155,7 +154,7 @@ extension OvviUITests {
         relaunch(one, ["-forceMotion", "YES"]) // the drop's glide too (CI has Reduce Motion on)
         let tabs = try await newWorkspace("tabs", tabs: 3).tabs
         let third = element("tab.\(tabs[2])")
-        let from = third.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let from = third.center
         let target = element("tab.\(tabs[0])").coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.5))
         during(from, to: target)
         try await expect("herdr's tab order") {
@@ -177,13 +176,11 @@ extension OvviUITests {
         let capsule = element("tab.\(tab)")
         XCTAssertTrue(capsule.has(\.isHittable, true, within: 3))
 
-        during(capsule.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
-               to: element("workspace.\(home)").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
+        during(capsule.center, to: element("workspace.\(home)").center)
         XCTAssertFalse(element("detail.notice").exists(within: 1))
         let stayed = try await place(of: terminal)?.tab
         XCTAssertEqual(stayed, tab)
-        during(capsule.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
-               to: element("workspace.w2").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
+        during(capsule.center, to: element("workspace.w2").center)
         let moved = try await movedTab(of: terminal, layout) { $0 == "w2" }
         let after = try await tabIDs()
         XCTAssertFalse(after.contains(tab))
@@ -228,7 +225,7 @@ extension OvviUITests {
         let rows = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'workspace.w'"))
         let bottom = rows.allElementsBoundByIndex.map(\.frame.maxY).max() ?? 0
         let sidebar = element("sidebar")
-        during(element("tab.\(away)").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
+        during(element("tab.\(away)").center,
                to: sidebar.coordinate(withNormalizedOffset: .zero)
                    .withOffset(CGVector(dx: sidebar.frame.width / 2, dy: bottom + 40 - sidebar.frame.minY)))
         let last = try await movedTab(of: terminal, layout) { !workspaces.contains($0) && $0 != made }
@@ -244,11 +241,7 @@ extension OvviUITests {
         XCTAssertTrue(secondRow.exists(within: 3))
 
         // Past the last row: the pin region pushes the rows down by 40 pt while a space is dragged.
-        during(firstRow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
-               to: secondRow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1)).withOffset(CGVector(
-                   dx: 0,
-                   dy: 45,
-               )))
+        during(firstRow.center, to: secondRow.below(45))
         try await expect("first below second") { try await workspaceIDs().suffix(2) == [second, first] }
 
         let root = "/tmp/ovvi-e2e-drag-\(Int.random(in: 10000 ... 99999))"
@@ -265,11 +258,7 @@ extension OvviUITests {
         let repoRow = element("workspace.\(repo)")
         XCTAssertTrue(element("workspace.\(tree)").exists(within: 3))
         // Above second's middle once the pin region pushed it 40 pt down.
-        during(repoRow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
-               to: secondRow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).withOffset(CGVector(
-                   dx: 0,
-                   dy: 20,
-               )))
+        during(repoRow.center, to: secondRow.center.withOffset(CGVector(dx: 0, dy: 20)))
         try await expect("the repository and its worktree before second") {
             try await workspaceIDs().suffix(4) == [repo, tree, second, first]
         }

@@ -106,7 +106,7 @@ extension OvviUITests {
         }
         // Followed at once, with no curve; nothing moves after the drop.
         try await problems += moves("\(what) divider drag", in: tab, curve: false, seen: &seen) {
-            let divider = element("divider.\(tab).root").coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            let divider = element("divider.\(tab).root").center
             divider.click(forDuration: 0.2, thenDragTo: divider.withOffset(step == "⌘D" ? CGVector(dx: -80, dy: 0)
                     : CGVector(dx: 0, dy: -60)))
         }
