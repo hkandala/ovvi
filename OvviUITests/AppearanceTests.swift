@@ -11,6 +11,42 @@ extension OvviUITests {
         }
     }
 
+    /// The update notice sits at the page's bottom right, on the notices' line when the page is wide enough for both,
+    /// over the centre notice when not. A wrong float pane gives the centre notice ("Can't float pane …"), for 4 s.
+    func testUpdateNoticeKeepsClearOfTheNotices() async throws {
+        addTeardownBlock { @MainActor [self] in setLook("glass dark") }
+        for (width, look) in [
+            (1400, "glass dark"),
+            (760, "glass light"),
+            (1400, "classic light"),
+            (760, "classic dark"),
+        ] {
+            step("\(look), a \(width) pt window")
+            relaunch(one, ["-updateAvailable", "0.2.0", "-forceMotion", "YES",
+                           "-NSWindow Frame main-AppWindow-1", "100 100 \(width) 700 0 0 1728 1084"])
+            let update = element("notice.update")
+            XCTAssertTrue(update.exists(within: connect))
+            // The light's run round the ring, for the pictures.
+            for turn in 0 ..< 3 {
+                keepScreenshot("\(look) sweep \(turn)")
+            }
+            setLook(look)
+            XCTAssertTrue(element("window.look").has(\.stringValue, look, within: 3))
+            try await openFloatURL("session=\(two)&pane=w9:p9")
+            let notice = element("detail.notice")
+            XCTAssertTrue(notice.exists(within: 5))
+            let (centre, right, window) = (notice.frame, update.frame, mainWindows.firstMatch.frame)
+            keepScreenshot("\(look) \(width) pt: notice \(centre), update \(right)")
+            XCTAssertEqual(window.maxX - right.maxX, 16, accuracy: 1, "\(right) in \(window)")
+            XCTAssertFalse(centre.intersects(right), "\(centre) and \(right)")
+            if width > 1000 {
+                XCTAssertEqual(right.maxY, centre.maxY, accuracy: 1, "\(right) beside \(centre)")
+            } else {
+                XCTAssertEqual(centre.minY - right.maxY, 8, accuracy: 1, "\(right) over \(centre)")
+            }
+        }
+    }
+
     /// Read from pixels, the one place the look shows. The rim is read on the card without the keyboard: the keyboard
     /// card's active border lies over its rim. Asserted in dark; light's rim and the card both end near white.
     func testCardsLookAlikeWithAndWithoutTheKeyboard() {

@@ -35,9 +35,14 @@ struct Detail: View {
                        id: "detail.reconnecting")
             }
         }
-        .overlay(alignment: .bottom) {
+        .overlay {
             if !special {
-                notices(store, reconnecting: reconnecting && cards ? why : nil)
+                NoticePlaces {
+                    notices(store, reconnecting: reconnecting && cards ? why : nil)
+                    UpdateNotice()
+                }
+                .padding(.horizontal, gap * 2)
+                .padding(.bottom, 30)
             }
         }
     }
@@ -152,10 +157,7 @@ struct Detail: View {
                     AccessibilityNotification.Announcement(text).post()
                 }
             }
-            UpdateNotice()
         }
-        .padding(.horizontal, gap * 2)
-        .padding(.bottom, 30)
     }
 
     @ViewBuilder private func install(_ store: HostStore) -> some View {
@@ -177,6 +179,26 @@ struct Detail: View {
                     .accessibilityIdentifier("detail.install")
             }
         }
+    }
+}
+
+/// The notices at the bottom centre and the update notice at the bottom right; on a page too narrow for both on one
+/// line, the update notice goes over the others.
+private struct NoticePlaces: Layout {
+    func sizeThatFits(proposal: ProposedViewSize, subviews _: Subviews, cache _: inout ()) -> CGSize {
+        proposal.replacingUnspecifiedDimensions()
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
+        let offer = ProposedViewSize(width: bounds.width, height: nil)
+        guard let centre = subviews.first else { return }
+        let size = centre.sizeThatFits(offer)
+        centre.place(at: CGPoint(x: bounds.midX, y: bounds.maxY), anchor: .bottom, proposal: offer)
+        guard let update = subviews.dropFirst().first else { return }
+        let width = update.sizeThatFits(offer).width
+        let clear = size.height == 0 || bounds.maxX - width >= bounds.midX + size.width / 2 + gap
+        update.place(at: CGPoint(x: bounds.maxX, y: bounds.maxY - (clear ? 0 : size.height + gap)),
+                     anchor: .bottomTrailing, proposal: offer)
     }
 }
 

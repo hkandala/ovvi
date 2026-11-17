@@ -19,8 +19,8 @@ final class Updates: NSObject, SPUStandardUserDriverDelegate {
                         keywords: "update version release new") { shared.check() }]
     }
 
-    /// The version the notice offers; nil hides it.
-    var available: String?
+    /// The version the notice offers; nil hides it. UI tests show it with `-updateAvailable <version>`.
+    var available = UserDefaults.standard.string(forKey: "updateAvailable")
     /// Sparkle's `canCheckForUpdates`: false before it starts and while a check runs (Settings' Check Now).
     private(set) var canCheck = false
     @ObservationIgnored private var canCheckObservation: NSKeyValueObservation?
@@ -77,17 +77,46 @@ final class Updates: NSObject, SPUStandardUserDriverDelegate {
     }
 }
 
-/// Under the window's other notices, until Update… or Close (Window ▸ Notice).
+/// At the page's bottom right, apart from the notices at its centre, until Update… or Close (Window ▸ Notice).
 struct UpdateNotice: View {
     var body: some View {
         if let version = Updates.shared.available {
             NoticeCapsule(tone: .info, text: "Ovvi \(version) is available", symbol: "arrow.down.circle.fill") {
-                Button("Update…") { Updates.shared.check() }.accessibilityIdentifier("notice.update.update")
+                Button("Update…") { Updates.shared.check() }.buttonStyle(.glassProminent)
+                    .accessibilityIdentifier("notice.update.update")
                 Button("Close", systemImage: "xmark") { Updates.shared.available = nil }
                     .labelStyle(.iconOnly).buttonStyle(.plain).foregroundStyle(.secondary)
                     .accessibilityIdentifier("notice.update.close")
             }
             .accessibilityIdentifier("notice.update")
+            .overlay { RimLight() }
+        }
+    }
+}
+
+/// A still ring from the accent to Done's green; a light runs round it once as it appears.
+private struct RimLight: View {
+    @State private var turn = 0.0
+
+    var body: some View {
+        Ring(turn: turn).allowsHitTesting(false).accessibilityHidden(true).onAppear {
+            withAnimation(Animation.reduced ? nil : .easeOut(duration: 1.4)) { turn = 1 }
+        }
+    }
+
+    private struct Ring: View, Animatable {
+        var turn: Double
+        @Environment(\.look) private var look
+
+        var animatableData: Double {
+            get { turn }
+            set { turn = newValue }
+        }
+
+        var body: some View {
+            let accent = Color.accentColor, half = accent.opacity(0.6)
+            Capsule().strokeBorder(AngularGradient(colors: [accent, half, look.finished, half, accent], center: .center,
+                                                   angle: .degrees(turn * 360 - 90)), lineWidth: 1.5)
         }
     }
 }
