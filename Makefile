@@ -35,8 +35,7 @@ lint: plugins/node_modules/@ovvi/plugin-api $(EXTRAS:%=plugins/extra/%/node_modu
 	swiftlint lint --strict --quiet
 	@if git grep -nwE 'p[k]ill|kill[a]ll' -- . ':!docs' ':!playbook' ':!resources'; then \
 		echo 'No pattern kills: kill the exact pids you started'; exit 1; fi
-	@if git grep -nIiwE '[r]ex|t[3] ?code|[s]uperlogical|[c]mux|[g]orex|[c]ollie|[k]ero|[t]ermote|[r]oamgate|[h]eeler|[u]herdr|[h]erdr-gpui|[t]uios' \
-		-- . ':!docs' ':!playbook/phases' ':!resources/research'; then \
+	@if git grep -nIiwE '[r]ex|t[3] ?code|[s]uperlogical|[c]mux|[g]orex|[c]ollie|[k]ero|[t]ermote|[r]oamgate|[h]eeler|[u]herdr|[h]erdr-gpui|[t]uios'; then \
 		echo 'Name no other app: say what the value is and why'; exit 1; fi
 
 # The built-in plugins: the defaults and the template, in the app.
