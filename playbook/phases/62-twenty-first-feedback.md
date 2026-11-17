@@ -250,10 +250,14 @@ Report: `~/Downloads/ovvi-research/p62-footer/index.html`.
   key never ran. It walks `Hotkeys.all` now and finds a plugin command by its id (`plugin.<plugin>.<command>`), since
   the app may have taken its first key. A menu item's own key stays the menu's.
 - **Decisions:** the recording monitor still ends a recording on any click, except a click inside the recording
-  field's ×, which it passes through (its SwiftUI global frame against the click in the content view). A key that the
-  action already has changes nothing. Swap gives the other action the key that this field gave up, not the first key.
-- **Decisions:** hover uses `onContinuousHover` in a small per-row view, so the pointer over a row runs only that
-  row's body. VoiceOver gets an "Add Shortcut" action on each field.
+  field's ×, which it passes through; an AppKit view under the × gives its place in the window. A key that the action
+  already has changes nothing. Swap gives the other action the key that this field gave up, not the first key.
+- **Cause (hover):** SwiftUI's `onHover` and `onContinuousHover` missed a Form row that a search moved under the
+  pointer, until the pointer left the window (a VM probe). Each row has its own AppKit tracking area
+  (`.inVisibleRect`, entered, moved, exited) in a small per-row view, so the pointer runs only that row's body.
+  VoiceOver gets an "Add Shortcut" action on each field.
+- **Runs:** the VM, at the head: testAddedKeysStackAndRunAPluginCommand,
+  testARecordedKeyShowsEverywhereAndASwapMovesTheOther, testKeyboardShortcutsScenes, testSecondShortcuts green.
 - **For the user:** hover a row: ⊕ shows; click it, type a key; click a field, the × removes that key; give a field a
   key that another action has: the dialog asks.
 

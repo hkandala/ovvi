@@ -8,8 +8,8 @@ struct KeysPage: View {
     /// Kept after the question closes, so its words stay while it fades.
     @State private var clash: Clash?
     @State private var asking = false
-    /// The recording field's ×, in the window: the monitor lets a click on it through.
-    @State private var remove: (slot: Slot, frame: CGRect)?
+    /// The recording field's ×: the monitor lets a click on it through.
+    @State private var remove = Place()
     @State private var monitor: Any?
     @Environment(\.look) private var look
 
@@ -151,7 +151,7 @@ struct KeysPage: View {
                                  drop(index, of: hotkey)
                                  recording = nil
                              },
-                             removeAt: { remove = (slot, $0) })
+                             place: remove)
                 }
             }
         }
@@ -199,12 +199,10 @@ struct KeysPage: View {
         guard event.window === window, event.type == .keyDown,
               let hotkey = hotkeys.all.first(where: { $0.id == slot.id })
         else {
-            if event.window === window, let remove, remove.slot == slot, let view = window.contentView {
-                var point = view.convert(event.locationInWindow, from: nil)
-                point.y = view.isFlipped ? point.y : view.bounds.height - point.y
-                if remove.frame.contains(point) {
-                    return false
-                }
+            if let view = remove.view, event.window === window, view.window === window,
+               view.convert(view.bounds, to: nil).contains(event.locationInWindow)
+            {
+                return false
             }
             recording = nil
             return event.window === window
@@ -245,8 +243,8 @@ private struct KeyField: View {
     let add: () -> Void
     let action: () -> Void
     let remove: () -> Void
-    /// Where the ×, which the key monitor would take, is in the window.
-    let removeAt: (CGRect) -> Void
+    /// Where the × is, for the key monitor, which would take its click.
+    let place: Place
     @Environment(\.look) private var look
 
     var body: some View {
@@ -279,8 +277,7 @@ private struct KeyField: View {
             if removes {
                 Button("Remove Shortcut", systemImage: "xmark.circle.fill", action: remove)
                     .labelStyle(.iconOnly).buttonStyle(.borderless).foregroundStyle(.secondary).help("Remove Shortcut")
-                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { removeAt($0) }
-                    .onDisappear { removeAt(.null) }
+                    .background(WindowPlace(place: place))
                     .padding(.trailing, 5)
                     .accessibilityIdentifier("\(id).remove")
             }
@@ -288,17 +285,79 @@ private struct KeyField: View {
     }
 }
 
-/// Whether the pointer is over the content.
+/// Whether the pointer is over the content. AppKit's own tracking: SwiftUI's hover missed a row that a search moved
+/// under the pointer until the pointer left the window.
 private struct Hovering<Content: View>: View {
     @ViewBuilder let content: (Bool) -> Content
     @State private var hovered = false
 
     var body: some View {
-        content(hovered).contentShape(Rectangle()).onContinuousHover { phase in
-            if case .active = phase {
-                hovered = true
-            } else {
-                hovered = false
+        content(hovered).background(PointerOver { hovered = $0 })
+    }
+}
+
+/// A view's place in its window, from AppKit: a SwiftUI global frame inside a Form row did not match the pointer.
+private final class Place {
+    weak var view: NSView?
+}
+
+private struct WindowPlace: NSViewRepresentable {
+    let place: Place
+
+    func makeNSView(context _: Context) -> NSView {
+        let view = ClickThrough()
+        place.view = view
+        return view
+    }
+
+    func updateNSView(_: NSView, context _: Context) {}
+
+    private final class ClickThrough: NSView {
+        override func hitTest(_: NSPoint) -> NSView? {
+            nil
+        }
+    }
+}
+
+private struct PointerOver: NSViewRepresentable {
+    let action: (Bool) -> Void
+
+    func makeNSView(context _: Context) -> Tracker {
+        let view = Tracker()
+        view.addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .mouseMoved,
+                                                                   .activeInKeyWindow, .inVisibleRect],
+                                            owner: view))
+        return view
+    }
+
+    func updateNSView(_ view: Tracker, context _: Context) {
+        view.action = action
+    }
+
+    final class Tracker: NSView {
+        var action: (Bool) -> Void = { _ in }
+        private var over = false
+
+        override func hitTest(_: NSPoint) -> NSView? {
+            nil
+        }
+
+        override func mouseEntered(with _: NSEvent) {
+            set(true)
+        }
+
+        override func mouseMoved(with _: NSEvent) {
+            set(true)
+        }
+
+        override func mouseExited(with _: NSEvent) {
+            set(false)
+        }
+
+        private func set(_ over: Bool) {
+            if over != self.over {
+                self.over = over
+                action(over)
             }
         }
     }

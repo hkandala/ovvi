@@ -231,6 +231,9 @@ Problems that came back, and the rule that stops each. How we work is in
   with a `.defaultAction` and a `.cancel` button. `role: .destructive` draws nothing on `.glass` buttons: tint them.
 - **WebKit draws an overlay scroll bar under its children's `z-index` layers** unless the scroll view is a stacking
   context (`isolation: isolate`).
+- **Inside a Form row, SwiftUI is not the window's.** Its `.global` frames did not match the pointer, and `onHover` missed a
+  row that a search moved under the pointer until the pointer left the window. Ask AppKit: an `NSView` under the view
+  for its place (`convert(bounds, to: nil)`), and its own tracking area (`.inVisibleRect`) for hover.
 - **Hover state is unreliable.** A view removed under the pointer gets no hover end, and a busy app runs
   hover late. Decide from the pointer's location when it matters.
 - **WebKit cannot end its own helper processes here** (xpc: "Operation not permitted"): a GPU or page process it gave
