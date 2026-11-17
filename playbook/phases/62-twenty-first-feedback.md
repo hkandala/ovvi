@@ -300,3 +300,20 @@ research or anything, just refer ovvi-docs folder""
 - Pictures: crisp on a 4K monitor (2× or more, no downscaled shots). The onboarding recordings: find how to record in
   4K and make the scripts ready; the user re-records when everything is done.
 - AGENTS.md points to the docs and to ~/ovvi-docs only.
+
+## Round 4: the footer picks
+
+The user, word for word: "G0 ("wait don’t we have blocked status in herdr or ovvi? i gave you order for it on what to
+show, needs you comes first, then blocked, then done, then working then placholder, idk why you are saying drop
+blocked?"), G1 A, G2 B, G3 D, G4 A
+
+show me final view of how footer and agent panel would look with these decisions before starting impl"
+
+Then, after hearing that Ovvi's Needs you is herdr's `blocked`: "no let's keep it needs you, no blocked status anymore"
+
+- The foot: the agents' summary at the left; Shortcuts, Palette, a line, then Settings at the right.
+- The summary is the state box with words: Needs you, else Done, else Working, else "All caught up".
+- A click opens the Agents panel (the old one, brought back): every attached session in every window on this
+  machine, groups Needs you and Done with a line between, each row the agent icon, title, and session · space. A pick
+  goes to that tab, bringing its window forward. "All caught up" opens the empty panel.
+- Final view: `~/Downloads/ovvi-research/p62-footer2/final.html`, to be confirmed before the build.
