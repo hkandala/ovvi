@@ -74,6 +74,7 @@ extension PaneViewRegistry {
     }
 
     func noted(_ id: String) {
+        pages?.photographed(id)
         Self.pictured.removeAll { $0.registry === self && $0.id == id }
         Self.pictured.append(Kept(registry: self, id: id))
         let bytes = { (kept: Kept) in kept.registry?.picture(kept.id).map { $0.bytesPerRow * $0.height } ?? 0 }

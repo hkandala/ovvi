@@ -18,6 +18,9 @@ final class WindowPages {
     @ObservationIgnored var overviewTabs: [String: [String]] = [:]
     @ObservationIgnored var overviewSettling: Task<Void, Never>?
     private(set) var overviewLive: Set<String> = []
+    /// The card drawn live in its tile for its first picture, and those done (`photographNext`).
+    var overviewPhoto: String?
+    @ObservationIgnored var overviewPhotographed: Set<String> = []
     @ObservationIgnored var tileScale = tile
     @ObservationIgnored var overviewScrolling = false
     @ObservationIgnored var panelOpen = false
@@ -293,6 +296,8 @@ final class WindowPages {
             current.shown(alive: alive)
         }
         markShown()
+        // Also at a snapshot: a card may become a chat or a plugin.
+        photographNext()
     }
 }
 

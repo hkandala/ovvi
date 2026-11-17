@@ -21,6 +21,7 @@ extension WindowPages {
         overviewTabs = [:]
         overviewScrolling = false
         overviewSettling?.cancel()
+        (overviewPhoto, overviewPhotographed) = (nil, [])
         showTerminals()
         current?.focusKeyboardCard()
     }
@@ -80,5 +81,46 @@ extension WindowPages {
                 showTerminals()
             }
         }
+    }
+
+    /// One at a time, in the tiles in view: a browser, plugin or chat card with no picture draws live in its tile
+    /// until it takes one (`TilePhoto`), and a web card made for it goes after. One already made takes its picture
+    /// where it is: in a tile, its web view would leave its card.
+    func photographNext() {
+        guard overview, !overviewScrolling, let page = current, page.store.state == .live else { return }
+        let waiting = (overviewTabs[page.id] ?? []).reversed().flatMap { tab in
+            let panes = (page.store.tabPanes[tab] ?? []).filter { !page.floats($0) }
+            let zoomed = panes.filter { $0.id == page.zoomedPanes[tab] }
+            return (zoomed.isEmpty ? panes : zoomed).compactMap { pane in
+                pane.terminalID.flatMap { id in
+                    !overviewPhotographed.contains(id) && terminals.picture(id) == nil
+                        && (pane.browser != nil || pane.plugin?.manifest?.entry != nil || page.shownChat(pane) != nil)
+                        ? id : nil
+                }
+            }
+        }
+        if let photo = overviewPhoto, waiting.contains(photo) {
+            return
+        }
+        for id in waiting {
+            guard let view = terminals.webView(id) else {
+                overviewPhoto = id
+                return
+            }
+            overviewPhotographed.insert(id)
+            view.takePicture()
+        }
+        overviewPhoto = nil
+    }
+
+    /// Its picture taken, or none in time.
+    func photographed(_ id: String) {
+        guard overviewPhoto == id else { return }
+        overviewPhotographed.insert(id)
+        overviewPhoto = nil
+        if terminals.droppable(id) {
+            terminals.drop(id)
+        }
+        photographNext()
     }
 }

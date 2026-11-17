@@ -53,31 +53,34 @@ struct ChatProbe: NSViewRepresentable {
         let probe = Probe()
         registry.chatViews[terminalID] = { [weak probe] in
             // Not one already out of view: a blank picture, or the page over it, would replace a good one.
-            guard let probe, !probe.outOfView, let root = probe.window?.contentView?.superview?.layer,
-                  !probe.visibleRect.isEmpty else { return nil }
-            let rect = probe.convert(probe.bounds, to: nil)
-            guard let context = CGContext(data: nil, width: Int(rect.width), height: Int(rect.height),
-                                          bitsPerComponent: 8, bytesPerRow: 0,
-                                          space: CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB(),
-                                          bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue) else { return nil }
-            // The deepest layer that holds the chat's place (its rows, under 1 ms), not the window's (120 ms).
-            var layer = root, area = rect
-            while let next = layer.sublayers?
-                .last(where: { !$0.isHidden && $0.opacity > 0 && $0.frame.contains(area) })
-            {
-                area = next.convert(area, from: layer)
-                layer = next
-            }
-            if layer.contentsAreFlipped() {
-                context.translateBy(x: -area.minX, y: area.maxY)
-                context.scaleBy(x: 1, y: -1)
-            } else {
-                context.translateBy(x: -area.minX, y: -area.minY)
-            }
-            layer.render(in: context)
-            return context.makeImage()
+            guard let probe, !probe.outOfView else { return nil }
+            return Self.picture(at: probe)
         }
         return probe
+    }
+
+    /// The window's layers at the view's place, at the size the deepest of them has it: a tile's place gives its
+    /// card's full size.
+    static func picture(at view: NSView) -> CGImage? {
+        guard let root = view.window?.contentView?.superview?.layer, !view.visibleRect.isEmpty else { return nil }
+        // The deepest layer that holds the chat's place (its rows, under 1 ms), not the window's (120 ms).
+        var layer = root, area = view.convert(view.bounds, to: nil)
+        while let next = layer.sublayers?.last(where: { !$0.isHidden && $0.opacity > 0 && $0.frame.contains(area) }) {
+            area = next.convert(area, from: layer)
+            layer = next
+        }
+        guard let context = CGContext(data: nil, width: Int(area.width), height: Int(area.height), bitsPerComponent: 8,
+                                      bytesPerRow: 0,
+                                      space: CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue) else { return nil }
+        if layer.contentsAreFlipped() {
+            context.translateBy(x: -area.minX, y: area.maxY)
+            context.scaleBy(x: 1, y: -1)
+        } else {
+            context.translateBy(x: -area.minX, y: -area.minY)
+        }
+        layer.render(in: context)
+        return context.makeImage()
     }
 
     func updateNSView(_ probe: Probe, context _: Context) {

@@ -47,12 +47,15 @@ private struct MiniCard: View {
                     Image(systemName: "pip").foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if let pane, pane.plugin != nil || page.shownChat(pane) != nil {
-                    // A tile makes no web view, proxy or transcript read, and takes no web view from its card, which
-                    // then draws blank as it goes back.
+                    // A tile takes no web view from its card, which then draws blank as it goes back: it draws one
+                    // live only for a card that has none yet (`TilePhoto`).
                     if let picture = pane.terminalID.flatMap(page.terminals.picture) {
-                        scaled(CardPicture(picture: picture, pane: pane)
-                            .miniCard(pane.id, pane.plugin.map { $0.manifest?.id ?? $0.plugin } ?? "chat"), content,
-                            under: header)
+                        CardPicture(picture: picture, pane: pane)
+                            .miniCard(pane.id, pane.plugin.map { $0.manifest?.id ?? $0.plugin } ?? "chat")
+                            .tile(content, scale).padding(.top, header * scale)
+                    } else if pane.terminalID != nil, pane.terminalID == page.terminals.pages?.overviewPhoto {
+                        TilePhoto(pane: pane, page: page, content: content, scale: scale)
+                            .miniCard(pane.id, "photo").padding(.top, header * scale)
                     } else {
                         Image(symbol: pane.plugin != nil ? pane.iconID : "bubble.left.and.bubble.right")
                             .foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -78,18 +81,77 @@ private struct MiniCard: View {
                 }
             }
     }
+}
 
-    private func scaled(_ view: some View, _ content: CGSize, under header: CGFloat) -> some View {
-        view.frame(width: content.width, height: content.height)
-            .scaleEffect(scale, anchor: .topLeading)
-            .frame(width: content.width * scale, height: content.height * scale, alignment: .topLeading)
-            .disabled(true)
-            .allowsHitTesting(false)
-            .padding(.top, header * scale)
+/// A card with no picture yet, live in its tile until it takes one (`WindowPages.photographNext`). One that does not
+/// settle in 10 s (a page that never loads, a machine away) keeps its symbol.
+private struct TilePhoto: View {
+    let pane: HostStore.Pane
+    let page: Page
+    let content: CGSize
+    let scale: CGFloat
+    @State private var place = Place()
+
+    var body: some View {
+        let browser = page.browser(pane), plugin = browser == nil ? page.plugin(pane) : nil
+        let chat = browser == nil && plugin == nil ? page.shownChat(pane) : nil
+        let settled = browser?.ready ?? plugin?.web.ready ?? chat.map { $0.current || $0.problem != nil } ?? false
+        Group {
+            if let browser {
+                BrowserCard(browser: browser, page: page)
+            } else if let plugin {
+                PluginCard(plugin: plugin, page: page)
+            } else if let chat {
+                ChatView(chat: chat, page: page, terminal: nil)
+            }
+        }
+        .tile(content, scale)
+        .background(PlaceView(place: place))
+        .task(id: settled) {
+            // Settled, after its first paint and the chat's rows' fade in.
+            try? await Task.sleep(for: settled ? .milliseconds(500) : .seconds(10))
+            guard !Task.isCancelled, let id = pane.terminalID else { return }
+            if settled, let browser, browser.loaded, browser.failure == nil, browser.asking == nil {
+                browser.view.takePicture()
+            } else if settled, let plugin, plugin.web.bridge?.failure == nil {
+                plugin.web.view.takePicture()
+            } else if settled, chat != nil, let picture = place.view.flatMap(ChatProbe.picture) {
+                page.terminals.keep(id, picture)
+            }
+            // A picture comes through `noted`, which ends this view.
+            try? await Task.sleep(for: .seconds(10))
+            if !Task.isCancelled {
+                page.terminals.pages?.photographed(id)
+            }
+        }
+    }
+
+    final class Place {
+        weak var view: NSView?
+    }
+
+    private struct PlaceView: NSViewRepresentable {
+        let place: Place
+
+        func makeNSView(context _: Context) -> NSView {
+            let view = NSView()
+            place.view = view
+            return view
+        }
+
+        func updateNSView(_: NSView, context _: Context) {}
     }
 }
 
 private extension View {
+    func tile(_ content: CGSize, _ scale: CGFloat) -> some View {
+        frame(width: content.width, height: content.height)
+            .scaleEffect(scale, anchor: .topLeading)
+            .frame(width: content.width * scale, height: content.height * scale, alignment: .topLeading)
+            .disabled(true)
+            .allowsHitTesting(false)
+    }
+
     /// A group's value does not reach XCUITest; static text's does.
     func miniCard(_ paneID: String, _ value: String) -> some View {
         readableText(value).accessibilityIdentifier("overview.card.\(paneID)")
