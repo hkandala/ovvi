@@ -234,6 +234,8 @@ struct FilterField: View {
     var symbol: String?
     var autofocus = false
     var focus = 0
+    /// More or less room inside the capsule than its own.
+    var leading: CGFloat = 0
     var trailing: CGFloat = 0
     @State private var editing = false
     @FocusState private var focused: Bool
@@ -258,7 +260,7 @@ struct FilterField: View {
                 .accessibilityIdentifier(identifier)
             }
         }
-        .padding(.trailing, trailing)
+        .padding(.leading, leading).padding(.trailing, trailing)
         .fieldCapsule()
         .contentShape(.capsule)
         .onTapGesture { editing = true }

@@ -28,7 +28,7 @@ struct ArchivedShelf: View {
             header(open: open, key: key)
             if open {
                 FilterField(prompt: "Search", text: $search, identifier: "agents.archived.search",
-                            symbol: "magnifyingglass", focus: focusSearch, trailing: 22)
+                            symbol: "magnifyingglass", focus: focusSearch, leading: -4, trailing: 22)
                     .onAppear {
                         if opening {
                             opening = false
@@ -39,7 +39,7 @@ struct ArchivedShelf: View {
                         toggle(key)
                         inView.focusKeyboardCard()
                     }
-                    .overlay(alignment: .trailing) { menu.padding(.trailing, 8) }
+                    .overlay(alignment: .trailing) { menu.padding(.trailing, 4.5) }
                     .padding(.horizontal, 4)
                 Group {
                     if loading {
