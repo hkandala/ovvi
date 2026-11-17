@@ -345,8 +345,7 @@ extension OvviUITests {
         try await waitFor(pane) { $0.contains("Echo: **hello**") }
         enable.click()
         let notice = element("detail.notice")
-        XCTAssertTrue(notice.staticTexts.matching(NSPredicate(format: "value == 'Claude Code did not start again'"))
-            .firstMatch.exists(within: 20))
+        XCTAssertTrue(text("Claude Code did not start again", in: notice).exists(within: 20))
         notice.hover()
         keepScreenshot("relaunch failed")
         notice.buttons["notice.retry"].click()

@@ -169,7 +169,7 @@ extension OvviUITests {
     private func scrolls(_ tab: String) async throws {
         try await select(tab)
         let markdown = try await element("markdown.\(pane(of: tab)).page")
-        let heading = markdown.staticTexts.matching(NSPredicate(format: "value == 'Part 1'")).firstMatch
+        let heading = text("Part 1", in: markdown)
         XCTAssertTrue(until(5) { heading.exists && heading.frame.minY >= markdown.frame.minY })
         markdown.scroll(byDeltaX: 0, deltaY: -2000)
         // Above the card, or gone: WebKit leaves text far out of view out of the tree.

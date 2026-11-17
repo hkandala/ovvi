@@ -35,8 +35,7 @@ extension OvviUITests {
                 return until(1) { NSPasteboard.general.string(forType: .string).map(expected) == true }
             }, "\(card): \(NSPasteboard.general.string(forType: .string) ?? "nothing copied")")
             let notice = element("detail.notice")
-            let copied = notice.staticTexts.matching(NSPredicate(format: "value == %@", "Copied \(kind)"))
-            XCTAssertTrue(copied.firstMatch.exists(within: 2), "\(card): \(notice.debugDescription)")
+            XCTAssertTrue(text("Copied \(kind)", in: notice).exists(within: 2), "\(card): \(notice.debugDescription)")
         }
         copies(shell, "Path") { $0.hasSuffix("/tmp/ovvi-e2e-copy") }
         copies(browser, "URL") { $0 == "file://\(root)/page.html" }

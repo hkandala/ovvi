@@ -112,8 +112,8 @@ extension OvviUITests {
         let identifier = app.windows.firstMatch.identifier
         app.typeKey("n", modifierFlags: .command)
         XCTAssertTrue(app.windows.element(boundBy: 1).exists(within: 3))
-        let window = try XCTUnwrap(app.windows.allElementsBoundByIndex.map(\.identifier).first { $0 != identifier })
-            .map { app.windows[$0] }
+        let id = try XCTUnwrap(app.windows.allElementsBoundByIndex.map(\.identifier).first { $0 != identifier })
+        let window = app.windows[id]
         let two = element("picker.local.\(two)", in: window)
         XCTAssertTrue(two.exists(within: connect))
         XCTAssertTrue(two.label.contains("Running"), two.label)
@@ -129,7 +129,7 @@ extension OvviUITests {
         XCTAssertTrue(element("workspace.w1", in: window).exists(within: connect))
         XCTAssertEqual(element("sidebar.header", in: window).stringValue, self.two)
         XCTAssertTrue(element("terminal.w1:p1", in: app.windows[identifier]).exists)
-        let screen = try XCTUnwrap(NSScreen.screens.first).visibleFrame, frame = try XCTUnwrap(window).frame
+        let screen = try XCTUnwrap(NSScreen.screens.first).visibleFrame, frame = window.frame
         XCTAssertEqual(frame.width, screen.width, accuracy: 2, "\(frame) in \(screen)")
         // It takes the frame of the window last placed: the first, which filled the visible frame at launch. On CI the
         // visible frame read now can differ from that by a few points (a window of 674 in 677).
@@ -141,18 +141,16 @@ extension OvviUITests {
         // AppKit saves each main window's frame, and a later launch opens at it.
         addTeardownBlock { @MainActor [self] in try await forgetWindows() }
         // The left half of the screen, with no hit test on an edge.
-        let front = try XCTUnwrap(window)
         app.menuBars.menuBarItems["Window"].click()
         let move = app.menuBars.menuItems["Move & Resize"]
         move.click()
         move.menuItems["Left"].click()
         // Once macOS's tiling motion has ended: two equal reads.
-        var last = front.frame
-        XCTAssertTrue(until(3) {
-            defer { last = front.frame }
-            return front.frame == last && last.width < frame.width - 100
-        }, "\(front.frame)")
-        let resized = front.frame, ids = app.windows.allElementsBoundByIndex.map(\.identifier)
+        let resized = try XCTUnwrap(
+            steady(3) { window.frame.width < frame.width - 100 ? window.frame : nil },
+            "\(window.frame)",
+        )
+        let ids = app.windows.allElementsBoundByIndex.map(\.identifier)
         app.typeKey("n", modifierFlags: .command)
         XCTAssertTrue(until(3) { app.windows.count == ids.count + 1 }, "no new window")
         let third = try XCTUnwrap(app.windows.allElementsBoundByIndex.first { !ids.contains($0.identifier) })
@@ -190,8 +188,8 @@ extension OvviUITests {
         let first = mainWindows.firstMatch.identifier
         app.typeKey("n", modifierFlags: .command)
         XCTAssertTrue(element("picker.local.\(one)").exists(within: connect))
-        let window = try XCTUnwrap(mainWindows.allElementsBoundByIndex.map(\.identifier).first { $0 != first })
-            .map { app.windows[$0] }
+        let id = try XCTUnwrap(mainWindows.allElementsBoundByIndex.map(\.identifier).first { $0 != first })
+        let window = app.windows[id]
         element("picker.+add-machine", in: window).click()
         let settings = settingsWindow
         let target = element("settings.machine.target", in: settings)
@@ -222,8 +220,8 @@ extension OvviUITests {
         XCTAssertTrue(element("settings.machines.add", in: settingsWindow).exists(within: 5))
         settingsWindow.typeKey("w", modifierFlags: .command)
         XCTAssertTrue(settingsWindow.vanishes(within: 3))
-        let window = try XCTUnwrap(app.windows.allElementsBoundByIndex.map(\.identifier).first { $0 != identifier })
-            .map { app.windows[$0] }
+        let id = try XCTUnwrap(app.windows.allElementsBoundByIndex.map(\.identifier).first { $0 != identifier })
+        let window = app.windows[id]
         element("picker.filter", in: window).click()
         app.typeText(eight)
         XCTAssertTrue(element("picker.local.+new", in: window).has(\.isSelected, true, within: 3))

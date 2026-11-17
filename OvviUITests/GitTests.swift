@@ -162,7 +162,7 @@ extension OvviUITests {
         let top = header.frame.minY
         XCTAssertLessThan(top, page.frame.minY + 50, "c.txt is not at the top: \(top), page \(page.frame)")
         try await send("sed -i '' 's/^line 250$/x250/' a.txt\r", to: left)
-        XCTAssertTrue(page.staticTexts.matching(NSPredicate(format: "value == 'x250'")).firstMatch.exists(within: 10))
+        XCTAssertTrue(text("x250", in: page).exists(within: 10))
         XCTAssertEqual(header.frame.minY, top, accuracy: 2, "c.txt moved")
         list.click()
     }
@@ -170,7 +170,7 @@ extension OvviUITests {
     private func stepsByFile(_ page: XCUIElement) {
         let header = page.buttons["Open c.txt"], top = page.frame.minY + 50
         XCTAssertLessThan(header.frame.minY, top, "c.txt is not at the top: \(header.frame), page \(page.frame)")
-        page.staticTexts.matching(NSPredicate(format: "value == 'new 3'")).firstMatch.click()
+        text("new 3", in: page).click()
         app.typeKey("[", modifierFlags: .shift)
         XCTAssertTrue(until(3) { header.frame.minY > top }, "⇧[ left c.txt at \(header.frame)")
         app.typeKey("]", modifierFlags: .shift)
@@ -261,7 +261,7 @@ extension OvviUITests {
         try await show(tab)
     }
 
-    private func commit(_ subject: String, in home: XCUIElement) -> XCUIElement {
+    func commit(_ subject: String, in home: XCUIElement) -> XCUIElement {
         home.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", subject + ",")).firstMatch
     }
 

@@ -18,7 +18,7 @@ extension OvviUITests {
         try await rename(markdown, "ovvi:explorer#e2emde \(folder)/notes.md")
         try await show(tab)
         let notes = element("markdown.\(markdown).page")
-        let heading = notes.staticTexts.matching(NSPredicate(format: "value == 'Notes'")).firstMatch
+        let heading = text("Notes", in: notes)
         let last = notes.staticTexts.matching(NSPredicate(format: "value BEGINSWITH 'Line 120,'")).firstMatch
         XCTAssertTrue(pageText("Paragraph 1").exists(within: 15))
         XCTAssertTrue(heading.exists(within: 15))
@@ -124,13 +124,11 @@ extension OvviUITests {
         // CI's virtual Mac has none (and its screen shows these pages blank).
         try await skipWithoutGPU()
         let notes = element("markdown.\(markdown).page"), page = element("browser.\(browser)")
-        let heading = { notes.staticTexts.matching(NSPredicate(format: "value == %@", $0)).firstMatch }
         XCTAssertTrue(drawn(pageText("Paragraph 1"), in: page, within: 15), "the browser at first")
-        XCTAssertTrue(drawn(heading("Notes"), in: notes, within: 15), "the Markdown card at first")
+        XCTAssertTrue(drawn(text("Notes", in: notes), in: notes, within: 15), "the Markdown card at first")
         try await show(kept)
         let home = element("git.\(git).page")
-        let commit = { home.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", $0 + ",")).firstMatch }
-        XCTAssertTrue(drawn(commit("before"), in: home, within: 15), "the Git card at first")
+        XCTAssertTrue(drawn(commit("before", in: home), in: home, within: 15), "the Git card at first")
         try await show(tab)
 
         let stopped = try await web("web-stop")
@@ -138,15 +136,15 @@ extension OvviUITests {
         XCTAssertTrue(ended, "the app ended the GPU process WebKit gave up on")
         page.scroll(byDeltaX: 0, deltaY: 10000)
         XCTAssertTrue(drawn(pageText("Paragraph 1"), in: page, within: 10), "the browser by itself")
-        XCTAssertTrue(drawn(heading("Notes"), in: notes, within: 10), "the Markdown card by itself")
+        XCTAssertTrue(drawn(text("Notes", in: notes), in: notes, within: 10), "the Markdown card by itself")
         element("browser.\(browser).reload").click()
         XCTAssertTrue(drawn(pageText("Paragraph 1"), in: page, within: 10), "the browser after Reload")
         try await send("echo '# Changed' >notes.md\r", to: shell)
-        XCTAssertTrue(drawn(heading("Changed"), in: notes, within: 10), "the Markdown card's change")
+        XCTAssertTrue(drawn(text("Changed", in: notes), in: notes, within: 10), "the Markdown card's change")
         try await show(kept)
-        XCTAssertTrue(drawn(commit("before"), in: home, within: 10), "the kept Git card by itself, shown")
+        XCTAssertTrue(drawn(commit("before", in: home), in: home, within: 10), "the kept Git card by itself, shown")
         try await send("git -c user.name=e2e -c user.email=e2e@ovvi commit -q --allow-empty -m after\r", to: shell)
-        XCTAssertTrue(drawn(commit("after"), in: home, within: 10), "the kept Git card's new commit")
+        XCTAssertTrue(drawn(commit("after", in: home), in: home, within: 10), "the kept Git card's new commit")
     }
 
     /// WebKit gives up on the stopped GPU process 10 to 25 s in.
@@ -203,7 +201,7 @@ extension OvviUITests {
         )
         try await send("printf '# Changed\\n' >>notes.md\r", to: shell)
         notes.scroll(byDeltaX: 0, deltaY: -10000)
-        XCTAssertTrue(notes.staticTexts.matching(NSPredicate(format: "value == 'Changed'")).firstMatch
+        XCTAssertTrue(text("Changed", in: notes)
             .exists(within: 10))
     }
 

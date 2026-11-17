@@ -15,11 +15,11 @@ extension OvviUITests {
         let (tab, card) = try await newCard("ovvi:explorer#e2emdc \(folder)/notes.md")
 
         let page = element("markdown.\(card).page")
-        XCTAssertTrue(page.staticTexts.matching(NSPredicate(format: "value == 'Second'")).firstMatch.exists(within: 10))
+        XCTAssertTrue(text("Second", in: page).exists(within: 10))
         XCTAssertTrue(element("pane.\(card).mode.rich text").has(\.isSelected, true, within: 3))
         XCTAssertTrue(element("pane.\(card).lock.read").isSelected)
         XCTAssertFalse(element("pane.\(card).lock.edit").isSelected)
-        XCTAssertTrue(page.staticTexts.matching(NSPredicate(format: "value == 'B'")).firstMatch.exists)
+        XCTAssertTrue(text("B", in: page).exists)
         XCTAssertFalse(page.textViews.firstMatch.exists)
         let outline = element("pane.\(card).outline")
         XCTAssertGreaterThan(outline.frame.minX, element("pane.\(card).jump").frame.maxX, "the outline is at the right")
@@ -34,10 +34,7 @@ extension OvviUITests {
 
         try await editAndSave(card, page: page, shell: shell)
 
-        app.typeKey("o", modifierFlags: [.command, .control])
-        XCTAssertTrue(element("overview.card.\(card)").has(\.stringValue, "explorer", within: 3))
-        app.typeKey(.escape, modifierFlags: [])
-        XCTAssertTrue(element("overview").vanishes(within: 2))
+        tiled(card)
 
         openPalette()
         app.typeText("markdown read")
@@ -49,7 +46,7 @@ extension OvviUITests {
         element("pane.\(card).lock.read").click()
         XCTAssertTrue(page.textViews.firstMatch.vanishes(within: 3))
         try await send("printf '## Third\\n' >>notes.md\r", to: shell)
-        XCTAssertTrue(page.staticTexts.matching(NSPredicate(format: "value == 'Third'")).firstMatch.exists(within: 5))
+        XCTAssertTrue(text("Third", in: page).exists(within: 5))
         copyAll(page)
         try await links(card, page: page, folder: folder, tab: tab)
         try await source(card, page: page, shell: shell)
@@ -149,7 +146,7 @@ extension OvviUITests {
     }
 
     private func editAndSave(_ card: String, page: XCUIElement, shell: String) async throws {
-        page.staticTexts.matching(NSPredicate(format: "value == 'Second'")).firstMatch.click()
+        text("Second", in: page).click()
         app.typeText("q")
         let link = page.links["Other"].frame
         app.typeKey("e", modifierFlags: .command)
@@ -163,7 +160,7 @@ extension OvviUITests {
         XCTAssertTrue(element("pane.\(card).title").has(\.stringValue, "other.md", within: 5))
         element("pane.\(card).go-back").click()
         XCTAssertTrue(element("pane.\(card).title").has(\.stringValue, "notes.md", within: 5))
-        page.staticTexts.matching(NSPredicate(format: "value == '1'")).firstMatch.click()
+        text("1", in: page).click()
         XCTAssertTrue(until(3) { editor.stringValue.contains("| 1 | 2 |") }, editor.stringValue)
         page.buttons["Notes"].click()
         XCTAssertTrue(until(3) { editor.stringValue.contains("# Notes") && !editor.stringValue.contains("## Second") })
@@ -179,7 +176,7 @@ extension OvviUITests {
 
     private func tick(_ card: String, page: XCUIElement, shell: String) async throws {
         let box = page.checkBoxes.firstMatch
-        let heading = page.staticTexts.matching(NSPredicate(format: "value == 'Second'")).firstMatch
+        let heading = text("Second", in: page)
         XCTAssertTrue(box.exists(within: 5))
         XCTAssertLessThan(
             abs(box.frame.minX - heading.frame.minX),
@@ -199,7 +196,7 @@ extension OvviUITests {
     private func copyAll(_ page: XCUIElement) {
         keepClipboard()
         NSPasteboard.general.clearContents()
-        page.staticTexts.matching(NSPredicate(format: "value == 'Third'")).firstMatch.click()
+        text("Third", in: page).click()
         app.typeKey("f", modifierFlags: .command)
         let search = page.searchFields.firstMatch
         XCTAssertTrue(search.exists(within: 2) && hasKeyboard(search))

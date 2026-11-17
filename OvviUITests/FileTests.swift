@@ -76,8 +76,7 @@ extension OvviUITests {
         search.click()
         app.typeKey("a", modifierFlags: .command)
         app.typeText("w = 4")
-        let count = element("file.\(card).page").staticTexts.matching(NSPredicate(format: "value == '1 of 1'"))
-        XCTAssertTrue(count.firstMatch.exists(within: 2))
+        XCTAssertTrue(text("1 of 1", in: element("file.\(card).page")).exists(within: 2))
         replace.click()
         app.typeText("w = 5")
         keepScreenshot("file card, find and replace")
@@ -99,11 +98,7 @@ extension OvviUITests {
         XCTAssertTrue(until(3) { editor.frame.width > width }, "\(editor.frame.width) in \(width)")
     }
 
-    private func crumbs(_ card: String, _ value: String) -> Bool {
-        element("pane.\(card).jump").has(\.stringValue, value, within: 3)
-    }
-
-    private func tiled(_ card: String) {
+    func tiled(_ card: String) {
         app.typeKey("o", modifierFlags: [.command, .control])
         XCTAssertTrue(element("overview.card.\(card)").has(\.stringValue, "explorer", within: 3))
         app.typeKey(.escape, modifierFlags: [])
@@ -201,7 +196,9 @@ extension OvviUITests {
         let label = "ovvi:explorer#e2eprv \(folder)/"
         try await relabel(card, label + "icon.png")
         let page = element("preview.\(card).page"), image = page.images["icon.png"]
-        XCTAssertTrue(image.exists(within: 10) && crumbs(card, "/ › tmp › ovvi-e2e-preview › icon.png"))
+        XCTAssertTrue(image.exists(within: 10))
+        let crumbs = element("pane.\(card).jump")
+        XCTAssertTrue(crumbs.has(\.stringValue, "/ › tmp › ovvi-e2e-preview › icon.png", within: 3))
         XCTAssertTrue(until(3) { image.frame.width > 100 && image.frame.width <= page.frame.width + 1 })
         element("pane.\(card).zoom.actual").click()
         XCTAssertTrue(until(3) { abs(image.frame.width - 1200) < 2 })

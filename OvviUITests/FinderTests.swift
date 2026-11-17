@@ -91,7 +91,7 @@ extension OvviUITests {
         XCTAssertTrue(row("empty", in: tree).exists(within: 5))
         row("empty", in: tree).doubleClick()
         try await labelEnds(card, " \(root)/empty/")
-        let empty = tree.staticTexts.matching(NSPredicate(format: "value == 'This folder is empty'")).firstMatch
+        let empty = text("This folder is empty", in: tree)
         XCTAssertTrue(empty.exists(within: 10))
         element("pane.\(card).go-back").click()
         XCTAssertTrue(row("a.txt", in: tree).exists(within: 10))

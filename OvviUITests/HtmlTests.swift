@@ -86,11 +86,8 @@ extension OvviUITests {
     }
 
     private func notFound(_ notice: XCUIElement, _ end: String) {
-        let text = notice.staticTexts.matching(NSPredicate(
-            format: "value BEGINSWITH 'File not found: ' AND value ENDSWITH %@",
-            end,
-        ))
-        XCTAssertTrue(text.firstMatch.exists(within: 10), notice.debugDescription)
+        let found = NSPredicate(format: "value BEGINSWITH 'File not found: ' AND value ENDSWITH %@", end)
+        XCTAssertTrue(notice.staticTexts.matching(found).firstMatch.exists(within: 10), notice.debugDescription)
         notice.buttons["notice.close"].click()
         XCTAssertTrue(notice.vanishes(within: 3))
     }

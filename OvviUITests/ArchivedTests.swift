@@ -188,16 +188,13 @@ extension OvviUITests {
         closeNew("workspace", besides: before)
         row.click()
         XCTAssertTrue(row.vanishes(within: 2))
-        var resumed: String?
-        try await expect("a new workspace in the folder") {
-            let panes = try await snapshot()["panes"] as? [[String: Any]] ?? []
-            resumed = panes.first { pane in
+        let resumed = try await poll("a new workspace in the folder") { () async throws -> String? in
+            try await (snapshot()["panes"] as? [[String: Any]] ?? []).first { pane in
                 !before.contains { pane["workspace_id"] as? String == $0 } && pane["cwd"] as? String == folder
             }?["pane_id"] as? String
-            return resumed != nil
         }
         // Wrapped at the pane's width.
-        try await waitFor(XCTUnwrap(resumed), toShow: "claude --resume \(id)")
+        try await waitFor(resumed, toShow: "claude --resume \(id)")
         XCTAssertTrue(row.exists(within: 15))
     }
 }
