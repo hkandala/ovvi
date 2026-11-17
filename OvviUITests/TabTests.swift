@@ -249,7 +249,13 @@ extension OvviUITests {
         try await expectShown(tabs[0], "back on the first space")
         app.typeKey("3", modifierFlags: .command)
         try await expectShown(tabs[2], "its third tab")
-        for (key, tab) in [("[", tabs[0]), ("[", other), ("]", tabs[0])] {
+        let back = element("titlebar.back"), forward = element("titlebar.forward")
+        XCTAssertTrue(back.has(\.isEnabled, true, within: 2), "Back with tabs behind")
+        XCTAssertFalse(forward.isEnabled, "Forward with nothing ahead")
+        back.click()
+        try await expectShown(tabs[0], "Back's click")
+        XCTAssertTrue(forward.has(\.isEnabled, true, within: 2), "Forward after a Back")
+        for (key, tab) in [("[", other), ("]", tabs[0])] {
             app.typeKey(key, modifierFlags: [.control, .shift])
             try await expectShown(tab, "\(key == "[" ? "back" : "forward") to \(tab)")
         }
@@ -257,10 +263,30 @@ extension OvviUITests {
         app.typeText("go forward")
         app.typeKey(.return, modifierFlags: [])
         try await expectShown(tabs[2], "forward from the palette")
+        // The menus list the steps, nearest first, as "title — space"; a pick goes straight there.
+        let steps = { (space: String) in
+            self.app.menuItems.matching(NSPredicate(format: "title ENDSWITH %@", " — \(space)"))
+        }
+        back.rightClick()
+        XCTAssertTrue(steps("history").firstMatch.exists(within: 2), "Back's menu")
+        keepScreenshot("Back's menu")
+        steps("elsewhere").firstMatch.click()
+        try await expectShown(other, "two steps back from the menu")
+        forward.rightClick()
+        XCTAssertTrue(steps("history").firstMatch.exists(within: 2), "Forward's menu")
+        XCTAssertEqual(steps("history").count, 2, "the two tabs ahead")
+        steps("history").element(boundBy: 1).click()
+        try await expectShown(tabs[2], "two steps forward from the menu")
+        XCTAssertTrue(forward.has(\.isEnabled, false, within: 2), "Forward at the newest")
         try await Self.call(one, "tab.close", ["tab_id": tabs[0]])
         XCTAssertTrue(element("tab.\(tabs[0])").vanishes(within: 3))
         app.typeKey("[", modifierFlags: [.control, .shift])
         try await expectShown(other, "back past the closed tab")
+        back.rightClick()
+        let oldest = app.menuItems.matching(NSPredicate(format: "title CONTAINS ' — '"))
+        XCTAssertTrue(oldest.firstMatch.exists(within: 2), "Back's menu")
+        oldest.element(boundBy: oldest.count - 1).click()
+        XCTAssertTrue(back.has(\.isEnabled, false, within: 2), "Back at the oldest")
     }
 
     private func expectShown(_ tab: String, _ step: String) async throws {

@@ -69,6 +69,10 @@ struct TitleBar: View {
         if page.store.state == .live || page.store.reconnecting,
            let workspace = page.selectedWorkspace
         {
+            HStack(spacing: 0) {
+                HistoryButton(page: page, offset: -1)
+                HistoryButton(page: page, offset: 1)
+            }
             TabBar(workspace: workspace, page: page, plus: plus)
                 // Made anew per session: herdr's ids repeat across sessions ("w1:t1").
                 .id(page.id)
@@ -87,6 +91,43 @@ struct TitleBar: View {
                 page: page, target: .move(.newTab(workspaceID: page.selectedWorkspaceID ?? "")), over: $plus,
             ))
             .clearsDrop(page) { plus = false }
+    }
+}
+
+/// Go Back or Go Forward. A right-click or a long press lists the tabs that presses would step through.
+private struct HistoryButton: View {
+    let page: Page
+    let offset: Int
+
+    var body: some View {
+        let back = offset < 0, title = back ? "Go Back" : "Go Forward"
+        Menu {
+            steps
+        } label: {
+            Image(systemName: back ? "chevron.left" : "chevron.right").fontWeight(.medium)
+                .frame(width: 28, height: 28)
+        } primaryAction: {
+            page.goInHistory(offset)
+        }
+        .menuStyle(.button)
+        .menuIndicator(.hidden)
+        .buttonStyle(ChromeStyle(radius: 7))
+        .fixedSize()
+        .contextMenu { steps }
+        .disabled(page.trail(offset, max: 1).isEmpty)
+        .tip(title, key: .hotkey(back ? "tab.back" : "tab.forward"))
+        .accessibilityLabel(title)
+        .accessibilityIdentifier(back ? "titlebar.back" : "titlebar.forward")
+    }
+
+    /// Text only: macOS 27 draws no images in these menus.
+    private var steps: some View {
+        ForEach(page.trail(offset), id: \.self) { index in
+            let id = page.history.ids[index]
+            if let workspace = page.store.workspace(of: id), let tab = page.store.tab(id) {
+                Button("\(page.titleText(tab)) — \(workspace.label)") { page.goInHistory(to: index) }
+            }
+        }
     }
 }
 

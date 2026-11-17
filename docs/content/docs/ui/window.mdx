@@ -77,7 +77,7 @@ background, its column centered 23 pt above the window's middle:
 
 One row, 46 pt tall as in Rex, always the same (D45). While the sidebar is
 open, the traffic lights, the sidebar toggle and the machine button sit in a
-leading area as wide as the sidebar, so the first tab starts where the cards
+leading area as wide as the sidebar, so Go Back starts where the cards
 start, also during a resize. From left to right:
 1. The traffic lights, centered on the row at 23, 46 and 69 pt from the
    left, where Rex has them ([Tab bar and Liquid
@@ -93,8 +93,8 @@ start, also during a resize. From left to right:
 3. The [machine button](#machine-button).
 4. The [space button](#space-button), only while the sidebar is
    collapsed.
-5. The [tab bar](#tab-bar): the selected space's tabs, whether the sidebar
-   is open or collapsed.
+5. Go Back and Go Forward, then the [tab bar](#tab-bar): the
+   selected space's tabs, whether the sidebar is open or collapsed.
 6. A spacer.
 7. `+` (new tab, ⌘T), the only button at the end. The overview's button sits in the
    [session header](#sidebar); the command palette has only its keys (⌘K).
@@ -217,6 +217,15 @@ One capsule per herdr tab of the selected space (D42).
   a browser's Back and Forward step through pages: across spaces, past the
   tabs closed since. Showing a tab another way after Go Back drops the tabs
   ahead. The window keeps the last 100.
+- **Back and Forward buttons.** At the bar's left end, where the cards
+  start (after the space button while the sidebar is collapsed), 8 pt before
+  the first tab: `chevron.left` and `chevron.right`, the title row's 28 pt
+  buttons with their rounded hover fill. They are always there. One with
+  nowhere to go is dimmed (40 %), as are its Window menu and palette items. A
+  right-click or a long press on either lists the tabs its presses would step
+  through, nearest first, at most 10, as "‹tab title› — ‹space›" (text only: macOS 27
+  draws no images in these menus). A pick goes straight there, as that many
+  presses would.
 - **Close.** When the selected tab closes, the window selects the tab used
   before it (the latest one still open), else the tab on its left, else the
   new first tab.

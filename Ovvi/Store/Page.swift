@@ -32,9 +32,8 @@ final class Page: Identifiable {
     }
 
     @ObservationIgnored private var usedTabIDs: [String: [String]] = [:]
-    /// The tabs shown, across spaces, oldest first; Go Back and Go Forward move `place` along it.
-    @ObservationIgnored private var history: [String] = []
-    @ObservationIgnored private var place = -1
+    /// Observed: the title row's Back and Forward dim when there is nowhere to go.
+    private(set) var history = TabHistory()
     @ObservationIgnored private var tabOrder: [String: [String]] = [:]
     /// Each tab's zoomed card: tab id to pane id.
     var zoomedPanes: [String: String] = [:]
@@ -101,31 +100,32 @@ final class Page: Identifiable {
 
     /// -1 back, 1 forward, past the tabs closed since.
     func goInHistory(_ offset: Int) {
-        var index = place + offset
-        while history.indices.contains(index) {
-            let id = history[index]
-            if id != selectedTab?.id, let workspace = store.workspace(of: id) {
-                place = index
-                return select(workspace, tab: id)
-            }
-            index += offset
-        }
+        trail(offset, max: 1).first.map(goInHistory(to:))
     }
 
-    /// A step through the history lands on `place` and adds nothing.
+    func trail(_ offset: Int, max: Int = 10) -> [Int] {
+        history.trail(offset, from: selectedTab?.id, max: max) { store.workspace(of: $0) != nil }
+    }
+
+    /// Straight to a place of `trail`, as that many presses would.
+    func goInHistory(to index: Int) {
+        guard history.ids.indices.contains(index), let workspace = store.workspace(of: history.ids[index])
+        else { return }
+        history.go(to: index)
+        select(workspace, tab: history.ids[index])
+    }
+
     private func went(from old: String?) {
-        guard let new = selectedWorkspaceID.flatMap({ selectedTabIDs[$0] }), new != old,
-              place < 0 || history[place] != new else { return }
-        // ponytail: the last 100 tabs, enough to step back through by key.
-        history = Array(history.prefix(place + 1).suffix(99)) + [new]
-        place = history.count - 1
+        if let new = selectedWorkspaceID.flatMap({ selectedTabIDs[$0] }), new != old {
+            history.show(new)
+        }
     }
 
     func settle() {
         let arrived = store.ahead.arrived
         if !arrived.isEmpty {
             usedTabIDs = usedTabIDs.mapValues { $0.map { arrived[$0] ?? $0 } }
-            history = history.map { arrived[$0] ?? $0 }
+            history.rename(arrived)
             // Only a change: each set notifies every observer of the selection.
             let selected = selectedTabIDs.mapValues { arrived[$0] ?? $0 }
             if selected != selectedTabIDs {
