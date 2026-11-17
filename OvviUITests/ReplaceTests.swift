@@ -120,9 +120,7 @@ extension OvviUITests {
         try await waitForPrompt(new)
         try await typeAndRead(new)
     }
-}
 
-extension OvviUITests {
     func testRedrawTerminalMakesTheProgramRepaint() async throws {
         let (tab, pane) = try await newTab("nudge")
         try await settle([tab])

@@ -54,10 +54,8 @@ extension OvviUITests {
         closeAfter("workspace", made)
         // In home, not the server's cwd (the runner's own home is its sandbox container).
         let panes = try await snapshot()["panes"] as? [[String: Any]] ?? []
-        XCTAssertEqual(
-            panes.first { $0["workspace_id"] as? String == made }?["cwd"] as? String,
-            "/Users/\(NSUserName())",
-        )
+        let cwd = panes.first { $0["workspace_id"] as? String == made }?["cwd"] as? String
+        XCTAssertEqual(cwd, "/Users/\(NSUserName())")
         try await expect("the button to show \(name)") { button.value as? String == "\(one) | \(name)" }
         XCTAssertTrue(element("tab.\(made):t1").exists(within: 2))
 

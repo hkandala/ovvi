@@ -107,9 +107,7 @@ extension OvviUITests {
         element("sidebar.settings").click()
         XCTAssertTrue(settingsWindow.exists(within: 3))
     }
-}
 
-extension OvviUITests {
     /// The panel scrolls past its most height. Clear All on Done and a done row's × mark finishes seen, so those agents
     /// turn idle; an agent that needs you has neither.
     func testTheAgentsPanelScrollsAndClearsItsDoneAgents() async throws {

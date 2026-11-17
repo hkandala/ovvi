@@ -24,12 +24,10 @@ extension OvviUITests {
         XCTAssertFalse(element("titlebar.machine").exists, "a window behind the welcome on a first launch")
         let count = try XCTUnwrap(welcomePage.split(separator: " ").last.flatMap { Int($0) }, welcomePage)
         XCTAssertEqual(welcomePage, "1 of \(count)")
-        let tabs = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'tab.'")).count
+        let capsules = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'tab.'"))
+        let tabs = capsules.count
         app.typeKey("t", modifierFlags: .command)
-        XCTAssertFalse(until(2) {
-            app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'tab.'")).count
-                != tabs
-        }, "⌘T made a tab behind the welcome")
+        XCTAssertFalse(until(2) { capsules.count != tabs }, "⌘T made a tab behind the welcome")
 
         step("Welcome: the pictures follow the appearance")
         let picture = element("welcome.picture")

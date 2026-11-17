@@ -305,14 +305,13 @@ extension OvviUITests {
 
     func testFoldersDroppedOnTheDockOpenWorkspaces() async throws {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        let ovvi = Self.devApp
-        let warm = try await dropFolder(ovvi)
+        let warm = try await dropFolder()
         let opened = try await workspace(in: warm)
         XCTAssertTrue(element("workspace.\(opened)").has(\.isSelected, true, within: 3))
         XCTAssertEqual(app.windows.count, 1)
 
         app.terminate()
-        let cold = try await dropFolder(ovvi)
+        let cold = try await dropFolder()
         // The Debug build's own id, never the installed app's.
         let relaunched = XCUIApplication(bundleIdentifier: "dev.ovvi.app.debug")
         addTeardownBlock { relaunched.terminate() }
@@ -323,8 +322,8 @@ extension OvviUITests {
         XCTAssertEqual(relaunched.windows.count, 1)
     }
 
-    private func dropFolder(_ ovvi: String) async throws -> String {
-        try await String(decoding: Self.post("\(one)/open-folder", Data(ovvi.utf8)), as: UTF8.self)
+    private func dropFolder() async throws -> String {
+        try await String(decoding: Self.post("\(one)/open-folder", Data(Self.devApp.utf8)), as: UTF8.self)
     }
 
     private func workspace(in folder: String, times: Int = 50) async throws -> String {
