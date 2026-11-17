@@ -300,6 +300,39 @@ agents to impl"), F2 C, F2 shown A, History menu ("looks good")"
 
 ## The cleanup (after phase 62's code lands)
 
+The user's request, word for word: "and one more thing, there's a lot of cleanup needs to be done in docs, take
+this up once all these impl changes are done
+- whatever in docs/ is public docs, right now it has design decisions, future work, lot of impl detials, rewrite the
+  entire docs such that its relevant to public users, so we should focus more on installation, features, how to use
+  certain features, any setup for them etc, and general guide overall, we can give high level design on how ovvi works
+  with herdr and how plugins works etc, just high level detail on how things works and how they can works, and
+  separate section for plugins, how to create new plugin, keep it concise but clear and make sure to cover all
+  relevant details, give me another html report on this on how we are going to structure all this docs and rough
+  overview of what content goes in them, give me multiple options so i can choose one
+
+let's also move out all files in research folder outside repo: https://github.com/hkandala/ovvi/tree/main/resources/research,
+let's create a new folder in downloads separate from existing research folder we arleady have and move it out,
+
+scripts folder has so many scripts there, review each script and remove the ones which are no longer relevant, have a
+readme file with index on what scripts to use when, only the ones which we would use in future should stay in repo
+
+and coming to playbooks folder, we shouldn't have phases in repo, there are few phases md files let's move them out
+as well, let's make sure in workflow.md or somewhere to keep these phase docs in ~/ovvi-docs/phases folder, so now
+that we are using ~/ovvi-docs folder, let's move research also in that, don't mention about research folder anywhere
+in the repo btw, this is specific to my device. so ovvi-docs should have phases folder research folder and any scratch
+folder for temp files agents can create, in one folder on their own, also phases should no longer be numbers like 57
+etc, each phase should have name. also check our ovvi-research folder in Downlaods, most of its can be dropped, i
+think tmeporary ones created by agents, go through all these docs, and distill info out anything important ones move
+to ovvi-docs/research folder and the research folder i mentioned earlier also should go into ovvi-docs/research,
+essentially by end of all this cleanup, in repo, we have only bsica workslfow, lession etc, no phases, no reesarch
+docs etc, and also grep through entire repo for mention of our inspired apps like rex, t3code etc, we shouldn't not
+quote those apps in our repo anywhere. and at the end review all docs in repo, and workflows md files, readne files
+etc and improve them, we have one inspirations folder as well in downloads, let's move that to ~/ovvi-docs as well,
+review ovvi-research carefully though, there are so many folders and docs and we can see only specific useful ones to
+move into research which might be useful for us later, other indidvual phase ones, most probably we can drop those, as
+those phases are done and might not add much value, so do one thing, analyse all of these, give me one html report
+including what docs structure we can go with, and general plan on this entier cleanup, keep it concise and clear"
+
 The user's picks on `~/Downloads/ovvi-research/p62-cleanup/index.html`, word for word: "D1 C, D2 A, D3 A, D4 B, P1 A,
 P2 A, P3 A, R1 keep, R2 drop, R3 drop, R4 keep, R5 drop, R6 keep, R7 keep, R8 latest, R9 A, R10 keep, R11 keep, R12
 drop, S1 A, N1 A, D1 note: "i like option C, but many subpages can come from option A, like plugins sections are good
