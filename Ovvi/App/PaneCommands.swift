@@ -16,7 +16,8 @@ extension CommandList {
                            symbol: symbol, heading: heading, keywords: "pane", enabled: pane != nil && enabled,
                            alternate: alternate, action: {
                                if let page, let pane = target() {
-                                   Task { await run(page, pane) }
+                                   // At once: a split reads ⌥ (`Chooser.asked`) while its key is the current event.
+                                   Task.immediate { await run(page, pane) }
                                }
                            })
         }

@@ -45,7 +45,7 @@ struct CommandList {
             Command(section: .file, title: "New Space", key: .hotkey("space.new"),
                     group: .workspaces, symbol: "folder.badge.plus", keywords: "workspace", enabled: live,
                     alternate: Chooser.fixed == nil ? nil : "New Space and Choose…",
-                    action: { Task { await page?.newWorkspace() } }),
+                    action: { Task.immediate { await page?.newWorkspace() } }),
             Command(section: .file, title: "Open Session…", key: .hotkey("session.open"), group: .sessions,
                     symbol: "rectangle.stack.badge.plus",
                     keywords: "create start switch", enabled: openSession != nil, action: {

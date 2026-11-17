@@ -14,9 +14,10 @@ extension Chooser {
         id.isEmpty ? nil : fixedRows.first { $0.id == id }
     }
 
-    /// Read ahead of any await, while the key or click that makes the pane is still held.
+    /// Read ahead of any await. A key's own event holds the ⌥ it was typed with: a quick ⌥⇧⌘D's ⌥ can be up before
+    /// its action runs. A menu item clicked has no event of its own here, so the ⌥ held now counts too.
     static var asked: Bool {
-        NSEvent.modifierFlags.contains(.option)
+        NSEvent.modifierFlags.contains(.option) || NSApp.currentEvent?.modifierFlags.contains(.option) == true
     }
 }
 
