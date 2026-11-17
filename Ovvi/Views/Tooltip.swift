@@ -12,7 +12,6 @@ struct Tip {
     var trigger: CGRect
     let text: String
     let key: String?
-    let enabled: Bool
     /// None when it follows another tip: the pointer moved along a row of buttons.
     var fades = true
 }
@@ -23,6 +22,8 @@ extension HoverPanels {
     func enter(_ tip: Tip) {
         wait?.cancel()
         watch()
+        // None while a button is held: a drag, or a menu opening.
+        guard NSEvent.pressedMouseButtons == 0 else { return }
         if self.tip != nil || tipEnded.map({ ContinuousClock.now - $0 < .milliseconds(500) }) == true {
             self.tip = tip
             self.tip?.fades = false
@@ -30,9 +31,9 @@ extension HoverPanels {
         }
         waiting = tip
         wait = Task {
-            try? await Task.sleep(for: .milliseconds(500))
-            // None while a button is held: a drag, or a menu opening.
-            if !Task.isCancelled, NSEvent.pressedMouseButtons == 0 {
+            // Cancelled, the next button's wait is the one that counts.
+            guard await (try? Task.sleep(for: .milliseconds(500))) != nil else { return }
+            if NSEvent.pressedMouseButtons == 0 {
                 self.tip = waiting
             }
             waiting = nil
@@ -82,7 +83,6 @@ private struct TipTrigger: ViewModifier {
     let text: String
     let key: String?
     @Environment(HoverPanels.self) private var panels: HoverPanels?
-    @Environment(\.isEnabled) private var enabled
     @State private var id = UUID()
     /// Not observed: a write at every move would redraw the trigger.
     @State private var frame = Frame()
@@ -95,7 +95,7 @@ private struct TipTrigger: ViewModifier {
             .onHover { over in
                 guard let panels else { return }
                 if over, !text.isEmpty {
-                    panels.enter(Tip(owner: id, trigger: frame.rect, text: text, key: key, enabled: enabled))
+                    panels.enter(Tip(owner: id, trigger: frame.rect, text: text, key: key))
                 } else {
                     panels.leave(id)
                 }
@@ -106,6 +106,8 @@ private struct TipTrigger: ViewModifier {
             }
             // A view removed under the pointer gets no hover end.
             .onDisappear { panels?.leave(id) }
+            // As `.help` did: VoiceOver reads it as help.
+            .accessibilityHint(text)
     }
 }
 
@@ -119,14 +121,13 @@ struct TipView: View {
         HStack(spacing: 8) {
             Text(tip.text)
             if let key = tip.key {
-                Text(key).font(.system(size: 11, weight: .medium)).kerning(0.5)
+                Text(key).font(.system(size: 11, weight: .medium)).kerning(0.5).fixedSize()
                     .padding(.horizontal, 5).padding(.vertical, 1)
                     .overlay(RoundedRectangle(cornerRadius: 5, style: .continuous).strokeBorder(colors.cap))
             }
         }
         .font(.system(size: 12))
         .foregroundStyle(colors.text)
-        .opacity(tip.enabled ? 1 : 0.6)
         .padding(.leading, 12).padding(.trailing, tip.key == nil ? 12 : 7).padding(.vertical, 6)
         .background(colors.fill, in: shape)
         .overlay(shape.strokeBorder(colors.rim))

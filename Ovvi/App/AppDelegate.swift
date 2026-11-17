@@ -58,7 +58,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     }
 
     func applicationWillFinishLaunching(_: Notification) {
-        UserDefaults.standard.register(defaults: ["NSQuitAlwaysKeepsWindows": true, "askNotifications": true])
+        UserDefaults.standard.register(defaults: [
+            "NSQuitAlwaysKeepsWindows": true, "askNotifications": true,
+            // The system tooltips left (Settings, cut-off text) wait as the app's own.
+            "NSInitialToolTipDelay": 500,
+        ])
         let center = UNUserNotificationCenter.current()
         center.delegate = self
         // macOS asks the user once; later calls answer at once. The Dock badge shows only with `.badge` allowed. The UI

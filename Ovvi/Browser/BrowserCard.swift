@@ -19,12 +19,13 @@ extension Page {
 
 extension CommandList {
     static func browser(_ browser: Browser?, chooser: Chooser?) -> [Command] {
-        [
-            Command(section: .view, title: "Back", key: browser == nil ? nil : .hotkey("browser.back"),
-                    symbol: "chevron.left", keywords: "browser history", enabled: browser?.canGoBack == true,
-                    action: { browser?.view.goBack() }),
-            Command(section: .view, title: "Forward", key: browser == nil ? nil : .hotkey("browser.forward"),
-                    symbol: "chevron.right", keywords: "browser history", enabled: browser?.canGoForward == true,
+        let back = browser?.canGoBack == true, forward = browser?.canGoForward == true
+        return [
+            // No key while disabled: a disabled item swallows its key, and a page may want ⌃-.
+            Command(section: .view, title: "Back", key: back ? .hotkey("browser.back") : nil, symbol: "chevron.left",
+                    keywords: "browser history", enabled: back, action: { browser?.view.goBack() }),
+            Command(section: .view, title: "Forward", key: forward ? .hotkey("browser.forward") : nil,
+                    symbol: "chevron.right", keywords: "browser history", enabled: forward,
                     action: { browser?.view.goForward() }),
             Command(
                 section: .view,

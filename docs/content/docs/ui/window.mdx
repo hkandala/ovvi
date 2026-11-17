@@ -109,15 +109,18 @@ action's name, then its shortcut in one outlined key cap, for example "New Tab
 ⌘T". The key comes from the key registry, so it is the key the user set.
 - **Look.** A solid panel in every look (dark `#202022`, light `#FDFDFD`) with
   a fine rim and a soft shadow, radius 9 pt, 12 pt text, 6 pt of padding above
-  and below and 12 pt at the sides. A disabled button's tooltip shows dimmed.
+  and below, 12 pt before the text and 12 pt after it (7 pt after a key cap).
+  A long one wraps at 320 pt. A disabled button shows its tooltip too.
 - **Place.** Centered under the button, 6 pt below it, and 8 pt inside the
-  window; above the button when there is no room under it.
+  window; above the button when there is no room under it. A tab's hover card
+  steps aside while its × shows its tooltip.
 - **Timing.** It shows after the pointer rests 0.5 s on the button, and at
   once when the pointer moves to the next button within 0.5 s. A click, a
   scroll or a key hides it, and the next one waits again. It fades in over
   0.1 s, with no fade when Animations are off.
 - It is drawn inside the window, not in a window of its own, so it never takes
-  the keyboard from a terminal. The Settings window keeps the system tooltip.
+  the keyboard from a terminal. The Settings window, and text cut off in a
+  line, keep the system tooltip, which also shows after 0.5 s.
 
 The window title is "‹tab title› - ‹page title›" (the page in view's sidebar title: the machine's name for
 `default`), so the
@@ -740,7 +743,7 @@ How it works: [Layout and sizing](/docs/layout).
   in one that does not (herdr's `right_click_passthrough_modifier = "alt"`).
   herdr's per-pane setting that gives a pane's right clicks to its program is
   not in its API, so the app does not follow it:
-  - Float Pane, Split Right (⌘D), Split Down (⇧⌘D), Split Left, Split Up,
+  - Float Pane (⌥⌘↩), Split Right (⌘D), Split Down (⇧⌘D), Split Left, Split Up,
     Zoom Pane or Restore Pane (⇧⌘↩).
   - Move Pane to Tab ▸ (New Tab, right after the pane's tab and disabled
     for a pane alone in its tab, and New Space, a separator, then every
@@ -966,8 +969,9 @@ Git diff the page's filter
   opened on.
 - A new query selects the last match, nearest the bottom. ⌘G or Enter goes to
   the next match down, ⇧Enter or ↑ to the previous one up, round the ends. Esc
-  or × closes the bar and gives the keyboard back to the card. As in Rex, Find
-  Previous has no shortcut here: ⇧⌘G is Go to Directory.
+  or × closes the bar and gives the keyboard back to the card. Find Previous has
+  no menu shortcut here, since ⇧⌘G is Go to Directory: its tooltip shows ⇧↩, the
+  field's key.
 - The text comes from herdr, read when the bar opens and again at the next
   step after Return was pressed in the pane, and the search is case blind.
   Each match scrolls herdr's viewport to it, with the match line centered.

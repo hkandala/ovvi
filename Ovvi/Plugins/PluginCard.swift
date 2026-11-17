@@ -58,6 +58,7 @@ private struct ToastView: View {
         let id = "pane.\(plugin.paneID).toast"
         Capped(width: Notice.width) {
             HStack(spacing: 8) {
+                // swiftlint:disable:next system_tooltip
                 Text(toast.text).lineLimit(1).help(toast.text).accessibilityIdentifier(id)
                 if let other = toast.other {
                     Button(other.title, role: other.role) {

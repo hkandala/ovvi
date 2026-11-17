@@ -55,14 +55,15 @@ private struct HoverPanelHost: ViewModifier {
     @State private var panels = HoverPanels()
 
     func body(content: Content) -> some View {
-        content.environment(panels).overlay {
+        content.environment(panels).onDisappear { panels.monitor.map(NSEvent.removeMonitor) }.overlay {
             // Always here, so the panel is the view inserted and scales about its own edge, not the window's.
             GeometryReader { proxy in
                 let open = panels.open, origin = proxy.frame(in: .global).origin
                 let trigger = open?.trigger.offsetBy(dx: -origin.x, dy: -origin.y) ?? .zero
                 PanelLayout(trigger: trigger, place: open?.place ?? .under) {
                     // In only: the panel would lose its place on the way out.
-                    if let open {
+                    // Not under a tooltip: a tab's × has both.
+                    if let open, panels.tip == nil {
                         open.content.id(open.owner).transition(.asymmetric(
                             insertion: .opacity.combined(with: Animation.reduced ? .identity
                                 : .scale(scale: 0.97, anchor: open.place.panel))
@@ -102,8 +103,8 @@ private struct PanelLayout: Layout {
 
     func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
         guard let panel = subviews.first else { return }
-        // The window's width: a long tooltip wraps.
-        let size = panel.sizeThatFits(ProposedViewSize(width: bounds.width - 2 * gap, height: nil))
+        // A long tooltip wraps, as the system's do.
+        let size = panel.sizeThatFits(ProposedViewSize(width: min(bounds.width - 2 * gap, 320), height: nil))
         let left = trigger.minX + trigger.width * place.trigger.x - size.width * place.panel.x + place.offset.width
         var top = trigger.minY + trigger.height * place.trigger.y - size.height * place.panel.y + place.offset
             .height

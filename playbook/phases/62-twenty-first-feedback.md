@@ -174,7 +174,9 @@ Report: `~/Downloads/ovvi-research/p62-footer/index.html`.
   the system tooltip.
 - **Decisions.** Float Pane gets ⌥⌘↩ (free in the registry, and libghostty has no binds, so the menu takes it over a
   terminal). Browser Back and Forward get a plugin card's keys, ⌃- and ⌃⇧-: ⌘← would take the caret's key from the
-  address field. Find Previous shows ⇧↩ and the find bar's Close ⎋, the keys the field takes. A disabled button's
-  tooltip shows dimmed.
-- **For the user.** The floating window's labels match their keys: Close Pane ⇧⌘W, Detach Pane ⌘W. Check the
-  tooltip's look over a bright and a dark page, and the flip above a button at the window's bottom.
+  address field; they have no key while disabled, so a page keeps ⌃-. Find Previous shows ⇧↩ and the find bar's
+  Close ⎋, the keys the field takes. A tab's hover card steps aside while its × shows a tooltip. The system tooltips
+  left wait 0.5 s too (`NSInitialToolTipDelay`), and a lint rule keeps `.help` out of the app's windows.
+- **For the user.** The floating window's labels match their keys: Close Pane ⇧⌘W, Detach Pane ⌘W. Check by hand:
+  a sweep across the pane header's buttons (each tip at once after the first), the flip above a button at the
+  window's bottom, and the look over a bright and a dark page.

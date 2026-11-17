@@ -85,7 +85,8 @@ private struct HeaderItem: View {
                 labeled(id, icon: true).buttonStyle(ChromeStyle(radius: 5.5)).foregroundStyle(look.paneButton)
             }
         }
-        .tip(title)
+        // A bordered button shows its title.
+        .tip(control.style == "bordered" ? "" : title)
         // In the label: XCUITest reads no button's value.
         .accessibilityLabel(control.label ?? control.badge.map { "\(title), \($0)" } ?? title)
     }

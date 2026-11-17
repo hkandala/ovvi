@@ -127,6 +127,7 @@ struct ClosedPagesPopover: View {
                     .frame(maxWidth: .infinity, minHeight: 26, alignment: .leading)
                 }
                 .buttonStyle(ChromeStyle(radius: 6))
+                // swiftlint:disable:next system_tooltip
                 .help(closed.shown + "\n" + closed.url)
                 .accessibilityIdentifier("browser.closed.\(index)")
             }

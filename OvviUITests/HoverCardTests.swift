@@ -135,7 +135,7 @@ extension OvviUITests {
 
     func testIconButtonsShowTheAppsTooltipAndFloatPaneHasAKey() async throws {
         step("A rest shows the tooltip under the button, with its key")
-        let (_, pane) = try await newTab("tips")
+        let (tab, pane) = try await newTab("tips")
         let tip = element("tooltip"), split = element("pane.\(pane).split-down"), zoom = element("pane.\(pane).zoom")
         hoverHeader(pane)
         XCTAssertTrue(split.exists(within: 3))
@@ -143,15 +143,31 @@ extension OvviUITests {
         XCTAssertTrue(tip.has(\.label, "Split Down ⇧⌘D", within: 3))
         XCTAssertEqual(tip.frame.minY - split.frame.maxY, 6, accuracy: 1, "\(tip.frame) under \(split.frame)")
         XCTAssertTrue((tip.frame.minX ... tip.frame.maxX).contains(split.frame.midX), "\(tip.frame)")
-        keepScreenshot("tooltip")
+        keepScreenshot("tooltip, dark")
 
-        step("The next button's follows at once, a disabled one's too; a click hides it until the pointer comes back")
+        step("A disabled button shows its tooltip too; a click hides it until the pointer comes back")
         XCTAssertFalse(zoom.isEnabled)
         zoom.hover()
-        XCTAssertTrue(tip.has(\.label, "Zoom Pane ⇧⌘↩", within: 1))
+        XCTAssertTrue(tip.has(\.label, "Zoom Pane ⇧⌘↩", within: 3))
         zoom.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
         XCTAssertTrue(tip.vanishes(within: 1))
         XCTAssertFalse(tip.exists(within: 1.5))
+
+        step("A tab's ×: its tooltip over the tab's hover card, which steps aside")
+        let card = element("hovercard"), close = element("tab.\(tab).close")
+        element("tab.\(tab)").hover()
+        XCTAssertTrue(card.exists(within: 3))
+        close.hover()
+        XCTAssertTrue(tip.has(\.label, "Close Tab ⇧⌘W", within: 3))
+        XCTAssertTrue(card.vanishes(within: 1))
+        addTeardownBlock { @MainActor [self] in pick("Appearance", "Dark") }
+        pick("Appearance", "Light")
+        XCTAssertTrue(element("window.look").has(\.stringValue, "glass light", within: 3))
+        hoverHeader(pane)
+        split.hover()
+        XCTAssertTrue(tip.has(\.label, "Split Down ⇧⌘D", within: 3))
+        keepScreenshot("tooltip, light")
+        pick("Appearance", "Dark")
 
         step("⌥⌘↩ floats the terminal that has the keys; the floating window shows tooltips too")
         XCTAssertTrue(hasKeyboard("terminal.\(pane)"))
@@ -160,6 +176,7 @@ extension OvviUITests {
         XCTAssertTrue(window.exists(within: 5))
         element("float.\(pane).pin", in: window).hover()
         XCTAssertTrue(element("tooltip", in: window).has(\.label, "Stay on Top", within: 3))
+        keepScreenshot("floating window tooltip", of: window)
         app.typeKey("w", modifierFlags: .command)
         XCTAssertTrue(window.vanishes(within: 3))
     }

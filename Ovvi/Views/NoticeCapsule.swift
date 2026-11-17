@@ -32,8 +32,10 @@ struct NoticeCapsule<Action: View>: View {
                 .accessibilityIdentifier("notice.symbol")
                 // One line: what is longer ends in … and shows whole on hover.
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    // swiftlint:disable:next system_tooltip
                     Text(text).lineLimit(1).help(whole ?? text).layoutPriority(1)
                     if !detail.isEmpty {
+                        // swiftlint:disable:next system_tooltip
                         Text(detail).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1).help(detail)
                             .accessibilityIdentifier("notice.detail")
                     }

@@ -17,6 +17,12 @@ custom_rules:
     regex: 'Color\((red|white|hue|srgbRed|calibratedRed|calibratedWhite|deviceRed|deviceWhite):|Color\((\.sRGB|\.displayP3|nsColor|uiColor|cgColor)|Color\.(white|black|gray|red|green|blue|orange|yellow|pink|purple|mint|teal|cyan|indigo|brown)\b|[(\[ ]\.(white|black|gray|red|green|blue|orange|yellow|pink|purple|mint|teal|cyan|indigo|brown)(\.opacity|\.withAlphaComponent|\))'
     message: 'Draw with the Look tokens in Style.swift (D44)'
     severity: error
+  system_tooltip: # the app's tooltip shows the key and waits 0.5 s; Settings is its own window
+    included: '/Ovvi/'
+    excluded: 'Ovvi/Settings/'
+    regex: '\.help\('
+    message: 'Use .tip (Views/Tooltip.swift); .help only for text cut off in a line'
+    severity: error
   nested_run_loops: # inside a main actor job, a menu or modal blocks every other main actor job until it ends
     included: '/Ovvi/'
     excluded: 'Ovvi/Views/MenuAction\.swift$'

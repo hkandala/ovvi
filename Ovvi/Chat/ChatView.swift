@@ -118,7 +118,8 @@ struct Composer: View {
                 if working, chat.draft.isEmpty {
                     roundButton("stop.fill", help: "Stop", id: "chat.\(chat.paneID).stop", action: chat.stop)
                 } else {
-                    roundButton("arrow.up", help: "Send", id: "chat.\(chat.paneID).send") { chat.send(chat.draft) }
+                    roundButton("arrow.up", help: "Send", key: KeyboardShortcut(.return, modifiers: []),
+                                id: "chat.\(chat.paneID).send") { chat.send(chat.draft) }
                 }
             }
         }
@@ -128,14 +129,16 @@ struct Composer: View {
         .onTapGesture { composing.wrappedValue = true }
     }
 
-    private func roundButton(_ symbol: String, help: String, id: String, action: @escaping () -> Void) -> some View {
+    private func roundButton(_ symbol: String, help: String, key: KeyboardShortcut? = nil, id: String,
+                             action: @escaping () -> Void) -> some View
+    {
         Button(action: action) {
             Image(systemName: symbol).font(.system(size: 10, weight: .bold)).foregroundStyle(Look.onAccent)
                 .frame(width: 22, height: 22)
                 .background(.tint, in: .circle)
         }
         .buttonStyle(.plain)
-        .tip(help)
+        .tip(help, key: key)
         .accessibilityLabel(help)
         .accessibilityIdentifier(id)
     }
