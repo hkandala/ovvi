@@ -34,12 +34,8 @@ const markdownMode = (edit: boolean) => [
     EditorView.domEventHandlers({ drop: (event) => (event.preventDefault(), true) }),
   ],
 ]
-const modeClass = EditorView.editorAttributes.compute([EditorView.editable], (state) => ({
-  class: editing(state) ? "" : "cm-reading",
-}))
 const rendered = [
   live,
-  modeClass,
   Prec.highest(EditorView.theme({
     "&": { fontSize: "calc(var(--font-size) + 1px)" },
     ".cm-scroller": { fontFamily: "system-ui", lineHeight: "1.55", outline: "none" },

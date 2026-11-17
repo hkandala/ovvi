@@ -59,7 +59,6 @@ nav button:hover {
   color: var(--accent);
   text-decoration: none;
 }
-.cm-reading a:hover,
 .cm-content > :not(.cm-activeLine) a:hover {
   text-decoration: underline;
   cursor: pointer;
