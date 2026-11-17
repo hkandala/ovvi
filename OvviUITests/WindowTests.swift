@@ -49,8 +49,8 @@ extension OvviUITests {
         let (first, second) = try newWindow()
         XCTAssertTrue(element("notice.controlled", in: second).exists(within: connect))
         // Every request and the events stream go over herdr's socket: no herdr process but the terminals'.
-        let runs = try await bridges(one)
-        XCTAssertEqual(runs, 0)
+        let bridges = try await runs(one).count { $0.contains("remote-api-bridge") }
+        XCTAssertEqual(bridges, 0)
         app.typeKey("s", modifierFlags: [.command, .control])
 
         raise(first)
@@ -326,10 +326,6 @@ extension OvviUITests {
                 observes = runs.count { $0.contains("observe") }
             return controls == control && observes == observe
         }
-    }
-
-    private func bridges(_ session: String) async throws -> Int {
-        try await runs(session).count { $0.contains("remote-api-bridge") }
     }
 
     /// Brings the window to the front with Window ▸ Cycle Through Windows (⌘`), as a click cannot: on CI's 1024×768

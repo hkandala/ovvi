@@ -10,11 +10,7 @@ extension OvviUITests {
         try await rename(working, "fixer")
         let blocked = try await newTab("deploy").pane
         try await report(blocked, "blocked", agent: "claude")
-        let docs = try await newTab("docs")
-        try await report(docs.pane, "working")
-        try await waitForValue("tab.\(docs.tab)", containing: "working")
-        try await report(docs.pane, "idle")
-        let done = docs.pane
+        let done = try await finish(newTab("docs"))
 
         let rows = [done, blocked, working, idle].map { element("agent.\($0)") }
         XCTAssertTrue(element("fold.w2").exists(within: 3))

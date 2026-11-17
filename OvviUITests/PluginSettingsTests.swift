@@ -92,14 +92,7 @@ extension OvviUITests {
         let cancel = element("pane.\(pane).trust.cancel")
         XCTAssertTrue(cancel.exists(within: 10))
         cancel.click()
-        try await expect("the canceled card's pane to close") {
-            do {
-                _ = try await self.pane(pane)
-                return false
-            } catch is Failed {
-                return true
-            }
-        }
+        try await expect("the canceled card's pane to close") { try await !Self.ids("pane", in: one).contains(pane) }
     }
 
     private func defaultPluginPage(_ page: XCUIElement, in settings: XCUIElement) {
@@ -115,7 +108,6 @@ extension OvviUITests {
         addTeardownBlock { @MainActor [self] in pick("Appearance", "Dark") }
         pick("Appearance", "Light")
         keepScreenshot("plugin page light", of: settings)
-        // Back to the list: a click on the selected row changes nothing.
         element("settings.page.general").click()
         page.click()
         XCTAssertTrue(element("plugins.explorer").exists(within: 3))

@@ -127,7 +127,7 @@ extension OvviUITests {
         ])
     }
 
-    private func finish(_ created: (tab: String, pane: String)) async throws -> String {
+    func finish(_ created: (tab: String, pane: String)) async throws -> String {
         try await report(created.pane, "working")
         try await waitForValue("tab.\(created.tab)", containing: "working")
         try await report(created.pane, "idle")

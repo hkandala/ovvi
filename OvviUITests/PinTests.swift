@@ -213,13 +213,7 @@ extension OvviUITests {
             seen = counts()
         }
         XCTAssertEqual(seen.count, 2, moves.stringValue)
-        addTeardownBlock { [one] in
-            _ = try? await Self.call(
-                one,
-                "workspace.move_block",
-                ["workspace_ids": ["w1"], "before_workspace_id": "w2"],
-            )
-        }
+        restoreSpaceOrderAfter()
         alpha.rightClick()
         app.menuItems["Move Down"].click()
         try await moved("Move Down")
@@ -256,13 +250,7 @@ extension OvviUITests {
     func testThePointerLightsTheRowUnderItAfterPins() async throws {
         relaunch(one, ["-configFolder", Self.pins("g"), "-recordMotion", "YES", "-forceMotion", "YES"])
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
-        addTeardownBlock { [one] in
-            _ = try? await Self.call(
-                one,
-                "workspace.move_block",
-                ["workspace_ids": ["w1"], "before_workspace_id": "w2"],
-            )
-        }
+        restoreSpaceOrderAfter()
         let gamma = try await newSpace("pin-g")
         let alpha = element("workspace.w1"), beta = element("workspace.w2"), third = element("workspace.\(gamma)")
         let rows = try await [("w1", alpha), ("w2", beta), (gamma, third)] + agents(in: ["w1", "w2", gamma])
@@ -293,6 +281,17 @@ extension OvviUITests {
     }
 
     /// Two agent lines in each space.
+    /// w1 back above w2 after a test that moves the spaces.
+    func restoreSpaceOrderAfter() {
+        addTeardownBlock { [one] in
+            _ = try? await Self.call(
+                one,
+                "workspace.move_block",
+                ["workspace_ids": ["w1"], "before_workspace_id": "w2"],
+            )
+        }
+    }
+
     private func agents(in spaces: [String]) async throws -> [(String, XCUIElement)] {
         var agents: [(String, XCUIElement)] = []
         for space in spaces {

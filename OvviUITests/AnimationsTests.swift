@@ -11,13 +11,7 @@ extension OvviUITests {
             openSettings("appearance")
             turn("settings.appearance.animations", true)
         }
-        addTeardownBlock { [one] in
-            _ = try? await Self.call(
-                one,
-                "workspace.move_block",
-                ["workspace_ids": ["w1"], "before_workspace_id": "w2"],
-            )
-        }
+        restoreSpaceOrderAfter()
         let (tab, pane) = try await newTab("animations")
         element("tab.\(tab)").click()
         step("Animations on")

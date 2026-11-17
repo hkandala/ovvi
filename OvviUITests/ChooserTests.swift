@@ -205,15 +205,15 @@ extension OvviUITests {
         commands(here: true)
         app.typeKey("r", modifierFlags: [.command, .shift])
         let chosen = try await replaced(shell, in: tab, besides: [])
-        let terminal = element("pane.\(chosen).chooser.terminal")
-        XCTAssertTrue(terminal.has(\.isSelected, true, within: 3))
-        app.typeKey(.return, modifierFlags: [])
-        XCTAssertTrue(terminal.vanishes(within: 2))
+        pickTerminal(chosen)
         try await waitForPrompt(chosen)
         try await typeAndRead(chosen)
     }
 
-    func typeFolderAndPickTerminal(remote: Bool) async throws {
+    private func typeFolderAndPickTerminal(remote: Bool) async throws {
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        element("workspace.w2").click()
+        XCTAssertTrue(element("pane.w2:p1").has(\.isHittable, true, within: 3))
         let before = try await tabIDs()
         closeNew("tab", besides: before)
         app.typeKey("t", modifierFlags: .command)
@@ -251,9 +251,6 @@ extension OvviUITests {
     }
 
     func testTheFolderLineSetsWhereThePickStarts() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        element("workspace.w2").click()
-        XCTAssertTrue(element("pane.w2:p1").has(\.isHittable, true, within: 2))
         try await typeFolderAndPickTerminal(remote: false)
     }
 
@@ -286,9 +283,6 @@ extension OvviUITests {
     func testARemoteNewPanesFolderLineTakesATypedFolder() async throws {
         try await skipWithoutSSH()
         relaunch(one, Self.onKeyHost + ["-appearance", "light"])
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        element("workspace.w2").click()
-        XCTAssertTrue(element("pane.w2:p1").has(\.isHittable, true, within: 3))
         try await typeFolderAndPickTerminal(remote: true)
     }
 }

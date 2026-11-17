@@ -263,7 +263,7 @@ extension OvviUITests {
         XCTAssertTrue(until(3) { terminal.title.isEmpty }, terminal.title)
     }
 
-    private func expectBrowser(_ tab: String, _ end: String) async throws {
+    func expectBrowser(_ tab: String, _ end: String) async throws {
         closeAfter("tab", tab)
         let pane = try await pane(of: tab)
         try await expect("ovvi:browser#…\(end) in \(tab)") {

@@ -110,13 +110,8 @@ extension OvviUITests {
         var tabs = try await tabIDs()
         func expectTab(_ how: String) async throws {
             let new = try await newTabID(after: tabs)
-            closeAfter("tab", new)
             tabs.append(new)
-            let pane = try await self.pane(of: new)
-            try await expect("\(how): two.html in \(new)") {
-                let label = try await paneLabel(pane)
-                return label.hasPrefix("ovvi:browser#") && label.hasSuffix(" \(two)")
-            }
+            try await expectBrowser(new, " \(two)")
             try await expectBeside(new, tab)
             XCTAssertFalse(until(0.5) { !element("tab.\(tab)").isSelected || !pageText("ovvi-page-one").exists }, how)
         }

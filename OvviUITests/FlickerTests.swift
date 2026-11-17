@@ -52,21 +52,13 @@ extension OvviUITests {
             }
             try await fill(pane)
             app.typeKey("o", modifierFlags: [.command, .control])
-            let card = element("overview.card.\(pane)"), tile = element("overview.tab.\(tab)")
+            let card = element("overview.card.\(pane)")
             // Up to 15 s: a runner's first launch builds the default plugins meanwhile, and a query then took 7 s.
             XCTAssertTrue(until(15) { card.stringValue.hasPrefix("snapshot") }, "\(card.exists) '\(card.stringValue)'")
             app.typeKey(.escape, modifierFlags: [])
             XCTAssertTrue(element("overview").vanishes(within: 2))
             try await Task.sleep(for: .seconds(2))
-            try await records.append(frames(name) {
-                if byTile {
-                    self.app.typeKey("o", modifierFlags: [.command, .control])
-                    XCTAssertTrue(tile.has(\.isHittable, true, within: 3))
-                    tile.click()
-                } else {
-                    self.element("tab.\(tab)").click()
-                }
-            })
+            try await records.append(frames(name, byTile ? tile(tab) : click("tab.\(tab)")))
             element("tab.w1:t1").click()
         }
         keep(records.joined(separator: "\n"), as: "frames")
@@ -123,12 +115,7 @@ extension OvviUITests {
         try await Task.sleep(for: .seconds(2))
         try await records.append(frames("tab key back", key("1")))
         for name in ["overview tile of another tab", "overview tile of the shown tab"] {
-            try await records.append(frames(name) {
-                self.app.typeKey("o", modifierFlags: [.command, .control])
-                let tile = self.element("overview.tab.w1:t2")
-                XCTAssertTrue(tile.has(\.isHittable, true, within: 3))
-                tile.click()
-            })
+            try await records.append(frames(name, tile("w1:t2")))
         }
         for (name, tab) in [("tab after the sidebar hid", "1"), ("tab after the sidebar showed", "2")] {
             element("titlebar.sidebar").click()
@@ -153,6 +140,15 @@ extension OvviUITests {
 
     private func click(_ id: String) -> () -> Void {
         { self.element(id).click() }
+    }
+
+    private func tile(_ tab: String) -> () -> Void {
+        {
+            self.app.typeKey("o", modifierFlags: [.command, .control])
+            let tile = self.element("overview.tab.\(tab)")
+            XCTAssertTrue(tile.has(\.isHittable, true, within: 3))
+            tile.click()
+        }
     }
 
     private func key(_ key: String, _ flags: XCUIElement.KeyModifierFlags = .command) -> () -> Void {
