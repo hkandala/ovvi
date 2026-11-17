@@ -61,12 +61,11 @@ final class OvviUITests: XCTestCase {
         }
     }
 
-    /// The pointer goes off the title row: left on a capsule, it would open a hover card in the next test's launch. Not
-    /// async: a failure stops an async test inside the main actor's job, and an async tearDown then waits for the main
-    /// actor until the 2-minute allowance runs out. The main window: the first match can be a floating window that a
-    /// teardown block's close is closing, with no frame (an INFINITY point, on CI). A warp, not XCUITest's hover: that
-    /// first looks for a window over the point, and a floating window gone meanwhile fails the test (on CI). XCTest
-    /// runs a sync tearDown on the main thread; a fresh XCUIApplication is the same app, so self stays out.
+    /// Warps the pointer off the title row: on a capsule it would open a hover card in the next launch. Sync: after a
+    /// failure an async tearDown waits for the main actor until the 2-minute allowance ends. The main window: a
+    /// floating window a teardown block is closing has no frame. A warp: XCUITest's hover fails on a window gone
+    /// meanwhile (both on CI). A sync tearDown runs on the main thread; a fresh XCUIApplication is the same app, so
+    /// self stays out.
     override func tearDown() {
         keepPluginConsole()
         MainActor.assumeIsolated {
@@ -234,9 +233,8 @@ extension OvviUITests {
 
     static let onKeyHost = ["-machines", keyHost, "-machine", "e2e-key"]
 
-    /// The sign of a swipe's or a sideways wheel's step that goes forward (to the next page, or a page scrolled right):
-    /// natural scrolling sets it, one way here and the other on CI. SidebarTests' and TabTests' swipes try this one
-    /// first and keep the one that worked, so only the run's first such swipe waits out a wrong sign.
+    /// The sign of a swipe step that goes forward: natural scrolling sets it, one way here and the other on CI. A swipe
+    /// tries this one first and keeps the one that worked, so only the run's first swipe waits out a wrong sign.
     static var forward = -1.0
 
     /// Which sign goes forward follows the natural scrolling setting (one way here, the other on CI).

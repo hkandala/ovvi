@@ -181,7 +181,6 @@ extension OvviUITests {
         try await waitFor(shell) { $0.contains("ready-42") }
     }
 
-    /// Not where the new pane's shell would start a real Claude Code; CI's is the stand-in, which only exits.
     private func resumes(_ row: XCUIElement, _ id: String, in folder: String, _ pane: String) async throws {
         try await skipIfThisMacHasClaude(pane, "the resume would start")
         let before = try await workspaceIDs()

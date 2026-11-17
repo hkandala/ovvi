@@ -19,9 +19,8 @@ extension OvviUITests {
         try await waitForPrompt("w1:p1")
         try await send("seq 1 500\r", to: "w1:p1")
         try await waitFor("w1:p1") { $0.contains("\n500\n") }
-        // The wheel goes where the pointer is. Which sign is up depends on the Mac's natural
-        // scrolling setting (up for negative here, down on CI), so try both; at the bottom, down
-        // does nothing.
+        // The wheel goes where the pointer is. Which sign is up follows natural scrolling (negative here, positive on
+        // CI), so try both; at the bottom, down does nothing.
         terminal.hover()
         var delta = -100.0
         try await poll("the viewport to move", times: 10) { () async throws -> Int? in

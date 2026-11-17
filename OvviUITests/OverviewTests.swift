@@ -71,9 +71,8 @@ extension OvviUITests {
         }
         app.typeKey("o", modifierFlags: [.command, .control])
         scrollOverview(to: element("overview.tab.\(next.tab)"))
-        // Recorded: CI's queries are too slow to see the loader.
+        // Recorded, and one query a tab, not a card: CI's queries are too slow to see the loaders.
         let tabs = [loads, next.tab], loaders = tabs.map { element("overview.tab.\($0).loading") }
-        // One query each, not one per card: CI's queries are slow.
         XCTAssertTrue(until(30) { !loaders.contains { $0.exists } })
         let record = element("app.latency").stringValue
         XCTAssertTrue(tabs.allSatisfy { record.contains("loader \($0)") }, record)

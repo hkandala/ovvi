@@ -53,7 +53,6 @@ func until(_ timeout: TimeInterval, _ check: () -> Bool) -> Bool {
 }
 
 extension OvviUITests {
-    /// Every 100 ms: a predicate expectation checks only about once a second.
     @discardableResult
     func poll<Value>(_ what: String, times: Int = 50,
                      _ probe: () async throws -> Value?) async throws -> Value

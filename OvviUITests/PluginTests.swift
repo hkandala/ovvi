@@ -57,9 +57,8 @@ extension OvviUITests {
         let names = try await foreground(pane)
         XCTAssertTrue(names.contains("cat"), "\(names)")
 
-        // A rename sends no herdr event; the metadata token makes the app read the layout. zsh turns bracketed paste
-        // on, so herdr pastes text into it, and a ⌃U in the text is a plain character (`command not found: ^U`); as a
-        // key it clears the line.
+        // zsh turns bracketed paste on, so herdr pastes text into it, and a ⌃U in the text is a plain character
+        // (`command not found: ^U`); as a key it clears the line.
         let (relabel, shell) = try await newTab("relabel")
         try await show(relabel)
         try await waitForPrompt(shell)

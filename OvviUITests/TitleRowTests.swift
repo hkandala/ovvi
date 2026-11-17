@@ -144,8 +144,7 @@ extension OvviUITests {
         XCTAssertTrue(moved.isSelected)
         app.typeKey(.leftArrow, modifierFlags: [.command, .shift])
         try await expect("the order back") { try await tabsOf(workspace).map(\.id) == tabs }
-        // Drawn there too: a right click can read the capsule's place ahead of the snapshot's draw, and hit the next
-        // tab.
+        // Drawn there too: a right click can read the capsule's place before the snapshot's draw and hit the next tab.
         let next = element("tab.\(tabs[1])")
         XCTAssertTrue(until(2) { moved.frame.maxX <= next.frame.minX }, "\(moved.frame), \(next.frame)")
         moved.rightClick()

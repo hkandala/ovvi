@@ -225,7 +225,6 @@ extension OvviUITests {
         XCTAssertTrue(twoRows(pane, title: "One", above: "browser.\(pane).address"))
         let back = element("browser.\(pane).back").frame
         XCTAssertEqual(element("browser.\(pane)").frame.minY - back.maxY, 11, accuracy: 1, "\(back)")
-        // A rename sends no herdr event: the metadata token makes Ovvi read the layout again.
         let two = page.replacing("one.html", with: "two.html")
         try await relabel(pane, "ovvi:browser#e2e5ab \(two)", in: five)
         XCTAssertTrue(pageText("ovvi-page-two").exists(within: 5))

@@ -55,8 +55,7 @@ extension OvviUITests {
     }
 
     /// Scrolled up, the next block comes above once the view's top nears the stack's, again and again, and the rows in
-    /// view stay where they are: each swipe up (with its momentum) moves them at most its own travel, never a block
-    /// more.
+    /// view stay put: each swipe up (with its momentum) moves them at most its own travel, never a block more.
     func testALongChatLoadsEarlierRowsAsItScrollsUp() async throws {
         // A swipe and a look take about 3 s in the VM, and the chat is about 15 long swipes tall.
         executionTimeAllowance = 300

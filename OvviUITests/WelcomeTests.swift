@@ -213,9 +213,8 @@ extension OvviUITests {
             // The step shows herdr.dev's command; its `curl` is a fixture that gives the fake installer.
             app.launchEnvironment["PATH"] = "\(Self.fixtures)/films:/usr/bin:/bin"
             relaunch(one, ["-welcomeDone", "NO", "-appearance", look, "-forceMotion", "YES", "-welcomeAfter", "20"])
-            // The panel's glass blurs what is behind it on screen: the app's own window, filling the screen. A first
-            // launch opens none until the welcome ends: the film opens one (File ▸ New Window) before the panel shows.
-            // Without herdr it is the new-window view, whose one row installs herdr.
+            // The panel's glass blurs the app's window behind it, which a first launch opens only after the welcome:
+            // File ▸ New Window opens it first (without herdr, the new-window view, whose one row installs herdr).
             XCTAssertTrue(app.menuBars.menuBarItems["File"].exists(within: connect))
             app.menuBars.menuBarItems["File"].click()
             app.menuBars.menuItems["New Window"].click()

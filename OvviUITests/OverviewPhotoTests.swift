@@ -31,7 +31,6 @@ extension OvviUITests {
         let tile = element("overview.tab.\(tab)")
         XCTAssertTrue(tile.exists(within: 3))
         scrollOverview(to: tile, whole: true)
-        // Failing on the old code: each kept its symbol.
         for (pane, picture) in [(chat, "chat"), (browser, "browser"), (plugin, "explorer")] {
             XCTAssertTrue(element("overview.card.\(pane)").has(\.stringValue, picture, within: 30),
                           "\(picture): \(element("overview.card.\(pane)").stringValue)")

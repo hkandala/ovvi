@@ -4,8 +4,8 @@ import XCTest
 extension OvviUITests {
     /// Key Host's master gone and Key Host unreachable. While the app finds out why (a link that is down: ssh waits out
     /// its 10 s ConnectTimeout), and then while it shows Reconnecting with ssh's reason, no card says its terminal
-    /// stopped, also on a workspace first shown meanwhile (its cards
-    /// try to stream and fail). Back once Key Host answers, with no stopped card between. In both looks.
+    /// stopped, also on a workspace first shown meanwhile (its cards try to stream and fail). Back once Key Host
+    /// answers, with no stopped card between. In both looks.
     func testAReconnectingPageShowsItsStateOnce() async throws {
         try await skipWithoutSSH()
         addTeardownBlock { [one] in _ = try? await Self.post("\(one)/ssh-hostname", Data("ovvi-key 127.0.0.1".utf8)) }
