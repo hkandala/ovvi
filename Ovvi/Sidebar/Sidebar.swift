@@ -43,18 +43,12 @@ struct Sidebar: View {
                     // At rest only the page in view: the others would lie over the tab's page, in the sidebar's
                     // accessibility frame (which takes in laid-out views past the clip) and in AppKit's hit tests.
                     ForEach(swipe.moving ? pages.list : pages.list.filter { $0 === pages.current }) { page in
-                        SidebarPage(page: page, pages: pages, filter: filter,
-                                    bottom: pages.list.count > 1 ? PageDots.height : 0, openSession: openSession)
+                        SidebarPage(page: page, pages: pages, filter: filter, openSession: openSession)
                             .frame(width: width - gap)
                             .accessibilityHidden(page !== pages.current)
                             .allowsHitTesting(page === pages.current)
                             .transition(.identity)
                     }
-                }
-            }
-            .overlay(alignment: .bottom) {
-                if pages.list.count > 1 {
-                    PageDots(pages: pages)
                 }
             }
             // Under the overview at once: hidden, it would draw both pages for 0.3 s.
@@ -63,6 +57,10 @@ struct Sidebar: View {
                       swipe.slide != Double(index) else { return }
                 let slides = old.last != new.last && !pages.overview && !Animation.reduced
                 slide(to: index, with: slides ? .session() : nil)
+            }
+            // A band of their own: over the list, rows scrolled under them would show through.
+            if pages.list.count > 1 {
+                PageDots(pages: pages)
             }
             if settings.showArchived, let page = pages.current {
                 ArchivedShelf(pages: pages, page: page)
@@ -85,7 +83,6 @@ struct Sidebar: View {
 }
 
 private struct PageDots: View {
-    static let height: CGFloat = 18
     let pages: WindowPages
 
     var body: some View {

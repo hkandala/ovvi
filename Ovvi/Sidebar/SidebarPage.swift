@@ -5,7 +5,6 @@ struct SidebarPage: View {
     let page: Page
     let pages: WindowPages
     let filter: String
-    let bottom: CGFloat
     let openSession: () -> Void
     private var settings = AppSettings()
     typealias Row = (workspace: HostStore.Workspace, parent: HostStore.Workspace?)
@@ -94,7 +93,6 @@ struct SidebarPage: View {
                 }
                 .animation(.fade, value: order)
                 .padding(Sidebar.rowInsets)
-                .padding(.bottom, bottom)
                 // The content's own space, which a scroll does not move: no frame changes at every scroll frame.
                 .coordinateSpace(.named("rows"))
             }
@@ -128,7 +126,7 @@ struct SidebarPage: View {
                 drop.spring?.cancel()
                 drop = RowsDrop.State()
             }
-            .fadesScrolledEdges(end: 18 + bottom)
+            .fadesScrolledEdges()
             .testValue("sidebar.moves", "Moves", "\(moves.animated) \(moves.still)", shown: SettlingHost.record)
             .background {
                 if SettlingHost.record {
@@ -224,7 +222,7 @@ private extension SidebarPage {
                 }
             }
             .background {
-                Color.clear.id("into view \(id)").padding(.top, -18).padding(.bottom, -18 - bottom)
+                Color.clear.id("into view \(id)").padding(.vertical, -18)
                     .onAppear {
                         if frames.wanted == id {
                             frames.wanted = nil

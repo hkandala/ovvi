@@ -158,7 +158,7 @@ extension OvviUITests {
         let dots = [one, two].map { element("sidebar.dot.\($0)") }
         XCTAssertTrue(dots[1].has(\.isSelected, true, within: 2))
         XCTAssertLessThan(element("workspace.w1").frame.maxY, dots[1].frame.minY)
-        XCTAssertLessThan(dots[1].frame.maxY, shelf.frame.minY)
+        XCTAssertEqual(shelf.frame.minY - dots[1].frame.maxY, 8, accuracy: 0.5, "the dots' band over the shelf")
         // A failed run may have left it open.
         if shelf.value as? String == "expanded" {
             shelf.click()
