@@ -34,7 +34,7 @@ struct Palette: View {
         }
         .padding([.horizontal, .top], 10)
         .frame(width: 480)
-        .floatingGlass(in: .panel)
+        .floatingGlass(in: .panel, material: nil)
         .task(id: lit) {
             guard command?.previews == true, let lit,
                   await (try? Task.sleep(for: .seconds(0.75))) != nil,

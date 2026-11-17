@@ -17,7 +17,7 @@ struct Shortcuts: View {
             panel
             ScrollView { panel }.scrollIndicators(.never)
         }
-        .floatingGlass(in: .panel)
+        .floatingGlass(in: .panel, material: nil)
         .padding(.vertical, 16)
         .focusable()
         .focusEffectDisabled()
