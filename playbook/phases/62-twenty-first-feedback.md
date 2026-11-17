@@ -222,6 +222,18 @@ Report: `~/Downloads/ovvi-research/p62-footer/index.html`.
 - **For the user.** A slow mouse-wheel notch moves the strip 10 pt (macOS's acceleration adds more on a fast turn):
   check that it feels right on a real mouse. Check a Markdown file with code in lists and quotes, dark and light.
 
+### Track S
+
+- **Decisions:** the session header (title, Overview, Sort Spaces, +) and the filter moved out of each page into the
+  sidebar, over the pages, so only the space lists slide; the title fades to the new name. The shelf lists the
+  window's other pages only (no states, no running or stopped), then Open Session… for the full panel. The page dots
+  went: the shelf names the open sessions, and swipes, ⌥⌘[ ] and ⌥⌘1–9 still step. The shelf folds on Esc, a pick, a
+  second click on the title, or when the keys go elsewhere (focus), not on a click that takes no keys.
+- **Decisions:** the home name is display only, set where the snapshot is applied (`HostStore.home`), so every place
+  that names a space shows it; herdr keeps `~` and its own folder naming. A tab's `zsh ~` keeps its `~`.
+- **For the user:** hover the session title (⌄), open the shelf, pick with the arrows and Return, click a card to
+  fold it; switch sessions and watch only the spaces slide; a new space shows your user name and renames as before.
+
 ## Round 3: the picks
 
 The user, word for word: "F1 D ("D but bunch of changes, move settings to right side, add a line separator, then
