@@ -206,11 +206,12 @@ extension OvviUITests {
         let row = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'workspace.'"))
             .firstMatch
         let (titleX, filterX, rowX) = (title.frame.minX, filter.frame.minX, row.frame.minX)
+        let path = "\(one)/swipe"
         var moved = false
         // The other way if natural scrolling is off.
         for sign in [-1.0, 1.0] where !moved {
             let swipe = Data("\(sidebar.midX) \(sidebar.midY) \(10 * sign) \(Int(sidebar.width / 30)) 3000".utf8)
-            async let swiped = Self.post("\(one)/swipe", swipe)
+            async let swiped = Self.post(path, swipe)
             try await Task.sleep(for: .seconds(1.5))
             moved = abs(row.frame.minX - rowX) > 20
             if moved {
