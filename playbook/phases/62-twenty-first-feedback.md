@@ -199,3 +199,43 @@ Report: `~/Downloads/ovvi-research/p62-footer/index.html`.
   stay round: they are dots, not button backgrounds.
 - **For the user.** On the ultrawide monitor: start an agent and look at the logo; hover the pane buttons and float a
   pane (rounded square, no circle); a working agent's ring and dot in a tab, a space row and the palette.
+
+## Round 3: the picks
+
+The user, word for word: "F1 D ("D but bunch of changes, move settings to right side, add a line separator, then
+command paellet icon and shorctucts icon right to left, in the left most side we show agents status thing, clicking on
+it should show a panel similar to what we had sometime back where we used to show a button in top right and that shows
+agent statuses, show basically in this order needs you, blocked, done, don’t show in progress or idle status here,
+separate each status by line separator, and it should list agent sessions only from all attached session for the given
+device. and each should show agent icon, title, session, workspace in the next line, clicking on it should take to that
+agent tab. and what shows on the footer without hover also goes in this order, we should show x needs you first, if no
+needs you then y blocked, if no needs you or blocked then z done, if neither, then  x working, if everything is idle,
+then show empty placeholder with some text like all done, or nothing needs you or something like that, give me
+options, so for the footer, give me another report on how this all looks with different options, before we start
+agents to impl"), F2 C, F2 shown A, History menu ("looks good")"
+
+- F2 C, shown A, history menu: Back and Forward at the tab strip's left end, always there, dimmed when there's nowhere
+  to go; a right-click or long press on Back lists up to 10 tabs. Track B builds it now.
+- F1: a second options report first (`~/Downloads/ovvi-research/p62-footer2/index.html`).
+
+## The cleanup (after phase 62's code lands)
+
+The user's picks on `~/Downloads/ovvi-research/p62-cleanup/index.html`, word for word: "D1 C, D2 A, D3 A, D4 B, P1 A,
+P2 A, P3 A, R1 keep, R2 drop, R3 drop, R4 keep, R5 drop, R6 keep, R7 keep, R8 latest, R9 A, R10 keep, R11 keep, R12
+drop, S1 A, N1 A, D1 note: "i like option C, but many subpages can come from option A, like plugins sections are good
+in option A, also no need to mention on privacy, idk why you are referring that everywhere, remove mentions of
+telemetry from docs and also from readme or any other mds we have refereenced currently, i like the high level
+structure of overivew, guide, plugins and references, and subpages structure it as relevant
+
+also for D2, D3, D4, there was no notes field so i am entering here: on pictures sepcifically take high quality
+pictures please, don’t take low quality ones, it should look crisp even on 4k monitors, i have the same issue with
+onboarding videos as well, once all these are done we will re record all the videos again as our ui has changed a bit
+since recording, but explore on how to record in 4k quality and update the scripts to keep it ready for final
+recording when all done. Agents.md should refer to our docs for more details and ~/ovvi-docs folder, don’t mention
+research or anything, just refer ovvi-docs folder""
+
+- Docs: four groups, Overview, Guide, Plugins and Reference, with C's short-guide shape and A's Plugins pages. No
+  privacy or telemetry pages or mentions in docs, README or other markdown files.
+- Pictures: crisp on a 4K monitor (2× or more, no downscaled shots). The onboarding recordings: find how to record in
+  4K and make the scripts ready; the user re-records when everything is done.
+- AGENTS.md points to the docs and to ~/ovvi-docs only.
