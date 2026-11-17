@@ -294,6 +294,12 @@ private struct Hovering<Content: View>: View {
     @State private var hovered = false
 
     var body: some View {
-        content(hovered).contentShape(Rectangle()).onHover { hovered = $0 }
+        content(hovered).contentShape(Rectangle()).onContinuousHover { phase in
+            if case .active = phase {
+                hovered = true
+            } else {
+                hovered = false
+            }
+        }
     }
 }
