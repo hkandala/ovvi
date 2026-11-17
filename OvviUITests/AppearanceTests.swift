@@ -12,31 +12,36 @@ extension OvviUITests {
     }
 
     /// The update notice sits at the page's bottom right, on the notices' line when the page is wide enough for both,
-    /// over the centre notice when not. A wrong float pane gives the centre notice ("Can't float pane …"), for 4 s.
+    /// over the centre notice when not, and stands apart from it by its ring. Copy Address gives the centre notice.
+    /// CI's and the VM's screens are 1024 pt wide: the wide page is a 1024 pt window with no sidebar.
     func testUpdateNoticeKeepsClearOfTheNotices() async throws {
-        addTeardownBlock { @MainActor [self] in setLook("glass dark") }
-        for (width, look) in [
-            (1400, "glass dark"),
-            (760, "glass light"),
-            (1400, "classic light"),
-            (760, "classic dark"),
-        ] {
+        let cases = [(1024, "glass dark"), (760, "glass light"), (1024, "classic light"), (760, "classic dark")]
+        for (width, look) in cases {
             step("\(look), a \(width) pt window")
             relaunch(one, ["-updateAvailable", "0.2.0", "-forceMotion", "YES",
-                           "-NSWindow Frame main-AppWindow-1", "100 100 \(width) 700 0 0 1728 1084"])
+                           "-liquidGlass", look.hasPrefix("glass") ? "YES" : "NO",
+                           "-appearance", look.hasSuffix("dark") ? "dark" : "light",
+                           "-NSWindow Frame main-AppWindow-1", "0 0 \(width) 600 0 0 1024 768"])
+            expectLook(look)
             let update = element("notice.update")
             XCTAssertTrue(update.exists(within: connect))
-            // The light's run round the ring, for the pictures.
-            for turn in 0 ..< 3 {
-                keepScreenshot("\(look) sweep \(turn)")
+            // The ring's turn, for the pictures.
+            for shot in 0 ..< 2 {
+                keepScreenshot("\(look) \(width) pt, sweep \(shot)")
             }
-            setLook(look)
-            XCTAssertTrue(element("window.look").has(\.stringValue, look, within: 3))
-            try await openFloatURL("session=\(two)&pane=w9:p9")
+            if width > 1000 {
+                element("titlebar.sidebar").click()
+                XCTAssertTrue(element("sidebar").vanishes(within: 2))
+            }
+            try await waitForPrompt("w1:p1")
+            element("terminal.w1:p1").click()
+            app.typeKey("c", modifierFlags: [.command, .shift])
             let notice = element("detail.notice")
-            XCTAssertTrue(notice.exists(within: 5))
+            XCTAssertTrue(notice.exists(within: 3))
             let (centre, right, window) = (notice.frame, update.frame, mainWindows.firstMatch.frame)
-            keepScreenshot("\(look) \(width) pt: notice \(centre), update \(right)")
+            let rims = (centre: Self.topSaturation(notice), update: Self.topSaturation(update))
+            keepScreenshot("\(look) \(width) pt: notice \(centre), update \(right), top saturation \(rims)")
+            XCTAssertEqual(window.width, CGFloat(width), accuracy: 1, "\(window)")
             XCTAssertEqual(window.maxX - right.maxX, 16, accuracy: 1, "\(right) in \(window)")
             XCTAssertFalse(centre.intersects(right), "\(centre) and \(right)")
             if width > 1000 {
@@ -44,7 +49,25 @@ extension OvviUITests {
             } else {
                 XCTAssertEqual(centre.minY - right.maxY, 8, accuracy: 1, "\(right) over \(centre)")
             }
+            // The ring's top is the accent; a plain notice's edge is grey.
+            XCTAssertGreaterThan(rims.update, rims.centre + 40, "\(look): \(rims)")
         }
+    }
+
+    /// The most saturated of the top 3 pixel rows' means, over the middle third: a ring's colour, not the glass.
+    private static func topSaturation(_ element: XCUIElement) -> Int {
+        let image = element.screenshot().image, pixels = pixels(image)
+        guard let width = image.cgImage(forProposedRect: nil, context: nil, hints: nil)?.width,
+              pixels.count >= width * 4 * 3 else { return 0 }
+        let columns = width / 3 ..< width * 2 / 3
+        return (0 ..< 3).map { row in
+            columns.map { column in
+                let offset = (row * width + column) * 4, rgb = pixels[offset ..< offset + 3].map(Int.init)
+                return (rgb.max() ?? 0) - (rgb.min() ?? 0)
+            }
+            .reduce(0, +) / columns.count
+        }
+        .max() ?? 0
     }
 
     /// Read from pixels, the one place the look shows. The rim is read on the card without the keyboard: the keyboard
@@ -201,9 +224,12 @@ extension OvviUITests {
 
     /// View ▸ Liquid Glass, read from the look: XCUITest cannot read a menu checkmark.
     func liquidGlass(_ isOn: Bool) {
-        guard element("window.look").stringValue.hasPrefix("glass") != isOn else { return }
+        let look = element("window.look")
+        XCTAssertTrue(look.exists(within: connect))
+        guard look.stringValue.hasPrefix("glass") != isOn else { return }
         app.menuBars.menuBarItems["View"].click()
         app.menuBars.menuItems["Liquid Glass"].click()
+        XCTAssertTrue(until(3) { look.stringValue.hasPrefix("glass") == isOn }, look.stringValue)
     }
 
     /// "glass dark", "classic light": View ▸ Liquid Glass and View ▸ Appearance.

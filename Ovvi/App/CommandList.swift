@@ -149,7 +149,7 @@ struct CommandList {
                     }, previews: true),
             Command(section: .view, title: "Liquid Glass", symbol: "paintbrush",
                     keywords: "glass classic solid transparent interface style theme",
-                    checked: settings.liquidGlass) { settings.liquidGlass.toggle() },
+                    checked: settings.liquidGlass, setting: true) { settings.liquidGlass.toggle() },
             Command(section: .size, title: "Increase Font Size", id: "app.bigger", key: .hotkey("app.bigger"),
                     symbol: "textformat.size.larger", keywords: "bigger text",
                     enabled: size < sizes.upperBound || page != nil, action: zoom(1) { PaneTerminal.stepFontSize(1) }),
