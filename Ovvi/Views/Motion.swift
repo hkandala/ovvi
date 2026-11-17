@@ -17,7 +17,6 @@ extension Animation {
         NSWorkspace.shared.accessibilityDisplayShouldReduceMotion && !forceMotion
     }
 
-    /// No movement: Reduce Motion or Animations off.
     static var reduced: Bool {
         off || reduceMotion
     }

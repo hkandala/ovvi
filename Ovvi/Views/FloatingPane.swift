@@ -50,8 +50,7 @@ struct FloatingWindow: View {
         let terminal = pane.flatMap(page.terminal), chooser = pane.flatMap { page.store.chooser($0.id) }
         let browser = pane.flatMap(page.browser), plugin = pane.flatMap(page.plugin)
         let chat = chooser == nil ? pane.flatMap(page.store.chat) : nil
-        let commands = CommandList(pages: pages, palette: $palette, settings: settings,
-                                   floating: floating)
+        let commands = CommandList(pages: pages, palette: $palette, settings: settings, floating: floating)
         return VStack(spacing: 0) {
             header(page, pane, chat: chat)
             // Not a Group, whose modifiers go on each child: the chooser's overlay would be made again as they change.
@@ -84,8 +83,7 @@ struct FloatingWindow: View {
                     FindBar(find: find, page: page).padding(gap)
                 }
             }
-            .background(CardSurface(keyboard: terminal?.hasKeyboard == true
-                    || chat?.showsChat == true))
+            .background(CardSurface(keyboard: terminal?.hasKeyboard == true || chat?.showsChat == true))
             .clipShape(CardSurface.shape)
             .overlay { CardFlash(store: page.store, id: pane?.id ?? "") }
             .accessibilityElement(children: .contain)

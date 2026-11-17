@@ -44,7 +44,7 @@ struct CardMotion<Content: View>: NSViewRepresentable {
 }
 
 final class MovingCard: NSView {
-    /// Every card's motion: ease-out, no overshoot. 0.2 s felt slow.
+    /// Every card's motion: ease-out, no overshoot; 0.2 s reads slow.
     static let slide = 0.13
     let host = NSHostingView(rootView: AnyView(EmptyView()))
     var id = ""

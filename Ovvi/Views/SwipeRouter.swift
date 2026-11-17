@@ -38,18 +38,11 @@ enum SwipeRouter {
         }
         if event.phase == .mayBegin || event.phase == .began {
             option = event.modifierFlags.contains(.option)
+            // The next touch may end with no move (`.cancelled`): not the last swipe's.
+            pager = nil
         }
         if event.phase == .began {
-            picked = false
-            pager = nil
-            lifted = false
-            moved = 0
-            sideways = 0
-            speed = 0
-        }
-        // The next touch may end with no move (`.cancelled`): not the last swipe's.
-        if event.phase == .mayBegin {
-            pager = nil
+            (picked, lifted, moved, sideways, speed) = (false, false, 0, 0, 0)
         }
         // A scroll moves the content against the fingers' delta; half the last speed smooths a jittery step.
         if event.phase == .changed, event.timestamp > last {
