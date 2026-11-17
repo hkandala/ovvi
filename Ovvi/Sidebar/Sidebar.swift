@@ -43,12 +43,18 @@ struct Sidebar: View {
                     // At rest only the page in view: the others would lie over the tab's page, in the sidebar's
                     // accessibility frame (which takes in laid-out views past the clip) and in AppKit's hit tests.
                     ForEach(swipe.moving ? pages.list : pages.list.filter { $0 === pages.current }) { page in
-                        SidebarPage(page: page, pages: pages, filter: filter, openSession: openSession)
+                        SidebarPage(page: page, pages: pages, filter: filter,
+                                    bottom: pages.list.count > 1 ? PageDots.height : 0, openSession: openSession)
                             .frame(width: width - gap)
                             .accessibilityHidden(page !== pages.current)
                             .allowsHitTesting(page === pages.current)
                             .transition(.identity)
                     }
+                }
+            }
+            .overlay(alignment: .bottom) {
+                if pages.list.count > 1 {
+                    PageDots(pages: pages)
                 }
             }
             // Under the overview at once: hidden, it would draw both pages for 0.3 s.
@@ -75,6 +81,31 @@ struct Sidebar: View {
             lift: lift,
             area: area,
         ))
+    }
+}
+
+private struct PageDots: View {
+    static let height: CGFloat = 18
+    let pages: WindowPages
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(pages.list) { page in
+                Button { pages.show(page) } label: {
+                    Circle().fill(page === pages.current ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
+                        .frame(width: 6, height: 6)
+                        .frame(width: 12, height: 12)
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .contextMenu { Button("Detach Session") { pages.close(page) }.disabled(!pages.canDetach) }
+                .accessibilityLabel(page.store.title)
+                .accessibilityIdentifier("sidebar.dot.\(page.id)")
+                .accessibilityAddTraits(page === pages.current ? .isSelected : [])
+            }
+        }
+        .padding(.leading, Sidebar.rowInsets.leading).padding(.trailing, Sidebar.rowInsets.trailing)
+        .padding(.bottom, 6)
     }
 }
 
