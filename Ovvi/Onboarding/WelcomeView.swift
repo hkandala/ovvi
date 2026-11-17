@@ -7,8 +7,7 @@ struct WelcomeView: View {
     let herdrMissing: Bool
     let close: () -> Void
     @State private var page = 0
-    /// nil once the intro has handed over to the first page.
-    /// The intro is all motion: none with Animations off.
+    /// nil once the intro hands over to the first page; nil from the start with Animations off (it is all motion).
     @State private var intro: WelcomeIntro.Step? = Animation.off ? nil : .hidden
     @State private var herdrFound = false
     @State private var reels = WelcomeClip.Reels()
@@ -50,8 +49,7 @@ struct WelcomeView: View {
         /// Reduce Motion: the clip's frame where its change shows (scripts/record-onboarding.sh), still.
         var still: Double {
             switch self {
-            case .running: 4.5
-            case .layout: 4.5
+            case .running, .layout: 4.5
             case .agents: 5
             case .plugins: 13
             case .machines: 8
