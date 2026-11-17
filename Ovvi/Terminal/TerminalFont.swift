@@ -7,11 +7,9 @@ extension PaneTerminal {
 
     /// `keybind = clear`: app shortcuts reach the menu. No padding, so that cells map from the view's origin; no
     /// scrollback, herdr keeps it. No links of libghostty's but OSC 8 ones: the app finds them (`Links.swift`).
-    ///
-    /// A selection draws its text in the theme's text color, as Ghostty's own Alabaster and Afterglow themes do, so a
-    /// program's colors (one chosen for the other appearance, a dark text color) never hide it. Light: Ghostty's
-    /// Alabaster selection, `#000000` on `#BFDBFE`. Dark: Afterglow's `#D0D0D0` on the system blue at 0.25 over
-    /// Afterglow's background, 7.6 to 1 (Ghostty's `#303030` is hardly darker than a card).
+    /// A selection draws its text in the theme's text color, so a program's colors never hide it: light is Alabaster's
+    /// `#000000` on `#BFDBFE`; dark is Afterglow's `#D0D0D0` on the system blue at 0.25 over its background (7.6 to 1;
+    /// Ghostty's `#303030` is hardly darker than a card).
     /// ponytail: always blue; follow the accent color (`NSColor.selectedTextBackgroundColor`) if users ask.
     static let controller = TerminalController(theme: TerminalTheme(
         light: .alabaster.selectionBackground("BFDBFE").selectionForeground("000000"),

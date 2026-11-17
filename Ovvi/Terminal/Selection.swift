@@ -3,15 +3,13 @@ import GhosttyKit
 import GhosttyTerminal
 import HerdrKit
 
-/// A plain left drag goes to the program and selects in the card. A program that reads the mouse (pi) selects from the
-/// press's cell to the pointer's, both taken, in reverse video, which herdr draws black on white; libghostty takes an
-/// end cell only on the far side of its 60 % point, and a cell only the program took would show white beside the
-/// card's blue. So libghostty gets points at the cells' edges, and its selection takes both end cells too. A ⇧, ⌥ or ⌃
-/// drag and a double or triple click select in the card alone (their cells differ from the program's); the program gets
-/// such a single click on its release when the pointer stayed in its cell. ponytail: the program's cells still show
-/// white for a frame after each move or click, since the card's selection moves at once and the program's comes back
-/// through herdr, and when the program's text scrolls under its selection. herdr reports no mouse mode; once it does,
-/// follow Ghostty (a drag to a mouse program only, a ⇧-drag to the card).
+/// A plain left drag goes to the program and selects in the card. A mouse program (pi) selects both end cells in
+/// reverse video (herdr draws black on white), but libghostty takes an end cell only past its 60 % point, and a cell
+/// only the program took shows white beside the card's blue: so libghostty gets points at the cells' edges. A ⇧, ⌥ or
+/// ⌃ drag and a double or triple click select in the card alone; the program gets such a single click on its release
+/// when the pointer stayed in its cell. ponytail: the program's cells show white for a frame after each move or click
+/// (its selection comes back through herdr) and when its text scrolls under the selection. Once herdr reports the
+/// mouse mode, follow Ghostty (a drag to a mouse program only, a ⇧-drag to the card).
 extension PaneSurfaceView {
     struct Anchor {
         let column: Int, row: Int

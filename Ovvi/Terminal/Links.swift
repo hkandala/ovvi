@@ -45,14 +45,8 @@ enum Links {
                                    background: how != .here)
         }
         guard let plugin = Registry.openers(for: found).first else { return cannot(link, store) }
-        await page.open(
-            plugin,
-            arg: found,
-            at: link.line.map(String.init),
-            from: terminalID,
-            how: how,
-            background: how != .here,
-        )
+        await page.open(plugin, arg: found, at: link.line.map(String.init), from: terminalID, how: how,
+                        background: how != .here)
     }
 
     /// The Mac's default app for the address: the browser for a web page, Mail for `mailto:`. A remote machine's own
@@ -78,7 +72,7 @@ enum Links {
     }
 }
 
-/// The app finds links in libghostty's text itself (`link-url` is off): libghostty's own pattern took `/compact` and
+/// The app finds links in libghostty's text itself (`link-url` is off): libghostty's own pattern takes `/compact` and
 /// the words after a path. libghostty still reports OSC 8 links, and draws their hover underline.
 extension PaneSurfaceView {
     struct Hovered {

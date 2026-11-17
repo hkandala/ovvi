@@ -129,8 +129,6 @@ final class PaneTerminal {
         open(observe: !controls, takeover: controls)
     }
 
-    // MARK: Stream
-
     private func open(observe: Bool = false, takeover: Bool = false) {
         guard shown, let grid else { return }
         end()
@@ -236,8 +234,6 @@ final class PaneTerminal {
         }
     }
 
-    // MARK: Size and input
-
     /// The first grid waits for the layout to settle, so that the first stream opens at the card's real size, not at
     /// the surface's first guess, which makes an agent redraw twice. Later ones go at once: the host waits
     /// for the card's size to settle.
@@ -262,8 +258,8 @@ final class PaneTerminal {
         }
     }
 
-    /// libghostty writes a paste in pieces (start mark, text, end mark); herdr frames it for the
-    /// app's paste mode only when one write is the whole `ESC[200~…ESC[201~`.
+    /// libghostty writes a paste in pieces (start mark, text, end mark); herdr frames it for the app's paste mode only
+    /// when one write is the whole `ESC[200~…ESC[201~`.
     private func enqueue(_ input: Input) {
         if case let .text(text) = input, paste != nil || text.hasPrefix("\u{1B}[200~") {
             let whole = (paste ?? "") + text
@@ -280,10 +276,9 @@ final class PaneTerminal {
         }
     }
 
-    /// A bridge call takes about 60 ms, more than a held key's repeat, so keys that pile up
-    /// meanwhile go as one call; text stays one write per piece, so a paste stays whole.
-    /// ponytail: keys (main thread) and libghostty's text (its IO thread) are ordered only as
-    /// they arrive here, microseconds apart; enough for typing.
+    /// A bridge call takes about 60 ms, more than a held key's repeat, so keys that pile up meanwhile go as one call;
+    /// text stays one write per piece, so a paste stays whole. ponytail: keys (main thread) and libghostty's text (its
+    /// IO thread) are ordered only as they arrive here, microseconds apart; enough for typing.
     private func queue(_ input: Input) {
         guard !state.isFailed else { return }
         if case let (.keys(old)?, .keys(new)) = (pending.last, input) {

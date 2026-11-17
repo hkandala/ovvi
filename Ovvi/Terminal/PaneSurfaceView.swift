@@ -250,22 +250,18 @@ final class PaneSurfaceView: AppTerminalView {
             | (flags.contains(.option) ? 4 : 0)
     }
 
-    private static let names: [UInt16: String] = [
+    private static let names: [Int: String] = [
         kVK_Return: "enter", kVK_ANSI_KeypadEnter: "enter", kVK_Tab: "tab", kVK_Delete: "backspace", kVK_Escape: "esc",
         kVK_LeftArrow: "left", kVK_RightArrow: "right", kVK_DownArrow: "down", kVK_UpArrow: "up",
         kVK_F1: "f1", kVK_F2: "f2", kVK_F3: "f3", kVK_F4: "f4", kVK_F5: "f5", kVK_F6: "f6",
         kVK_F7: "f7", kVK_F8: "f8", kVK_F9: "f9", kVK_F10: "f10", kVK_F11: "f11", kVK_F12: "f12",
-    ].reduce(into: [:]) { $0[UInt16($1.key)] = $1.value }
+    ]
 
-    /// The US character of each letter, digit and symbol key (kVK_ANSI_*), for Ctrl chords on
-    /// layouts whose letters are not Latin.
-    private static let ansi: [UInt16: String] = {
-        var keys = [UInt16: String](uniqueKeysWithValues: zip(
-            0...,
-            "asdfhgzxcv_bqweryt123465=97-80]ou[ip_lj'k;\\,/nm.",
-        )
-        .filter { $0.1 != "_" }
-        .map { (UInt16($0.0), String($0.1)) })
+    /// The US character of each letter, digit and symbol key (kVK_ANSI_*), for Ctrl chords on layouts whose letters
+    /// are not Latin.
+    private static let ansi: [Int: String] = {
+        var keys = [Int: String](uniqueKeysWithValues: zip(0..., "asdfhgzxcv_bqweryt123465=97-80]ou[ip_lj'k;\\,/nm.")
+            .filter { $0.1 != "_" }.map { ($0.0, String($0.1)) })
         keys[49] = "space"
         keys[50] = "`"
         return keys
@@ -276,22 +272,19 @@ final class PaneSurfaceView: AppTerminalView {
                                 ("terminal.delete-line", "ctrl+u"), ("terminal.word-back", "alt+b"),
                                 ("terminal.word-forward", "alt+f")]
 
-    /// herdr's name (`pane.send_keys`) for a key whose bytes depend on the app's input modes:
-    /// arrows, Esc, F-keys, any of them with modifiers, Ctrl chords; plus macOS line editing
-    /// (`edits`: Cmd+←/→/⌫, Option+←/→ by default), which `keybind = clear` took from libghostty. nil leaves the
-    /// key to libghostty: text, IME, dead keys, Option characters, other Cmd keys, and plain
-    /// Enter, Tab and Backspace, which are the same bytes in every mode and stay off the slower
-    /// bridge path. Home, End, Page Up/Down and Delete have no herdr names; libghostty sends
-    /// them as xterm does.
-    /// Option follows Settings ▸ Terminal ▸ Option key (`macos-option-as-alt`); ⌥← and ⌥→ move by word with every
-    /// choice.
+    /// herdr's name (`pane.send_keys`) for a key whose bytes depend on the app's input modes: arrows, Esc, F-keys, any
+    /// of them with modifiers, Ctrl chords; plus the line-editing keys (`edits`: ⌘←/→/⌫, ⌥←/→ by default), which
+    /// `keybind = clear` takes from libghostty. nil leaves the key to libghostty: text, IME, dead keys, Option
+    /// characters, other ⌘ keys, and plain Enter, Tab and Backspace (the same bytes in every mode, off the slower
+    /// bridge path). Home, End, Page Up/Down and Delete have no herdr names: libghostty sends them as xterm does. ⌥
+    /// follows Settings ▸ Terminal ▸ Option key (`macos-option-as-alt`); ⌥← and ⌥→ move by word with every choice.
     static func herdrKey(_ event: NSEvent) -> String? {
         if let edit = edits.first(where: { Hotkeys.keys($0.0).contains { $0.matches(event) } }) {
             return edit.1
         }
         let flags = event.modifierFlags
         let control = flags.contains(.control), option = flags.contains(.option), shift = flags.contains(.shift)
-        let named = names[event.keyCode]
+        let named = names[Int(event.keyCode)]
         if flags.contains(.command) {
             return nil
         }
@@ -312,7 +305,7 @@ final class PaneSurfaceView: AppTerminalView {
         {
             return chord + letter
         }
-        return ansi[event.keyCode].map { chord + $0 }
+        return ansi[Int(event.keyCode)].map { chord + $0 }
     }
 }
 
@@ -344,9 +337,8 @@ extension PaneSurfaceView: TerminalSurfaceGridResizeDelegate, TerminalSurfaceLif
         hover(nil)
     }
 
-    /// A new surface starts focused (a filled cursor) until it first loses the keyboard, and
-    /// libghostty-spm has no public way to set a surface's focus; resigning is the one that
-    /// tells the surface it is not focused.
+    /// A new surface starts focused (a filled cursor) until it first loses the keyboard, and libghostty-spm has no
+    /// public way to set a surface's focus; resigning is the one that tells the surface it is not focused.
     func terminalDidAttachSurface(_ surface: TerminalSurface) {
         linkSurface = surface
         if window?.firstResponder !== self {

@@ -3,7 +3,7 @@ import GhosttyTerminal
 import HerdrKit
 
 /// Keyed by `terminal_id`, so that SwiftUI never destroys a terminal when its tab goes out of view.
-/// ponytail: keyed by terminal id alone; herdr's ids (`term_` and 14 hex digits, from the clock) did not
+/// ponytail: keyed by terminal id alone; herdr's ids (`term_` and 14 hex digits, from the clock) do not
 /// repeat across sessions. Key by session too if they ever do.
 @MainActor
 final class PaneViewRegistry {
@@ -12,9 +12,9 @@ final class PaneViewRegistry {
     /// card on Retina) and a herdr run of 7 MB. On Retina: 405 MB with 16 terminals in splits, 653 MB with 33
     /// full-window tabs.
     static let spare = UserDefaults.standard.string(forKey: "spareTerminals").flatMap { Int($0) } ?? 25
-    /// On critical memory pressure the kept cards out of view go down to half the bounds. Not on a warning: macOS sent
-    /// one every 30 minutes at normal pressure with 43 % of 32 GB free, and each dropped web cards that the next
-    /// workspace switch made again (100–200 ms each).
+    /// On critical memory pressure the kept cards out of view go down to half the bounds. Not on a warning: macOS sends
+    /// one about every 30 minutes even at normal pressure, and each would drop web cards that the next switch makes
+    /// again (100–200 ms each).
     private static let pressure = {
         let source = DispatchSource.makeMemoryPressureSource(eventMask: .critical, queue: .main)
         source.setEventHandler {

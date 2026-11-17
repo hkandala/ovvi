@@ -288,11 +288,7 @@ extension PaneSurfaceView {
         copy.lock(options: [], seed: nil)
         let row = min(surface.bytesPerRow, copy.bytesPerRow)
         for line in 0 ..< surface.height {
-            memcpy(
-                copy.baseAddress + line * copy.bytesPerRow,
-                surface.baseAddress + line * surface.bytesPerRow,
-                row,
-            )
+            memcpy(copy.baseAddress + line * copy.bytesPerRow, surface.baseAddress + line * surface.bytesPerRow, row)
         }
         copy.unlock(options: [], seed: nil)
         surface.unlock(options: .readOnly, seed: nil)
