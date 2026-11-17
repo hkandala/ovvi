@@ -246,8 +246,12 @@ extension OvviUITests {
         XCTAssertNotNil(steady(3) { [card.frame, send.frame] })
         XCTAssertEqual(chat.frame.width, 360, accuracy: 1)
         XCTAssertGreaterThan(send.frame.maxX, card.frame.maxX)
+        // The wheel turns at the card's middle, over the chat, with the pointer warped there first: on CI, XCUITest's
+        // move to the point played a step of its path last, and the wheel went to the card beside.
+        let spot = card.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
         XCTAssertTrue([-600.0, 600].contains { step in
-            chat.scroll(byDeltaX: step, deltaY: 0)
+            CGWarpMouseCursorPosition(spot.screenPoint)
+            spot.scroll(byDeltaX: step, deltaY: 0)
             return until(2) { send.frame.maxX <= card.frame.maxX }
         }, "\(send.frame) \(card.frame)")
     }
