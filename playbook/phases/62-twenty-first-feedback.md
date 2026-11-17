@@ -200,6 +200,28 @@ Report: `~/Downloads/ovvi-research/p62-footer/index.html`.
 - **For the user.** On the ultrawide monitor: start an agent and look at the logo; hover the pane buttons and float a
   pane (rounded square, no circle); a working agent's ring and dot in a tab, a space row and the palette.
 
+### Track M
+
+- **Cause (Markdown).** A code line in a list item took its indent as `margin-left` in its own 0.9 em font (1.35 em
+  where the text has 1.5 em) and lost the 6 px every text line has; outside lists the code box started 6 px left of
+  the paragraphs, a quote's bar 3 px left of its text, a quote's code fill 3–6 px left of its bar, and inside a list
+  item a quote's code drifted 2 px from its bars.
+- **Fix (Markdown).** Blocks in a list item pass the item's indent as `--indent`; markdown.css places quotes at it and
+  code at `--indent / 0.9 + 6px`. Quote bars sit at the text's edge (6 px), a quote's code fill starts at its bar, and
+  a quote's empty line in a list item keeps its bar in line. Explorer 1.15.6.
+- **Fix (Wheel).** `SwipeRouter.wheel`: a phase-less wheel turned up or down over the tab strip (a zero-size anchor in
+  its scroll content) scrolls the strip sideways by its delta (× the scroll view's 10 pt line when not precise), as a
+  list scrolls. Trackpad and Magic Mouse scrolls have phases and never take this path; ⌥ + wheel comes first; not
+  under a panel or the overview.
+- **Decisions.** A list item that opens with a fence (`- ````) keeps today's place: its first line carries the
+  item's mark. The cursor's code line keeps its box in place and shows its indent inside.
+- **Runs.** The new UI test failed in the VM with the strip's anchor removed, and passed with it. Pictures: WebKit
+  renders of the explorer's own live.ts and markdown.css (a harness that measures each line's left edge),
+  ~/Downloads/ovvi-research/p62m/markdown-{dark,light}-before-after.png, and the real card in the VM,
+  vm-markdown-{dark,light}.png.
+- **For the user.** A slow mouse-wheel notch moves the strip 10 pt (macOS's acceleration adds more on a fast turn):
+  check that it feels right on a real mouse. Check a Markdown file with code in lists and quotes, dark and light.
+
 ## Round 3: the picks
 
 The user, word for word: "F1 D ("D but bunch of changes, move settings to right side, add a line separator, then
