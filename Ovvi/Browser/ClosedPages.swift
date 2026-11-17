@@ -133,7 +133,7 @@ struct ClosedPagesPopover: View {
         }
         .padding(6)
         .frame(width: 320)
-        .presentationBackground(.regularMaterial)
+        .presentationBackground(.ultraThinMaterial)
     }
 
     @ViewBuilder

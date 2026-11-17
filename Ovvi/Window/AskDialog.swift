@@ -54,7 +54,8 @@ extension View {
     func dialog() -> some View {
         Color.clear.contentShape(.rect).onTapGesture {}
             .overlay {
-                padding(20).frame(width: 440).floatingGlass(in: .panel)
+                // One step more solid than the other panels: it may ask for a password.
+                padding(20).frame(width: 440).floatingGlass(in: .panel, material: .thinMaterial)
                     .accessibilityElement(children: .contain)
                     .accessibilityAddTraits(.isModal)
             }

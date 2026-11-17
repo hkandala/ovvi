@@ -82,7 +82,7 @@ private struct ToastView: View {
             .buttonBorderShape(.capsule)
             .padding(.leading, 14).padding([.trailing, .vertical], 7)
         }
-        .glassEffect(.regular, in: .capsule)
+        .floatingGlass(in: .capsule)
     }
 }
 

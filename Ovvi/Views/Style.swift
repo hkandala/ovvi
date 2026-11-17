@@ -281,10 +281,10 @@ extension View {
         accessibilityElement().accessibilityAddTraits(.isStaticText).accessibilityValue(value)
     }
 
-    /// The system glass over a material: Liquid Glass alone is thin on a small panel, and a terminal reads clearly
-    /// through the hover card.
-    func floatingGlass(in shape: some Shape) -> some View {
-        glassEffect(.regular, in: shape).background(.regularMaterial, in: shape)
+    /// The system glass over a material, the same on every floating panel: Liquid Glass alone lets the text behind
+    /// compete with the panel's own. The ultra-thin one still shows the page's layout through it.
+    func floatingGlass(in shape: some Shape, material: Material = .ultraThinMaterial) -> some View {
+        glassEffect(.regular, in: shape).background(material, in: shape)
     }
 
     func floatingPanel(open: Binding<Bool>, alignment: Alignment) -> some View {
