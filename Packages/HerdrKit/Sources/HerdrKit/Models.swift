@@ -180,7 +180,6 @@ struct Created: Decodable {
     enum CodingKeys: String, CodingKey { case rootPane = "root_pane", pane }
 }
 
-/// A move to another workspace gives the pane a new id.
 struct Moved: Decodable {
     let moveResult: Change
 

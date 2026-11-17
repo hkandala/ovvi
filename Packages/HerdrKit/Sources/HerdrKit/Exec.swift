@@ -267,13 +267,11 @@ public final class ProcessExec: Exec {
         ["PATH", "HOME", "SSH_AUTH_SOCK"].contains(key) || key.hasPrefix("XDG_")
     }
 
-    /// A pipe's output until EOF. Not `FileHandle.bytes`: with several pipes open at once it
-    /// stalls (seen on macOS 27 with a second bridge run while the events stream is open).
+    /// A pipe's output until EOF. Not `FileHandle.bytes`: it stalls with several pipes open at once (macOS 27).
     private static func chunks(_ handle: FileHandle) -> AsyncStream<Data> {
         let (stream, continuation) = AsyncStream<Data>.makeStream()
-        // The handler holds the handle until EOF or until the reader stops: once a fast child's Process
-        // and Pipe are released, nothing else does, and EOF never arrived (seen on CI as a 10 s timeout
-        // after `sh -c` exited).
+        // The handler holds the handle until EOF or until the reader stops: once a fast child's Process and Pipe
+        // are released, nothing else does, and EOF never comes.
         handle.readabilityHandler = { _ in
             let data = handle.availableData
             if data.isEmpty {
@@ -367,9 +365,8 @@ public final class ProcessExec: Exec {
             reader.cancel()
             errors.cancel()
         }
-        // A dropped stream terminates; one that ended at EOF leaves stderr to finish for `exit`. Not on the dropping
-        // thread: a cancel runs this where it is called (the main actor, when a chat card leaves view), and the kill
-        // and the pipes' handlers took up to 0.8 s there on a loaded Mac.
+        // A dropped stream terminates; one that ended at EOF leaves stderr to finish for `exit`. Off the dropping
+        // thread: that may be the main actor, where the kill and the pipes' handlers take up to 0.8 s on a loaded Mac.
         linesContinuation.onTermination = { reason in
             DispatchQueue.global().async {
                 if case .cancelled = reason {
