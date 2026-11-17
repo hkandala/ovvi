@@ -2,7 +2,6 @@ import XCTest
 
 extension OvviUITests {
     func testPaletteSplitsTheKeyboardCardRight() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("palette")
         element("tab.\(tab)").click()
         element("terminal.\(pane)").click()
@@ -248,7 +247,6 @@ extension OvviUITests {
     }
 
     func testGoToDirectoryAndInsertPath() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("paths")
         element("tab.\(tab)").click()
         XCTAssertTrue(element("terminal.\(pane)").has(\.isHittable, true, within: 3))
@@ -296,7 +294,6 @@ extension OvviUITests {
     }
 
     func testMoveToTabLandsBesideTheLastCard() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (mover, pane) = try await newTab("mover")
         let (target, first) = try await newTab("target")
         let last = try await split(first)

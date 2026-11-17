@@ -132,7 +132,6 @@ extension OvviUITests {
     private func agentPluginsSetUp(_ config: String, _ line: String,
                                    clean: String) async throws -> (tab: String, pane: String)
     {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("plugins")
         try await waitForPrompt(pane)
         try await send("rm -rf \(config) && mkdir -p \(config) && \(line) && clear && echo made-$((6*7))\r", to: pane)

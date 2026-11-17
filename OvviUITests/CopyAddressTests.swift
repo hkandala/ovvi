@@ -4,7 +4,6 @@ extension OvviUITests {
     /// ⇧⌘C copies the keyboard card's address: a terminal's folder, a browser's URL, File Explorer's open file, Git's
     /// commit and an agent's session id. The notice names what it copied, in the menu item's words, never the value.
     func testCopyAddressCopiesEachCardsAddress() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, shell) = try await newTab("copy")
         try await waitForPrompt(shell)
         let folder = "/tmp/ovvi-e2e-copy", root = "/private/tmp/ovvi-e2e-copy"

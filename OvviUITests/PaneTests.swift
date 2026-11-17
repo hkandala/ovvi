@@ -139,7 +139,6 @@ extension OvviUITests {
     func testQuickSplitsSplitTheNewestAndItKeepsTheKeyboard() async throws {
         step("Quick splits split the newest pane, and it keeps the keyboard")
         relaunch(one, ["-recordMotion", "YES", "-forceMotion", "YES"])
-        XCTAssertTrue(element("workspace.w1").exists(within: connect))
         let (tab, first) = try await newTab("quick-splits")
         element("tab.\(tab)").click()
         element("terminal.\(first)").click()

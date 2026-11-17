@@ -4,7 +4,6 @@ extension OvviUITests {
     func testOverviewShowsEveryTabLiveAndOpensOne() async throws {
         step("The overview shows every tab live and opens one")
         relaunch(one, ["-recordLatency", "YES"])
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (closing, _) = try await newTab("closing", in: "w1")
         let made = sidebarsMade
         let block = "clear; for i in 1 2 3 4 5 6 7 8 9 10; do printf '\\033[107m%300s\\033[0m\\n' ''; done"
@@ -83,7 +82,6 @@ extension OvviUITests {
     /// With motion on, a tile's click on a tab never shown shows its terminal, and never a loading card after it drew.
     func testOverviewTileIntoAnUnshownTabShowsItSteadily() async throws {
         relaunch(one, ["-recordMotion", "YES", "-forceMotion", "YES"])
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("unshown", in: "w1")
         try await send("seq 1 40\r", to: pane)
         for round in ["unshown", "shown"] {

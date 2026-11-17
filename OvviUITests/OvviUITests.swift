@@ -262,10 +262,10 @@ extension OvviUITests {
     }
 
     func newTab(_ label: String, in workspace: String = "w2") async throws -> (tab: String, pane: String) {
-        let (tab, pane) = try await createTab(in: workspace, label: label)
-        closeAfter("tab", tab)
         let row = element("workspace.\(workspace)")
         XCTAssertTrue(row.exists(within: connect), "no row for \(workspace)")
+        let (tab, pane) = try await createTab(in: workspace, label: label)
+        closeAfter("tab", tab)
         if !row.isSelected {
             row.click()
         }

@@ -2,7 +2,6 @@ import XCTest
 
 extension OvviUITests {
     func testPluginPanesOpenFromTheChooserThePaletteAndLinks() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("plugins")
         try await waitForPrompt(left)
         let repo = "/tmp/ovvi-e2e-plugins", root = "/private/tmp/ovvi-e2e-plugins"
@@ -122,7 +121,6 @@ extension OvviUITests {
 
 extension OvviUITests {
     func testTheRegistryListsUserPackagesAndShowsAMissingPlugin() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("registry")
         try await waitForPrompt(pane)
         let config = "/tmp/ovvi-e2e-config"

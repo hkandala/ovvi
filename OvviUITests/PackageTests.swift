@@ -2,7 +2,6 @@ import XCTest
 
 extension OvviUITests {
     func testAPluginPackageAsksForTrustBuildsAndReloads() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, shell) = try await newTab("packages")
         try await waitForPrompt(shell)
         let config = "/tmp/ovvi-e2e-packages", csv = "/tmp/ovvi-e2e-csv", data = "/tmp/ovvi-e2e-csv-data"
@@ -146,7 +145,6 @@ extension OvviUITests {
     }
 
     func testAnNPMPluginOffersTheUpdateThatNPMHas() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, shell) = try await newTab("npm")
         try await waitForPrompt(shell)
         let config = "/tmp/ovvi-e2e-npm", made = "/tmp/ovvi-e2e-npm-made", tarball = "/tmp/ovvi-e2e-npm-csv.tgz"

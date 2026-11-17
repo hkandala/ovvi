@@ -3,7 +3,6 @@ import XCTest
 extension OvviUITests {
     func testAFixedPickSkipsTheChooserAndOptionShowsIt() async throws {
         relaunch(one, ["-newPaneOpens", "browser"])
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("fixed pick")
         element("tab.\(tab)").click()
         element("terminal.\(left)").click()
@@ -81,7 +80,6 @@ extension OvviUITests {
 
     func testAFixedPicksMenuItemsAndSetting() async throws {
         relaunch(one, ["-newPaneOpens", "terminal"])
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, shell) = try await newTab("fixed menu")
         element("tab.\(tab)").click()
         element("terminal.\(shell)").click()

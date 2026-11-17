@@ -18,7 +18,6 @@ extension OvviUITests {
                 ["workspace_ids": ["w1"], "before_workspace_id": "w2"],
             )
         }
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("animations")
         element("tab.\(tab)").click()
         step("Animations on")

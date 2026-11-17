@@ -2,7 +2,6 @@ import XCTest
 
 extension OvviUITests {
     func testAWorkspaceUnfoldsToItsAgentsByTabAndPlace() async throws {
-        XCTAssertTrue(element("workspace.w1").exists(within: connect))
         let idle = try await newTab("review", in: "w1").pane
         try await report(idle, "idle", agent: "pi")
         // A split, not a fourth tab in w1: 220 pt tabs, and only 3 fit on CI's window.
@@ -48,7 +47,6 @@ extension OvviUITests {
     }
 
     func testRecentPutsTheSpaceWhoseAgentChangedLastFirst() async throws {
-        XCTAssertTrue(element("workspace.w1").exists(within: connect))
         let alpha = try await newTab("recent-a", in: "w1").pane, beta = try await newTab("recent-b", in: "w2").pane
         try await report(alpha, "working", agent: "pi")
         try await report(beta, "working", agent: "pi")
@@ -90,7 +88,6 @@ extension OvviUITests {
     }
 
     func testSpaceKeysFollowTheSidebarsRecentOrder() async throws {
-        XCTAssertTrue(element("workspace.w1").exists(within: connect))
         let alpha = try await newTab("keys-a", in: "w1").pane, beta = try await newTab("keys-b", in: "w2").pane
         let created = try await createWorkspace("keys-c")
         // Recent: gamma, beta, alpha; herdr's order: alpha, beta, gamma.
@@ -201,7 +198,6 @@ extension OvviUITests {
     }
 
     func testAnUntitledAgentShowsItsFirstPrompt() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, pane) = try await newTab("prompt")
         try await waitForPrompt(pane)
         let prompt = "find why the drop indicator lands one slot to the right when a tab comes in from another "

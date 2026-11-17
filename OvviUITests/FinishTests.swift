@@ -138,7 +138,6 @@ extension OvviUITests {
     }
 
     private func twoHundredLines(_ label: String) async throws -> String {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab(label)
         element("tab.\(tab)").click()
         try await send("for i in $(seq 1 200); do echo line $i; done\r", to: pane)
@@ -163,7 +162,6 @@ extension OvviUITests {
     }
 
     func testCommandClickOnALinkOpensIt() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("link")
         element("tab.\(tab)").click()
         let folder = "/tmp/ovvi-e2e-links", address = "https://example.com/ovvi"
@@ -275,7 +273,6 @@ extension OvviUITests {
     }
 
     func testCardShowsItsTerminalOnceHerdrDrewItAtItsSize() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("ready")
         let terminal = try await terminalID(pane)
         try await Self.post("\(one)/control", Data(terminal.utf8))

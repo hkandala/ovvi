@@ -2,7 +2,6 @@ import XCTest
 
 extension OvviUITests {
     func testHtmlOpensInTheBrowserFromLinksAndTheFileCard() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, shell) = try await newTab("html")
         let folder = "/tmp/ovvi-e2e-html"
         try await waitForPrompt(shell)
@@ -43,7 +42,6 @@ extension OvviUITests {
     }
 
     func testGoneFilesSayFileNotFound() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, shell) = try await newTab("gone")
         element("tab.\(tab)").click()
         let folder = "/tmp/ovvi-e2e-gone"

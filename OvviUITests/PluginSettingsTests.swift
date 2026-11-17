@@ -2,7 +2,6 @@ import XCTest
 
 extension OvviUITests {
     func testAPluginCardAsksAndItsPageSetsItsSettings() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, shell) = try await newTab("plugin settings")
         try await waitForPrompt(shell)
         let config = "/tmp/ovvi-e2e-plugin-settings", source = "\(config)/src/ovvi-e2e-shout"
@@ -59,7 +58,6 @@ extension OvviUITests {
     }
 
     func testAPluginPageReachesOnlyTheLocalOriginsItDeclares() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, shell) = try await newTab("plugin connect")
         try await waitForPrompt(shell)
         let config = "/tmp/ovvi-e2e-connect", folder = "\(config)/plugins/ovvi-e2e-connect"

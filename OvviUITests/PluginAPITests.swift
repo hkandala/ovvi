@@ -2,7 +2,6 @@ import XCTest
 
 extension OvviUITests {
     func testAPluginPageCallsEveryPartOfTheAPI() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, shell) = try await newTab("plugin-api")
         try await waitForPrompt(shell)
         let config = "/tmp/ovvi-e2e-api-config", folder = "/tmp/ovvi-e2e-api", root = "/private/tmp/ovvi-e2e-api"

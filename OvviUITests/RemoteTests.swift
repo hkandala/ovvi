@@ -178,7 +178,6 @@ extension OvviUITests {
     func testAFileDroppedOnARemoteCardPastesItsCopysPath() async throws {
         try await skipWithoutSSH()
         relaunch(one, Self.onKeyHost)
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("drop")
         app.typeKey("2", modifierFlags: .command)
         XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, true, within: 2))

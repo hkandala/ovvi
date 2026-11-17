@@ -2,7 +2,6 @@ import XCTest
 
 extension OvviUITests {
     func testAPinchMagnifiesABrowserPage() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, shell) = try await newTab("pinch")
         try await waitForPrompt(shell)
         let page = try await writePages(from: shell)

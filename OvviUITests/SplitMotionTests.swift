@@ -4,7 +4,6 @@ extension OvviUITests {
     func testSplitsKeepTheDisplayRate() async throws {
         executionTimeAllowance = 900
         relaunch(one, ["-recordLatency", "YES", "-forceMotion", "YES"])
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, shell) = try await newTab("split-setup")
         try await waitForPrompt(shell)
         try await makeTreeRepo(Self.splits, in: shell)
@@ -30,7 +29,6 @@ extension OvviUITests {
     }
 
     func testAShortChoosersListKeepsTheSelectedRowInView() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, top) = try await newTab("chooser short")
         element("tab.\(tab)").click()
         element("terminal.\(top)").click()

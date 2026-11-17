@@ -88,7 +88,6 @@ extension OvviUITests {
     }
 
     func testTakenOverCardOffersTakeBack() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("taken")
         element("tab.\(tab)").click()
         // The app controls the pane (its PTY has the card's size) ahead of the probe: a probe that came first would

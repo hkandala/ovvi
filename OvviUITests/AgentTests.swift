@@ -41,7 +41,6 @@ extension OvviUITests {
     }
 
     func testBlockedAgentNeedsYouAndItsRowGoesToIt() async throws {
-        XCTAssertTrue(element("workspace.w1").exists(within: connect))
         let (tab, pane) = try await newTab("deploy")
         try await report(pane, "blocked", agent: "claude")
         try await waitForValue("tab.\(tab)", containing: "claude, needs you")
@@ -58,7 +57,6 @@ extension OvviUITests {
     }
 
     func testTheKeyboardCardsAgentIsLitInItsWorkspace() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let first = try await newTab("deploy").pane
         try await report(first, "blocked", agent: "claude")
         let second = try await split(first)
@@ -79,7 +77,6 @@ extension OvviUITests {
     }
 
     func testAFinishShowsDoneUntilTheUserLeavesIt() async throws {
-        XCTAssertTrue(element("workspace.w1").exists(within: connect))
         let other = try await newTab("review").pane
         try await report(other, "idle", agent: "pi")
         let created = try await newTab("docs")
@@ -111,7 +108,6 @@ extension OvviUITests {
     }
 
     func testRelaunchCountsAnOldFinishAsSeen() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let pane = try await newTab("tests").pane
         try await report(pane, "working")
         try await waitForValue("workspace.w2", containing: "working")

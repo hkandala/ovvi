@@ -99,7 +99,6 @@ extension OvviUITests {
     }
 
     func testPaneClosedInHerdrDropsItsCardAndStream() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, first) = try await newTab("gone")
         let second = try await split(first)
         element("tab.\(tab)").click()

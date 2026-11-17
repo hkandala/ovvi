@@ -2,7 +2,6 @@ import XCTest
 
 extension OvviUITests {
     func testABrowserKeepsAFailedAddressAndTakesClicksOffItsPage() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("browser clicks")
         try await waitForPrompt(left)
         let page = try await writePages(from: left)
@@ -64,7 +63,6 @@ extension OvviUITests {
     /// A web card moved into another tab shows its page there at once: its old tab's page, hidden as the pane left it,
     /// can make one more host for the web view after the new card's took it.
     func testMovedWebCardsShowTheirPagesAtOnce() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (target, shell) = try await newTab("target")
         try await waitForPrompt(shell)
         let page = try await writePages(from: shell), folder = "/tmp/ovvi-e2e-moved"

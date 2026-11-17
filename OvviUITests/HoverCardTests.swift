@@ -3,7 +3,6 @@ import XCTest
 extension OvviUITests {
     func testHoverCardShowsABlockedAgentsScreenAndEscClosesIt() async throws {
         step("A blocked agent's row shows its screen; Esc closes the card")
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("deploy")
         let second = try await split(pane)
         try await split(second)
@@ -58,7 +57,6 @@ extension OvviUITests {
     }
 
     func testAgentsRowShowsItsTabsCard() async throws {
-        XCTAssertTrue(element("workspace.w1").exists(within: connect))
         let (tab, pane) = try await newTab("build")
         try await split(pane)
         element("workspace.w1").click()
@@ -83,7 +81,6 @@ extension OvviUITests {
     /// On a Mac Liquid Glass alone lets the text behind read clearly; CI's VM draws glass with no backdrop, so on CI
     /// this guards only against a see-through panel.
     func testHoverCardBlursTheTextBehindIt() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("busy")
         element("tab.\(tab)").click()
         let line = String(repeating: "@#W", count: 60)

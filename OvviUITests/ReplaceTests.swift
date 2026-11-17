@@ -4,7 +4,6 @@ extension OvviUITests {
     /// With motion: CI has Reduce Motion on.
     func testReplacingAShellPaneTakesItsPlaceAndFolder() async throws {
         relaunch(one, ["-recordMotion", "YES", "-forceMotion", "YES"])
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("replace")
         let right = try await split(left)
         let below = try await split(right, "down")
@@ -42,7 +41,6 @@ extension OvviUITests {
     }
 
     func testReplacingKeepsTheZoomAndTheFloatingWindow() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("replace zoom")
         let right = try await split(left)
         try await settle([tab])
@@ -88,7 +86,6 @@ extension OvviUITests {
     }
 
     func testReplacingAPaneRunningAProgramAsks() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("replace ask")
         let pane = try await split(left)
         try await settle([tab])
@@ -127,7 +124,6 @@ extension OvviUITests {
 
 extension OvviUITests {
     func testRedrawTerminalMakesTheProgramRepaint() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("nudge")
         try await settle([tab])
         element("tab.\(tab)").click()

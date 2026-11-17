@@ -115,7 +115,6 @@ extension OvviUITests {
     /// ⊕ stacks a second key under the first, which runs a plugin's command too; Use Here takes another action's
     /// key; the × of a recording field removes its key.
     func testAddedKeysStackAndRunAPluginCommand() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, shell) = try await newTab("added keys")
         let folder = "/tmp/ovvi-e2e-added-keys"
         try await waitForPrompt(shell)

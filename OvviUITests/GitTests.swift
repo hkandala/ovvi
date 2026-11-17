@@ -4,7 +4,6 @@ extension OvviUITests {
     func testGitCardCommitsPushesAndOpensDiffs() async throws {
         // 80–105 s on CI, and once XCUITest took 32 s to hover a branch menu's item.
         executionTimeAllowance = 240
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("git")
         try await waitForPrompt(left)
         let repo = "/tmp/ovvi-e2e-git", root = "/private/tmp/ovvi-e2e-git"
@@ -59,7 +58,6 @@ extension OvviUITests {
     }
 
     func testGitHomeInitializesCommitsAllAndShowsMore() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("git-new")
         try await waitForPrompt(left)
         let folder = "/tmp/ovvi-e2e-git-new", root = "/private/tmp/ovvi-e2e-git-new"

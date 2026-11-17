@@ -4,7 +4,6 @@ extension OvviUITests {
     func testSettingsScenes() async throws {
         // About 70 pictures.
         executionTimeAllowance = 900
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, shell) = try await newTab("settings scenes")
         try await waitForPrompt(shell)
         let config = "/tmp/ovvi-e2e-settings-scenes"

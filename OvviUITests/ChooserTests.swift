@@ -52,7 +52,6 @@ extension OvviUITests {
     }
 
     func testSplitShowsTheChooserArrowsMoveAndEscGivesATerminal() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("chooser split")
         element("tab.\(tab)").click()
         XCTAssertTrue(element("pane.\(left)").has(\.isHittable, true, within: 3))
@@ -180,7 +179,6 @@ extension OvviUITests {
     }
 
     func testReplacePaneAndThePaletteFollowThePanesKind() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("chooser kinds")
         try await settle([tab])
         element("tab.\(tab)").click()
@@ -260,7 +258,6 @@ extension OvviUITests {
     }
 
     func testNewPanesFolderShowsBeforeHerdrAnswers() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("chooser folder")
         element("tab.\(tab)").click()
         element("terminal.\(pane)").click()

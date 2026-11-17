@@ -2,7 +2,6 @@ import XCTest
 
 extension OvviUITests {
     func testFileExplorerBrowsesOpensAndGoesBack() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, shell) = try await newTab("files")
         try await waitForPrompt(shell)
         let repo = "/tmp/ovvi-e2e-files", root = "/private/tmp/ovvi-e2e-files"
@@ -56,7 +55,6 @@ extension OvviUITests {
     }
 
     func testFileExplorerShowsTheTreeBesideAFile() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, shell) = try await newTab("files side")
         try await waitForPrompt(shell)
         let repo = "/tmp/ovvi-e2e-side", root = "/private/tmp/ovvi-e2e-side"
@@ -101,7 +99,6 @@ extension OvviUITests {
 
     /// The tree's page and the tree beside a file are one tree: its scroll and its open folders go both ways.
     func testFileExplorerKeepsOneTreeForItsPageAndItsFiles() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, shell) = try await newTab("files one")
         try await waitForPrompt(shell)
         let repo = "/tmp/ovvi-e2e-one", root = "/private/tmp/ovvi-e2e-one"
@@ -268,7 +265,6 @@ extension OvviUITests {
     }
 
     func testFileExplorerLeavesTheKeyboardToThePaneInUse() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (shellTab, shell) = try await newTab("files-keyboard")
         try await waitForPrompt(shell)
         let repo = "/tmp/ovvi-e2e-files-keyboard", root = "/private/tmp/ovvi-e2e-files-keyboard"
@@ -295,7 +291,6 @@ extension OvviUITests {
 
     func testFileExplorerOpensInNewTabsAndToTheSide() async throws {
         step("A folder of six files in an explorer card")
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, shell) = try await newTab("files-open")
         try await waitForPrompt(shell)
         let repo = "/tmp/ovvi-e2e-files-open", root = "/private/tmp/ovvi-e2e-files-open"

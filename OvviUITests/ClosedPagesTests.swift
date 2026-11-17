@@ -3,7 +3,6 @@ import XCTest
 extension OvviUITests {
     /// The machine's list is one file for every session: the test puts it aside, writes its own and puts it back.
     func testClosedBrowserPagesReopenFromTheMenuAndStayAfterARelaunch() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, shell) = try await newTab("closed")
         try await waitForPrompt(shell)
         let page = try await writePages(from: shell), two = page.replacing("one.html", with: "two.html")

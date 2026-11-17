@@ -3,7 +3,6 @@ import XCTest
 extension OvviUITests {
     func testFileExplorerFindBarAndFinderKeys() async throws {
         step("A repository in an explorer card")
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, shell) = try await newTab("files-finder")
         try await waitForPrompt(shell)
         let repo = "/tmp/ovvi-e2e-files-finder", root = "/private/tmp/ovvi-e2e-files-finder"
@@ -169,7 +168,6 @@ extension OvviUITests {
     }
 
     func testFileExplorerChangeDotsAndGitBar() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, shell) = try await newTab("files-dots")
         try await waitForPrompt(shell)
         let repo = "/tmp/ovvi-e2e-files-dots", root = "/private/tmp/ovvi-e2e-files-dots"

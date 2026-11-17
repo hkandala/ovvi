@@ -2,7 +2,6 @@ import XCTest
 
 extension OvviUITests {
     func testAPluginsHeaderDrawsItsManifestsControls() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, shell) = try await newTab("header")
         try await waitForPrompt(shell)
         let config = "/tmp/ovvi-e2e-header"

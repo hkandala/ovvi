@@ -4,7 +4,6 @@ extension OvviUITests {
     /// A click gives a card the keyboard wherever it lands: on a view that takes no keys (a plugin's error, a missing
     /// plugin, a header button) as on a terminal, a web page, a field or a chat.
     func testAClickAnywhereOnACardGivesItTheKeyboard() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, shell) = try await newTab("clicks")
         try await waitForPrompt(shell)
         let config = "/tmp/ovvi-e2e-clicks", root = "/private/tmp/ovvi-e2e-clicks"

@@ -2,7 +2,6 @@ import XCTest
 
 extension OvviUITests {
     func testGitDiffStepsWithBracketsAndFilters() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("git-keys")
         try await waitForPrompt(left)
         let repo = "/tmp/ovvi-e2e-git-keys", root = "/private/tmp/ovvi-e2e-git-keys"

@@ -2,7 +2,6 @@ import XCTest
 
 extension OvviUITests {
     func testClosingAPaneAsksUnlessOnlyItsShellRuns() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, first) = try await newTab("close")
         let second = try await split(first)
         element("tab.\(tab)").click()
@@ -35,7 +34,6 @@ extension OvviUITests {
     }
 
     func testClosingTheKeyboardCardHandsKeysToItsNeighbor() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("handoff")
         let right = try await split(left)
         element("tab.\(tab)").click()
@@ -48,7 +46,6 @@ extension OvviUITests {
     }
 
     func testClosingATabAsksOnlyWhileAProgramRuns() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, pane) = try await newTab("doomed")
         let second = try await split(pane)
         // A startup program still running would make the second close ask.

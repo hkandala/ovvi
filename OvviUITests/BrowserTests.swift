@@ -44,7 +44,6 @@ extension OvviUITests {
     }
 
     func testBrowserFromTheChooserLoadsATypedAddressAndKeepsItsPage() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("browser")
         try await waitForPrompt(left)
         let page = try await writePages(from: left)

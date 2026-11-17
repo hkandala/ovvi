@@ -2,7 +2,6 @@ import XCTest
 
 extension OvviUITests {
     func testMarkdownCardReadsEditsSavesAndLinks() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (_, shell) = try await newTab("markdown")
         let folder = "/tmp/ovvi-e2e-markdown"
         try await waitForPrompt(shell)

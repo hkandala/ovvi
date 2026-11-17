@@ -2,7 +2,6 @@ import XCTest
 
 extension OvviUITests {
     func testAFileCardEditsSavesAndReloadsItsFile() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("file")
         try await waitForPrompt(left)
         let folder = "/tmp/ovvi-e2e-file", file = "\(folder)/src/main.swift"
@@ -187,7 +186,6 @@ extension OvviUITests {
     }
 
     func testAPreviewCardShowsImagesPDFsAndOtherFiles() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, left) = try await newTab("preview")
         try await waitForPrompt(left)
         let folder = "/tmp/ovvi-e2e-preview"

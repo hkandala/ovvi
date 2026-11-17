@@ -47,7 +47,6 @@ extension OvviUITests {
 
     /// A shown tab of two panes, split by herdr: halves, already even.
     private func balanceTab(_ label: String) async throws -> (tab: String, panes: [String]) {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, first) = try await newTab(label)
         let second = try await split(first)
         element("tab.\(tab)").click()

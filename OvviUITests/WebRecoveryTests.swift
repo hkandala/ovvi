@@ -3,7 +3,6 @@ import XCTest
 /// The system ends WebKit processes under memory pressure, after a sleep or a long idle.
 extension OvviUITests {
     func testWebCardsComeBackAfterTheirProcessEnds() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, shell) = try await newTab("ended")
         try await waitForPrompt(shell)
         let folder = "/tmp/ovvi-e2e-ended"
@@ -54,7 +53,6 @@ extension OvviUITests {
     }
 
     func testABrowserPageThatEndsTwiceSaysSoAndReloads() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, shell) = try await newTab("twice")
         try await waitForPrompt(shell)
         let folder = "/tmp/ovvi-e2e-twice", port = Int.random(in: 20000 ..< 30000)
@@ -103,7 +101,6 @@ extension OvviUITests {
     /// WebKit gives up on a GPU process that stops answering (a starved Mac) but cannot end it, so every page keeps its
     /// drawing connection to it and stays blank, Reload too. Needs a GPU process (not CI's).
     func testWebCardsDrawAgainAfterTheGPUProcessHangs() async throws {
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
         let (tab, shell) = try await newTab("hang")
         try await waitForPrompt(shell)
         let folder = "/tmp/ovvi-e2e-hang"
