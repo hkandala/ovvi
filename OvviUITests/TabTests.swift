@@ -191,7 +191,7 @@ extension OvviUITests {
     func testHoldingADraggedTabAtTheRowsEndScrollsTheRow() async throws {
         let tabs = try await newWorkspace("far", tabs: 8).tabs
         let first = element("tab.\(tabs[0])")
-        let rowEnd = element("titlebar.overview").frame.minX - 8
+        let rowEnd = element("titlebar.new-tab").frame.minX - 8
         XCTAssertTrue(element("tabs.fades").has(\.stringValue, "trailing", within: 2))
         let from = first.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
         during(from, to: from.withOffset(CGVector(dx: rowEnd - 5 - first.frame.midX, dy: 0)), hold: 6)
@@ -223,7 +223,7 @@ extension OvviUITests {
     func testATabThatOpensOutOfViewSlidesIntoView() async throws {
         relaunch(one, ["-recordMotion", "YES"])
         let (tabs, pane) = try await newWorkspace("opens", tabs: 8)
-        let first = element("tab.\(tabs[0])"), rowEnd = element("titlebar.overview").frame.minX - 8
+        let first = element("tab.\(tabs[0])"), rowEnd = element("titlebar.new-tab").frame.minX - 8
         XCTAssertTrue(first.has(\.isSelected, true, within: 3))
         XCTAssertTrue(element("tabs.fades").has(\.stringValue, "trailing", within: 2))
         // Another client's tab: last, in the background.
@@ -322,7 +322,7 @@ extension OvviUITests {
         relaunch(one, ["-recordMotion", "YES"])
         let tabs = try await newWorkspace("many", tabs: 24).tabs
         let first = element("tab.\(tabs[0])"), beta = element("workspace.w2"), made = element("tabs.made")
-        let fit = Int((element("titlebar.overview").frame.minX - 8 - first.frame.minX) / (220 + 1)) + 1
+        let fit = Int((element("titlebar.new-tab").frame.minX - 8 - first.frame.minX) / (220 + 1)) + 1
         beta.click()
         XCTAssertTrue(beta.has(\.isSelected, true, within: 3))
         let before = Int(made.stringValue) ?? 0

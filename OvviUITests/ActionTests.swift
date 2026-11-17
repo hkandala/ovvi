@@ -126,6 +126,10 @@ extension OvviUITests {
         let workspace = workspace(of: tab)
         closeAfter("workspace", workspace)
         XCTAssertTrue(element("workspace.\(workspace)").exists(within: 3))
+        // At home, herdr's "~" shows as the home folder's name, and herdr keeps its own.
+        XCTAssertTrue(element("workspace.\(workspace)").has(\.label, NSUserName(), within: 3))
+        let label = try await workspaceLabel(workspace)
+        XCTAssertEqual(label, "~")
         XCTAssertTrue(element("page.\(tab)").exists(within: 3))
         XCTAssertFalse(element("page.w1:t1").exists)
         let pane = "\(workspace):p1"
@@ -213,7 +217,7 @@ extension OvviUITests {
         XCTAssertTrue(filter.vanishes(within: 2))
         XCTAssertTrue(element("tab.w1:t2").has(\.isSelected, true, within: 2))
 
-        element("titlebar.palette").click()
+        app.typeKey("k", modifierFlags: .command)
         XCTAssertTrue(hasKeyboard(filter))
         app.typeText("beta")
         XCTAssertTrue(element("palette.workspace.\(one).w2").has(\.isSelected, true, within: 2))

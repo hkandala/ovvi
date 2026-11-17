@@ -158,6 +158,38 @@ extension OvviUITests {
         try await type("next", into: theirs, of: two)
     }
 
+    func testTheSessionTitleListsTheWindowsOtherSessions() {
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        openPage(two)
+        let title = element("sidebar.header"), mine = element("sidebar.session.\(one)")
+        XCTAssertTrue(title.has(\.stringValue, two, within: 3))
+        title.click()
+        XCTAssertTrue(mine.exists(within: 2))
+        XCTAssertFalse(element("sidebar.session.\(two)").exists)
+        XCTAssertFalse(element("sidebar.session.\(three)").exists)
+        XCTAssertLessThan(mine.frame.maxY, element("sidebar.open-session").frame.minY)
+        XCTAssertGreaterThan(element("sidebar.filter").frame.minY, element("sidebar.open-session").frame.maxY)
+        keepScreenshot("session shelf")
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(mine.vanishes(within: 2))
+
+        step("The arrows and Return pick a session; the shelf folds")
+        let place = title.frame
+        title.click()
+        XCTAssertTrue(mine.exists(within: 2))
+        app.typeKey(.downArrow, modifierFlags: [])
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(title.has(\.stringValue, one, within: 3))
+        XCTAssertTrue(mine.vanishes(within: 2))
+        XCTAssertEqual(title.frame.minY, place.minY, accuracy: 0.5)
+
+        step("A click on a card folds it")
+        title.click()
+        XCTAssertTrue(element("sidebar.session.\(two)").exists(within: 2))
+        element("terminal.w1:p1").click()
+        XCTAssertTrue(element("sidebar.session.\(two)").vanishes(within: 2))
+    }
+
     private func type(_ word: String, into pane: String, of session: String) async throws {
         app.typeText("echo \(word)-$((6*7))")
         app.typeKey(.return, modifierFlags: [])
@@ -206,6 +238,7 @@ extension OvviUITests {
 
     @discardableResult
     func openSessionPanel(in window: XCUIElement? = nil) -> XCUIElement {
+        element("sidebar.header", in: window).click()
         element("sidebar.open-session", in: window).click()
         let filter = element("open-session.filter", in: window)
         XCTAssertTrue(hasKeyboard(filter))

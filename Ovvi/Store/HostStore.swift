@@ -252,7 +252,7 @@ final class HostStore {
         let shown = ahead.show(snapshot)
         let tabs = Dictionary(grouping: shown.tabs, by: \.workspaceID)
         reuse(self, \.workspaces, shown.workspaces, Workspace.init(id:)) { workspace, new in
-            workspace.label = new.label
+            workspace.label = new.label == "~" ? home(of: tabs[new.id] ?? [], in: shown.panes) : new.label
             workspace.activeTabID = new.activeTabID
             workspace.worktree = new.worktree
             reuse(workspace, \.tabs, tabs[new.id] ?? [], Tab.init(id:)) { tab, new in

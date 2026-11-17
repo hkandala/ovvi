@@ -302,22 +302,22 @@ extension OvviUITests {
             try await report(pane, "working")
             (rows, panes) = (rows + ["workspace.\(workspace(of: tab))"], panes + [pane])
         }
-        let header = element("sidebar.header"), filter = element("sidebar.filter")
+        let filter = element("sidebar.filter"), shelf = element("agents.shelf.Archived Sessions")
         let first = element("workspace.w1"), long0 = element(rows[0]), last = element(rows[23])
         let inView = { (row: XCUIElement) in
-            row.exists && row.frame.minY >= header.frame.maxY && row.frame.maxY <= filter.frame.minY
+            row.exists && row.frame.minY >= filter.frame.maxY && row.frame.maxY <= shelf.frame.minY
         }
         XCTAssertTrue(until(5) {
             self.app.typeKey("1", modifierFlags: [.command, .control])
             self.app.typeKey("[", modifierFlags: [.command, .control])
             return until(1) { last.isSelected }
         })
-        XCTAssertTrue(until(2) { inView(last) }, "\(last.frame), filter \(filter.frame)")
+        XCTAssertTrue(until(2) { inView(last) }, "\(last.frame), shelf \(shelf.frame)")
         let end = element("agent.\(panes[23])").frame
-        XCTAssertGreaterThan(end.maxY, filter.frame.minY - 60, "\(end), filter \(filter.frame)")
+        XCTAssertGreaterThan(end.maxY, shelf.frame.minY - 60, "\(end), shelf \(shelf.frame)")
         XCTAssertFalse(inView(first))
         app.typeKey("3", modifierFlags: [.command, .control])
-        XCTAssertTrue(until(2) { long0.isSelected && long0.frame.minY >= header.frame.maxY + 21 }, "\(long0.frame)")
+        XCTAssertTrue(until(2) { long0.isSelected && long0.frame.minY >= filter.frame.maxY + 24 }, "\(long0.frame)")
         app.typeKey("1", modifierFlags: [.command, .control])
         XCTAssertTrue(until(2) { first.isSelected && inView(first) }, "\(first.frame)")
     }

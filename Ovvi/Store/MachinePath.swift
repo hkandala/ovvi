@@ -25,6 +25,15 @@ enum MachinePath {
 }
 
 extension HostStore {
+    /// herdr's own name for a space at home is "~": shown as the home folder's name, read from a pane there. Display
+    /// only: a name sent to herdr would count as the user's, and herdr would stop naming the space by its folder.
+    func home(of tabs: [HerdrKit.Tab], in panes: [HerdrKit.Pane]) -> String {
+        let ids = Set(tabs.map(\.id))
+        return panes.lazy.filter { ids.contains($0.tabID) }.compactMap(\.cwd)
+            .first { MachinePath.short($0, remote: self.machine.isRemote) == "~" }
+            .map { ($0 as NSString).lastPathComponent } ?? "~"
+    }
+
     func there(_ path: String, from cwd: String) async -> String? {
         let script = #"""
         case $1 in "~"|"~/"*) p=$HOME${1#"~"} ;; /*) p=$1 ;; *) p=${2:-$HOME}/$1 ;; esac

@@ -14,7 +14,6 @@ struct TitleBar: View {
     let fullScreen: Bool
     @Binding var sidebar: Bool
     let sidebarWidth: CGFloat
-    @Binding var palette: Bool
     @Binding var workspaceMenu: Bool
     @Binding var openSession: Bool
     @Binding var workspaceButtonX: CGFloat
@@ -76,12 +75,6 @@ struct TitleBar: View {
         } else {
             Spacer(minLength: 0)
         }
-        IconButton(symbol: "square.grid.2x2", help: "Show Overview", key: .hotkey("app.overview")) {
-            pages.toggleOverview()
-        }
-        .accessibilityIdentifier("titlebar.overview")
-        IconButton(symbol: "command", help: "Command Palette", key: .hotkey("app.palette")) { palette.toggle() }
-            .accessibilityIdentifier("titlebar.palette")
         IconButton(symbol: "plus", help: "New Tab", key: .hotkey("tab.new")) { Task { await page.newTab() } }
             .disabled(page.selectedWorkspace == nil || page.store.state != .live)
             .accessibilityIdentifier("titlebar.new-tab")

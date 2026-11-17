@@ -129,8 +129,8 @@ extension OvviUITests {
         let button = element("titlebar.new-tab")
         XCTAssertTrue(button.exists(within: connect))
         XCTAssertEqual(button.label, "New Tab ⌘T")
-        XCTAssertEqual(element("titlebar.palette").label, "Command Palette ⌘K")
-        XCTAssertEqual(element("sidebar.open-session").label, "Open Session ⌥⌘T")
+        XCTAssertEqual(element("sidebar.overview").label, "Show Overview ⌃⌘O")
+        XCTAssertEqual(element("sidebar.new-workspace").label, "New Space ⌃⌘T")
     }
 
     func testIconButtonsShowTheAppsTooltipAndFloatPaneHasAKey() async throws {

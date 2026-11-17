@@ -162,14 +162,12 @@ extension OvviUITests {
         }
     }
 
-    func testArchivedSessionsAndTheDotsStayUnderThePages() {
+    func testArchivedSessionsStayUnderThePages() {
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
         let shelf = element("agents.shelf.Archived Sessions")
-        XCTAssertFalse(element("sidebar.dot.\(one)").exists)
         openPage(two)
-        let dots = [one, two].map { element("sidebar.dot.\($0)") }
-        XCTAssertTrue(dots[1].has(\.isSelected, true, within: 2))
-        XCTAssertLessThan(dots[1].frame.maxY, shelf.frame.minY)
+        XCTAssertTrue(until(3) { header == two })
+        XCTAssertLessThan(element("workspace.w1").frame.maxY, shelf.frame.minY)
         // A failed run may have left it open.
         if shelf.value as? String == "expanded" {
             shelf.click()
@@ -185,16 +183,16 @@ extension OvviUITests {
         }
         XCTAssertTrue(element("agents.archived.search").exists(within: 2))
         XCTAssertTrue(element("agents.archived.filter").exists)
-        dots[0].click()
+        element("sidebar.header").click()
+        element("sidebar.session.\(one)").click()
         XCTAssertTrue(until(3) { header == one })
         XCTAssertEqual(shelf.value as? String, "expanded")
         XCTAssertTrue(element("agents.archived.search").exists)
-        keepScreenshot("dots and Archived Sessions")
+        keepScreenshot("Archived Sessions")
         relaunch()
         XCTAssertTrue(shelf.has(\.stringValue, "expanded", within: connect))
         shelf.click()
         XCTAssertTrue(shelf.has(\.stringValue, "collapsed", within: 2))
-        XCTAssertFalse(element("sidebar.dot.\(one)").exists)
         XCTAssertTrue(until(2) { shelf.frame == place }, "\(shelf.frame) \(place)")
     }
 

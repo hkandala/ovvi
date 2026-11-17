@@ -5,7 +5,6 @@ struct SidebarPage: View {
     let page: Page
     let pages: WindowPages
     let filter: String
-    let bottom: CGFloat
     let openSession: () -> Void
     private var settings = AppSettings()
     typealias Row = (workspace: HostStore.Workspace, parent: HostStore.Workspace?)
@@ -32,7 +31,6 @@ struct SidebarPage: View {
     @State private var landing: (ids: [String], offset: CGFloat)?
     /// The order's changes with a motion and without, for the tests (`recordMotion`).
     @State private var moves = (animated: 0, still: 0)
-    @State private var plus = false
     @State private var position = ScrollPosition(idType: String.self)
 
     var body: some View {
@@ -54,33 +52,6 @@ struct SidebarPage: View {
                                 shown: top + (region ? [[]] : []) + rest, pinned: pinned, order: spaceOrder,
                                 land: land)
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 0) {
-                Text(store.title).truncationMode(.middle)
-                    .font(.system(size: 13, weight: .bold)).foregroundStyle(.primary).lineLimit(1)
-                    .accessibilityIdentifier("sidebar.header")
-                    .frame(height: 28)
-                    .allowsHitTesting(false)
-                Spacer(minLength: gap)
-                SortMenu(page: page, order: spaceOrder)
-                IconButton(symbol: "plus", help: "New Space", key: .hotkey("space.new")) {
-                    Task { await page.newWorkspace() }
-                }
-                .disabled(store.state != .live)
-                .accessibilityIdentifier("sidebar.new-workspace")
-                .overlay {
-                    if plus, page.dragging != nil {
-                        DropIndicator(radius: 7)
-                    }
-                }
-                .onDrop(of: [.ovviDrag], delegate: PaneDrop(page: page, target: .move(.newWorkspace()),
-                                                            over: $plus))
-                .clearsDrop(page) { plus = false }
-            }
-            .padding(.leading, Sidebar.rowInsets.leading + WorkspaceRow.textInset)
-            .padding(.trailing, Sidebar.rowInsets.trailing)
-            .padding(.bottom, 7)
-            // Behind the row: on the row, a menu takes the row's frame for the name when it is the row's only element.
-            .background { Color.clear.contentShape(.rect).contextMenu { sessionMenu } }
             ScrollView {
                 // Lazy: at hundreds of spaces and agents an eager stack makes and lays out every row in each update.
                 LazyVStack(alignment: .leading, spacing: WorkspaceRow.gap) {
@@ -122,7 +93,6 @@ struct SidebarPage: View {
                 }
                 .animation(.fade, value: order)
                 .padding(Sidebar.rowInsets)
-                .padding(.bottom, bottom)
                 // The content's own space, which a scroll does not move: no frame changes at every scroll frame.
                 .coordinateSpace(.named("rows"))
             }
@@ -134,7 +104,7 @@ struct SidebarPage: View {
                 frames.scrolling = phase != .idle
                 frames.aim()
             }
-            .contextMenu { sessionMenu }
+            .contextMenu { SessionMenu(page: page, pages: pages, openSession: openSession) }
             .scrollIndicators(.never)
             // Only asked, never told: the scroll view's writes make the page and the rows in view again.
             .scrollPosition(.constant(position))
@@ -156,7 +126,7 @@ struct SidebarPage: View {
                 drop.spring?.cancel()
                 drop = RowsDrop.State()
             }
-            .fadesScrolledEdges(end: 18 + bottom)
+            .fadesScrolledEdges()
             .testValue("sidebar.moves", "Moves", "\(moves.animated) \(moves.still)", shown: SettlingHost.record)
             .background {
                 if SettlingHost.record {
@@ -252,7 +222,7 @@ private extension SidebarPage {
                 }
             }
             .background {
-                Color.clear.id("into view \(id)").padding(.top, -18).padding(.bottom, -18 - bottom)
+                Color.clear.id("into view \(id)").padding(.top, -18).padding(.bottom, -18)
                     .onAppear {
                         if frames.wanted == id {
                             frames.wanted = nil
@@ -325,57 +295,5 @@ private extension SidebarPage {
             guard let head = group.first, !shown.isEmpty else { return [] }
             return (shown.first === head ? shown : [head] + shown).map { Row($0, $0 === head ? nil : head) }
         }
-    }
-
-    @ViewBuilder var sessionMenu: some View {
-        Button("New Space") { Task { await page.newWorkspace() } }
-            .disabled(page.store.state != .live)
-        Button("Open Session…", action: openSession)
-        if settings.showArchived {
-            Button(opened.hasLine(page.archivedKey) ? "Hide Archived Sessions" : "Show Archived Sessions") {
-                withAnimation(.fade) {
-                    opened = opened.togglingLine(page.archivedKey)
-                }
-            }
-        }
-        Button(page.store.onlyPinned ? "Show All Spaces" : "Show Only Pinned Spaces") {
-            afterMenu { page.store.onlyPinned.toggle() }
-        }
-        .disabled(page.store.pins.isEmpty)
-        Divider()
-        Button("Detach Session") { pages.close(page) }.disabled(!pages.canDetach)
-    }
-}
-
-/// Its own view: inside the sidebar's body, each change there (an agent's state) would make the menu again and close
-/// it.
-private struct SortMenu: View {
-    let page: Page
-    let order: SpaceOrder
-
-    var body: some View {
-        Menu {
-            Picker(
-                "Sort Spaces",
-                selection: Binding { order } set: { order in afterMenu { page.store.order = order } },
-            ) {
-                Text("Manual").tag(SpaceOrder.manual)
-                Text("Recent").tag(SpaceOrder.recent)
-            }
-            .pickerStyle(.inline)
-            .labelsHidden()
-        } label: {
-            // As tall as the `+`'s glyph, which is shorter at the same size.
-            Image(systemName: "arrow.up.arrow.down").font(.system(size: 11, weight: .semibold))
-                .frame(width: 28, height: 28)
-        }
-        .menuStyle(.button)
-        .menuIndicator(.hidden)
-        .buttonStyle(ChromeStyle(radius: 7))
-        .fixedSize()
-        .tip("Sort Spaces")
-        .accessibilityLabel("Sort Spaces")
-        .accessibilityValue(order == .manual ? "Manual" : "Recent")
-        .accessibilityIdentifier("sidebar.sort")
     }
 }

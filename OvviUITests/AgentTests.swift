@@ -18,7 +18,8 @@ extension OvviUITests {
         XCTAssertEqual(state.frame.width, 11, accuracy: 0.5, "\(state.frame)")
         XCTAssertEqual(state.frame.midX, row.maxX - 8 - 12 - 6 - 6, accuracy: 0.5, "\(state.frame) \(row)")
         XCTAssertEqual(state.frame.midY, row.minY + 15, accuracy: 0.5, "\(state.frame) \(row)")
-        XCTAssertEqual(element("sidebar.header").frame.minX, row.minX + 8, accuracy: 0.5)
+        // The title's 8 pt padding puts its text on the row's.
+        XCTAssertEqual(element("sidebar.header").frame.minX, row.minX, accuracy: 0.5)
 
         let slot = icon.frame
         element("tab.\(tab)").click()

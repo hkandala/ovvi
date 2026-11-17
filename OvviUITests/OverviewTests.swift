@@ -43,7 +43,7 @@ extension OvviUITests {
         XCTAssertTrue(hasKeyboard("terminal.w2:p1"))
         try await expectPTYSize("w2:p1")
 
-        element("titlebar.overview").click()
+        element("sidebar.overview").click()
         XCTAssertTrue(overview.exists(within: 2))
         scrollOverview(to: tile)
         XCTAssertEqual(tile.stringValue, "selected")
@@ -55,7 +55,7 @@ extension OvviUITests {
         XCTAssertTrue(overview.exists(within: 2))
         element("overview.close").click()
         XCTAssertTrue(overview.vanishes(within: 2))
-        XCTAssertTrue(element("titlebar.overview").exists(within: 2))
+        XCTAssertTrue(element("sidebar.overview").exists(within: 2))
         try await expectEveryTileLoadsInTurn()
     }
 
@@ -104,9 +104,7 @@ extension OvviUITests {
     }
 
     private func expectOverviewChrome(first: CGRect, second: CGRect) {
-        for id in ["titlebar.sidebar", "titlebar.machine", "titlebar.overview", "titlebar.palette",
-                   "titlebar.new-tab"]
-        {
+        for id in ["titlebar.sidebar", "titlebar.machine", "titlebar.new-tab", "sidebar.overview"] {
             XCTAssertFalse(element(id).exists, id)
         }
         XCTAssertEqual(element("overview.title").stringValue, one)

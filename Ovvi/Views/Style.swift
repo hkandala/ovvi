@@ -318,8 +318,8 @@ extension View {
         }
     }
 
-    func fadesScrolledEdges(end: CGFloat = 18) -> some View {
-        modifier(ScrolledFades(end: end))
+    func fadesScrolledEdges() -> some View {
+        modifier(ScrolledFades())
     }
 }
 
@@ -330,7 +330,6 @@ extension Shape where Self == RoundedRectangle {
 }
 
 private struct ScrolledFades: ViewModifier {
-    let end: CGFloat
     @State private var under = (top: false, bottom: false)
 
     func body(content: Content) -> some View {
@@ -341,7 +340,7 @@ private struct ScrolledFades: ViewModifier {
             } action: {
                 under = ($1[0], $1[1])
             }
-            .fadeEdges(.vertical, start: under.top ? 18 : 0, end: under.bottom ? end : 0)
+            .fadeEdges(.vertical, start: under.top ? 18 : 0, end: under.bottom ? 18 : 0)
     }
 }
 

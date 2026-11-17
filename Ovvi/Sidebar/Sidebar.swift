@@ -16,7 +16,7 @@ struct Sidebar: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            pagesAndFooter
+            headerAndPages
                 .frame(width: width - gap)
             ResizeHandle(width: $width)
         }
@@ -27,15 +27,23 @@ struct Sidebar: View {
         .onAppear { Latency.shared.note("sidebar made") }
     }
 
-    private var pagesAndFooter: some View {
+    private var headerAndPages: some View {
         VStack(spacing: 0) {
+            if let page = pages.current {
+                SessionHeader(pages: pages, page: page, openSession: openSession)
+                    .padding(.leading, Sidebar.rowInsets.leading).padding(.trailing, Sidebar.rowInsets.trailing)
+            }
+            FilterField(prompt: "Find a space or agent", text: $filter, identifier: "sidebar.filter",
+                        symbol: "magnifyingglass")
+                .onExitCommand { filter = "" }
+                .padding(.leading, Sidebar.rowInsets.leading).padding(.trailing, Sidebar.rowInsets.trailing)
+                .padding(.top, 8).padding(.bottom, 10)
             Pager(swipe: swipe, width: width - gap) {
                 HStack(spacing: 0) {
                     // At rest only the page in view: the others would lie over the tab's page, in the sidebar's
                     // accessibility frame (which takes in laid-out views past the clip) and in AppKit's hit tests.
                     ForEach(swipe.moving ? pages.list : pages.list.filter { $0 === pages.current }) { page in
-                        SidebarPage(page: page, pages: pages, filter: filter,
-                                    bottom: pages.list.count > 1 ? PageDots.height : 0, openSession: openSession)
+                        SidebarPage(page: page, pages: pages, filter: filter, openSession: openSession)
                             .frame(width: width - gap)
                             .accessibilityHidden(page !== pages.current)
                             .allowsHitTesting(page === pages.current)
@@ -43,18 +51,6 @@ struct Sidebar: View {
                     }
                 }
             }
-            .overlay(alignment: .bottom) {
-                if pages.list.count > 1 {
-                    PageDots(pages: pages)
-                }
-            }
-            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { area = $0 }
-            .background(PagesAnchor(
-                step: step,
-                drag: pages.overview ? nil : drag as (Double, Bool) -> Void,
-                lift: lift,
-                area: area,
-            ))
             // Under the overview at once: hidden, it would draw both pages for 0.3 s.
             .onChange(of: pages.list.map(\.id) + [pages.current?.id ?? ""], initial: true) { old, new in
                 guard let index = pages.list.firstIndex(where: { $0 === pages.current }),
@@ -67,42 +63,15 @@ struct Sidebar: View {
                     .padding(.leading, Sidebar.rowInsets.leading).padding(.trailing, Sidebar.rowInsets.trailing)
                     .padding(.top, 2)
             }
-            HStack(spacing: 2) {
-                FilterField(prompt: "Filter", text: $filter, identifier: "sidebar.filter")
-                    .onExitCommand { filter = "" }
-                    .padding(.trailing, 4)
-                IconButton(symbol: "plus.square.on.square", help: "Open Session", key: .hotkey("session.open"),
-                           action: openSession)
-                    .accessibilityIdentifier("sidebar.open-session")
-            }
-            .padding(Sidebar.rowInsets)
-            .padding(.top, 8)
         }
-    }
-}
-
-private struct PageDots: View {
-    static let height: CGFloat = 18
-    let pages: WindowPages
-
-    var body: some View {
-        HStack(spacing: 0) {
-            ForEach(pages.list) { page in
-                Button { pages.show(page) } label: {
-                    Circle().fill(page === pages.current ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
-                        .frame(width: 6, height: 6)
-                        .frame(width: 12, height: 12)
-                        .contentShape(.rect)
-                }
-                .buttonStyle(.plain)
-                .contextMenu { Button("Detach Session") { pages.close(page) }.disabled(!pages.canDetach) }
-                .accessibilityLabel(page.store.title)
-                .accessibilityIdentifier("sidebar.dot.\(page.id)")
-                .accessibilityAddTraits(page === pages.current ? .isSelected : [])
-            }
-        }
-        .padding(.leading, Sidebar.rowInsets.leading).padding(.trailing, Sidebar.rowInsets.trailing)
-        .padding(.bottom, 6)
+        // The whole sidebar swipes its pages, the header and the filter too.
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { area = $0 }
+        .background(PagesAnchor(
+            step: step,
+            drag: pages.overview ? nil : drag as (Double, Bool) -> Void,
+            lift: lift,
+            area: area,
+        ))
     }
 }
 

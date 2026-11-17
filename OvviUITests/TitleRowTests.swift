@@ -188,7 +188,7 @@ extension OvviUITests {
     func testTabsKeepTheirWidthAndTheRowScrolls() async throws {
         let tabs = try await newWorkspace("row", tabs: 8).tabs
         let capsules = tabs.map { element("tab.\($0)") }, first = capsules[0], last = capsules[7]
-        let fades = element("tabs.fades"), rowEnd = element("titlebar.overview").frame.minX - 8
+        let fades = element("tabs.fades"), rowEnd = element("titlebar.new-tab").frame.minX - 8
         XCTAssertTrue(first.exists(within: 3))
         XCTAssertEqual(first.frame.width, 220, accuracy: 1)
         XCTAssertLessThan(element("titlebar.new-tab").frame.maxX, app.windows.firstMatch.frame.maxX)

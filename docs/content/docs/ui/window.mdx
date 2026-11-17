@@ -1,6 +1,6 @@
 ---
 title: "Main window"
-description: "Windows, the title row, tab bar, sidebar pages with spaces and their agents, page dots and Archived Sessions, Open Session, hover card, tab page, pane cards, zoom, overview, floating panes, find bar, notices and the palette"
+description: "Windows, the title row, tab bar, sidebar pages with spaces and their agents, the session header and Archived Sessions, Open Session, hover card, tab page, pane cards, zoom, overview, floating panes, find bar, notices and the palette"
 ---
 
 ## Windows
@@ -96,8 +96,8 @@ start, also during a resize. From left to right:
 5. The [tab bar](#tab-bar): the selected space's tabs, whether the sidebar
    is open or collapsed.
 6. A spacer.
-7. The [overview](#overview) button (⌃⌘O).
-8. ⌘ (the command palette, ⌘K) and `+` (new tab, ⌘T).
+7. `+` (new tab, ⌘T), the only button at the end. The overview's button sits in the
+   [session header](#sidebar); the command palette has only its keys (⌘K).
 
 While the overview is open the row shows only the traffic lights and one ×
 that leaves it ([Overview](#overview)).
@@ -145,7 +145,7 @@ Window menu and Mission Control show it.
 ## Space button
 
 Shown only while the sidebar is collapsed, after the machine button.
-- An outline folder icon, then "‹page title› | ‹space›" (the sidebar page header's title, so the
+- An outline folder icon, then "‹page title› | ‹space›" (the sidebar's session header title, so the
   machine's name for `default`): the title in the
   title row's chrome color, a thin vertical line in the divider color, the
   space in the selected title color, a step brighter, all semibold. Then
@@ -267,22 +267,22 @@ One capsule per herdr tab of the selected space (D42).
 ## Sidebar
 
 Flat on the window background, with no panel (D44). Arc-style pages, one per
-session open in this window (D43). One view (D111): each page has its header and its
-[space rows](#space-rows) with their [agents](#agent-rows) (the only part that scrolls); under the pages, which they
-do not slide with, the page dots, [Archived Sessions](#archived-sessions) and the footer.
+session open in this window (D43). One view (D111): from the top, the session header, the filter, the pages and
+[Archived Sessions](#archived-sessions). Each page has the session's [space rows](#space-rows) with their
+[agents](#agent-rows) (the only part that scrolls). Only the pages slide: the header, the filter and Archived Sessions
+stay still.
 - **Open sessions, not all sessions.** A window starts with the page the user
   picks in the [new-window view](#new-window) (or the pages it restores). It
   never loads other sessions by itself. The user adds pages with
   [Open Session](#open-session), as many as they like. Only open pages, and a
   session with a [floating pane](#floating-pane), have a `HostStore`, snapshot
   reads and an event stream.
-- **Session menu.** A right-click on the page header or on the sidebar's empty area under the rows shows the
+- **Session menu.** A right-click on the session header's title or on the sidebar's empty area under the rows shows the
   session's menu: New Space, Open Session…, Show Archived Sessions (Hide while it is open; not there while Settings
   hides it), Show Only Pinned Spaces (Show All Spaces while it is on; disabled with nothing pinned,
   [Pinned spaces](#sidebar)), then Detach Session. New Space, Open Session… and Detach Session do what their menu bar
   items do; Show Archived Sessions opens the shelf, Hide folds it.
-- **Detach Session.** The session menu and the context menu of its page dot
-  have Detach Session (also in the File menu). It removes the page from this
+- **Detach Session.** The session menu has Detach Session (also in the File menu). It removes the page from this
   window. When no other window shows the session, its store disconnects, so
   its event stream and its terminal streams end. The herdr session keeps running and stays in the Open Session list.
   Detach Session is disabled on the last page. The UI says "session", never
@@ -304,26 +304,28 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   remote machine that needs an answer keeps its pages, which show
   Disconnected with **Connect**: nothing asks by itself.
 - **Pages.** A sideways swipe on the sidebar moves to the next or previous
-  open page ([Swiping](/docs/ui/swiping)); so do ⌥⌘[ ], and ⌥⌘1–9 show a page by its place (Window menu).
-- **Page dots.** Over the pages' foot, above Archived Sessions, centered on the rows: one 6 pt dot per open page, 6
-  pt apart, 11 pt from Archived Sessions under them. The list's end has 18 pt more room for them, so its last row
-  ends 11 pt above the dots. While rows lie under the list's end, its fade runs 36 pt instead of 18: the rows thin
-  out from full to clear over it, and the dots lie over its faint end (rows at about a third behind them), in both
-  styles, with no color painted. The current page's dot is in primary text color, the others tertiary. A click on a
-  dot shows its page; its context menu has Detach Session. Hidden while one page is open. VoiceOver reads each dot
-  as its page's title (the page header's).
-- **Page header.** The session's name, the page's title (13 pt bold, the
-  rows' size, primary); for a machine's `default`
+  open page ([Swiping](/docs/ui/swiping)); so do ⌥⌘[ ], and ⌥⌘1–9 show a page by its place (Window menu). The
+  session shelf lists them too. There are no page dots: the shelf names the open sessions.
+- **Session header.** Over the pages, still while they slide. At its start the page's title (13 pt bold, the
+  rows' size, primary), the session's name; for a machine's `default`
   session, the machine's name instead: This Mac's own name (System Settings,
   "Hari's MacBook Pro") or the remote machine's name from the list. The Open
-  Session panel and the palette keep the real names. Its text starts where
-  everything under it starts: 18 pt in from the window's edge, on the
-  space rows' names and branch lines, the agents' icons and the shelf's label. It
-  sits 7 pt above the first
-  row (its baseline 16.5 pt above the row's top), and, at the trailing
-  end, **Sort Spaces** (`arrow.up.arrow.down`, 11 pt semibold, so its glyph is as tall as the `+`'s, 10.5 pt) and a
-  `+` that makes a new space in that session, in `$HOME`: two 28 pt buttons whose frames touch. The
-  snapshot after it selects the new space.
+  Session panel and the palette keep the real names. The title is a quiet button: its text starts where everything
+  under it starts, 18 pt in from the window's edge (on the space rows' names and branch lines, the agents' icons and
+  the shelf's label), and under the pointer it fills (radius 7) and shows a small `chevron.down` after the name. When
+  the page in view changes, the title fades to the new name as the spaces slide; during a swipe it changes when the
+  page lands. At the trailing end, three 28 pt buttons whose frames touch: **Show Overview** (`square.grid.2x2`,
+  ⌃⌘O, [Overview](#overview)), **Sort Spaces** (`arrow.up.arrow.down`, 11 pt semibold, so its glyph is as tall as the
+  `+`'s, 10.5 pt) and a `+` that makes a new space in that session, in `$HOME`. The snapshot after it selects the new
+  space.
+- **Session shelf.** A click on the title opens a shelf in the sidebar, not a menu: a 1 pt border (primary at 14 %,
+  radius 10, no glass) round the header and, under it, one 28 pt row per other session open in this window, in the
+  window's order (`rectangle.stack` and the session's title), a 1 pt line, then **Open Session…** with ⌥⌘T, which
+  opens the [Open Session](#open-session) panel for every other session of the machine (detached ones, new ones,
+  Stop and Delete). The title's chevron points up while it is open. The rows carry no state and no running or
+  stopped word: every one is a page of this window. A row fills under the pointer; ↑ and ↓ move that light and
+  Return picks. A pick shows that page and folds the shelf; Esc, a second click on the title, or a click that gives
+  the keys elsewhere (a card, a row, a field) folds it too. The filter and the pages move down while it is open.
 - **Sort Spaces.** A menu with a check on the current order of the unpinned spaces. The order is the session's,
   in every window that shows it, kept in the sidebar's defaults ([Data](/docs/data#every-piece-of-data)). A
   session follows Settings ▸ Agents ▸ **Sort spaces** (Manual by default) until its own menu picks.
@@ -371,13 +373,13 @@ do not slide with, the page dots, [Archived Sessions](#archived-sessions) and th
   fade. While the list scrolls nothing fills; when it stops, the row under the pointer does.
 - **Empty session.** A session with no space leaves its page quiet: no rows, no text and no button (the page
   header's `+` makes one). The window's content has the session's start ([States](/docs/ui/states)).
-- **Footer.** The filter field and one button, **Open Session** (⌥⌘T), which
-  opens the [Open Session](#open-session) panel. The filter keeps the rows
+- **Filter.** Under the session header, 8 pt below it and 10 pt above the rows: a field with a magnifying glass and
+  "Find a space or agent". It keeps the rows
   whose name or branch matches, and the rows with an agent whose name, agent, space or tab matches, unfolded to
   those agents (a row kept by its branch alone stays folded). A matching worktree also keeps its repository's row.
   With none, the compact empty state says "No matching spaces" (`magnifyingglass`). Archived Sessions has its own
-  search field. The footer has no New Space and no Add Machine:
-  the page header has `+`, and the machine menu has Add Machine.
+  search field. The sidebar's foot has no buttons: the session header has `+` and Open Session…, and the machine
+  menu has Add Machine.
 - **Width.** 300 pt in a new window, from the window's edge to the cards: the rows sit 10 pt in from the window's
   edge, and the 8 pt handle lies over the gap before the cards. Drag the
   handle to resize it between 227 and 480 pt. Each window keeps its own
@@ -390,15 +392,21 @@ The sidebar never shows tabs, and its bottom never shows agent activity.
 One row per herdr space of the session, in the sidebar's order (pinned
 spaces first, then [Sort Spaces](#sidebar)' order), like herdr's Spaces panel.
 - **Line 1.** The name (13 pt), 8 pt into the row, so the names, the branch
-  lines and the page header's text start on one edge. So does the drag ghost
+  lines and the session header's text start on one edge. So does the drag ghost
   "New Space". Nothing comes before the
   name. The name is medium weight while the row calls for the user (needs you
   or done).
+- **Home name.** herdr names a space by its git repository or folder, and a space in the home folder `~`. The app
+  shows that `~` as the home folder's name, read from the folder of one of the space's panes there: `hkandala` for
+  `/Users/hkandala`, on a remote machine its user's (`/home/alice` gives `alice`). The name shows everywhere the space
+  is named (the space button, the overview, the palette, notifications), but only shows: herdr keeps `~`, so it goes
+  on naming the space by its folder after a `cd`. Rename starts with the shown name, and an unchanged name sends
+  nothing. A tab's folder (`zsh ~`) keeps its `~`.
 - **Chevron.** A space that runs agents has a chevron (`chevron.right`, 10 pt semibold, secondary) at the end of
   the name's line, 8 pt in; it turns down while the row is unfolded. A click on it folds or unfolds the row's
   [agents](#agent-rows) and does not select the row; "Show Agents" or "Hide Agents" is its tooltip and VoiceOver
   label, "collapsed" or "expanded" its value. Rows are unfolded at first; each one the user folds stays folded, per
-  machine and session, across relaunches (`foldsAndShelves`). The rename field hides it. While the footer filter holds
+  machine and session, across relaunches (`foldsAndShelves`). The rename field hides it. While the filter holds
   rows open, the chevron does nothing.
 - **State icon.** At the end of the name's line, 8 pt in (6 pt before the chevron) and centered on
   that line: the state icon (12 pt, as a tab's) of the space's strongest agent, with no word and
@@ -479,8 +487,7 @@ How it works: [Agents and notifications](/docs/status#agents-and-notifications).
 
 ## Archived Sessions
 
-A folded shelf at the sidebar's foot, under the pages and the page dots, above the footer (D110), 10 pt under the
-rows with one page, as two rows are apart. It is the machine's, not a session's: it does not slide with the pages,
+A folded shelf at the sidebar's foot, under the pages (D110), 10 pt under the rows, as two rows are apart. It is the machine's, not a session's: it does not slide with the pages,
 and every page shows the same. Settings ▸ Agents ▸ **Show closed sessions** (on by default) hides it, and then
 nothing is read.
 - **The shelf.** Open, a 1 pt border round it (primary at 14 %, radius 10), as a space row that is not selected, and
@@ -496,7 +503,7 @@ nothing is read.
   rows, with "Searching older sessions…" under them while it reads. Paging, not a grep on the machine, which would
   read whole transcripts. Esc folds the shelf, which empties the search, and gives the keyboard to the pane in view.
   At its trailing end a menu button (`line.3.horizontal.decrease.circle`, filled while it shows one agent, "Show
-  Agent") opens a menu: **All Agents**, then the four agents. The choice is kept across relaunches. The footer's
+  Agent") opens a menu: **All Agents**, then the four agents. The choice is kept across relaunches. The sidebar's
   filter does not reach it.
 - **List.** Under the search field, one height whatever it shows, five rows' (256 pt): the loader, an empty state
   or a failure sits in its middle, rows scroll inside, with an 18 pt fade at an edge that has more rows, and the
@@ -540,7 +547,7 @@ nothing is read.
 ## Open Session
 
 The one place to create or open a session, as a page of this window (D68).
-The footer's Open Session button, the session menu's, the space menu's and
+The session shelf's Open Session…, the session menu's, the space menu's and
 the machine menu's "Open Session…" and File ▸ Open Session… (⌥⌘T) open it.
 - A glass panel like the command palette, 420 pt wide, near the top of the
   window, with no title and no buttons: Enter acts, Esc or a click outside
@@ -1009,8 +1016,8 @@ How it works: [Scrolling, queries and links](/docs/talking-to-herdr#scrolling-qu
 
 Every tab of the session at a glance, as pictures (D70): for watching many
 agents at once.
-- **Open and close.** The title-row button (`square.grid.2x2`, after the
-  tab bar, before ⌘), View ▸ Show Overview, the palette, and ⌃⌘O toggle it;
+- **Open and close.** The session header's button (`square.grid.2x2`, before
+  Sort Spaces), View ▸ Show Overview, the palette, and ⌃⌘O toggle it;
   Esc and the title row's × leave it. Each window has its own; it does not come
   back after a relaunch.
 - **What it hides.** The sidebar, the tab bar and every title-row button: the
@@ -1021,7 +1028,7 @@ agents at once.
   ⌥⌘[ ] and the palette step to the window's previous or next session, which
   the overview then shows; a sideways swipe alone goes nowhere. From the top:
   the session's title as the sidebar's
-  page header has it (13 pt semibold; the machine's name for `default`), then
+  session header has it (13 pt semibold; the machine's name for `default`), then
   the session's spaces in the sidebar's order, 32 pt apart: each
   space's name (13 pt semibold, secondary), then its tabs as tiles in a
   grid, 2 to 4 a row (as many 340 pt tiles as fit), 16 pt apart. Wide
@@ -1239,7 +1246,7 @@ Two windows on different sessions each control their own session.
 
 ## Command palette
 
-⌘K or the title-bar ⌘ button opens it (D48). ⇧⌘P also opens it (Rex's key).
+⌘K opens it (D48). ⇧⌘P also opens it (Rex's key).
 - 480 pt wide, with 10 pt around its content. The list is the exception at
   the bottom: it runs to the panel's bottom edge, so a row cut by the scroll
   is cut at that edge. Its 10 pt sit after the last row, and show only when

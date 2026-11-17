@@ -262,7 +262,6 @@ private struct WindowContent: View {
                 fullScreen: fullScreen,
                 sidebar: $sidebar,
                 sidebarWidth: sidebarWidth,
-                palette: open(.palette),
                 workspaceMenu: open(.workspaces),
                 openSession: open(.openSession),
                 workspaceButtonX: $workspaceButtonX,
