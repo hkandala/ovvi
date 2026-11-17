@@ -41,7 +41,7 @@ struct CommandList {
             Command(section: .file, title: "New Window", key: .hotkey("app.new-window"),
                     symbol: "macwindow.badge.plus") { WindowPages.open(machine: nil) },
             Command(section: .file, title: "New Tab", key: .hotkey("tab.new"), group: .tabs, symbol: "plus.square",
-                    enabled: live && workspace != nil) { Task { await page?.newTab() } },
+                    enabled: live && workspace != nil) { Task.immediate { await page?.newTab() } },
             Command(section: .file, title: "New Space", key: .hotkey("space.new"),
                     group: .workspaces, symbol: "folder.badge.plus", keywords: "workspace", enabled: live,
                     alternate: Chooser.fixed == nil ? nil : "New Space and Choose…",
@@ -315,7 +315,7 @@ extension CommandList {
                             if let page = pages?.current, let pane = page.keyboardPane,
                                !page.store.writing || event?.type != .keyDown || event?.isARepeat != true
                             {
-                                Task { await act(page, pane, heading) }
+                                Task.immediate { await act(page, pane, heading) }
                             }
                         })
             }
@@ -325,7 +325,9 @@ extension CommandList {
                               key: .hotkey("pane.balance"), symbol: "equal.square",
                               keywords: "pane even", enabled: tab != nil, action: {
                                   if let page = pages?.current, let tab = page.selectedTab {
-                                      Task { await page.store.write { try await page.store.balance(tab.id, $0) } }
+                                      Task.immediate {
+                                          await page.store.write { try await page.store.balance(tab.id, $0) }
+                                      }
                                   }
                               })
         return [balance] +
