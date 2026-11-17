@@ -1,8 +1,9 @@
 // The scene's window, read and placed through accessibility (no events): `ax.swift <pid> window [x y w h]` prints the
 // main window's id and frame, after moving it when a frame is given; `screen` prints the main display's size; `close`
-// closes the app's other windows; `front` brings the app in front; `park` moves the pointer off it; `find <id>` prints
-// the screen frame of each element with that accessibility identifier (a prefix with a trailing `*`, or
-// `title:<title>` for a button or a menu's item); `set <text>` puts text in the focused field, as typing leaves it.
+// closes the app's other windows; `windows` prints each window's id and frame, largest first; `front` brings the app
+// in front; `park` moves the pointer off it; `find <id>` prints the screen frame of each element with that
+// accessibility identifier (a prefix with a trailing `*`, or `title:<title>` for a button or a menu's item); `set
+// <text>` puts text in the focused field, as typing leaves it.
 import ApplicationServices
 import Foundation
 
@@ -30,8 +31,8 @@ func show(_ rect: CGRect) -> String {
     "\(Int(rect.minX)) \(Int(rect.minY)) \(Int(rect.width)) \(Int(rect.height))"
 }
 
-/// The largest normal window of the pid, by the window server's list (its number is screencapture's id).
-func mainWindow() -> (id: Int, frame: CGRect)? {
+/// The normal windows of the pid, by the window server's list (its number is screencapture's id), largest first.
+func windows() -> [(id: Int, frame: CGRect)] {
     let list = CGWindowListCopyWindowInfo(.optionAll, kCGNullWindowID) as? [[String: Any]] ?? []
     return list.compactMap { window -> (Int, CGRect)? in
         guard window[kCGWindowOwnerPID as String] as? Int32 == pid, window[kCGWindowLayer as String] as? Int == 0,
@@ -39,7 +40,11 @@ func mainWindow() -> (id: Int, frame: CGRect)? {
                   .flatMap({ CGRect(dictionaryRepresentation: $0 as CFDictionary) }), bounds.width > 400
         else { return nil }
         return (window[kCGWindowNumber as String] as? Int ?? 0, bounds)
-    }.max { $0.1.width * $0.1.height < $1.1.width * $1.1.height }
+    }.sorted { $0.1.width * $0.1.height > $1.1.width * $1.1.height }
+}
+
+func mainWindow() -> (id: Int, frame: CGRect)? {
+    windows().first
 }
 
 switch arguments[2] {
@@ -50,6 +55,10 @@ case "front":
         AXUIElementPerformAction(window, kAXRaiseAction as CFString)
     }
     Thread.sleep(forTimeInterval: 0.3)
+case "windows":
+    for window in windows() {
+        print(window.id, show(window.frame))
+    }
 case "screen":
     let bounds = CGDisplayBounds(CGMainDisplayID())
     print(Int(bounds.width), Int(bounds.height))
