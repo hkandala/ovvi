@@ -1,169 +1,63 @@
 ---
 title: "Plugins"
-description: "Every pane kind but the terminal, the agent and the browser is a plugin: a package that Ovvi installs, loads in a web view and connects to the card's machine"
+description: "What a plugin is, the plugins that come with Ovvi, and where a plugin runs"
 ---
 
-A pane kind is what a pane shows: a terminal, an agent, a browser or a
-plugin. Terminal and Agent are herdr's own panes. Every other kind is a
-plugin: a herdr pane that runs a placeholder, with a label that names the
-plugin ([Labels and instance ids](/docs/plugins/labels)). The app draws the
-plugin's card over that pane.
+A plugin adds a kind of card to Ovvi. A card is what a pane shows. Terminal, Agent and Browser cards are part of
+the app. Every other card is a plugin: File Explorer and Git too.
 
-Every plugin is made the same way, as a pi package is:
-- A plugin is a package: a folder with a `package.json` whose `ovvi` key is
-  the manifest, its TypeScript and its own `node_modules`
-  ([The manifest](/docs/plugins/manifest)).
-- The package builds itself with its own `build` script, for example
-  esbuild from `src/main.ts` into `dist/main.js`. Ovvi ships no bundler. It
-  runs the script with the npm, pnpm or bun on the user's login `PATH`
-  ([Build a plugin](/docs/plugins/building)).
-- Ovvi installs packages from npm, from git or from a local path. Settings
-  ▸ Plugins lists them, and each plugin has its own page there: its settings,
-  **Update to ‹version›** for an npm install, **Show Log**, **Reload** and **Remove**
-  ([Packages and installs](/docs/plugins/packages#the-plugins-page)).
-- A plugin can declare settings in its manifest. The app draws them on the
-  plugin's page and gives their values to its cards
-  ([Settings](/docs/plugins/manifest#settings)).
-- Each card is a web view of its own. Its page calls the app through one
-  typed object, `ovvi` ([The plugin API](/docs/plugins/api)).
-- The two default plugins, File Explorer and Git, are packages too. The app
-  installs them on first launch, they update from npm, and they use only the
-  public API
-  ([File Explorer and Git](/docs/plugins/default-plugins)).
-- The browser is a native web view. It is a kind in the same registry, with a
-  manifest written in Swift ([The browser](/docs/plugins/browser)).
+A plugin is an npm package, a folder with a `package.json`. The `ovvi` key in that file is the plugin's manifest: its
+name, its icon, what it opens and the controls in its card's header
+([The manifest](/docs/plugins/manifest)). The package builds its own code into JavaScript. Each card of the plugin
+is a web page that runs that code. The page calls the app through one object, `ovvi`
+([The plugin API](/docs/plugins/api)).
 
-| Pane kind | Content | Its code | How herdr marks the pane |
-|---|---|---|---|
-| Terminal | native terminal (libghostty) | the app | none (the default) |
-| Agent | native terminal and chat view | the app | none (herdr sets `pane.agent`) |
-| Browser | native web view of any site | the app | label `ovvi:browser#<iid> <url>` |
-| File Explorer, Git | a plugin page in a web view | packages that the app installs in `~/.config/ovvi/plugins/` | label `ovvi:<id>#<iid> <arg>` |
-| your plugins | a plugin page in a web view | packages on This Mac | label `ovvi:<id>#<iid> <arg>` |
+## What you need
 
-## How the pieces connect
+Node.js on This Mac. Ovvi installs and builds plugins with the npm, pnpm or bun on your login `PATH`. It does not
+include a package manager or a bundler.
 
-```text
-~/.config/ovvi/plugins/csv-table/      package.json (the ovvi key), src/main.ts, node_modules/
-        │  npm run build: the package's own script, at install and on Reload Plugin
-        ▼
-~/.config/ovvi/plugins/csv-table/dist/      main.js, main.css, chunks
-        │  served as ovvi-plugin://csv-table/
-        ▼
-WKWebView, one per card ── the app's runtime makes `ovvi` and imports dist/main.js
-        │  ovvi.files.read(path) as a bridge message
-        ▼
-the bridge (Swift) ── bound to its card's machine and session
-        │  Exec of the card's machine
-        ▼
-This Mac, or a remote machine over the relay
-```
+## The plugins that come with Ovvi
 
-1. The registry (`Registry`) reads the `ovvi` key of every package
-   ([Where the registry looks](/docs/plugins/packages#where-the-registry-looks)).
-   A bad manifest is left out, and the plugin's log says why.
-2. The package's build script writes the entry that the manifest names
-   (`dist/main.js`), with its chunks and CSS beside it. The app runs the
-   script at install when there is no built entry, on Reload Plugin, and on
-   the card's **Build**.
-3. The scheme handler serves the entry's folder as `ovvi-plugin://<id>/`,
-   under a strict Content Security Policy
-   ([Security and trust](/docs/plugins/security)). The card loads
-   `ovvi-plugin://<id>/main`, a page that the app writes: it links the app's
-   `card.css`, the entry's CSS when the build wrote one (`dist/main.css`),
-   and the app's runtime, `ovvi.js`, with a module script for the entry so
-   that both load at once.
-4. The runtime reads the card's context, which the app puts in the page
-   before any script runs. It makes the `ovvi` object, imports the entry
-   and calls its default export with the object.
-5. Each call of the page is a bridge message. Swift runs it with the `Exec`
-   of the card's machine.
+File Explorer (`explorer`) and Git (`git`) are plugins that use the same API as yours
+([Files and Git](/docs/guide/files-and-git)).
+
+- Ovvi installs them at its first launch, from the copy inside the app.
+- After that, each one updates from npm on its page in Settings ▸ Plugins. A new Ovvi does not replace them.
+- They do not ask for a confirmation, and they have no Remove. If you delete one's folder, Ovvi installs it again.
+
+## Where a plugin runs
+
+A plugin lives and builds on your Mac. Its card runs on your Mac too. Only its data comes from the card's machine:
+
+- The calls for files, git and commands (`ovvi.files`, `ovvi.git`, `ovvi.run`) go to the machine of the card. On a
+  remote machine they go over Ovvi's SSH connection. A page cannot pick another machine.
+- Paths in the API are paths on that machine.
+- You install nothing on a remote machine. One plugin on your Mac works for cards on every machine.
 
 ## Where things live
 
 | What | Where |
 |---|---|
-| Installed plugins (from npm or git, the defaults, New Plugin…) | `~/.config/ovvi/plugins/<folder>/` |
-| Plugins from a local path | where they are, listed in `~/.config/ovvi/settings.json` under `packages` |
-| The list of packages | `~/.config/ovvi/settings.json`, `packages` |
-| A plugin's build | its own folder, for example `dist/` |
-| The API's types | `~/.config/ovvi/plugins/node_modules/@ovvi/plugin-api/`, written at launch when the app's copy differs |
-| The confirmed plugins' ids | `~/.config/ovvi/trust.json` |
-| Build output, console lines, errors | `~/Library/Logs/Ovvi/plugins/<id>.log` ([Errors and logs](/docs/plugins/errors)) |
-| A card's state | in the app while it runs, and in the instance state file on the card's machine ([State](/docs/plugins/api#state)) |
-| What the app carries | `Ovvi.app/Contents/Resources/web/`: the runtime (`ovvi.js`), `card.css`, the types package (`plugin-api/`), the defaults' source (`defaults/<id>/`) and the template (`template/`) |
-
-- The folder is `~/.config/ovvi/` and not `~/Library/Application
-  Support/`, because people and agents type the path. It has no space, and
-  agents know `~/.config`.
-- The launch argument `-configFolder <path>` puts the whole folder
-  somewhere else, and the plugin logs in its `logs/plugins`. The UI tests
-  use it, so they never touch the user's plugins or logs.
-- In the repository, the defaults are `plugins/builtin/explorer` and
-  `plugins/builtin/git`, and the template is `plugins/builtin/template`. The
-  runtime and the types are in `web/ovvi/`. `make web` installs, checks and
-  builds the three packages as a user would, then copies their source
-  without `node_modules` and `dist` into `.build/web`, which the project
-  copies into the app.
-- `plugins/extra/` holds plugins that the repository keeps but the app does
-  not carry (Tart VM). `make lint` checks them; a user installs one from its
-  folder ([Packages](/docs/plugins/packages)).
-
-## Remote machines
-
-A plugin lives and builds on the Mac. Its page runs in a web view on the
-Mac. Only its data comes from the card's machine:
-- `ovvi.files`, `ovvi.git` and `ovvi.run` go through the card's `Exec`. On
-  a remote machine that is the relay's one SSH session
-  ([Running commands](/docs/talking-to-herdr#running-commands)). The page
-  cannot pick another machine.
-- Paths in the API are the machine's paths. A watch on a remote machine is a
-  check every 2 s while the card shows
-  ([Remote machines](/docs/plugins/default-plugins#remote-machines)).
-- Nothing is installed on the machine. One plugin on the Mac works for cards
-  on every machine.
-- A plugin folder on a remote machine is not loaded.
-
-## Memory
-
-Each card has its own WebContent process, about 28 to 45 MB. Out of view,
-the 25 most recently shown web cards stay, browser and plugin cards
-together. An older one is dropped and made again from its label and its
-state when it shows
-([What stays in memory](/docs/ui/browser#what-stays-in-memory)). A card with
-unsaved edits and a floated card are never dropped.
+| Installed plugins (from npm or git, the default plugins, New Plugin…) | `~/.config/ovvi/plugins/<folder>/` |
+| Plugins from a folder on your Mac | where they are |
+| The list of installed packages, and plugin settings | `~/.config/ovvi/settings.json` |
+| The plugins that you confirmed | `~/.config/ovvi/trust.json` |
+| The API's types | `~/.config/ovvi/plugins/node_modules/@ovvi/plugin-api/` |
+| A plugin's log | `~/Library/Logs/Ovvi/plugins/<id>.log` |
 
 ## A missing plugin
 
-A label can name a plugin that is not on this Mac: one that was removed, or
-one from another Mac. Its card shows "‹id› is not on this Mac" and the
-argument, with **Show Placeholder** (the pane's terminal) and **Close Pane**.
-When a package with that id exists but its manifest is wrong, the card says
-"‹id› did not load" and the field that is wrong, with the same two buttons
-(Show Log is in its menu). The app
-never changes the label, so the card comes back when the plugin does.
+A pane can name a plugin that is not on this Mac: one that you removed, or one from another Mac. Its card shows
+"‹id› is not on this Mac", with Show Placeholder and Close Pane. If the plugin's manifest has an error, the card
+shows "‹id› did not load" and the field that is wrong. The pane stays as it is, so the card comes back when the
+plugin does.
 
-## Not built
+## In this section
 
-- The parts of the API in
-  [Not in version 3](/docs/plugins/api#not-in-version-3), such as network
-  from the page beyond its manifest's local `connect` servers. A plugin can
-  use `curl` on the machine through `run`.
-- Plugins from a project folder (`<repo>/.ovvi/plugins/`), also on a remote
-  machine.
-- Plugin settings from an agent: the `ovvi` command neither reads nor
-  changes them. An agent on This Mac can edit `settings.json`, which applies
-  at Reload Plugins.
-- Update and Remove from an agent: they stay the user's, on the plugin's page
-  in Settings. An agent on This Mac lists, makes, reloads and installs plugins with
-  the `ovvi` command ([CLI](/docs/agent-control/cli#plugins)).
-- A plugin store, and plugins outside panes (a sidebar section, a status
-  item, a pill).
-- Plugins on iPhone and iPad ([iPhone and iPad](/docs/future-work/iphone-and-ipad#plugins)).
-
-## Choices
-
-The decisions are D89 to D94, D96 to D100, D102, D103, D107, D108 and D115 on the
-[Decisions](/docs/decisions#pane-kinds) page. Research:
-[`plugins.md`](https://github.com/hkandala/ovvi/blob/main/resources/research/plugins/plugins.md),
-[`plugin-systems.md`](https://github.com/hkandala/ovvi/blob/main/resources/research/plugins/plugin-systems.md).
+- [Install plugins](/docs/plugins/install): install from npm, git or a folder, update, remove, and change plugin settings.
+- [Create a plugin](/docs/plugins/create): step by step from the template, with reload, debugging and logs.
+- [The manifest](/docs/plugins/manifest): the `ovvi` key of `package.json`, field by field.
+- [The plugin API](/docs/plugins/api): the `ovvi` object, its events, state and versions.
+- [Security](/docs/plugins/security): what a plugin can do, and the confirmation before it first runs.
+- [Publish a plugin](/docs/plugins/publish): put it on npm, and release new versions.

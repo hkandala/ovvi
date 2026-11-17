@@ -1,102 +1,75 @@
 ---
-title: "Security and trust"
-description: "What a plugin can do, one confirmation before it first runs, and what the app protects"
+title: "Security"
+description: "What a plugin can do, the confirmation before it first runs, and what Ovvi protects"
 ---
 
-Ovvi is a single-user app on one Mac. A plugin is code that you or an agent
-of yours installed or put in the plugins folder. Ovvi does not sandbox a
-plugin from you. It asks you once before a plugin's code first runs, and it
-keeps text from files and machines from taking over a plugin's card.
+A plugin is code that you, or an agent of yours, installed. Ovvi does not put a plugin in a sandbox. It asks you
+once before a plugin's code first runs, and it keeps the content that a card shows from taking over the card.
 
 ## What a plugin can do
 
-A plugin can do what you can do, on this Mac and on each machine whose card
-you open:
+A plugin can do what you can do, on this Mac and on each machine where you open one of its cards:
 
 - Read, write and move any file that you can.
-- Run any command as you with `run`, also one that uses the network or keeps
-  running, and run git's reads and writes.
+- Run any command as you with `run`, also one that uses the network, and run git.
 - Write to the clipboard.
 - Run its package's `build` script as you on this Mac, when Ovvi builds it.
 
-The manifest does not limit this, and it lists no permissions: a plugin that
-can run a command can do anything else too, so a list of permissions would be
-a promise that the app cannot keep. Install plugins only from sources that you trust.
+The manifest lists no permissions. A plugin that can run a command can do anything else too, so Ovvi cannot
+keep a list of permissions. Install plugins only from sources that you trust.
 
 ## The confirmation
 
-The default plugins never ask. Any other plugin asks once, before its code
-or its build script first runs.
+The default plugins never ask. Any other plugin asks once, before its code or its build script first runs:
 
-| Where it comes from | When it asks | Where |
+| How the plugin comes | When it asks | Where |
 |---|---|---|
-| An install from npm or git | for a new source, before its dependencies install. An update asks only when the new version has another id | a dialog over the window, with **Install** and **Cancel** |
-| A local path from the Plugins page | when you add it | the same dialog |
-| An agent's `ovvi plugins install` | as for the page's install | the same dialog, on the window of the agent's session ([An agent's install](#an-agents-install)) |
-| New Plugin…, or an agent's `ovvi plugins new` on This Mac | never: you or your agent made it | |
-| A folder put in the plugins folder by hand, or a path written in `settings.json` | in its first card | the card's middle |
+| An install from npm or git | before its dependencies install | a dialog, with Install and Cancel |
+| A folder that you add on the Plugins page | when you add it | the same dialog |
+| An agent's `ovvi plugins install` | as for an install from the Plugins page | the same dialog, in the window of the agent's session |
+| New Plugin…, or an agent's `ovvi plugins new` | never: you or your agent made it | |
+| A folder put in the plugins folder by hand, or a path written in `settings.json` | at its first card | in the card |
 
-A change to the plugin's code or manifest does not ask again, and an update
-runs the new version's code with no question. Reload depends on that, and a
-program that can edit the code can already run as you. When you confirm a
-plugin, you trust its source with its later versions too.
-
-The confirmation in a card sits under the plugin's icon:
+The confirmation shows:
 
 > Install “CSV Table”?
-> `csv-table 0.1.0 in ~/.config/ovvi/plugins/csv-table`
-> A CSV or TSV file as a table you can sort.
-> Plugins run code as you on this Mac and on the machines whose cards you
-> open, including their build script. Install plugins only from sources you
-> trust.
 >
-> Cancel · **Install**
+> `csv-table 0.1.0 from npm:csv-table in ~/.config/ovvi/plugins/csv-table`
+>
+> A CSV or TSV file as a table you can sort.
+>
+> Plugins run code as you on this Mac and on the machines whose cards you open, including their build script.
+> Install plugins only from sources you trust.
 
-- The id, the version and the folder come first, because a plugin picks its
-  own name. For an npm or git source, the line also names the source:
-  `csv-table 0.1.0 from npm:csv-table in ~/.config/ovvi/plugins/csv-table`.
-- A plugin with `connect` gets one more line before the warning: "Its page
-  connects to ws://127.0.0.1:57900." It is not a permission (`run` can reach
-  any server); it says what the page itself reaches.
-- A plugin with a `chooser` row also gets a **Show in New Pane** checkbox,
-  off by default. **Install** sets the switch on the plugin's page in Settings
-  to it ([The Plugins page](/docs/plugins/packages#the-plugins-page)).
-- **Install** keeps the plugin's id in `trust.json` in the config folder, and
-  the plugin's waiting cards load. **Cancel** closes the pane.
-- Text from the manifest shows with control and direction-override
-  characters removed.
-- **Remove** on the plugin's page in Settings takes its id out of
-  `trust.json`. If you add it again, it asks again.
-- `trust.json` is a list of ids. Anything that can write the plugins folder
-  can also write this file. That fits the model above.
+- The id, the version, the source and the folder come first, because a plugin picks its own name.
+- A plugin with `connect` in its manifest adds a line, such as "Its page connects to ws://127.0.0.1:57900."
+- A plugin with a row in New Pane adds a Show in New Pane checkbox, which is off at first.
+- Install keeps the plugin's id in `~/.config/ovvi/trust.json`, and the plugin's waiting cards load. Cancel stops
+  the install, or closes the card's pane.
+- Ovvi removes control characters and direction-override characters from the text of the manifest.
+
+A change to the plugin's code does not ask again. An update runs the new version with no question, unless the new
+version has another id. When you confirm a plugin, you trust its source with its later versions too. Remove takes
+the id out of `trust.json`, so the plugin asks again if you add it again.
 
 ### An agent's install
 
-`ovvi plugins install` ([CLI](/docs/agent-control/cli#plugins-install))
-shows the same dialog, with one more line first: "‹agent› in pane ‹pane›
-asks to install it." ‹agent› is the asking pane's agent name, else its
-program, else its card's title.
+When an agent runs `ovvi plugins install`, the dialog starts with one more line: "‹agent› in pane ‹pane› asks to
+install it."
 
-- The dialog goes on the window that shows the agent's session. Ovvi does
-  not come to the front: it asks for attention in the Dock.
-- Return does not press **Install**, so keys typed for another window cannot
-  install a plugin. You must click it.
-- **Cancel** answers the agent `declined`.
-- The command works only from a pane on This Mac. A pane on a remote machine
-  cannot install a plugin on the Mac.
+- The dialog shows on the window of the agent's session. Ovvi does not come to the front: it bounces in the Dock.
+- Return does not press Install, so keys that you type for another window cannot install a plugin. You must click
+  it.
+- Cancel answers the agent with `declined`.
+- The command works only from a pane on This Mac.
 
-## What the app protects
+## What Ovvi protects
 
-A plugin's card often shows content that the plugin did not write: a
-Markdown file, a diff, a command's output, a file from a remote machine.
-The rules below keep that content from taking over the card and its bridge
-(the app's side of the page's `ovvi` object).
+A card often shows content that the plugin did not write: a Markdown file, a diff, a command's output. These rules
+keep that content from taking over the card and its `ovvi` object:
 
-- **The page loads only its own files.** The scheme handler serves
-  `ovvi-plugin://<id>/` from the folder of that plugin's entry alone, plus
-  the app's `ovvi.js` and `card.css`: one folder, no subfolders, no hidden
-  files, and `Cache-Control: no-store`, so a rebuild is never served from a
-  cache. It sends this Content Security Policy with every answer:
+- The page loads only its own files. Ovvi serves `ovvi-plugin://<id>/` from the folder of the plugin's entry: no
+  subfolders and no hidden files. Each answer has this Content Security Policy:
 
   ```text
   default-src 'none'; script-src ovvi-plugin://<id> 'wasm-unsafe-eval';
@@ -105,62 +78,22 @@ The rules below keep that content from taking over the card and its bridge
   frame-src 'none'; form-action 'none'; base-uri 'none'
   ```
 
-  `<connect>` is the manifest's `connect` list
-  ([Fields](/docs/plugins/manifest#fields)), empty for most plugins.
+  So no inline script and no `eval` run. WebAssembly runs. `fetch` and WebSockets reach only the plugin's own files
+  and its `connect` servers on this Mac. The page has no other network access.
+- The card stays on its own page. A link, a refresh or a form in shown content cannot take the page to another
+  site. A plugin opens links with `ovvi.open`, which opens them in a browser card.
+- Each card reaches only its own machine. Its `ovvi` object is tied to the card's machine, session and plugin when
+  the card opens. Each card runs in its own process, and each plugin has its own web storage.
+- `run` has no shell. It takes argv, and the card's argument is never part of a command line.
+- Installs run no scripts of the package's dependencies.
 
-  No inline script and no `eval`, so HTML built from a file's text by
-  mistake cannot run a script. WebAssembly is allowed, for a fast parser or
-  decoder (pdf.js's). `fetch` and WebSockets reach only the plugin's own
-  files and its `connect` servers, which are on this Mac: the page has no
-  network beyond them. A plugin that shows a local server's stream (the Tart
-  VM plugin's screen) names that server there.
-- **The navigation lock.** The card allows only its own page,
-  `ovvi-plugin://<id>/main`. A link, a `<meta>` refresh or a form in shown
-  content cannot take the page, and the bridge with it, to another site or
-  another page. A plugin opens links with `ovvi.open`, which makes a browser
-  card under the browser's load rule
-  ([When a page loads by itself](/docs/ui/browser#when-a-page-loads-by-itself)).
-- **A bridge bound to its card.** Each card's web view has its own message
-  handler. It is bound to the card's machine, session and plugin when the
-  card is made. No message names a machine, a pane or another card, so a
-  page reaches only its own card's machine. Cards share no memory: WebKit
-  gives each one its own process. Web storage is per plugin
-  (`ovvi-plugin://<id>`), so one plugin never reads another's.
-- **Text is text.** A plugin must insert file and command text with
-  `textContent` or its library's text API, not as HTML. The default plugins
-  do, except Markdown's Rich Text, which draws a file's HTML as GitHub does:
-  the page's Content Security Policy (D91) runs no script that is not the
-  plugin's own and loads nothing from outside (images only from the plugin,
-  `data:` and `blob:`), so the HTML runs no code and loads nothing.
-- **`run` has no shell.** It takes argv, which goes to the machine inside the
-  envelope (D3). The label's argument is never part of a command line.
-- **Installs run no scripts of dependencies.** The app installs with
-  `--ignore-scripts` and no peer dependencies
-  ([Install](/docs/plugins/packages#install)). The package's own `build`
-  script runs only after you confirm the plugin.
-- **Limits:** a file read 16 MiB, a `run`'s stdout 4 MiB, a card's state
-  file (its state and controls) 256 KiB, a label argument 1024 characters.
+Your plugin must put text from files and commands in with `textContent`, or the text API of its library, not as
+HTML.
 
-## What the app cannot protect
+## What Ovvi cannot protect
 
-- **A plugin you installed.** Its code runs as you. It can read your files,
-  run commands, use the network through `run`, and change other plugins'
-  folders. Only the source you install from protects you.
-- **A plugin's own mistakes.** A plugin that builds HTML from a file's text
-  or passes a file's words to `run` can be used by that file. The CSP and the
-  navigation lock limit the first. Nothing in the app limits the second. A
-  link's `ping` in shown content can still reach the plugin's own `connect`
-  servers, so such a server takes commands only over its WebSocket.
-- **A machine.** A machine writes labels. So any process on a machine (a
-  script, an agent) can open a card on that machine of any plugin that you confirmed.
-  That gives it what the plugin does there, as the user it runs as. It cannot
-  open a card on another machine. `ovvi open` writes the same label, so it
-  gives nothing more ([Agent control](/docs/agent-control#security)).
-
-## Not built
-
-- A card that says "‹name› is not responding" for a hung page.
-
-## Choices
-
-The decision is D108 on the [Decisions](/docs/decisions#pane-kinds) page.
+- A plugin that you installed. Its code runs as you. Only the source that you install from protects you.
+- A plugin's own mistakes. A plugin that builds HTML from a file's text, or passes a file's words to `run`, can be
+  used by that file. The Content Security Policy limits the first. Nothing in Ovvi limits the second.
+- A machine's own processes. Any process on a machine can open a card of a plugin that you confirmed on that
+  machine, as `ovvi open` does. That gives it what the plugin does there. It cannot open a card on another machine.

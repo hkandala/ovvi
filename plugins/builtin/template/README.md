@@ -11,3 +11,5 @@ In Ovvi, Settings ▸ Plugins ▸ New Plugin… does steps 1 and 2 for you.
 3. Open a card of it (Open With on a `.txt` file). After an edit, Reload Plugin (⌥⌘R) builds and reloads it.
 4. `npm run check` checks the types. Build errors and `console` lines are in
    `~/Library/Logs/Ovvi/plugins/<id>.log` (the card's menu: Show Log).
+
+The whole guide, with the manifest and the API: [Create a plugin](https://ovvi.dev/docs/plugins/create).

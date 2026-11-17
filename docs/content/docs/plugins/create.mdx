@@ -1,0 +1,307 @@
+---
+title: "Create a plugin"
+description: "Make a plugin from the template step by step: build it, open it, reload it, debug it, read its log, or ask an agent to make one"
+---
+
+This page makes a plugin from the template, then changes it into CSV Table: a CSV file as a table that you can
+sort. You need Node.js on This Mac.
+
+## 1. Make the plugin
+
+In Settings ▸ Plugins, click New Plugin…, type a name such as "CSV Table", and click Create. Ovvi does these steps:
+
+1. It copies the template to `~/.config/ovvi/plugins/<id>/`. The id comes from the name: lower case, with letters and
+   digits joined by `-` ("CSV Table" becomes `csv-table`).
+2. It puts the name and the id in `package.json`.
+3. It installs the dependencies and runs the build.
+4. It confirms the plugin for you, because you made it.
+
+To do the same by hand, copy the template folder
+([`plugins/builtin/template`](https://github.com/hkandala/ovvi/tree/main/plugins/builtin/template)) to
+`~/.config/ovvi/plugins/<id>/`. Set `name` and the `ovvi` key's `id` and `name` in `package.json`. Then run
+`npm install` and `npm run build` in the folder, and choose Reload Plugins in the command palette (⌘K).
+
+The template is MIT. Your plugin can use any license: change `license` in `package.json`.
+
+```text
+~/.config/ovvi/plugins/
+├── node_modules/@ovvi/plugin-api/     the API's types (Ovvi writes them)
+└── csv-table/
+    ├── package.json      the ovvi key, the scripts, esbuild and TypeScript
+    ├── package-lock.json
+    ├── tsconfig.json
+    ├── README.md
+    ├── node_modules/
+    ├── src/
+    │   ├── main.ts       the entry
+    │   └── main.css
+    └── dist/             the build: main.js, main.css, chunks, source maps
+```
+
+The template's `package.json`:
+
+```json
+{
+  "name": "my-plugin",
+  "license": "MIT",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A text file with its line count.",
+  "scripts": {
+    "build": "esbuild src/main.ts --bundle --splitting --format=esm --minify --sourcemap --target=safari18 --log-level=warning --outdir=dist",
+    "dev": "npm run build -- --watch",
+    "check": "tsc -p ."
+  },
+  "devDependencies": { "esbuild": "0.28.2", "typescript": "7.0.2" },
+  "peerDependencies": { "@ovvi/plugin-api": "*" },
+  "peerDependenciesMeta": { "@ovvi/plugin-api": { "optional": true } },
+  "ovvi": {
+    "id": "my-plugin",
+    "name": "My Plugin",
+    "api": 3,
+    "entry": "dist/main.js",
+    "icon": "doc.plaintext",
+    "opens": { "files": ["*.txt"], "priority": "option" },
+    "header": [{ "id": "lines", "type": "text", "style": "dim" }],
+    "settings": [{ "id": "wrap", "type": "toggle", "title": "Wrap long lines", "default": true }]
+  }
+}
+```
+
+- `build` bundles `src/main.ts` into `dist/` as ES modules, with shared chunks for dynamic imports and source maps.
+- `dev` builds again each time you save. An open card loads the new build only when you reload it.
+- `check` checks the types against the API ([Types](/docs/plugins/api#types)).
+- `@ovvi/plugin-api` holds only types. Ovvi gives the `ovvi` object to the page, so a plugin never bundles it.
+
+## 2. Open a card
+
+The template opens `.txt` files as an `option`, so it never takes them from File Explorer. Open a `.txt` file in
+File Explorer, then pick My Plugin (or the name you gave it) in the card's Open With menu. The card shows the file
+and its line count, and follows the file as it changes.
+
+## 3. Change it
+
+Change the `ovvi` key in `package.json`. CSV Table opens `.csv` and `.tsv` files by default, and its header has a
+row count, a First Row Is Header toggle and a Reload button:
+
+```json
+"ovvi": {
+  "id": "csv-table",
+  "name": "CSV Table",
+  "api": 3,
+  "entry": "dist/main.js",
+  "icon": "tablecells",
+  "opens": { "files": ["*.csv", "*.tsv", "public.comma-separated-values-text"] },
+  "header": [
+    { "id": "rows", "type": "text", "style": "dim" },
+    { "type": "spacer" },
+    { "id": "first-row", "type": "toggle", "symbol": "tablecells.badge.ellipsis",
+      "title": "First Row Is Header", "value": true },
+    { "id": "reload", "type": "button", "symbol": "arrow.clockwise", "title": "Reload" }
+  ]
+}
+```
+
+Delete `src/main.css`, then write these three files. `src/parse.ts` is plain TypeScript:
+
+```ts
+/** Rows of fields. Quotes can wrap a field; "" inside quotes is one quote. */
+export function parse(text: string, separator: string): string[][] {
+  const rows: string[][] = [[]]
+  let field = "", quoted = false
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (quoted) {
+      if (c === '"' && text[i + 1] === '"') { field += '"'; i++ }
+      else if (c === '"') quoted = false
+      else field += c
+    } else if (c === '"') quoted = true
+    else if (c === separator) { rows.at(-1)!.push(field); field = "" }
+    else if (c === "\n") { rows.at(-1)!.push(field.replace(/\r$/, "")); rows.push([]); field = "" }
+    else field += c
+  }
+  rows.at(-1)!.push(field)
+  return rows.filter((row) => row.some((cell) => cell !== ""))
+}
+```
+
+`src/main.ts` is the entry. Ovvi calls its default export with the `ovvi` object:
+
+```ts
+import type { Ovvi } from "@ovvi/plugin-api"
+import { parse } from "./parse"
+import "./table.css"
+
+type State = { column?: number; descending?: boolean; scroll?: number }
+
+export default async function main(ovvi: Ovvi) {
+  const path = ovvi.card.arg
+  let state = ovvi.state.get<State>() ?? {}
+  let rows: string[][] = []
+  const table = document.body.appendChild(document.createElement("table"))
+
+  function save(change: State) {
+    state = { ...state, ...change }
+    ovvi.state.set(state)
+  }
+
+  function draw() {
+    const header = ovvi.controls.get("first-row") === true
+    const [head, ...body] = header ? rows : [rows[0]?.map((_, i) => `${i + 1}`) ?? [], ...rows]
+    const { column, descending } = state
+    if (column !== undefined) {
+      body.sort((a, b) => (a[column] ?? "").localeCompare(b[column] ?? "", undefined, { numeric: true }))
+      if (descending) body.reverse()
+    }
+    table.replaceChildren()
+    const tr = table.createTHead().insertRow()
+    head.forEach((title, i) => {
+      const th = tr.appendChild(document.createElement("th"))
+      th.textContent = title + (i === column ? (descending ? " ↓" : " ↑") : "")
+      th.onclick = () => {
+        save({ column: i, descending: i === column && !descending })
+        draw()
+      }
+    })
+    const tbody = table.createTBody()
+    for (const row of body) {
+      const line = tbody.insertRow()
+      for (const cell of row) line.insertCell().textContent = cell
+    }
+    ovvi.controls.set("rows", { value: `${body.length} rows` })
+  }
+
+  async function load() {
+    try {
+      const { text } = await ovvi.files.read(path)
+      rows = parse(text, path.endsWith(".tsv") ? "\t" : ",")
+      draw()
+    } catch (error) {
+      table.replaceChildren()
+      ovvi.controls.set("rows", { value: (error as Error).message })
+    }
+  }
+
+  ovvi.on("control", ({ id }) => {
+    if (id === "reload") load()
+    if (id === "first-row") draw()
+  })
+  ovvi.files.watch(path, load)
+  addEventListener("scroll", () => save({ scroll: scrollY }), { passive: true })
+
+  await load()
+  scrollTo(0, state.scroll ?? 0)
+}
+```
+
+`src/table.css` uses the app's colors and text size ([Theme](/docs/plugins/api#theme)):
+
+```css
+table { border-collapse: collapse; font: var(--app-text-size) ui-monospace, monospace; color: var(--text) }
+th { position: sticky; top: 0; text-align: left; cursor: default; backdrop-filter: blur(20px);
+     background: color-mix(in srgb, var(--text) 6%, transparent) }
+th, td { padding: 3px 10px; border-bottom: 0.5px solid var(--divider); white-space: nowrap }
+```
+
+What the code does:
+
+- It puts text from the file in with `textContent`, never as HTML ([Security](/docs/plugins/security)).
+- It keeps the sort and the scroll in `ovvi.state`. After a reload or a relaunch, the card comes back sorted and at
+  the same row ([State](/docs/plugins/api#state)).
+- The toggle's value belongs to the app. The page reads it with `ovvi.controls.get`.
+- The watch loads the table again when the file changes, on This Mac and on a remote machine.
+- The CSS that `main.ts` imports becomes `dist/main.css`. Ovvi loads it because it has the entry's name.
+
+Save, then reload the plugin (the next step). Double-click a `.csv` file in File Explorer: CSV Table is now its
+default plugin, so the file opens in a CSV Table card. The same plugin opens CSV files on a remote machine.
+
+## What the build must write
+
+- The file that `entry` names (`dist/main.js`), as an ES module whose default export is the `main` function.
+- Everything the page loads, in the same folder as the entry: chunks, the entry's CSS (`main.css`), workers, fonts,
+  WebAssembly and other assets. Ovvi serves no subfolders and no hidden files.
+- If the page loads an asset by name, the build script must copy it into that folder. For example, File Explorer's
+  build copies the files of pdf.js into `dist/` before it bundles.
+- `--target=safari18` is enough: the page runs in the WebKit of macOS.
+
+## Reload
+
+Nothing watches the plugin's folder. After an edit, choose Reload Plugin: press ⌥⌘R over a card of the plugin, or
+use the card's menu, the command palette, or Reload on the plugin's page in Settings. Reload Plugins in the command
+palette (Reload All in Settings) does it for every plugin.
+
+1. If a card of the plugin has unsaved edits, Ovvi asks first: Discard or Keep Editing.
+2. Ovvi reads every manifest again.
+3. It runs the package's `build` script, if there is one. It does not build a plugin from npm, or one that you did
+   not confirm.
+4. It loads each card's page again, with the same state and header values. A card comes back where it was.
+
+If the build fails, the open cards keep their running page and show a notice with the first line of the error and
+Try Again. The build writes into `dist/` and does not empty it first, so a failed build keeps the last good one.
+
+## Debug it
+
+- The log: Show Log opens `~/Library/Logs/Ovvi/plugins/<id>.log`. It has every build, every `console` line of the
+  page and every uncaught error ([The log](#the-log)).
+- Types: esbuild removes types and does not check them. Run `npm run check` in the plugin's folder.
+- Tests: use any test runner in the plugin's own `node_modules`.
+- A plugin card has no Web Inspector. Use `console` lines and the log.
+
+## Errors and logs
+
+When a plugin's page cannot load, its card says why, with Show Log and a button that fixes it when it can:
+
+| Title | When | Button |
+|---|---|---|
+| "‹name› needs Node.js" | no npm, pnpm or bun on your login `PATH` | Try Again |
+| "‹name› could not install" | a default plugin's first install failed (offline, a failed `npm ci`) | Try Again |
+| "‹name› did not build" | the build script failed. The card shows its last 20 lines | Try Again |
+| "‹name› is not built" | the entry (`dist/main.js`) is missing | Build. A package with no `build` script has no button: build it with its own tools |
+| "‹name› stopped" | `main` threw an error, or the page did not load. The card shows the message and its first stack line | Reload |
+| "‹name› needs a newer Ovvi" | the manifest's `api` is above the app's | Check for Updates… |
+| "‹id› did not load" | the manifest has an error. The card shows the file and the field, such as `ovvi.entry is missing` | Show Placeholder, Close Pane |
+
+- A card of a plugin that you did not confirm yet asks for the confirmation first. That is not an error
+  ([The confirmation](/docs/plugins/security#the-confirmation)).
+- If macOS stops a card's web page (for example when memory is low), the page loads again by itself. Unsaved edits
+  are lost then. If it stops again before it loads, the card shows "The page stopped working", with Reload.
+
+### The log
+
+Each plugin has a log file, `~/Library/Logs/Ovvi/plugins/<id>.log`. Each line starts with its time. When the file
+is over 1 MB, it starts again. The log has:
+
+- Each build: "built in ‹n› ms" and the script's output, or the error.
+- Each install and update: "installed from ‹source›" and the package manager's output, or what failed.
+- Each `console` line of the page, with its level, and each uncaught error and rejected promise.
+- A command key that the app already uses: Ovvi leaves that key off the command.
+- A manifest that Ovvi did not load: its file and field, or "the id ‹id› is taken by ‹folder›". This goes to the
+  log named after the package's folder.
+
+Show Log is in the card's menu, on each error card, and on the plugin's page in Settings. It opens the file in
+Console. You or an agent can also follow the file:
+
+```sh
+tail -f ~/Library/Logs/Ovvi/plugins/csv-table.log
+```
+
+## Ask an agent
+
+An agent in a pane on This Mac can make and change a plugin with the `ovvi` command
+([The ovvi command](/docs/reference/ovvi-command#plugins)):
+
+1. `ovvi --timeout 300 plugins new "CSV Table"` does what New Plugin… does. It answers with the plugin's `id`, its
+   `folder` and its `log`.
+2. The agent edits the folder. It follows these pages and the types in `@ovvi/plugin-api`.
+3. `ovvi open csv-table ./data.csv` opens a card next to the agent's pane. `ovvi plugins --for data.csv` says which
+   plugin opens a file by default.
+4. After each edit, `ovvi plugins reload csv-table` builds the plugin and loads its cards again. It answers with
+   `built`, `ms` and `cards`. A failed build answers `build_failed` with the build's last 20 lines. A card with
+   unsaved edits stops it with `dirty`.
+5. The agent reads the plugin's log for its `console` lines and errors.
+
+- A folder that an agent makes by hand loads with `ovvi plugins reload`, with no id. Its first card asks you to
+  confirm it.
+- `ovvi plugins install <source>` installs from npm, git or a folder. You confirm it on the Mac.
+- An agent on a remote machine cannot make, reload or install plugins: those commands answer `other_machine`. It
+  can open cards of the plugins on your Mac.

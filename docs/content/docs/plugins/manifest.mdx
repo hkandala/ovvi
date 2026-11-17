@@ -1,18 +1,12 @@
 ---
 title: "The manifest"
-description: "The ovvi key of a plugin's package.json: who it is, what it opens, how it shows, its header row, its settings and what it can do"
+description: "The ovvi key of a plugin's package.json, field by field: what it opens, how it shows, its header, its commands and its settings"
 ---
 
-A plugin's manifest is the `ovvi` key of its `package.json`. The app reads
-it before any of the plugin's code runs. So the chooser, ⌘K, Open With, the
-card's header row and the placeholder in herdr's TUI show at once, and the
-page only fills them in. There is no separate manifest file.
+A plugin's manifest is the `ovvi` key of its `package.json`. Ovvi reads it before any of the plugin's code runs. So
+New Pane, the command palette, Open With and the card's header show at once, and the page only fills them in.
 
 ## An example
-
-A CSV table's `package.json`. The scripts and the dependencies are the
-template's ([Build a plugin](/docs/plugins/building#start-from-the-template)),
-left out here:
 
 ```json
 {
@@ -44,167 +38,123 @@ From the package itself:
 
 | Field | Required | Value |
 |---|---|---|
-| `version` | yes | The plugin's version, shown on the Plugins page, the confirmation and the log. An npm install offers Update to ‹version› when npm has a newer one. |
-| `description` | no | One line: the chooser row's detail, and a line of the confirmation. |
-| `keywords` | no | More words that ⌘K finds the plugin's Open ‹chooser› Here by. |
+| `version` | yes | The plugin's version. It shows on the Plugins page, in the confirmation and in the log. |
+| `description` | no | One line. It shows in New Pane and in the confirmation. |
+| `keywords` | no | More words that the command palette finds the plugin's Open ‹chooser› Here command by. |
 
 In the `ovvi` key:
 
 | Field | Required | Value |
 |---|---|---|
-| `id` | yes | 1 to 64 of `a-z`, `0-9` and `-`, starting with a letter or digit. The label's plugin id (`ovvi:<id>#…`). It is the plugin's own, because a package name can be scoped (`@ovvi/git`). The first package of an id wins ([Where the registry looks](/docs/plugins/packages#where-the-registry-looks)). |
-| `name` | yes | What the user reads: the tab's first part ("CSV Table data.csv"), the placeholder's title, Open With, ⌘K, the Plugins page. |
-| `api` | yes | The API version the plugin is written for, an integer, 1 or more ([Versions](/docs/plugins/api#versions)). |
-| `entry` | yes | The built entry, relative to the package: a `.js` file inside it, for example `dist/main.js`. Its chunks, its CSS (`main.css`) and its assets sit beside it in one flat folder. |
-| `icon` | yes | An SF Symbol name, or one of the app's own symbols: `source.branch` (Material Design Icons' `source-branch`) or `text.wrap` (`wrap`): the card's, the tab's and the chooser's icon, on the neutral tile. A control's or a menu item's `symbol` can name it too. |
-| `opens` | no | What the card shows, and so what its label's argument is ([What a plugin opens](#what-a-plugin-opens)). No `opens`: the argument is empty, and the card uses the pane's folder. |
-| `chooser` | no | A row title for the [New pane](/docs/ui/new-pane) chooser and the command "Open ‹chooser› Here" ([How it shows](#how-it-shows)). |
-| `header` | no | The controls of the card's second header row ([Header](#header)). |
-| `history` | no | `true` draws Back and Forward at the left of row 2, over the places the card went to ([One plugin, many places](/docs/plugins/api#one-plugin-many-places)). |
-| `commands` | no | Menu bar and ⌘K commands of the card, with keys ([Commands](#commands)). |
-| `handles` | no | The app's own commands that the card takes: `save` (⌘S), `find` (⌘F, ⌘G, ⇧⌘G). |
-| `settings` | no | Values the user sets on the plugin's page in Settings, which its cards read ([Settings](#settings)). |
-| `connect` | no | Servers on this Mac that the page reaches with `fetch` or a WebSocket, as origins: `http` or `ws`, the host `127.0.0.1`, and a port, for example `["ws://127.0.0.1:57900"]`. They join the page's Content Security Policy ([What the app protects](/docs/plugins/security#what-the-app-protects)), and the confirmation names them ([The confirmation](/docs/plugins/security#the-confirmation)). |
+| `id` | yes | 1 to 64 characters of `a-z`, `0-9` and `-`, which start with a letter or a digit. It is separate from the package name, which can have a scope (`@ovvi/git`). Two plugins cannot have the same id. |
+| `name` | yes | The name that you read: in the card's title ("CSV Table data.csv"), Open With, the command palette and the Plugins page. |
+| `api` | yes | The version of the plugin API that the plugin is written for, an integer, 1 or more ([Versions](/docs/plugins/api#versions)). |
+| `entry` | yes | The built entry, a `.js` file in the package, such as `dist/main.js`. Its chunks, its CSS and its assets go in the same folder. |
+| `icon` | yes | An SF Symbol name, or one of the app's own symbols, `source.branch` or `text.wrap`. It shows on the card, the tab and New Pane. |
+| `opens` | no | What the card shows ([What a plugin opens](#what-a-plugin-opens)). With no `opens`, the card uses the pane's folder. |
+| `chooser` | no | The plugin's row title in New Pane, and the command "Open ‹chooser› Here" ([How it shows](#how-it-shows)). |
+| `header` | no | The controls of the card's header ([Header](#header)). |
+| `history` | no | `true` shows Back and Forward at the start of the header, for the places the card went to ([One plugin, many places](/docs/plugins/api#one-plugin-many-places)). |
+| `commands` | no | The card's commands in the menu bar and the command palette, with keys ([Commands](#commands)). |
+| `handles` | no | The app commands that the card takes: `save` (Save, ⌘S) and `find` (Find, ⌘F, ⌘G, ⇧⌘G). |
+| `settings` | no | Values that you set on the plugin's page in Settings ([Settings](#settings)). |
+| `connect` | no | Servers on this Mac that the page can reach with `fetch` or a WebSocket. Each is an origin with `http` or `ws`, the host `127.0.0.1` and a port, such as `"ws://127.0.0.1:57900"`. The confirmation names them. |
 
-- The app reads the manifest leniently. An unknown field is ignored, so a
-  manifest written for a newer app still loads.
-- A missing required field or a wrong value leaves the plugin out. The log
-  and the plugin's cards name the field: `ovvi.entry must be a built .js
-  file in the package`, `ovvi.header.1 has the wrong type`
-  ([Errors and logs](/docs/plugins/errors)).
-- The checks beyond the types: the `id`'s letters, a non-empty `name` and
-  `icon`, `api` of 1 or more, `entry` a `.js` path with no `/` at the start
-  and no `..`, `opens.priority`, a `chooser` only with `folders`, `git` or no
-  `opens`, known header types with unique ids, a `gap` of 0 or more, `digits`
-  only `mono`, a value on every segmented option, commands with ids unique
-  among the commands and the header's controls, a
-  `file`, `edit` or `view` menu and a key that reads as a chord, known `handles`, `connect`
-  origins as above, and the settings' rules ([Settings](#settings)).
+- Ovvi ignores a field that it does not know, so a manifest written for a newer Ovvi still loads.
+- If a required field is missing or a value is wrong, Ovvi does not load the plugin. The plugin's log and its cards
+  name the field, such as `ovvi.entry must be a built .js file in the package` or `ovvi.header.1 has the wrong
+  type` ([Errors and logs](/docs/plugins/create#errors-and-logs)).
 
 ## What a plugin opens
 
-`opens` has one or more of these keys, and `priority`. The key sets what the
-label's argument holds, and the card's title.
+`opens` has one or more of these keys, and `priority`. The key sets what the card gets as its argument
+(`ovvi.card.arg`), and the card's title.
 
 | Key | The argument | The title | Example |
 |---|---|---|---|
 | `files` | a file's absolute path | the file's name | `{ "files": ["*.csv", "public.comma-separated-values-text"] }` |
-| `folders` | a folder's path, ending in `/`: the root of its git repository, else the folder | the folder's name | `{ "folders": true }` |
-| `git` | a repository's root with its `/`, then optionally a space and `uncommitted` or a commit hash | the root's name, `Working Tree` or the short hash (the page's title, a commit's subject, once it loads) | `{ "git": true }` |
+| `folders` | a folder's path, which ends in `/`: the root of its git repository, else the folder | the folder's name | `{ "folders": true }` |
+| `git` | a repository's root with its `/`, then optionally a space and `uncommitted` or a commit hash | the root's name, Working Tree or the short hash | `{ "git": true }` |
 | `urls` | a URL | its last part | `{ "urls": ["https://github.com/*/*/pull/*"] }` |
 
-- Copy Address (⇧⌘C) copies the argument: the path, the URL, or a commit's hash (a repository's root for
-  `uncommitted` and the home). A card with an empty argument copies its page's title, else the pane's folder.
-- `files` is a list of patterns. Each is a name glob (`*.csv`, `Makefile`),
-  case blind, or a uniform type identifier (`public.image`). A type matches
-  its subtypes, as `UTType.conforms(to:)` says. A name the system does not
-  know (a dynamic type, such as `.rs`) matches no type, only a glob or `*`.
-- `files` and `folders` can go together: File Explorer opens both, with
-  `{ "folders": true, "files": ["*"] }`.
-- `urls` is a list of globs for web addresses, case blind, where `*` also
-  spans `/`. An `ovvi.open` of an `http` or `https` address with no `plugin`
-  opens in a `default` plugin whose `urls` match it (a user's plugin before a
-  default plugin), else in the browser.
-- `priority` is `"default"` (the default) or `"option"`. An option plugin
-  opens a file only when the user picks it in Open With.
+- `files` is a list of patterns. A pattern is a file name glob (`*.csv`, `Makefile`), with no difference between
+  upper and lower case, or a uniform type identifier (`public.image`). A type also matches its subtypes. A file
+  type that macOS does not know (such as `.rs`) matches only a glob or `*`.
+- `files` and `folders` can go together. File Explorer has `{ "folders": true, "files": ["*"] }`.
+- `urls` is a list of globs for web addresses, with no difference between upper and lower case. In these globs, `*`
+  also matches `/`. A web address that a plugin's `urls` match opens in that plugin, else in the browser.
+- `priority` is `"default"` (the default) or `"option"`. An `option` plugin opens a file only when you pick it in
+  Open With.
+- Copy Address (⇧⌘C) copies the argument.
+- A page's `document.title`, when it is not empty, replaces the title from the argument.
 
 ### Which plugin opens a file
 
-A link in a card, a double-click in File Explorer's tree and `ovvi.open`
-with no `plugin` open a file with its default plugin. The app picks it by the
-file's name alone, so a remote file is not read first:
-1. Only `default` plugins whose patterns match take part.
-2. The most specific pattern wins: an exact name (`Makefile`), then a glob
-   (`*.md`), then a type, a subtype before its supertype (`public.text`
-   before `public.data`), then `*`.
-3. On a tie, a user's plugin wins over a default plugin. Then the lower id in
-   alphabetical order wins.
+A link in a card, a double-click in File Explorer and `ovvi.open` with no `plugin` open a file in its default
+plugin. Ovvi picks it by the file's name alone, so it does not read a remote file first:
 
-File Explorer's `*` is the lowest rank. So a CSV plugin with `*.csv` takes
-`.csv` files from File Explorer, and any plugin with a pattern for a file
-wins over it. A path that ends in `/` opens in the first plugin with
-`folders`. An `http` or `https` address opens in the first plugin whose
-`urls` match it, else in the browser.
+1. Only plugins with the `default` priority whose patterns match take part.
+2. The most specific pattern wins: an exact name (`Makefile`), then a glob (`*.md`), then a type (a subtype before
+   its supertype), then `*`.
+3. On a tie, your plugin wins over a default plugin. Then the lower id in alphabetical order wins.
+
+File Explorer's `*` has the lowest rank. So a plugin with `*.csv` takes `.csv` files from File Explorer. A path that
+ends in `/` opens in the first plugin with `folders`.
 
 ## How it shows
 
 | Place | What shows | From |
 |---|---|---|
-| [New pane](/docs/ui/new-pane) chooser | a row under Browser, with the icon, the `chooser` title and the `description`, the defaults first, then the user's plugins by id | `chooser` |
-| ⌘K, the File menu, the card's menu | "Open ‹chooser› Here" | `chooser`, `keywords` |
-| Open With (an `openWith` control in row 2) | after the Mac's apps, a divider and every other plugin whose patterns match the file, `option` ones too, each with its icon and name; a pick turns this card into that plugin's card | `opens.files` |
-| the card's first row, the tab, the floating window | "‹name› ‹title›", the icon | `name`, `icon`, `opens` |
-| the placeholder in herdr's TUI | the name and the argument | `name` |
+| New Pane | a row with the icon, the `chooser` title and the `description` | `chooser` |
+| The command palette, the File menu, the card's menu | "Open ‹chooser› Here" | `chooser`, `keywords` |
+| Open With (an `openWith` control in the header) | after the Mac's apps, every other plugin whose patterns match the file, `option` ones too. A pick turns the card into that plugin's card | `opens.files` |
+| The card's title, the tab, a floating window | "‹name› ‹title›" and the icon | `name`, `icon`, `opens` |
+| The pane in herdr's own interface | the name and the argument | `name` |
 | Settings ▸ Plugins and the plugin's page | the icon, the name, the version, the description and the settings | `icon`, `name`, `version`, `description`, `settings` |
 
-- Open With lists the Mac's apps only on This Mac. The plugins show on every
-  machine.
-- A pick in Open With renames the pane to the other plugin's label with the
-  same iid and argument. The card is made again as that plugin.
+- `chooser` works only with `folders`, `git` or no `opens`: a new pane has a folder, not a file or an address.
+- Open With lists the Mac's apps only for a file on This Mac. It lists the plugins on every machine.
 
 ## Header
 
-`header` lists the controls of row 2, left to right
-([The card](/docs/plugins/default-plugins#the-card)). The app draws them
-natively: the row is 32 pt tall in a pane (36 pt in a floating window), buttons are 22 × 22 pt in the card buttons'
-color, and the row ends where row 1 does. They show before the page loads,
-in a pane and in a floating window. The page changes them with
-`ovvi.controls.set` and hears them with `ovvi.on("control")`
-([Types](/docs/plugins/api#types)). A click on a button, a toggle, a segment
-or a menu item gives the card the keyboard, as a click on its page does.
+`header` lists the controls of the card's header, from left to right. Ovvi draws them as native controls. They
+show before the page loads, in a pane and in a floating window. The page changes them with `ovvi.controls.set`
+and gets their changes with `ovvi.on("control")` ([The plugin API](/docs/plugins/api)).
 
-| `type` | Fields | Draws | The page hears |
+| `type` | Fields | What it is | What the page gets |
 |---|---|---|---|
-| `button` | `id`, `symbol`, `title`, `badge`, `busy`, `label`, `style` | an icon button; `title` is its help; `badge` a count after the symbol; `busy` a spinner in place of the symbol. `"style": "bordered"` draws the system's small bordered button with the symbol and the title (Git's Working Tree, Fetch, Pull and Push), or, when the row has no room for every bordered button's title, each with its symbol alone | `{ id }` on a click |
-| `toggle` | `id`, `symbol`, `title`, `value` (boolean), `onSymbol`, `style` | an icon button, in the accent while on; with `onSymbol`, that symbol while on, in the buttons' color (File Tree, Git's File List). `"style": "segment"` draws it as one of the pill segments, picked while on (Markdown's outline, beside the mode and the lock) | `{ id, value }` |
-| `segmented` | `id`, `options` (`[{ "value", "title", "symbol" }]`), `value` | the app's pill segments. An option with a `symbol` shows it alone, with the title as its help, gray while not picked (Markdown's mode) | `{ id, value }` |
-| `menu` | `id`, `title`, `symbol`, `items`, `value`, `busy`, `style` | a menu button showing the picked item's title and symbol, else `title` and `symbol`; `busy` a spinner in place of its symbol. `"style": "icon"` shows the symbol alone, with the title as its help. `"style": "bordered"` draws it as a bordered button's small bezel, as `button`'s (Git's branch). An item is `{ "value", "title", "symbol" }`, `{ "title" }` for a section heading ("Remote"), or `"-"` for a divider | `{ id, value }` on a pick |
-| `field` | `id`, `placeholder`, `value` | a search field ("Filter") that takes the free width | `{ id, value }` on each change, and `{ id, value, submit: true }` on Return |
-| `field` with `"style": "path"` | `id`, `symbol`, `label`, `value` (a folder's path) | a path field, as the browser's address: at rest the path with the home as `~` (on This Mac), cut at the start when it is long; a click shows the whole path, selected, to edit. Esc puts the path back. `symbol` is a button before the path | `{ id, value, submit: true }` on Return with the typed path, absolute (a relative one from the field's path; `.`, `..` and `//` resolved, `~` expanded on This Mac), and `{ id }` on a click of the symbol |
-| `text` | `id`, `value`, `style` (`plain`, `dim` or `path`), `symbol`, `digits`, `links` | text cut in the middle; `path` draws a list of parts with `›` between them, the first part dim; `symbol` draws before the last part (File's `{}` before the scope); `links` makes a path's first parts buttons (the File Explorer's folders), never the last part | `{ id, part }` on a click of a linked part, `part` its index from 0 |
-| `openWith` | `id`, `value` (a file's path) | Open With: the default app's icon and name open the file; its menu lists the apps with icons, then the plugins. Not drawn with no path | nothing |
+| `button` | `id`, `symbol`, `title`, `badge`, `busy`, `label`, `style` | an icon button. `title` is its tooltip. `badge` shows a count after the symbol. `busy` shows a spinner. With `"style": "bordered"`, a small bordered button with the symbol and the title | `{ id }` on a click |
+| `toggle` | `id`, `symbol`, `title`, `value` (true or false), `onSymbol`, `style` | an icon button, in the accent color while on. With `onSymbol`, that symbol while on. With `"style": "segment"`, a segment of a pill | `{ id, value }` |
+| `segmented` | `id`, `options` (`[{ "value", "title", "symbol" }]`), `value` | segments in a pill. An option with a `symbol` shows only the symbol, with the title as its tooltip | `{ id, value }` |
+| `menu` | `id`, `title`, `symbol`, `items`, `value`, `busy`, `style` | a menu button that shows the picked item, else `title` and `symbol`. `"style": "icon"` shows only the symbol. `"style": "bordered"` draws a bordered button. An item is `{ "value", "title", "symbol" }`, `{ "title" }` for a section heading, or `"-"` for a divider | `{ id, value }` on a pick |
+| `field` | `id`, `placeholder`, `value` | a search field that takes the free width | `{ id, value }` on each change, and `{ id, value, submit: true }` on Return |
+| `field` with `"style": "path"` | `id`, `symbol`, `label`, `value` (a folder's path) | a path field. It shows the path with your home folder as `~`, and the whole path to edit when you click it. Esc puts the path back. `symbol` is a button before the path | `{ id, value, submit: true }` on Return, with the typed path made absolute, and `{ id }` on a click of the symbol |
+| `text` | `id`, `value`, `style` (`plain`, `dim` or `path`), `symbol`, `digits`, `links` | text, cut in the middle when it is long. `path` shows a list of parts with `›` between them. `symbol` shows before the last part. `links` makes the first parts of a path buttons | `{ id, part }` on a click of a linked part, with the part's index from 0 |
+| `openWith` | `id`, `value` (a file's path) | Open With: the default app opens the file, and its menu lists the other apps and the plugins | nothing |
 | `spacer` | none | free space | nothing |
 
-- **Every control** also takes `hidden`, `enabled`, `label` (what VoiceOver
-  reads when the title says too little: "Push, 1 ahead") and `gap`.
-- **Spacing.** Controls sit 6 pt apart. A control's `gap` sets the points
-  before it: `0` joins icon buttons into a group (Preview's zoom buttons,
-  Diff's Previous and Next), `2` sets them close.
-- **Width.** A `text` with `"digits": "mono"` has monospaced digits, so a
-  count (Preview's `3 of 12`) keeps its width as it changes. Free space goes
-  to a spacer or a field. With neither, it goes after the last control, so
-  the row starts at the left.
-- **Ids.** A control's `id` is unique in the plugin. It is also the end of
-  its accessibility identifier: `pane.<paneID>.<id>`. A segment adds its
-  title in lower case: `pane.<paneID>.mode.source`.
-- **Values.** A toggle's value is a boolean, a `path` text's a list of
-  strings, the others' a string. The app keeps each value in the card's
-  state file under `"controls"` ([State](/docs/plugins/api#state)). A card
-  loaded again, or shown again after it was dropped, gets the same values.
-- **A toggle, segments and a field** change their value natively, then the
-  page hears it. A menu pick only sends: an item can be an action, and the
-  page sets the menu's value (Git's branch menu shows the branch once the
-  switch ran). The same segment again,
-  or a field set to its own text, sends nothing.
-- **Asks of the page.** `controls.set(id, { focus: true })` gives a plain
-  field (not a path field) the keyboard (a page's ⌘F). `controls.set(id, { refused: true })`
-  shakes a path field, which keeps the typed path: the path names no place
-  to go.
-- **One header for many places.** A control that only some places use
-  starts `hidden: true` in the manifest. The page shows its place's controls
-  before it calls `card.ready()`. So a brand-new card draws only what the
-  manifest shows until its page runs.
-- **No row.** A plugin with no `header` and no `history` has one header row,
-  in a pane and floating.
+- Every control also takes `hidden`, `enabled`, `label` and `gap`. `label` is what VoiceOver reads when the title
+  says too little ("Push, 1 ahead").
+- `gap` sets the space before a control, in points. `0` joins icon buttons into a group.
+- A `text` with `"digits": "mono"` has digits of one width, so a count keeps its width as it changes.
+- Free space goes to a `spacer` or a `field`. With neither, it goes after the last control.
+- Each control's `id` is unique in the plugin.
+- A toggle's value is true or false, a `path` text's value is a list of strings, and other values are strings. Ovvi
+  keeps the values with the card's state, so a card that loads again gets the same values.
+- A toggle, segments and a field change their value themselves, then the page gets the change. A menu pick only
+  sends the pick: the page sets the menu's value.
+- `ovvi.controls.set(id, { focus: true })` gives a search field the keyboard. `ovvi.controls.set(id, { refused: true
+  })` shakes a path field, which keeps the typed path.
+- If only some places of a card use a control, give it `"hidden": true` in the manifest. The page shows its place's
+  controls before it calls `ovvi.card.ready()`.
+- A plugin with no `header` and no `history` has a header of one row.
 
 ## Commands
 
-`commands` puts a card's commands in the menu bar and ⌘K, with their keys,
-only while that card has the keyboard. Elsewhere the item is gone, so it
-swallows no key (D93). The app owns the keys: each command is a row in
-Settings ▸ Shortcuts, in a group named as the plugin, where the user
-can change, add or clear its keys ([Shortcuts](/docs/ui/settings#shortcuts)).
-The page never matches the key itself: it hears the pick.
+`commands` puts a card's commands in the menu bar and the command palette, with their keys. They are there only
+while that card has the keyboard. Each command is also a row in Settings ▸ Shortcuts, in a group with the plugin's
+name, where you can change its keys ([Shortcuts](/docs/reference/shortcuts)). The page never reads the key itself:
+it gets the pick.
 
 ```json
 "commands": [
@@ -213,28 +163,28 @@ The page never matches the key itself: it hears the pick.
 ]
 ```
 
-- `menu` is `file`, `edit` or `view`. `keywords` are more words that ⌘K finds
-  the command by. `key` is the default key, a chord with `cmd`, `ctrl` or
-  `option` (`alt`), plus `shift` if needed, and one key: a character or
-  `left`, `right`, `up`, `down`, `return`, `tab`, `space`, `escape`,
-  `delete`, `plus` (`cmd+e`, `cmd+shift+k`, `ctrl+option+left`). The user's
-  key wins over it. A key that an app command already has is left off, the
-  log says so once, and Settings marks the row.
-- A pick sends `{ id }` to `ovvi.on("control")`, as a header button does.
-  `ovvi.controls.set` changes `title`, `checked` and `enabled`. A disabled
-  command has no key, so ⌘E has its key only over Markdown.
-- `handles: ["save"]` gives the card ⌘S (File ▸ Save). `handles: ["find"]`
-  gives it ⌘F, ⌘G and ⇧⌘G. The page hears `save`, `find`, `findNext` and
-  `findPrevious`. Git takes ⌘F only in a diff, not on its home.
+| Field | Required | Value |
+|---|---|---|
+| `id` | yes | Unique among the commands and the header's controls. |
+| `title` | yes | The command's name in the menu and the command palette. |
+| `menu` | no | `file`, `edit` or `view`: the menu that shows the command. |
+| `key` | no | The default key: `cmd`, `ctrl` or `option` (`alt`), with `shift` if needed, and one key. The key is a character or `left`, `right`, `up`, `down`, `return`, `tab`, `space`, `escape`, `delete`, `plus`. Examples: `cmd+e`, `cmd+shift+k`, `ctrl+option+left`. |
+| `symbol` | no | An SF Symbol for the menu item. |
+| `checked` | no | `true` shows a checkmark. |
+| `keywords` | no | More words that the command palette finds the command by. |
+
+- A pick sends `{ id }` to `ovvi.on("control")`, as a header button does. `ovvi.controls.set` changes a command's
+  `title`, `checked` and `enabled`. A disabled command has no key.
+- Your own key in Settings wins over the default key. If an app command already has the default key, Ovvi leaves
+  the key off, and the log says so.
+- `handles: ["save"]` gives the card ⌘S. `handles: ["find"]` gives it ⌘F, ⌘G and ⇧⌘G. The page gets the events
+  `save`, `find`, `findNext` and `findPrevious`.
 
 ## Settings
 
-`settings` lists up to 16 values that the user sets on the plugin's page in
-Settings ▸ Plugins. The app draws them from the manifest, saves them in
-`settings.json` ([Plugin settings in settings.json](/docs/plugins/packages#plugin-settings-in-settingsjson)),
-and gives them to the plugin's cards: `ovvi.settings.get` reads one, and
-the `settings` event brings each change at once
-([Types](/docs/plugins/api#types)). A setting is one value for all machines.
+`settings` lists up to 16 values that you set on the plugin's page in Settings ▸ Plugins. Ovvi draws them from the
+manifest, saves them in `settings.json` ([Plugin settings](/docs/plugins/install#plugin-settings)), and gives them
+to the plugin's cards. `ovvi.settings.get` reads one, and the `settings` event brings each change at once.
 
 ```json
 "settings": [
@@ -251,34 +201,24 @@ Every setting has these fields:
 
 | Field | Required | Value |
 |---|---|---|
-| `id` | yes | 1 to 64 of `a-z`, `0-9` and `-`, starting with a letter or digit, once in the plugin. |
-| `type` | yes | `toggle`, `choice`, `number`, `text` or `path` (the table below). |
+| `id` | yes | 1 to 64 characters of `a-z`, `0-9` and `-`, which start with a letter or a digit. Unique in the plugin. |
+| `type` | yes | `toggle`, `choice`, `number`, `text` or `path` (the next table). |
 | `title` | yes | 1 to 60 characters: the row's title. |
-| `default` | yes | The value while the user has not set one, of the type. |
+| `default` | yes | The value until you set one. It must fit the type. |
 | `description` | no | One line under the title, up to 200 characters. |
 | `section` | no | Up to 60 characters: a heading over this row and the rows after it. The first rows go under "Settings". |
 
-| Type | Value | More fields | Drawn as |
+| Type | Value | More fields | Shows as |
 |---|---|---|---|
 | `toggle` | `true` or `false` | none | a switch |
-| `choice` | one option's `value` | `options`: 2 to 12 of `{ "value", "title" }`, each value once | a segmented control for up to 4 options whose titles have 24 characters in all, else a pop-up menu |
-| `number` | a number | `min`, `max`, `step`, `unit` (all optional; `min` under `max`, `step` over 0) | a field with a stepper, held in the range |
-| `text` | a string of up to 1 KB | `placeholder` (up to 1 KB) | a text field, saved on Return or when it loses the keyboard |
-| `path` | an absolute path (it starts with `/` or `~/`, or is `~`), or empty | `kind`: `file` or `folder`; `placeholder` | a path field, saved as a text field is |
+| `choice` | the `value` of one option | `options`: 2 to 12 of `{ "value", "title" }`, each value once | segments for up to 4 options whose titles have 24 characters in all, else a pop-up menu |
+| `number` | a number | `min`, `max`, `step`, `unit`, all optional. `min` must be under `max`, and `step` over 0 | a field with a stepper, held in the range |
+| `text` | a string of up to 1 KB | `placeholder` | a text field, saved on Return or when it loses the keyboard |
+| `path` | an absolute path (it starts with `/` or `~/`, or is `~`), or empty | `kind` (`file` or `folder`), `placeholder` | a path field |
 
-- A setting is a value. There is no secret type: no plugin can ask for a
-  password or a token in Settings.
-- A wrong setting leaves the plugin out, as a wrong header does. The log
-  names the field: `ovvi.settings.2.default does not fit the type, options
-  or range`, `ovvi.settings.0.title must be 1 to 60 characters`,
-  `ovvi.settings.1.id is taken`, `ovvi.settings has over 16 settings`,
-  `ovvi.settings.0.description must be 0 to 200 characters`.
-- The page reads them, and never sets them: the user owns them. A card keeps
-  its own choices in `ovvi.state`. The default plugins read
-  `ovvi.state.get()?.layout ?? ovvi.settings.get("diff-layout")`, so a
-  setting starts new cards and a card's own choice in its header wins.
-
-## Choices
-
-The decisions are D96, D99, D103, D107 and D108 on the
-[Decisions](/docs/decisions#pane-kinds) page.
+- There is no secret type. A plugin cannot ask for a password or a token in Settings.
+- A wrong setting stops the plugin from loading, as a wrong header does. The log names the field, such as
+  `ovvi.settings.2.default does not fit the type, options or range`.
+- The page reads settings and never sets them. A card keeps its own choices in `ovvi.state`. A good pattern:
+  `ovvi.state.get()?.layout ?? ovvi.settings.get("layout")`, so the setting starts new cards and a card's own choice
+  wins.

@@ -1,0 +1,105 @@
+---
+title: "Install plugins"
+description: "Install a plugin from npm, git or a folder, update and remove it, and change its settings"
+---
+
+You install plugins on the Plugins page of Settings. Ovvi lists each installed package in
+`~/.config/ovvi/settings.json`. It uses the npm, pnpm or bun on your login `PATH`.
+
+## Install a plugin
+
+1. Open Settings ▸ Plugins: choose Ovvi ▸ Plugins…, or Plugins… in the command palette (⌘K).
+2. Type a source in the field (the table below), then press Return or click Install.
+3. Read the confirmation: the plugin's id, version, source and folder, and its description. Then click Install
+   ([The confirmation](/docs/plugins/security#the-confirmation)).
+4. Ovvi installs the package's dependencies, builds it when it has no build yet, and loads its open cards.
+
+| Source | Example | Where it goes |
+|---|---|---|
+| `npm:<package>` | `npm:@acme/ovvi-csv`, `npm:@acme/ovvi-csv@1.2.0`, or the path of a tarball | `~/.config/ovvi/plugins/<name>/` |
+| `git:<repository>[@ref]` | `git:github.com/acme/ovvi-kanban@v1`, an `https://` or `ssh://` URL, `git@host:x/y` | `~/.config/ovvi/plugins/<repository name>/` |
+| a folder's path, which starts with `/`, `~` or `.` | `~/code/my-plugin` | nowhere: Ovvi loads it where it is |
+
+- An install from npm needs npm. An install from git needs git.
+- Ovvi runs no install script of the package or its dependencies (`--ignore-scripts`), and it installs no peer
+  dependencies. It runs the package's own `build` script only after you confirm the plugin.
+- If an npm package includes its build, Ovvi installs nothing more and does not build it.
+- A fetch stops after 5 minutes. An install or build command stops after 10 minutes. When a step fails, the page
+  shows its last line, and the plugin's log has the whole output.
+- A folder that you or an agent put in `~/.config/ovvi/plugins/` loads too, after Reload All. Its first card asks
+  for the confirmation.
+- An agent on This Mac can install a plugin with `ovvi plugins install <source>`
+  ([The ovvi command](/docs/reference/ovvi-command#plugins)). You confirm it on the Mac.
+
+Ovvi refuses an install in these cases:
+
+- The plugin is written for a newer plugin API than this Ovvi has: "‹name› ‹version› needs a newer Ovvi".
+- Another plugin has the same id: "The id ‹id› is taken by ‹folder›".
+- The plugins folder already has a folder of that name.
+
+## Update a plugin
+
+Only a plugin from npm updates. When you open its page, Ovvi asks npm for the newest version that its source
+allows. If npm has a newer one, the page shows Update to ‹version›. Otherwise it shows "Up to date".
+
+- Update replaces the plugin's folder, edits included, and does not ask again. It asks only when the new version
+  has another id.
+- A source with a version (`npm:name@1.2.0`) stays at that version.
+- Nothing checks for updates in the background.
+- A plugin from git does not update. To get a newer commit, remove the plugin and install it again.
+- Ovvi never changes a plugin from a folder. Run `npm install` and `npm run build` in that folder yourself.
+
+## Remove a plugin
+
+On the plugin's page, click Remove… at the end of the page, then Remove. Ovvi takes the plugin off the list,
+forgets its settings and its confirmation, and moves its folder to the Trash. A plugin from a folder on your Mac
+keeps its folder: Ovvi stops loading it. The default plugins have no Remove.
+
+## The Plugins page
+
+- The source field and Install install a plugin. A failure shows on a red notice, with Retry when a second try can
+  help.
+- New Plugin… makes a plugin from the template ([Create a plugin](/docs/plugins/create)).
+- Reload All reads every plugin again, builds each plugin from git or a folder, and loads every open card again.
+  The command palette's Reload Plugins does the same.
+- Each plugin has a row with its icon, name, version and source. The source is "Comes with Ovvi", an `npm:` or
+  `git:` source, or a folder. A row opens the plugin's page.
+
+A plugin's page has these parts:
+
+- The header: the icon, the name, the version, the description and the source.
+- Update to ‹version›, for a plugin from npm when npm has a newer version.
+- Install, for a plugin from npm or git whose folder is missing.
+- Show Log: opens the plugin's log in Console ([Errors and logs](/docs/plugins/create#errors-and-logs)).
+- Reload: builds the plugin and loads its cards again ([Reload](/docs/plugins/create#reload)).
+- The plugin's settings, when its manifest has any.
+- Show in New Pane, when the plugin has a row in New Pane.
+- Remove…
+
+## Plugin settings
+
+A plugin can have settings ([Settings](/docs/plugins/manifest#settings)). You change them on its page in
+Settings ▸ Plugins. A change saves at once and reaches the plugin's open cards. A setting has one value for all
+machines.
+
+Ovvi keeps only the values that differ from the default, in `settings.json` under `plugins`, by plugin id and
+setting id:
+
+```json
+{
+  "packages": ["npm:@ovvi/explorer", "npm:@ovvi/git", "npm:@acme/ovvi-csv@1.2.0", "~/code/my-plugin"],
+  "plugins": {
+    "explorer": { "hidden-files": true },
+    "git": { "commits": 1000 }
+  },
+  "hideInNewPane": ["csv-table"]
+}
+```
+
+- `packages` lists the sources that you installed.
+- A value that does not fit its setting (a wrong type, an option that does not exist, a number out of range) reads as
+  the default.
+- `hideInNewPane` lists the plugins that New Pane leaves out
+  ([New Pane](/docs/guide/basics#new-pane)). The Show in New Pane switch writes it. The confirmation has a Show in New Pane
+  checkbox too. It is off at first, so a plugin that you confirm starts out of New Pane.
+- After you or an agent edit `settings.json` by hand, choose Reload Plugins in the command palette.

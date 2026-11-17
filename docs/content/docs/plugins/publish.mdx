@@ -1,0 +1,48 @@
+---
+title: "Publish a plugin"
+description: "Put a plugin on npm with its build, release new versions, and when to change the api field"
+---
+
+A plugin is an npm package, so you publish it with npm. People install it with `npm:<package>` on the Plugins page
+([Install plugins](/docs/plugins/install)).
+
+## Publish to npm
+
+1. In `package.json`, delete `"private": true`. Set a `name` that is free on npm, such as `ovvi-csv-table` or
+   `@you/ovvi-csv-table`. The `ovvi` key's `id` does not change.
+2. Add `"files": ["dist"]`, so the package holds the build. If the page loads other files from the package, add them
+   to `files` too.
+3. Set `license`, `description`, `keywords` and `repository`. The description shows in New Pane and in the
+   confirmation.
+4. Build the plugin: `npm run build`.
+5. Sign in to npm (`npm login`), then publish: `npm publish`. A scoped name needs `npm publish --access public`.
+
+A package that holds its build installs fast: Ovvi installs nothing more and does not build it. So bundle every
+runtime dependency into `dist/`, as the template's esbuild line does.
+
+A package with no build in it still installs. Ovvi then installs its `dependencies` and `devDependencies` and runs
+its `build` script at the install, with your user's package manager.
+
+## Release a new version
+
+1. Raise `version` in `package.json`.
+2. Run `npm run build`, then `npm publish`.
+
+When a user opens the plugin's page in Settings ▸ Plugins, it shows Update to ‹version›. Update installs the new
+version without a question, unless its `id` changed.
+
+## The api field
+
+The manifest's `api` is the version of the plugin API that the plugin needs ([Versions](/docs/plugins/api#versions)).
+
+- Set it to the version that you build against. The current version is 3.
+- Raise it only when your plugin uses a call that a newer API adds.
+- An Ovvi with an older API refuses to install or update to your version: "‹name› ‹version› needs a newer Ovvi".
+  A user who already has an older version of your plugin keeps it.
+
+## Publish from git
+
+You can also publish only a git repository. People install it with `git:github.com/you/repo` or
+`git:github.com/you/repo@v1` (a tag, a branch or a commit). Ovvi clones it, installs its dependencies and runs its
+`build` script, so the repository does not need `dist/`. A plugin from git does not update: to get a newer commit, a
+user removes the plugin and installs it again.
