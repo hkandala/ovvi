@@ -129,3 +129,18 @@ What they mean:
 | T | Q9 and the ⌥⌘↩ default | ../ovvi-p62t |
 | K | Q6 | ../ovvi-p62k |
 | M | markdown, wheel | ../ovvi-p62m |
+
+## Round 3: the sidebar footer, Back and Forward (options report)
+
+The user's words: "[screenshot r3-1] - one more thing while i review the docs, so i see now in sidebar footer we have
+only archived sessions, can we use that space for more controls like settings icon, may be command palette icon,
+anythin else? give me some ui mockups on what can be shown in footer below archived sessions, think of things that we
+miss in our ui and what can be shown there, give me multipl options and options to pick similar to previous html
+report. and one more thing i am thinking of is to have back and forward buttons, i know we have a shorcut key to go
+back to prviously active tab or forward and have proper hitsotry, give me some ui options on where we can show these
+back and forward buttons, show me one report with options for all of tehse and a way to pick the options"
+
+Screenshot r3-1 (`.build/fb59/r3-1.png`): another app's sidebar foot, with three small icons on the left (a gear, a
+branch-like icon, a bar chart) and "⌘Z to undo" with a circled arrow on the right.
+
+Report: `~/Downloads/ovvi-research/p62-footer/index.html`.
