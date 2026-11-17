@@ -156,7 +156,7 @@ struct FloatingWindow: View {
                 }
             }
             .accessibilityIdentifier("\(id).close")
-            IconButton(symbol: "pip.exit", help: "Detach Pane", key: .hotkey("pane.close")) {
+            IconButton(symbol: "macwindow.on.rectangle", help: "Detach Pane", key: .hotkey("pane.close")) {
                 page.floating[floating.terminalID] = nil
             }
             .accessibilityIdentifier("\(id).detach")

@@ -157,7 +157,7 @@ extension CommandList {
         }
         let list = [
             Command(section: .close, title: "Detach Pane", key: .hotkey("pane.close"), group: .panes,
-                    symbol: "pip.exit", action: { page.floating[terminalID] = nil }),
+                    symbol: "macwindow.on.rectangle", action: { page.floating[terminalID] = nil }),
             Command(section: .view, title: "Command Palette", id: "app.palette", key: .hotkey("app.palette"),
                     symbol: "command", enabled: palette != nil) { palette?.wrappedValue.toggle() },
             Command(section: .view, title: "Stay on Top", symbol: "pin", checked: page.floating[terminalID] == true,
