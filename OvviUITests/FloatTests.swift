@@ -364,9 +364,6 @@ extension OvviUITests {
     }
 
     func keepScreen(_ name: String) {
-        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-        attachment.name = name
-        attachment.lifetime = .keepAlways
-        add(attachment)
+        keep(XCTAttachment(screenshot: XCUIScreen.main.screenshot()), as: name)
     }
 }

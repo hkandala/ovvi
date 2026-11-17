@@ -257,7 +257,10 @@ extension OvviUITests {
     }
 
     func keep(_ text: String, as name: String) {
-        let attachment = XCTAttachment(string: text)
+        keep(XCTAttachment(string: text), as: name)
+    }
+
+    @nonobjc nonisolated func keep(_ attachment: XCTAttachment, as name: String) {
         attachment.name = name
         attachment.lifetime = .keepAlways
         add(attachment)
@@ -301,10 +304,8 @@ extension OvviUITests {
             done.signal()
         }.resume()
         done.wait()
-        let text = log.withLock(\.self), attachment = XCTAttachment(string: text.isEmpty ? "(none)" : text)
-        attachment.name = "plugin console"
-        attachment.lifetime = .keepAlways
-        add(attachment)
+        let text = log.withLock(\.self)
+        keep(XCTAttachment(string: text.isEmpty ? "(none)" : text), as: "plugin console")
     }
 
     @discardableResult

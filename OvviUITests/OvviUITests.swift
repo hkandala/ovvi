@@ -324,10 +324,7 @@ extension OvviUITests {
         if let window {
             raise(window)
         }
-        let attachment = XCTAttachment(screenshot: (window ?? app.windows.firstMatch).screenshot())
-        attachment.name = name
-        attachment.lifetime = .keepAlways
-        add(attachment)
+        keep(XCTAttachment(screenshot: (window ?? app.windows.firstMatch).screenshot()), as: name)
     }
 
     /// One query a try: between `exists` and a focus read a terminal can go as its floating window comes forward, which

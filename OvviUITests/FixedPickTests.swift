@@ -91,9 +91,7 @@ extension OvviUITests {
         XCTAssertTrue(alternate.exists(within: 2))
         let main = mainWindows.firstMatch
         XCUIElement.perform(withKeyModifiers: .option) {
-            let shot = XCTAttachment(screenshot: main.screenshot())
-            (shot.name, shot.lifetime) = ("split alternate", .keepAlways)
-            add(shot)
+            keep(XCTAttachment(screenshot: main.screenshot()), as: "split alternate")
         }
         // The alternate item by its key (macOS takes ⌥⌘D): XCUITest's pointer path into the submenu lost the submenu
         // on CI once. One Esc closes every open menu.
@@ -109,9 +107,7 @@ extension OvviUITests {
         keepScreenshot("settings new panes open", of: settingsWindow)
         picker.click()
         XCTAssertTrue(picker.menuItems["File Explorer"].exists(within: 2))
-        let menu = XCTAttachment(screenshot: settingsWindow.screenshot())
-        (menu.name, menu.lifetime) = ("settings new panes open menu", .keepAlways)
-        add(menu)
+        keep(XCTAttachment(screenshot: settingsWindow.screenshot()), as: "settings new panes open menu")
         app.typeKey(.escape, modifierFlags: [])
         settingsWindow.typeKey("w", modifierFlags: .command)
         XCTAssertTrue(settingsWindow.vanishes(within: 2))

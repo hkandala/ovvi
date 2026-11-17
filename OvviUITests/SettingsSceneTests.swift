@@ -97,10 +97,7 @@ extension OvviUITests {
         // A closed menu is still there with an empty frame.
         let menus = app.menus.allElementsBoundByIndex.filter { $0.frame.width > 1 }
         for (shot, suffix) in [(window, "")] + menus.map({ ($0, " (menu)") }) {
-            let attachment = XCTAttachment(screenshot: shot.screenshot())
-            attachment.name = name + suffix
-            attachment.lifetime = .keepAlways
-            add(attachment)
+            keep(XCTAttachment(screenshot: shot.screenshot()), as: name + suffix)
         }
     }
 }

@@ -103,9 +103,7 @@ extension OvviUITests {
             let shot = try await poll("the program's frame after release \(releases)") { () -> Shot? in
                 Shot(terminal.screenshot().image, rows: rows).flatMap { $0.whites(row: 0).contains(mark) ? $0 : nil }
             }
-            let attachment = XCTAttachment(image: shot.image)
-            (attachment.name, attachment.lifetime) = ("selection \(releases)", .keepAlways)
-            add(attachment)
+            keep(XCTAttachment(image: shot.image), as: "selection \(releases)")
             func blue(_ column: Int) -> Int {
                 shot.blue(Int(origin + Double(column) * width), Int(width), row: 1)
             }
