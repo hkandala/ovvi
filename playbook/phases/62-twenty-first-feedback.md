@@ -240,6 +240,23 @@ Report: `~/Downloads/ovvi-research/p62-footer/index.html`.
 - **For the user:** with the sidebar collapsed, no button opens the overview (its button is in the session header):
   ⌃⌘O, View ▸ Show Overview and the palette still do, and Open Session stays in the machine menu.
 
+### Track K
+
+- **Fix (Q6 A):** Settings ▸ Shortcuts shows one 128 × 24 pt field per key, stacked at the row's right edge. With the
+  pointer over a row, ⊕ (Add Shortcut) shows before the last field and adds a field under it that records at once. A
+  recording field shows an × (Remove Shortcut) that removes its key; ⌫ does too. No ⊖. A conflict asks in a standard
+  alert: Swap for a changed key, Use Here for an added key, OK only for macOS's keys.
+- **Cause (plugin second keys):** `KeyboardShortcut.second` walked only `Hotkeys.app`, so a plugin command's extra
+  key never ran. It walks `Hotkeys.all` now and finds a plugin command by its id (`plugin.<plugin>.<command>`), since
+  the app may have taken its first key. A menu item's own key stays the menu's.
+- **Decisions:** the recording monitor still ends a recording on any click, except a click inside the recording
+  field's ×, which it passes through (its SwiftUI global frame against the click in the content view). A key that the
+  action already has changes nothing. Swap gives the other action the key that this field gave up, not the first key.
+- **Decisions:** hover uses `onContinuousHover` in a small per-row view, so the pointer over a row runs only that
+  row's body. VoiceOver gets an "Add Shortcut" action on each field.
+- **For the user:** hover a row: ⊕ shows; click it, type a key; click a field, the × removes that key; give a field a
+  key that another action has: the dialog asks.
+
 ## Round 3: the picks
 
 The user, word for word: "F1 D ("D but bunch of changes, move settings to right side, add a line separator, then
