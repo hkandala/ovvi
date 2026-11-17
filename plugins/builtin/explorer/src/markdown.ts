@@ -3,7 +3,7 @@ import { yamlFrontmatter } from "@codemirror/lang-yaml"
 import { ensureSyntaxTree, syntaxTree, syntaxTreeAvailable } from "@codemirror/language"
 import { closeSearchPanel } from "@codemirror/search"
 import { Compartment, EditorState, Prec } from "@codemirror/state"
-import { EditorView } from "@codemirror/view"
+import { EditorView, highlightActiveLine } from "@codemirror/view"
 import type { Ovvi } from "@ovvi/plugin-api"
 import { code, type Editor, editor, selected } from "./editor"
 import { containers, editing, live, referenceField, ticked } from "./live"
@@ -29,7 +29,7 @@ const slug = (text: string) => text.trim().toLowerCase().replace(/[^\p{L}\p{N}\s
 /** Not read only: read only is the file's, and a tick while locked writes. */
 const markdownMode = (edit: boolean) => [
   EditorView.editable.of(edit),
-  edit ? [] : [
+  edit ? highlightActiveLine() : [
     Prec.highest(EditorView.contentAttributes.of({ role: "article", "aria-readonly": "true" })),
     EditorView.domEventHandlers({ drop: (event) => (event.preventDefault(), true) }),
   ],
@@ -44,7 +44,6 @@ const rendered = [
     "&": { fontSize: "calc(var(--font-size) + 1px)" },
     ".cm-scroller": { fontFamily: "system-ui", lineHeight: "1.55", outline: "none" },
     ".cm-content": { boxSizing: "border-box", maxWidth: "640px", margin: "0 auto", padding: "28px 24px 48px" },
-    "&.cm-reading .cm-activeLine": { background: "none" },
     ".cm-frontmatter, .cm-frontmatter *": {
       fontFamily: "ui-monospace, monospace", fontSize: "12px", color: "var(--dim)",
     },

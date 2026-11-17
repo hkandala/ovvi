@@ -82,7 +82,7 @@ const highlight = HighlightStyle.define([
   { tag: tags.invalid, color: "var(--error)" },
 ])
 
-export const code = [lineNumbers(), highlightActiveLineGutter(), syntaxHighlighting(highlight)]
+export const code = [lineNumbers(), highlightActiveLine(), highlightActiveLineGutter(), syntaxHighlighting(highlight)]
 
 const theme = EditorView.theme({
   "&": { height: "100%", fontSize: "var(--font-size)" },
@@ -146,7 +146,6 @@ export async function editor(place: Place, extensions: Extension[], parent: HTML
         drawSelection(),
         indentOnInput(),
         bracketMatching(),
-        highlightActiveLine(),
         highlightSelectionMatches(),
         search({ top: true, createPanel: find.createPanel }),
         keymap.of([...defaultKeymap, ...searchKeymap, ...historyKeymap, indentWithTab]),

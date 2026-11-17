@@ -84,14 +84,15 @@ nav button:hover {
 .cm-md-pre-first.cm-md-pre-last {
   border-radius: 8px;
 }
+/* A hidden fence's line is as tall as a shown first or last line's padding. */
 .cm-md-pre-first:not(.cm-md-fence) {
-  padding-top: 5px;
+  padding-top: 18px;
 }
 .cm-md-pre-last:not(.cm-md-fence) {
-  padding-bottom: 5px;
+  padding-bottom: 18px;
 }
 .cm-line.cm-md-fence {
-  line-height: 10px;
+  line-height: 18px;
 }
 .cm-line.cm-md-quote,
 .cm-line.cm-md-hang {
