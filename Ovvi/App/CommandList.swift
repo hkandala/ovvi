@@ -200,18 +200,12 @@ struct CommandList {
                     }),
             pin(page, workspace),
             onlyPinned(page),
-            Command(
-                section: .palette,
-                title: "Font Size",
-                id: "app.font-size",
-                symbol: "textformat.size",
-                keywords: "text bigger smaller",
-                menu: PaneTerminal.fontSizes.map { size in
-                    Command(section: .palette, title: "\(size) pt", checked: settings.fontSize == size) {
-                        settings.fontSize = size
-                    }
-                },
-            ),
+            Command(section: .palette, title: "Font Size", id: "app.font-size", symbol: "textformat.size",
+                    keywords: "text bigger smaller", menu: PaneTerminal.fontSizes.map { size in
+                        Command(section: .palette, title: "\(size) pt", checked: settings.fontSize == size) {
+                            settings.fontSize = size
+                        }
+                    }),
             // AppKit's View menu has its own item and key.
             Command(section: .palette, title: fullScreen ? "Exit Full Screen" : "Enter Full Screen",
                     key: .init("f", modifiers: [.command, .control]),
@@ -235,14 +229,8 @@ struct CommandList {
         let tabs = page?.selectedWorkspace?.tabs ?? []
         let tab = page?.selectedTab
         func step(_ title: String, _ symbol: String, _ offset: Int) -> Command {
-            Command(
-                section: .pages,
-                title: title,
-                key: .hotkey(offset < 0 ? "session.previous" : "session.next"),
-                symbol: symbol,
-                enabled: (pages?.list.count ?? 0) > 1,
-                action: { pages?.step(offset) },
-            )
+            Command(section: .pages, title: title, key: .hotkey(offset < 0 ? "session.previous" : "session.next"),
+                    symbol: symbol, enabled: (pages?.list.count ?? 0) > 1) { pages?.step(offset) }
         }
         func stepWorkspace(_ title: String, _ symbol: String, _ offset: Int) -> Command {
             Command(section: .workspaceSteps, title: title,

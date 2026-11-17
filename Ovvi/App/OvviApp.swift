@@ -27,8 +27,7 @@ struct OvviApp: App {
             ContentView()
         }
         .windowToolbarStyle(.unifiedCompact)
-        // The frame a window last moved, resized or closed with, which AppKit cascades; with none, the screen's
-        // visible frame.
+        // `WindowReader.lastFrame`, which AppKit cascades; with none, the screen's visible frame.
         .defaultWindowPlacement { _, context in
             WindowReader.lastFrame.map(FloatFrames.placement)
                 ?? WindowPlacement(.center, size: context.defaultDisplay.visibleRect.size)
@@ -256,17 +255,10 @@ private struct WindowContent: View {
         // The page's and the sidebar's 4 pt top room (for the cards' strokes) lies under the title row; the row
         // stays on top for its clicks and window drags.
         VStack(spacing: -4) {
-            TitleBar(
-                pages: pages,
-                page: page,
-                fullScreen: fullScreen,
-                sidebar: $sidebar,
-                sidebarWidth: sidebarWidth,
-                workspaceMenu: open(.workspaces),
-                openSession: open(.openSession),
-                workspaceButtonX: $workspaceButtonX,
-            )
-            .zIndex(1)
+            TitleBar(pages: pages, page: page, fullScreen: fullScreen, sidebar: $sidebar, sidebarWidth: sidebarWidth,
+                     workspaceMenu: open(.workspaces), openSession: open(.openSession),
+                     workspaceButtonX: $workspaceButtonX)
+                .zIndex(1)
             HStack(spacing: 0) {
                 if sidebar {
                     // The cards start at the sidebar's width: its handle lies over the page's 8 pt gap.

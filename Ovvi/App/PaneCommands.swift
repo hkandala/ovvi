@@ -84,20 +84,13 @@ extension CommandList {
                               enabled: pane != nil) { page?.replacePane(target()) }
         // A plugin card's ⌥⌘R is Reload Plugin.
         let redraw = pane?.plugin != nil ? [] : [
-            Command(
-                section: .close,
-                title: "Redraw Terminal",
-                key: .hotkey("terminal.redraw"),
-                group: .panes,
-                symbol: "arrow.trianglehead.2.clockwise",
-                keywords: "pane refresh repaint rerender tui garbled",
-                enabled: pane.map { page?.shownChat($0) == nil } == true,
-                action: {
-                    if let page, let pane = target(), pane.plugin == nil {
-                        page.terminal(pane)?.redraw()
-                    }
-                },
-            ),
+            Command(section: .close, title: "Redraw Terminal", key: .hotkey("terminal.redraw"), group: .panes,
+                    symbol: "arrow.trianglehead.2.clockwise", keywords: "pane refresh repaint rerender tui garbled",
+                    enabled: pane.map { page?.shownChat($0) == nil } == true, action: {
+                        if let page, let pane = target(), pane.plugin == nil {
+                            page.terminal(pane)?.redraw()
+                        }
+                    }),
         ]
         let terminal = pane?.agent == nil && pane?.plugin == nil ? [] : [
             Command(section: .close, title: "Open Terminal Here", group: .panes, symbol: "terminal",

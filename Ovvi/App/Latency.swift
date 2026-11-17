@@ -263,19 +263,17 @@ private final class FrameMeter: NSObject {
             return gap > hitch ? "\(Int(elapsed * 1000))+\(Int(gap * 1000))/\(Int(cpu * 1000))" : nil
         }
         let busy = Int((Latency.threadTime - cpu) * 1000)
+        let head = "\(name) \(gaps.count) \(hitches.count) \(time)ms \(part(0.5)) \(part(0.95)) \(part(1)) \(busy)ms "
         if name == "scroll" {
-            record("scroll \(gaps.count) \(hitches.count) \(time)ms \(part(0.5)) \(part(0.95)) \(part(1)) \(busy)ms "
-                + "\(Latency.rows - rowsBefore) " + hitches.joined(separator: ","))
-            return
+            return record(head + "\(Latency.rows - rowsBefore) " + hitches.joined(separator: ","))
         }
-        record("split \(gaps.count) \(hitches.count) \(time)ms \(part(0.5)) \(part(0.95)) \(part(1)) \(busy)ms "
-            + hitches.joined(separator: ",") + " " + steps.map { step, time in
-                var end = 0.0
-                let cpu = zip(gaps, cpus).first { gap, _ in
-                    end += gap
-                    return end >= time
-                }?.1 ?? 0
-                return "\(step)@\(Int(time * 1000))/\(Int(cpu * 1000))"
-            }.joined(separator: ","))
+        record(head + hitches.joined(separator: ",") + " " + steps.map { step, time in
+            var end = 0.0
+            let cpu = zip(gaps, cpus).first { gap, _ in
+                end += gap
+                return end >= time
+            }?.1 ?? 0
+            return "\(step)@\(Int(time * 1000))/\(Int(cpu * 1000))"
+        }.joined(separator: ","))
     }
 }
