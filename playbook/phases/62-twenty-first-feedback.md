@@ -412,3 +412,28 @@ Then, after hearing that Ovvi's Needs you is herdr's `blocked`: "no let's keep i
   machine, groups Needs you and Done with a line between, each row the agent icon, title, and session · space. A pick
   goes to that tab, bringing its window forward. "All caught up" opens the empty panel.
 - Final view: `~/Downloads/ovvi-research/p62-footer2/final.html`, to be confirmed before the build.
+
+### Final CI
+
+Heads p62-final1 (72d3c7d1) and final2 (236aed30). Every watch-list test ran and passed in final2's green full run
+(315 of 315), the eight new ones included; the on-demand scenes passed in both rounds.
+- **Cause (⌥ alternate items).** testAFixedPicksMenuItemsAndSetting: ⌥⇧⌘D made a plain split, not Split Down and
+  Choose…. The menu action started a plain `Task`, which ran after the key's queued ⌥-up, and `Chooser.asked` read the
+  hardware state. **Fix:** the pane commands, New Tab, New Space, the pane steps and Balance start with
+  `Task.immediate` (in key order), and `asked` also reads the current event's ⌥.
+- **Cause (disabled tooltips).** SwiftUI calls no `onHover` on a disabled view (a VM probe), so a disabled button
+  never showed its tip. **Fix:** the tip's hover runs outside the disabled state; the button stays disabled.
+  The tooltip test also selected no tab before it hovered its pane, and read the label where the text is the value.
+- **Cause (narrow chat).** XCUITest's move to the wheel's point played a step of its path last: the pointer sat 63 %
+  along it, over the card beside, and the sideways wheel went there. **Fix:** the test warps the pointer there first.
+- **Test times.** Refreshed from final1: 41 tests had no time, and one shard took 28 of its 30 minutes; the shards now
+  plan 1280 s each.
+- **Infra.** final2 full 44019283698 shard 2: the runner's WindowServer deadlocked (its spindump: the main thread and
+  its Metal dealloc queue wait on each other), the app's main thread blocked on it 130 s, and the timed-out test left
+  two tabs that pushed every later new tab out of the strip (15 reds). Rerun once: green, 63 of 63.
+- **Open.** final2 shard 1: testAPinchMagnifiesABrowserPage saw no magnification after a posted pinch (pointer in
+  place, page loaded); green in the other three runs. No cause found: a VM probe with the page's process stopped still
+  magnified, so a busy page is not it.
+- **Runs.** final1: full 44011342382 red (narrow chat, tooltip), 44011345888 red (⌥ item, tooltip), on-demand
+  44011349186 green. final2: full 44019286988 green (315), 44019283698 red (pinch; shard 2 infra, rerun green),
+  on-demand 44019290469 green (22, 2 skipped as always). Checks 44010452155, 44014777650, 44019280868 green.
