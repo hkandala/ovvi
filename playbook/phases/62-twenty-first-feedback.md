@@ -308,6 +308,21 @@ Report: `~/Downloads/ovvi-research/p62-footer/index.html`.
 - **For the user.** Click the summary with agents in two windows' sessions; pick a row of the other window's session
   (that window comes forward on the tab); check the summary at the narrowest sidebar.
 
+### Track D (cleanup: the docs guide)
+
+- **Fix.** 13 user pages in four groups (Overview, Guide, Plugins, Reference): about 2,900 lines from 11,800. Written
+  from the code on main, checked against the old features.mdx line by line; every old URL redirects (next.config.mjs).
+- **Decisions.** No privacy or telemetry page: /docs/telemetry redirects to the settings page, the app's "What it
+  sends" link went, and UsageTests checks the event's keys against a list in the test. The Settings page named Privacy
+  holds only approved websites, so the docs name it. The guide has seven pages, not C's five: browser, files-and-git
+  and navigate each got their own ("subpages structure it as relevant").
+- **Cause.** The Tart VM's screen was 1x: Tart takes a headless guest's scale from the Mac's main screen, a 1x monitor
+  here. **Fix.** `hidpi-display.m mirror`: each `make vm-e2e` mirrors the guest's display to a 2x 1024 × 768 pt one.
+- **Fix.** `scripts/docs-pictures.sh` takes the ten pictures in the VM on a 1280 × 800 pt display at 2x (2400 px wide),
+  from the welcome scene; menu items and web buttons through accessibility presses, no keys.
+- **For the user.** Read ovvi.dev after the deploy; the welcome picture shows the old clips until they are recorded
+  again (then run `scripts/docs-pictures.sh`).
+
 ## Round 3: the picks
 
 The user, word for word: "F1 D ("D but bunch of changes, move settings to right side, add a line separator, then
