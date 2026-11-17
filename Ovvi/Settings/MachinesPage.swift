@@ -6,13 +6,9 @@ struct MachinesPage: View {
         let list = MachineList.shared
         Form {
             Section {
-                NavigationLink(value: SettingsDetail.machine(Machine.thisMac.id)) {
-                    MachineLabel(machine: .thisMac, detail: Machine.computerName)
-                }
-                .accessibilityIdentifier("settings.machine.\(Machine.thisMac.id)")
-                ForEach(list.list) { machine in
+                ForEach(list.all) { machine in
                     NavigationLink(value: SettingsDetail.machine(machine.id)) {
-                        MachineLabel(machine: machine, detail: machine.target)
+                        MachineLabel(machine: machine, detail: machine.isRemote ? machine.target : Machine.computerName)
                     }
                     .accessibilityIdentifier("settings.machine.\(machine.id)")
                 }

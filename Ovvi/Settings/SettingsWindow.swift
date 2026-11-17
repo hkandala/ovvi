@@ -53,7 +53,9 @@ struct SettingsWindow: View {
             }) {
                 if search.isEmpty {
                     ForEach(SettingsPage.allCases, id: \.self) { page in
-                        SettingsSidebarRow(page: page)
+                        Label { Text(page.title) } icon: { SettingsIcon(page: page) }
+                            .tag(page)
+                            .accessibilityIdentifier("settings.page.\(page.rawValue)")
                     }
                 } else {
                     ForEach(SettingsSearch.matches(search)) { row in
@@ -120,16 +122,6 @@ private struct SettingsIcon: View {
                                         lineWidth: 0.5))
             .shadow(color: look.settingsShadow, radius: 0.5, y: 0.5)
             .compositingGroup()
-    }
-}
-
-private struct SettingsSidebarRow: View {
-    let page: SettingsPage
-
-    var body: some View {
-        Label { Text(page.title) } icon: { SettingsIcon(page: page) }
-            .tag(page)
-            .accessibilityIdentifier("settings.page.\(page.rawValue)")
     }
 }
 
@@ -298,7 +290,7 @@ struct SettingsHeader<Icon: View, Actions: View>: View {
 }
 
 extension SettingsHeader where Actions == EmptyView {
-    init(title: String, note: String? = nil, lines: [String] = [], @ViewBuilder icon: () -> Icon) {
-        self.init(title: title, note: note, lines: lines, icon: icon, actions: { EmptyView() })
+    init(title: String, lines: [String] = [], @ViewBuilder icon: () -> Icon) {
+        self.init(title: title, lines: lines, icon: icon, actions: { EmptyView() })
     }
 }

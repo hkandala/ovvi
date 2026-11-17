@@ -45,9 +45,7 @@ struct KeysPage: View {
                 HStack(spacing: 8) {
                     FilterField(prompt: "Search", text: $search, identifier: "keys.search", symbol: "magnifyingglass")
                         .labelsHidden()
-                    Button("Reset All") {
-                        hotkeys.resetAll()
-                    }.disabled(hotkeys.saved.isEmpty)
+                    Button("Reset All", action: hotkeys.resetAll).disabled(hotkeys.saved.isEmpty)
                         .accessibilityIdentifier("keys.reset-all")
                 }
                 .settingsRow("keys.search")
@@ -284,8 +282,8 @@ private struct KeyField: View {
     }
 }
 
-/// Whether the pointer is over the content. AppKit's own tracking: SwiftUI's hover missed a row that a search moved
-/// under the pointer until the pointer left the window.
+/// Whether the pointer is over the content. AppKit's own tracking: SwiftUI's hover misses a row that a search moves
+/// under a still pointer.
 private struct Hovering<Content: View>: View {
     @ViewBuilder let content: (Bool) -> Content
     @State private var hovered = false

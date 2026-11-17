@@ -5,13 +5,12 @@ import SwiftUI
 
 struct GeneralPage: View {
     private var settings = AppSettings()
-    private static let fixedNote = "Hold ⌥ as you make a pane to choose each time."
-    private static var chooserNote: String {
-        "What \(Hotkeys.named("tab.new")), \(Hotkeys.named("pane.split-right")) and New Space open."
-    }
 
     var body: some View {
         let opens = Chooser.fixedRow(settings.newPaneOpens)?.id ?? ""
+        let note = opens.isEmpty
+            ? "What \(Hotkeys.named("tab.new")), \(Hotkeys.named("pane.split-right")) and New Space open."
+            : "Hold ⌥ as you make a pane to choose each time."
         Form {
             Section("Startup") { OpenAtLogin() }
             Section("Panes") {
@@ -25,7 +24,7 @@ struct GeneralPage: View {
                     }
                 } label: {
                     Text("New panes open")
-                    Text(opens.isEmpty ? Self.chooserNote : Self.fixedNote)
+                    Text(note)
                 }
                 .identifiedSettingsRow("general.new-pane")
                 Toggle(isOn: settings.$followMouse) {
