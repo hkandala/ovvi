@@ -231,6 +231,10 @@ Report: `~/Downloads/ovvi-research/p62-footer/index.html`.
   second click on the title, or when the keys go elsewhere (focus), not on a click that takes no keys.
 - **Decisions:** the home name is display only, set where the snapshot is applied (`HostStore.home`), so every place
   that names a space shows it; herdr keeps `~` and its own folder naming. A tab's `zsh ~` keeps its `~`.
+- **Cause:** the shelf opening with a fade moved the space list's top over the animation, and the list was left
+  scrolled 1–3 pt (its first row under the top fade). **Fix:** the shelf opens and folds at once.
+- **Runs:** the VM lists stale `ovvi-e2e-*` sessions of earlier runs in Open Session, so
+  `testOpenSessionListsSessionsAndOpensAPage` missed a stopped session below the panel's end there; it needs CI.
 - **For the user:** hover the session title (⌄), open the shelf, pick with the arrows and Return, click a card to
   fold it; switch sessions and watch only the spaces slide; a new space shows your user name and renames as before.
 - **For the user:** with the sidebar collapsed, no button opens the overview (its button is in the session header):
