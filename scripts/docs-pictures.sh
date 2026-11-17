@@ -7,15 +7,16 @@
 # It takes the VM lock for the run (playbook/workflow.md). Unlike a test run, it waits up to 30 minutes for a run that
 # holds it: the pictures are taken by hand, rarely. The guest is set up as `make vm-e2e` leaves it (the shared Xcode).
 set -euo pipefail
-cd "$(dirname "$0")/.."
 world=docs-pictures
 
 if [[ ${1:-} != --in-vm ]]; then
-    locks=~/.config/ovvi-tart/locks
-    [[ -n ${DOCS_LOCKED:-} ]] || DOCS_LOCKED=1 exec lockf -k -t 1800 "$locks/ovvi-test.lock" "$0" "$@"
-    dd=${1:-${DERIVED_DATA:-/tmp/ovvi-dd-docs}} vm=ovvi-test runs=/tmp/ovvi-vm/runs
+    dd=${1:-${DERIVED_DATA:-/tmp/ovvi-dd-docs}} vm=ovvi-test runs=/tmp/ovvi-vm/runs locks=~/.config/ovvi-tart/locks
     app="$dd/Build/Products/Debug/Ovvi Debug.app"
     [ -d "$app" ] || { echo "no $app: make build DERIVED_DATA=$dd" >&2; exit 1; }
+    app=$(cd "$app" && pwd)
+    mkdir -p "$locks"
+    [[ -n ${DOCS_LOCKED:-} ]] || DOCS_LOCKED=1 exec lockf -k -t 1800 "$locks/ovvi-test.lock" "$0" "$@"
+    cd "$(dirname "$0")/.."
     echo "${OWNER:-$USER} docs-pictures $(date +%H:%M)" >"$locks/ovvi-test.owner"
     run=$runs/docs-$$ guest="/Volumes/My Shared Files"
     trap 'rm -rf "$run" "$locks/ovvi-test.owner"' EXIT
@@ -36,7 +37,8 @@ if [[ ${1:-} != --in-vm ]]; then
     exit $status
 fi
 
-# In the guest.
+# In the guest, in the run's copy of the checkout.
+cd "$(dirname "$0")/.."
 scene=scripts/welcome-scene.sh W=/tmp/$world
 shot() {
     ax front
