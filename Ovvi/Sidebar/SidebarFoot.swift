@@ -128,7 +128,8 @@ struct AgentsPanel: View {
                                 .accessibilityIdentifier("agents.panel.group.\(state.title)")
                                 .overlay(alignment: .trailing) {
                                     if state == .finishedUnseen {
-                                        clearAll
+                                        // Its text on the rows' right edge, as the heading's is on their left.
+                                        clearAll.padding(.trailing, -6)
                                     }
                                 }
                                 .padding(.horizontal, 8).padding(.top, 6).padding(.bottom, 4)
