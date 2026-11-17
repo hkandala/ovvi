@@ -266,3 +266,6 @@ Problems that came back, and the rule that stops each. How we work is in
 - **Never make artificial load to reproduce a flake.** 150 `yes` processes at load 250, beside builds, the VM and a
   Blender render, crashed the Mac. Starve only the test process instead (`taskpolicy -c background <cmd>`, `nice`),
   and run heavy jobs through the load gate, `~/ovvi-docs/heavy.sh`.
+- **A track never removes a visible feature without the user's words.** A sidebar track took out the page dots
+  because its new session list "named the sessions", and the user asked at once where they went. When a change seems
+  to make something visible redundant, keep it and ask the orchestrator; only the user's words remove it.
