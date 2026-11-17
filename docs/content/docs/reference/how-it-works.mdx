@@ -1,0 +1,131 @@
+---
+title: "How it works"
+description: "How Ovvi works with herdr, how it reaches remote machines, and what it stores."
+---
+
+## herdr owns the layout
+
+herdr keeps every session, space, tab and pane, the split layout of each tab, and each terminal with its program.
+Ovvi keeps none of this. It reads it from herdr and draws it as a window with a sidebar, a tab bar and cards.
+
+When you change something in Ovvi, Ovvi asks herdr to do it. A split, a move, a rename and a close are all herdr's
+changes. So other herdr clients, such as herdr's own terminal interface, show the same result. A change that you
+make there shows in Ovvi too.
+
+Some things are Ovvi's own, because they belong to one window:
+
+- The session, space and tab that a window shows.
+- The card that gets your keys, and a zoomed card.
+- Which agent finish you already saw.
+
+Because herdr keeps the layout, a new install of Ovvi on another Mac shows every space, tab and pane as they are.
+
+### Sessions keep running
+
+Each herdr session is one herdr server on its machine. The server runs your terminals and agents, not Ovvi. When you
+quit Ovvi, close a window or lose the network, every program keeps running.
+
+When Ovvi starts a session on This Mac, macOS runs the server as a background job, apart from Ovvi. The server writes
+its errors to `~/Library/Logs/Ovvi/<session>.log`. On a remote machine, Ovvi starts the server in the background
+over SSH.
+
+### Agent states
+
+herdr knows when an agent works, needs you or finishes, through its integration for that agent. Ovvi reads these
+states from herdr and shows them in the sidebar, the tabs, the Dock and in notifications
+([Agents](/docs/guide/agents)). The chat view reads the agent's own session files on its machine, and it sends your
+messages to the agent's terminal through herdr.
+
+### One controller at a time
+
+A terminal has one size and takes keys from one place at a time:
+
+- If two Ovvi windows show the same session, the window that you typed in last controls it. The other window shows
+  "Controlled in another window" with Take Back.
+- If another herdr client controls a pane, the card shows "In use elsewhere · Take Back".
+
+## SSH and the relay
+
+Ovvi reaches a remote machine with the Mac's own `ssh`. Your `~/.ssh/config`, keys, SSH agent and jump hosts work
+without changes. Ovvi never writes to `~/.ssh`. Only `ssh` itself writes `known_hosts` when you accept a host key.
+
+Ovvi opens one shared SSH connection for each machine. All sessions of the machine use it, so you log in once.
+When the connection asks a question, such as a password or a one-time code, Ovvi shows it in a dialog and does not
+store the answer. The connection does not forward your SSH agent or your Mac's ports to the machine.
+
+The relay is a small Perl script that Ovvi sends with each connection. It runs every command and every terminal
+stream of the machine over one SSH session, so a server that allows few sessions still works. Ovvi does not install
+the relay. It stops when the connection ends. This is why each remote machine needs Perl.
+
+Through the same connection:
+
+- Ovvi talks to herdr on the machine.
+- Browser cards load their pages, so `localhost` in a browser card is the remote machine.
+- File Explorer and Git cards read, save and watch files and run `git`.
+- Files that you drop on a terminal are copied to the machine.
+
+Ovvi checks each open session at regular times. If the connection drops, Ovvi shows "Reconnecting to ‹machine›…" and
+connects again by itself, without questions. If the machine needs an answer to log in, Ovvi shows "Disconnected from
+‹machine›" and waits until you click Connect. When you quit Ovvi, it closes its SSH connections.
+
+### Files on a machine
+
+Ovvi installs no program on a remote machine. It writes a few small files under your home folder, on This Mac and on
+each remote machine where you open a session:
+
+| Folder | What is in it |
+|---|---|
+| `~/.cache/ovvi` | The `ovvi` command for agents, and small helper files for the chat view. Helper files that are not used for 30 days are deleted. |
+| `~/.local/state/ovvi` | The state of each browser and plugin card: its page, its history and its settings, and whether each agent card shows the chat or the terminal. |
+
+Because this state is on the machine, a card shows the same page in every Ovvi that opens the session.
+
+## What Ovvi stores
+
+On This Mac, Ovvi keeps only what herdr does not:
+
+| What | Where |
+|---|---|
+| Your settings and your list of remote machines | Ovvi's app settings |
+| Each window's machine, open sessions and selection, so windows come back after a quit | macOS saved windows |
+| Plugins, their settings and your changed keyboard shortcuts | `~/.config/ovvi` |
+| Plugin logs and the logs of the herdr servers that Ovvi started | `~/Library/Logs/Ovvi` |
+| Browser logins, cookies and cache, one store for each machine | Ovvi's website data |
+| The SSH connections while Ovvi runs | `~/Library/Caches/ovvi` |
+
+The files that File Explorer and Git cards show are your own files on the card's machine. Ovvi saves them only when
+you save. [Uninstall](/docs#uninstall) and [Reset Ovvi](/docs/reference/help#reset-ovvi) say how to delete this
+data.
+
+## Plugins in web views
+
+A browser card is a web page in its own web view. Each machine has its own website data, so a login on one machine
+does not carry over to another.
+
+A plugin card is a web page too. The page comes from the plugin's package, which Ovvi installs and builds in
+`~/.config/ovvi/plugins`. The page runs in its own web view and uses the plugin API to work with the card's machine:
+it reads and saves files, runs `git` and other commands, and keeps its state. File Explorer and Git are plugins of
+this kind.
+
+A plugin runs code as you, with your rights. Ovvi asks once before a plugin's code runs for the first time
+([Security](/docs/plugins/security#the-confirmation)). [Plugins](/docs/plugins) explains how to install and write
+them.
+
+## Glossary
+
+| Word | Meaning |
+|---|---|
+| herdr | The terminal multiplexer that keeps your terminals and agents running. Ovvi shows what herdr keeps. |
+| machine | A computer that runs herdr: This Mac or a computer that you reach with `ssh`. Each window shows one machine. |
+| This Mac | The Mac that Ovvi runs on. |
+| session | One herdr server on a machine, such as `default`. A window can show several sessions. |
+| space | A project folder with its own tabs, one row in the sidebar. herdr's commands call it a workspace. |
+| tab | One page of panes in a space, shown in the tab bar. |
+| pane | One part of a tab, split by herdr's layout. Ovvi draws each pane as a card. |
+| card | How Ovvi draws a pane: a header and its content, such as a terminal, a web page or a plugin. |
+| agent | A coding agent that runs in a pane, such as Claude Code, Codex, Pi or OpenCode. |
+| chat view | An agent card shown as messages with a reply box, in place of the agent's terminal. |
+| plugin | A package that adds a kind of card. File Explorer and Git are plugins. |
+| relay | The small Perl script that carries Ovvi's commands over one SSH session to a remote machine. |
+| notice | A short message at the bottom of the window, for example after an action failed. |
+| Take Back | The button that gives control of a session or a pane back to this window. |

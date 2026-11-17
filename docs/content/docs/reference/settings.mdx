@@ -1,0 +1,167 @@
+---
+title: "Settings"
+description: "Every page and every setting in the Settings window, and what each one changes."
+---
+
+Choose Ovvi ▸ Settings… (⌘,) to open the Settings window. The pages are in the sidebar at the left. A change takes
+effect at once. Only a machine's page has a Save button.
+
+![The Settings window on its Appearance page](/images/settings.png)
+
+To find a setting, type in the search field at the top of the sidebar. The sidebar lists each setting that matches,
+with its page. Click one to go to it.
+
+Some settings are also in the menu bar and in the command palette (⌘K):
+
+| Setting | Menu |
+|---|---|
+| Appearance | View ▸ Appearance |
+| Liquid Glass | View ▸ Liquid Glass |
+| Text size | View ▸ Increase Font Size, Decrease Font Size and Reset Font Size |
+| Focus follows mouse | View ▸ Pane ▸ Focus Follows Mouse |
+| Balance splits automatically | View ▸ Pane ▸ Balance Splits Automatically |
+
+The three notification switches on the Agents page are commands in the palette too.
+
+## General
+
+| Setting | What it changes |
+|---|---|
+| Open at login | macOS opens Ovvi when you log in. If macOS waits for your approval, Open Login Items opens the page in System Settings where you allow it. |
+| New panes open | What a new pane shows. New Pane, the default, shows the list of pane kinds to pick from ([New pane](/docs/guide/basics#new-pane)). Pick Terminal, an agent, Browser, File Explorer, Git or another plugin to open that kind at once. Then hold ⌥ as you make a pane to see the list. |
+| Focus follows mouse | A pane gets the keyboard when the pointer rests on it. |
+| Balance splits automatically | Panes side by side or stacked keep equal sizes as panes open and close. Off, a split halves the pane, and a neighbor takes the place of a closed pane. On by default. |
+| Check for updates automatically | Ovvi looks for a new version once a day and asks before it installs one. On by default. |
+| Check for updates now | Check Now looks for a new version at once. Ovvi ▸ Check for Updates… does the same. |
+| Keyboard shortcuts | Show Shortcuts opens the Keyboard Shortcuts panel (⌘/) in the front window. |
+| Welcome to Ovvi | Show Welcome opens the welcome screens again. |
+
+The two update rows show only in the released app. Balance Splits (⌥⌘=) evens out the panes of a tab with Balance
+splits automatically on or off.
+
+## Appearance
+
+| Setting | What it changes |
+|---|---|
+| Appearance | Auto, Light or Dark. Auto follows macOS. Dark is the default. |
+| Liquid Glass | On, the desktop shows softly through the window. Off, the window is solid. On by default. |
+| Text size | The size of the text in every terminal, from 8 to 32 pt. The default is 13. ⌘+ and ⌘- change it in any window. |
+| Animations | Off, everything changes at once: no slides, fades or zooms. On by default. |
+
+More about the look: [Customize](/docs/guide/customize).
+
+## Terminal
+
+Each setting changes every terminal at once.
+
+| Setting | What it changes |
+|---|---|
+| Font | The terminal font. JetBrains Mono, the default, comes with Ovvi. SF Mono and the other monospaced fonts on your Mac are in the same list. |
+| Cursor | Block, Bar or Underline. A program can ask for its own shape. |
+| Blink the cursor | The cursor blinks unless a program asks for a steady one. On by default. |
+| Option key | Types special characters (⌥B types ∫), Acts as Meta, or Left acts as Meta (only the left Option key). Choose Meta for shells and editors that use ⌥ shortcuts. |
+| Copy text when you select it | A selection goes to the clipboard as you make it. Off by default. |
+
+The text size is on the Appearance page. The terminal colors follow the appearance.
+
+## Agents
+
+### New agents
+
+| Setting | What it changes |
+|---|---|
+| Open new agents in | Terminal or Chat: what the card of a new agent shows first. You can switch any agent between Chat and Terminal in its header ([Chat view](/docs/guide/agents#chat-view)). |
+
+### Sidebar
+
+| Setting | What it changes |
+|---|---|
+| Sort spaces | Manual or Recent. Recent puts the space whose agent changed last first. Each session uses this until you pick an order in the Sort Spaces menu of its sidebar. |
+| Show closed sessions | Shows Archived Sessions in the sidebar. It lists the Claude Code, Codex, Pi and OpenCode sessions that no pane runs. On by default. |
+
+### Agents in New Pane
+
+Claude Code, Codex, Pi and OpenCode each have a row with two controls:
+
+| Setting | What it changes |
+|---|---|
+| Extra arguments | Words that Ovvi adds after the agent's command when it starts the agent, for example `--model opus`. Relaunch with Chat adds them too. |
+| The switch | Shows the agent in the new pane list. An agent that is off is not in the list. |
+
+### Notifications
+
+| Setting | What it changes |
+|---|---|
+| When an agent needs you | A notification when an agent asks a question or waits for permission. On by default. |
+| When an agent finishes | A notification when an agent finishes its work. On by default. |
+| When an agent sends one | The notifications that agents send with the `ovvi` command. On by default. |
+
+Notification Settings… opens the page of Ovvi in System Settings. Banners, sounds and the Dock badge are there. More
+about notifications: [Notifications](/docs/guide/agents#notifications).
+
+## Machines
+
+The list shows This Mac, then each remote machine, with its icon, name and SSH target. A remote machine shows
+Connected or Not connected. Add Machine… opens a page for a new machine
+([Remote machines](/docs/guide/setup#remote-machines)).
+
+Click a machine to open its page:
+
+| Setting | What it changes |
+|---|---|
+| Name | The name that Ovvi shows. Optional: with no name, Ovvi shows the SSH target. |
+| SSH target | The host that `ssh` connects to, for example `user@server`. A host from `~/.ssh/config` works too. It has no spaces and does not start with `-`. |
+| Icon | The icon of the machine in the window and the lists. |
+| Website data | Clear… logs the browser cards of this machine out of every site and removes their approved websites. Ovvi asks first. |
+| Remove | Remove… takes a remote machine off the list. Its terminals keep running on it. Ovvi asks first. |
+
+Click Save to keep a change to the name, target or icon. On a new machine's page, click Add. Ovvi then opens the
+machine in a new window. This Mac's page has only Website data.
+
+## Plugins
+
+Ovvi ▸ Plugins… also opens this page.
+
+- The field at the top installs a plugin. Type `npm:package`, `git:repository` or a folder path, then click Install.
+- New Plugin… makes a new plugin from a template.
+- Reload All loads every plugin again.
+- Installed lists the Browser, File Explorer, Git and your own plugins, each with its version and source.
+
+Click a plugin to open its page. The page has Update to ‹version› when npm has a newer version, Show Log and Reload,
+the plugin's own settings, Show in New Pane, and Remove… for a plugin that did not come with Ovvi. The steps are in
+[The Plugins page](/docs/plugins/install#the-plugins-page) and
+[Plugin settings](/docs/plugins/install#plugin-settings).
+
+The settings of the plugins that come with Ovvi:
+
+| Plugin | Setting | What it changes |
+|---|---|---|
+| Browser | Web pages on remote machines load through | The Machine or This Mac, for new browser cards on a remote machine. The machine chip in a card switches it. |
+| Browser | Approved websites | Show in Privacy opens the Privacy page. |
+| File Explorer, Git | Their settings | See [Files and Git](/docs/guide/files-and-git#settings). |
+
+Show in New Pane, on each plugin page that has it, shows the plugin in the new pane list.
+
+## Privacy
+
+The Privacy page lists the approved websites of each machine. A page that opens by itself in a browser card loads only
+from an approved website, from the machine's `localhost`, or from a short list of safe sites. Other pages wait until
+you click Open. Ovvi adds a site to the list when you open it ([Browser](/docs/guide/browser)).
+
+Each machine has its own section:
+
+- To remove a site, click Remove next to it.
+- To remove every site of the machine, click Clear All in the section's header.
+- To approve a site before a card opens it, type its address in the field and click Add.
+
+## Shortcuts
+
+The Shortcuts page lists every action that has a keyboard shortcut or can have one, in groups. Your plugins' commands
+are in a group of their own. A shortcut that you set here works everywhere: in the menu bar, the command palette and
+the Keyboard Shortcuts panel.
+
+- Type in the search field to find an action by its name or its keys.
+- Reset All gives every action its default shortcuts again.
+
+How to change, add and remove a shortcut: [Change a shortcut](/docs/reference/shortcuts#change-a-shortcut). The list of
+default shortcuts: [Keyboard shortcuts](/docs/reference/shortcuts).

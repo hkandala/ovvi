@@ -1,0 +1,191 @@
+---
+title: "Browser"
+description: "Open web pages in browser cards beside your terminals and agents, on This Mac and on remote machines."
+---
+
+A browser card shows a web page in a pane, beside your terminals and agents. It has Back, Forward, an address
+field and Web Inspector. On a remote machine, `localhost` in a browser card is that machine's `localhost`, so you
+can see a dev server that runs there.
+
+![A browser card beside a terminal](/images/browser.png)
+
+## Open a browser card
+
+You can open a browser card in four ways:
+
+1. In a new pane, choose Browser ([New Pane](/docs/guide/basics#new-pane)).
+2. On a pane, choose File ▸ Open Browser Here. The command palette (⌘K) has the same command.
+3. ⌘-click a link in a terminal. A link to an HTML file also opens in a browser card
+   ([Links and paths](/docs/guide/navigate#links-and-paths)).
+4. Ask an agent to open one with `ovvi open browser` ([Agents open pages](#agents-open-pages)).
+
+The card shows "Opening Browser…" while it opens. Then the address field has the keyboard.
+
+## Load a page
+
+1. Click the address field, or press ⌘L. The whole address is selected.
+2. Type an address, for example `localhost:3000` or `example.com`.
+3. Press Return. The page loads and gets the keyboard.
+
+Text that is not an address goes to a Google search. Text with a space is a search. So is text with no `://`
+and no dot, other than `localhost` and its ports. So `localhost:3000` and `example.com` load, and `swift actors`
+searches. Press Esc in the address field to put back the current address.
+
+A line under the header shows the progress while a page loads. While a page loads, Reload becomes Stop.
+
+## The card
+
+The card header has two rows. The first row shows the page's icon and its title. The second row is the toolbar:
+
+| Control | Does |
+|---|---|
+| Back and Forward | Go through the card's history. |
+| Reload | Loads the page again. Stop while a page loads. |
+| The address field | Shows the address. On a remote machine, it ends with the machine's chip. |
+| Recently Closed | Lists the pages that you closed on this machine. |
+| Web Inspector | Shows Web Inspector, docked at the bottom of the card. |
+
+A two-finger swipe to the side over the page goes back or forward. The tab shows "Browser" and the page's title.
+
+### Shortcuts
+
+These shortcuts work while a browser card has the keyboard:
+
+| Keys | Command | Menu |
+|---|---|---|
+| ⌘R | Reload Page | View |
+| ⌃- | Back | View |
+| ⌃⇧- | Forward | View |
+| ⌘L | Open Location | Edit |
+| ⌥⌘I | Show Web Inspector | Edit |
+| ⌘+ and ⌘− | Zoom the page in or out, from 50 to 300 % | View |
+| ⌘0 | Actual size of the page | View |
+| ⇧⌘R | Replace Pane: a new shell with the New Pane chooser | File |
+
+You can change each shortcut ([Shortcuts](/docs/reference/shortcuts#change-a-shortcut)).
+
+A trackpad pinch magnifies the page. A two-finger double tap zooms to the block under your fingers, and a second
+double tap zooms back. Find (⌘F) does not work in a browser card.
+
+## Links and popups
+
+- Click a link to open it in the card.
+- ⌘-click a link, or right-click it and choose Open Link in New Tab, to open it in a new tab after the card's tab.
+  The new tab stays in the background.
+- ⌥-click a link, or right-click it and choose Open Link to the Side, to open it in a new card beside this card.
+- A link with `target=_blank` opens in a new tab.
+- A page's popup window (a sign-in window, for example) opens over the card, with its host and a ×. Click × or
+  press Esc to close it.
+- A `mailto:` link or an app link opens its app.
+- A video's full-screen button shows the video full screen. Press Esc to go back to the card.
+- Page alerts and confirmations show as a sheet on the window. A file upload opens the macOS open panel.
+
+Ovvi does not save downloads.
+
+## Web Inspector
+
+Click Web Inspector in the toolbar, or press ⌥⌘I. Web Inspector opens docked at the bottom of the card. Use its
+own control to move it to a window. You can also right-click the page and choose Inspect Element.
+
+Web Inspector is available once the card has a page.
+
+## Recently Closed
+
+Click Recently Closed in the toolbar to see the last 20 pages that you closed on the card's machine, newest first.
+A page counts when you close its card, its tab or its space in Ovvi.
+
+- Click a page to open it in a new tab.
+- ⌘-click it to open it in a new tab in the background.
+- ⌥-click it to open it in a new card beside this card.
+- ⌘⌥-click it to open it in the Mac's default browser.
+
+The list is the same for every session on the machine.
+
+## When a page asks to open
+
+An agent or a script on a machine can put an address in a browser card. So a card loads a page by itself only from
+a website that you approved for that machine, or from a short safe list. Other pages ask first: the card shows
+"Open this page?" with the address.
+
+- Click Open, or press Return, to load the page and approve its website for that machine.
+- Click Not Now, or press Esc, to keep the page that the card had.
+
+A page that you type or open from a link loads at once and approves its website. The safe list holds the machine's
+own `localhost`, local files on This Mac, and a few developer sites such as `github.com`.
+
+Settings ▸ Privacy lists the approved websites of each machine. You can add and remove them there
+([Settings](/docs/reference/settings#privacy)).
+
+## Logins and website data
+
+Each machine has its own website data: cookies, local storage and the cache. Your logins stay after Ovvi quits.
+A login on one machine's cards does not show on another machine's cards.
+
+To clear a machine's logins and approved websites, open Settings ▸ Machines, choose the machine and click Clear…
+next to Website data ([Settings](/docs/reference/settings#machines)).
+
+## Pages come back
+
+- A browser card keeps its page and its history. After Ovvi starts again, or on another Mac that follows the same
+  session, the card opens the same page with its Back and Forward history.
+- If macOS stops the page's process, the card loads the page again by itself. If that fails, the card shows "The
+  page stopped working" with Reload.
+
+## When a page fails
+
+If a page fails to load, the card shows why, with Reload:
+
+| Message | Means |
+|---|---|
+| "Nothing answers on localhost:3001" | No server listens on that port. Make sure that the dev server runs. |
+| "devbox cannot reach example.internal:443" | The remote machine cannot connect to that address. |
+| "devbox is not connected" | Ovvi has no connection to the remote machine now. |
+| "Cannot find example.test" | The name does not exist. |
+| "Ovvi could not start the proxy to devbox" | Ovvi failed to connect the card to the remote machine. |
+
+Click Reload to try again.
+
+## On a remote machine
+
+On a remote machine, a browser card loads its pages through that machine. Ovvi uses the SSH connection that it
+already has to the machine. Nothing is installed there.
+
+- `localhost` is the remote machine's `localhost`. Private names resolve as on that machine.
+- The address field shows `localhost`, with the machine's name in a chip at its end.
+- A page on the machine cannot reach This Mac's `localhost`. If a page calls an API on another `localhost` port,
+  serve that API on the page's own address.
+- `file://` addresses open only on This Mac. On a remote machine, serve the file with a web server, for example
+  `python3 -m http.server 8000`, and open `http://localhost:8000`.
+- The SSH server must allow port forwarding (`AllowTcpForwarding yes`, the default). Otherwise pages show
+  "cannot reach".
+
+### Load through This Mac
+
+Click the machine's chip in the address field to load the card through This Mac's network. The chip then says
+"This Mac". `localhost` and the logins are then This Mac's. Click the chip again to load through the machine.
+
+A switch starts the card's history again. The card keeps its choice after Ovvi starts again.
+
+To pick the network for new cards, open Settings ▸ Plugins ▸ Browser and set "Web pages on remote machines load
+through" to The Machine or This Mac ([Settings](/docs/reference/settings#plugins)). This setting changes no open
+card.
+
+## Agents open pages
+
+An agent in a herdr pane can open a browser card beside itself with the `ovvi` command, on any machine:
+
+```sh
+ovvi open browser http://localhost:3000             # beside the agent's pane
+ovvi open browser http://localhost:3000 --tab       # in a new tab, with a notice that offers Show
+ovvi open browser http://localhost:3000/x --replace w1:p7    # the card w1:p7 loads a new address
+ovvi open browser ./report.html                     # a local file, on This Mac only
+```
+
+Ovvi never moves your view for an agent. A card in a new tab shows a notice with Show. An address that is not
+approved or safe waits for you to click Open. Every option is in
+[The ovvi command](/docs/reference/ovvi-command#open).
+
+## Security
+
+- A web page gets no access to Ovvi. It cannot run commands on your machines.
+- A local file page can show any file that you can read, as in Safari. Its scripts cannot read other files.

@@ -1,0 +1,211 @@
+---
+title: "Help"
+description: "Fixes for common problems, and answers to common questions."
+---
+
+## herdr is not found
+
+The window shows "herdr is not installed", or "herdr is not installed on ‹machine›" for a remote machine.
+
+1. Click Install herdr. Ovvi runs herdr's own install command on that machine and shows its progress.
+2. If the window shows "herdr did not install", read the installer's output under it. Fix the problem, then click Try
+   Again.
+
+If herdr is installed but Ovvi does not find it:
+
+- Ovvi asks your login shell where herdr is (`command -v herdr`), and it also looks in `~/.local/bin`. Make sure
+  that a login shell on that machine finds `herdr`. If herdr is somewhere else, add its folder to `PATH` in your
+  shell's login configuration.
+- Ovvi asks again every 30 seconds while herdr is missing, so the window clears by itself after you fix it.
+
+This Mac needs herdr only for its own sessions. Remote machines work without herdr on the Mac.
+
+## A session is not running
+
+The window shows "‹session› is not running". The session's herdr server stopped, for example after a restart of the
+machine.
+
+1. Click Start ‹session›.
+2. If the start fails, the window shows the reason under the title. Fix it, then click Start ‹session› again.
+
+When Ovvi opens a window that it restores after a quit, it starts the window's stopped sessions by itself.
+
+## SSH fails
+
+The window shows "Disconnected from ‹machine›" with the message from `ssh` and a Connect button.
+
+1. Open a terminal on your Mac and run `ssh <target>` with the machine's SSH target. Ovvi uses the same `ssh` and
+   the same `~/.ssh/config`, so a login that fails there also fails in Ovvi.
+2. Fix the problem in the terminal until `ssh <target>` logs in.
+3. Click Connect in the Ovvi window.
+
+Some common causes:
+
+- The host key changed. `ssh` shows a warning with the new fingerprint, and Connect fails until you fix it. If you
+  trust the new key, remove the old one with `ssh-keygen -R <host>`, then click Connect.
+- The machine needs a password or a one-time code. Ovvi asks only when you click Connect or add the machine.
+  Automatic reconnects never ask, so after a dropped connection the window shows Disconnected. Click Connect.
+- The network is down or the machine is off. The window shows "Reconnecting to ‹machine›…" and Ovvi tries again by
+  itself. Its cards dim and take no clicks until the machine answers.
+- A machine on your local network fails with "No route to host". macOS controls which apps can reach the local
+  network. If Ovvi is in System Settings ▸ Privacy & Security ▸ Local Network, turn it on. Addresses on a VPN, such
+  as Tailscale, are not affected.
+
+To change a machine's SSH target, open Settings ▸ Machines, click the machine, edit SSH target and click Save
+([Setup](/docs/guide/setup#edit-or-remove-a-machine)).
+
+## herdr is too old
+
+The window shows "herdr is too old" with the version that runs. Ovvi needs herdr 0.9.3 or later.
+
+1. Update herdr on that machine. herdr's install command installs the newest version:
+
+   ```sh
+   curl -fsSL https://herdr.dev/install.sh | sh
+   ```
+
+2. Restart the session's server. The version of the running server counts, not the version on disk. A stop ends
+   every program in the session. Its spaces and tabs stay for the next start.
+   - In Ovvi, open the Open Session panel (⌥⌘T) in a window that does not show the session, and click Stop on its
+     row.
+   - Or, in a terminal on the machine, run `herdr session stop <session>`.
+3. Click Start ‹session› in the window.
+
+Ovvi asks herdr again every 2 seconds, so the window clears by itself when a newer server runs.
+
+## Perl is missing on a remote machine
+
+The window shows "Reconnecting to ‹machine›…" with "Ovvi needs Perl on ‹target›: its relay did not start".
+
+Ovvi runs all commands on a remote machine through a small Perl script that it sends with the SSH connection
+([How it works](/docs/reference/how-it-works#ssh-and-the-relay)). Some minimal systems, such as small container
+images, have no Perl.
+
+1. Install Perl on the machine with its package manager, for example `apk add perl` or `sudo apt install perl`.
+2. Wait. Ovvi tries again by itself and connects when Perl is there.
+
+## Notifications do not show
+
+Ovvi posts a notification when an agent needs you, when an agent finishes, and when an agent sends one with the
+`ovvi` command ([Agents](/docs/guide/agents#notifications)).
+
+1. Make sure that Ovvi can post notifications. macOS asks once, at the first launch. If you clicked Don't Allow, open
+   System Settings ▸ Notifications ▸ Ovvi and turn on Allow notifications. The link Notification Settings… in
+   Settings ▸ Agents opens the same page.
+2. Make sure that the switch for that kind is on in Settings ▸ Agents: When an agent needs you, When an agent
+   finishes and When an agent sends one ([Settings](/docs/reference/settings#agents)).
+3. Make sure that herdr's integration for the agent is installed on its machine
+   ([Agent integrations](/docs/guide/setup#agent-integrations)). Without it, herdr does not know the agent's state.
+
+Some notifications are left out on purpose:
+
+- Ovvi posts none for the tab that you see in the front window while Ovvi is the active app.
+- Ovvi posts none for a space that Show Only Pinned Spaces hides.
+- Ovvi posts none for changes that it finds when it first connects to a session.
+
+The Dock badge counts the agents that need you. It shows only if macOS allows badges for Ovvi in System Settings ▸
+Notifications ▸ Ovvi. Ovvi plays no sounds.
+
+## A card does not load
+
+What to do depends on the kind of card.
+
+### A terminal card
+
+- If the card shows "The terminal stopped", click Retry. This often happens after herdr updates and its server did
+  not restart. Restart the session as in [herdr is too old](#herdr-is-too-old).
+- If a program draws its screen wrong, press ⌥⌘R (Redraw Terminal). The program draws its whole screen again.
+- If the card shows "In use elsewhere · Take Back", another herdr client controls the pane. Click Take Back.
+- If the window shows "Controlled in another window", another Ovvi window shows the same session. Click Take Back.
+
+### A browser card
+
+- If the card shows "Open this page?", click Open. A page that opens by itself asks first, unless its site is in the
+  machine's approved websites in Settings ▸ Privacy ([Browser](/docs/guide/browser#when-a-page-asks-to-open)).
+- To load the page again, press ⌘R (Reload Page).
+- On a remote machine, `localhost` is the remote machine, not your Mac ([Browser](/docs/guide/browser)).
+
+### A plugin card
+
+A plugin card, such as File Explorer or Git, says why it does not load, with a button that fixes it and a Show Log
+button that opens its log.
+
+| The card says | What to do |
+|---|---|
+| ‹plugin› needs Node.js | Install Node.js from nodejs.org, then click Try Again. Ovvi installs and builds plugins with npm, pnpm or bun. |
+| ‹plugin› is not built | Click Build. |
+| ‹plugin› did not build | Click Show Log, fix the error, then click Try Again. |
+| ‹plugin› is not installed, or ‹plugin› could not install | Click Try Again. If it fails again, click Show Log. |
+| ‹plugin› needs a newer Ovvi | Click Check for Updates… and install the update. |
+| The page stopped working | Click Reload. The page stopped twice in a row. |
+
+To reload a plugin card at any time, press ⌥⌘R (Reload Plugin). [Plugins](/docs/plugins/create#errors-and-logs) has
+more about plugin errors and logs.
+
+## Reset Ovvi
+
+A reset deletes the data that Ovvi keeps on This Mac, so Ovvi starts as on a fresh install. It never touches herdr's
+sessions or the agents' own files.
+
+For smaller resets, you can do one of these steps:
+
+- To see the welcome again, open Settings ▸ General and click Show Welcome.
+- To log a machine's browser cards out of every site, open Settings ▸ Machines, click the machine, and click Clear…
+  under Website data.
+- To forget a remote machine, click Remove… on its page in Settings ▸ Machines.
+
+To reset everything:
+
+<Callout type="warn">
+Copy your own plugins out of `~/.config/ovvi/plugins` first. The reset deletes `~/.config/ovvi`, also the plugins
+that you made with New Plugin.
+</Callout>
+
+1. Quit every copy of Ovvi, also Ovvi Dev.
+2. Run the reset script from the repository. Run it without `sudo`:
+
+   ```sh
+   curl -fsSL https://raw.githubusercontent.com/hkandala/ovvi/main/scripts/reset-app-data.sh | sh
+   ```
+
+   To see what it deletes first, run it with `sh -s -- --dry-run`.
+3. Open Ovvi. It shows the welcome again.
+
+The script deletes Ovvi's settings, machine list, saved windows, browser data, logs, plugins and caches on This Mac.
+It also deletes `~/.cache/ovvi` and `~/.local/state/ovvi` on This Mac. Ovvi keeps these folders on each remote
+machine too. To delete them there, run `rm -rf ~/.cache/ovvi ~/.local/state/ovvi` on the machine.
+
+If macOS blocks the terminal from a folder, the script lists what it kept and exits with an error. To delete those
+folders too, turn on your terminal app in System Settings ▸ Privacy & Security ▸ Full Disk Access, open the terminal
+again, and run the script again.
+
+## FAQ
+
+### Does Ovvi run on an Intel Mac?
+
+No. Ovvi needs a Mac with Apple silicon and macOS 26 or later. Your remote machines can have any processor.
+
+### Why does macOS block Ovvi at the first open?
+
+Ovvi is not notarized by Apple. The install script downloads Ovvi with `curl`, so macOS does not ask. If you
+downloaded the zip in a browser, macOS blocks the first open. Go to System Settings ▸ Privacy & Security and click
+Open Anyway. A right-click and Open does not skip this check.
+
+### What does Ovvi cost, and what is its license?
+
+Ovvi is free. It is free software under the GNU Affero General Public License v3.0 only (`AGPL-3.0-only`), and its
+source is on [GitHub](https://github.com/hkandala/ovvi). The plugin API's types and the plugin template are under the
+MIT license, so you can give your plugins any license.
+
+### Is there a version for Windows, Linux, iPhone or iPad?
+
+No. Ovvi runs only on macOS. The machines that it connects to can run any system that has SSH, `sh`, Perl and herdr,
+for example Linux.
+
+### Do I need herdr on my Mac?
+
+Only to use This Mac's sessions. To work only on remote machines, install herdr on each remote machine.
+
+### What happens to my agents when I quit Ovvi?
+
+They keep running. herdr runs them, not Ovvi. When you open Ovvi again, it shows them where you left them.

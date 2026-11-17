@@ -1,0 +1,149 @@
+---
+title: "Setup"
+description: "Install herdr, go through the first launch, and connect This Mac and your remote machines."
+---
+
+Ovvi works with machines. A machine is a computer that runs herdr: This Mac, or a computer that you reach with
+`ssh`. Each window of Ovvi shows one machine and the herdr sessions that you open on it.
+
+## herdr
+
+herdr is the terminal multiplexer that Ovvi shows. It runs a server for each session on a machine. That server keeps
+your terminals and agents running when Ovvi is closed, when your Mac sleeps, or when the SSH connection drops.
+
+Ovvi needs herdr 0.9.3 or later on each machine that you use. This Mac needs herdr only if you use its sessions. A
+remote machine needs its own herdr.
+
+You can install herdr in four ways. Each way runs herdr's own install command:
+
+```sh
+curl -fsSL https://herdr.dev/install.sh | sh
+```
+
+- The Ovvi install script asks to install herdr on This Mac ([Install](/docs#install)).
+- The welcome shows an Install herdr step when This Mac has no herdr ([First run](#first-run)).
+- A window on a machine without herdr shows "herdr is not installed" with an Install herdr button. On a remote
+  machine, the button installs herdr there over SSH.
+- You can run the command yourself in a terminal on the machine.
+
+herdr installs to `~/.local/bin`. Ovvi finds herdr through your login shell, and it also looks in `~/.local/bin` when
+your shell does not put that folder on `PATH`. If you install herdr while Ovvi runs, Ovvi finds it by itself within
+30 seconds.
+
+### Agent integrations
+
+herdr knows when an agent works, needs you or finishes through its integration for that agent. Ovvi shows these
+states in the sidebar, the tabs, the Dock and in notifications. The Ovvi install script asks to install the
+integrations on This Mac. To install one yourself, run herdr's command on the machine where the agent runs:
+
+```sh
+herdr integration install claude    # or codex, pi, opencode
+```
+
+## First run
+
+The first time you open Ovvi, it shows the welcome. The welcome is a short tour of a few pages with a short clip of
+the app on each. No window opens until the welcome closes.
+
+![The welcome on its first page](/images/welcome.png)
+
+1. Click Next, or press → or Return, to go to the next page. Click Back, or press ←, to go back.
+2. If This Mac has no herdr, the last page installs it. Click Install herdr and wait for "herdr is installed".
+3. Click Get Started on the last page.
+
+To close the welcome at any time, click Skip or press Esc. Next on the herdr page waits until Ovvi finds herdr, but
+Skip still closes the welcome. To see the welcome again, open Settings ▸ General and click Show Welcome.
+
+When the welcome closes, the first window opens. It shows a list of the sessions on each machine. This is the same
+list that File ▸ New Window (⌘N) shows:
+
+- Each machine is a group, with its sessions marked Running or Stopped.
+- New Session makes a new session on that machine.
+- Install herdr shows on a machine without herdr. Connect shows on a remote machine that is not connected.
+- Add Machine… adds a remote machine. Edit Machines… opens Settings ▸ Machines.
+- Type in the Find a session field to filter the list. Type a name that no session has to make a session with that
+  name.
+
+Click a session to open it in the window.
+
+## This Mac
+
+This Mac is always the first machine in the list. You need herdr on This Mac only for its own sessions.
+
+1. Install herdr on This Mac, if it is not installed ([herdr](#herdr)).
+2. Open a window with File ▸ New Window (⌘N).
+3. Click a session under This Mac, or click New Session.
+
+If the session is stopped, Ovvi starts it. A session is one herdr server, so it keeps running after you quit Ovvi.
+If a session stops later, the window shows "‹session› is not running" with a Start button.
+
+A new session has no spaces yet. A space is a project folder with its own tabs and terminals. Click New Space
+(⌃⌘T) or Open Folder… to make the first one. [Basics](/docs/guide/basics) explains sessions, spaces, tabs and panes.
+
+To open Ovvi when you log in, turn on Open at login in Settings ▸ General.
+
+## Remote machines
+
+A remote machine is a computer that you reach with `ssh`, such as a server, a cloud VM or another Mac. Ovvi shows
+its sessions in the same way as This Mac's. Your terminals and agents keep running on the machine while your Mac
+sleeps or is offline.
+
+### Before you add a machine
+
+Make sure that these items are ready:
+
+- You can log in to the machine with `ssh` from a terminal on your Mac. Ovvi uses the Mac's own `ssh`, so your
+  `~/.ssh/config`, keys, SSH agent and jump hosts work in Ovvi too.
+- The machine has `sh` and Perl. Most Linux machines and every Mac have Perl.
+- herdr is on the machine, or you let Ovvi install it.
+
+### Add a machine
+
+1. Click the machine button in the window's title row, then choose Add Machine…. You can also click Add Machine… in
+   a new window's session list, or open Settings ▸ Machines and click Add Machine….
+2. In SSH target, type what you give to `ssh`, for example `user@devbox`. A host name from `~/.ssh/config` works
+   too. A target cannot have spaces or start with `-`.
+3. Optional: type a Name. If you leave it empty, Ovvi uses the target.
+4. Optional: click Icon and pick an icon. The machine button shows only the icon, so give each machine its own icon.
+5. Click Add.
+
+Ovvi opens a window on the machine with its `default` session and connects. If `ssh` asks a question, Ovvi shows it
+in a dialog in that window:
+
+- For a new host key, the dialog shows the key's fingerprint. Click Connect to accept it. `ssh` writes it to
+  `~/.ssh/known_hosts`.
+- For a password, a passphrase or a one-time code, type it and click OK. Ovvi does not store the answer.
+
+If the machine has no herdr, the window shows "herdr is not installed on ‹machine›". Click Install herdr to install
+it over SSH. If the session is stopped, click Start ‹session›.
+
+### Use a remote machine
+
+The machine button in the title row lists This Mac first, then your remote machines. Choose a machine to bring its
+window forward, or to open a window on it. Open Session… in the same menu opens another session of the window's
+machine.
+
+Ovvi uses one SSH connection for each machine, so you log in once for all its sessions. If the connection drops,
+the window shows "Reconnecting to ‹machine›…" and Ovvi connects again by itself. Automatic reconnects never ask for a
+password or a code. If the machine needs an answer, the window shows "Disconnected from ‹machine›" with a Connect
+button. Click Connect to log in again.
+
+A few things differ on a remote machine:
+
+- Browser cards load pages through the SSH connection, so `localhost` is the remote machine
+  ([Browser](/docs/guide/browser)).
+- Files that you drop on a terminal are copied to the machine first, and the copies' paths are pasted.
+- File Explorer and Git cards read and save files on the machine. They have no Open With
+  ([Files and Git](/docs/guide/files-and-git)).
+- The chat view of OpenCode needs `curl` on the machine.
+
+### Edit or remove a machine
+
+Open Settings ▸ Machines, or choose Edit Machines… in the machine button's menu. Click a machine to open its page:
+
+- Change its Name, SSH target or Icon, then click Save. Open windows show the new name and icon at once.
+- Click Clear… under Website data to log the machine's browser cards out of every site.
+- Click Remove… to remove the machine from Ovvi. Its terminals keep running on it, and herdr on the machine is not
+  touched.
+
+All machine settings are in [Settings](/docs/reference/settings#machines).

@@ -1,0 +1,428 @@
+---
+title: "The ovvi command"
+description: "The ovvi command and skill let an agent in a herdr pane open cards, float panes, notify you and manage plugins."
+---
+
+An agent in a herdr pane can do everything that herdr does: make tabs and splits, run commands, read output. The
+`ovvi` command gives it the things that only Ovvi has: browser and plugin cards, floating windows, Mac
+notifications, the Mac's clipboard, agents with the chat view, and plugins. The command works the same on This Mac
+and on every remote machine that Ovvi connects to.
+
+An agent never moves your view. It can add a card beside itself, or a card out of view with a notice that offers
+Show. Ovvi never comes to the front for an agent and never selects a tab for it.
+
+## Where it is
+
+Ovvi writes the command to `~/.cache/ovvi/bin/ovvi` on each machine where it opens a session, This Mac included.
+Ovvi updates the file when a newer version comes with the app.
+
+The command is not on your `PATH`. Agents run it by its full path, and the [skill](#the-skill) tells them that
+path. To type `ovvi` in your own shell, add this line to your shell's startup file:
+
+```sh
+export PATH="$HOME/.cache/ovvi/bin:$PATH"
+```
+
+If the file is missing, no Ovvi opened a session on that machine yet. The command is a small `sh` script. It needs
+only `sh`, standard POSIX tools and herdr. You can read it on GitHub:
+[`ovvi.sh`](https://github.com/hkandala/ovvi/blob/main/Ovvi/Agent/ovvi.sh).
+
+## Usage
+
+```text
+ovvi [--pane <pane>] [--timeout <seconds>] <command> [<args>] [--json]
+```
+
+- `--pane <pane>` asks for another pane of the session than the pane that runs the command. Use it after a pane
+  moved to another space, because herdr then gives the pane a new id.
+- `--timeout <seconds>` is how long the command waits for Ovvi's answer, in whole seconds. The default is 10.
+  `plugins new`, `plugins reload`, `plugins install` and `chat` need more.
+- `--pane` and `--timeout` go before the command. After the command, an option belongs to that command.
+- `--json` prints one JSON value, also for an error. It works anywhere in the arguments.
+- Without `--json`, a command prints text, or its fields as `name: value` lines.
+
+A `<pane>` is a pane id of the asking session, for example `w1:p3`, or `<session>/<pane>` for a pane of another
+session on the same machine, for example `pi-herd/w1:p1`.
+
+### Exit codes
+
+| Code | Means |
+|---|---|
+| 0 | Done. |
+| 1 | Failed. The message says why. |
+| 2 | Usage: a wrong option or command. |
+| 3 | No Ovvi follows this herdr session. |
+| 4 | Ovvi did not answer in time. |
+| 5 | Not in a herdr pane, or herdr does not know the pane. |
+
+### Errors
+
+An error prints `ovvi: <message>` on standard error. With `--json`, it also prints
+`{"error":{"code":"…","message":"…"}}` on standard output. The codes are:
+
+| Code | Means |
+|---|---|
+| `usage`, `unknown_command` | The arguments are wrong (exit 2). |
+| `bad_argument` | An argument is not valid, for example a path that does not exist. |
+| `failed` | The command did not act. The message says why. |
+| `pane_not_found`, `plugin_not_found` | No such pane or plugin. |
+| `busy`, `self` | `chat` refuses a working agent or the asking pane. |
+| `dirty` | A card has unsaved edits. Ovvi never discards edits for an agent. |
+| `declined` | You clicked Cancel. |
+| `build_failed` | A plugin's build failed. |
+| `not_floating` | `unfloat` of a pane that does not float. |
+| `other_machine` | The command works only from a pane on This Mac. |
+| `rate_limited` | More than one notification from a pane in 10 seconds. |
+| `no_ovvi`, `timeout`, `no_herdr` | Exit 3, 4 and 5. |
+
+## The skill
+
+A skill is a folder of instructions that an agent loads when a task needs it. The `ovvi` skill teaches an agent
+the `ovvi` command: how to tell whether Ovvi shows its pane, the commands that it uses most, and the rules. It
+has one file each for cards, plugins, agents and remote machines, which the agent reads only when it needs them.
+
+### Install the skill
+
+- On This Mac, the install script asks once whether to install the skill. If you say yes, it links the skill
+  for Claude Code, Codex, Pi and OpenCode to the copy inside Ovvi.app. Each update of Ovvi then updates the
+  skill.
+- For other agents, or without the install script, run:
+
+  ```sh
+  npx skills add hkandala/ovvi -g
+  ```
+
+- On a remote machine, run the same `npx` command on that machine. It needs Node.js. Ovvi does not install the
+  skill on remote machines.
+
+The skill points to the herdr skill (`herdr --skill`) for everything that herdr does.
+
+## status
+
+Says whether Ovvi shows the asking pane. It reads only herdr, so it answers fast, also when no Ovvi runs.
+
+```sh
+$ ovvi status
+Shown in Ovvi
+$ ovvi status --json
+{"session":"default","pane":"w1:p2","open":true,"shown":true,"remote":false,"protocol":1}
+$ ovvi status --watch
+```
+
+| Text | Means |
+|---|---|
+| Shown in Ovvi | A window on a Mac shows the pane now. |
+| Open in Ovvi, not shown | An Ovvi follows the session, but the pane is out of view. Commands work. |
+| Not in Ovvi | No Ovvi follows the session (exit 3). |
+
+- `open` is true when an Ovvi follows the session and takes requests.
+- `shown` is true when a window of any Ovvi shows the pane, or the pane floats.
+- `remote` is true when the Ovvi that shows the pane runs on another machine. The agent's own `pbcopy` then does
+  not reach your Mac, so it uses `ovvi copy`.
+- `--watch` prints the JSON line again each time it changes.
+
+## help
+
+```sh
+ovvi help              # every command with its usage
+ovvi help open         # the usage and details of one command
+```
+
+`ovvi` with no command is `ovvi help`. The help comes from the Ovvi that answers, so it lists what that Ovvi has.
+
+## info
+
+What the Ovvi that answers offers.
+
+```sh
+$ ovvi info --json
+{"agents":["claude","codex","pi","opencode"],"app":"1.0","appearance":"dark",
+ "commands":["help","info","float","unfloat","copy","plugins","open","reveal","card","shown","notify","agent","chat","view","balance"],
+ "machine":"This Mac","protocol":1}
+```
+
+| Field | Means |
+|---|---|
+| `app` | Ovvi's version. |
+| `protocol` | The version of the request format. |
+| `machine` | Ovvi's name for the asking pane's machine. |
+| `appearance` | `light` or `dark`, as Ovvi draws now. An agent can match an HTML report to it. |
+| `commands` | The commands that this Ovvi takes. |
+| `agents` | The agents that `ovvi agent` starts. |
+
+## plugins
+
+Lists the kinds of card that an agent can open: the browser and every plugin. Terminals and agents are herdr's
+panes, so they are not in the list.
+
+```text
+ovvi plugins [--for <path or URL>]
+ovvi plugins new <name>
+ovvi plugins reload [<id>]
+ovvi plugins install <source>
+```
+
+```sh
+$ ovvi plugins
+browser    Browser        urls                   app
+explorer   File Explorer  files,folders          npm:@ovvi/explorer
+git        Git            git                    npm:@ovvi/git
+csv-table  CSV Table      files                  ~/.config/ovvi/plugins/csv-table
+$ ovvi plugins --for data.csv
+csv-table  CSV Table      files                  ~/.config/ovvi/plugins/csv-table   default
+explorer   File Explorer  files,folders          npm:@ovvi/explorer
+```
+
+- With `--json`, each plugin has its `id`, `name`, `icon`, `description`, `version`, `opens`, `chooser` and
+  `source`. A plugin on This Mac also has `log`, the path of its log.
+- A plugin that did not load shows `not loaded` and its error.
+- `--for` lists only the plugins that open that file, folder or URL, best first. The default plugin, which
+  `ovvi open <path>` picks, is marked `default`.
+
+`new`, `reload` and `install` work only from a pane on This Mac, because the plugins live there. From a remote
+pane they answer `other_machine`.
+
+### plugins new
+
+```sh
+$ ovvi --timeout 120 plugins new "CSV Table"
+folder: /Users/me/.config/ovvi/plugins/csv-table
+id: csv-table
+log: /Users/me/Library/Logs/Ovvi/plugins/csv-table.log
+```
+
+Makes a new plugin from the template, as New Plugin… on the Plugins page does
+([Create a plugin](/docs/plugins/create)). Ovvi installs its dependencies and builds it. A name that is taken
+fails.
+
+### plugins reload
+
+```sh
+$ ovvi plugins reload csv-table --json
+{"built":true,"cards":1,"id":"csv-table","ms":840}
+$ ovvi plugins reload
+```
+
+Builds a plugin and reloads its open cards, as Reload Plugin does ([Reload](/docs/plugins/create#reload)). With no
+id, it reloads every plugin.
+
+- `built` is false for a plugin from npm, which never builds again. Its cards only load again.
+- If a card of the plugin has unsaved edits, the command stops with `dirty` and names the pane.
+- A failed build is `build_failed`, with the last lines of the build. Open cards keep the last good build.
+- A plugin that you did not confirm yet is `failed`. Its card asks you first.
+
+### plugins install
+
+```sh
+$ ovvi --timeout 300 plugins install npm:ovvi-csv-table
+csv-table  CSV Table  files  npm:ovvi-csv-table
+```
+
+Installs a plugin from `npm:<package>`, `git:<repository>` or a folder.
+
+- Ovvi asks you to confirm the install on the session's window, and names the agent and its pane
+  ([The confirmation](/docs/plugins/security#the-confirmation)). Ovvi does not come to the front. It asks for your
+  attention in the Dock. Return does not press Install.
+- The answer comes after the install and the build. If you click Cancel, the answer is `declined`.
+- If the timeout ends first, the confirmation stays, and the install goes on after you answer.
+- A source that is already installed is `bad_argument`. You update and remove plugins on the Plugins page.
+
+## open
+
+Opens a browser or plugin card.
+
+```text
+ovvi open <kind> [<arg>...] [<place>] [--new]
+ovvi open <path-or-url> [<place>] [--new]
+```
+
+| `<place>` | Where the card opens |
+|---|---|
+| (none) | A split to the right of the asking pane. |
+| `--down` | A split below the asking pane. |
+| `--beside <pane>` | A split to the right of that pane. Add `--down` for below. |
+| `--tab` | A new tab after the asking pane's tab. Ovvi does not select it. |
+| `--float` | A new tab, then a floating window. |
+| `--replace <pane>` | That browser or plugin card shows the new kind and argument. |
+
+```sh
+ovvi open git . uncommitted                    # the uncommitted changes of this repository
+ovvi open git . 4f2a91c --tab                  # a commit, in a new tab
+ovvi open browser http://localhost:3000 --down # a browser card below
+ovvi open ./docs/report.md                     # the file in its default plugin
+ovvi open https://github.com/o/r/pull/7        # a plugin for that URL, else the browser
+ovvi open browser ./report.html                # a local file in the browser, This Mac only
+ovvi open explorer . --float                   # a file tree in a floating window
+```
+
+```json
+{"arg":"/repo/ uncommitted","kind":"git","label":"ovvi:git#k3x9q2 /repo/ uncommitted",
+ "pane":"w1:p7","reused":false,"shown":true}
+```
+
+- A kind is an id from `ovvi plugins`. A path with the same name as a kind is written `./name`.
+- A path or URL alone opens with its default plugin. A web address opens with a plugin that takes it, else in
+  the browser.
+- A relative path is from the command's folder. The path must exist on the asking pane's machine.
+- Git takes a repository folder, then `uncommitted` or a commit (a hash, a branch or a ref such as `HEAD~2`).
+- A `file://` address opens only from a pane on This Mac.
+- If a card of the same kind and argument is already in the session, that card is the answer (`"reused": true`)
+  and nothing new opens. Add `--new` for a second card.
+- A new or reused card out of view shows a notice in each window that shows the session, for example
+  "Claude Code opened Git main.swift", with Show.
+- `--replace` takes only a browser or plugin card. A browser card loads the new address as a new history entry,
+  so Back returns. A terminal or agent pane is `bad_argument`. A card with unsaved edits is `dirty`.
+- `shown` says whether the new card is in view.
+
+Do not put secrets in an argument, for example a `?token=` address. Every device that follows the session sees
+it.
+
+## float
+
+```sh
+ovvi float w1:p3
+ovvi float pi-herd/w1:p1 --on-top
+```
+
+Floats a pane in a window of its own, over the Ovvi window where you last worked in that session. The window
+comes to the front, but Ovvi does not become the active app, and the keyboard stays where it was.
+
+- `--on-top` turns on Stay on Top.
+- A pane that floats already comes to the front, with `"existing": true`.
+- A session that no window shows is `failed`.
+
+## unfloat
+
+```sh
+ovvi unfloat w1:p3
+```
+
+Puts a floating pane back into its tab. A pane that does not float is `not_floating`.
+
+## reveal
+
+```sh
+$ ovvi reveal w1:p3 --json
+{"pane":"w1:p3","shown":false}
+```
+
+Points you to a pane without a change of your view. If the pane is in view, its card's border flashes once. If
+not, each window that shows the session shows a notice, for example "Claude Code points to Git", with Show.
+Show selects the pane's space, tab and card.
+
+## card
+
+```sh
+$ ovvi card w1:p3 --json
+{"arg":"/repo/Sources/main.swift","dirty":true,"floating":false,"kind":"explorer",
+ "pane":"w1:p3","shown":true,"title":"main.swift"}
+```
+
+What a card shows:
+
+- `kind` is a browser or plugin id, `terminal` or `agent`. An agent card also has `agent`, for example `claude`,
+  and `view` (`chat` or `tui`) when it has the chat view.
+- `arg` is the card's argument. For a terminal or an agent, it is the folder.
+- `title` is the card's title. `dirty` is true when the card has unsaved edits.
+- `error` shows only when a plugin is missing or failed.
+
+## shown
+
+```sh
+$ ovvi shown --json
+{"floating":["w3:p1"],"shown":["w1:p2","w1:p3"],"windows":1}
+```
+
+The panes of the asking session that this Ovvi shows now. `shown` lists the panes in a tab in view, `floating` the
+panes in floating windows, and `windows` the number of visible windows that show the session.
+
+## notify
+
+```sh
+$ ovvi notify "Tests pass" "412 passed in 38 s"
+notified: true
+pane: w1:p2
+$ ovvi notify "Review ready" --pane w2:p1
+```
+
+Posts a Mac notification with that title and body. The subtitle names the agent and the session.
+
+- A click brings Ovvi to the front and shows the asking pane, or the pane of `--pane`.
+- A pane can post one notification every 10 seconds. A second one is `rate_limited`.
+- If you turned off Settings ▸ Agents ▸ When an agent sends one, or Show Only Pinned Spaces hides the pane's
+  space, Ovvi posts nothing and answers `"notified": false`.
+
+See [Notifications](/docs/guide/agents#notifications).
+
+## agent
+
+```sh
+$ ovvi agent claude --json
+{"agent":"claude","pane":"w1:p9"}
+$ ovvi agent pi --tab
+```
+
+Starts an agent with the chat view in a new pane, as Start Agent Here does. The name is `claude`, `codex`, `pi` or
+`opencode`. The places are the same as for [open](#open), but not `--replace`.
+
+The command answers when Ovvi typed the agent's command, not when the agent is ready. The card opens on the chat
+([Chat view](/docs/guide/agents#chat-view)).
+
+## chat
+
+```sh
+ovvi --timeout 40 chat w1:p4
+```
+
+Runs [Relaunch with Chat](/docs/guide/agents#relaunch-with-chat) on an idle agent: the agent quits and starts again
+in the same session, with the chat view. It never asks you, so it refuses instead:
+
+- The asking pane itself is `self`.
+- An agent that works, needs you or starts again is `busy`.
+- A pane with no agent, an agent that shows the chat already, or an agent whose session herdr does not know is
+  `bad_argument`.
+
+An agent can take up to 30 seconds to quit, so pass `--timeout 40`. The command clears any text that you typed into
+that agent's prompt.
+
+## view
+
+```sh
+ovvi view w1:p4 tui
+ovvi view w1:p4 chat
+```
+
+Switches an agent card between its chat and its TUI in every window of the session, as the Chat | TUI switch does.
+The agent goes on. A pane whose agent has no chat view is `bad_argument`.
+
+## balance
+
+```sh
+$ ovvi balance
+pane: w1:p2
+tab: w1:t1
+$ ovvi balance w2:p1
+```
+
+Evens out the splits of a pane's tab, as Balance Splits (⌥⌘=) does. Without a pane, it is the asking pane's tab.
+
+## copy
+
+```sh
+git diff | ovvi copy
+```
+
+Puts its standard input on the Mac's clipboard, at most 1 MiB. It never reads the clipboard.
+
+## How a request travels
+
+The command and Ovvi talk through herdr. The command writes its arguments to a file in `~/.cache/ovvi/rpc/` on its
+own machine and sets a short-lived herdr token on its pane. Each Ovvi that follows the session hears the token on
+the herdr connection that it already has. One Ovvi takes the request, acts and writes the answer back as files,
+which the command prints. Nothing listens on a network port. A request acts only on its own machine and reads
+nothing on your Mac ([How it works](/docs/reference/how-it-works)).
+
+On a remote machine, the command, its files and herdr are all on that machine. Ovvi reaches them over the SSH
+connection that it already holds, so the command works with no setup there. Paths and `localhost` are the remote
+machine's. A `file://` address opens only from This Mac, and plugins are made and installed only from This Mac. If
+the SSH connection drops, the command exits 3 until Ovvi connects again.

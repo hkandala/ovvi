@@ -1,0 +1,175 @@
+---
+title: "Navigate"
+description: "Move around Ovvi with the overview, the command palette, find, links, swipes and the keyboard."
+---
+
+This page shows the fast ways to get to a session, a space, a tab, a pane or a line of text. For the parts of the
+window, read [Basics](/docs/guide/basics).
+
+## Overview
+
+![The overview with the tabs of a session as tiles](/images/overview.png)
+
+The overview shows every tab of the session as a tile, grouped by space. Each tile is a small picture of the tab's
+panes in their layout: terminals, browser pages, plugins and chats. Use it to watch many agents at once.
+
+To open the overview, do one of these:
+
+- Click Show Overview in the sidebar's session header.
+- Press ⌃⌘O.
+- Use View ▸ Show Overview or the command palette.
+
+In the overview:
+
+- Click a tile to show its tab and leave the overview.
+- Move the pointer over a tile and click × to close the tab. It asks first if a program other than the shell runs.
+- Press ⌥⌘[ or ⌥⌘], or swipe sideways with ⌥ held, to show the previous or next session of the window.
+- Press ⌘K to open the command palette. The overview stays open.
+
+To leave the overview on the selected tab, press Esc or ⌃⌘O, or click × at the right end of the title row. The
+overview hides the sidebar and the tab strip while it is open.
+
+## Command palette
+
+![The command palette with its groups of commands](/images/palette.png)
+
+The command palette lists every command and its shortcut. Press ⌘K or ⇧⌘P to open it, or use View ▸ Command
+Palette.
+
+With an empty field, the commands show in groups: Tabs, Spaces, Sessions, Panes, View, Edit and Plugins. Tabs starts
+with the tabs of the selected space. Spaces lists the spaces of every session in the window. Sessions lists the
+sessions in the window.
+
+To run a command:
+
+1. Type a part of its name. The letters can have gaps, for example `splr` finds Split Right. Words such as `dark`
+   also find the command that they belong to.
+2. Press ↑ and ↓ to select a row, or move the pointer.
+3. Press Return or click the row.
+
+A row with › opens a page of its own. Press Esc or ⌫ in an empty field to go back one page. Press Esc on the first
+page to close the palette.
+
+| Command | What it does |
+|---|---|
+| Rename Tab, Rename Space, Rename Pane | Shows the current name in the field. Press Return to save. |
+| Move Pane to Tab | Moves the active pane to a new tab, a new space or another tab of the session. |
+| Appearance | Shows each choice on the window as you select it. Press Return to keep it or Esc to go back. |
+| Font Size | Sets the terminal's text size. |
+| Start Agent Here | Replaces the active pane with Claude Code, Codex, Pi or OpenCode. |
+| Open File | Opens a file or folder by its path, in a new tab. `~` is the home folder, and a relative path starts at the active pane's folder. |
+| Open Working Tree | Opens Git on the uncommitted changes of the active pane's repository. |
+| Open Commit | Opens Git on a commit. Type its hash or a ref such as `main` or `HEAD~2`. |
+| Go to Directory… (⇧⌘G) | Opens a folder panel. The folder that you pick goes into the shell as a `cd` command. |
+| Insert Path… (⇧⌘I) | Opens a file panel. The path that you pick is typed at the cursor. |
+
+Open File, Open Working Tree and Open Commit open to the side of the active pane when you press ⌥Return.
+
+If you type a path that starts with `/`, `~`, `./` or `../` and the file is there, the first row opens it.
+
+Each switch from the menu bar is one command with a name that says what it does, for example Turn On Focus Follows
+Mouse.
+
+### On a remote machine
+
+Open File, Open Working Tree and Open Commit use the files of the pane's machine. Go to Directory works only on This
+Mac, because the folder panel shows only the Mac's folders. Insert Path shows the Mac's files, copies the file that
+you pick to the remote machine and types the path of the copy.
+
+## Find
+
+Press ⌘F (Edit ▸ Find…) to search the text of the active terminal, including the lines that scrolled away. The find
+bar shows at the top right of the pane.
+
+- Type the text. The search ignores case. The bar shows how many matches there are, for example "3 of 12".
+- The matches show highlighted, and the selected match is brighter. The first match is the one nearest the bottom.
+- Press Return or ⌘G for the next match, and ⇧Return for the previous match. The ↓ and ↑ buttons do the same. At
+  the last match, the search goes round to the first.
+- Press Esc or click × to close the bar. The terminal scrolls back to the bottom.
+
+The bar closes when you show another tab, space or session. In a file or Markdown card, ⌘F uses the editor's own
+search ([Files and Git](/docs/guide/files-and-git)). Find is not on browser cards or on an agent in its chat view.
+
+## Links and paths
+
+A link or a file opens the same way in every card that shows one: the terminal, the chat view, File Explorer, Git
+and the browser.
+
+| You do | It opens |
+|---|---|
+| Click | In the card, if the card can show it. Else in a new tab. |
+| ⌘-click | In a new tab, in the background. |
+| ⌥-click | In a new pane beside the card, in the background. |
+| Right-click | A menu with Open, Open in New Tab and Open to the Side. |
+| ⌘⌥-click | In the Mac's default app for it, outside Ovvi. |
+
+In the background means that you stay where you are. You can ⌘-click one link after another.
+
+A web address opens in a browser card. A file opens in the plugin for its kind, for example File Explorer for a
+Markdown file. On This Mac, a link to an HTML file opens its page in a browser card.
+
+### In a terminal
+
+In a terminal, a plain click goes to the program, so only ⌘-click, ⌥-click and ⌘⌥-click open a link. Hold ⌘, ⌥ or
+⌘⌥ and move the pointer over the text: the link under the pointer lights up.
+
+Ovvi finds these links in the terminal's text:
+
+- Web addresses with a scheme, such as `https://example.com`, and email addresses.
+- Paths: absolute paths, paths that start with `~/`, `./` or `../`, `file:` links, and relative paths such as
+  `src/main.rs`. A relative path starts at the pane's folder.
+- A line number after a path, such as `src/main.rs:12` or `src/main.rs:12:5`. The file opens at that line.
+- A path in quotes or with escaped spaces, such as `'/tmp/my file.txt'`.
+
+A path opens only when the file or folder is there. If it is not there, a notice says "File not found" with the
+path. An address that Ovvi cannot open shows a notice too.
+
+### On a remote machine
+
+Paths are on the pane's machine, and Ovvi opens them there. ⌘⌥-click cannot open a remote file or the remote
+machine's `localhost` on the Mac. A notice says that the file is on the remote machine. A link to an HTML file opens
+as a file, not as a page.
+
+## Swiping
+
+Swipe sideways with two fingers on a trackpad:
+
+- On the sidebar, a swipe shows the previous or next session of the window. Only the spaces slide.
+- On a card, the swipe goes to the card, as any scroll does. On a browser card it goes back or forward a page.
+- On the tab strip, it scrolls the tabs when they do not fit.
+
+A swipe never changes the tab.
+
+Hold ⌥ and swipe anywhere in the window, also over the cards:
+
+- Sideways, to show the previous or next session.
+- Up or down, to show the space above or below in the sidebar.
+
+Each ⌥ swipe moves one step. With a mouse, ⌥ and the scroll wheel do the same.
+
+## Keyboard moves
+
+Press ⌘/ (Help ▸ Keyboard Shortcuts) to see the main keys in a panel. These are the keys to move around:
+
+| Keys | Move |
+|---|---|
+| ⌘[ and ⌘] | Previous or next pane in the tab |
+| ⌥⌘← ⌥⌘→ ⌥⌘↑ ⌥⌘↓ | The pane on that side |
+| ⌥⇧⌘← ⌥⇧⌘→ ⌥⇧⌘↑ ⌥⇧⌘↓ | Swap the active pane with the pane on that side |
+| ⇧⌘[ and ⇧⌘], or ⌃⇧⇥ and ⌃⇥ | Previous or next tab |
+| ⌘1 to ⌘9 | A tab by its place |
+| ⌃⇧[ and ⌃⇧] | Go Back and Go Forward ([Back and forward](/docs/guide/basics#back-and-forward)) |
+| ⇧⌘← and ⇧⌘→ | Move the tab left or right |
+| ⌃⌘[ and ⌃⌘] | Previous or next space |
+| ⌃⌘1 to ⌃⌘9 | A space by its place in the sidebar |
+| ⌥⌘[ and ⌥⌘] | Previous or next session |
+| ⌥⌘1 to ⌥⌘9 | A session by its place |
+| ⌃⌘S | Show or hide the sidebar |
+| ⌃⌘O | Show or hide the overview |
+| ⌘K | Command palette |
+
+The space and session keys follow the order of the sidebar, and they skip the spaces that Show Only Pinned Spaces
+hides. Resize Pane Left, Right, Up and Down have no keys at first.
+
+You can change every key and add a second one ([Change a shortcut](/docs/reference/shortcuts#change-a-shortcut)).
+All shortcuts are in [Shortcuts](/docs/reference/shortcuts).

@@ -1,57 +1,121 @@
 ---
-title: "Introduction"
-description: "What Ovvi is, the problem it solves and the principles behind it"
+title: "Overview"
+description: "What Ovvi is, what it needs, and how to install, update and remove it."
 ---
 
-Ovvi is a native macOS client for [herdr](https://github.com/herdrdev/herdr), a
-terminal multiplexer for AI coding agents: a program that keeps terminals alive
-in spaces, tabs and panes. herdr stays the backend. It owns every space,
-tab, pane, terminal and agent. The app draws them, drives them, and keeps as
-little state of its own as it can.
+Ovvi is a macOS app for [herdr](https://github.com/herdrdev/herdr). herdr is a terminal multiplexer for AI coding
+agents: a program that keeps terminals running in sessions, spaces, tabs and panes, also when no window shows them.
+Ovvi shows those terminals as live cards in a window, on This Mac and on remote machines that you reach with SSH.
 
-These pages describe the app as it is built. It needs macOS 26 and herdr 0.9.3
-or newer on each machine; the Mac needs herdr only for its own
-sessions. Ideas for later are in [Future work](/docs/future-work).
+herdr keeps everything: each space, tab, pane, terminal and agent. Ovvi draws it and lets you change it. When you
+quit Ovvi, your terminals and agents keep running. When you open Ovvi again, it shows them where you left them.
 
-## The problem
+![The Ovvi window with a sidebar of spaces and a tab of terminal cards](/images/window.png)
 
-People run many coding agents (Claude Code, Codex, Pi) at once, often on
-several machines. herdr keeps those agents alive in panes on each machine and
-knows when each one is working, blocked or done (the app shows these as
-working, needs you and finished). But herdr's interface is a terminal UI: one
-machine at a time, keyboard first.
+## What you can do
 
-## What the app does
+- Work in herdr's sessions, spaces, tabs and panes with the mouse and the keyboard: split, zoom, drag and float
+  panes ([Basics](/docs/guide/basics)).
+- Start Claude Code, Codex, Pi or OpenCode in a pane, see when each agent works, needs you or finishes, and talk to
+  an agent in a chat view ([Agents](/docs/guide/agents)).
+- Open a web page, a file explorer or a Git card beside your terminals ([Browser](/docs/guide/browser),
+  [Files and Git](/docs/guide/files-and-git)).
+- Add your own cards with plugins ([Plugins](/docs/plugins)).
+- Let an agent open cards and send notifications with the `ovvi` command
+  ([The ovvi command](/docs/reference/ovvi-command)).
+- Do all of this on a remote machine over SSH, in the same way as on This Mac
+  ([Setup](/docs/guide/setup#remote-machines)).
 
-A window per machine shows its herdr sessions as sidebar pages and each tab as a page of live terminal
-cards laid out the way herdr splits them. Everything it does is in [Features](/docs/features).
+## Who it is for
 
-## Principles
+Ovvi is for people who run coding agents in herdr, often several at once and on more than one machine. herdr's own
+interface is a terminal interface for one machine at a time. Ovvi gives you a Mac window for each machine, with every
+session, agent state and notification in one place.
 
-1. **The multiplexer is the source of truth.** If herdr can hold a piece of
-   state, it holds it. A fresh app on a new Mac rebuilds everything from it.
-   Everything the app keeps for itself is listed in [Data](/docs/data).
-2. **Use what exists.** herdr's API and CLI, OpenSSH, Apple's frameworks. On
-   a remote machine the app only runs commands over SSH. No daemon or server of
-   our own; the one exception is the relay, a script sent with each SSH
-   connection, never installed, gone with it
-   ([Machines](/docs/machines#the-ssh-connection)).
-3. **Never send the user to herdr.** Everything a user does with sessions,
-   spaces, tabs, panes and machines is done in the app. No text in the UI
-   tells the user to run a herdr command; where there is nothing yet, the app
-   shows the button that makes it. When herdr is not installed, the page
-   shows **Install herdr**, which runs herdr's own install command.
-4. **The simplest thing that works.** Each shortcut we take on purpose is
-   marked "Simpler choice" and says when to revisit it.
+## Requirements
 
-## Read the design
+- A Mac with Apple silicon and macOS 26 or later.
+- herdr 0.9.3 or later on each machine that you use. This Mac needs herdr only for its own sessions. Ovvi can
+  install herdr for you.
+- On each remote machine: an SSH login, `sh` and Perl. Ovvi sends a small Perl script with each SSH connection
+  ([How it works](/docs/reference/how-it-works#ssh-and-the-relay)).
+- Node.js with npm, only to install, update or build plugins. The File Explorer and Git cards come with Ovvi.
 
-<Cards>
-  <Card title="Features" href="/docs/features" description="Everything the app does, in one list" />
-  <Card title="UI design" href="/docs/ui/window" description="The window, new panes, browser, chat view, program icons, swiping, drag and drop, adding a machine, states, the welcome, settings, theme" />
-  <Card title="Plugins" href="/docs/plugins" description="Plugin packages, the API, the manifest and the default plugins" />
-  <Card title="How it works" href="/docs/architecture" description="Architecture, data, talking to herdr, agent control, machines, layout, status, platform, usage data" />
-  <Card title="Decisions" href="/docs/decisions" description="Design decisions, why, and what was rejected" />
-  <Card title="Future work" href="/docs/future-work" description="Designs for the changes panel, pills, iPhone and iPad, and Rex" />
-  <Card title="Reference" href="/docs/reference/glossary" description="Glossary and herdr calls" />
-</Cards>
+## Install
+
+Run this line in a terminal on your Mac:
+
+```sh
+curl -fsSL https://github.com/hkandala/ovvi/releases/latest/download/install.sh | sh
+```
+
+The script does these steps:
+
+1. It makes sure that the Mac has Apple silicon and macOS 26 or later.
+2. It downloads the newest release and makes sure that the download matches the release's checksums.
+3. It puts `Ovvi.app` in `/Applications`, or in `~/Applications` when you cannot write to `/Applications`. An old
+   copy is replaced where it is.
+4. If Ovvi is running, it waits until you quit Ovvi (⌘Q). herdr keeps your sessions and agents while Ovvi is closed.
+5. It asks before it installs the `ovvi` skill, which teaches Claude Code, Codex, Pi and OpenCode the `ovvi`
+   command ([The skill](/docs/reference/ovvi-command#the-skill)).
+6. If herdr is not installed, it asks before it installs herdr with herdr's own install command.
+7. For each of Claude Code, Codex, Pi and OpenCode that is installed, it asks before it installs or updates herdr's
+   integration for that agent. The integration tells herdr when the agent works or waits.
+8. It opens Ovvi.
+
+Run the script without `sudo`. To install one release, add its version after `sh`:
+
+```sh
+curl -fsSL https://github.com/hkandala/ovvi/releases/latest/download/install.sh | sh -s -- --version 0.1.0
+```
+
+You can also download `Ovvi-<version>.zip` from the [releases page](https://github.com/hkandala/ovvi/releases)
+in a browser. Ovvi is not notarized, so macOS blocks the first open of a downloaded copy. To open it, go to System
+Settings ▸ Privacy & Security and click Open Anyway. The install script needs no such step.
+
+Next, read [Setup](/docs/guide/setup). It covers the first launch and how to add a remote machine.
+
+### Build from source
+
+To build Ovvi from its source, follow the README in the [repository](https://github.com/hkandala/ovvi). `make
+install` builds your checkout as Ovvi Dev, a second app that runs beside Ovvi. Ovvi Dev has its own name, icon and
+settings, and it gets no updates. To update it, run `git pull && make install` again.
+
+## Updates
+
+Ovvi checks for a new release once a day. When it finds one, each window shows the notice "Ovvi ‹version› is
+available" at its bottom right. Ovvi never installs an update by itself.
+
+1. Click Update… in the notice. To check now, choose Ovvi ▸ Check for Updates….
+2. Read the release notes, then click Install Update.
+3. Click Install and Relaunch when the download is ready.
+
+herdr keeps every pane and agent running while Ovvi relaunches. To skip one release, click Skip This Version in step
+2.
+
+To turn off the daily check, turn off Check for updates automatically in Settings ▸ General. Check Now on the same
+page checks at once ([Settings](/docs/reference/settings#general)). You can also run the install line again: it
+replaces Ovvi with the newest release.
+
+## Uninstall
+
+1. Quit Ovvi.
+2. Delete the app, its configuration folder, its logs and its settings:
+
+   ```sh
+   rm -rf /Applications/Ovvi.app ~/.config/ovvi ~/Library/Logs/Ovvi
+   defaults delete dev.ovvi.app
+   ```
+
+   If Ovvi is in `~/Applications`, delete `~/Applications/Ovvi.app` instead.
+3. If you installed the `ovvi` skill, delete its links:
+
+   ```sh
+   rm -f ~/.agents/skills/ovvi ~/.claude/skills/ovvi
+   ```
+
+`~/.config/ovvi` holds your plugins, also the plugins that you made with New Plugin. To keep a plugin, copy it out of
+that folder first.
+
+Uninstalling Ovvi does not remove herdr, and your sessions keep running. herdr's own docs say how to remove herdr.
+To delete every file that Ovvi keeps, see [Reset Ovvi](/docs/reference/help#reset-ovvi).

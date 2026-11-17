@@ -1,0 +1,280 @@
+---
+title: "Agents"
+description: "Start coding agents, follow their states, talk to them in the chat view and resume closed sessions."
+---
+
+Ovvi works with four coding agents: Claude Code, Codex, Pi and OpenCode. Each agent runs in a herdr pane, on This
+Mac or on a remote machine. Ovvi shows the state of each agent in the window, in notifications and on the Dock.
+For an agent that Ovvi starts, it also offers a chat view: the same agent drawn as messages with a reply box.
+
+## Start an agent
+
+You can start an agent in three ways:
+
+1. In a new pane, choose Agent, then the agent ([New Pane](/docs/guide/basics#new-pane)).
+2. On a pane that runs a shell, choose File ▸ Start Agent Here, then the agent. The command palette (⌘K) has the
+   same command.
+3. Ask an agent to start one with `ovvi agent` ([The ovvi command](/docs/reference/ovvi-command#agent)).
+
+The card shows "Starting Claude Code…" until the agent is ready. Ovvi types the agent's command into the pane's
+shell, so your own alias or shell function for the command still runs. If the agent does not start with Ovvi's
+chat flags, Ovvi types the plain command again. The agent then starts without a chat view.
+
+An agent that you start by hand in a terminal also works. Ovvi shows its state and its title, but it has no chat
+view until you use [Relaunch with Chat](#relaunch-with-chat).
+
+### Agents in New Pane
+
+Settings ▸ Agents ▸ Agents in New Pane has a row for each agent:
+
+- Extra arguments: Ovvi adds them to the command each time it starts that agent.
+- The switch: an agent that is off is not in the New Pane list.
+
+An agent that is not installed on the machine shows "Not installed" in the list.
+
+## Agent states
+
+herdr reports the state of each agent pane. Ovvi shows four states:
+
+| State | Means |
+|---|---|
+| Working | The agent runs a turn. |
+| Needs you | The agent asks a question or waits for permission. |
+| Done | The agent finished a turn and you did not look at its pane yet. |
+| Idle | The agent waits for a prompt. Ovvi shows nothing for it. |
+
+A finished agent stays Done until you leave its pane. A tab and a space show the strongest state of their panes:
+needs you first, then done, then working.
+
+### Where states show
+
+- The tab: one still icon at the end of the tab. If an agent in a tab that you do not look at needs you or
+  finishes, the tab bounces its icons and its title says so ("codex needs you") for a few seconds.
+- The hover card: rest the pointer on a tab to see its panes, with the last lines of an agent that needs you.
+- The space row in the sidebar: the strongest state of the space, as an icon at the end of the row.
+- The agent rows in the sidebar: under each space, one row per agent, with its icon, its title and its state.
+  A working agent also shows how long it works ("12m").
+- The card header of a chat card: the state as an icon and a word.
+- The Dock: see [Notifications](#notifications).
+
+### Agent rows in the sidebar
+
+Each space lists its agents under its row, by tab and by place in the tab.
+
+- Click an agent row to go to its space, tab and pane. The pane gets the keyboard.
+- Click the chevron of a space row (Hide Agents or Show Agents) to fold or show its agent rows.
+- Type in the sidebar's filter field ("Find a space or agent") to find a space or an agent by name.
+
+### Sort spaces by agent activity
+
+The Sort Spaces menu in the sidebar header has two orders:
+
+- Manual: the spaces stay where you put them.
+- Recent: the space whose agent changed state last goes first, under the pinned spaces.
+
+Each session keeps its own order. Settings ▸ Agents ▸ Sort spaces sets the order for a session where you did not
+pick one.
+
+To see only your pinned spaces, right-click the session title in the sidebar and choose Show Only Pinned Spaces.
+Ovvi then shows no state, no notification and no Dock count for the agents in the hidden spaces.
+
+## Chat view
+
+![The chat view of an agent card](/images/chat-view.png)
+
+The chat view shows an agent as messages, with a reply box at the bottom. The agent keeps running in its herdr
+pane. The chat is a second way to look at the same agent, so a switch between the two views stops nothing.
+
+The chat view works for Claude Code, Codex, Pi and OpenCode, on This Mac and on remote machines, in a card and in
+a floating window. It works only for an agent that Ovvi started: from New Pane, Start Agent Here, Relaunch with
+Chat or `ovvi agent`.
+
+### Switch between Chat and TUI
+
+The second row of an agent card's header has a Chat | TUI switch. TUI is the agent's own terminal interface. In a
+floating window, the switch is in the window's title row.
+
+- Settings ▸ Agents ▸ Open new agents in sets the view of a new agent: Terminal or Chat.
+- After Relaunch with Chat, and for an agent that another agent started with `ovvi agent`, the card opens on the
+  chat.
+- Each pane keeps its view in every window of the session and after Ovvi starts again.
+
+### Read the chat
+
+- Your messages are blue bubbles on the right. The agent's replies are gray bubbles on the left.
+- The chat shows the whole session, with Markdown: headings, lists, task lists, tables, code blocks and quotes.
+- A long chat opens at the bottom with its newest messages. Scroll up to load the earlier ones.
+- If you scroll up, new messages come in below and the view does not move. Click Scroll to Bottom (the arrow
+  above the reply box) to go back to the newest message.
+- Each run of tool calls between two messages is one line of counts, for example "Ran 3 commands, read 2 files".
+  Click the line to see each call. Click a call to see its input and output, or the diff of an edit.
+- While the agent works, the last row says "Working" with the time of the turn. Each finished turn ends with
+  "Worked" and its time.
+- The reply box shows the model and the effort of the last reply, for example "Opus 4.5 · high".
+- Links, email addresses and file paths in the chat open as they do in a terminal
+  ([Links and paths](/docs/guide/navigate#links-and-paths)). Ovvi never loads the images in a reply.
+
+### Send a message
+
+1. Click anywhere in the chat. The reply box gets the keyboard.
+2. Type your message. Press ⇧Return to add a line.
+3. Press Return, or click Send.
+
+A message stays dimmed until the agent takes it. If the agent does not take it, "Not sent" shows under it in red,
+and your text comes back into the reply box.
+
+You can send a message while the agent works. Claude Code and OpenCode queue it for after the turn. Codex and Pi
+take it into the running turn, after the current tool.
+
+A message that starts with `/` is a command for the agent's TUI. Ovvi switches the card to the TUI and types the
+command there without Return. Press Return in the TUI to run it.
+
+### Stop the agent
+
+While the agent works and the reply box is empty, Send becomes Stop. Click Stop, or press Esc, to stop the turn.
+Ovvi sends the agent its own stop key, never ⌃C.
+
+### Answer the agent
+
+When the agent asks something that the chat can answer, a question card shows above the reply box. Click an
+option to answer.
+
+- Claude Code: questions with one answer.
+- OpenCode: permissions (Allow once, Allow always, Reject) and questions with one answer.
+
+If you answer in the TUI first, the question card goes away.
+
+When the agent asks anything else (a tool approval, a picker, an extension dialog, a question with several
+answers), the bottom of the card shows the agent's live terminal in place of the reply box. Its header says
+"Claude Code is asking in the terminal". Answer there, or click Open TUI to switch the whole card. When the agent
+goes on, the reply box comes back.
+
+### When the chat cannot read the session
+
+If the chat cannot read the agent's session, a red card says why, with Show TUI, and the header says Error. The
+reasons are:
+
+- "Claude Code has not started a session": the agent did not start a session in time.
+- "OpenCode has not reported its session": the OpenCode build ignores plugins. After a few seconds the card
+  switches to its terminal.
+- "OpenCode's server did not answer".
+- "The transcript is not in a format the chat knows".
+
+The agent still runs. Use the TUI.
+
+### Agent support
+
+| Agent | In the chat | Notes |
+|---|---|---|
+| Claude Code | Messages, tool calls, questions | A tool approval shows the live terminal. |
+| Codex | Messages, tool calls, subagents | Pickers and questions show the live terminal. |
+| Pi | Messages, tool calls, `/tree` moves | Extension dialogs show the live terminal. Needs pi 0.80.4 or later. |
+| OpenCode | Messages, tool calls, permissions, questions | Needs a build that loads plugins. A remote machine needs `curl`. |
+
+A new session in the TUI (`/clear`, `/new`, a fork or a resume) starts the chat again with that session.
+
+## Relaunch with Chat
+
+An agent that you started by hand has no chat view. If Ovvi knows the agent's session, the card header shows
+Relaunch with Chat in place of the Chat | TUI switch. Relaunch with Chat quits the agent and starts it again in
+the same session, with the chat view.
+
+1. Click Relaunch with Chat in the card header.
+2. If the agent works or needs you, Ovvi asks "Restart Claude Code?". Click Restart to go on.
+3. Ovvi quits the agent, then starts it again in the same session. The card shows the loader meanwhile.
+4. The card opens on the chat, with the session's history.
+
+If a step fails, a notice says why, with Retry:
+
+| Notice | Means |
+|---|---|
+| "Claude Code could not start with chat" | Ovvi failed to prepare the launch. The agent still runs. |
+| "Claude Code did not quit" | The agent did not quit in time. |
+| "Claude Code did not start again" | The shell came back at once. The command is not found, or the agent refused the line. |
+| "Claude Code started again without chat" | The agent runs, but without the chat view. |
+| "Claude Code is not back after 10 s" | The agent is slow to start. The chat still opens when it comes. |
+
+Relaunch with Chat clears any text that you typed into the agent's prompt.
+
+## Session titles
+
+An agent pane shows a name in its card header, its tab, its floating window, the sidebar's agent rows and the
+hover card. The name is the first of these that exists:
+
+1. The pane name that you gave in herdr.
+2. The title of the agent's session, for example after `/rename` in Claude Code or `/name` in Pi.
+3. The first prompt that you typed in the session.
+4. "Untitled".
+
+This works for every agent pane, with or without a chat view.
+
+## Archived Sessions
+
+{/* TRACK-F: foot */}
+Archived Sessions is a list at the foot of the sidebar. It shows the closed sessions of Claude Code, Codex, Pi and
+OpenCode on the machine of the current session: the sessions that no pane runs.
+
+- To show the list, turn on Settings ▸ Agents ▸ Show closed sessions.
+- To open or close the list, click Archived Sessions, or right-click the session title in the sidebar and choose
+  Show Archived Sessions or Hide Archived Sessions.
+- Each row shows the agent's icon, the session's title, its folder and its date.
+- Type in the Search field to find a session by title or folder. The search also reads older sessions.
+- Click the filter button at the end of the Search field to show All Agents or one agent.
+- Press Esc in the Search field to close the list.
+
+### Resume a session
+
+- Click a row, or right-click it and choose Resume. The agent starts in the same session, in a new tab of the
+  space for the session's folder. If no space has that folder, Ovvi makes a new space.
+- ⌥-click a row, or right-click it and choose Resume to the Side. The agent starts beside the card that has the
+  keyboard.
+
+If the agent is not installed on the machine, or the session's folder is gone, a notice says so.
+
+## Notifications
+
+Ovvi posts a Mac notification when an agent needs you, when it finishes and when it sends one with
+`ovvi notify` ([notify](/docs/reference/ovvi-command#notify)). Ovvi posts for every session that a window shows.
+
+- The title names the agent and the state, for example "codex needs you". The body names the session, the space
+  and the tab.
+- Ovvi posts nothing for the panes of the tab that you look at in the active window.
+- A newer notification of a pane replaces the older one. Ovvi removes it when you look at the tab, or when the
+  state no longer holds.
+- Click a notification to bring Ovvi to the front and go to the pane.
+- Ovvi plays no sound.
+
+Ovvi asks macOS for permission to post notifications when it first starts.
+
+### Notification settings
+
+Settings ▸ Agents ▸ Notifications has three switches, each on by default:
+
+| Switch | Posts when |
+|---|---|
+| When an agent needs you | The agent asks a question or waits for permission. |
+| When an agent finishes | The agent finishes a turn. |
+| When an agent sends one | An agent runs `ovvi notify`. |
+
+Banners and the Dock badge are in macOS's notification settings. The Notification Settings… link under the
+switches opens them.
+
+### The Dock
+
+- The Dock badge shows the number of agents that need you, in every open session.
+- Right-click the Dock icon for a menu of the agents that need you or finished, for example
+  "codex needs you · default · infra". Choose one to go to its pane. The menu also has New Tab.
+
+The badge and the menu leave out the spaces that Show Only Pinned Spaces hides.
+
+## On a remote machine
+
+Agents on a remote machine work as on This Mac: their states, the chat view, Relaunch with Chat, titles and
+notifications.
+
+- A notification names the machine with the session, for example "devbox · default", or the machine's name alone
+  for the `default` session.
+- Archived Sessions lists the closed sessions on that machine.
+- OpenCode's chat view needs `curl` on the machine.
+
+To add a remote machine, see [Remote machines](/docs/guide/setup#remote-machines).

@@ -1,27 +1,4 @@
 {
   "title": "Ovvi",
-  "pages": [
-    "index",
-    "features",
-    "---UI design---",
-    "...ui",
-    "---Plugins---",
-    "...plugins",
-    "---How it works---",
-    "architecture",
-    "data",
-    "talking-to-herdr",
-    "agent-control",
-    "machines",
-    "layout",
-    "status",
-    "platform",
-    "telemetry",
-    "---Decisions---",
-    "decisions",
-    "---Future work---",
-    "...future-work",
-    "---Reference---",
-    "...reference"
-  ]
+  "pages": ["---Overview---", "index", "---Guide---", "...guide", "---Plugins---", "...plugins", "---Reference---", "...reference"]
 }

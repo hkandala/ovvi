@@ -1,0 +1,396 @@
+---
+title: "Basics"
+description: "The window, the sidebar, sessions, spaces, tabs and panes, and how you split, zoom, float and move them."
+---
+
+Ovvi shows what herdr runs. herdr keeps your terminals alive in four levels:
+
+| Level | What it is |
+|---|---|
+| Session | One herdr server on a machine. It keeps running when you close Ovvi. |
+| Space | A group of tabs, usually for one project folder. herdr calls it a workspace. |
+| Tab | One page of panes, laid out side by side or stacked. |
+| Pane | One terminal, agent, browser page or plugin. Ovvi shows each pane as a card. |
+
+Everything you do in Ovvi changes herdr. herdr's own terminal UI and other herdr clients see the same sessions,
+spaces, tabs and panes.
+
+![The Ovvi window with the sidebar, the tab strip and two panes](/images/window.png)
+
+## The window
+
+Each window shows one machine: This Mac or a remote machine that you connect to with SSH. Two windows can show
+different machines or the same machine. Each window keeps its own sidebar width, selection and zoom.
+
+The title row at the top of the window has these items, from left to right:
+
+1. The sidebar button. It shows and hides the sidebar (⌃⌘S).
+2. The machine button. It shows the machine's icon. Its menu lists your machines, then Open Session…, Add Machine…
+   and Edit Machines….
+3. The space button. It shows only while the sidebar is hidden.
+4. Go Back and Go Forward ([Back and forward](#back-and-forward)).
+5. The tab strip, with the tabs of the selected space.
+6. The `+` button, which makes a new tab (⌘T).
+
+Rest the pointer on any icon button to see its name and its shortcut. The shortcut is the one you set in
+[Settings ▸ Shortcuts](/docs/reference/settings#shortcuts).
+
+The window title is the selected tab's title and the session's name, so the Window menu and Mission Control show
+it.
+
+### Machines
+
+Pick a machine in the machine menu to go to its window. If no window shows that machine, Ovvi opens a new window on
+its `default` session. Add Machine… and Edit Machines… open Settings ▸ Machines. To connect a machine for the first
+time, read [Remote machines](/docs/guide/setup#remote-machines).
+
+### New windows
+
+File ▸ New Window (⌘N) opens a window that lists the sessions of every machine. Type to filter the list, then press
+Return or click a session to open it. A stopped session on This Mac starts. New Session makes a session on that
+machine. A machine that Ovvi cannot read shows the button that fixes it, for example Connect or Install herdr.
+
+When you quit Ovvi, it keeps your windows. At the next launch each window opens its sessions again, with the same
+space and tab. A session that stopped (for example after a restart of the Mac) starts again. A remote machine that
+asks for a password shows Connect and waits for you.
+
+### Two windows on one session
+
+When two windows show the same session, the window where you last typed or clicked in a terminal controls its panes.
+The other window dims its cards and shows "Controlled in another window" with a Take Back button. Click Take Back,
+or type in one of its terminals, to take control.
+
+A pane that another herdr client uses shows "In use elsewhere · Take Back" in its card.
+
+### Notices
+
+A short message shows at the bottom of the window after an action fails, when a move is not possible, or when an
+agent points you to a pane. It goes away after a few seconds. It stays while the pointer is over it. Some notices have
+a button, for example Show or Retry.
+
+## The sidebar
+
+The sidebar lists the sessions that you opened in this window, one page per session. From the top it has:
+
+- The session header: the session's name, then Show Overview (⌃⌘O), Sort Spaces and `+` (New Space, ⌃⌘T).
+- A filter, "Find a space or agent".
+- The session's spaces, with their agents.
+- Archived Sessions, at the foot.
+
+{/* TRACK-F: foot */}
+The foot of the sidebar has only Archived Sessions. It lists the closed sessions of your agents
+([Agents](/docs/guide/agents)). Settings ▸ Agents ▸ Show closed sessions hides it.
+
+Drag the sidebar's right edge to make it wider or narrower.
+
+### Sessions
+
+A machine's `default` session shows the machine's name as its title. Other sessions show their own name.
+
+To change the session in view, do one of these:
+
+- Click the session's name. A list of the other sessions in this window opens under it. Click one, or use ↑, ↓ and
+  Return.
+- Swipe sideways with two fingers on the sidebar.
+- Press ⌥⌘[ or ⌥⌘], or ⌥⌘1 to ⌥⌘9 for a session by its place. Window ▸ Previous Session and Next Session do the
+  same.
+
+Only the spaces slide when the session changes. The header and the filter stay in place.
+
+To add a session to the window, open Open Session (File ▸ Open Session…, ⌥⌘T, or the last row of the session list).
+Type to filter. The panel lists:
+
+- Create session, with the name that you typed or a suggested name.
+- The running sessions that this window does not show, then the stopped sessions.
+- The sessions open in this window.
+
+Click a row or press Return to open it. A stopped session starts. The highlighted row also has a button: Stop for a
+running session, Delete for a stopped session, and Detach for a session in this window. Stop ends every program in
+the session but keeps its spaces and tabs. Delete removes the session and everything in it. Both ask first.
+
+File ▸ Detach Session (⌥⌘W) removes the session from this window. The session keeps running. You can open it again
+with Open Session. You cannot detach the last session of a window.
+
+Right-click the session's name to see its menu: New Space, Open Session…, Show Archived Sessions, Show Only Pinned
+Spaces and Detach Session.
+
+### Spaces
+
+Each row in the sidebar is a space. A row shows:
+
+- The space's name. herdr names a space after its git repository or folder. A space in your home folder shows your
+  user name.
+- The state of the space's agents as an icon at the end of the row: working, needs you or done. An idle agent shows
+  nothing.
+- For a git repository, the branch, with ↑ for commits ahead and ↓ for commits behind.
+- The space's agents, one line each, with their state and how long they have worked. Click the chevron to hide or
+  show them. Click an agent to go to its pane ([Agents](/docs/guide/agents)).
+
+A linked git worktree shows indented under its repository's space.
+
+Click a row to show the space. Double-click its name to rename it. Press ⌃⌘[ or ⌃⌘] for the previous or next space,
+or ⌃⌘1 to ⌃⌘9 for a space by its place.
+
+Right-click a row to see these items:
+
+| Item | What it does |
+|---|---|
+| New Tab | Makes a tab in the space. |
+| Rename Space | Renames the space. Press Return to save or Esc to cancel. |
+| Move Up, Move Down | Moves the space in the list. |
+| Pin Space, Unpin Space | Keeps the space at the top of the list. |
+| Fetch, Pull, Push | Runs `git fetch --all`, `git pull` or `git push` in the repository, on the session's machine. A notice shows the result. |
+| Close Space | Closes the space and its tabs. It asks first if a program other than the shell runs. |
+
+Closing a repository's space also closes the spaces of its worktrees. The worktrees stay on disk.
+
+To make a space, click `+` in the session header, or use File ▸ New Space (⌃⌘T). The new space starts in your home
+folder.
+
+### Sort and pin spaces
+
+Click Sort Spaces to pick an order for the session:
+
+- Manual: herdr's order. Drag a row, or use Move Up and Move Down, to change it.
+- Recent: the space whose agent changed state last comes first. The rows do not move while the pointer is over the
+  list.
+
+Settings ▸ Agents ▸ Sort spaces sets the order for a session until you pick one in its menu.
+
+Pinned spaces stay at the top, above a thin line, in every order. Use Pin Space in a row's menu, or drag a row onto
+the Pin Space area that shows at the top during a drag. Show Only Pinned Spaces, in the session's menu, hides the
+other spaces. Hidden spaces send no notifications and do not count in the Dock badge.
+
+### Filter the sidebar
+
+Type in "Find a space or agent" to show only the spaces whose name or branch matches, and the agents whose name, tab
+or space matches. Press Esc to clear it.
+
+### The space button
+
+When you hide the sidebar, the title row shows the session and the space in view. Click it to see a list of the
+spaces of every session in this window. Type to filter. If no space matches, press Return to make a space with that
+name. The list ends with New Space and Open Session….
+
+## Tabs
+
+The tab strip in the title row shows the tabs of the selected space. Each tab shows:
+
+- The icons of the programs in its panes. A tab with several panes shows its icons overlapping, with the active
+  pane's icon in front.
+- Its title. The title is herdr's tab label. If the tab has no label, the title is the program and the folder, for
+  example `zsh ~`, or the agent's name and session title.
+- The state icon of its agents: working, needs you or done.
+
+When an agent in another tab needs you or finishes, that tab's icons bounce once and its title says so for a few
+seconds.
+
+To work with tabs:
+
+- Click a tab to show it. Press ⌘1 to ⌘9 for a tab by its place, ⇧⌘[ or ⇧⌘] for the previous or next tab, or ⌃⇥
+  and ⌃⇧⇥.
+- Press ⌘T or click `+` to make a tab at the end of the space. A tab opened from a pane (a link, a file) opens right
+  after that pane's tab.
+- Double-click a tab to rename it. Press Return to save or Esc to cancel.
+- Drag a tab to change the order, or press ⇧⌘← and ⇧⌘→ (Move Tab Left and Move Tab Right).
+- Move the pointer over a tab and click × to close it, or press ⇧⌘W.
+
+Right-click a tab to see Rename Tab, Move Tab Left, Move Tab Right, Close Tab, Close Other Tabs and Close Tabs to the
+Right. A close asks first when a program other than the shell runs in one of the panes. When you close the selected
+tab, Ovvi shows the tab that you used before it.
+
+If the tabs do not fit, scroll the strip sideways with the trackpad or turn the mouse wheel.
+
+### The hover card
+
+Rest the pointer on a tab, or on an agent in the sidebar, to see a card with the tab's panes. Each row shows the
+program and its folder. For an agent that needs you, the card also shows the last lines of its screen. Click a row to
+go to that pane.
+
+## Back and forward
+
+Go Back and Go Forward step through the tabs that you showed in this window, as a web browser steps through pages.
+They cross spaces, and they skip tabs that closed.
+
+- Click the ‹ and › buttons at the left end of the tab strip.
+- Press ⌃⇧[ for Go Back and ⌃⇧] for Go Forward.
+- Use Window ▸ Go Back and Window ▸ Go Forward, or the command palette.
+
+To jump more than one step, right-click a button, or hold the mouse button down on it for half a second and release.
+A menu lists up to 10 tabs, nearest first, each with its space. Pick one to go straight there.
+
+A button is dimmed when there is no tab to go to. If you show a tab another way after Go Back, the tabs ahead go.
+
+## Panes
+
+A tab shows its panes as cards, laid out as herdr splits them. Each card has a header with the program's icon and its
+title. On the active pane and on the pane under the pointer, the header shows these buttons: Split Right, Split Down,
+Float Pane, Zoom Pane and Close Pane.
+
+The active pane is the pane that gets what you type. Click anywhere on a card to make it the active pane. In a tab
+with two or more panes, the active pane has a thin border. To move between panes from the keyboard, read
+[Keyboard moves](/docs/guide/navigate#keyboard-moves).
+
+Settings ▸ General ▸ Focus follows mouse makes a pane the active pane when the pointer rests on it.
+
+### The pane menu
+
+Right-click a card's header or its terminal to see the pane's menu. In a terminal it starts with Copy, Paste and
+Select All. The menu has:
+
+| Item | What it does |
+|---|---|
+| Float Pane, Split Right, Split Down, Split Left, Split Up, Zoom Pane | Read the sections below. |
+| Move Pane to Tab | Moves the pane to a new tab, a new space or another tab of the session. |
+| Rename Pane… | Gives the pane a name. An empty name removes it. |
+| Reset Pane Name | Removes the name, so the header shows the program again. |
+| Copy Address (⇧⌘C) | Copies what the card shows: a URL, a path, an agent's session ID or a commit ID. The item's name says which. |
+| Redraw Terminal (⌥⌘R) | Makes the program draw its whole screen again, for example when old text shows over it. |
+| Replace Pane (⇧⌘R) | Puts a new shell in the pane's place, in the same folder. |
+| Open Terminal Here, Start Agent Here, Open Browser Here, Open File Explorer Here, Open Git Here | Changes the pane to another kind ([New pane](#new-pane)). |
+| Close Pane (⌘W) | Closes the pane. |
+
+The same items are in View ▸ Pane and the File menu, for the active pane. Close Pane and Replace Pane ask first if a
+program other than the shell runs.
+
+## New pane
+
+![The New Pane list on a new card](/images/new-pane.png)
+
+A new pane asks what it runs. The card shows a short list:
+
+| Row | Opens |
+|---|---|
+| Terminal | A shell. |
+| Agent | Claude Code, Codex, Pi or OpenCode ([Agents](/docs/guide/agents)). |
+| Browser | A web page ([Browser](/docs/guide/browser)). |
+| File Explorer | The files of the folder ([Files and Git](/docs/guide/files-and-git#file-explorer)). |
+| Git | The changes and history of the repository ([Files and Git](/docs/guide/files-and-git#git)). |
+
+A plugin that you install can add its own row ([Plugins](/docs/plugins)).
+
+Terminal is selected first, so ⌘T and then Return gives you a terminal. You can type at once. Ovvi sends what you
+type to the new shell when it is ready.
+
+The list shows on every pane that Ovvi makes: a new tab, a split and a new space. Panes made in herdr's own terminal
+UI show their terminal.
+
+### Pick a row
+
+- Press ↑ and ↓ to move, and Return to pick.
+- Press a row's number key to pick it.
+- Type the start of a name to select it, for example `br` for Browser.
+- Press Esc to pick Terminal.
+- Click a row.
+
+Agent opens a list of the four agents. Press → or Return to open it and ← or Esc to close it. An agent that is not on
+the machine shows dimmed with "Not installed". Rest the pointer on it to see its install command.
+
+To remove an agent from the list, turn off its Show in New Pane switch in Settings ▸ Agents.
+
+### The folder
+
+The line under the list says where the pane starts, for example "Opens in ~/code/ovvi". A split starts in the folder
+of the pane that it splits. A new tab starts in the folder of the space's active pane. On a remote machine the line
+ends with the machine's name.
+
+To start somewhere else:
+
+1. Click the folder, or press Tab.
+2. Type a path. A relative path starts at the shown folder, and `~` is the home folder on the pane's machine.
+3. Press Return.
+
+On This Mac, the folder icon opens a folder panel.
+
+### Skip the list
+
+Settings ▸ General ▸ New panes open can name one kind, for example Terminal or Claude Code. Then each new pane opens
+that kind at once. To see the list one time, hold ⌥ while you click `+`, a split button or a menu item. With ⌥ held,
+the menus show Split Right and Choose… and the other splits, and New Space and Choose….
+
+### Change a pane's kind
+
+Open Terminal Here, Start Agent Here, Open Browser Here, Open File Explorer Here and Open Git Here replace the active
+pane with another kind, in the same place and folder. They are in the File menu, the pane menu and the command
+palette. Each asks first if a program other than the shell runs.
+
+Replace Pane (⇧⌘R) on an agent, browser or plugin pane gives a new shell with the New Pane list.
+
+## Splits
+
+To split a pane:
+
+- Click Split Right or Split Down in the card's header.
+- Press ⌘D for Split Right or ⇧⌘D for Split Down.
+- Use Split Left or Split Up in the pane menu or View ▸ Pane. They have no shortcut at first.
+
+To resize panes, drag the gap between two cards. Double-click the gap to give both sides half. View ▸ Pane ▸ Balance
+Splits (⌥⌘=) gives every pane in the tab an equal share.
+
+Settings ▸ General ▸ Balance splits automatically is on at first. When it is on, panes side by side or stacked keep
+equal sizes as panes open and close.
+
+## Zoom
+
+Zoom shows one pane over the whole tab. The other panes keep running.
+
+To zoom a pane, click Zoom Pane in its header, double-click its header, or press ⇧⌘↩. To go back, click Restore Pane
+or press ⇧⌘↩ again. Esc does not end the zoom, because the program in the pane uses Esc.
+
+Each tab keeps its own zoom. A split from the zoomed pane, or a move to another pane, ends the zoom.
+
+## Float a pane
+
+Float Pane opens a pane in a small window of its own, above the main window. The pane stays in its tab in herdr.
+
+To float a pane, click Float Pane in its header or press ⌥⌘↩. The floating window shows the pane's title and where
+it is (session, space and tab). Its buttons are:
+
+| Button | What it does |
+|---|---|
+| Stay on Top | Keeps the window above the windows of every app and on every desktop. |
+| Close Pane (⇧⌘W) | Closes the pane. |
+| Detach Pane (⌘W) | Closes the window and shows the pane in its tab again. The red window button does the same. |
+
+In the tab, the card says "This pane is open in a floating window." with Show Window and Bring Back Here.
+
+You can float several panes. Each floating window keeps its size and place for the next time. The floating windows
+come back with their main window after a quit. Closing the main window closes its floating windows.
+
+## Drag and drop
+
+Drag a card by its header to move the pane. A highlight shows where it goes:
+
+| Drop on | Result |
+|---|---|
+| The middle of another card in the same tab | The two panes swap places. |
+| An edge of another card | The pane goes beside that card, on that side. |
+| Another tab | The pane moves into that tab. |
+| The empty end of the tab strip, or `+` | The pane moves to a new tab. |
+| A space row in the sidebar | The pane moves to a new tab in that space. |
+| The empty area under the sidebar's spaces, or `+` in the session header | The pane moves to a new space. |
+
+To drop on a card in another tab, hold the pane over that tab for a moment. The tab opens, and you can drop on one
+of its cards. Hold over a space row the same way to show that space. With the sidebar hidden, hold over the space
+button to open its list.
+
+Press Esc to cancel a drag. Panes cannot move between sessions or machines.
+
+### Tabs and spaces
+
+- Drag a tab along the tab strip to change the order.
+- Drag a tab onto another space's row to move it there, with all its panes.
+- Drag a tab onto the empty area under the spaces, or onto `+` in the session header, to move it to a new space.
+- Drag a space row up or down to change the order. A repository's worktrees move with it.
+
+### Files
+
+Drop files from Finder on a terminal to type their paths into it. Ovvi adds a backslash before spaces and special
+characters. An image dragged from a web page or a screenshot is saved as a file first.
+
+On a remote machine's pane, Ovvi copies each file to that machine first and types the paths of the copies. It does
+not copy folders or files over 16 MB. A notice says why.
+
+A browser or plugin card takes files, text and links that you drop on its page.
+
+Drop folders on Ovvi's icon in the Dock to open a new space for each folder, in the session in view on This Mac.
