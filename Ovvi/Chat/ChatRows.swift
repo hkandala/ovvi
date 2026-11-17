@@ -30,7 +30,7 @@ struct ChatRowView: View, Equatable {
                 .accessibilityIdentifier("chat.\(paneID).worked")
         case let .reply(_, text):
             Markdown(text: text).accessibilityIdentifier("chat.\(paneID).reply")
-                .bubble(look.receivedBubble).replyPlace(Bubble.inset)
+                .bubble(look.receivedBubble).replyPlace()
                 .frame(maxWidth: .infinity, alignment: .leading)
         case let .todos(_, todos): Plan(todos: todos)
         case let .note(_, text, failed):
@@ -83,9 +83,9 @@ extension View {
         padding(.horizontal, Bubble.inset).padding(.vertical, 7).background(color, in: .rect(cornerRadius: 15))
     }
 
-    /// Pulled out by `inset`, so that its text keeps the messages' edge.
-    func replyPlace(_ inset: CGFloat = Composer.inset) -> some View {
-        padding(.leading, -inset).padding(.trailing, ChatView.gutter)
+    /// Pulled out by `Bubble.inset`, so that its text keeps the messages' edge and its sides the bubbles'.
+    func replyPlace() -> some View {
+        padding(.leading, -Bubble.inset).padding(.trailing, ChatView.gutter)
     }
 }
 

@@ -17,7 +17,7 @@ struct ToolStack: View {
                     Chevron(open: steps != nil)
                     Spacer(minLength: 4)
                 }
-                .padding(.horizontal, Composer.inset).frame(height: 24)
+                .padding(.horizontal, Bubble.inset).frame(height: 24)
             }
             .buttonStyle(ChromeStyle(radius: 6))
             .accessibilityValue(steps != nil ? "open" : "closed")
@@ -35,7 +35,7 @@ struct ToolStack: View {
                             Icon(symbol: "text.bubble")
                             Text("Thought").italic().foregroundStyle(.tertiary)
                         }
-                        .padding(.horizontal, Composer.inset).frame(height: 22)
+                        .padding(.horizontal, Bubble.inset).frame(height: 22)
                     }
                 }
                 .padding(.leading, 12)
@@ -71,7 +71,7 @@ private struct ToolRow: View {
                     Time(start: tool.started, end: tool.ended)
                     Chevron(open: open)
                 }
-                .padding(.horizontal, Composer.inset).frame(height: 22)
+                .padding(.horizontal, Bubble.inset).frame(height: 22)
             }
             .buttonStyle(ChromeStyle(radius: 6))
             .accessibilityValue(open ? "open" : "closed")
@@ -88,7 +88,7 @@ private struct ToolRow: View {
                     }
                 }
                 // Past the 14 pt icon and the row's 6 pt spacing.
-                .padding(.leading, Composer.inset + 20).padding(.bottom, 4)
+                .padding(.leading, Bubble.inset + 20).padding(.bottom, 4)
             }
         }
     }

@@ -256,6 +256,33 @@ extension OvviUITests {
         }, "\(send.frame) \(card.frame)")
     }
 
+    /// A shown legacy scroll bar narrows the rows: the reply box and Scroll to Bottom give up its width too.
+    func testTheReplyBoxKeepsTheBubblesEdgesBesideAScrollBar() async throws {
+        let (tab, pane) = try await startChat(["-AppleShowScrollBars", "Always"])
+        let composer = element("chat.\(pane).composer"), box = { composer.frame.insetBy(dx: -17, dy: 0) }
+        try await say("hello", in: pane)
+        XCTAssertTrue(row(pane, "reply", "Echo: **hello**").exists(within: 5))
+        onBubbles(box(), pane, reply: "Echo: **hello**", user: "hello")
+        try await say("many 25", in: pane)
+        XCTAssertTrue(row(pane, "reply", "Last.").exists(within: 10))
+        let sent = row(pane, "user", "Question 25")
+        XCTAssertTrue(until(3) { abs(box().maxX - sent.frame.maxX - 12) <= 1 }, "\(box()) \(sent.frame)")
+        onBubbles(box(), pane, reply: "Last.", user: "Question 25")
+        let chat = element("chat.\(pane)"), bottom = element("chat.\(pane).bottom")
+        XCTAssertTrue((0 ..< 3).contains { _ in
+            chat.scroll(byDeltaX: 0, deltaY: 400)
+            return bottom.exists(within: 2)
+        })
+        XCTAssertEqual(bottom.frame.midX, box().midX, accuracy: 1, "\(bottom.frame) \(box())")
+        keepScreenshot("scroll bar")
+        bottom.click()
+        XCTAssertTrue(bottom.vanishes(within: 3))
+        _ = try await splitByButton(pane, in: tab)
+        XCTAssertTrue(until(3) { chat.frame.width < 600 }, "\(chat.frame)")
+        XCTAssertNotNil(steady(3) { [box(), sent.frame] })
+        onBubbles(box(), pane, reply: "Last.", user: "Question 25")
+    }
+
     private func keepsTop(_ top: Set<String>, of chat: XCUIElement, _ pane: String, narrow: Bool) {
         XCTAssertTrue(until(3) { (chat.frame.width < 600) == narrow && !atTop(of: chat, pane).isDisjoint(with: top) },
                       "\(top) \(atTop(of: chat, pane))")

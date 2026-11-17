@@ -7,6 +7,9 @@ struct ChatMessages: View, Equatable {
     let page: Page
     let floats: Bool
     var composing: FocusState<Bool>.Binding
+    /// The width a shown legacy scroll bar takes from the rows: the reply box gives it up too, to keep the bubbles'
+    /// edges.
+    @Binding var scroller: CGFloat
     @State private var tops = Tops()
     @State private var atBottom = true
     @State private var away = false
@@ -101,6 +104,7 @@ struct ChatMessages: View, Equatable {
                         Composer(chat: chat, composing: composing, placeholder: welcome ? phrase.placeholder : nil)
                     }
                     .padding(.bottom, 14).padding(.top, 4).readingColumn(margin: ChatView.boxMargin)
+                    .padding(.trailing, scroller)
                 }
             }
         }
@@ -144,6 +148,7 @@ struct ChatMessages: View, Equatable {
         }
         .onAppear {
             (tops, atBottom, away, first, earlier, nearTop) = (Tops(), true, false, nil, false, false)
+            scroller = 0
             position = ScrollPosition(idType: String.self)
         }
     }
@@ -156,6 +161,7 @@ struct ChatMessages: View, Equatable {
         // Read here: a change of the view's state or environment read inside the reader's content does not build it
         // again, only a change of what its closure holds. The chat's observed values are tracked inside.
         let (scrolledUp, loading, near, error, place) = (!atBottom, earlier, nearTop, look.error, position)
+        let bar = scroller
         // The next block comes once the view's top is within half a view of the stack's and the scroll rests, again
         // after each. Not during a scroll: its momentum keeps its own offset, over the place on the top row.
         let more = nearTop && !scrolling && start > 0 ? start : nil
@@ -200,6 +206,10 @@ struct ChatMessages: View, Equatable {
                 }
             }
             .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { viewHeight.value = $1 }
+            // The rows take the clip view's width, the scroll bar the rest. Both come in one geometry, and a resize
+            // keeps their difference: the box moves with the rows; a scroll bar shown or hidden moves it a frame late.
+            .onScrollGeometryChange(for: CGFloat.self) { max(0, $0.containerSize.width - $0.contentSize.width) }
+            action: { scroller = $1 }
             .scrollPosition(.constant(place))
             .task(id: pin) {
                 // A load in the same update pins as well, from its own row.
@@ -265,7 +275,7 @@ struct ChatMessages: View, Equatable {
             // After the messages' id, which would replace its own.
             .overlay(alignment: .bottom) {
                 if scrolledUp {
-                    bottomButton { proxy.scrollTo(Self.end, anchor: .bottom) }
+                    bottomButton { proxy.scrollTo(Self.end, anchor: .bottom) }.padding(.trailing, bar)
                 }
             }
         }
@@ -305,7 +315,13 @@ struct ChatMessages: View, Equatable {
         }
     }
 
-    private func bottomButton(_ action: @escaping () -> Void) -> some View {
+    private var topPadding: CGFloat {
+        floats ? 28 : 16
+    }
+}
+
+private extension ChatMessages {
+    func bottomButton(_ action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: "arrow.down").font(.system(size: 12, weight: .semibold)).frame(width: 30, height: 30)
                 .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 7.5))
@@ -317,12 +333,6 @@ struct ChatMessages: View, Equatable {
         .padding(.bottom, 10)
     }
 
-    private var topPadding: CGFloat {
-        floats ? 28 : 16
-    }
-}
-
-private extension ChatMessages {
     func outgoing(_ message: Chat.Outgoing, error: Color) -> some View {
         VStack(alignment: .trailing, spacing: 4) {
             // Dimmed until the agent takes it.
