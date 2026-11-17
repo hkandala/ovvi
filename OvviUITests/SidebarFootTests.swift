@@ -32,7 +32,7 @@ extension OvviUITests {
         XCTAssertTrue(element("agent.\(done.pane)", in: second).has(\.stringValue, "Working", within: 5))
         try await report(done.pane, "idle", agent: "claude", session: two)
         XCTAssertTrue(summary.has(\.stringValue, "1 done", within: 5), summary.stringValue)
-        XCTAssertEqual(element("sidebar.agents", in: second).stringValue, "1 done")
+        XCTAssertTrue(element("sidebar.agents", in: second).has(\.stringValue, "1 done", within: 2))
         keepScreenshot("foot, 1 done")
         summary.click()
         let doneRow = element("agents.panel.\(two).\(done.pane)", in: first)
@@ -67,11 +67,13 @@ extension OvviUITests {
         keepScreenshot("agents panel, needs you and done")
 
         step("A pick shows its tab")
+        XCTAssertFalse(element("tab.\(needs.tab)", in: first).isSelected)
         needsRow.click()
         XCTAssertTrue(panel.vanishes(within: 2))
         XCTAssertTrue(element("tab.\(needs.tab)", in: first).has(\.isSelected, true, within: 3))
 
         step("A pick in the other window's session brings that window forward")
+        XCTAssertFalse(element("tab.\(done.tab)", in: second).isSelected)
         summary.click()
         doneRow.click()
         XCTAssertTrue(until(3) { app.windows.firstMatch.identifier == second.identifier }, "the other window in front")

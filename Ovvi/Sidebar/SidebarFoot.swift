@@ -13,7 +13,7 @@ struct SidebarFoot: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            AgentsSummary(stores: pages.machineStores) { panel = .agents }
+            AgentsSummary(stores: pages.machineStores, open: panel == .agents) { panel = .agents }
             Spacer(minLength: gap)
             IconButton(symbol: "keyboard", help: "Keyboard Shortcuts", key: .hotkey("app.shortcuts")) {
                 panel = .shortcuts
@@ -34,6 +34,7 @@ struct SidebarFoot: View {
 /// The state box with words: who needs you, else the unseen finishes, else who works, else "All caught up".
 private struct AgentsSummary: View {
     let stores: [HostStore]
+    let open: Bool
     let action: () -> Void
     @Environment(\.look) private var look
 
@@ -54,9 +55,10 @@ private struct AgentsSummary: View {
                 }
                 Text(words)
             }
+            .lineLimit(1)
             .font(.system(size: 11, weight: state == nil ? .medium : .semibold)).foregroundStyle(color)
             .padding(.horizontal, 8).frame(height: 22)
-            .background(color.opacity(state == nil ? 0 : 0.14), in: shape)
+            .background(color.opacity(state == nil ? 0 : open ? 0.24 : 0.14), in: shape)
             .overlay(shape.strokeBorder(state == nil ? look.divider : color.opacity(0.45)))
         }
         .buttonStyle(ChromeStyle(radius: 6))
@@ -80,14 +82,17 @@ private struct AgentsSummary: View {
 /// first in each group. A pick shows its tab, in whichever window has its session, as a notification's click does.
 struct AgentsPanel: View {
     let pages: WindowPages
+    /// The window's: the list stays under the title row.
+    let height: CGFloat
     let close: () -> Void
     @FocusState private var focused: Bool
 
     var body: some View {
         let groups = [AgentState.needsYou, .finishedUnseen].map { state in
             (state, pages.machineStores.flatMap { store in
-                store.agentPanes.filter { $0.state == state }.map { (store, $0) }
-            }.sorted { $0.1.since ?? .distantPast > $1.1.since ?? .distantPast })
+                // Pane ids repeat across sessions.
+                store.agentPanes.filter { $0.state == state }.map { (id: "\(store.session) \($0.id)", store, $0) }
+            }.sorted { $0.2.since ?? .distantPast > $1.2.since ?? .distantPast })
         }.filter { !$0.1.isEmpty }
         VStack(alignment: .leading, spacing: 2) {
             Text("Agents · \(pages.machine.name)").font(.system(size: 11)).foregroundStyle(.secondary)
@@ -112,12 +117,13 @@ struct AgentsPanel: View {
                                 .foregroundStyle(.secondary)
                                 .padding(.horizontal, 8).padding(.top, 6).padding(.bottom, 4)
                                 .accessibilityIdentifier("agents.panel.group.\(state.title)")
-                            ForEach(rows, id: \.1.id) { store, pane in row(store, pane) }
+                            ForEach(rows, id: \.id) { row($0.1, $0.2) }
                         }
                     }
                 }
                 .scrollBounceBehavior(.basedOnSize)
-                .frame(maxHeight: 440)
+                .fadesScrolledEdges()
+                .frame(maxHeight: min(440, height - TitleBar.height - 100))
                 .fixedSize(horizontal: false, vertical: true)
             }
         }

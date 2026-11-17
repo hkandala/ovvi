@@ -141,10 +141,6 @@ extension HostStore {
 }
 
 extension HostStore {
-    var waiting: Int {
-        stateCounts[.needsYou] ?? 0
-    }
-
     var agentPanes: [Pane] {
         workspaces.flatMap(\.tabs).flatMap { panes(in: $0.id).filter { $0.state != nil } }
     }

@@ -319,7 +319,7 @@ private struct WindowContent: View {
             }
             if panel == .agents {
                 // Over the sidebar's foot, from its agents' summary up.
-                AgentsPanel(pages: pages) { panel = nil }
+                AgentsPanel(pages: pages, height: height) { panel = nil }
                     .padding(.leading, Sidebar.rowInsets.leading).padding(.bottom, gap + SidebarFoot.height + 6)
                     .floatingPanel(open: open(.agents), alignment: .bottomLeading)
             }
@@ -357,6 +357,12 @@ private struct WindowContent: View {
         .onChange(of: sidebar) {
             // The workspace menu stands in for the sidebar; the Agents panel stands over its foot.
             if sidebar && panel == .workspaces || !sidebar && panel == .agents {
+                panel = nil
+            }
+        }
+        // The overview hides the foot the panel stands over.
+        .onChange(of: pages.overview) {
+            if pages.overview, panel == .agents {
                 panel = nil
             }
         }

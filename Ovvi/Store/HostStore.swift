@@ -21,7 +21,7 @@ final class HostStore {
     private(set) var panes: [Pane] = []
     /// Set only when it changes: a view of one tab reads its own.
     private(set) var tabPanes: [String: [Pane]] = [:]
-    /// The agents by state, written only when a count changes: every window's sidebar foot reads every session's.
+    /// The agents by state. Observation skips an equal value: every window's sidebar foot reads every session's.
     private(set) var stateCounts: [AgentState: Int] = [:]
     private(set) var focusedWorkspaceID: String?
     var notice: Notice?

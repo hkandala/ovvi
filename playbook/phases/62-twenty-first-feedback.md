@@ -293,6 +293,21 @@ Report: `~/Downloads/ovvi-research/p62-footer/index.html`.
 - **For the user.** The re-record: `scripts/record-onboarding.sh` (scripts/README.md, Record the welcome); the menu
   bar and Dock move to the software display while it runs. The README screenshot waits for D4.
 
+### Track F
+
+- **Decisions.** The foot counts the sessions attached in any window on the window's machine (the stores whose
+  windows list them), not floating-only ones. Each store keeps its agents by state (`stateCounts`), and `HostStore.open`
+  is observed (a small holder), so the foot and the Dock badge follow a session that opens or closes in another window;
+  the badge's old lag note went. The panel uses the palette's plumbing (a window panel over the foot: Esc, a click
+  outside or a pick closes it; a collapsed sidebar or the overview closes it too), and a pick calls the notification
+  click's `WindowPages.go(to:)`. Rows are newest change first.
+- **Decisions.** A Done agent picked in the panel stays Done while you look at it, and turns idle when you leave it,
+  as everywhere else. "All caught up" also covers no agents; its tooltip then says "No agents".
+- **Runs.** The VM, dark and light, at the head: testTheSidebarFootSumsUpTheAgentsAndItsPanelGoesToOne,
+  testTheSidebarFootsButtonsOpenTheirPanels green. In the VM a tooltip's text reads as its value, not its label.
+- **For the user.** Click the summary with agents in two windows' sessions; pick a row of the other window's session
+  (that window comes forward on the tab); check the summary at the narrowest sidebar.
+
 ## Round 3: the picks
 
 The user, word for word: "F1 D ("D but bunch of changes, move settings to right side, add a line separator, then

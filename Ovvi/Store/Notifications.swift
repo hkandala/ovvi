@@ -72,7 +72,7 @@ enum Notifications {
 
 extension HostStore {
     static var needsYou: Int {
-        all.reduce(0) { $0 + $1.waiting }
+        all.reduce(0) { $0 + ($1.stateCounts[.needsYou] ?? 0) }
     }
 
     static func showBadge() {
