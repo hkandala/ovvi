@@ -19,7 +19,8 @@ In Settings ▸ Plugins, click New Plugin…, type a name such as "CSV Table", a
 To do the same by hand, copy the template folder
 ([`plugins/builtin/template`](https://github.com/hkandala/ovvi/tree/main/plugins/builtin/template)) to
 `~/.config/ovvi/plugins/<id>/`. Set `name` and the `ovvi` key's `id` and `name` in `package.json`. Then run
-`npm install` and `npm run build` in the folder, and choose Reload Plugins in the command palette (⌘K).
+`npm install` and `npm run build` in the folder, and choose Reload Plugins in the command palette (⌘K). The plugin's first card asks
+for the confirmation, because you did not make it in Ovvi ([The confirmation](/docs/plugins/security#the-confirmation)).
 
 The template is MIT. Your plugin can use any license: change `license` in `package.json`.
 
@@ -69,7 +70,8 @@ The template's `package.json`:
 ```
 
 - `build` bundles `src/main.ts` into `dist/` as ES modules, with shared chunks for dynamic imports and source maps.
-- `dev` builds again each time you save. An open card loads the new build only when you reload it.
+- `dev` builds again each time you save. An open card loads the new build only when you reload it. Reload after
+  each build, so that the card's chunks match.
 - `check` checks the types against the API ([Types](/docs/plugins/api#types)).
 - `@ovvi/plugin-api` holds only types. Ovvi gives the `ovvi` object to the page, so a plugin never bundles it.
 
@@ -147,7 +149,7 @@ export default async function main(ovvi: Ovvi) {
 
   function draw() {
     const header = ovvi.controls.get("first-row") === true
-    const [head, ...body] = header ? rows : [rows[0]?.map((_, i) => `${i + 1}`) ?? [], ...rows]
+    const [head = [], ...body] = header ? rows : [rows[0]?.map((_, i) => `${i + 1}`) ?? [], ...rows]
     const { column, descending } = state
     if (column !== undefined) {
       body.sort((a, b) => (a[column] ?? "").localeCompare(b[column] ?? "", undefined, { numeric: true }))
@@ -212,7 +214,7 @@ What the code does:
 - The watch loads the table again when the file changes, on This Mac and on a remote machine.
 - The CSS that `main.ts` imports becomes `dist/main.css`. Ovvi loads it because it has the entry's name.
 
-Save, then reload the plugin (the next step). Double-click a `.csv` file in File Explorer: CSV Table is now its
+Save, then reload the plugin ([Reload](#reload)). Double-click a `.csv` file in File Explorer: CSV Table is now its
 default plugin, so the file opens in a CSV Table card. The same plugin opens CSV files on a remote machine.
 
 ## What the build must write
@@ -249,12 +251,14 @@ Try Again. The build writes into `dist/` and does not empty it first, so a faile
 
 ## Errors and logs
 
-When a plugin's page cannot load, its card says why, with Show Log and a button that fixes it when it can:
+When a plugin's page cannot load, its card says why, with a button that fixes it when it can. Each card but "‹id›
+did not load" also has Show Log.
 
 | Title | When | Button |
 |---|---|---|
 | "‹name› needs Node.js" | no npm, pnpm or bun on your login `PATH` | Try Again |
 | "‹name› could not install" | a default plugin's first install failed (offline, a failed `npm ci`) | Try Again |
+| "‹name› is not installed" | a default plugin's copy is missing | Try Again |
 | "‹name› did not build" | the build script failed. The card shows its last 20 lines | Try Again |
 | "‹name› is not built" | the entry (`dist/main.js`) is missing | Build. A package with no `build` script has no button: build it with its own tools |
 | "‹name› stopped" | `main` threw an error, or the page did not load. The card shows the message and its first stack line | Reload |
@@ -304,4 +308,4 @@ An agent in a pane on This Mac can make and change a plugin with the `ovvi` comm
   confirm it.
 - `ovvi plugins install <source>` installs from npm, git or a folder. You confirm it on the Mac.
 - An agent on a remote machine cannot make, reload or install plugins: those commands answer `other_machine`. It
-  can open cards of the plugins on your Mac.
+  can open cards of the plugins on This Mac.

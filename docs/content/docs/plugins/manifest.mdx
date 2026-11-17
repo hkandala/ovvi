@@ -13,7 +13,6 @@ New Pane, the command palette, Open With and the card's header show at once, and
   "name": "csv-table",
   "version": "0.1.0",
   "description": "A CSV or TSV file as a table you can sort.",
-  "keywords": ["csv", "table"],
   "ovvi": {
     "id": "csv-table",
     "name": "CSV Table",
@@ -38,9 +37,9 @@ From the package itself:
 
 | Field | Required | Value |
 |---|---|---|
-| `version` | yes | The plugin's version. It shows on the Plugins page, in the confirmation and in the log. |
+| `version` | yes | The plugin's version. It shows on the Plugins page and in the confirmation. |
 | `description` | no | One line. It shows in New Pane and in the confirmation. |
-| `keywords` | no | More words that the command palette finds the plugin's Open ‹chooser› Here command by. |
+| `keywords` | no | With `chooser`: more words for the command palette to find Open ‹chooser› Here. |
 
 In the `ovvi` key:
 
@@ -58,7 +57,7 @@ In the `ovvi` key:
 | `commands` | no | The card's commands in the menu bar and the command palette, with keys ([Commands](#commands)). |
 | `handles` | no | The app commands that the card takes: `save` (Save, ⌘S) and `find` (Find, ⌘F, ⌘G, ⇧⌘G). |
 | `settings` | no | Values that you set on the plugin's page in Settings ([Settings](#settings)). |
-| `connect` | no | Servers on this Mac that the page can reach with `fetch` or a WebSocket. Each is an origin with `http` or `ws`, the host `127.0.0.1` and a port, such as `"ws://127.0.0.1:57900"`. The confirmation names them. |
+| `connect` | no | Servers on This Mac that the page can reach with `fetch` or a WebSocket. Each is an origin with `http` or `ws`, the host `127.0.0.1` and a port, such as `"ws://127.0.0.1:57900"`. The confirmation names them. |
 
 - Ovvi ignores a field that it does not know, so a manifest written for a newer Ovvi still loads.
 - If a required field is missing or a value is wrong, Ovvi does not load the plugin. The plugin's log and its cards
@@ -128,7 +127,7 @@ and gets their changes with `ovvi.on("control")` ([The plugin API](/docs/plugins
 | `segmented` | `id`, `options` (`[{ "value", "title", "symbol" }]`), `value` | segments in a pill. An option with a `symbol` shows only the symbol, with the title as its tooltip | `{ id, value }` |
 | `menu` | `id`, `title`, `symbol`, `items`, `value`, `busy`, `style` | a menu button that shows the picked item, else `title` and `symbol`. `"style": "icon"` shows only the symbol. `"style": "bordered"` draws a bordered button. An item is `{ "value", "title", "symbol" }`, `{ "title" }` for a section heading, or `"-"` for a divider | `{ id, value }` on a pick |
 | `field` | `id`, `placeholder`, `value` | a search field that takes the free width | `{ id, value }` on each change, and `{ id, value, submit: true }` on Return |
-| `field` with `"style": "path"` | `id`, `symbol`, `label`, `value` (a folder's path) | a path field. It shows the path with your home folder as `~`, and the whole path to edit when you click it. Esc puts the path back. `symbol` is a button before the path | `{ id, value, submit: true }` on Return, with the typed path made absolute, and `{ id }` on a click of the symbol |
+| `field` with `"style": "path"` | `id`, `symbol`, `label`, `value` (a folder's path) | a path field. It shows the path with the home folder as `~`, and the whole path to edit when you click it. Esc puts the path back. `symbol` is a button before the path | `{ id, value, submit: true }` on Return, with the typed path made absolute, and `{ id }` on a click of the symbol |
 | `text` | `id`, `value`, `style` (`plain`, `dim` or `path`), `symbol`, `digits`, `links` | text, cut in the middle when it is long. `path` shows a list of parts with `›` between them. `symbol` shows before the last part. `links` makes the first parts of a path buttons | `{ id, part }` on a click of a linked part, with the part's index from 0 |
 | `openWith` | `id`, `value` (a file's path) | Open With: the default app opens the file, and its menu lists the other apps and the plugins | nothing |
 | `spacer` | none | free space | nothing |
@@ -167,11 +166,11 @@ it gets the pick.
 |---|---|---|
 | `id` | yes | Unique among the commands and the header's controls. |
 | `title` | yes | The command's name in the menu and the command palette. |
-| `menu` | no | `file`, `edit` or `view`: the menu that shows the command. |
+| `menu` | no | `file`, `edit` or `view`: the menu that shows the command. The default is `view`. |
 | `key` | no | The default key: `cmd`, `ctrl` or `option` (`alt`), with `shift` if needed, and one key. The key is a character or `left`, `right`, `up`, `down`, `return`, `tab`, `space`, `escape`, `delete`, `plus`. Examples: `cmd+e`, `cmd+shift+k`, `ctrl+option+left`. |
 | `symbol` | no | An SF Symbol for the menu item. |
 | `checked` | no | `true` shows a checkmark. |
-| `keywords` | no | More words that the command palette finds the command by. |
+| `keywords` | no | More words for the command palette to find the command. |
 
 - A pick sends `{ id }` to `ovvi.on("control")`, as a header button does. `ovvi.controls.set` changes a command's
   `title`, `checked` and `enabled`. A disabled command has no key.

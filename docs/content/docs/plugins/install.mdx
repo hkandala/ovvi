@@ -12,20 +12,23 @@ You install plugins on the Plugins page of Settings. Ovvi lists each installed p
 2. Type a source in the field (the table below), then press Return or click Install.
 3. Read the confirmation: the plugin's id, version, source and folder, and its description. Then click Install
    ([The confirmation](/docs/plugins/security#the-confirmation)).
-4. Ovvi installs the package's dependencies, builds it when it has no build yet, and loads its open cards.
+4. For a source from npm or git, Ovvi installs the package's dependencies and builds it when it has no build yet.
+   Then it loads the plugin's open cards.
 
 | Source | Example | Where it goes |
 |---|---|---|
 | `npm:<package>` | `npm:@acme/ovvi-csv`, `npm:@acme/ovvi-csv@1.2.0`, or the path of a tarball | `~/.config/ovvi/plugins/<name>/` |
-| `git:<repository>[@ref]` | `git:github.com/acme/ovvi-kanban@v1`, an `https://` or `ssh://` URL, `git@host:x/y` | `~/.config/ovvi/plugins/<repository name>/` |
+| `git:<repository>[@ref]` | `git:github.com/acme/ovvi-kanban@v1`, an `https://` or `ssh://` URL, `git:git@github.com:acme/ovvi-kanban` | `~/.config/ovvi/plugins/<repository name>/` |
 | a folder's path, which starts with `/`, `~` or `.` | `~/code/my-plugin` | nowhere: Ovvi loads it where it is |
 
 - An install from npm needs npm. An install from git needs git.
+- A relative folder path is from `~/.config/ovvi/`. Type a full path or a `~` path.
 - Ovvi runs no install script of the package or its dependencies (`--ignore-scripts`), and it installs no peer
   dependencies. It runs the package's own `build` script only after you confirm the plugin.
 - If an npm package includes its build, Ovvi installs nothing more and does not build it.
 - A fetch stops after 5 minutes. An install or build command stops after 10 minutes. When a step fails, the page
-  shows its last line, and the plugin's log has the whole output.
+  shows the first line of the error. After Ovvi has read the manifest, the plugin's log has the last 20 lines of
+  the output.
 - A folder that you or an agent put in `~/.config/ovvi/plugins/` loads too, after Reload All. Its first card asks
   for the confirmation.
 - An agent on This Mac can install a plugin with `ovvi plugins install <source>`
@@ -47,12 +50,13 @@ allows. If npm has a newer one, the page shows Update to ‹version›. Otherwis
 - A source with a version (`npm:name@1.2.0`) stays at that version.
 - Nothing checks for updates in the background.
 - A plugin from git does not update. To get a newer commit, remove the plugin and install it again.
-- Ovvi never changes a plugin from a folder. Run `npm install` and `npm run build` in that folder yourself.
+- Ovvi does not install the dependencies of a plugin from a folder. Run `npm install` in that folder yourself.
+  Reload runs its `build` script.
 
 ## Remove a plugin
 
 On the plugin's page, click Remove… at the end of the page, then Remove. Ovvi takes the plugin off the list,
-forgets its settings and its confirmation, and moves its folder to the Trash. A plugin from a folder on your Mac
+forgets its settings and its confirmation, and moves its folder to the Trash. A plugin from a folder on This Mac
 keeps its folder: Ovvi stops loading it. The default plugins have no Remove.
 
 ## The Plugins page

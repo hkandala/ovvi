@@ -8,12 +8,12 @@ once before a plugin's code first runs, and it keeps the content that a card sho
 
 ## What a plugin can do
 
-A plugin can do what you can do, on this Mac and on each machine where you open one of its cards:
+A plugin can do what you can do, on This Mac and on each machine where you open one of its cards:
 
 - Read, write and move any file that you can.
 - Run any command as you with `run`, also one that uses the network, and run git.
 - Write to the clipboard.
-- Run its package's `build` script as you on this Mac, when Ovvi builds it.
+- Run its package's `build` script as you on This Mac, when Ovvi builds it.
 
 The manifest lists no permissions. A plugin that can run a command can do anything else too, so Ovvi cannot
 keep a list of permissions. Install plugins only from sources that you trust.
@@ -79,9 +79,10 @@ keep that content from taking over the card and its `ovvi` object:
   ```
 
   So no inline script and no `eval` run. WebAssembly runs. `fetch` and WebSockets reach only the plugin's own files
-  and its `connect` servers on this Mac. The page has no other network access.
+  and its `connect` servers on This Mac. The page has no other network access.
 - The card stays on its own page. A link, a refresh or a form in shown content cannot take the page to another
-  site. A plugin opens links with `ovvi.open`, which opens them in a browser card.
+  site. A plugin opens links with `ovvi.open`, which opens them in a browser card, or in a plugin
+  that opens that address.
 - Each card reaches only its own machine. Its `ovvi` object is tied to the card's machine, session and plugin when
   the card opens. Each card runs in its own process, and each plugin has its own web storage.
 - `run` has no shell. It takes argv, and the card's argument is never part of a command line.
@@ -95,5 +96,5 @@ HTML.
 - A plugin that you installed. Its code runs as you. Only the source that you install from protects you.
 - A plugin's own mistakes. A plugin that builds HTML from a file's text, or passes a file's words to `run`, can be
   used by that file. The Content Security Policy limits the first. Nothing in Ovvi limits the second.
-- A machine's own processes. Any process on a machine can open a card of a plugin that you confirmed on that
+- A machine's own processes. Any process on a machine can open a card of any plugin that you confirmed, on that
   machine, as `ovvi open` does. That gives it what the plugin does there. It cannot open a card on another machine.

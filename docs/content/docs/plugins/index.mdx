@@ -14,7 +14,7 @@ is a web page that runs that code. The page calls the app through one object, `o
 
 ## What you need
 
-Node.js on This Mac. Ovvi installs and builds plugins with the npm, pnpm or bun on your login `PATH`. It does not
+You need Node.js on This Mac. Ovvi installs and builds plugins with the npm, pnpm or bun on your login `PATH`. It does not
 include a package manager or a bundler.
 
 ## The plugins that come with Ovvi
@@ -24,23 +24,24 @@ File Explorer (`explorer`) and Git (`git`) are plugins that use the same API as 
 
 - Ovvi installs them at its first launch, from the copy inside the app.
 - After that, each one updates from npm on its page in Settings ▸ Plugins. A new Ovvi does not replace them.
-- They do not ask for a confirmation, and they have no Remove. If you delete one's folder, Ovvi installs it again.
+- They do not ask for a confirmation, and they have no Remove. If you delete one's folder, Ovvi installs it again at the next launch, or when a card of it
+  opens.
 
 ## Where a plugin runs
 
-A plugin lives and builds on your Mac. Its card runs on your Mac too. Only its data comes from the card's machine:
+A plugin lives and builds on This Mac. Its card runs on This Mac too. Only its data comes from the card's machine:
 
 - The calls for files, git and commands (`ovvi.files`, `ovvi.git`, `ovvi.run`) go to the machine of the card. On a
   remote machine they go over Ovvi's SSH connection. A page cannot pick another machine.
 - Paths in the API are paths on that machine.
-- You install nothing on a remote machine. One plugin on your Mac works for cards on every machine.
+- You install nothing on a remote machine. One plugin on This Mac works for cards on every machine.
 
 ## Where things live
 
 | What | Where |
 |---|---|
 | Installed plugins (from npm or git, the default plugins, New Plugin…) | `~/.config/ovvi/plugins/<folder>/` |
-| Plugins from a folder on your Mac | where they are |
+| Plugins from a folder on This Mac | where they are |
 | The list of installed packages, and plugin settings | `~/.config/ovvi/settings.json` |
 | The plugins that you confirmed | `~/.config/ovvi/trust.json` |
 | The API's types | `~/.config/ovvi/plugins/node_modules/@ovvi/plugin-api/` |
@@ -48,7 +49,7 @@ A plugin lives and builds on your Mac. Its card runs on your Mac too. Only its d
 
 ## A missing plugin
 
-A pane can name a plugin that is not on this Mac: one that you removed, or one from another Mac. Its card shows
+A pane can name a plugin that is not on This Mac: one that you removed, or one from another Mac. Its card shows
 "‹id› is not on this Mac", with Show Placeholder and Close Pane. If the plugin's manifest has an error, the card
 shows "‹id› did not load" and the field that is wrong. The pane stays as it is, so the card comes back when the
 plugin does.

@@ -17,7 +17,8 @@ export default async function main(ovvi: Ovvi) {
 
 - The card shows a loader until `main` returns, or until the page calls `ovvi.card.ready()`.
 - If `main` throws an error, the card shows "‹name› stopped" with the message, and Reload.
-- Ovvi runs a page's calls in the order that the page made them.
+- Ovvi starts a page's calls in the order that the page made them. Of two `controls.set` calls to one control, the
+  second one wins.
 - Every call works only on the card's own machine.
 
 ## Types
@@ -38,7 +39,7 @@ The full types are at the end of this page ([All the types](#all-the-types)).
 
 | Part | What it does |
 |---|---|
-| `card` | Who the card is: its instance id, plugin, machine, place (`arg`), folder (`cwd`) and landing (`at`). `go` moves the card to another place, `ready` ends its loader, `setDirty` shows the Edited dot. |
+| `card` | Who the card is: its instance id ([Labels](#labels)), plugin, machine, place (`arg`), folder (`cwd`) and landing (`at`: the line or the diff file that a link opened to). `go` moves the card to another place, `ready` ends its loader, `setDirty` shows the Edited dot. |
 | `files` | Reads, lists, writes, moves and watches files on the card's machine. |
 | `git` | The repository's root, status, changes, branches, history, patches and commits, and the everyday writes: stage, unstage, revert, commit, fetch, pull, push, switch, init. |
 | `run` | Runs a command on the card's machine: argv, no shell, 30 seconds unless `timeout` says otherwise, two at a time per card. |
@@ -106,8 +107,7 @@ event.
 - The app's style sheet loads before the plugin's CSS. It sets system fonts at 13 px (`--font-size`), no margin
   and a clear background, so the card's fill shows behind the page.
 - The class `ovvi-sidebar` makes a sidebar that slides in and out as the window's sidebar does. Put it on a flex
-  child with `--sidebar-width`, and set the attribute `data-closed` to hide it. Its parent clips with `overflow:
-  hidden`. The class `end` puts it on the right.
+  child with `--sidebar-width`, and set the attribute `data-closed` to hide it. Give its parent `overflow: hidden`. The class `end` puts it on the right.
 - When Animations is off in Settings ▸ Appearance, the root has the attribute `data-animations-off`, and the app's
   style sheet turns off every CSS transition. CSS animations, such as a spinner, keep going.
 
@@ -147,7 +147,8 @@ files on the machine.
 - 500 ms after the last change, Ovvi writes both to a file on the card's machine:
   `~/.local/state/ovvi/<session>/<plugin-id>/<instance id>.json`. So a relaunch, another device, or a restart of
   herdr starts where the card was.
-- The file holds at most 256 KiB. The last write wins. Closing the pane removes the file.
+- The state holds at most 256 KiB. Ovvi does not keep a larger value, and the log shows the error.
+- The last write wins. Closing the pane removes the file. Ovvi deletes a state file that nothing wrote for 30 days.
 
 ```json
 { "controls": { "diff.layout": "split" }, "state": { "draft": "Fix the login", "list": false } }
@@ -168,7 +169,7 @@ ovvi:csv-table#k3f9q2 /Users/me/data.csv
 - The argument is at most 1024 characters.
 - The pane runs a small placeholder program, which shows the plugin's name and argument in herdr's own interface.
 - To open a card from a pane, use `ovvi open <plugin id> <argument>`
-  ([The ovvi command](/docs/reference/ovvi-command)). It writes the label for you.
+  ([The ovvi command](/docs/reference/ovvi-command#open)). It writes the label for you.
 
 ## Versions
 
