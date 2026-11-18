@@ -75,6 +75,7 @@ struct AgentsSection: View {
                     }
                     .padding(.horizontal, 4).frame(height: 22)
                     .background(.primary.opacity(backLit ? 0.05 : 0), in: .rect(cornerRadius: 6))
+                    .animation(.highlight, value: backLit)
                     .padding(.leading, WorkspaceRow.textInset - 4)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                     .contentShape(.rect)
