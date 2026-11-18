@@ -218,7 +218,7 @@ public enum Files {
 
 /// Whatever file a path names: a file an editor replaced, or one that comes back, is still seen. The stream is on
 /// the nearest folder that exists: one made later sends nothing.
-private final class Events: Sendable {
+final class Events: Sendable {
     private static let queue = DispatchQueue(label: "ovvi.files.watch")
     /// The paths that changed, under the target; the target itself for events the system dropped.
     private let changed: @Sendable ([String]) -> Void

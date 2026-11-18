@@ -284,54 +284,64 @@ private final class Dropping: Exec {
 }
 
 /// A build's output and git's objects wake no card; a file of the work tree does, an ignored name at the top (the
-/// Explorer lists it) does, and so does a new rule.
+/// Explorer lists it) does, and so does a new rule. The batches are the watch's own, judged in order; each wait is for
+/// a batch that names a file just written, so a slow `git check-ignore` or a late batch cannot shift what is judged.
 @Test func `a folder's watch skips what git ignores and git's objects`() async throws {
     let folder = try scratchFolder()
     defer { try? FileManager.default.removeItem(at: folder) }
     _ = try await localExec.checkedOutput(["sh", "-c", """
     cd "$1" && git init -q && printf 'build/\\n*.log\\n' >.gitignore && mkdir -p build/deep src && echo a >src/a
     """, "sh", folder.path])
-    let count = Mutex(0)
-    let watch = Task {
-        for await _ in Files.watch(folder.path, git: true, exec: localExec) {
-            count.withLock { $0 += 1 }
-        }
-    }
-    defer { watch.cancel() }
+    let batches = Mutex<[[String]]>([])
+    let events = Events(folder.path, latency: 2) { paths in batches.withLock { $0.append(paths) } }
+    defer { events.stop() }
+    var ignored = Ignored(root: folder.path, canonical: events.target, git: true)
+    var judged = 0, waking: Set = [events.target]
     let write = { (path: String) in try Data(UUID().uuidString.utf8).write(to: folder.appending(path: path)) }
+    // Waits for a batch that names `path`, then judges every batch up to it: one that names a file written to wake
+    // (one write can come in two batches), or the root (events the system dropped), wakes; the others do not. A
+    // dropped batch that swallows `path` fails the wait. `start`: passed through unjudged, as they may name the
+    // setup's files.
+    func judge(until path: String, wakes: Bool = true, start: Bool = false) async throws {
+        let named = events.target + "/" + path
+        if wakes {
+            waking.insert(named)
+        }
+        #expect(await eventually { batches.withLock { $0[judged...].contains { $0.contains(named) } } }, "\(path)")
+        let ready = batches.withLock { Array($0[judged...]) }
+        let last = try #require(ready.firstIndex { $0.contains(named) })
+        for batch in ready[...last] {
+            let woke = await ignored.matter(batch, exec: localExec)
+            #expect(start || woke == batch.contains(where: waking.contains), "\(batch)")
+        }
+        judged += last + 1
+    }
     // Live once it sees a change.
     #expect(await eventually {
         try? write("src/ready")
         try? await Task.sleep(for: .milliseconds(500))
-        return count.withLock { $0 } > 0
+        return batches.withLock { $0.contains { $0.contains(events.target + "/src/ready") } }
     })
-    // The last writes' batch comes 2 s after them, then waits for git's check: once no batch came for 3 s, all came.
-    var last = -1
-    while last != count.withLock({ $0 }) {
-        last = count.withLock { $0 }
-        try await Task.sleep(for: .seconds(3))
-    }
-    count.withLock { $0 = 0 }
+    try await judge(until: "src/ready", start: true)
+    // After every src/ready write.
+    try write("src/go")
+    try await judge(until: "src/go", start: true)
     for index in 0 ..< 3 {
         try write("build/deep/out\(index).o")
         try FileManager.default.createDirectory(at: folder.appending(path: ".git/objects/ab"),
                                                 withIntermediateDirectories: true)
         try write(".git/objects/ab/obj\(index)")
-        try await Task.sleep(for: .seconds(1))
     }
-    try await Task.sleep(for: .seconds(2.5))
-    #expect(count.withLock { $0 } == 0)
-    for (index, path) in ["err.log", "src/a"].enumerated() {
+    try await judge(until: ".git/objects/ab/obj2", wakes: false)
+    for path in ["err.log", "src/a"] {
         try write(path)
-        #expect(await eventually { count.withLock { $0 } == index + 1 }, "\(path)")
-        try await Task.sleep(for: .seconds(2.5))
+        try await judge(until: path)
     }
     try Data("other/\n".utf8).write(to: folder.appending(path: ".gitignore"))
-    #expect(await eventually { count.withLock { $0 } == 3 })
-    try await Task.sleep(for: .seconds(2.5))
+    try await judge(until: ".gitignore")
     // build/ counts again now.
     try write("build/deep/out9.o")
-    #expect(await eventually { count.withLock { $0 } == 4 })
+    try await judge(until: "build/deep/out9.o")
 }
 
 @Test func `a watch of an ignored folder sees what is in it`() async throws {
