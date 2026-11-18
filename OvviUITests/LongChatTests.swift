@@ -45,12 +45,7 @@ extension OvviUITests {
         XCTAssertTrue(until(3) { chat.frame.width > 600 && last.exists && last.isHittable }, "\(chat.frame)")
         XCTAssertFalse(bottom.exists)
 
-        relaunch()
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        element("workspace.w2").click()
-        XCTAssertTrue(element("tab.\(tab)").exists(within: 3))
-        element("tab.\(tab)").click()
-        XCTAssertTrue(element("pane.\(pane).view.chat").has(\.isSelected, true, within: 10))
+        relaunchOnChat(tab, pane)
         XCTAssertTrue(until(10) { last.exists && last.isHittable })
     }
 

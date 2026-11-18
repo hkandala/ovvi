@@ -13,14 +13,7 @@ extension OvviUITests {
             let count = try await web("web-pids", "").count
             return count >= 2 ? count : nil
         }
-        app.typeKey("o", modifierFlags: [.command, .control])
-        let tile = element("overview.tab.\(tab)")
-        XCTAssertTrue(tile.exists(within: 3))
-        scrollOverview(to: tile, whole: true)
-        for (pane, picture) in [(chat, "chat"), (browser, "browser"), (plugin, "explorer")] {
-            XCTAssertTrue(element("overview.card.\(pane)").has(\.stringValue, picture, within: 30),
-                          "\(picture): \(element("overview.card.\(pane)").stringValue)")
-        }
+        overviewPictures(tab, [(chat, "chat"), (browser, "browser"), (plugin, "explorer")])
         keepScreenshot("overview, cards never drawn")
         // Recorded: XCUITest's queries are too slow to see a loader.
         let loaders = element("app.latency").stringValue
@@ -45,18 +38,25 @@ extension OvviUITests {
         executionTimeAllowance = 360
         let (tab, panes) = try await cardsNeverDrawn(), (chat, browser, plugin) = (panes[0], panes[1], panes[2])
         let below = try await explorersBelow("/tmp/ovvi-e2e-unseen")
+        let first = [(chat, "chat"), (browser, "browser"), (plugin, "explorer")]
+        let tile = overviewPictures(tab, first)
+        expectPicturesKept(first, below: below, tile: tile)
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(element("overview").vanishes(within: 2))
+    }
+
+    /// The overview open on the tab's tile, each card's picture shown.
+    @discardableResult
+    private func overviewPictures(_ tab: String, _ cards: [(String, String)]) -> XCUIElement {
         app.typeKey("o", modifierFlags: [.command, .control])
         let tile = element("overview.tab.\(tab)")
         XCTAssertTrue(tile.exists(within: 3))
         scrollOverview(to: tile, whole: true)
-        let first = [(chat, "chat"), (browser, "browser"), (plugin, "explorer")]
-        for (pane, picture) in first {
+        for (pane, picture) in cards {
             XCTAssertTrue(element("overview.card.\(pane)").has(\.stringValue, picture, within: 30),
                           "\(picture): \(element("overview.card.\(pane)").stringValue)")
         }
-        expectPicturesKept(first, below: below, tile: tile)
-        app.typeKey(.escape, modifierFlags: [])
-        XCTAssertTrue(element("overview").vanishes(within: 2))
+        return tile
     }
 
     /// A chat's tab in w2 with a browser and a File Explorer split in (in that order), after a relaunch: no card of it

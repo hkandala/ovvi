@@ -47,12 +47,7 @@ extension OvviUITests {
         XCTAssertEqual(worked.count, 3)
 
         step("Read again after a relaunch: a loader, never the empty chat, then every Worked")
-        relaunch()
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        element("workspace.w2").click()
-        XCTAssertTrue(element("tab.\(tab)").exists(within: 3))
-        element("tab.\(tab)").click()
-        XCTAssertTrue(element("pane.\(pane).view.chat").has(\.isSelected, true, within: 10))
+        relaunchOnChat(tab, pane)
         try expectNoEmptyChat(pane, until: row(pane, "reply", "Done."))
         XCTAssertTrue(until(3) { worked.count == 3 }, "\(worked.count)")
     }
@@ -142,5 +137,15 @@ extension OvviUITests {
         app.typeKey("a", modifierFlags: .command)
         app.typeKey(.delete, modifierFlags: [])
         XCTAssertTrue(until(2) { composer.frame.minY == top })
+    }
+
+    /// Relaunched, the chat's tab in w2 shown with its chat view.
+    func relaunchOnChat(_ tab: String, _ pane: String) {
+        relaunch()
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        element("workspace.w2").click()
+        XCTAssertTrue(element("tab.\(tab)").exists(within: 3))
+        element("tab.\(tab)").click()
+        XCTAssertTrue(element("pane.\(pane).view.chat").has(\.isSelected, true, within: 10))
     }
 }

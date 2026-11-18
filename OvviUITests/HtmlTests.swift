@@ -17,13 +17,14 @@ extension OvviUITests {
         XCTAssertTrue(link.exists(within: 10))
         let tabs = try await tabIDs()
         XCUIElement.perform(withKeyModifiers: .command) { link.click() }
-        let behind = try await newTabID(after: tabs)
-        closeAfter("tab", behind)
-        try await browserLabel(pane(of: behind), html)
+        try await expectBrowser(newTabID(after: tabs), " file://\(html)")
         XCTAssertTrue(element("tab.\(tab)").isSelected)
         XCUIElement.perform(withKeyModifiers: .option) { link.click() }
         let side = try await sidePane(in: tab, besides: [notes])
-        try await browserLabel(side, html)
+        try await expect("a browser on \(html) in \(side)") {
+            let label = try await paneLabel(side)
+            return label.hasPrefix("ovvi:browser#") && label.hasSuffix(" file://\(html)")
+        }
 
         let (_, file) = try await newCard("ovvi:explorer#e2eht2 \(html)")
         let button = element("pane.\(file).browser")
@@ -32,9 +33,8 @@ extension OvviUITests {
         let before = try await tabIDs()
         button.click()
         let opened = try await newTabID(after: before)
-        closeAfter("tab", opened)
         XCTAssertTrue(element("tab.\(opened)").has(\.isSelected, true, within: 5))
-        try await browserLabel(pane(of: opened), html)
+        try await expectBrowser(opened, " file://\(html)")
 
         let (_, plain) = try await newCard("ovvi:explorer#e2eht3 \(folder)/plain.txt")
         XCTAssertTrue(element("pane.\(plain).open-with").exists(within: 10))
@@ -90,12 +90,5 @@ extension OvviUITests {
         XCTAssertTrue(notice.staticTexts.matching(found).firstMatch.exists(within: 10), notice.debugDescription)
         notice.buttons["notice.close"].click()
         XCTAssertTrue(notice.vanishes(within: 3))
-    }
-
-    private func browserLabel(_ pane: String, _ path: String) async throws {
-        try await expect("a browser on \(path) in \(pane)") {
-            let label = try await paneLabel(pane)
-            return label.hasPrefix("ovvi:browser#") && label.hasSuffix(" file://\(path)")
-        }
     }
 }

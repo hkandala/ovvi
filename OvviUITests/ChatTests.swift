@@ -250,12 +250,7 @@ extension OvviUITests {
         try await say("big", in: pane)
         XCTAssertTrue(row(pane, "reply", "Big.").exists(within: 5))
 
-        relaunch()
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        element("workspace.w2").click()
-        XCTAssertTrue(element("tab.\(tab)").exists(within: 3))
-        element("tab.\(tab)").click()
-        XCTAssertTrue(element("pane.\(pane).view.chat").has(\.isSelected, true, within: 10))
+        relaunchOnChat(tab, pane)
         XCTAssertTrue(row(pane, "reply", "Big.").exists(within: 5))
         XCTAssertTrue(row(pane, "user", "wait").exists)
         XCTAssertTrue(row(pane, "reply", "Allowed.").exists)
