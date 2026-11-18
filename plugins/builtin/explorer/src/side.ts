@@ -50,6 +50,8 @@ export function sidebar(ovvi: Ovvi) {
   const folder = (path: string) => path.slice(0, path.lastIndexOf("/") + 1)
   /** The last shown last. */
   let trees: Tree[] = [], current: Tree | undefined, file = "", next = ""
+  /** The page of the file the tree shows beside: its Show Hidden Files follows the tree's eye. */
+  let beside: Ovvi | undefined
   ovvi.on("settings", (changed) => "file-tree" in changed && show())
 
   function draw(root: string, at?: string): Tree {
@@ -85,6 +87,7 @@ export function sidebar(ovvi: Ovvi) {
             delete kept.refused
             tree.values.set(id, kept)
             tree.header?.controls.set(id, change)
+            if (id === "show-hidden" && tree === current) beside?.controls.set(id, change)
           },
         },
       },
@@ -158,6 +161,7 @@ export function sidebar(ovvi: Ovvi) {
     // A tree not drawn yet slides in once it has its rows, not empty.
     void (current ? Promise.resolve() : rooted(folder(file), file)).then(() => {
       if (file) side(chosen())
+      beside?.controls.set("show-hidden", { ...current?.values.get("show-hidden") })
       return current?.reveal.then((reveal) => reveal?.(file, keys))
     })
   }
@@ -176,13 +180,15 @@ export function sidebar(ovvi: Ovvi) {
       return chosen()
     },
     /** The card shows this file. */
-    file(path: string) {
+    file(path: string, page: Ovvi) {
       file = path
+      beside = page
       show()
     },
     /** The card shows the tree's page of this root, with that page's row 2: resolves once the tree has its rows. */
     async page(header: Ovvi, root: string, at?: string) {
       file = ""
+      beside = undefined
       const shown = rooted(root, at, () => ovvi.card.arg === root)
       const tree = trees.find((each) => each.root === root)
       if (tree) tree.header = header

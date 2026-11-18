@@ -72,10 +72,18 @@ extension OvviUITests {
         }
         XCTAssertFalse(until(1) { self.row("src", in: file).exists }, "the tree shows with Show only the file")
 
-        step("The tree beside the file: a click selects, a double-click shows the file")
+        step("⇧⌘. toggles hidden files while the tree shows beside the file, not while it is hidden")
+        app.typeKey(".", modifierFlags: [.command, .shift])
         toggle.click()
         XCTAssertTrue(toggle.has(\.isSelected, true, within: 3))
         XCTAssertTrue(row("src", in: file).exists(within: 10))
+        XCTAssertFalse(row(".gitignore", in: file).exists, "⇧⌘. worked with the tree hidden")
+        app.typeKey(".", modifierFlags: [.command, .shift])
+        XCTAssertTrue(row(".gitignore", in: file).exists(within: 5))
+        app.typeKey(".", modifierFlags: [.command, .shift])
+        XCTAssertTrue(row(".gitignore", in: file).vanishes(within: 5))
+
+        step("The tree beside the file: a click selects, a double-click shows the file")
         XCTAssertLessThan(row("src", in: file).frame.maxX, file.textViews.firstMatch.frame.minX)
         row("build", in: file).click()
         app.typeKey(.rightArrow, modifierFlags: [])

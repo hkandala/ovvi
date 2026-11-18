@@ -51,11 +51,18 @@ export default async function main(ovvi: Ovvi) {
       return side.page(scoped, arg, page.at)
     }
     // Each page keeps its own row 2: a page shown again, or a setting, follows the card's sidebar.
-    const sync = () => scoped.controls.set("tree", { value: side.open })
-    const shows = () => (sync(), side.file(arg))
+    const sync = () => {
+      scoped.controls.set("tree", { value: side.open })
+      scoped.controls.set("show-hidden", { enabled: side.open })
+    }
+    const shows = () => (sync(), side.file(arg, scoped))
     shows()
     scoped.on("place", shows)
-    scoped.on("control", ({ id }) => id === "tree-keys" && (side.keys(), sync()))
+    scoped.on("control", ({ id }) => {
+      if (id === "tree-keys") side.keys()
+      else if (id === "show-hidden") side.emit("control", { id })
+      sync()
+    })
     scoped.on("settings", sync)
     const read = place === "file" || place === "markdown" ? ovvi.files.read(arg) : undefined
     read?.catch(() => undefined)
