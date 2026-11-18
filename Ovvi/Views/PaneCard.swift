@@ -18,11 +18,9 @@ struct PaneCard: View {
     @State private var zone: Heading??
     @State private var size = CGSize.zero
     @State private var keptLit = false
-    @Environment(\.appearsActive) private var active
     @Environment(\.look) private var look
     @Environment(\.pageHidden) private var hidden
     @Environment(\.chromeLink) private var chromeLink
-    private var settings = AppSettings()
 
     var body: some View {
         let store = page.store
@@ -41,7 +39,6 @@ struct PaneCard: View {
         // `CardChrome` draws its border.
         let bordered = lit && shown.count > 1 && page.zoomedPaneID == nil
         let floated = pane.map(page.floats) ?? false
-        let follow = hovering && settings.followMouse && !away && active && !floated
         let content = page.watched ? 0.85 : 1
         let chooser = store.chooser(id), (browser, plugin) = page.cards(pane, make: !hidden)
         let chat = chooser == nil && !floated ? pane.flatMap(page.store.chat) : nil
@@ -159,22 +156,6 @@ struct PaneCard: View {
         }
         .clearsDrop(page) { zone = nil }
         .onHover { hovering = $0 }
-        .task(id: follow) {
-            // A lit card waits too while a text field has the keys: a rename in another card holds them, and its end
-            // gives them to that card.
-            guard follow, !lit || NSApp.keyWindow?.firstResponder is NSText else { return }
-            while await (try? Task.sleep(for: .milliseconds(150))) != nil {
-                // Not once the page is on another tab (a palette pick): hover lasts until the mouse moves.
-                guard let pane = store.pane(id), pane.tabID == page.selectedTab?.id else { return }
-                // No button down, no open menu (hover stays on while one tracks), no text field typing.
-                guard NSEvent.pressedMouseButtons == 0, RunLoop.main.currentMode != .eventTracking,
-                      !(NSApp.keyWindow?.firstResponder is NSText) else { continue }
-                if page.keyboardCard(pane.tabID) !== pane {
-                    page.go(to: pane)
-                }
-                return
-            }
-        }
         .accessibilityHidden(away)
     }
 

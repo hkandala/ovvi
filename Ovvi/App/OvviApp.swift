@@ -9,6 +9,7 @@ struct OvviApp: App {
     init() {
         SwipeRouter.install()
         MovingCard.activateOnClick()
+        MovingCard.followMouse()
         Latency.shared.install()
         FrameProbe.shared.install()
         NSWindow.allowsAutomaticWindowTabbing = false

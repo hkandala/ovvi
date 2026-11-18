@@ -259,11 +259,8 @@ extension MovingCard {
     }
 
     private static func clicked(_ event: NSEvent) {
-        guard let window = event.window, window.attachedSheet == nil, let content = window.contentView,
-              let hit = content.hitTest(content.superview?.convert(event.locationInWindow, from: nil)
-                  ?? event.locationInWindow)
-        else { return }
-        let card = sequence(first: hit, next: \.superview).lazy.compactMap { $0 as? MovingCard }.first
+        guard let window = event.window, window.attachedSheet == nil else { return }
+        let card = card(at: event.locationInWindow, in: window)
         // After AppKit's mouse-down: a view that takes keys (a field, the page, the terminal) became first responder
         // there, ahead of its own mouseDown.
         DispatchQueue.main.async {
@@ -278,15 +275,71 @@ extension MovingCard {
         }
     }
 
+    private static func card(at point: NSPoint, in window: NSWindow) -> MovingCard? {
+        guard let content = window.contentView,
+              let hit = content.hitTest(content.superview?.convert(point, from: nil) ?? point) else { return nil }
+        return sequence(first: hit, next: \.superview).lazy.compactMap { $0 as? MovingCard }.first
+    }
+
+    /// Focus follows mouse: the card under the pointer takes the keyboard once the pointer rests on it 150 ms. From the
+    /// pointer's place, not SwiftUI's hover: that stops for good in the window once a text panel shows (an
+    /// autocorrection while typing in a web page).
+    static func followMouse() {
+        NSEvent.addLocalMonitorForEvents(matching: .mouseMoved) { event in
+            MainActor.assumeIsolated { pointerMoved() }
+            return event
+        }
+    }
+
+    private weak static var pointed: MovingCard?
+    private static var following: Task<Void, Never>?
+
+    private static func pointerMoved() {
+        let card = AppSettings().followMouse ? underPointer() : nil
+        guard card !== pointed else { return }
+        pointed = card
+        following?.cancel()
+        guard let card else { return }
+        following = Task {
+            while await (try? Task.sleep(for: .milliseconds(150))) != nil {
+                guard underPointer() === card, let window = card.window else { return }
+                // No button down, no open menu, no field typed in (at its end, this card takes the keys).
+                guard NSEvent.pressedMouseButtons == 0, RunLoop.main.currentMode != .eventTracking,
+                      !typing(in: window) else { continue }
+                activate(card, in: window, follow: true)
+                return
+            }
+        }
+    }
+
+    /// Only in the key window: an event goes to a panel over it too (an autocorrection's).
+    private static func underPointer() -> MovingCard? {
+        let point = NSEvent.mouseLocation
+        guard let window = NSApp.window(withWindowNumber: NSWindow.windowNumber(at: point,
+                                                                                belowWindowWithWindowNumber: 0)),
+            window.isKeyWindow, window.attachedSheet == nil else { return nil }
+        return card(at: window.convertPoint(fromScreen: point), in: window)
+    }
+
+    /// A field typed in keeps the keys (a rename, an address, the sidebar's filter), but not a chat's reply box: that
+    /// is its card's keyboard view, as a terminal is.
+    private static func typing(in window: NSWindow) -> Bool {
+        guard let text = window.firstResponder as? NSText else { return false }
+        let card = sequence(first: text as NSView, next: \.superview).lazy.compactMap { $0 as? MovingCard }.first
+        guard let card, let page = WindowPages.windows.first(where: { $0.window === window })?.current,
+              let pane = page.store.pane(card.id) else { return true }
+        return page.renamingPaneID == card.id || page.shownChat(pane) == nil
+    }
+
     private static func floated(in window: NSWindow) -> String? {
         FloatFrames.windows.keyEnumerator().allObjects.compactMap { $0 as? String }
             .first { FloatFrames.windows.object(forKey: $0 as NSString) === window }
     }
 
-    private static func activate(_ card: MovingCard, in window: NSWindow) {
+    private static func activate(_ card: MovingCard, in window: NSWindow, follow: Bool = false) {
         guard let pages = WindowPages.windows.first(where: { $0.window === window }), !pages.panelOpen,
               let page = pages.current, let pane = page.store.pane(card.id), pane.tabID == page.selectedTab?.id,
-              !page.floats(pane)
+              !page.floats(pane), !follow || page.keyboardCard(pane.tabID) !== pane
         else { return }
         if let responder = window.firstResponder as? NSView, responder.isDescendant(of: card),
            let terminalID = pane.terminalID
