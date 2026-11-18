@@ -3,16 +3,17 @@ import HerdrKit
 
 extension AgentCommand {
     static let float = AgentCommand(
-        name: "float", usage: "float <pane> [--on-top]", summary: "Floats a pane in a window of its own",
+        name: "float", usage: "float <pane> [--on-top] [--focus]", summary: "Floats a pane in a window of its own",
         help: """
         Over the window where the user last worked in the asking session. A pane that floats already comes to the \
-        front ("existing": true). --on-top turns on Stay on Top.
+        front ("existing": true). --on-top turns on Stay on Top. --focus makes Ovvi the active app and gives the pane \
+        the keyboard; without it, the keyboard stays where it is.
         """,
     ) { call in
-        let onTop = call.flag("--on-top")
+        let onTop = call.flag("--on-top"), focus = call.flag("--focus")
         let target = try await call.target(call.argument("pane"))
         try call.done()
-        return try await call.float(target, onTop: onTop)
+        return try await call.float(target, onTop: onTop, focus: focus)
     }
 
     static let unfloat = AgentCommand(
@@ -63,13 +64,18 @@ extension AgentCommand {
 }
 
 extension AgentCall {
-    func float(_ target: PaneTarget, onTop: Bool) async throws -> AgentOutput {
+    func float(_ target: PaneTarget, onTop: Bool, focus: Bool = false) async throws -> AgentOutput {
         let machine = store.machine
         guard let window = store.windows.first else {
             throw AgentError.noWindow(store.session)
         }
         let existing = target.floating != nil
-        WindowPages.float(session: target.session, pane: target.id, machine: machine.id, over: window, agent: true)
+        if focus {
+            NSApp.activate()
+        }
+        // Without --focus, the quiet float: an agent never takes the user's typing.
+        WindowPages.float(session: target.session, pane: target.id, machine: machine.id, over: window,
+                          agent: !focus)
         try await settle(for: .seconds(8)) { target.floating != nil || window.floatPending == nil }
         let floating = target.floating
         if floating == nil, case let .failed(error) = target.store?.state {

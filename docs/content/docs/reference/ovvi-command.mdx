@@ -282,12 +282,15 @@ it.
 ```sh
 ovvi float w1:p3
 ovvi float work/w1:p1 --on-top
+ovvi float w1:p3 --focus
 ```
 
 Floats a pane in a window of its own, over the Ovvi window where you last worked in that session. The window
-comes to the front, but Ovvi does not become the active app, and the keyboard stays where it was.
+comes to the front. Without `--focus`, Ovvi does not become the active app, and the keyboard stays where it was.
 
 - `--on-top` turns on Stay on Top.
+- `--focus` makes Ovvi the active app and gives the floating pane the keyboard. Use it when the user asked for
+  the float, for example from a menu in your agent.
 - A pane that floats already comes to the front, with `"existing": true`.
 - A session that no window shows is `failed`.
 

@@ -54,7 +54,8 @@ With `--replace`, a browser card adds a history entry, so Back returns. A termin
 ## Float, point, look
 
 ```sh
-ovvi float w1:p3 [--on-top]               # its own window over Ovvi. --on-top: Stay on Top
+ovvi float w1:p3 [--on-top] [--focus]     # its own window over Ovvi. --on-top: Stay on Top. --focus: the
+                                          # keyboard goes to it; only when the user asked for the float
 ovvi unfloat w1:p3                        # back into its tab
 ovvi reveal w1:p3                         # a flash when in view, else a notice with Show
 ovvi card w1:p3 --json                    # kind, arg, title, dirty (unsaved edits), floating, shown, error

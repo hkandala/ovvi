@@ -21,14 +21,19 @@ extension OvviUITests {
         XCTAssertTrue(element("float.\(second).pin").has(\.stringValue, "on", within: 3))
         XCTAssertTrue(hasKeyboard("terminal.\(first)"))
         try await run("\(ovvi) float \(second)", in: first, "again", 0, "existing: true")
+        XCTAssertTrue(hasKeyboard("terminal.\(first)"))
+        try await run("\(ovvi) float \(second) --focus", in: first, "focus", 0, "existing: true")
+        XCTAssertTrue(hasKeyboard("terminal.\(second)", in: window))
         try await run("\(ovvi) unfloat \(second)", in: first, "unfloat", 0, "floating: false")
         XCTAssertTrue(window.vanishes(within: 3))
         try await run("\(ovvi) unfloat \(second)", in: first, "not", 1, "ovvi: pane \(second) does not float")
         // `tr`: the JSON is wider than the pane. `exit`: the command's code, not tr's.
         try await run("j=$(\(ovvi) --json unfloat \(second)); s=$?; echo \"$j\" | tr , '\\n'; (exit $s)", in: first,
                       "json", 1, #"{"error":{"code":"not_floating""#)
-        try await run("\(ovvi) float \(two)/w1:p1", in: first, "other", 0, "floating: true")
+        try await run("\(ovvi) float \(two)/w1:p1 --focus", in: first, "other", 0, "floating: true")
         try await expectOpen("w1", in: two)
+        let other = app.windows.containing(.any, identifier: "float.w1:p1").firstMatch
+        XCTAssertTrue(hasKeyboard("terminal.w1:p1", in: other))
         try await run("\(ovvi) unfloat \(two)/w1:p1", in: first, "back", 0, "floating: false")
         try await expectOpen("w1", false, in: two)
         try await run("\(ovvi) float", in: first, "usage", 2, "ovvi: missing <pane>")
