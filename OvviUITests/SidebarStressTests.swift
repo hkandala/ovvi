@@ -1,6 +1,7 @@
 import XCTest
 
-/// 200 spaces with 400 agent panes and no programs running (`scripts/stress.py --still`).
+/// 200 spaces with 400 agent panes (200 off CI: the Mac's 511 terminals are shared with the user's programs), no
+/// programs running (`scripts/stress.py --still`).
 extension OvviUITests {
     func testHundredsOfSpacesKeepTheSidebarQuick() async throws {
         executionTimeAllowance = 600
