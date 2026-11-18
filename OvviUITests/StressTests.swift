@@ -119,9 +119,11 @@ extension OvviUITests {
         keep(text, as: "stress")
     }
 
+    /// Away from the list's start and back past it, so the list rests at its start again: on CI an equal swipe back
+    /// once stopped 27 pt short, and the first space's chevron lay under the filter field, which took the click.
     private func scroll(over frame: CGRect, vertical: Bool) async throws {
-        for sign in [-1.0, 1.0] {
-            let body = "\(frame.midX) \(frame.midY) \(20 * sign) 30 0 \(vertical ? 1 : 0)"
+        for (sign, steps) in [(-1.0, 30), (1.0, 40)] {
+            let body = "\(frame.midX) \(frame.midY) \(20 * sign) \(steps) 0 \(vertical ? 1 : 0)"
             try await Self.post("\(one)/swipe", Data(body.utf8))
             try await Task.sleep(for: .seconds(0.5))
         }
