@@ -80,7 +80,8 @@ struct UserBubble: View {
 extension View {
     /// The caller pulls it out by `Bubble.inset`, so that its text keeps the messages' edge.
     func bubble(_ color: Color) -> some View {
-        padding(.horizontal, Bubble.inset).padding(.vertical, 7).background(color, in: .rect(cornerRadius: 15))
+        padding(.horizontal, Bubble.inset).padding(.vertical, Bubble.padding)
+            .background(color, in: .rect(cornerRadius: 15))
     }
 
     /// Pulled out by `Bubble.inset`, so that its text keeps the messages' edge and its sides the bubbles'.
@@ -92,6 +93,7 @@ extension View {
 /// Messages' padding (iMessage: 12 pt beside the text, 7 pt above and under it).
 enum Bubble {
     static let inset: CGFloat = 12
+    static let padding: CGFloat = 7
 }
 
 private struct Plan: View {

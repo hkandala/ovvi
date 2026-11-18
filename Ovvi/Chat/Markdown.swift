@@ -25,15 +25,26 @@ private struct Blocks: View {
         let blocks = Array(container.children)
         VStack(alignment: .leading, spacing: 0) {
             ForEach(blocks.indices, id: \.self) { index in
-                let space = index == 0 ? 0 : Self.space(blocks[index - 1], blocks[index])
+                let space = index == 0 ? Self.first(blocks[index]) : Self.space(blocks[index - 1], blocks[index])
                 Block(markup: blocks[index]).padding(.top, space)
             }
         }
     }
 
+    /// The Markdown plugin's: a heading sits 0.6 of its size below what is above it.
+    private static func margin(_ heading: Heading) -> CGFloat {
+        (0.6 * Block.size(heading)).rounded()
+    }
+
+    /// At a reply's top the bubble's padding is part of the heading's margin.
+    private static func first(_ block: any Markup) -> CGFloat {
+        guard let heading = block as? Heading, block.parent is Markdown::Document else { return 0 }
+        return margin(heading) - Bubble.padding
+    }
+
     private static func space(_ above: any Markup, _ block: any Markup) -> CGFloat {
         if let heading = block as? Heading {
-            heading.level < 3 ? 26 : 17
+            17 + margin(heading)
         } else if above is Heading {
             8
         } else if block.parent is ListItem {
@@ -50,7 +61,7 @@ private struct Block: View {
     var body: some View {
         switch markup {
         case let heading as Heading:
-            let size: CGFloat = [22, 18, 16][min(max(heading.level, 1), 3) - 1]
+            let size = Self.size(heading)
             let weight: Font.Weight = heading.level < 3 ? .bold : .semibold
             ChatLinks.text(Inline.text(heading, size: size)).font(.system(size: size, weight: weight))
         case let paragraph as Paragraph:
@@ -84,6 +95,10 @@ private struct Block: View {
         default:
             Text(markup.format())
         }
+    }
+
+    static func size(_ heading: Heading) -> CGFloat {
+        [22, 18, 16][min(max(heading.level, 1), 3) - 1]
     }
 }
 
