@@ -4,8 +4,7 @@ import Testing
 
 @Test func `envelope runs the argv unchanged`() async throws {
     let argv = ["printf", "%s|", "it's", "a b", "$HOME", "\"q\"", "`x`", "ü\n2", "'\u{301}; echo no"]
-    let exec = localExec
-    let out = try await exec.output(["sh", "-c", shellEnvelope(argv)])
+    let out = try await localExec.output(["sh", "-c", shellEnvelope(argv)])
     #expect(out == "it's|a b|$HOME|\"q\"|`x`|ü\n2|'\u{301}; echo no|")
 }
 
@@ -17,8 +16,7 @@ import Testing
 }
 
 @Test func `relay carries runs over one process`() async throws {
-    let local = localExec
-    let relay = try await Relay.started(local.environment)
+    let relay = try await Relay.started(localExec.environment)
     let failing = try relay.run("echo out; echo err >&2; exit 3")
     let echo = try relay.run("cat")
     let sleeping = try relay.run("sleep 100")

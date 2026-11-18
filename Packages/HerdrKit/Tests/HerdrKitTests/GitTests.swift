@@ -25,10 +25,9 @@ import Testing
 }
 
 @Test func `reads a checkout's status and nothing outside one`() async {
-    let exec = localExec
-    #expect(await GitStatus.of(URL(filePath: #filePath).deletingLastPathComponent().path, exec: exec) != nil)
-    #expect(await GitStatus.of("/", exec: exec) == nil)
-    #expect(await GitStatus.usable(exec: exec))
+    #expect(await GitStatus.of(URL(filePath: #filePath).deletingLastPathComponent().path, exec: localExec) != nil)
+    #expect(await GitStatus.of("/", exec: localExec) == nil)
+    #expect(await GitStatus.usable(exec: localExec))
 }
 
 @Test func `status letters from real porcelain`() {

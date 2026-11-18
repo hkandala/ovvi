@@ -80,7 +80,7 @@ public struct Channel: Sendable {
     public let lines: AsyncStream<String>
     /// One line, no line break in it: over a remote machine's relay the rest would be read as a relay command.
     public let write: @Sendable (String) -> Void
-    /// Every long-running command the app starts exits when its stdin closes (talking-to-herdr, Running commands).
+    /// Every long-running command the app starts exits when its stdin closes.
     public let closeInput: @Sendable () -> Void
     public let terminate: @Sendable () -> Void
     public let exit: @Sendable () async -> (status: Int32, stderr: String)

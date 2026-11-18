@@ -141,11 +141,10 @@ private func talk(_ client: HerdrClient, _ exec: SubscribeCounter) async throws 
 }
 
 @Test func `output of fast commands always ends`() async throws {
-    let exec = localExec
     try await withThrowingTaskGroup(of: [String].self) { group in
         for _ in 0 ..< 30 {
             group.addTask {
-                let channel = try await exec.run(["sh", "-c", "echo hi"])
+                let channel = try await localExec.run(["sh", "-c", "echo hi"])
                 channel.closeInput()
                 return try await withTimeout(failureBound, onTimeout: channel.terminate) {
                     await channel.lines.reduce(into: []) { $0.append($1) }
@@ -159,9 +158,8 @@ private func talk(_ client: HerdrClient, _ exec: SubscribeCounter) async throws 
 }
 
 @Test func `a long line and the lines around it read whole`() async throws {
-    let exec = localExec
     // 8 MB in one line, as a big session's snapshot comes (280 KB at 400 panes), in many pipe chunks.
-    let channel = try await exec.run(["sh", "-c", "echo a; head -c 8000000 /dev/zero | tr '\\0' x; echo; echo b"])
+    let channel = try await localExec.run(["sh", "-c", "echo a; head -c 8000000 /dev/zero | tr '\\0' x; echo; echo b"])
     channel.closeInput()
     let lines = await channel.lines.reduce(into: []) { $0.append($1) }
     #expect(lines.map(\.count) == [1, 8_000_000, 1])
@@ -179,8 +177,7 @@ private func talk(_ client: HerdrClient, _ exec: SubscribeCounter) async throws 
 }
 
 @Test func `terminate stops the readers when a grandchild keeps the pipes open`() async throws {
-    let exec = localExec
-    let channel = try await exec.run(["sh", "-c", "sleep 120 & echo $!"])
+    let channel = try await localExec.run(["sh", "-c", "sleep 120 & echo $!"])
     let sleep = try #require(await channel.lines.first { _ in true }.flatMap { pid_t($0) })
     defer { kill(sleep, SIGKILL) }
     channel.terminate()
