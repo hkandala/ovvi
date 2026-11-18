@@ -6,6 +6,7 @@ extension OvviUITests {
         // Open, the section would lie under the click.
         if element("agents.section").exists {
             element("sidebar.agents").click()
+            XCTAssertTrue(element("agents.section").vanishes(within: 2))
         }
         let below = element("workspace.w2").center
             .withOffset(CGVector(dx: 0, dy: 120))
