@@ -330,12 +330,14 @@ extension MovingCard {
               window.isMainWindow, window.attachedSheet == nil else { return nil }
         // By frame, not a hit test: SwiftUI's says no view takes a click over text that takes none (a card's title).
         let inWindow = window.convertPoint(fromScreen: point)
+        guard let page = WindowPages.windows.first(where: { $0.window === window })?.current else { return nil }
+        // Not a closed pane's card as it fades out.
         let cards = all.allObjects.filter {
-            $0.window === window && !$0.isHiddenOrHasHiddenAncestor && $0.convert($0.bounds, to: nil).contains(inWindow)
+            $0.window === window && !$0.isHiddenOrHasHiddenAncestor && page.store.pane($0.id) != nil
+                && $0.convert($0.bounds, to: nil).contains(inWindow)
         }
         // A zoomed card lies over the others of its tab.
-        let zoomed = WindowPages.windows.first { $0.window === window }?.current?.zoomedPaneID
-        return cards.first { $0.id == zoomed } ?? cards.first
+        return cards.first { $0.id == page.zoomedPaneID } ?? cards.first
     }
 
     /// A field typed in keeps the keys (a rename, an address, the sidebar's filter), but not a chat's reply box or a
@@ -356,6 +358,7 @@ extension MovingCard {
 
     private static func activate(_ card: MovingCard, in window: NSWindow, follow: Bool = false) {
         guard let pages = WindowPages.windows.first(where: { $0.window === window }), !pages.panelOpen,
+              !follow || pages.question == nil,
               let page = pages.current, let pane = page.store.pane(card.id), pane.tabID == page.selectedTab?.id,
               !page.floats(pane), !follow || page.keyboardCard(pane.tabID) !== pane
         else { return }
