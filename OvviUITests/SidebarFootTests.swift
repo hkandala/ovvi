@@ -179,25 +179,28 @@ extension OvviUITests {
         // Ids, not the bound elements: a removed row shifts their indexes.
         let rows = section.descendants(matching: .any)
             .matching(NSPredicate(format: "identifier BEGINSWITH %@", prefix))
-        let order = rows.allElementsBoundByIndex.sorted { $0.frame.minY < $1.frame.minY }.map(\.identifier)
-        XCTAssertEqual(order.count, 12)
-        XCTAssertEqual(order.first, prefix + needs)
+        // The lazy list builds the rows in view only.
+        let built = { rows.allElementsBoundByIndex.sorted { $0.frame.minY < $1.frame.minY }.map(\.identifier) }
+        XCTAssertEqual(built().first, prefix + needs)
         XCTAssertEqual(section.frame.height, 324, accuracy: 0.5)
-        let last = element(order[11])
-        XCTAssertFalse(last.isHittable, "the last row shows unscrolled: \(last.frame) in \(section.frame)")
         keepScreenshot("agents section, 12 agents")
         section.scroll(byDeltaX: 0, deltaY: -3000)
-        XCTAssertTrue(last.has(\.isHittable, true, within: 2), "\(last.frame) in \(section.frame)")
+        let first = element(prefix + needs)
+        XCTAssertTrue(until(2) { !first.exists || !first.isHittable }, "the list did not scroll")
+        let end = built().suffix(2)
+        XCTAssertEqual(end.count, 2)
+        let last = element(end.last ?? "")
+        XCTAssertTrue(last.isHittable, "\(last.frame) in \(section.frame)")
         XCTAssertEqual(section.frame.maxY - last.frame.maxY, 4, accuracy: 0.5, "the last row's bottom inset")
         keepScreenshot("agents section, scrolled to the end")
-        clearsDone(order, needs: needs)
+        clearsDone(Array(end), needs: needs)
     }
 
-    /// `order`: the section's rows from the top, scrolled to the end; the first needs you.
-    private func clearsDone(_ order: [String], needs: String) {
+    /// `end`: the section's last two rows, scrolled to the end; `needs` is the first row's.
+    private func clearsDone(_ end: [String], needs: String) {
         let section = element("agents.section"), header = element("agents.group.Done")
         let prefix = "agents.row.\(one).", clearPrefix = "agents.clear.\(one)."
-        let last = element(order[11]), clearLast = element(order[11].replacing(prefix, with: clearPrefix))
+        let last = element(end[1]), clearLast = element(end[1].replacing(prefix, with: clearPrefix))
         step("A done row under the pointer shows its ×, which clears it")
         last.hover()
         XCTAssertTrue(clearLast.exists(within: 2), "no × on a done row under the pointer")
@@ -206,7 +209,7 @@ extension OvviUITests {
         XCTAssertTrue(last.vanishes(within: 2))
         XCTAssertTrue(header.has(\.stringValue, "10, expanded", within: 2), header.stringValue)
         // At the list's end the row above slides under the resting pointer.
-        XCTAssertTrue(element(order[10].replacing(prefix, with: clearPrefix)).exists(within: 2),
+        XCTAssertTrue(element(end[0].replacing(prefix, with: clearPrefix)).exists(within: 2),
                       "the row that came under the pointer shows no ×")
 
         step("A row that needs you shows no ×")

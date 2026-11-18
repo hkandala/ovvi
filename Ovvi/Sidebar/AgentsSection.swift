@@ -86,7 +86,6 @@ struct AgentsSection: View {
                 .accessibilityIdentifier("agents.back")
             } else {
                 Text("Agents · \(pages.machine.name)").padding(.leading, WorkspaceRow.textInset)
-                    .accessibilityAddTraits(.isHeader)
                     .accessibilityIdentifier("agents.header")
             }
             Spacer(minLength: 8)
