@@ -16,7 +16,7 @@ public actor HerdrClient {
 
     private var out: AsyncStream<Update>.Continuation?
     private var lastRead: ContinuousClock.Instant?
-    private var reading = false
+    var reading = false
     private var readAgain = false
     private var hurry = false
     private var pause: Task<Void, Never>?

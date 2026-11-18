@@ -151,9 +151,10 @@ func started(_ client: HerdrClient, _ exec: FakeExec, _ gate: Gate? = nil) async
         gate?.open()
         return exec[\.subscribes].count == 1 && exec[\.reads] >= 2 && exec[\.inFlight] == 0
     })
-    // Start-up reads have settled once none came for 150 ms; a late one would count as the test's.
+    // Start-up reads have settled once none came for 150 ms and the client reads none (a read can outlast the 150
+    // ms); a late one would count as the test's.
     var reads = -1
-    while reads != exec[\.reads] || gate?[\.waiting] ?? 0 > 0 {
+    while await client.reading || reads != exec[\.reads] || gate?[\.waiting] ?? 0 > 0 {
         reads = exec[\.reads]
         gate?.open()
         try? await Task.sleep(for: .milliseconds(150))
