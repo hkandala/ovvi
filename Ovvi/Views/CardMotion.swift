@@ -285,7 +285,8 @@ extension MovingCard {
     /// pointer's place, not SwiftUI's hover: that stops for good in the window once a text panel shows (an
     /// autocorrection while typing in a web page).
     static func followMouse() {
-        NSEvent.addLocalMonitorForEvents(matching: .mouseMoved) { event in
+        // Entered too: a pointer that comes from outside the window (the menu bar) brings no move.
+        NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved, .mouseEntered, .mouseExited]) { event in
             MainActor.assumeIsolated { pointerMoved() }
             return event
         }
@@ -312,23 +313,24 @@ extension MovingCard {
         }
     }
 
-    /// Only in the key window: an event goes to a panel over it too (an autocorrection's).
+    /// The main window, as a card's `appearsActive`: a panel over it (an autocorrection's) can be the key window.
     private static func underPointer() -> MovingCard? {
         let point = NSEvent.mouseLocation
         guard let window = NSApp.window(withWindowNumber: NSWindow.windowNumber(at: point,
                                                                                 belowWindowWithWindowNumber: 0)),
-            window.isKeyWindow, window.attachedSheet == nil else { return nil }
+            NSApp.isActive, window.isMainWindow, window.attachedSheet == nil else { return nil }
         return card(at: window.convertPoint(fromScreen: point), in: window)
     }
 
-    /// A field typed in keeps the keys (a rename, an address, the sidebar's filter), but not a chat's reply box: that
-    /// is its card's keyboard view, as a terminal is.
+    /// A field typed in keeps the keys (a rename, an address, the sidebar's filter), but not a chat's reply box or a
+    /// blank browser's address: they are their card's keyboard view, as a terminal is.
     private static func typing(in window: NSWindow) -> Bool {
         guard let text = window.firstResponder as? NSText else { return false }
         let card = sequence(first: text as NSView, next: \.superview).lazy.compactMap { $0 as? MovingCard }.first
         guard let card, let page = WindowPages.windows.first(where: { $0.window === window })?.current,
               let pane = page.store.pane(card.id) else { return true }
-        return page.renamingPaneID == card.id || page.shownChat(pane) == nil
+        return page.renamingPaneID == card.id
+            || page.shownChat(pane) == nil && page.cards(pane, make: false).0?.address.isEmpty != true
     }
 
     private static func floated(in window: NSWindow) -> String? {
