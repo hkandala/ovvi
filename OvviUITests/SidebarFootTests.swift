@@ -12,6 +12,9 @@ extension OvviUITests {
         step("Nothing works, finished or needs you: all caught up, and the section says so")
         XCTAssertTrue(summary.has(\.stringValue, "All caught up", within: 3), summary.stringValue)
         XCTAssertGreaterThan(summary.frame.width, 40, "the idle box has no words beside its icon")
+        summary.hover()
+        let idleTip = element("tooltip", in: first)
+        XCTAssertTrue(idleTip.has(\.stringValue, "No agents running", within: 3), idleTip.stringValue)
         keepScreenshot("foot, all caught up")
         openAgents(in: first)
         XCTAssertTrue(element("agents.empty", in: first).exists(within: 2))
@@ -115,9 +118,9 @@ extension OvviUITests {
     /// The foot's buttons name their keys and open what those keys open.
     func testTheSidebarFootsButtonsOpenTheirPanels() {
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
-        // On the section's text column; as far over the window's bottom as under the open section.
+        // On the space rows' text column; as far over the window's bottom as under the open section.
         let summary = element("sidebar.agents"), window = mainWindows.firstMatch
-        XCTAssertEqual(summary.frame.minX - window.frame.minX, 22, accuracy: 0.5, "\(summary.frame)")
+        XCTAssertEqual(summary.frame.minX - window.frame.minX, 18, accuracy: 0.5, "\(summary.frame)")
         XCTAssertEqual(window.frame.maxY - summary.frame.maxY, 18, accuracy: 0.5, "\(summary.frame) in \(window.frame)")
         let tip = element("tooltip")
         for (button, text) in [("shortcuts", "Keyboard Shortcuts ⌘/"), ("palette", "Command Palette ⌘K"),
@@ -141,11 +144,12 @@ extension OvviUITests {
         XCTAssertEqual(section.frame.minX - window.frame.minX, 10, accuracy: 0.5, "\(section.frame)")
         XCTAssertEqual(section.frame.height, 324, accuracy: 0.5)
         XCTAssertEqual(summary.frame.minY - section.frame.maxY, 18, accuracy: 0.5, "the section over the foot")
-        XCTAssertEqual(header.frame.minX, summary.frame.minX, accuracy: 0.5, "the title on the box's edge")
+        XCTAssertEqual(header.frame.minX - section.frame.minX, 12, accuracy: 0.5, "the title's inset")
         XCTAssertEqual(element("agents.archive").frame.minY - section.frame.minY, 6, accuracy: 0.5, "the top inset")
-        // The archive button's glyph and the gear's end on one column.
+        // The header's 22 pt row, 4 pt, then the summary's 26 pt row.
+        XCTAssertEqual(element("agents.summary").frame.midY - header.frame.midY, 28, accuracy: 0.5)
         XCTAssertEqual(element("agents.archive").frame.maxX, section.frame.maxX - 6, accuracy: 0.5)
-        XCTAssertEqual(element("sidebar.settings").frame.maxX, section.frame.maxX - 5, accuracy: 0.5)
+        XCTAssertEqual(element("sidebar.settings").frame.maxX, section.frame.maxX - 1.5, accuracy: 0.5)
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(section.vanishes(within: 2))
         element("sidebar.settings").click()
@@ -207,6 +211,8 @@ extension OvviUITests {
         step("A done row under the pointer shows its ×, which clears it")
         last.hover()
         XCTAssertTrue(clearLast.exists(within: 2), "no × on a done row under the pointer")
+        // Its 16 pt box 2 pt in: its ink 6 pt from the row's edge, as far in as the tile.
+        XCTAssertEqual(last.frame.maxX - clearLast.frame.maxX, 2, accuracy: 0.5)
         keepScreenshot("agents section, a done row under the pointer")
         clearLast.click()
         XCTAssertTrue(last.vanishes(within: 2))

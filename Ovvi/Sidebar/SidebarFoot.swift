@@ -7,10 +7,10 @@ struct SidebarFoot: View {
     private static let height: CGFloat = 28
     /// The box sits as far under the agents section's border as over the window's bottom.
     private static let margin: CGFloat = 18
-    /// The box's left edge on the agents section's text column.
-    private static let leading = AgentsSection.inset + AgentsSection.padding
-    /// The gear's ink ends on the section's right column: its archive button's, the fold chevrons', a row's ×.
-    private static let end: CGFloat = 5
+    /// The box's left edge on the sidebar's text column, the space rows'.
+    private static let leading = WorkspaceRow.textInset
+    /// The gear's ink 8.5 pt inside the space rows' right edge, as the box is 8 pt inside their left edge.
+    private static let end: CGFloat = 1.5
 
     let pages: WindowPages
     @Binding var panel: WindowPanel?

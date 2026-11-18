@@ -122,7 +122,7 @@ private struct GroupHeader: View {
                 if hovering {
                     Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
                         .rotationEffect(.degrees(folded ? 0 : 90))
-                        // Its ink on the column of the gear and a row's ×.
+                        // Its ink on the section's right column, with a row's ×.
                         .frame(width: 20, height: 22).padding(.trailing, -5.5)
                 }
             }
@@ -140,11 +140,11 @@ private struct GroupHeader: View {
                 // The header's light is its light.
                 Button(action: clearAll) {
                     Text("Clear All").font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
-                        .frame(height: 20).contentShape(.rect)
+                        .padding(.horizontal, 6).frame(height: 20).contentShape(.rect)
                 }
                 .buttonStyle(.plain)
                 // Its ink 5.5 pt left of the right column, left of the chevron under the pointer.
-                .padding(.trailing, hovering ? 25 : 10)
+                .padding(.trailing, hovering ? 19 : 4)
                 .accessibilityIdentifier("agents.clearAll")
             }
         }
@@ -197,7 +197,7 @@ private struct AgentRow: View {
                         .frame(width: 16, height: 16)
                 }
                 .buttonStyle(ChromeStyle(radius: 6))
-                // Its ink as far in as the tile on the left, on the gear's column.
+                // Its ink as far in as the tile on the left, on the section's right column.
                 .padding(.trailing, AgentsSection.padding - 4)
                 .accessibilityLabel("Clear")
                 .accessibilityIdentifier("agents.clear.\(store.session).\(pane.id)")
