@@ -121,7 +121,7 @@ struct SessionHeader: View {
 
     private func shelf(_ list: [Page]) -> some View {
         VStack(spacing: 0) {
-            // In the window's order, so a pick moves nothing: only the mark changes, with a fade.
+            // In the window's order, so a pick moves nothing: only the mark (a filled symbol, a bolder name) fades.
             ForEach(list.indices, id: \.self) { index in
                 let other = list[index]
                 let detach = pages.canDetach ? { pages.close(other) } : nil
@@ -147,7 +147,7 @@ struct SessionHeader: View {
         return Button(action: action) {
             HStack(spacing: 8) {
                 Image(systemName: current ? symbol + ".fill" : symbol).foregroundStyle(.secondary).frame(width: 18)
-                Text(title).truncationMode(.middle).lineLimit(1)
+                Text(title).truncationMode(.middle).lineLimit(1).fontWeight(current ? .semibold : nil)
                 Spacer(minLength: 0)
                 Text(key).font(.system(size: 11)).foregroundStyle(.tertiary)
             }
@@ -166,7 +166,8 @@ struct SessionHeader: View {
         .overlay(alignment: .trailing) {
             if let detach, detaches {
                 IconButton(symbol: "rectangle.stack.badge.minus", help: "Detach Session", size: 18, action: detach)
-                    .padding(.trailing, 4)
+                    // Its ink as far from the row's right edge as the row's symbol from its left.
+                    .padding(.trailing, 3.5)
                     .accessibilityIdentifier(id + ".detach")
             }
         }
