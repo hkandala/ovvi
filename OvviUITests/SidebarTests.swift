@@ -3,6 +3,10 @@ import XCTest
 extension OvviUITests {
     func testTheSidebarsEmptyAreaHasTheSessionMenu() {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        // Open, the section would lie under the click.
+        if element("agents.section").exists {
+            element("sidebar.agents").click()
+        }
         let below = element("workspace.w2").center
             .withOffset(CGVector(dx: 0, dy: 120))
         below.rightClick()

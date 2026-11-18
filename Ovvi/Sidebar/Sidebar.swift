@@ -15,8 +15,15 @@ struct Sidebar: View {
     /// The user opened the agents section, so the keys go to it.
     @State private var opening = false
     /// The defaults' open line, followed in a transaction of its own: a write to the defaults draws with none.
-    @State private var agentsOpen = false
+    @State private var agentsOpen: Bool
     @Environment(\.look) private var look
+
+    init(pages: WindowPages, width: Binding<Double>, panel: Binding<WindowPanel?>) {
+        (self.pages, _width, _panel) = (pages, width, panel)
+        // Shown again, the sidebar draws its first frame with the section.
+        _agentsOpen = State(initialValue: (UserDefaults.sidebar.string(forKey: Page.foldsAndShelves) ?? "")
+            .hasLine(pages.agentsKey))
+    }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -82,13 +89,7 @@ struct Sidebar: View {
             SidebarFoot(pages: pages, panel: $panel, open: agentsOpen, toggle: toggleAgents)
                 .padding(.leading, Sidebar.rowInsets.leading).padding(.trailing, Sidebar.rowInsets.trailing)
         }
-        .onChange(of: opened.hasLine(pages.agentsKey), initial: true) { old, new in
-            if old == new {
-                agentsOpen = new
-            } else {
-                withAnimation(.slide) { agentsOpen = new }
-            }
-        }
+        .onChange(of: opened.hasLine(pages.agentsKey)) { _, open in withAnimation(.slide) { agentsOpen = open } }
         // The whole sidebar swipes its pages, the header and the filter too.
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { area = $0 }
         .background(PagesAnchor(
