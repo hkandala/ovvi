@@ -100,6 +100,14 @@ nav button:hover {
 .cm-line.cm-md-hang {
   padding-left: calc(var(--quotes, 0) * 12px + var(--hang, 0em) + 6px);
 }
+/* List items sit a little apart (a top-level list's first keeps the paragraph gap); after a code block's gap, that
+   gap is theirs. An item that opens with a fence keeps its box as it is. */
+.cm-line.cm-md-item:not(.cm-md-pre) {
+  padding-top: 3px;
+}
+.cm-md-gap + .cm-line.cm-md-item {
+  padding-top: 0;
+}
 /* Longhands: a code line in a quote keeps its fill under the bars. */
 .cm-line.cm-md-quote {
   color: var(--dim);

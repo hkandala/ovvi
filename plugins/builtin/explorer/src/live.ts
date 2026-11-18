@@ -431,7 +431,8 @@ function preview(view: EditorView): DecorationSet {
           const each = doc.lineAt(node.from)
           const width = depth(parent) * INDENT
           const style = raw(node.from) ? `--hang: ${width - 1}em` : `--hang: ${width}em; text-indent: -${width}em`
-          ranges.push(Decoration.line({ class: "cm-md-hang", attributes: { style } }).range(each.from))
+          const item = parent.prevSibling || parent.parent?.parent?.name === "ListItem" ? " cm-md-item" : ""
+          ranges.push(Decoration.line({ class: `cm-md-hang${item}`, attributes: { style } }).range(each.from))
           if (!raw(node.from)) {
             const marker = parent.getChild("Task")?.getChild("TaskMarker") ?? undefined
             const end = past(marker?.to ?? node.to)
