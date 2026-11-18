@@ -92,9 +92,9 @@ nav button:hover {
 .cm-line.cm-md-fence {
   line-height: 10px;
 }
-/* A blank line's height: a code block keeps a paragraph's gap from text that touches it. */
+/* A slight gap: a code block next to text no longer touches it. */
 .cm-md-gap {
-  height: 1lh;
+  height: 6px;
 }
 .cm-line.cm-md-quote,
 .cm-line.cm-md-hang {
