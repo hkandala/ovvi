@@ -46,7 +46,6 @@
   .row > .icon { opacity: 0; }
   .row:hover > .icon, .row:focus-within > .icon { opacity: 1; }
   .empty { margin: 0; padding: 0 10px; height: 28px; line-height: 28px; color: var(--dim); }
-  .open > .symbol { color: var(--dim); }
   .icon { all: unset; display: grid; place-items: center; flex: none; width: 22px; height: 22px; border-radius: 6px;
     color: var(--dim); }
   .icon .symbol { width: 11px; height: 11px; }
