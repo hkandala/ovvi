@@ -59,6 +59,9 @@ private struct MiniCard: View {
                         TilePhoto(pane: pane, page: page, content: content, scale: scale, header: header,
                                   symbol: symbol)
                             .miniCard(pane.id, "photo")
+                            // A view per turn: a turn ended and started again before SwiftUI's next update keeps the
+                            // view, whose task already ran for the last one.
+                            .id(page.terminals.pages?.overviewPhotoTimeout)
                     } else if page.terminals.pages?.photoWaits(page, pane) == true {
                         TileLoader(symbol: symbol, pane: pane.id).miniCard(pane.id, "waiting")
                     } else {
