@@ -78,7 +78,6 @@ final class MachineList {
     static let machine = arguments["machine"] as? String
 
     private init() {
-        // The argument as given: the argument domain reads a JSON array as something else.
         let arguments = ProcessInfo.processInfo.arguments
         let json = Self.isolated
             ? arguments.firstIndex(of: "-machines").flatMap { arguments.dropFirst($0 + 1).first }
