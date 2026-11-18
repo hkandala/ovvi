@@ -9,7 +9,8 @@ Mac's clipboard, agents with the chat view, and plugins. The command works the s
 and on every remote machine that Ovvi connects to.
 
 An agent never moves your view. It can add a card beside itself, or a card out of view with a notice that offers
-Show. Ovvi never comes to the front for an agent and never selects a tab for it.
+Show. Ovvi never comes to the front for an agent and never selects a tab for it. The one exception is
+[`float --focus`](#float), for a float that you asked for.
 
 ## Where it is
 
@@ -289,7 +290,7 @@ Floats a pane in a window of its own, over the Ovvi window where you last worked
 comes to the front. Without `--focus`, Ovvi does not become the active app, and the keyboard stays where it was.
 
 - `--on-top` turns on Stay on Top.
-- `--focus` makes Ovvi the active app and gives the floating pane the keyboard. Use it when the user asked for
+- `--focus` brings Ovvi to the front and gives the floating pane the keyboard. Use it when the user asked for
   the float, for example from a menu in your agent.
 - A pane that floats already comes to the front, with `"existing": true`.
 - A session that no window shows is `failed`.

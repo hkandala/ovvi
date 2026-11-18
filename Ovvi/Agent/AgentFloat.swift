@@ -6,7 +6,7 @@ extension AgentCommand {
         name: "float", usage: "float <pane> [--on-top] [--focus]", summary: "Floats a pane in a window of its own",
         help: """
         Over the window where the user last worked in the asking session. A pane that floats already comes to the \
-        front ("existing": true). --on-top turns on Stay on Top. --focus makes Ovvi the active app and gives the pane \
+        front ("existing": true). --on-top turns on Stay on Top. --focus brings Ovvi to the front and gives the pane \
         the keyboard; without it, the keyboard stays where it is.
         """,
     ) { call in

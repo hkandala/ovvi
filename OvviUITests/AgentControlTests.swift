@@ -22,6 +22,7 @@ extension OvviUITests {
         XCTAssertTrue(hasKeyboard("terminal.\(first)"))
         try await run("\(ovvi) float \(second)", in: first, "again", 0, "existing: true")
         XCTAssertTrue(hasKeyboard("terminal.\(first)"))
+        XCTAssertFalse(hasKeyboard("terminal.\(second)", in: window))
         try await run("\(ovvi) float \(second) --focus", in: first, "focus", 0, "existing: true")
         XCTAssertTrue(hasKeyboard("terminal.\(second)", in: window))
         try await run("\(ovvi) unfloat \(second)", in: first, "unfloat", 0, "floating: false")
