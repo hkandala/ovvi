@@ -187,7 +187,8 @@ export async function make(place: Page, root: string, source: string) {
   }
 
   function fileRow(box: Box) {
-    const diff = box.diff, row = element("div", "file"), disclosure = element("button", "disclosure", "›")
+    const diff = box.diff, row = element("div", "file"), disclosure = element("button", "disclosure")
+    disclosure.append(element("span", "", "›"))
     disclosure.ariaLabel = "Show or hide the file"
     disclosure.onclick = () => collapse(diff.name, !box.folded)
     const [base, dir] = nameAndFolder(diff.name)

@@ -48,9 +48,13 @@
   .about .dim { color: var(--dim) }
   .about .hash { font: 11px ui-monospace, monospace; padding: 1px 5px; margin-left: -5px; margin-right: 4px }
   .mark { display: flex; align-items: center; gap: 4px }
-  .disclosure { display: inline-block; width: 10px; text-align: center; transform: rotate(90deg);
-    transition: transform 0.15s }
-  .disclosure.shut { transform: none }
+  /* The find bar's square; only the arrow turns. The glyph's ink sits 1.25px under its line's middle, and turned,
+     1px lower still: the padding and the turned arrow's shift put it on the square's middle. */
+  .disclosure { display: grid; place-items: center; flex: none; width: 22px; height: 22px; padding: 0;
+    border-radius: 5.5px }
+  .disclosure > span { padding-bottom: 2.5px; rotate: 90deg; translate: 0 -1px;
+    transition: rotate 0.15s, translate 0.15s }
+  .disclosure.shut > span { rotate: none; translate: none }
   .find { position: absolute; top: 44px; right: 16px; z-index: 2; display: flex; align-items: center; gap: 2px;
     width: 280px; max-width: calc(100% - 32px); box-sizing: border-box; padding: 4.5px 6px 4.5px 12px;
     border: 0.5px solid var(--divider); border-radius: 16px; background: color-mix(in srgb, var(--card) 82%, transparent);

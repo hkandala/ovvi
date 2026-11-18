@@ -247,6 +247,12 @@ extension OvviUITests {
         XCTAssertTrue(line.vanishes(within: 3))
         viewed.click()
         XCTAssertTrue(line.exists(within: 3))
+        // A click on the disclosure's turned arrow folds the file too.
+        let disclosure = page.buttons["Show or hide the file"].firstMatch
+        disclosure.click()
+        XCTAssertTrue(line.vanishes(within: 3))
+        disclosure.click()
+        XCTAssertTrue(line.exists(within: 3))
 
         let far = page.staticTexts.matching(NSPredicate(format: "value CONTAINS 'far290'")).firstMatch
         XCTAssertFalse(far.exists)
