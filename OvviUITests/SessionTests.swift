@@ -242,9 +242,12 @@ extension OvviUITests {
         showPage(one)
         XCTAssertTrue(element("workspace.w2").exists(within: 2))
 
+        // With a later seq than the report's: herdr ignores a release without one, and the next tests saw it blocked.
         addTeardownBlock { [two] in
-            _ = try? await Self.call(two, "pane.release_agent", ["pane_id": "w1:p1", "source": "ovvi-e2e",
-                                                                 "agent": "codex"])
+            _ = try? await Self.call(two, "pane.release_agent", [
+                "pane_id": "w1:p1", "source": "ovvi-e2e", "agent": "codex",
+                "seq": Int(Date.now.timeIntervalSince1970 * 1000),
+            ])
         }
         try await report("w1:p1", "blocked", session: two)
         try await expect("the badge to count the other page") { element("app.badge").value as? String == "1" }
