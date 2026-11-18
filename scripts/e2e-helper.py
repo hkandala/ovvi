@@ -254,7 +254,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             status, reply = 400, b"the body must be x y (x y hold)... tx ty"
         elif action == "release" and session not in held:
             status, reply = 400, b"no drag held"
-        elif action in (*builds, "press", "temporary-file-drag", "text-drag") and any(
+        elif action in (*builds, "press", "record", "temporary-file-drag", "text-drag") and any(
                 [build.wait() for build in builds.values()]):
             status, reply = 500, b"".join(open(f"{tools}/{name}.log", "rb").read() for name in builds)
         elif action in ("swipe", "pinch", "drag"):
