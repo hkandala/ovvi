@@ -35,7 +35,7 @@ final class HostStore {
     var flashing: String?
     var resuming: Set<String> = []
     var choosers: [Chooser] = []
-    /// The session's sidebar (ui/window#sidebar), kept in the sidebar's defaults: its pinned spaces, its Sort Spaces
+    /// The session's sidebar, kept in the sidebar's defaults: its pinned spaces, its Sort Spaces
     /// (nil: Settings'), and whether it shows only the pinned spaces, which hides the others' states.
     var pins: Set<String> = [] {
         didSet {

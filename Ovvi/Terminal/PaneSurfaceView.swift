@@ -322,7 +322,7 @@ extension PaneSurfaceView {
         terminal.map { "terminal.\($0.paneID)" } ?? ""
     }
 
-    /// ponytail: grid size until VoiceOver gets the screen text (design: accessibility).
+    /// ponytail: grid size until VoiceOver gets the screen text.
     override func accessibilityValue() -> Any? {
         metrics.map { "\($0.rows) \($0.columns)" }
     }

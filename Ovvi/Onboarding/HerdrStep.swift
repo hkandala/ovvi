@@ -1,8 +1,8 @@
 import HerdrKit
 import SwiftUI
 
-/// The welcome's herdr step, only while This Mac has no herdr: Install runs the app's own install (`HerdrInstall`,
-/// ui/states), with its progress, and a failure with Retry. Next waits for `found`.
+/// The welcome's herdr step, only while This Mac has no herdr: Install runs the app's own install (`HerdrInstall`),
+/// with its progress, and a failure with Retry. Next waits for `found`.
 struct HerdrStep: View {
     @Binding var found: Bool
     @Environment(\.look) private var look

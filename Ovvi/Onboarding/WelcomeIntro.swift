@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The welcome's intro (ui/welcome): the logo's three panes come in back to front with the name under them, then they
+/// The welcome's intro: the logo's three panes come in back to front with the name under them, then they
 /// slide apart and resize into the window of the first page's picture, its sidebar and two panes, as the name fades
 /// out; the picture then fades in over them.
 struct WelcomeIntro: View {

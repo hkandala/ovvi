@@ -1,6 +1,6 @@
 import XCTest
 
-/// The welcome panel (ui/welcome): on a first launch (`-welcomeDone NO`; scripts/e2e.sh marks it done for every other
+/// The welcome panel: on a first launch (`-welcomeDone NO`; scripts/e2e.sh marks it done for every other
 /// test), from Settings ▸ General, and its herdr step with a fake installer, never herdr.dev's.
 extension OvviUITests {
     var welcomeNext: XCUIElement {

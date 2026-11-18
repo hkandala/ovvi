@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The welcome panel (ui/welcome): a floating panel of its own, no title bar, over Ovvi's windows. It opens by itself
+/// The welcome panel: a floating panel of its own, no title bar, over Ovvi's windows. It opens by itself
 /// on the first launch until it is finished or skipped, and again only from Settings ▸ General.
 enum Welcome {
     /// Set when the panel closes (Get Started, Skip or Esc). `-welcomeDone NO` shows it again (the tests).

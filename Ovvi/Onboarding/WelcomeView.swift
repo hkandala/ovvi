@@ -1,7 +1,7 @@
 import AVFoundation
 import SwiftUI
 
-/// The welcome (ui/welcome): the intro, then five pages, each a short looping clip of the app with a title and one
+/// The welcome: the intro, then five pages, each a short looping clip of the app with a title and one
 /// sentence, and the herdr step last while This Mac has no herdr. Skip on every page, → ← Return and Esc.
 struct WelcomeView: View {
     let herdrMissing: Bool

@@ -1,6 +1,6 @@
 import XCTest
 
-/// A session's space order (ui/window#sidebar, Sort Spaces) and pinned spaces: on top in herdr's order, a line under
+/// A session's space order (Sort Spaces) and pinned spaces: on top in herdr's order, a line under
 /// them when others follow, pinned from a row's menu, the palette or a drop on the pin region; Recent never moves them;
 /// Show Only Pinned Spaces hides the others and their alerts.
 extension OvviUITests {
