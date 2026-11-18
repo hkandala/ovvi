@@ -193,7 +193,9 @@ extension OvviUITests {
         keepScreenshot("agents section, 12 agents")
         section.scroll(byDeltaX: 0, deltaY: -3000)
         let first = element(prefix + needs)
-        XCTAssertTrue(until(2) { !first.exists || !first.isHittable }, "the list did not scroll")
+        // Out of the list's view: above where the list starts, under the summary.
+        let listTop = element("agents.summary").frame.maxY
+        XCTAssertTrue(until(2) { !first.exists || first.frame.maxY <= listTop }, "the list did not scroll")
         let end = built().suffix(2)
         XCTAssertEqual(end.count, 2)
         let last = element(end.last ?? "")
@@ -218,9 +220,10 @@ extension OvviUITests {
         XCTAssertTrue(last.vanishes(within: 2))
         let summary = element("agents.summary")
         XCTAssertTrue(summary.has(\.stringValue, "1 needs you · 10 done · 1 idle", within: 2), summary.stringValue)
-        // At the list's end the row above slides under the resting pointer.
+        // The lazy list's height is a guess: the row above need not land exactly under the resting pointer.
+        element(end[0]).hover()
         XCTAssertTrue(element(end[0].replacing(prefix, with: clearPrefix)).exists(within: 2),
-                      "the row that came under the pointer shows no ×")
+                      "the next done row under the pointer shows no ×")
 
         step("A row that needs you shows no ×")
         section.scroll(byDeltaX: 0, deltaY: 3000)
