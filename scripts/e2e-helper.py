@@ -1,6 +1,7 @@
 """Runs herdr API requests for the sandboxed UI tests, which cannot reach herdr's sockets.
 
 Usage: python3 scripts/e2e-helper.py <session>... -- <test command>...
+       python3 scripts/e2e-helper.py --tools <folder>
 Serves on 127.0.0.1 while the test command runs, then exits with its status.
 POST /<session> with one API request line as the body; the reply line comes back.
 POST /<session>/control with a terminal id as the body opens `terminal session control` on it
@@ -85,6 +86,28 @@ import tempfile
 import threading
 import time
 
+
+def build_tools(folder):
+    """Compiled once: `swift` interpreting a script takes up to 10 s a swipe on CI."""
+    # One file each: swiftc takes top-level code only in a single file or main.swift.
+    for name in ("swipe", "pinch", "drag", "file-drag"):
+        with open(f"{folder}/{name}.swift", "w") as joined:
+            joined.write(open("scripts/posting.swift").read() + open(f"scripts/{name}.swift").read())
+    return {name: subprocess.Popen(["swiftc", f"{folder}/{name}.swift" if name not in ("usage", "record-window")
+                                   else f"scripts/{name}.swift", "-o", f"{folder}/{name}"],
+                                  stderr=open(f"{folder}/{name}.log", "wb"))
+            for name in ("swipe", "pinch", "drag", "file-drag", "usage", "record-window")}
+
+
+# `--tools <folder>`: only the tools, into that folder. CI's build job builds them beside the app, and its test jobs
+# pass the folder in E2E_TOOLS, so the tests start about 40 s sooner.
+if sys.argv[1] == "--tools":
+    os.makedirs(sys.argv[2], exist_ok=True)
+    failed = [name for name, build in build_tools(sys.argv[2]).items() if build.wait()]
+    for name in failed:
+        sys.stderr.write(open(f"{sys.argv[2]}/{name}.log").read())
+    sys.exit(1 if failed else 0)
+
 split = sys.argv.index("--")
 sessions, command = sys.argv[1:split], sys.argv[split + 1:]
 folders = []
@@ -95,20 +118,16 @@ ISOLATED = ["-configFolder", "/tmp/ovvi-e2e-no-config", "-archivedHome", "/tmp/o
             "-askNotifications", "NO"]
 # npm as the tests' own launches have it (OvviUITests.relaunch).
 NPM = ["--env", "npm_config_offline=true", "--env", "npm_config_registry=http://127.0.0.1:9/"]
-# Compiled once: `swift` interpreting a script takes up to 10 s a swipe on CI.
-tools = tempfile.mkdtemp()
-folders.append(tools)
-# One file each: swiftc takes top-level code only in a single file or main.swift.
-for name in ("swipe", "pinch", "drag", "file-drag"):
-    with open(f"{tools}/{name}.swift", "w") as joined:
-        joined.write(open("scripts/posting.swift").read() + open(f"scripts/{name}.swift").read())
+tools = os.environ.get("E2E_TOOLS")
+if tools:
+    builds = {}
+else:
+    tools = tempfile.mkdtemp()
+    folders.append(tools)
+    builds = build_tools(tools)
 WEB = {"web-kill": signal.SIGKILL, "web-stop": signal.SIGSTOP, "web-resume": signal.SIGCONT, "web-pids": None}
 CI_ONLY = {"ssh-stop": "it stops a live ControlMaster", "ssh-unforward": "it changes a live ControlMaster",
            "ssh-forget": "it writes ~/.ssh/known_hosts", "ssh-hostname": "it writes ~/.ssh/config"}
-builds = {name: subprocess.Popen(["swiftc", f"{tools}/{name}.swift" if name not in ("usage", "record-window")
-                                  else f"scripts/{name}.swift", "-o", f"{tools}/{name}"],
-                                 stderr=open(f"{tools}/{name}.log", "wb"))
-          for name in ("swipe", "pinch", "drag", "file-drag", "usage", "record-window")}
 recordings = {}  # each session's film, from /record until /record-stop
 
 
