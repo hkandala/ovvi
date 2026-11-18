@@ -309,15 +309,18 @@ extension OvviUITests {
         let shown = {
             target.exists && target.isHittable && (!whole || self.element("overview").frame.contains(target.frame))
         }
+        let middle = element("overview").frame.midY
         for delta in [-step, step, -step] {
-            var last: CGRect?, still = 0
+            var last: CGFloat?, still = 0
             for _ in 0 ..< steps {
                 guard !shown() else { return }
-                // At the grid's end: the target did not move twice (a wheel can be lost).
-                let frame = target.exists ? target.frame : nil
-                still = frame != nil && frame == last ? still + 1 : 0
-                guard still < 2 else { break }
-                last = frame
+                // Away from the middle, or still twice (the grid's end; a wheel can be lost): the other way.
+                let off = target.exists ? abs(target.frame.midY - middle) : nil
+                if let off, let last {
+                    still = off == last ? still + 1 : 0
+                    guard off <= last, still < 2 else { break }
+                }
+                last = off
                 element("overview").scroll(byDeltaX: 0, deltaY: delta)
             }
         }
