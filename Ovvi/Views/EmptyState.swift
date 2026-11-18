@@ -101,9 +101,8 @@ struct Loader<Icon: View>: View {
         }
         .opacity(shown || delay == .zero ? 1 : 0)
         .task {
-            if delay > .zero {
-                try? await Task.sleep(for: delay)
-            }
+            guard delay > .zero else { return }
+            try? await Task.sleep(for: delay)
             shown = true
         }
     }

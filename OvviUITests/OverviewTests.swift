@@ -310,7 +310,8 @@ extension OvviUITests {
             target.exists && target.isHittable && (!whole || self.element("overview").frame.contains(target.frame))
         }
         for delta in [-step, step, -step] {
-            for _ in 0 ..< steps where !shown() {
+            for _ in 0 ..< steps {
+                guard !shown() else { return }
                 element("overview").scroll(byDeltaX: 0, deltaY: delta)
             }
         }

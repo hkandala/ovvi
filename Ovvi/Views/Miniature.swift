@@ -103,6 +103,9 @@ private struct TilePhoto: View {
         let browser = page.browser(pane), plugin = browser == nil ? page.plugin(pane) : nil
         let chat = browser == nil && plugin == nil ? page.shownChat(pane) : nil
         let settled = browser?.ready ?? plugin?.web.ready ?? chat.map { $0.current || $0.problem != nil } ?? false
+        // A chat's picture is the window's layers at its place, so it shows once it settles; WebKit's own picture
+        // needs none.
+        let shown = settled && chat != nil
         Group {
             if let browser {
                 BrowserCard(browser: browser)
@@ -112,14 +115,13 @@ private struct TilePhoto: View {
                 ChatView(chat: chat, page: page, terminal: nil)
             }
         }
-        // Drawn but not seen until it settles (the card's fill is not opaque): the tile shows the loader of a card
-        // waiting its turn meanwhile.
-        .opacity(settled ? 1 : 0)
+        // Drawn but not seen (the card's fill is not opaque): the tile shows the loader of a card waiting its turn.
+        .opacity(shown ? 1 : 0)
         .tile(content, scale)
         .background(WindowPlace(place: place))
         .padding(.top, header * scale)
         .overlay {
-            if !settled {
+            if !shown {
                 TileLoader(symbol: symbol, pane: pane.id)
             }
         }
@@ -154,8 +156,13 @@ private struct TileLoader: View {
     let pane: String
 
     var body: some View {
-        Loader(symbol: symbol).frame(maxWidth: .infinity, maxHeight: .infinity)
-            .onAppear { Latency.shared.note("tile loader \(pane)") }
+        // A deeply split card's tile is too short for the symbol.
+        ViewThatFits {
+            Loader(symbol: symbol)
+            ProgressView().controlSize(.small)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear { Latency.shared.note("tile loader \(pane)") }
     }
 }
 

@@ -46,6 +46,7 @@ extension OvviUITests {
         "testNewWindowRowsResolveWhileAnotherConnectAsks",
         "testNewWindowShowsKnownSessionsAtOnce",
         "testOpenPutsCardsWithoutMovingTheView",
+        "testOverviewDrawsAgainAPictureLetGo",
         "testOverviewShowsEveryTabLiveAndOpensOne",
         "testOverviewTileIntoAnUnshownTabShowsItSteadily",
         "testPanelsAndSwitchesReactAtOnce",

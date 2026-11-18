@@ -81,6 +81,8 @@ extension OvviUITests {
             XCTAssertTrue(card.has(\.stringValue, "explorer", within: 30), "\(pane): \(card.stringValue)")
         }
         XCTAssertFalse(tile.exists && tile.isHittable, "the first tab's tile stayed in view")
+        // A photo cut short (its tile scrolled out, a chat not whole in view) starts again: count only from here.
+        let made = (first.map(\.0) + below).map { photos($0) }
         for (pane, picture) in first {
             let card = element("overview.card.\(pane)")
             scrollOverview(to: card, whole: true, step: 100, steps: 30)
@@ -91,9 +93,43 @@ extension OvviUITests {
             scrollOverview(to: card, whole: true, step: 100, steps: 30)
             XCTAssertEqual(card.stringValue, "explorer", pane)
         }
-        let record = element("app.latency").stringValue.components(separatedBy: "; ")
-        for pane in first.map(\.0) + below {
-            XCTAssertEqual(record.count { $0 == "photo \(pane)" }, 1, "\(pane) drawn again")
+        XCTAssertEqual((first.map(\.0) + below).map { photos($0) }, made, "a card with its picture drawn again")
+    }
+
+    /// Recorded as each starts.
+    private func photos(_ pane: String) -> Int {
+        element("app.latency").stringValue.components(separatedBy: "; ").count { $0 == "photo \(pane)" }
+    }
+
+    /// Past the pictures' bound the least recently shown goes, and its tile draws its card again once it shows.
+    func testOverviewDrawsAgainAPictureLetGo() async throws {
+        executionTimeAllowance = 400
+        // About seven pictures (1.2–1.5 MB each on CI and in the VM), more than the tiles in view.
+        relaunch(one, ["-recordLatency", "YES", "-pictureBytes", "10000000"])
+        addTeardownBlock { @MainActor in self.keep(self.element("app.latency").stringValue, as: "latency") }
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        let folder = "/tmp/ovvi-e2e-let-go"
+        try await send("mkdir -p \(folder) && for i in $(seq 0 13); do printf '# Notes\\n' >\(folder)/notes$i.md; "
+            + "done && clear\r", to: "w2:p1")
+        try await waitFor("w2:p1") { !$0.contains("printf") }
+        sendAfter("rm -rf \(folder)\r", to: "w2:p1")
+        let (first, root) = try await createWorkspace("let go")
+        var panes = [root]
+        for _ in 1 ..< 14 {
+            try await panes.append(createTab(in: workspace(of: first)).pane)
         }
+        for (index, pane) in panes.enumerated() {
+            // An iid of exactly 6 characters.
+            try await relabel(pane, "ovvi:explorer#e2el\(index / 10)\(index % 10) /private\(folder)/notes\(index).md")
+        }
+        app.typeKey("o", modifierFlags: [.command, .control])
+        XCTAssertTrue(element("overview").exists(within: 3))
+        for pane in panes + [panes[0]] {
+            let card = element("overview.card.\(pane)")
+            scrollOverview(to: card, whole: true, step: 100, steps: 30)
+            XCTAssertTrue(card.has(\.stringValue, "explorer", within: 30), "\(pane): \(card.stringValue)")
+        }
+        XCTAssertGreaterThan(photos(panes[0]), 1, "the first card kept its picture past the bound")
+        app.typeKey(.escape, modifierFlags: [])
     }
 }

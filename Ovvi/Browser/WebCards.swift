@@ -5,9 +5,9 @@ extension PaneViewRegistry {
     /// Each kept web card keeps a WebKit process.
     static let spareWeb = UserDefaults.standard.string(forKey: "spareWebCards").flatMap { Int($0) } ?? 25
     static var recentWeb: [Kept] = []
-    /// The web and chat cards' pictures: 4 bytes a point of the card at any scale (1.5 MB for a 680 × 546 pt card,
-    /// about 4.4 MB for a full-window one on a 14-inch screen), so about 200 tiles of full-window cards.
-    static let pictureBytes = 1 << 30
+    /// The web and chat cards' pictures: 4 bytes a point of the card at any scale (1.5 MB for a 680 × 546 pt card), so
+    /// about 200 full-window cards on a 14-inch screen, 60 on a 3440-point one.
+    static let pictureBytes = UserDefaults.standard.string(forKey: "pictureBytes").flatMap { Int($0) } ?? 1 << 30
     static var pictured: [Kept] = []
     struct Kept {
         weak var registry: PaneViewRegistry?

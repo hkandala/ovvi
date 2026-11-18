@@ -1,5 +1,6 @@
 import HerdrKit
 import SwiftUI
+import WebKit
 
 extension WindowPages {
     static let tile: CGFloat = 0.35
@@ -129,7 +130,12 @@ extension WindowPages {
                 }
                 return
             }
-            view.takePicture()
+            // A page that never committed takes no picture.
+            if view.url == nil {
+                overviewGaveUp.insert(id)
+            } else {
+                view.takePicture()
+            }
         }
     }
 
