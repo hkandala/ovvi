@@ -49,15 +49,20 @@ private struct MiniCard: View {
                 } else if let pane, pane.plugin != nil || page.shownChat(pane) != nil {
                     // A tile takes no web view from its card, which then draws blank as it goes back: it draws one
                     // live only for a card that has none yet (`TilePhoto`).
-                    if let picture = pane.terminalID.flatMap(page.terminals.picture) {
+                    let symbol = pane.plugin != nil ? pane.iconID : "bubble.left.and.bubble.right"
+                    if let id = pane.terminalID, let picture = page.terminals.picture(id) {
                         CardPicture(picture: picture, pane: pane)
                             .miniCard(pane.id, pane.plugin.map { $0.manifest?.id ?? $0.plugin } ?? "chat")
                             .tile(content, scale).padding(.top, header * scale)
+                            .onAppear { page.terminals.shown(id) }
                     } else if pane.terminalID != nil, pane.terminalID == page.terminals.pages?.overviewPhoto {
-                        TilePhoto(pane: pane, page: page, content: content, scale: scale)
-                            .miniCard(pane.id, "photo").padding(.top, header * scale)
+                        TilePhoto(pane: pane, page: page, content: content, scale: scale, header: header,
+                                  symbol: symbol)
+                            .miniCard(pane.id, "photo")
+                    } else if page.terminals.pages?.photoWaits(page, pane) == true {
+                        TileLoader(symbol: symbol, pane: pane.id).miniCard(pane.id, "waiting")
                     } else {
-                        Image(symbol: pane.plugin != nil ? pane.iconID : "bubble.left.and.bubble.right")
+                        Image(symbol: symbol)
                             .foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)
                             .miniCard(pane.id, "symbol")
                     }
@@ -70,7 +75,7 @@ private struct MiniCard: View {
                         if drawsLive, let view {
                             MiniTerminal(terminal: view, size: terminal)
                         } else if let snapshot = view?.snapshot {
-                            Snapshot(surface: snapshot)
+                            Snapshot(surface: snapshot).onAppear { view?.snapshotShown() }
                         }
                     }
                     .miniCard(pane.id, "\(view?.pictured != true ? "loading" : drawsLive ? "live" : "snapshot") "
@@ -90,6 +95,8 @@ private struct TilePhoto: View {
     let page: Page
     let content: CGSize
     let scale: CGFloat
+    let header: CGFloat
+    let symbol: String
     @State private var place = Place()
 
     var body: some View {
@@ -105,8 +112,17 @@ private struct TilePhoto: View {
                 ChatView(chat: chat, page: page, terminal: nil)
             }
         }
+        // Drawn but not seen until it settles (the card's fill is not opaque): the tile shows the loader of a card
+        // waiting its turn meanwhile.
+        .opacity(settled ? 1 : 0)
         .tile(content, scale)
         .background(WindowPlace(place: place))
+        .padding(.top, header * scale)
+        .overlay {
+            if !settled {
+                TileLoader(symbol: symbol, pane: pane.id)
+            }
+        }
         .task(id: settled) {
             guard settled, let id = pane.terminalID else { return }
             // After its first paint and the chat's rows' fade in.
@@ -130,6 +146,16 @@ private struct TilePhoto: View {
                 page.terminals.pages?.photographed(id)
             }
         }
+    }
+}
+
+private struct TileLoader: View {
+    let symbol: String
+    let pane: String
+
+    var body: some View {
+        Loader(symbol: symbol).frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onAppear { Latency.shared.note("tile loader \(pane)") }
     }
 }
 

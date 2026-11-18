@@ -21,7 +21,7 @@ extension WindowPages {
         overviewTabs = [:]
         overviewScrolling = false
         overviewSettling?.cancel()
-        (overviewPhotographed, overviewLater) = ([], [])
+        (overviewGaveUp, overviewLater) = ([], [])
         showTerminals()
         // After the show: a card of the tab the overview opens stays.
         endPhoto()
@@ -91,28 +91,35 @@ extension WindowPages {
         }
     }
 
+    /// A browser, plugin or chat card with no picture that the overview has not given up on: its tile shows the
+    /// loader until its turn (`photographNext`) ends.
+    func photoWaits(_ page: Page, _ pane: HostStore.Pane) -> Bool {
+        guard overview, page.store.state == .live, let id = pane.terminalID else { return false }
+        return !overviewGaveUp.contains(id) && terminals.picture(id) == nil
+            && (pane.browser != nil || pane.plugin?.manifest?.entry != nil || page.shownChat(pane) != nil)
+    }
+
     /// One at a time, in the tiles in view: a browser, plugin or chat card with no picture draws live in its tile
     /// until it takes one (`TilePhoto`), at most 10 s, and a web card made for it goes after. One already laid out
     /// takes its picture where it is: in a tile, its web view would leave its card.
     func photographNext() {
         guard overview, !overviewScrolling else { return }
         let waiting = current.map { page in
-            page.store.state != .live ? [] : (overviewTabs[page.id] ?? []).reversed().flatMap { tab in
+            (overviewTabs[page.id] ?? []).reversed().flatMap { tab in
                 tilePanes(page, tab).compactMap { pane in
                     pane.terminalID.flatMap { id in
-                        !overviewPhotographed.union(overviewLater).contains(id) && terminals.picture(id) == nil
-                            && (pane.browser != nil || pane.plugin?.manifest?.entry != nil
-                                || page.shownChat(pane) != nil) ? id : nil
+                        photoWaits(page, pane) && !overviewLater.contains(id) ? (id, pane.id) : nil
                     }
                 }
             }
         } ?? []
-        if let photo = overviewPhoto, waiting.contains(photo) {
+        if let photo = overviewPhoto, waiting.contains(where: { $0.0 == photo }) {
             return
         }
         endPhoto()
-        for id in waiting {
+        for (id, pane) in waiting {
             guard let view = terminals.webView(id), !view.bounds.isEmpty else {
+                Latency.shared.note("photo \(pane)")
                 overviewPhoto = id
                 overviewPhotoTimeout = Task {
                     try? await Task.sleep(for: .seconds(10))
@@ -122,7 +129,6 @@ extension WindowPages {
                 }
                 return
             }
-            overviewPhotographed.insert(id)
             view.takePicture()
         }
     }
@@ -130,7 +136,9 @@ extension WindowPages {
     /// Its picture taken, or none in time.
     func photographed(_ id: String) {
         guard overviewPhoto == id else { return }
-        overviewPhotographed.insert(id)
+        if terminals.picture(id) == nil {
+            overviewGaveUp.insert(id)
+        }
         endPhoto()
         photographNext()
     }

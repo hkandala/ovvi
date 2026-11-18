@@ -99,7 +99,7 @@ struct Loader<Icon: View>: View {
                     .identifier(id.map { "\($0).detail" })
             }
         }
-        .opacity(shown ? 1 : 0)
+        .opacity(shown || delay == .zero ? 1 : 0)
         .task {
             if delay > .zero {
                 try? await Task.sleep(for: delay)

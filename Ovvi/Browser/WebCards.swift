@@ -5,6 +5,9 @@ extension PaneViewRegistry {
     /// Each kept web card keeps a WebKit process.
     static let spareWeb = UserDefaults.standard.string(forKey: "spareWebCards").flatMap { Int($0) } ?? 25
     static var recentWeb: [Kept] = []
+    /// The web and chat cards' pictures: 4 bytes a point of the card at any scale (1.5 MB for a 680 × 546 pt card,
+    /// about 4.4 MB for a full-window one on a 14-inch screen), so about 200 tiles of full-window cards.
+    static let pictureBytes = 1 << 30
     static var pictured: [Kept] = []
     struct Kept {
         weak var registry: PaneViewRegistry?
@@ -76,16 +79,28 @@ extension PaneViewRegistry {
     func noted(_ id: String) {
         Self.pictured.removeAll { $0.registry === self && $0.id == id }
         Self.pictured.append(Kept(registry: self, id: id))
+        Self.trimPictures(Self.pictureBytes)
+        pages?.photographed(id)
+    }
+
+    /// Least recently shown first out, past the bound.
+    static func trimPictures(_ most: Int) {
         let bytes = { (kept: Kept) in kept.registry?.picture(kept.id).map { $0.bytesPerRow * $0.height } ?? 0 }
-        Self.pictured.removeAll { bytes($0) == 0 }
-        var total = Self.pictured.reduce(0) { $0 + bytes($1) }
-        while total > 200 << 20, let oldest = Self.pictured.first {
+        pictured.removeAll { bytes($0) == 0 }
+        var total = pictured.reduce(0) { $0 + bytes($1) }
+        while total > most, let oldest = pictured.first {
             total -= bytes(oldest)
-            Self.pictured.removeFirst()
+            pictured.removeFirst()
             oldest.registry?.webView(oldest.id)?.shot.image = nil
             oldest.registry?.pictures.removeAll { $0.id == oldest.id }
         }
-        pages?.photographed(id)
+    }
+
+    /// Its picture showed in a tile: the last to go.
+    func shown(_ id: String) {
+        if let index = Self.pictured.firstIndex(where: { $0.registry === self && $0.id == id }) {
+            Self.pictured.append(Self.pictured.remove(at: index))
+        }
     }
 
     func keptPicture(_ id: String) -> CGImage? {

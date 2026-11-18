@@ -107,8 +107,10 @@ extension PaneTerminal {
 
 /// An IOSurface: Core Animation shows it without a copy of its own (a `CGImage` doubles the memory).
 extension PaneTerminal {
-    /// Least recently taken first out, past 100 MB: a full-window card's is about 1.3–1.7 MB on Retina.
+    /// Least recently taken or shown in a tile first out, past the bound: a full-window card's is about 1.3–1.7 MB on
+    /// Retina, so about 200 tiles.
     static var snapshots: [PaneTerminal] = []
+    static let snapshotBytes = 320 << 20
     private static let context = CIContext(options: [.cacheIntermediates: false])
 
     var pictured: Bool {
@@ -132,10 +134,19 @@ extension PaneTerminal {
         Self.context.render(image, to: small, bounds: size,
                             colorSpace: space.flatMap { CGColorSpace(propertyListPlist: $0) })
         snapshot = small
+        snapshotShown()
+        Self.trimSnapshots(Self.snapshotBytes)
+    }
+
+    func snapshotShown() {
+        guard snapshot != nil else { return }
         Self.snapshots.removeAll { $0 === self }
         Self.snapshots.append(self)
-        while Self.snapshots.reduce(0, { $0 + ($1.snapshot?.allocationSize ?? 0) }) > 100 << 20 {
-            let old = Self.snapshots.removeFirst()
+    }
+
+    static func trimSnapshots(_ most: Int) {
+        while snapshots.reduce(0, { $0 + ($1.snapshot?.allocationSize ?? 0) }) > most {
+            let old = snapshots.removeFirst()
             if let still = old.view.still, still.superlayer == nil, still.contents as AnyObject? === old.snapshot {
                 old.view.still = nil
                 old.revealed = false

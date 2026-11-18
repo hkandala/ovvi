@@ -11,13 +11,17 @@ final class PaneViewRegistry {
     /// card on Retina) and a herdr run of 7 MB. On Retina: 405 MB with 16 terminals in splits, 653 MB with 33
     /// full-window tabs.
     static let spare = UserDefaults.standard.string(forKey: "spareTerminals").flatMap { Int($0) } ?? 25
-    /// On critical memory pressure the kept cards out of view go down to half the bounds. Not on a warning: macOS sends
-    /// one about every 30 minutes even at normal pressure, and each would drop web cards that the next switch makes
-    /// again (100–200 ms each).
+    /// On critical memory pressure the kept cards out of view and the pictures go down to half the bounds. Not on a
+    /// warning: macOS sends one about every 30 minutes even at normal pressure, and each would drop web cards that the
+    /// next switch makes again (100–200 ms each).
     private static let pressure = {
         let source = DispatchSource.makeMemoryPressureSource(eventMask: .critical, queue: .main)
         source.setEventHandler {
-            MainActor.assumeIsolated { trim(terminals: spare / 2, web: spareWeb / 2) }
+            MainActor.assumeIsolated {
+                trim(terminals: spare / 2, web: spareWeb / 2)
+                trimPictures(pictureBytes / 2)
+                PaneTerminal.trimSnapshots(PaneTerminal.snapshotBytes / 2)
+            }
         }
         source.resume()
         return source

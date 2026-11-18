@@ -18,10 +18,10 @@ final class WindowPages {
     @ObservationIgnored var overviewTabs: [String: [String]] = [:]
     @ObservationIgnored var overviewSettling: Task<Void, Never>?
     private(set) var overviewLive: Set<String> = []
-    /// The card drawn live in its tile for its first picture, those done, and those whose tile is not whole in view
-    /// until the next scroll rests (`photographNext`).
+    /// The card drawn live in its tile for its first picture, those that took none in time, and those whose tile is
+    /// not whole in view until the next scroll rests (`photographNext`).
     var overviewPhoto: String?
-    @ObservationIgnored var overviewPhotographed: Set<String> = []
+    @ObservationIgnored var overviewGaveUp: Set<String> = []
     @ObservationIgnored var overviewLater: Set<String> = []
     @ObservationIgnored var overviewPhotoTimeout: Task<Void, Never>?
     @ObservationIgnored var tileScale = tile
