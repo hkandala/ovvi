@@ -64,6 +64,7 @@ extension OvviUITests {
         "testStoppedSessionSaysSoAndComesBackWhenStartedAgain",
         "testTheOvviPluginsCommandFromARemoteMachine",
         "testThePointerLightsTheRowUnderItAfterPins",
+        "testTheSessionTitleListsTheWindowsOtherSessions",
         "testTheWelcomeInstallsAMissingHerdr",
         "testTheWelcomeTurnsItsPagesAndClosesForGood",
         "testTrafficLightsStayStillWhenWorkspacesSwitch",

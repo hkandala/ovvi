@@ -8,6 +8,8 @@ struct SessionHeader: View {
     let page: Page
     let openSession: () -> Void
     @State private var open = false
+    /// Laid out while open and while it folds.
+    @State private var shelved = false
     @State private var over = false
     @State private var plus = false
     /// The row under the pointer or the arrows: the other sessions, then Open Session.
@@ -27,26 +29,21 @@ struct SessionHeader: View {
                 SortMenu(page: page)
                 newSpace
             }
-            // A dropdown: its room opens at once and only the shelf slides, inside the clip (the space list's top moved
-            // over an animation would end scrolled a few points). It folds at once.
-            VStack(spacing: 0) {
-                if open {
-                    shelf(others).transition(.move(edge: .top))
+            // A dropdown: the filter and the spaces move down with it. Folded, it has no height.
+            Reveal(shown: open ? 1 : 0) {
+                if shelved {
+                    shelf(others).transition(.identity)
                 }
             }
-            .animation(open ? .slide : nil, value: open)
             .clipped()
+            // As it opens, its rows pass under the title: clicks and hover there stay the title's.
+            .contentShape(.rect)
+            .allowsHitTesting(open)
         }
         .focusable(open)
         .focusEffectDisabled()
         .focused($focused)
         .focusSoon($focused, open)
-        // A click elsewhere (a card, a row, another field) takes the keys, and the shelf folds.
-        .onChange(of: focused) {
-            if !focused, open {
-                open = false
-            }
-        }
         .onMoveCommand { direction in
             let count = others.count + 1
             if direction == .down {
@@ -56,19 +53,22 @@ struct SessionHeader: View {
             }
         }
         .onKeyPress(.return) {
-            guard let lit else { return .ignored }
+            guard let lit, lit <= others.count else { return .ignored }
             if others.indices.contains(lit) {
-                pick(others[lit])
+                // The new page's card takes the keys, as after a click.
+                self.lit = nil
+                pages.show(others[lit])
             } else {
                 openPanel()
             }
             return .handled
         }
-        .onExitCommand { close() }
+        .onExitCommand { fold() }
         // The overview hides the sidebar but keeps it, keys and all.
         .onChange(of: pages.overview) {
             if pages.overview {
                 open = false
+                shelved = false
             }
         }
     }
@@ -76,10 +76,11 @@ struct SessionHeader: View {
     private var title: some View {
         Button {
             if open {
-                close()
+                fold()
             } else {
                 lit = nil
-                open = true
+                shelved = true
+                withAnimation(.slide) { open = true }
             }
         } label: {
             HStack(spacing: 5) {
@@ -118,8 +119,10 @@ struct SessionHeader: View {
 
     private func shelf(_ others: [Page]) -> some View {
         VStack(spacing: 0) {
-            ForEach(Array(others.enumerated()), id: \.element.id) { index, other in
-                row(index, symbol: "rectangle.stack", other.store.title) { pick(other) }
+            // By place: a pick only changes the rows' names, which fade.
+            ForEach(others.indices, id: \.self) { index in
+                let other = others[index]
+                row(index, symbol: "rectangle.stack", other.store.title) { pages.show(other) }
                     .accessibilityIdentifier("sidebar.session.\(other.id)")
             }
             if !others.isEmpty {
@@ -129,6 +132,7 @@ struct SessionHeader: View {
                 action: openPanel)
                 .accessibilityIdentifier("sidebar.open-session")
         }
+        .animation(.fade, value: page.id)
         .padding(4)
         .background(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(.primary.opacity(0.14)))
         // As far under the header as the filter is under it.
@@ -159,20 +163,43 @@ struct SessionHeader: View {
         .accessibilityLabel(title)
     }
 
-    private func pick(_ other: Page) {
-        pages.show(other)
-        close()
-    }
-
     private func openPanel() {
-        open = false
+        fold(keys: false)
         openSession()
     }
 
-    /// Folded by the keys or a pick: the keys go back to the page's card.
-    private func close() {
-        open = false
-        pages.current?.focusKeyboardCard()
+    /// Folded by the title or Esc, the keys go back to the page's card; by Open Session, to its panel.
+    private func fold(keys: Bool = true) {
+        withAnimation(.slide) { open = false } completion: {
+            if !open {
+                shelved = false
+            }
+        }
+        if keys {
+            pages.current?.focusKeyboardCard()
+        }
+    }
+}
+
+/// Shows the shelf's lower part, from none to all of it, in whole points: a scroll view resized by a fraction of a
+/// pixel keeps that fraction as its offset, so the space list under it would end scrolled.
+private struct Reveal: Layout {
+    var shown: Double
+
+    var animatableData: Double {
+        get { shown }
+        set { shown = newValue }
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) -> CGSize {
+        let size = subviews.first?.sizeThatFits(ProposedViewSize(width: proposal.width, height: nil)) ?? .zero
+        return CGSize(width: size.width, height: (size.height * shown).rounded())
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
+        guard let shelf = subviews.first else { return }
+        let size = ProposedViewSize(width: bounds.width, height: nil)
+        shelf.place(at: CGPoint(x: bounds.minX, y: bounds.maxY - shelf.sizeThatFits(size).height), proposal: size)
     }
 }
 
