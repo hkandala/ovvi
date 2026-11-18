@@ -24,7 +24,7 @@ struct ArchivedRow: View {
                     AgeText(date: date)
                 }
             }
-            .padding(.horizontal, 4)
+            .padding(.horizontal, AgentsSection.padding)
             .frame(height: 48)
         }
         .buttonStyle(ChromeStyle(radius: 6))
@@ -37,7 +37,7 @@ struct ArchivedRow: View {
                     resumeButton
                     AgeText(date: date).hidden().accessibilityHidden(true)
                 }
-                .padding(.horizontal, 4)
+                .padding(.horizontal, AgentsSection.padding)
             }
         }
         .onHover { hovering = $0 }

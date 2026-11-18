@@ -3,12 +3,14 @@ import SwiftUI
 
 /// The agents' box, which opens the agents section, then Keyboard Shortcuts, Command Palette, a line and Settings.
 struct SidebarFoot: View {
-    static let box: CGFloat = 22
+    fileprivate static let box: CGFloat = 22
     private static let height: CGFloat = 28
-    /// The box's left edge from the window's, on the agents section's text; its bottom sits as far over the window's.
-    private static let inset = Sidebar.rowInsets.leading + WorkspaceRow.textInset
+    /// The box sits as far under the agents section's border as over the window's bottom.
+    private static let margin: CGFloat = 18
+    /// The box's left edge on the agents section's text column.
+    private static let leading = AgentsSection.inset + AgentsSection.padding
     /// The gear's ink ends on the section's right column: its archive button's, the fold chevrons', a row's ×.
-    private static let end: CGFloat = 1.5
+    private static let end: CGFloat = 5
 
     let pages: WindowPages
     @Binding var panel: WindowPanel?
@@ -35,14 +37,16 @@ struct SidebarFoot: View {
             .accessibilityIdentifier("sidebar.settings")
         }
         .frame(height: Self.height)
-        .padding(.leading, WorkspaceRow.textInset)
+        .padding(.leading, Self.leading)
         .padding(.trailing, Self.end)
+        .padding(.top, Self.margin - (Self.height - Self.box) / 2)
         // The sidebar ends gap over the window's bottom.
-        .padding(.bottom, Self.inset - gap - (Self.height - Self.box) / 2)
+        .padding(.bottom, Self.margin - gap - (Self.height - Self.box) / 2)
     }
 }
 
-/// The state box with words: who needs you, else the unseen finishes, else who works; else the agents' symbol.
+/// The state box with words: who needs you, else the unseen finishes, else who works; else the agents' symbol and
+/// "Agents".
 private struct AgentsBox: View {
     let counts: [AgentState: Int]
     let open: Bool
@@ -56,7 +60,7 @@ private struct AgentsBox: View {
             label(state).frame(height: SidebarFoot.box)
         }
         .buttonStyle(ChromeStyle(radius: 6))
-        .tip(all.isEmpty ? "No agents" : all.joined(separator: " · "))
+        .tip(all.isEmpty ? "No agents running" : all.joined(separator: " · "))
         .accessibilityLabel("Agents")
         .accessibilityValue(state.map { $0.words(counts[$0, default: 0]) } ?? "All caught up")
         .accessibilityAddTraits(open ? .isSelected : [])
@@ -78,10 +82,15 @@ private struct AgentsBox: View {
             .background(color.opacity(open ? 0.24 : 0.14), in: shape)
             .overlay(shape.strokeBorder(color.opacity(0.45)))
         } else {
-            Image(systemName: "sparkles").font(.system(size: 11, weight: .medium)).foregroundStyle(.primary)
-                .frame(width: SidebarFoot.box, height: SidebarFoot.box)
-                .background(.primary.opacity(open ? 0.08 : 0), in: shape)
-                .overlay(shape.strokeBorder(look.divider))
+            HStack(spacing: 5) {
+                Image(systemName: "sparkles")
+                Text("Agents")
+            }
+            .font(.system(size: 11, weight: .medium)).foregroundStyle(.primary)
+            .padding(.horizontal, 8)
+            .frame(maxHeight: .infinity)
+            .background(.primary.opacity(open ? 0.08 : 0), in: shape)
+            .overlay(shape.strokeBorder(look.divider))
         }
     }
 }

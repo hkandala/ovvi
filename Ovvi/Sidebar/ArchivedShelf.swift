@@ -26,15 +26,15 @@ struct ArchivedShelf: View {
         let searching = !search.trimmingCharacters(in: .whitespaces).isEmpty
         VStack(spacing: 4) {
             FilterField(prompt: "Search", text: $search, identifier: "agents.archived.search",
-                        symbol: "magnifyingglass", focus: focusSearch, leading: -4, trailing: 22)
+                        symbol: "magnifyingglass", focus: focusSearch, leading: -3.5, trailing: 22)
                 .onAppear {
                     if focuses {
                         focusSearch += 1
                     }
                 }
                 .onExitCommand(perform: back)
-                .overlay(alignment: .trailing) { menu.padding(.trailing, 4.5) }
-                .padding(.horizontal, 4)
+                // The magnifier's and the menu's ink on the section's columns.
+                .overlay(alignment: .trailing) { menu.padding(.trailing, 5) }
             Group {
                 if loading {
                     Loader(text: "Reading sessions…", delay: .milliseconds(300))
@@ -55,7 +55,6 @@ struct ArchivedShelf: View {
                                 }
                             }
                         }
-                        .padding(.horizontal, 4)
                     }
                     .scrollIndicators(.never)
                     .fadesScrolledEdges()

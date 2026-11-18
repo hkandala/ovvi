@@ -11,13 +11,13 @@ extension OvviUITests {
 
         step("Nothing works, finished or needs you: all caught up, and the section says so")
         XCTAssertTrue(summary.has(\.stringValue, "All caught up", within: 3), summary.stringValue)
-        XCTAssertEqual(summary.frame.width, 22, accuracy: 0.5, "the idle box is not the icon's")
+        XCTAssertGreaterThan(summary.frame.width, 40, "the idle box has no words beside its icon")
         keepScreenshot("foot, all caught up")
         openAgents(in: first)
         XCTAssertTrue(element("agents.empty", in: first).exists(within: 2))
         XCTAssertEqual(element("agents.empty.text", in: first).stringValue, "No agent is waiting on you")
         XCTAssertEqual(element("agents.header", in: first).stringValue, "Agents · This Mac")
-        XCTAssertEqual(element("agents.summary", in: first).stringValue, "No agents")
+        XCTAssertEqual(element("agents.summary", in: first).stringValue, "No agents running")
         keepScreenshot("agents section, empty")
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(section.vanishes(within: 2), "Esc closes the section")
@@ -115,9 +115,9 @@ extension OvviUITests {
     /// The foot's buttons name their keys and open what those keys open.
     func testTheSidebarFootsButtonsOpenTheirPanels() {
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
-        // On the section's text, and as far over the window's bottom.
+        // On the section's text column; as far over the window's bottom as under the open section.
         let summary = element("sidebar.agents"), window = mainWindows.firstMatch
-        XCTAssertEqual(summary.frame.minX - window.frame.minX, 18, accuracy: 0.5, "\(summary.frame)")
+        XCTAssertEqual(summary.frame.minX - window.frame.minX, 22, accuracy: 0.5, "\(summary.frame)")
         XCTAssertEqual(window.frame.maxY - summary.frame.maxY, 18, accuracy: 0.5, "\(summary.frame) in \(window.frame)")
         let tip = element("tooltip")
         for (button, text) in [("shortcuts", "Keyboard Shortcuts ⌘/"), ("palette", "Command Palette ⌘K"),
@@ -140,11 +140,12 @@ extension OvviUITests {
         let section = element("agents.section"), header = element("agents.header")
         XCTAssertEqual(section.frame.minX - window.frame.minX, 10, accuracy: 0.5, "\(section.frame)")
         XCTAssertEqual(section.frame.height, 324, accuracy: 0.5)
-        XCTAssertEqual(summary.frame.minY - section.frame.maxY, 11, accuracy: 0.5, "the section over the foot")
+        XCTAssertEqual(summary.frame.minY - section.frame.maxY, 18, accuracy: 0.5, "the section over the foot")
         XCTAssertEqual(header.frame.minX, summary.frame.minX, accuracy: 0.5, "the title on the box's edge")
+        XCTAssertEqual(element("agents.archive").frame.minY - section.frame.minY, 6, accuracy: 0.5, "the top inset")
         // The archive button's glyph and the gear's end on one column.
-        XCTAssertEqual(element("agents.archive").frame.maxX, section.frame.maxX - 4.5, accuracy: 0.5)
-        XCTAssertEqual(element("sidebar.settings").frame.maxX, section.frame.maxX - 1.5, accuracy: 0.5)
+        XCTAssertEqual(element("agents.archive").frame.maxX, section.frame.maxX - 6, accuracy: 0.5)
+        XCTAssertEqual(element("sidebar.settings").frame.maxX, section.frame.maxX - 5, accuracy: 0.5)
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(section.vanishes(within: 2))
         element("sidebar.settings").click()
@@ -193,7 +194,7 @@ extension OvviUITests {
         XCTAssertEqual(end.count, 2)
         let last = element(end.last ?? "")
         XCTAssertTrue(last.isHittable, "\(last.frame) in \(section.frame)")
-        XCTAssertEqual(section.frame.maxY - last.frame.maxY, 4, accuracy: 0.5, "the last row's bottom inset")
+        XCTAssertEqual(section.frame.maxY - last.frame.maxY, 6, accuracy: 0.5, "the last row's bottom inset")
         keepScreenshot("agents section, scrolled to the end")
         clearsDone(Array(end), needs: needs)
     }
@@ -219,8 +220,8 @@ extension OvviUITests {
         section.scroll(byDeltaX: 0, deltaY: 3000)
         let needsRow = element(prefix + needs)
         XCTAssertTrue(needsRow.has(\.isHittable, true, within: 2))
-        XCTAssertEqual(needsRow.frame.minX - section.frame.minX, 4, accuracy: 0.5, "the rows' side inset")
-        XCTAssertEqual(section.frame.maxX - needsRow.frame.maxX, 4, accuracy: 0.5, "the rows' side inset")
+        XCTAssertEqual(needsRow.frame.minX - section.frame.minX, 6, accuracy: 0.5, "the rows' side inset")
+        XCTAssertEqual(section.frame.maxX - needsRow.frame.maxX, 6, accuracy: 0.5, "the rows' side inset")
         needsRow.hover()
         XCTAssertFalse(element(clearPrefix + needs).exists(within: 1), "a × on a row that needs you")
         keepScreenshot("agents section, a row that needs you under the pointer")

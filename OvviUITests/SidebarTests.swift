@@ -314,8 +314,8 @@ extension OvviUITests {
         }
         let filter = element("sidebar.filter"), box = element("sidebar.agents")
         let first = element("workspace.w1"), long0 = element(rows[0]), last = element(rows[23])
-        // The list ends 8 pt over the foot's row, whose box is 3 pt inside it.
-        let bottom = { box.frame.minY - 11 }
+        // The list ends where the section would, 18 pt over the foot's box.
+        let bottom = { box.frame.minY - 18 }
         let inView = { (row: XCUIElement) in
             row.exists && row.frame.minY >= filter.frame.maxY && row.frame.maxY <= bottom()
         }

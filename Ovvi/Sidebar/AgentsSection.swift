@@ -13,10 +13,13 @@ struct AgentsSection: View {
     @State private var switched = false
     @State private var backLit = false
     @FocusState private var focused: Bool
-    private var settings = AppSettings()
+    /// Every lit box (a row, a group's header, the search field, the back row) from the border, on all four sides.
+    static let inset: CGFloat = 6
+    /// Text and glyphs inside those boxes: the section's columns sit `inset + padding` inside its border.
+    static let padding: CGFloat = 6
 
     var body: some View {
-        let archived = settings.showArchived && opened.hasLine(pages.archivedKey)
+        let archived = opened.hasLine(pages.archivedKey)
         VStack(spacing: 4) {
             header(archived: archived)
             if archived {
@@ -25,7 +28,7 @@ struct AgentsSection: View {
                 AgentsList(pages: pages)
             }
         }
-        .padding(.bottom, 4)
+        .padding(Self.inset)
         .background {
             RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(.primary.opacity(0.14))
         }
@@ -73,10 +76,9 @@ struct AgentsSection: View {
                         Image(systemName: "chevron.left").font(.system(size: 10, weight: .semibold))
                         Text("Archived · \(pages.machine.name)")
                     }
-                    .padding(.horizontal, 4).frame(height: 22)
+                    .padding(.horizontal, Self.padding).frame(height: 22)
                     .background(.primary.opacity(backLit ? 0.05 : 0), in: .rect(cornerRadius: 6))
                     .animation(.highlight, value: backLit)
-                    .padding(.leading, WorkspaceRow.textInset - 4)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                     .contentShape(.rect)
                 }
@@ -86,24 +88,23 @@ struct AgentsSection: View {
                 .accessibilityValue("Archived · \(pages.machine.name)")
                 .accessibilityIdentifier("agents.back")
             } else {
-                Text("Agents · \(pages.machine.name)").padding(.leading, WorkspaceRow.textInset)
+                Text("Agents · \(pages.machine.name)").padding(.leading, Self.padding)
                     .accessibilityIdentifier("agents.header")
             }
             Spacer(minLength: 8)
-            if !archived, settings.showArchived {
+            if !archived {
                 Button { show(archived: true) } label: {
+                    // The glyph's 12 pt ink `padding` inside its box, on the section's right column.
                     Image(systemName: "archivebox").font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.primary).frame(width: 20, height: 20)
+                        .foregroundStyle(.primary).frame(width: 12 + 2 * Self.padding, height: 22)
                 }
                 .buttonStyle(ChromeStyle(radius: 6))
                 .tip("Archived Sessions")
-                // Its glyph's ink on the gear's column.
-                .padding(.trailing, 4.5)
                 .accessibilityLabel("Archived Sessions")
                 .accessibilityIdentifier("agents.archive")
             }
         }
         .font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary).lineLimit(1)
-        .frame(height: 30)
+        .frame(height: 22)
     }
 }

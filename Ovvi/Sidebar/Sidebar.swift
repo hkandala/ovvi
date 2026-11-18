@@ -77,7 +77,6 @@ struct Sidebar: View {
             .clipped()
             SidebarFoot(pages: pages, panel: $panel, open: opened.hasLine(pages.agentsKey), toggle: toggleAgents)
                 .padding(.leading, Sidebar.rowInsets.leading).padding(.trailing, Sidebar.rowInsets.trailing)
-                .padding(.top, 8)
         }
         // The whole sidebar swipes its pages, the header and the filter too.
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { area = $0 }

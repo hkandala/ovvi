@@ -26,7 +26,7 @@ struct AgentsList: View {
                 (id: "\(store.session) \(pane.id)", item: Item.agent(store, pane))
             })
         }
-        Summary(counts: stores.stateCounts).padding(.horizontal, WorkspaceRow.textInset).frame(height: 26)
+        Summary(counts: stores.stateCounts).padding(.horizontal, AgentsSection.padding).frame(height: 26)
         Group {
             if items.isEmpty {
                 EmptyState(symbol: "checkmark.circle", title: "All caught up", text: "No agent is waiting on you",
@@ -41,7 +41,6 @@ struct AgentsList: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 4)
                 }
                 .scrollIndicators(.never)
                 .fadesScrolledEdges()
@@ -83,7 +82,7 @@ private struct Summary: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .ignore)
         .accessibilityAddTraits(.isStaticText)
-        .accessibilityLabel(states.isEmpty ? "No agents"
+        .accessibilityLabel(states.isEmpty ? "No agents running"
             : states.map { $0.words(counts[$0, default: 0]) }.joined(separator: " · "))
         .accessibilityIdentifier("agents.summary")
     }
@@ -91,7 +90,7 @@ private struct Summary: View {
     private func line(_ states: [AgentState]) -> some View {
         HStack(spacing: 0) {
             if states.isEmpty {
-                Text("No agents").foregroundStyle(.secondary)
+                Text("No agents running").foregroundStyle(.secondary)
             }
             ForEach(states, id: \.self) { state in
                 if state != states.first {
@@ -124,11 +123,11 @@ private struct GroupHeader: View {
                     Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
                         .rotationEffect(.degrees(folded ? 0 : 90))
                         // Its ink on the column of the gear and a row's ×.
-                        .frame(width: 20, height: 22).padding(.trailing, -5)
+                        .frame(width: 20, height: 22).padding(.trailing, -5.5)
                 }
             }
             .foregroundStyle(.secondary)
-            .padding(.horizontal, 4).frame(height: 24)
+            .padding(.horizontal, AgentsSection.padding).frame(height: 24)
             .contentShape(.rect)
         }
         .buttonStyle(ChromeStyle(radius: 6, hovered: hovering))
@@ -138,13 +137,14 @@ private struct GroupHeader: View {
         .accessibilityIdentifier("agents.group.\(state.title)")
         .overlay(alignment: .trailing) {
             if state == .finishedUnseen {
+                // The header's light is its light.
                 Button(action: clearAll) {
                     Text("Clear All").font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
-                        .padding(.horizontal, 6).frame(height: 20)
+                        .frame(height: 20).contentShape(.rect)
                 }
-                .buttonStyle(ChromeStyle(radius: 6))
-                // Its text 5 pt inside the header's, left of the chevron under the pointer.
-                .padding(.trailing, hovering ? 17.5 : 2.5)
+                .buttonStyle(.plain)
+                // Its ink 5.5 pt left of the right column, left of the chevron under the pointer.
+                .padding(.trailing, hovering ? 25 : 10)
                 .accessibilityIdentifier("agents.clearAll")
             }
         }
@@ -175,7 +175,8 @@ private struct AgentRow: View {
                 .lineLimit(1)
                 Spacer(minLength: 0)
             }
-            .padding(.leading, 4).padding(.trailing, clears && hovering ? 20 : 4)
+            .padding(.leading, AgentsSection.padding)
+            .padding(.trailing, clears && hovering ? 16 + AgentsSection.padding : AgentsSection.padding)
             .frame(height: 48)
         }
         .buttonStyle(ChromeStyle(radius: 6))
@@ -196,8 +197,8 @@ private struct AgentRow: View {
                         .frame(width: 16, height: 16)
                 }
                 .buttonStyle(ChromeStyle(radius: 6))
-                // Its ink on the gear's column.
-                .padding(.trailing, 0.5)
+                // Its ink as far in as the tile on the left, on the gear's column.
+                .padding(.trailing, AgentsSection.padding - 4)
                 .accessibilityLabel("Clear")
                 .accessibilityIdentifier("agents.clear.\(store.session).\(pane.id)")
             }
