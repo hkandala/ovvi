@@ -108,18 +108,16 @@ extension PaneViewRegistry {
     }
 
     /// Only the overview's tiles show the terminals' snapshots and the chats' pictures. The web cards' pictures stay:
-    /// a card shows its own until its page loads. ponytail: a chat is told by its probe; a pane that showed a chat
-    /// and then a web card loses that card's picture too.
+    /// a card shows its own until its page loads.
     static func letGoOfTilePictures(_ registries: [PaneViewRegistry]) {
-        let chats = registries.reduce(0) { total, registry in
-            total + registry.pictures.count { registry.chatViews[$0.id] != nil }
-        }
-        Latency.shared.note("overview let go \(PaneTerminal.snapshots.count) \(chats)")
+        let (snapshots, pictures) = (PaneTerminal.snapshots.count, registries.reduce(0) { $0 + $1.pictures.count })
         PaneTerminal.trimSnapshots(0)
         for registry in registries {
-            registry.pictures.removeAll { registry.chatViews[$0.id] != nil }
+            // Web pictures are of panes labeled a browser or plugin.
+            registry.pictures.removeAll { registry.pages?.page(of: $0.id)?.store.terminalPane($0.id)?.plugin == nil }
         }
-        trimPictures(pictureBytes)
+        Latency.shared.note("overview let go \(snapshots - PaneTerminal.snapshots.count) "
+            + "\(pictures - registries.reduce(0) { $0 + $1.pictures.count })")
     }
 
     func webView(_ id: String) -> BrowserView? {

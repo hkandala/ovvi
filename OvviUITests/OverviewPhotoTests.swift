@@ -156,12 +156,12 @@ extension OvviUITests {
         app.typeKey(.escape, modifierFlags: [])
     }
 
-    /// A while after the overview closes (5 minutes, 8 s here), the pictures only its tiles show go: the terminals'
-    /// snapshots and the chats' pictures. A web card's own picture stays. Opened again in time, it keeps them.
+    /// Every 5 minutes (8 s here) while no overview is open, counted from its last close, the pictures only its tiles
+    /// show go: the terminals' snapshots and the chats' pictures. A dropped web card's own picture stays.
     func testOverviewLetsGoOfItsTilePicturesAfterItCloses() async throws {
         executionTimeAllowance = 300
-        // w2's terminal leaves view for the chat's tab: its snapshot.
-        let (chatTab, chat) = try await startChat(["-recordLatency", "YES", "-tilePictureSeconds", "8"])
+        let (chatTab, chat) = try await startChat(["-recordLatency", "YES", "-tilePictureSeconds", "8",
+                                                   "-spareWebCards", "0"])
         addTeardownBlock { @MainActor in self.keep(self.element("app.latency").stringValue, as: "latency") }
         try await say("hello", in: chat)
         XCTAssertTrue(row(chat, "reply", "Echo: **hello**").exists(within: 5))
@@ -170,40 +170,48 @@ extension OvviUITests {
                        to: "w2:p1")
         try await waitFor("w2:p1") { !$0.contains("printf") }
         sendAfter("rm -rf \(folder)\r", to: "w2:p1")
-        // The chat leaves view for the browser's tab: its picture.
         let (tab, browser) = try await newTab("page")
         try await relabel(browser, "ovvi:browser#e2etpb file://\(folder)/page.html")
         element("tab.\(tab)").click()
         XCTAssertTrue(pageText("ovvi-kept-page").exists(within: 10))
+        // No web card is kept out of view: the browser's is dropped, and its picture kept for it.
+        element("tab.w2:t1").click()
+        let chatTile = element("overview.tab.\(chatTab)"), latency = element("app.latency")
         let cards = [chat: "chat", browser: "browser", "w2:p1": "snapshot"].map { pane, picture in
             (element("overview.card.\(pane)"), picture)
         }
-        for opening in ["first", "again in time"] {
-            step("Opened \(opening), each card shows its picture")
+        func open() {
             app.typeKey("o", modifierFlags: [.command, .control])
+            // A chat's picture waits until its whole tile is in the window.
+            scrollOverview(to: chatTile, whole: true)
             for (card, picture) in cards {
-                scrollOverview(to: card, whole: true)
-                XCTAssertTrue(until(10) { card.stringValue.hasPrefix(picture) }, "\(picture): \(card.stringValue)")
+                XCTAssertTrue(until(30) { card.stringValue.hasPrefix(picture) }, "\(picture): \(card.stringValue)")
             }
-            app.typeKey(.escape, modifierFlags: [])
-            XCTAssertTrue(element("overview").vanishes(within: 2))
         }
-        XCTAssertEqual(photos(chat), 0)
-        XCTAssertFalse(element("app.latency").stringValue.contains("overview let go"), "let go while opened in time")
+        open()
+        app.typeKey(.escape, modifierFlags: [])
 
-        step("Let go: the chat is drawn again for its picture, the page keeps its own")
-        let latency = element("app.latency")
-        XCTAssertTrue(until(30) { latency.stringValue.contains("overview let go") }, latency.stringValue)
-        let counts = latency.stringValue.firstMatch(of: /overview let go (\d+) (\d+)/).map { (Int($0.1), Int($0.2)) }
-        XCTAssertGreaterThan(counts?.0 ?? 0, 0, "snapshots let go: \(latency.stringValue)")
-        XCTAssertEqual(counts?.1, 1, "chat pictures let go: \(latency.stringValue)")
-        app.typeKey("o", modifierFlags: [.command, .control])
-        // A chat's picture waits until its whole tile is in the window.
-        scrollOverview(to: element("overview.tab.\(chatTab)"), whole: true)
-        XCTAssertTrue(element("overview.card.\(chat)").has(\.stringValue, "chat", within: 30))
-        XCTAssertEqual(photos(chat), 1)
-        XCTAssertEqual(element("overview.card.\(browser)").stringValue, "browser")
+        step("Opened again in time and kept open past the delay, it keeps them")
+        let (photographed, letGoes) = (photos(chat), lettingGo(latency))
+        open()
+        try await Task.sleep(for: .seconds(10))
+        XCTAssertEqual(lettingGo(latency).count, letGoes.count, "let go while open: \(latency.stringValue)")
+        XCTAssertEqual(photos(chat), photographed, "the chat drawn again")
+        app.typeKey(.escape, modifierFlags: [])
+
+        step("Closed for the delay: the chat is drawn again for its picture, the page keeps its own")
+        XCTAssertTrue(until(30) { self.lettingGo(latency).count > letGoes.count }, latency.stringValue)
+        let counts = lettingGo(latency)[letGoes.count]
+        XCTAssertGreaterThan(counts.snapshots, 0, latency.stringValue)
+        XCTAssertEqual(counts.pictures, 1, latency.stringValue)
+        open()
+        XCTAssertGreaterThan(photos(chat), photographed)
         XCTAssertEqual(photos(browser), 0)
         app.typeKey(.escape, modifierFlags: [])
+    }
+
+    /// Recorded at each let go: the snapshots and the pictures it let go of.
+    private func lettingGo(_ latency: XCUIElement) -> [(snapshots: Int, pictures: Int)] {
+        latency.stringValue.matches(of: /overview let go (\d+) (\d+)/).map { (Int($0.1) ?? 0, Int($0.2) ?? 0) }
     }
 }

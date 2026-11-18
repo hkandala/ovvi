@@ -4,11 +4,25 @@ import WebKit
 
 extension WindowPages {
     static let tile: CGFloat = 0.35
-    /// The overview is rarely used: the pictures only its tiles show go 5 minutes after it closes, unless one is open
-    /// then (`PaneViewRegistry.letGoOfTilePictures`).
+    /// The overview is rarely used: the pictures only its tiles show go every 5 minutes while none is open, counted
+    /// from the launch and from each close (tab switches take them too). ponytail: all at once, not each 5 minutes
+    /// after an overview last showed it.
     private static let tilePictureTime = UserDefaults.standard.string(forKey: "tilePictureSeconds")
         .flatMap { Double($0) } ?? 300
     private static var lettingGo: Task<Void, Never>?
+
+    static func letGoOfTilePictures(restart: Bool) {
+        guard restart || lettingGo == nil else { return }
+        lettingGo?.cancel()
+        lettingGo = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(tilePictureTime))
+                if !Task.isCancelled, !windows.contains(where: \.overview) {
+                    PaneViewRegistry.letGoOfTilePictures(windows.map(\.terminals))
+                }
+            }
+        }
+    }
 
     func toggleOverview() {
         if overview {
@@ -24,12 +38,7 @@ extension WindowPages {
     func closeOverview() {
         guard overview else { return }
         overview = false
-        Self.lettingGo?.cancel()
-        Self.lettingGo = Task {
-            try? await Task.sleep(for: .seconds(Self.tilePictureTime))
-            guard !Task.isCancelled, !Self.windows.contains(where: \.overview) else { return }
-            PaneViewRegistry.letGoOfTilePictures(Self.windows.map(\.terminals))
-        }
+        Self.letGoOfTilePictures(restart: true)
         overviewTabs = [:]
         overviewScrolling = false
         overviewSettling?.cancel()

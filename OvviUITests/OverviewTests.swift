@@ -310,12 +310,13 @@ extension OvviUITests {
             target.exists && target.isHittable && (!whole || self.element("overview").frame.contains(target.frame))
         }
         for delta in [-step, step, -step] {
-            var last: CGRect?
+            var last: CGRect?, still = 0
             for _ in 0 ..< steps {
                 guard !shown() else { return }
-                // At the grid's end: the target did not move.
+                // At the grid's end: the target did not move twice (a wheel can be lost).
                 let frame = target.exists ? target.frame : nil
-                guard frame == nil || frame != last else { break }
+                still = frame != nil && frame == last ? still + 1 : 0
+                guard still < 2 else { break }
                 last = frame
                 element("overview").scroll(byDeltaX: 0, deltaY: delta)
             }

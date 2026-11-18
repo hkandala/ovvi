@@ -66,6 +66,7 @@ final class WindowPages {
             Self.windows.append(self)
         }
         findAgents()
+        Self.letGoOfTilePictures(restart: false)
         Self.runEarly()
     }
 
