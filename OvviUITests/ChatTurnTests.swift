@@ -77,7 +77,7 @@ extension OvviUITests {
     /// A table wider than the reply scrolls sideways in its own box, and the chat still scrolls up and down over it.
     func testAWideTableScrollsSideways() async throws {
         let pane = try await startChat().pane
-        try await say("many 6", in: pane)
+        app.typeText("many 6\r")
         XCTAssertTrue(row(pane, "reply", "Last.").exists(within: 8))
         try await say("table", in: pane)
         let table = app.descendants(matching: .any)

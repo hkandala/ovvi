@@ -166,7 +166,7 @@ extension OvviUITests {
     /// follows the card at once. Narrower than the chat's minimum, the messages keep the minimum.
     func testASplitMovesTheMessagesWithTheReplyBox() async throws {
         let (tab, pane) = try await startChat()
-        try await say("many 6", in: pane)
+        app.typeText("many 6\r")
         XCTAssertTrue(row(pane, "reply", "Last.").exists(within: 10))
         let wide = element("pane.\(pane)").frame.width, inset = Int(wide - element("chat.\(pane)").frame.width)
         let expected = { (card: CGFloat) in max(Int(card) - inset, 360) }
@@ -192,7 +192,7 @@ extension OvviUITests {
     /// in the same frame. The drag widens the chat: a split leaves it near its minimum, which the messages keep.
     func testADividerDragMovesTheMessagesWithTheReplyBox() async throws {
         let (tab, pane) = try await startChat()
-        try await say("many 6", in: pane)
+        app.typeText("many 6\r")
         XCTAssertTrue(row(pane, "reply", "Last.").exists(within: 10))
         let card = element("pane.\(pane)"), chat = element("chat.\(pane)"), box = element("chat.\(pane).composer")
         let inset = Int(card.frame.width - chat.frame.width)
@@ -263,7 +263,7 @@ extension OvviUITests {
         try await say("hello", in: pane)
         XCTAssertTrue(row(pane, "reply", "Echo: **hello**").exists(within: 5))
         onBubbles(box(), pane, reply: "Echo: **hello**", user: "hello")
-        try await say("many 25", in: pane)
+        app.typeText("many 25\r")
         XCTAssertTrue(row(pane, "reply", "Last.").exists(within: 10))
         let sent = row(pane, "user", "Question 25")
         XCTAssertTrue(until(3) { abs(box().maxX - sent.frame.maxX - 12) <= 1 }, "\(box()) \(sent.frame)")
@@ -335,7 +335,7 @@ extension OvviUITests {
     }
 
     /// One Return: a chat whose agent still starts sends it once the agent is ready (a remote pi's session comes
-    /// over ssh).
+    /// over ssh). Not for `many`: its replies scroll the sent row out of the list before the wait can see it.
     func say(_ text: String, in pane: String) async throws {
         app.typeText(text + "\r")
         XCTAssertTrue(row(pane, "user", text).exists(within: 15))
