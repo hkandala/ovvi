@@ -70,21 +70,26 @@ struct AgentsList: View {
 /// The counts in the foot's order, each in its state's color; where the line does not fit, the idle count goes.
 private struct Summary: View {
     let counts: [AgentState: Int]
+    @State private var room = CGFloat.infinity
+    @State private var full: CGFloat = 0
     @Environment(\.look) private var look
 
     var body: some View {
         let states = AgentState.footOrder.filter { counts[$0, default: 0] > 0 }
-        ViewThatFits(in: .horizontal) {
-            line(states).fixedSize()
-            line(states.filter { $0 != .idle })
-        }
-        .font(.system(size: 11, weight: .medium)).lineLimit(1)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .ignore)
-        .accessibilityAddTraits(.isStaticText)
-        .accessibilityLabel(states.isEmpty ? "No agents running"
-            : states.map { $0.words(counts[$0, default: 0]) }.joined(separator: " · "))
-        .accessibilityIdentifier("agents.summary")
+        // Measured, not a ViewThatFits: that one drew nothing while the section slid.
+        line(full <= room ? states : states.filter { $0 != .idle })
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { room = $0 }
+            .background(alignment: .leading) {
+                line(states).fixedSize().hidden()
+                    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { full = $0 }
+            }
+            .font(.system(size: 11, weight: .medium)).lineLimit(1)
+            .accessibilityElement(children: .ignore)
+            .accessibilityAddTraits(.isStaticText)
+            .accessibilityLabel(states.isEmpty ? "No agents running"
+                : states.map { $0.words(counts[$0, default: 0]) }.joined(separator: " · "))
+            .accessibilityIdentifier("agents.summary")
     }
 
     private func line(_ states: [AgentState]) -> some View {
@@ -102,7 +107,7 @@ private struct Summary: View {
     }
 }
 
-/// A click anywhere folds the group; its chevron shows under the pointer.
+/// A click anywhere folds the group; its chevron says which way.
 private struct GroupHeader: View {
     let state: AgentState
     let count: Int
@@ -119,12 +124,10 @@ private struct GroupHeader: View {
                     .padding(.horizontal, 5).frame(height: 15)
                     .background(.primary.opacity(0.07), in: .capsule)
                 Spacer(minLength: 0)
-                if hovering {
-                    Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
-                        .rotationEffect(.degrees(folded ? 0 : 90))
-                        // Its ink on the section's right column, with a row's ×.
-                        .frame(width: 20, height: 22).padding(.trailing, -5.5)
-                }
+                Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
+                    .rotationEffect(.degrees(folded ? 0 : 90))
+                    // Its ink on the section's right column, with a row's ×.
+                    .frame(width: 20, height: 22).padding(.trailing, -5.5)
             }
             .foregroundStyle(.secondary)
             .padding(.horizontal, AgentsSection.padding).frame(height: 24)
@@ -143,8 +146,8 @@ private struct GroupHeader: View {
                         .padding(.horizontal, 6).frame(height: 20).contentShape(.rect)
                 }
                 .buttonStyle(.plain)
-                // Its ink 5.5 pt left of the right column, left of the chevron under the pointer.
-                .padding(.trailing, hovering ? 19 : 4)
+                // Left of the chevron.
+                .padding(.trailing, 19)
                 .accessibilityIdentifier("agents.clearAll")
             }
         }

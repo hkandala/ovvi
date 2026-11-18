@@ -14,6 +14,8 @@ struct Sidebar: View {
     @AppStorage(Page.foldsAndShelves, store: .sidebar) private var opened = ""
     /// The user opened the agents section, so the keys go to it.
     @State private var opening = false
+    /// The defaults' open line, followed in a transaction of its own: a write to the defaults draws with none.
+    @State private var agentsOpen = false
     @Environment(\.look) private var look
 
     var body: some View {
@@ -64,19 +66,28 @@ struct Sidebar: View {
             if pages.list.count > 1 {
                 PageDots(pages: pages)
             }
-            // Slides up from behind the foot.
+            // Slides up from behind the foot as it fades in, as the session shelf slides down.
             VStack(spacing: 0) {
-                if let page = pages.current, opened.hasLine(pages.agentsKey) {
+                if let page = pages.current, agentsOpen {
                     AgentsSection(pages: pages, page: page, focuses: opening, close: toggleAgents)
                         .padding(.leading, Sidebar.rowInsets.leading).padding(.trailing, Sidebar.rowInsets.trailing)
                         // Its border a row gap under the list's cut rows; the dots' band keeps them away already.
                         .padding(.top, pages.list.count < 2 ? WorkspaceRow.gap : 2)
-                        .transition(.move(edge: .bottom))
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
+            // Empty, it would have no width either, and the section would grow out of its middle.
+            .frame(maxWidth: .infinity)
             .clipped()
-            SidebarFoot(pages: pages, panel: $panel, open: opened.hasLine(pages.agentsKey), toggle: toggleAgents)
+            SidebarFoot(pages: pages, panel: $panel, open: agentsOpen, toggle: toggleAgents)
                 .padding(.leading, Sidebar.rowInsets.leading).padding(.trailing, Sidebar.rowInsets.trailing)
+        }
+        .onChange(of: opened.hasLine(pages.agentsKey), initial: true) { old, new in
+            if old == new {
+                agentsOpen = new
+            } else {
+                withAnimation(.slide) { agentsOpen = new }
+            }
         }
         // The whole sidebar swipes its pages, the header and the filter too.
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { area = $0 }
@@ -144,9 +155,7 @@ extension Sidebar {
 
     private func toggleAgents() {
         opening = !opened.hasLine(pages.agentsKey)
-        withAnimation(.fade) {
-            opened = opened.togglingLine(pages.agentsKey)
-        }
+        opened = opened.togglingLine(pages.agentsKey)
         if !opening {
             pages.current?.focusKeyboardCard()
         }

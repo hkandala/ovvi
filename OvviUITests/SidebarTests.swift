@@ -3,10 +3,6 @@ import XCTest
 extension OvviUITests {
     func testTheSidebarsEmptyAreaHasTheSessionMenu() {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        let section = element("agents.section"), search = element("agents.archived.search")
-        if section.exists {
-            element("sidebar.agents").click()
-        }
         let below = element("workspace.w2").center
             .withOffset(CGVector(dx: 0, dy: 120))
         below.rightClick()
@@ -14,13 +10,8 @@ extension OvviUITests {
         XCTAssertTrue(menu["New Space"].exists(within: 2))
         XCTAssertTrue(menu["Open Session…"].exists)
         XCTAssertFalse(menu["Detach Session"].isEnabled)
+        XCTAssertFalse(menu["Show Archived Sessions"].exists, "the agents section's archive button has it")
         keepScreenshot("sidebar menu")
-        menu["Show Archived Sessions"].click()
-        XCTAssertTrue(search.exists(within: 2))
-        element("sidebar.header").center.rightClick()
-        menu["Hide Archived Sessions"].click()
-        XCTAssertTrue(section.vanishes(within: 2))
-        below.rightClick()
         menu["Open Session…"].click()
         XCTAssertTrue(element("open-session.filter").exists(within: 2))
         app.typeKey(.escape, modifierFlags: [])

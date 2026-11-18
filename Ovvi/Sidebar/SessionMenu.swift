@@ -5,21 +5,11 @@ struct SessionMenu: View {
     let page: Page
     let pages: WindowPages
     let openSession: () -> Void
-    @AppStorage(Page.foldsAndShelves, store: .sidebar) private var opened = ""
 
     var body: some View {
         Button("New Space") { Task { await page.newWorkspace() } }
             .disabled(page.store.state != .live)
         Button("Open Session…", action: openSession)
-        let shown = opened.hasLine(pages.agentsKey) && opened.hasLine(pages.archivedKey)
-        Button(shown ? "Hide Archived Sessions" : "Show Archived Sessions") {
-            withAnimation(.fade) {
-                opened = opened.withLine(pages.agentsKey, !shown).withLine(pages.archivedKey, !shown)
-            }
-            if shown {
-                page.focusKeyboardCard()
-            }
-        }
         Button(page.store.onlyPinned ? "Show All Spaces" : "Show Only Pinned Spaces") {
             afterMenu { page.store.onlyPinned.toggle() }
         }
