@@ -73,6 +73,8 @@ struct SessionHeader: View {
                 shelved = false
             }
         }
+        // The rows moved under the pointer, which gets no new hover: no row lit or showing Detach until it moves.
+        .onChange(of: pages.list.count) { lit = nil }
     }
 
     private var title: some View {
@@ -136,7 +138,7 @@ struct SessionHeader: View {
         .padding(4)
         .background(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(.primary.opacity(0.14)))
         // As far from the header's glyphs as the filter is from its border.
-        .padding(.top, 8).padding(.bottom, 8)
+        .padding(.vertical, 8)
     }
 
     private func row(_ index: Int, _ id: String, symbol: String, _ title: String, key: String = "",

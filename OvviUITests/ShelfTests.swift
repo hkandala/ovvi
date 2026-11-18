@@ -142,7 +142,7 @@ extension OvviUITests {
         XCTAssertTrue(detach.exists(within: 2))
         XCTAssertEqual(detach.label, "Detach Session")
         // Its ink as far from the right edge as the row's symbol from the left (measured at 2×).
-        XCTAssertEqual(theirs.frame.maxX - detach.frame.maxX, 3.5, accuracy: 0.25)
+        XCTAssertEqual(theirs.frame.maxX - detach.frame.maxX, 3.5, accuracy: 0.5) // 3 on a 1× display
         detach.click()
         XCTAssertTrue(until(3) { !pageList().contains(two) })
         XCTAssertTrue(theirs.vanishes(within: 2))
