@@ -152,40 +152,32 @@ extension OvviUITests {
 
     func testArchivedSessionsAndTheDotsStayUnderThePages() {
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
-        let shelf = element("agents.shelf.Archived Sessions")
+        let box = element("sidebar.agents"), section = element("agents.section")
         XCTAssertFalse(element("sidebar.dot.\(one)").exists)
         openPage(two)
         let dots = [one, two].map { element("sidebar.dot.\($0)") }
         XCTAssertTrue(dots[1].has(\.isSelected, true, within: 2))
         XCTAssertLessThan(element("workspace.w1").frame.maxY, dots[1].frame.minY)
-        XCTAssertEqual(shelf.frame.minY - dots[1].frame.maxY, 8, accuracy: 0.5, "the dots' band over the shelf")
         // A failed run may have left it open.
-        if shelf.value as? String == "expanded" {
-            shelf.click()
+        if section.exists {
+            box.click()
         }
-        XCTAssertTrue(shelf.has(\.stringValue, "collapsed", within: 2))
-        let place = shelf.frame
-        shelf.click()
-        addTeardownBlock { @MainActor [self] in
-            let shelf = element("agents.shelf.Archived Sessions")
-            if shelf.exists, shelf.value as? String == "expanded" {
-                shelf.click()
-            }
-        }
-        XCTAssertTrue(element("agents.archived.search").exists(within: 2))
+        XCTAssertTrue(section.vanishes(within: 2))
+        let place = box.frame
+        openArchived()
+        XCTAssertEqual(section.frame.minY - dots[1].frame.maxY, 8, accuracy: 0.5, "the dots' band over the section")
         XCTAssertTrue(element("agents.archived.filter").exists)
         dots[0].click()
         XCTAssertTrue(until(3) { header == one })
         XCTAssertTrue(dots[0].has(\.isSelected, true, within: 2))
-        XCTAssertEqual(shelf.value as? String, "expanded")
         XCTAssertTrue(element("agents.archived.search").exists)
         keepScreenshot("dots and Archived Sessions")
         relaunch()
-        XCTAssertTrue(shelf.has(\.stringValue, "expanded", within: connect))
-        shelf.click()
-        XCTAssertTrue(shelf.has(\.stringValue, "collapsed", within: 2))
+        XCTAssertTrue(element("agents.archived.search").exists(within: connect), "the archived view is not kept")
+        box.click()
+        XCTAssertTrue(section.vanishes(within: 2))
         XCTAssertFalse(element("sidebar.dot.\(one)").exists)
-        XCTAssertTrue(until(2) { shelf.frame == place }, "\(shelf.frame) \(place)")
+        XCTAssertTrue(until(2) { box.frame == place }, "\(box.frame) \(place)")
     }
 
     func testAnUntitledAgentShowsItsFirstPrompt() async throws {

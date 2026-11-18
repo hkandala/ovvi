@@ -10,8 +10,10 @@ struct Sidebar: View {
     @Binding var panel: WindowPanel?
     @State private var filter = ""
     @State private var swipe = Swipe()
-    private var settings = AppSettings()
     @State private var area = CGRect.zero
+    @AppStorage(Page.foldsAndShelves, store: .sidebar) private var opened = ""
+    /// The user opened the agents section, so the keys go to it.
+    @State private var opening = false
     @Environment(\.look) private var look
 
     var body: some View {
@@ -62,11 +64,18 @@ struct Sidebar: View {
             if pages.list.count > 1 {
                 PageDots(pages: pages)
             }
-            if settings.showArchived, let page = pages.current {
-                ArchivedShelf(pages: pages, page: page)
-                    .padding(.leading, Sidebar.rowInsets.leading).padding(.trailing, Sidebar.rowInsets.trailing)
+            // Slides up from behind the foot.
+            VStack(spacing: 0) {
+                if let page = pages.current, opened.hasLine(pages.agentsKey) {
+                    AgentsSection(pages: pages, page: page, focuses: opening, close: toggleAgents)
+                        .padding(.leading, Sidebar.rowInsets.leading).padding(.trailing, Sidebar.rowInsets.trailing)
+                        // Its border a row gap under the list's cut rows; the dots' band keeps them away already.
+                        .padding(.top, pages.list.count < 2 ? WorkspaceRow.gap : 2)
+                        .transition(.move(edge: .bottom))
+                }
             }
-            SidebarFoot(pages: pages, panel: $panel)
+            .clipped()
+            SidebarFoot(pages: pages, panel: $panel, open: opened.hasLine(pages.agentsKey), toggle: toggleAgents)
                 .padding(.leading, Sidebar.rowInsets.leading).padding(.trailing, Sidebar.rowInsets.trailing)
                 .padding(.top, 8)
         }
@@ -132,6 +141,16 @@ private struct ResizeHandle: View {
 extension Sidebar {
     private func openSession() {
         panel = .openSession
+    }
+
+    private func toggleAgents() {
+        opening = !opened.hasLine(pages.agentsKey)
+        withAnimation(.fade) {
+            opened = opened.togglingLine(pages.agentsKey)
+        }
+        if !opening {
+            pages.current?.focusKeyboardCard()
+        }
     }
 
     /// Not under a panel (the palette, Open Session), which would then act on another page.

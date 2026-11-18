@@ -1,3 +1,4 @@
+import HerdrKit
 import SwiftUI
 
 /// A session's order of the unpinned spaces; a session follows Settings' until its Sort Spaces picks.
@@ -16,10 +17,6 @@ func afterMenu(_ action: @escaping @MainActor () -> Void) {
 extension Page {
     /// ponytail: folds are never pruned, so a space herdr makes again with a folded one's id starts folded.
     static let foldsAndShelves = "foldsAndShelves"
-
-    var archivedKey: String {
-        "\(store.machine.id) archived-sessions"
-    }
 
     func foldKey(_ workspace: String) -> String {
         "\(store.machine.id) \(id) folded \(workspace)"
@@ -61,6 +58,22 @@ extension Page {
     }
 }
 
+extension WindowPages {
+    /// The agents section is open.
+    var agentsKey: String {
+        "\(machine.id) agents"
+    }
+
+    /// The agents section shows the archived sessions.
+    var archivedKey: String {
+        "\(machine.id) archived-sessions"
+    }
+
+    func agentsFoldKey(_ state: AgentState) -> String {
+        "\(machine.id) agents folded \(state.title)"
+    }
+}
+
 extension HostStore {
     /// The session's lines of a kind ("‹machine› ‹session› ‹kind› ‹value›") in the sidebar's defaults.
     static func saved(_ kind: String, _ session: String, _ machine: Machine) -> [String] {
@@ -94,6 +107,10 @@ extension HostStore {
 extension String {
     func hasLine(_ line: String) -> Bool {
         split(separator: "\n").contains { $0 == line }
+    }
+
+    func withLine(_ line: String, _ present: Bool) -> String {
+        hasLine(line) == present ? self : togglingLine(line)
     }
 
     func togglingLine(_ line: String) -> String {

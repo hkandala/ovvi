@@ -48,17 +48,44 @@ extension OvviUITests {
         openArchived()
         XCTAssertTrue(element("agents.archived.pi.page-1.jsonl").exists(within: 5))
         let search = element("agents.archived.search"), window = app.windows.firstMatch
-        let shelf = element("agents.shelf.Archived Sessions"), top = shelf.frame.minY
+        let back = element("agents.back"), top = back.frame.minY
         search.typeText("no such session")
         XCTAssertTrue(window.staticTexts["No sessions found"].exists(within: 10))
-        XCTAssertEqual(shelf.frame.minY, top, "no match moved the header")
+        XCTAssertEqual(back.frame.minY, top, "no match moved the header")
         keepScreenshot("archived search, no match")
         search.typeKey("a", modifierFlags: .command)
         search.typeText("Page 55")
         XCTAssertTrue(element("agents.archived.pi.page-55.jsonl").exists(within: 10))
         app.typeKey(.escape, modifierFlags: [])
-        XCTAssertTrue(element("agents.shelf.Archived Sessions").has(\.stringValue, "collapsed", within: 2))
+        XCTAssertTrue(element("agents.header").exists(within: 2), "Esc does not go back to the agents")
+        XCTAssertFalse(search.exists)
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(element("agents.section").vanishes(within: 2), "the second Esc does not close the section")
         XCTAssertTrue(hasKeyboard(element("terminal.\(shell)")))
+    }
+
+    /// The archive button switches the section in place; the back chevron, the title row or Esc goes back.
+    func testArchivedSwitchesInPlaceAndGoesBack() {
+        XCTAssertTrue(element("workspace.w1").exists(within: connect))
+        openAgents()
+        let section = element("agents.section"), frame = section.frame
+        let summary = element("agents.summary")
+        element("agents.archive").click()
+        let search = element("agents.archived.search")
+        XCTAssertTrue(hasKeyboard(search))
+        XCTAssertEqual(section.frame, frame, "the section moved")
+        XCTAssertEqual(search.frame.minY, summary.frame.minY, accuracy: 0.5, "the search not in the summary's row")
+        XCTAssertEqual(element("agents.back").label, "Back to Agents")
+        XCTAssertFalse(element("agents.archive").exists)
+        keepScreenshot("archived in the agents section")
+        element("agents.back").click()
+        XCTAssertTrue(element("agents.header").exists(within: 2))
+        element("agents.archive").click()
+        XCTAssertTrue(search.exists(within: 2))
+        // The title row, right of the back chevron's words.
+        section.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0)).withOffset(CGVector(dx: 0, dy: 15)).click()
+        XCTAssertTrue(element("agents.header").exists(within: 2), "the title row does not go back")
+        XCTAssertEqual(section.frame, frame)
     }
 
     @discardableResult
@@ -97,6 +124,8 @@ extension OvviUITests {
 
     func showsTheOthersPastAStuckAgent(on machine: String) {
         let shelf = openArchived(), top = shelf.frame.minY, window = app.windows.firstMatch
+        XCTAssertEqual(element("agents.back").label, "Back to Agents")
+        XCTAssertEqual(element("agents.back").frame.height, 22, accuracy: 0.5)
         let row = element("agents.archived.pi.stuck.jsonl")
         let failure = window.staticTexts["Could not read Claude Code sessions on \(machine)"]
         XCTAssertTrue(row.exists(within: 15))
@@ -109,23 +138,14 @@ extension OvviUITests {
         keepScreenshot("archived stuck agent")
     }
 
+    /// The agents section in its archived view, with the keys in its search: the section.
     @discardableResult
     func openArchived() -> XCUIElement {
-        let shelf = element("agents.shelf.Archived Sessions")
-        XCTAssertTrue(shelf.exists(within: 3))
-        if shelf.value as? String == "expanded" {
-            shelf.click()
-            XCTAssertTrue(shelf.has(\.stringValue, "collapsed", within: 2))
-        }
-        shelf.click()
+        XCTAssertTrue(element("sidebar.agents").exists(within: 3))
+        openAgents()
+        element("agents.archive").click()
         XCTAssertTrue(hasKeyboard("agents.archived.search"))
-        addTeardownBlock { @MainActor [self] in
-            let shelf = element("agents.shelf.Archived Sessions")
-            if shelf.exists, shelf.value as? String == "expanded" {
-                shelf.click()
-            }
-        }
-        XCTAssertTrue(shelf.has(\.stringValue, "expanded", within: 2))
+        let shelf = element("agents.section")
         // A run that stops midway leaves another agent picked.
         let menu = element("agents.archived.filter")
         if menu.value as? String != "All Agents" {

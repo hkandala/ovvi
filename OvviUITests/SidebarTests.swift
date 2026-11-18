@@ -3,10 +3,9 @@ import XCTest
 extension OvviUITests {
     func testTheSidebarsEmptyAreaHasTheSessionMenu() {
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        let shelf = element("agents.shelf.Archived Sessions")
-        if shelf.value as? String == "expanded" {
-            shelf.click()
-            addTeardownBlock { @MainActor in shelf.click() }
+        let section = element("agents.section"), search = element("agents.archived.search")
+        if section.exists {
+            element("sidebar.agents").click()
         }
         let below = element("workspace.w2").center
             .withOffset(CGVector(dx: 0, dy: 120))
@@ -17,10 +16,10 @@ extension OvviUITests {
         XCTAssertFalse(menu["Detach Session"].isEnabled)
         keepScreenshot("sidebar menu")
         menu["Show Archived Sessions"].click()
-        XCTAssertTrue(shelf.has(\.stringValue, "expanded", within: 2))
+        XCTAssertTrue(search.exists(within: 2))
         element("sidebar.header").center.rightClick()
         menu["Hide Archived Sessions"].click()
-        XCTAssertTrue(shelf.has(\.stringValue, "collapsed", within: 2))
+        XCTAssertTrue(section.vanishes(within: 2))
         below.rightClick()
         menu["Open Session…"].click()
         XCTAssertTrue(element("open-session.filter").exists(within: 2))
@@ -313,19 +312,21 @@ extension OvviUITests {
             try await report(pane, "working")
             (rows, panes) = (rows + ["workspace.\(workspace(of: tab))"], panes + [pane])
         }
-        let filter = element("sidebar.filter"), shelf = element("agents.shelf.Archived Sessions")
+        let filter = element("sidebar.filter"), box = element("sidebar.agents")
         let first = element("workspace.w1"), long0 = element(rows[0]), last = element(rows[23])
+        // The list ends 8 pt over the foot's row, whose box is 3 pt inside it.
+        let bottom = { box.frame.minY - 11 }
         let inView = { (row: XCUIElement) in
-            row.exists && row.frame.minY >= filter.frame.maxY && row.frame.maxY <= shelf.frame.minY
+            row.exists && row.frame.minY >= filter.frame.maxY && row.frame.maxY <= bottom()
         }
         XCTAssertTrue(until(5) {
             self.app.typeKey("1", modifierFlags: [.command, .control])
             self.app.typeKey("[", modifierFlags: [.command, .control])
             return until(1) { last.isSelected }
         })
-        XCTAssertTrue(until(2) { inView(last) }, "\(last.frame), shelf \(shelf.frame)")
+        XCTAssertTrue(until(2) { inView(last) }, "\(last.frame), foot \(box.frame)")
         let end = element("agent.\(panes[23])").frame
-        XCTAssertGreaterThan(end.maxY, shelf.frame.minY - 60, "\(end), shelf \(shelf.frame)")
+        XCTAssertGreaterThan(end.maxY, bottom() - 60, "\(end), foot \(box.frame)")
         XCTAssertFalse(inView(first))
         app.typeKey("3", modifierFlags: [.command, .control])
         XCTAssertTrue(until(2) { long0.isSelected && long0.frame.minY >= filter.frame.maxY + 24 }, "\(long0.frame)")

@@ -309,13 +309,6 @@ private struct WindowContent: View {
             if panel == .shortcuts {
                 Shortcuts().floatingPanel(open: open(.shortcuts), alignment: .center)
             }
-            if panel == .agents {
-                // Over the sidebar's foot, from its agents' summary up.
-                let width = SidebarFoot.width(sidebar: sidebarWidth)
-                AgentsPanel(pages: pages, height: height, width: width) { panel = nil }
-                    .padding(.leading, SidebarFoot.inset).padding(.bottom, SidebarFoot.inset + SidebarFoot.box + 9)
-                    .floatingPanel(open: open(.agents), alignment: .bottomLeading)
-            }
         }
         .modifier(CloseDialog(page: page))
         .overlay {
@@ -348,14 +341,8 @@ private struct WindowContent: View {
         .navigationTitle(page.selectedTab.map { "\(page.titleText($0)) - \(page.store.title)" } ?? page.store.name)
         .menuBar(commands)
         .onChange(of: sidebar) {
-            // The workspace menu stands in for the sidebar; the Agents panel stands over its foot.
-            if sidebar && panel == .workspaces || !sidebar && panel == .agents {
-                panel = nil
-            }
-        }
-        // The overview hides the foot the panel stands over.
-        .onChange(of: pages.overview) {
-            if pages.overview, panel == .agents {
+            // The workspace menu stands in for the sidebar.
+            if sidebar, panel == .workspaces {
                 panel = nil
             }
         }
@@ -369,5 +356,5 @@ private struct WindowContent: View {
 }
 
 enum WindowPanel {
-    case workspaces, palette, openSession, shortcuts, agents
+    case workspaces, palette, openSession, shortcuts
 }

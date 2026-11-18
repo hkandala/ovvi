@@ -1,28 +1,25 @@
 import HerdrKit
 import SwiftUI
 
-/// Under Archived Sessions: the agents' summary, which opens the Agents panel, then Keyboard Shortcuts, Command
-/// Palette, a line and Settings.
+/// The agents' box, which opens the agents section, then Keyboard Shortcuts, Command Palette, a line and Settings.
 struct SidebarFoot: View {
     static let box: CGFloat = 22
     private static let height: CGFloat = 28
-    /// The box's left edge from the window's, on Archived Sessions' text; its bottom sits as far over the window's.
-    static let inset = Sidebar.rowInsets.leading + WorkspaceRow.textInset
-    private static let end: CGFloat = 4
-
-    /// The Agents panel's: from the box's left edge to the gear's right edge.
-    static func width(sidebar: Double) -> CGFloat {
-        sidebar - gap - Sidebar.rowInsets.trailing - end - inset
-    }
+    /// The box's left edge from the window's, on the agents section's text; its bottom sits as far over the window's.
+    private static let inset = Sidebar.rowInsets.leading + WorkspaceRow.textInset
+    /// The gear's ink ends on the section's right column: its archive button's, the fold chevrons', a row's ×.
+    private static let end: CGFloat = 1.5
 
     let pages: WindowPages
     @Binding var panel: WindowPanel?
+    let open: Bool
+    let toggle: () -> Void
     @Environment(\.openWindow) private var openWindow
     @Environment(\.look) private var look
 
     var body: some View {
         HStack(spacing: 0) {
-            AgentsSummary(stores: pages.machineStores, open: panel == .agents) { panel = .agents }
+            AgentsBox(counts: pages.machineStores.stateCounts, open: open, action: toggle)
                 .layoutPriority(1)
             Spacer(minLength: gap)
             IconButton(symbol: "keyboard", help: "Keyboard Shortcuts", key: .hotkey("app.shortcuts")) {
@@ -39,57 +36,73 @@ struct SidebarFoot: View {
         }
         .frame(height: Self.height)
         .padding(.leading, WorkspaceRow.textInset)
-        // The gear's ink right-aligned with Archived Sessions' chevron.
         .padding(.trailing, Self.end)
         // The sidebar ends gap over the window's bottom.
         .padding(.bottom, Self.inset - gap - (Self.height - Self.box) / 2)
     }
 }
 
-/// The state box with words: who needs you, else the unseen finishes, else who works, else "All caught up".
-private struct AgentsSummary: View {
-    let stores: [HostStore]
+/// The state box with words: who needs you, else the unseen finishes, else who works; else the agents' symbol.
+private struct AgentsBox: View {
+    let counts: [AgentState: Int]
     let open: Bool
     let action: () -> Void
     @Environment(\.look) private var look
 
     var body: some View {
-        var counts: [AgentState: Int] = [:]
-        for store in stores {
-            counts.merge(store.stateCounts, uniquingKeysWith: +)
-        }
-        let order: [AgentState] = [.needsYou, .finishedUnseen, .working, .idle]
-        let state = order.dropLast().first { counts[$0, default: 0] > 0 }
-        let words = state.map { Self.words(counts[$0, default: 0], $0) } ?? "All caught up"
-        let all = order.compactMap { state in counts[state].map { Self.words($0, state) } }
-        let color = state?.color(look) ?? .secondary, shape = RoundedRectangle(cornerRadius: 6, style: .continuous)
+        let state = AgentState.footOrder.dropLast().first { counts[$0, default: 0] > 0 }
+        let all = AgentState.footOrder.compactMap { state in counts[state].map { state.words($0) } }
         return Button(action: action) {
-            HStack(spacing: 5) {
-                if let state {
-                    StateIcon(state: state)
-                }
-                Text(words)
-            }
-            .lineLimit(1)
-            .font(.system(size: 11, weight: state == nil ? .medium : .semibold)).foregroundStyle(color)
-            .padding(.horizontal, 8).frame(height: SidebarFoot.box)
-            .background(color.opacity(state == nil ? 0 : open ? 0.24 : 0.14), in: shape)
-            .overlay(shape.strokeBorder(state == nil ? look.divider : color.opacity(0.45)))
+            label(state).frame(height: SidebarFoot.box)
         }
         .buttonStyle(ChromeStyle(radius: 6))
         .tip(all.isEmpty ? "No agents" : all.joined(separator: " · "))
         .accessibilityLabel("Agents")
-        .accessibilityValue(words)
+        .accessibilityValue(state.map { $0.words(counts[$0, default: 0]) } ?? "All caught up")
+        .accessibilityAddTraits(open ? .isSelected : [])
         .accessibilityIdentifier("sidebar.agents")
     }
 
-    static func words(_ count: Int, _ state: AgentState) -> String {
-        switch state {
+    @ViewBuilder private func label(_ state: AgentState?) -> some View {
+        let shape = RoundedRectangle(cornerRadius: 6, style: .continuous)
+        if let state {
+            let color = state.color(look)
+            HStack(spacing: 5) {
+                StateIcon(state: state)
+                Text(state.words(counts[state, default: 0]))
+            }
+            .lineLimit(1)
+            .font(.system(size: 11, weight: .semibold)).foregroundStyle(color)
+            .padding(.horizontal, 8)
+            .frame(maxHeight: .infinity)
+            .background(color.opacity(open ? 0.24 : 0.14), in: shape)
+            .overlay(shape.strokeBorder(color.opacity(0.45)))
+        } else {
+            Image(systemName: "sparkles").font(.system(size: 11, weight: .medium)).foregroundStyle(.primary)
+                .frame(width: SidebarFoot.box, height: SidebarFoot.box)
+                .background(.primary.opacity(open ? 0.08 : 0), in: shape)
+                .overlay(shape.strokeBorder(look.divider))
+        }
+    }
+}
+
+extension AgentState {
+    /// The foot's, the tooltip's and the section's order.
+    static let footOrder: [AgentState] = [.needsYou, .finishedUnseen, .working, .idle]
+
+    func words(_ count: Int) -> String {
+        switch self {
         case .needsYou: count == 1 ? "1 needs you" : "\(count) need you"
         case .finishedUnseen: "\(count) done"
         case .working: "\(count) working"
         case .idle: "\(count) idle"
         }
+    }
+}
+
+extension [HostStore] {
+    var stateCounts: [AgentState: Int] {
+        reduce(into: [:]) { counts, store in counts.merge(store.stateCounts, uniquingKeysWith: +) }
     }
 }
 

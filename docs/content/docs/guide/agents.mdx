@@ -55,7 +55,7 @@ needs you first, then done, then working.
 - The agent rows in the sidebar: under each space, one row per agent, with its icon, its title and its state.
   A working agent also shows how long it works ("12m").
 - The card header of a chat card: the state as an icon and a word.
-- The foot of the sidebar: a summary of every agent on the machine ([The Agents panel](#the-agents-panel)).
+- The foot of the sidebar: a summary of every agent on the machine ([The Agents section](#the-agents-section)).
 - The Dock: see [Notifications](#notifications).
 
 ### Agent rows in the sidebar
@@ -68,28 +68,33 @@ Each space lists its agents under its row, by tab and by place in the tab.
 
 To put the space whose agent changed last first, read [Sort and pin spaces](/docs/guide/basics#sort-and-pin-spaces).
 
-### The Agents panel
+### The Agents section
 
-The foot of the sidebar sums up the agents of every session that an Ovvi window shows on the window's machine. It
-says one of these, in this order:
+The agents button at the left of the sidebar's foot sums up the agents of every session that an Ovvi window shows on
+the window's machine. It shows one of these, in this order:
 
 1. How many agents need you, for example "1 needs you".
 2. Else, how many agents finished and you did not look yet, for example "3 done".
 3. Else, how many agents work, for example "2 working".
-4. Else, "All caught up".
+4. Else, a sparkles icon: no agent needs you.
 
-Rest the pointer on it to see every count. Click it to open the Agents panel. The panel lists the agents that need
-you, then the agents that are done, newest first. Each row shows the agent's icon, its title, and its session and
-space. Working and idle agents are not in the list.
+Rest the pointer on the button to see every count. Click it to open the Agents section above the foot. The header
+names the machine, for example "Agents · This Mac". Under it, a line gives every count in the color of its state, for
+example "1 needs you · 2 done · 1 working · 3 idle".
+
+The section lists the agents in three groups: Needs you, Done and Working. Each group lists its newest change first.
+Idle agents are not in the list. Each row shows the agent's icon, its title, and its session and space.
 
 - Click a row to go to that agent's tab. Ovvi brings the window that shows its session to the front.
-- Click Clear All beside the Done heading to mark every done agent as seen. They become idle and leave the list.
+- Click a group's header to fold or show its agents. Ovvi remembers each fold.
+- Click Clear All on the Done header to mark every done agent as seen. They become idle and leave the list.
 - To clear one done agent, put the pointer on its row and click the × at its right. Agents that need you cannot be
   cleared.
-- A long list scrolls inside the panel.
-- Press Esc, or click outside the panel, to close it.
+- A long list scrolls inside the section.
+- Click the agents button again, or press Esc, to close the section. It stays open while you work elsewhere, and
+  Ovvi remembers it.
 
-With no agent to list, the panel says "All caught up".
+With no agent to list, the section says "All caught up" and "No agent is waiting on you".
 
 ## Chat view
 
@@ -225,16 +230,16 @@ This works for every agent pane, with or without a chat view.
 
 ## Archived Sessions
 
-Archived Sessions is a list near the bottom of the sidebar, above its foot. It shows the closed sessions of Claude
-Code, Codex, Pi and OpenCode on the machine of the current session: the sessions that no pane runs.
+Archived Sessions is a list in the Agents section ([The Agents section](#the-agents-section)). It shows the closed
+sessions of Claude Code, Codex, Pi and OpenCode on the machine of the current session: the sessions that no pane runs.
 
-- To show the list, turn on Settings ▸ Agents ▸ Show closed sessions.
-- To open or close the list, click Archived Sessions, or right-click the session title in the sidebar and choose
-  Show Archived Sessions or Hide Archived Sessions.
+- To show the archive button, turn on Settings ▸ Agents ▸ Show closed sessions.
+- To open the list, click the archive button at the right of the Agents section's header. You can also right-click
+  the session title in the sidebar and choose Show Archived Sessions or Hide Archived Sessions.
+- To go back to the agents, click ‹ or the header, or press Esc.
 - Each row shows the agent's icon, the session's title, its folder and its date.
 - Type in the Search field to find a session by title or folder. The search also reads older sessions.
 - Click the filter button at the end of the Search field to show All Agents or one agent.
-- Press Esc in the Search field to close the list.
 
 ### Resume a session
 

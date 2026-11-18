@@ -1,11 +1,14 @@
 import HerdrKit
 import SwiftUI
 
+/// The agents section's other view: the closed sessions on the window's machine, with their search.
 struct ArchivedShelf: View {
     let pages: WindowPages
     let page: Page
+    /// Shown by the user: the keys go to its search.
+    let focuses: Bool
+    let back: () -> Void
     @AppStorage("archivedAgent", store: .sidebar) private var agent = ""
-    @AppStorage(Page.foldsAndShelves, store: .sidebar) private var opened = ""
     @State private var list = ClosedList()
     @State private var reading: Set<String> = []
     @State private var failed: Set<String> = []
@@ -14,86 +17,62 @@ struct ArchivedShelf: View {
     @State private var attempt = 0
     @State private var search = ""
     @State private var focusSearch = 0
-    @State private var opening = false
     private static var lists: [String: ClosedList] = [:]
 
     var body: some View {
-        let key = page.archivedKey
-        let open = opened.hasLine(key)
         let shown = agent.isEmpty ? Chooser.agents.map(\.command) : [agent]
-        let rows = open ? rows(shown) : []
+        let rows = rows(shown)
         let next = list.next(of: shown).filter { !failed.contains($0) }
         let searching = !search.trimmingCharacters(in: .whitespaces).isEmpty
         VStack(spacing: 4) {
-            header(open: open, key: key)
-            if open {
-                FilterField(prompt: "Search", text: $search, identifier: "agents.archived.search",
-                            symbol: "magnifyingglass", focus: focusSearch, leading: -4, trailing: 22)
-                    .onAppear {
-                        if opening {
-                            opening = false
-                            focusSearch += 1
-                        }
-                    }
-                    .onExitCommand {
-                        toggle(key)
-                        inView.focusKeyboardCard()
-                    }
-                    .overlay(alignment: .trailing) { menu.padding(.trailing, 4.5) }
-                    .padding(.horizontal, 4)
-                Group {
-                    if loading {
-                        Loader(text: "Reading sessions…", delay: .milliseconds(300))
-                    } else {
-                        ScrollView {
-                            LazyVStack(spacing: 4) {
-                                ForEach(rows) { row($0) }
-                                if rows.isEmpty {
-                                    status(shown, next: next, rows: false).frame(maxWidth: .infinity)
-                                        .frame(height: Self.height)
-                                        .overlay(alignment: .bottom) { end(next, searching: searching) }
-                                } else {
-                                    end(next, searching: searching)
-                                    if !failed.isDisjoint(with: shown) || !reading.isDisjoint(with: shown)
-                                        || problem(shown) != nil || searching && !next.isEmpty && !bounded(shown)
-                                    {
-                                        status(shown, next: next, rows: true).frame(maxWidth: .infinity)
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 4)
-                        }
-                        .scrollIndicators(.never)
-                        .fadesScrolledEdges()
+            FilterField(prompt: "Search", text: $search, identifier: "agents.archived.search",
+                        symbol: "magnifyingglass", focus: focusSearch, leading: -4, trailing: 22)
+                .onAppear {
+                    if focuses {
+                        focusSearch += 1
                     }
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: Self.height)
-                .padding(.bottom, 4)
+                .onExitCommand(perform: back)
+                .overlay(alignment: .trailing) { menu.padding(.trailing, 4.5) }
+                .padding(.horizontal, 4)
+            Group {
+                if loading {
+                    Loader(text: "Reading sessions…", delay: .milliseconds(300))
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 4) {
+                            ForEach(rows) { row($0) }
+                            if rows.isEmpty {
+                                status(shown, next: next, rows: false).frame(maxWidth: .infinity)
+                                    .frame(height: Self.height)
+                                    .overlay(alignment: .bottom) { end(next, searching: searching) }
+                            } else {
+                                end(next, searching: searching)
+                                if !failed.isDisjoint(with: shown) || !reading.isDisjoint(with: shown)
+                                    || problem(shown) != nil || searching && !next.isEmpty && !bounded(shown)
+                                {
+                                    status(shown, next: next, rows: true).frame(maxWidth: .infinity)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 4)
+                    }
+                    .scrollIndicators(.never)
+                    .fadesScrolledEdges()
+                }
             }
+            .frame(maxWidth: .infinity)
+            .frame(height: Self.height)
         }
-        .background {
-            if open {
-                RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(.primary.opacity(0.14))
-            }
-        }
-        // Open, its border stands a row gap under the list's cut rows; the dots' band keeps them away already.
-        .padding(.top, open && pages.list.count < 2 ? WorkspaceRow.gap : 2)
-        .onChange(of: open) {
-            if !open {
-                search = ""
-            }
-        }
-        .task(id: open && searching ? "\(agent) \(search)" : "") {
-            guard open, searching else { return }
+        .task(id: searching ? "\(agent) \(search)" : "") {
+            guard searching else { return }
             try? await Task.sleep(for: .milliseconds(300))
             await searchOlder(shown)
         }
-        .task(id: [open ? 1 : 0, attempt]) {
+        .task(id: attempt) {
             let machine = page.store.machine.id
             (list, loading) = (Self.lists[machine] ?? ClosedList(), Self.lists[machine] == nil)
             (reading, failed, generation) = ([], [], generation + 1)
-            guard open else { return }
             await readFirst()
         }
     }
@@ -105,35 +84,6 @@ struct ArchivedShelf: View {
             Color.clear.frame(height: 1).id(list.agents.values.map(\.looked).reduce(0, +))
                 .onAppear { Task { await readNext(next) } }
         }
-    }
-
-    private func toggle(_ key: String) {
-        withAnimation(.fade) {
-            opened = opened.togglingLine(key)
-        }
-        opening = opened.hasLine(key)
-    }
-
-    private func header(open: Bool, key: String) -> some View {
-        Button {
-            toggle(key)
-        } label: {
-            HStack(spacing: 6) {
-                Text(Self.label)
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
-                    .rotationEffect(.degrees(open ? 90 : 0)).frame(width: 12)
-            }
-            .font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
-            .padding(.leading, WorkspaceRow.textInset).padding(.trailing, 8)
-            .frame(height: 30)
-            .contentShape(.rect)
-        }
-        .buttonStyle(ChromeStyle(radius: 10))
-        .accessibilityLabel(Self.label)
-        .accessibilityAddTraits(.isHeader)
-        .accessibilityValue(open ? "expanded" : "collapsed")
-        .accessibilityIdentifier("agents.shelf.\(Self.label)")
     }
 
     private var menu: some View {
@@ -159,8 +109,6 @@ struct ArchivedShelf: View {
         .accessibilityValue(agent.isEmpty ? "All Agents" : Chooser.name(agent))
         .accessibilityIdentifier("agents.archived.filter")
     }
-
-    static let label = "Archived Sessions"
 
     private func rows(_ shown: [String]) -> [ClosedSession] {
         let live = page.liveSessions

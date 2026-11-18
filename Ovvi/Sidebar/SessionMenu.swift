@@ -13,9 +13,10 @@ struct SessionMenu: View {
             .disabled(page.store.state != .live)
         Button("Open Session…", action: openSession)
         if settings.showArchived {
-            Button(opened.hasLine(page.archivedKey) ? "Hide Archived Sessions" : "Show Archived Sessions") {
+            let shown = opened.hasLine(pages.agentsKey) && opened.hasLine(pages.archivedKey)
+            Button(shown ? "Hide Archived Sessions" : "Show Archived Sessions") {
                 withAnimation(.fade) {
-                    opened = opened.togglingLine(page.archivedKey)
+                    opened = opened.withLine(pages.agentsKey, !shown).withLine(pages.archivedKey, !shown)
                 }
             }
         }
