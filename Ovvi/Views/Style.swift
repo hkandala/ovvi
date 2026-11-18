@@ -296,17 +296,6 @@ extension View {
         accessibilityElement().accessibilityAddTraits(.isStaticText).accessibilityValue(value)
     }
 
-    /// The system glass over a material: Liquid Glass alone lets the text behind compete with a small panel's own. The
-    /// ultra-thin one still shows the page's layout through it. With none, the page shows through as through the
-    /// system's menus.
-    func floatingGlass(in shape: some Shape, material: Material? = .ultraThinMaterial) -> some View {
-        glassEffect(.regular, in: shape).background {
-            if let material {
-                shape.fill(material)
-            }
-        }
-    }
-
     func floatingPanel(open: Binding<Bool>, alignment: Alignment) -> some View {
         Color.clear.contentShape(.rect).onTapGesture { open.wrappedValue = false }
             .overlay(alignment: alignment) {

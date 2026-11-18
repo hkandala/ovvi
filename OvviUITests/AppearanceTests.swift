@@ -243,6 +243,55 @@ extension OvviUITests {
         pick("Appearance", look.hasSuffix("dark") ? "Dark" : "Light")
     }
 
+    /// With Liquid Glass off, the floating panels are solid: the page of stripes under a strip of their filter field
+    /// does not show through. CI's VM draws in-window glass opaque too, so only the Tart VM sees glass fail it.
+    func testFloatingPanelsAreSolidWithLiquidGlassOff() async throws {
+        let (tab, pane) = try await newTab("stripes")
+        element("tab.\(tab)").click()
+        XCTAssertTrue(element("terminal.\(pane)").exists(within: 3))
+        try await waitForPrompt(pane)
+        // Full blocks from printf's bytes, so the line editor gets ASCII in any locale.
+        let block = String(repeating: "\\342\\226\\210", count: 8) + String(repeating: " ", count: 8)
+        try await send("clear; for i in $(seq 1440); do printf '\(block)'; done; echo\r", to: pane)
+        let stripe = String(repeating: "█", count: 8) + String(repeating: " ", count: 8)
+        try await waitFor(pane) { $0.contains(stripe + stripe) }
+        addTeardownBlock { @MainActor [self] in liquidGlass(true) }
+        liquidGlass(false)
+        for (panel, key, modifiers) in [("palette", "k", XCUIElement.KeyModifierFlags.command),
+                                        ("open-session", "t", [.command, .option])]
+        {
+            app.typeKey(key, modifierFlags: modifiers)
+            let filter = element("\(panel).filter")
+            XCTAssertTrue(filter.exists(within: 2))
+            let field = filter.frame
+            // In the field's fill, right of its prompt.
+            let strip = CGRect(x: field.maxX - 100, y: field.midY - 2, width: 90, height: 4)
+            let over = spread(strip)
+            app.typeKey(.escape, modifierFlags: [])
+            XCTAssertTrue(filter.vanishes(within: 2))
+            let under = spread(strip)
+            XCTAssertGreaterThan(under, 60, "\(panel): no stripes under it")
+            XCTAssertLessThan(over, 4, "\(panel): stripes through it (\(under) under it)")
+        }
+    }
+
+    /// The largest channel's spread, max minus min, over a rect of the window in screen points.
+    private func spread(_ rect: CGRect) -> Int {
+        let window = mainWindows.firstMatch, frame = window.frame
+        guard let image = window.screenshot().image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+            return -1
+        }
+        let scale = CGFloat(image.width) / frame.width
+        guard let part = image.cropping(to: rect.offsetBy(dx: -frame.minX, dy: -frame.minY)
+            .applying(CGAffineTransform(scaleX: scale, y: scale))) else { return -1 }
+        let pixels = Self.pixels(NSImage(cgImage: part, size: .zero))
+        return (0 ..< 3).map { channel in
+            let values = stride(from: channel, to: pixels.count, by: 4).map { Int(pixels[$0]) }
+            return (values.max() ?? 0) - (values.min() ?? 0)
+        }
+        .max() ?? -1
+    }
+
     private func expectLook(_ look: String) {
         XCTAssertTrue(element("window.look").has(\.stringValue, look, within: connect), look)
     }
