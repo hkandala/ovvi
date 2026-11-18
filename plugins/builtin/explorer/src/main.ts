@@ -58,6 +58,7 @@ export default async function main(ovvi: Ovvi) {
     const shows = () => (sync(), side.file(arg, scoped))
     shows()
     scoped.on("place", shows)
+    // After the card's own handler: File Tree has toggled the tree by then.
     scoped.on("control", ({ id }) => {
       if (id === "tree-keys") side.keys()
       else if (id === "show-hidden") side.emit("control", { id })

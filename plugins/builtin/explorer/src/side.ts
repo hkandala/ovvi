@@ -138,6 +138,7 @@ export function sidebar(ovvi: Ovvi) {
     trees = [...trees.filter((each) => each !== tree), tree]
     for (const old of trees.splice(0, Math.max(0, trees.length - 5))) old.drop()
     current = tree
+    beside?.controls.set("show-hidden", { ...tree.values.get("show-hidden") })
     for (const each of trees) each.element.inert = each !== tree
     for (const fn of tree.due) fn()
     tree.due.clear()
