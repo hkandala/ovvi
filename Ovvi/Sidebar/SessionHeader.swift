@@ -2,7 +2,7 @@ import HerdrKit
 import SwiftUI
 
 /// The page in view's header, over the pages: a session change slides only the spaces. Its title opens a shelf with the
-/// window's other sessions and Open Session.
+/// window's sessions and Open Session.
 struct SessionHeader: View {
     let pages: WindowPages
     let page: Page
@@ -12,12 +12,12 @@ struct SessionHeader: View {
     @State private var shelved = false
     @State private var over = false
     @State private var plus = false
-    /// The row under the pointer or the arrows: the other sessions, then Open Session.
+    /// The row under the pointer or the arrows: the sessions, then Open Session.
     @State private var lit: Int?
     @FocusState private var focused: Bool
 
     var body: some View {
-        let others = pages.list.filter { $0 !== page }
+        let list = pages.list
         VStack(spacing: 0) {
             HStack(spacing: 0) {
                 title
@@ -29,12 +29,14 @@ struct SessionHeader: View {
                 SortMenu(page: page)
                 newSpace
             }
-            // A dropdown: the filter and the spaces move down with it. Folded, it has no height.
+            // A dropdown that fades in as it slides: the filter and the spaces move down with it. Folded, it has no
+            // height.
             Reveal(shown: open ? 1 : 0) {
                 if shelved {
-                    shelf(others).transition(.identity)
+                    shelf(list).transition(.identity)
                 }
             }
+            .opacity(open ? 1 : 0)
             .clipped()
             // As it opens, its rows pass under the title: clicks and hover there stay the title's.
             .contentShape(.rect)
@@ -45,7 +47,7 @@ struct SessionHeader: View {
         .focused($focused)
         .focusSoon($focused, open)
         .onMoveCommand { direction in
-            let count = others.count + 1
+            let count = list.count + 1
             if direction == .down {
                 lit = lit.map { min($0 + 1, count - 1) } ?? 0
             } else if direction == .up {
@@ -53,13 +55,13 @@ struct SessionHeader: View {
             }
         }
         .onKeyPress(.return) {
-            guard let lit, lit <= others.count else { return .ignored }
-            if others.indices.contains(lit) {
+            guard let lit, lit <= list.count else { return .ignored }
+            if list.indices.contains(lit) {
                 // The new page's card takes the keys, as after a click.
                 self.lit = nil
-                pages.show(others[lit])
+                pages.show(list[lit])
             } else {
-                openPanel()
+                openSession()
             }
             return .handled
         }
@@ -117,42 +119,57 @@ struct SessionHeader: View {
         .clearsDrop(page) { plus = false }
     }
 
-    private func shelf(_ others: [Page]) -> some View {
+    private func shelf(_ list: [Page]) -> some View {
         VStack(spacing: 0) {
-            // By place: a pick only changes the rows' names, which fade.
-            ForEach(others.indices, id: \.self) { index in
-                let other = others[index]
-                row(index, symbol: "rectangle.stack", other.store.title) { pages.show(other) }
-                    .accessibilityIdentifier("sidebar.session.\(other.id)")
+            // In the window's order, so a pick moves nothing: only the mark changes, with a fade.
+            ForEach(list.indices, id: \.self) { index in
+                let other = list[index]
+                let detach = pages.canDetach ? { pages.close(other) } : nil
+                row(index, "sidebar.session.\(other.id)", symbol: "rectangle.stack", other.store.title,
+                    current: other === page, detach: detach) { pages.show(other) }
             }
-            if !others.isEmpty {
-                Rectangle().fill(.primary.opacity(0.14)).frame(height: 1).padding(4)
-            }
-            row(others.count, symbol: "plus.square.on.square", "Open Session…", key: Hotkeys.glyphs("session.open"),
-                action: openPanel)
-                .accessibilityIdentifier("sidebar.open-session")
+            Rectangle().fill(.primary.opacity(0.14)).frame(height: 1).padding(4)
+            row(list.count, "sidebar.open-session", symbol: "plus.square.on.square", "Open Session…",
+                key: Hotkeys.glyphs("session.open"), action: openSession)
         }
         .animation(.fade, value: page.id)
         .padding(4)
         .background(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(.primary.opacity(0.14)))
-        // As far under the header as the filter is under it.
-        .padding(.top, 8)
+        // As far from the header's glyphs as the filter is from its border.
+        .padding(.top, 8).padding(.bottom, 8)
     }
 
-    private func row(_ index: Int, symbol: String, _ title: String, key: String = "",
+    private func row(_ index: Int, _ id: String, symbol: String, _ title: String, key: String = "",
+                     current: Bool = false, detach: (() -> Void)? = nil,
                      action: @escaping () -> Void) -> some View
     {
-        Button(action: action) {
+        let detaches = detach != nil && lit == index
+        return Button(action: action) {
             HStack(spacing: 8) {
-                Image(systemName: symbol).foregroundStyle(.secondary).frame(width: 18)
+                Image(systemName: current ? symbol + ".fill" : symbol).foregroundStyle(.secondary).frame(width: 18)
                 Text(title).truncationMode(.middle).lineLimit(1)
                 Spacer(minLength: 0)
                 Text(key).font(.system(size: 11)).foregroundStyle(.tertiary)
             }
-            .padding(.horizontal, 4)
+            .padding(.leading, 4).padding(.trailing, detaches ? 22 : 4)
             .frame(height: 28)
         }
         .buttonStyle(ChromeStyle(radius: 6, hovered: lit == index))
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(current ? .isSelected : [])
+        .accessibilityActions {
+            if let detach {
+                Button("Detach Session", action: detach)
+            }
+        }
+        .accessibilityIdentifier(id)
+        .overlay(alignment: .trailing) {
+            if let detach, detaches {
+                IconButton(symbol: "rectangle.stack.badge.minus", help: "Detach Session", size: 18, action: detach)
+                    .padding(.trailing, 4)
+                    .accessibilityIdentifier(id + ".detach")
+            }
+        }
         .onHover { inside in
             if inside {
                 lit = index
@@ -160,24 +177,16 @@ struct SessionHeader: View {
                 lit = nil
             }
         }
-        .accessibilityLabel(title)
     }
 
-    private func openPanel() {
-        fold(keys: false)
-        openSession()
-    }
-
-    /// Folded by the title or Esc, the keys go back to the page's card; by Open Session, to its panel.
-    private func fold(keys: Bool = true) {
+    /// Folded by the title or Esc, the keys go back to the page's card.
+    private func fold() {
         withAnimation(.slide) { open = false } completion: {
             if !open {
                 shelved = false
             }
         }
-        if keys {
-            pages.current?.focusKeyboardCard()
-        }
+        pages.current?.focusKeyboardCard()
     }
 }
 
