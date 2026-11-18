@@ -11,7 +11,7 @@ extension WindowPages {
         .flatMap { Double($0) } ?? 300
     private static var lettingGo: Task<Void, Never>?
 
-    static func letGoOfTilePictures(restart: Bool) {
+    static func sweepTilePictures(restart: Bool) {
         guard restart || lettingGo == nil else { return }
         lettingGo?.cancel()
         lettingGo = Task {
@@ -38,7 +38,7 @@ extension WindowPages {
     func closeOverview() {
         guard overview else { return }
         overview = false
-        Self.letGoOfTilePictures(restart: true)
+        Self.sweepTilePictures(restart: true)
         overviewTabs = [:]
         overviewScrolling = false
         overviewSettling?.cancel()

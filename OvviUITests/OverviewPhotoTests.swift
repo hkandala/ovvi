@@ -83,9 +83,7 @@ extension OvviUITests {
         return (tab, [chat, browser, plugin])
     }
 
-    /// Three rows of explorer cards below (two columns on CI and in the VM), so that the first tab's tile scrolls out
-    /// of
-    /// view.
+    /// Three rows of explorers below (two columns on CI and in the VM): the first tab's tile scrolls out of view.
     private func explorersBelow(_ folder: String) async throws -> [String] {
         let (first, root) = try await createWorkspace("below")
         var below = [root]
@@ -191,10 +189,11 @@ extension OvviUITests {
             }
         }
         open()
+        // Read ahead of the close: the delay runs from it.
+        let (photographed, letGoes) = (photos(chat), lettingGo(latency))
         app.typeKey(.escape, modifierFlags: [])
 
         step("Opened again in time and kept open past the delay, it keeps them")
-        let (photographed, letGoes) = (photos(chat), lettingGo(latency))
         open()
         try await Task.sleep(for: .seconds(10))
         XCTAssertEqual(lettingGo(latency).count, letGoes.count, "let go while open: \(latency.stringValue)")
