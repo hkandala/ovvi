@@ -4,6 +4,11 @@ import WebKit
 
 extension WindowPages {
     static let tile: CGFloat = 0.35
+    /// The overview is rarely used: the pictures only its tiles show go 5 minutes after it closes, unless one is open
+    /// then (`PaneViewRegistry.letGoOfTilePictures`).
+    private static let tilePictureTime = UserDefaults.standard.string(forKey: "tilePictureSeconds")
+        .flatMap { Double($0) } ?? 300
+    private static var lettingGo: Task<Void, Never>?
 
     func toggleOverview() {
         if overview {
@@ -19,6 +24,12 @@ extension WindowPages {
     func closeOverview() {
         guard overview else { return }
         overview = false
+        Self.lettingGo?.cancel()
+        Self.lettingGo = Task {
+            try? await Task.sleep(for: .seconds(Self.tilePictureTime))
+            guard !Task.isCancelled, !Self.windows.contains(where: \.overview) else { return }
+            PaneViewRegistry.letGoOfTilePictures(Self.windows.map(\.terminals))
+        }
         overviewTabs = [:]
         overviewScrolling = false
         overviewSettling?.cancel()

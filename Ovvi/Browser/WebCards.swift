@@ -107,6 +107,21 @@ extension PaneViewRegistry {
         pictures.firstIndex { $0.id == id }.map { pictures.remove(at: $0).picture }
     }
 
+    /// Only the overview's tiles show the terminals' snapshots and the chats' pictures. The web cards' pictures stay:
+    /// a card shows its own until its page loads. ponytail: a chat is told by its probe; a pane that showed a chat
+    /// and then a web card loses that card's picture too.
+    static func letGoOfTilePictures(_ registries: [PaneViewRegistry]) {
+        let chats = registries.reduce(0) { total, registry in
+            total + registry.pictures.count { registry.chatViews[$0.id] != nil }
+        }
+        Latency.shared.note("overview let go \(PaneTerminal.snapshots.count) \(chats)")
+        PaneTerminal.trimSnapshots(0)
+        for registry in registries {
+            registry.pictures.removeAll { registry.chatViews[$0.id] != nil }
+        }
+        trimPictures(pictureBytes)
+    }
+
     func webView(_ id: String) -> BrowserView? {
         browsers[id]?.view ?? plugins[id]?.web.view
     }
