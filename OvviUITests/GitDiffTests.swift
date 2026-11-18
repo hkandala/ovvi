@@ -26,7 +26,7 @@ extension OvviUITests {
         XCTAssertTrue(line("far290").has(\.isHittable, true, within: 3))
         app.typeKey("[", modifierFlags: [])
         XCTAssertTrue(line("far200").has(\.isHittable, true, within: 3))
-        page.scroll(byDeltaX: 0, deltaY: 100_000)
+        page.scroll(byDeltaX: 0, deltaY: 5000)
         XCTAssertTrue(line("ten").has(\.isHittable, true, within: 3))
         app.typeKey("]", modifierFlags: [])
         XCTAssertFalse(until(0.5) { !line("ten").isHittable }, "] left the first change")
