@@ -83,11 +83,13 @@ extension OvviUITests {
         return (tab, [chat, browser, plugin])
     }
 
-    /// Three rows of explorer cards below, so that the first tab's tile scrolls out of view.
+    /// Three rows of explorer cards below (two columns on CI and in the VM), so that the first tab's tile scrolls out
+    /// of
+    /// view.
     private func explorersBelow(_ folder: String) async throws -> [String] {
         let (first, root) = try await createWorkspace("below")
         var below = [root]
-        for _ in 1 ..< 9 {
+        for _ in 1 ..< 6 {
             try await below.append(createTab(in: workspace(of: first)).pane)
         }
         for (index, pane) in below.enumerated() {
@@ -149,7 +151,7 @@ extension OvviUITests {
         XCTAssertTrue(element("overview").exists(within: 3))
         for pane in panes + [panes[0]] {
             let card = element("overview.card.\(pane)")
-            scrollOverview(to: card, whole: true, step: 100, steps: 30)
+            scrollOverview(to: card, whole: true, step: 200, steps: 15)
             XCTAssertTrue(card.has(\.stringValue, "explorer", within: 30), "\(pane): \(card.stringValue)")
         }
         XCTAssertGreaterThan(photos(panes[0]), 1, "the first card kept its picture past the bound")
