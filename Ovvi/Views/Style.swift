@@ -37,6 +37,11 @@ struct Look: Equatable {
         pick(.white.opacity(0.03), .white.opacity(0.6), .white.opacity(0.018), .white.opacity(0.6))
     }
 
+    /// The glass palette's and Keyboard Shortcuts' fill over the window's tint: dark's a step lighter than a card's.
+    var panelFill: Color {
+        dark ? .white.opacity(0.07) : cardFill
+    }
+
     /// Classic's is exact; Glass's is measured on the screen over a black window (light Glass is the same over a white
     /// one).
     /// ponytail: a bright window or wallpaper behind lightens dark Glass's card by up to 18 levels, and the header then
