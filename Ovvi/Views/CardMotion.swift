@@ -279,11 +279,12 @@ extension MovingCard {
         }
     }
 
-    /// Focus follows mouse: the card under the pointer takes the keyboard once the pointer rests on it 150 ms. From the
-    /// pointer's place, not SwiftUI's hover: that stops in the window while a text panel shows (an autocorrection
-    /// while typing in a web page), which also keeps the run loop in its tracking mode.
+    /// Focus follows mouse: the card under the pointer takes the keyboard once the pointer rests on it. Read from the
+    /// pointer's place, not SwiftUI's hover or mouse events: while a text panel shows (an autocorrection when typing
+    /// in a web page), its own tracking takes the moves and keeps the run loop in its tracking mode.
+    /// ponytail: polls the pointer every 150 ms while the app is active; start the polls from mouse events if it ever
+    /// shows in energy use.
     static func followMouse() {
-        // Not the run loop's tracking mode: an autocorrection's panel keeps it on while it shows.
         let center = NotificationCenter.default
         center.addObserver(forName: NSMenu.didBeginTrackingNotification, object: nil, queue: .main) { _ in
             MainActor.assumeIsolated { menus += 1 }
@@ -291,34 +292,25 @@ extension MovingCard {
         center.addObserver(forName: NSMenu.didEndTrackingNotification, object: nil, queue: .main) { _ in
             MainActor.assumeIsolated { menus = max(menus - 1, 0) }
         }
-        // Entered too: a pointer that comes from outside the window (the menu bar) brings no move.
-        NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved, .mouseEntered, .mouseExited]) { event in
-            MainActor.assumeIsolated { pointerMoved() }
-            return event
+        Task {
+            weak var last: MovingCard?, followed: MovingCard?
+            while await (try? Task.sleep(for: .milliseconds(NSApp.isActive ? 150 : 1000))) != nil {
+                let card = AppSettings().followMouse ? underPointer() : nil
+                defer { last = card }
+                if card !== last {
+                    followed = nil
+                }
+                // Rested a poll on it, no button down, no open menu, no field typed in (at its end, it takes the keys).
+                guard let card, card === last, card !== followed, let window = card.window,
+                      NSEvent.pressedMouseButtons == 0, menus == 0, !typing(in: window) else { continue }
+                followed = card
+                activate(card, in: window, follow: true)
+            }
         }
     }
 
     private static let all = NSHashTable<MovingCard>.weakObjects()
-    private weak static var pointed: MovingCard?
     private static var menus = 0
-    private static var following: Task<Void, Never>?
-
-    private static func pointerMoved() {
-        let card = AppSettings().followMouse ? underPointer() : nil
-        guard card !== pointed else { return }
-        pointed = card
-        following?.cancel()
-        guard let card else { return }
-        following = Task {
-            while await (try? Task.sleep(for: .milliseconds(150))) != nil {
-                guard underPointer() === card, let window = card.window else { return }
-                // No button down, no open menu, no field typed in (at its end, this card takes the keys).
-                guard NSEvent.pressedMouseButtons == 0, menus == 0, !typing(in: window) else { continue }
-                activate(card, in: window, follow: true)
-                return
-            }
-        }
-    }
 
     /// In the main window, as a card's `appearsActive`, under panels: a closed menu's fades out over it for a moment,
     /// and an autocorrection's can be the key window. A floating pane's window over it hides its cards.
