@@ -39,7 +39,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: actions/cache@v6
-        with:
+        with: &cas
           path: .build/DerivedData/CompilationCache.noindex
           key: xcode-cas-${{ github.sha }}
           restore-keys: xcode-cas-
@@ -59,10 +59,7 @@ jobs:
       - uses: actions/checkout@v7
       # Saved only on a miss: the checks saved main's commits.
       - uses: actions/cache@v6
-        with:
-          path: .build/DerivedData/CompilationCache.noindex
-          key: xcode-cas-${{ github.sha }}
-          restore-keys: xcode-cas-
+        with: *cas
       # The e2e helper's tools build beside the app, not before each shard's tests.
       - run: |
           python3 scripts/e2e-helper.py --tools .build/e2e-tools &
@@ -92,10 +89,7 @@ jobs:
       - uses: actions/checkout@v7
       - if: ${{ inputs.only_testing }}
         uses: actions/cache/restore@v6
-        with:
-          path: .build/DerivedData/CompilationCache.noindex
-          key: xcode-cas-${{ github.sha }}
-          restore-keys: xcode-cas-
+        with: *cas
       - if: ${{ !inputs.only_testing }}
         uses: actions/download-artifact@v8
         with:

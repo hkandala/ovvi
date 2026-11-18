@@ -29,11 +29,13 @@ How CI runs, how to run part of it, and how to keep it green and fast.
   keep `CompilationCache.noindex` in the Actions cache, one entry per commit: the checks restore the newest and save
   their commit's, and a dispatch's build restores its commit's, or the newest when the checks did not build it
   (then it saves its own). The cache keeps the compiler's outputs by their inputs, so a hit gives the same output.
-  A cold build-for-testing takes about 3.5 minutes; with the cache, about 1.3 (the package resolve, about 40 s, and
-  `make web` stay). A cold build fills about 520 MB (170 MB in the Actions cache).
+  A cold `make build-tests` takes about 3.5 minutes; with a hit, about 2 (the package resolve, about 40 s, `make web`,
+  linking and signing stay). A cold build fills about 520 MB (170 MB in the Actions cache). Each commit adds its own
+  outputs to the newest entry, so the entries grow to the 1 GB limit (about 330 MB in the Actions cache; the
+  repository's 10 GB drop the oldest first). A checks log shows the size ("Cache Size").
 - **Full run** (a dispatch): a `build` job (`make build-tests`, its products uploaded as a tar), then five jobs
   (`test (0)` to `test (4)`), each a shard of the UI tests, which run that build (`make e2e PREBUILT=1`:
-  `test-without-building`) and reach their first test about 30 s after they start (`make web`, which fills npm's
+  `test-without-building`) and reach their first test about 40 s after they start (`make web`, which fills npm's
   cache for the default plugins, and xcodebuild's start). The build job also builds the e2e helper's tools
   (`scripts/e2e-helper.py --tools`, about 40 s of `swiftc`, beside the app's build), and the test jobs run them
   (`E2E_TOOLS`). A chosen-tests run builds the app and the tools in its one job. Every test job starts CI's sshd on
@@ -46,12 +48,12 @@ How CI runs, how to run part of it, and how to keep it green and fast.
   and after a change to what they measure.
 - **Results.** Each test job uploads `e2e-xcresult-<shard>`: the xcresult with screen recordings, also of
   green runs.
-- **Time.** A full run takes 26–32 minutes and about 100–125 runner-minutes: about 2.5 minutes of the build job (4.5
-  cold), then about 30 s of setup and 10 s of upload per test job and a fifth of 6500–7200 s of UI tests, 324 of them
+- **Time.** A lone full run takes about 29–32 minutes and about 115–130 runner-minutes: about 2.5 minutes of the build
+  job (4.5 cold), then about 40 s of setup and 10 s of upload per test job and a fifth of 6500–7200 s of UI tests, 324 of them
   (the slowest shard ends 3–5 minutes after the fastest: runners differ in speed, up to a fifth, and one shard of times
-  from before a change can run 5 minutes over the others). An on-demand run takes about 17 minutes and 53 runner-minutes: the build job, then
-  four jobs of 11–14 minutes for about 3000 s of on-demand tests, 22 of them. The build job does not shorten a lone run, but it saves four builds, about 12 runner-minutes a
-  run. Two full runs dispatched together take about twice as long as one, since the second waits for runners, and any other run (a chosen-tests run) takes one of the 5. A test job
+  from before a change can run 5 minutes over the others). An on-demand run took about 17 minutes and 53 runner-minutes before the compilation cache: the build job, then
+  four jobs of 11–14 minutes for about 3000 s of on-demand tests, 22 of them. The build job does not shorten a lone run, but it saves four builds, about 8 runner-minutes a
+  run (12 cold). Two full runs dispatched together take about twice as long as one, since the second waits for runners, and any other run (a chosen-tests run) takes one of the 5. A test job
   stops at 30 minutes (`timeout-minutes`): a slow runner's shard can take 20 minutes after every test passed. Each test stops at 120 s, so the limit costs a green run
   nothing. Refresh the test times when tests are added, or the shards stop balancing.
 
