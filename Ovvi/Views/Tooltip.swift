@@ -110,7 +110,7 @@ private struct TipTrigger: ViewModifier {
             }
             // A view removed under the pointer gets no hover end.
             .onDisappear { panels?.leave(id) }
-            // As `.help` did: VoiceOver reads it as help.
+            // As `.help` does: VoiceOver reads it as help.
             .accessibilityHint(text)
     }
 }

@@ -101,10 +101,10 @@ struct FilterList: View {
             } else if submit == nil {
                 ScrollViewReader { proxy in
                     ScrollView {
-                        // Lazy: the palette's 100 rows take 230 ms to build and lay out on CI. By place, not by row: a
-                        // typed key changes what the rows in view show, instead of making them anew with their
-                        // accessibility (100 ms a key at 130 rows with an accessibility client). An Int id inside a row
-                        // would catch `scrollTo`.
+                        // Lazy: 100 rows take 230 ms to build and lay out on CI. By place, not by row: a typed key
+                        // changes what the rows in view show, instead of making them anew with their accessibility
+                        // (100 ms a key at 130 rows with an accessibility client). An Int id inside a row would catch
+                        // `scrollTo`.
                         LazyVStack(alignment: .leading, spacing: 2) {
                             ForEach(Array(items.enumerated().dropLast(pinned)), id: \.offset) { offset, _ in
                                 row(items, offset, index)
