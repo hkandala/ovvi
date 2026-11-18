@@ -62,6 +62,8 @@ extension OvviUITests {
         let needs = try await newTab("foot-needs")
         try await report(needs.pane, "blocked")
         XCTAssertTrue(summary.has(\.stringValue, "1 needs you", within: 5), summary.stringValue)
+        // Off the box first: its click hid its tip until the pointer leaves it.
+        first.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.5)).hover()
         summary.hover()
         let tip = element("tooltip", in: first)
         XCTAssertTrue(until(3) { tip.stringValue.hasPrefix("1 needs you · 1 done · 1 working") }, tip.stringValue)
@@ -207,7 +209,8 @@ extension OvviUITests {
         keepScreenshot("agents section, a done row under the pointer")
         clearLast.click()
         XCTAssertTrue(last.vanishes(within: 2))
-        XCTAssertTrue(header.has(\.stringValue, "10, expanded", within: 2), header.stringValue)
+        let summary = element("agents.summary")
+        XCTAssertTrue(summary.has(\.stringValue, "1 needs you · 10 done · 1 idle", within: 2), summary.stringValue)
         // At the list's end the row above slides under the resting pointer.
         XCTAssertTrue(element(end[0].replacing(prefix, with: clearPrefix)).exists(within: 2),
                       "the row that came under the pointer shows no ×")
