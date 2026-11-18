@@ -33,6 +33,17 @@ extension OvviUITests {
             XCTAssertTrue(hasKeyboard(terminal), "the keyboard is on \(keyboardOwner())")
         }
 
+        // A card that comes under the still pointer (an unzoom) waits for it to move.
+        element("pane.\(explorer)").hover()
+        XCTAssertTrue(lostKeys(terminal), "the keyboard stayed on \(shell)")
+        app.typeKey("]", modifierFlags: .command)
+        XCTAssertTrue(hasKeyboard(terminal), "the keyboard is on \(keyboardOwner())")
+        app.typeKey(.return, modifierFlags: [.shift, .command])
+        XCTAssertTrue(element("pane.\(explorer)").vanishes(within: 3))
+        app.typeKey(.return, modifierFlags: [.shift, .command])
+        XCTAssertTrue(element("pane.\(explorer)").exists(within: 3))
+        XCTAssertFalse(lostKeys(terminal), "the unzoom gave the keys to \(explorer)")
+
         // A misspelling brings up macOS's correction panel over the page.
         field.click()
         app.typeText("teh")

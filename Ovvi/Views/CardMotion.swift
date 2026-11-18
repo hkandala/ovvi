@@ -282,8 +282,8 @@ extension MovingCard {
     /// Focus follows mouse: the card under the pointer takes the keyboard once the pointer rests on it. Read from the
     /// pointer's place, not SwiftUI's hover or mouse events: while a text panel shows (an autocorrection when typing
     /// in a web page), its own tracking takes the moves and keeps the run loop in its tracking mode.
-    /// ponytail: polls the pointer every 150 ms while the app is active; start the polls from mouse events if it ever
-    /// shows in energy use.
+    /// ponytail: polls the pointer every 150 ms while the app is active and follow is on; start the polls from mouse
+    /// events if it ever shows in energy use.
     static func followMouse() {
         let center = NotificationCenter.default
         center.addObserver(forName: NSMenu.didBeginTrackingNotification, object: nil, queue: .main) { _ in
@@ -294,11 +294,16 @@ extension MovingCard {
         }
         Task {
             weak var last: MovingCard?, followed: MovingCard?
-            while await (try? Task.sleep(for: .milliseconds(NSApp.isActive ? 150 : 1000))) != nil {
+            var point = NSEvent.mouseLocation, parked = false
+            while true {
+                try? await Task.sleep(for: .milliseconds(NSApp.isActive && AppSettings().followMouse ? 150 : 1000))
                 let card = AppSettings().followMouse ? underPointer() : nil
+                let moved = NSEvent.mouseLocation != point
+                point = NSEvent.mouseLocation
                 defer { last = card }
-                if card !== last {
-                    followed = nil
+                // A card that comes under a still pointer (an unzoom, a swap, a tab switch) waits for it to move.
+                if card !== last || moved && parked {
+                    (followed, parked) = moved ? (nil, false) : (card, true)
                 }
                 // Rested a poll on it, no button down, no open menu, no field typed in (at its end, it takes the keys).
                 guard let card, card === last, card !== followed, let window = card.window,
