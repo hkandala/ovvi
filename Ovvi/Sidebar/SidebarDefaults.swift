@@ -66,7 +66,7 @@ extension WindowPages {
 
     /// The agents section shows the archived sessions.
     var archivedKey: String {
-        "\(machine.id) archived-sessions"
+        "\(machine.id) agents archived"
     }
 
     func agentsFoldKey(_ state: AgentState) -> String {

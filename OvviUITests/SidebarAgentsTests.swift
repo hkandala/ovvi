@@ -174,6 +174,7 @@ extension OvviUITests {
         keepScreenshot("dots and Archived Sessions")
         relaunch()
         XCTAssertTrue(element("agents.archived.search").exists(within: connect), "the archived view is not kept")
+        XCTAssertTrue(until(3) { keyboardOwner().contains("'terminal.") }, "the keys on \(keyboardOwner())")
         box.click()
         XCTAssertTrue(section.vanishes(within: 2))
         XCTAssertFalse(element("sidebar.dot.\(one)").exists)

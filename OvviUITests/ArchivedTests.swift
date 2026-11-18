@@ -69,12 +69,12 @@ extension OvviUITests {
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
         openAgents()
         let section = element("agents.section"), frame = section.frame
-        let summary = element("agents.summary")
+        let summaryMiddle = element("agents.summary").frame.midY
         element("agents.archive").click()
         let search = element("agents.archived.search")
         XCTAssertTrue(hasKeyboard(search))
         XCTAssertEqual(section.frame, frame, "the section moved")
-        XCTAssertEqual(search.frame.minY, summary.frame.minY, accuracy: 0.5, "the search not in the summary's row")
+        XCTAssertEqual(search.frame.midY, summaryMiddle, accuracy: 0.5, "the search not in the summary's row")
         XCTAssertEqual(element("agents.back").label, "Back to Agents")
         XCTAssertFalse(element("agents.archive").exists)
         keepScreenshot("archived in the agents section")
@@ -124,8 +124,7 @@ extension OvviUITests {
 
     func showsTheOthersPastAStuckAgent(on machine: String) {
         let shelf = openArchived(), top = shelf.frame.minY, window = app.windows.firstMatch
-        XCTAssertEqual(element("agents.back").label, "Back to Agents")
-        XCTAssertEqual(element("agents.back").frame.height, 22, accuracy: 0.5)
+        XCTAssertEqual(element("agents.back").stringValue, "Archived · \(machine)")
         let row = element("agents.archived.pi.stuck.jsonl")
         let failure = window.staticTexts["Could not read Claude Code sessions on \(machine)"]
         XCTAssertTrue(row.exists(within: 15))

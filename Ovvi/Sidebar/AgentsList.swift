@@ -15,7 +15,7 @@ struct AgentsList: View {
 
     var body: some View {
         let stores = pages.machineStores
-        let groups = [AgentState.needsYou, .finishedUnseen, .working].map { state in
+        let groups = AgentState.footOrder.dropLast().map { state in
             (state, stores.flatMap { store in store.agentPanes.filter { $0.state == state }.map { (store, $0) } }
                 .sorted { $0.1.since ?? .distantPast > $1.1.since ?? .distantPast })
         }.filter { !$0.1.isEmpty }

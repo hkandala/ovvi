@@ -11,11 +11,13 @@ extension OvviUITests {
 
         step("Nothing works, finished or needs you: all caught up, and the section says so")
         XCTAssertTrue(summary.has(\.stringValue, "All caught up", within: 3), summary.stringValue)
+        XCTAssertEqual(summary.frame.width, 22, accuracy: 0.5, "the idle box is not the icon's")
         keepScreenshot("foot, all caught up")
         openAgents(in: first)
         XCTAssertTrue(element("agents.empty", in: first).exists(within: 2))
+        XCTAssertEqual(element("agents.empty.text", in: first).stringValue, "No agent is waiting on you")
         XCTAssertEqual(element("agents.header", in: first).stringValue, "Agents · This Mac")
-        XCTAssertEqual(element("agents.summary", in: first).label, "No agents")
+        XCTAssertEqual(element("agents.summary", in: first).stringValue, "No agents")
         keepScreenshot("agents section, empty")
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(section.vanishes(within: 2), "Esc closes the section")
@@ -41,7 +43,7 @@ extension OvviUITests {
         let workingRow = element("agents.row.\(one).\(working)", in: first)
         XCTAssertTrue(doneRow.exists(within: 2))
         XCTAssertEqual(doneRow.label, "Untitled, \(two) · gamma")
-        XCTAssertEqual(element("agents.summary", in: first).label, "1 done · 1 working")
+        XCTAssertEqual(element("agents.summary", in: first).stringValue, "1 done · 1 working")
         try await expectOrder([element("agents.group.Done", in: first), doneRow,
                                element("agents.group.Working", in: first), workingRow], "Done, then Working")
         keepScreenshot("agents section, done and working")
@@ -72,7 +74,7 @@ extension OvviUITests {
                                element("agents.group.Done", in: first), rows.done,
                                element("agents.group.Working", in: first), rows.working], "Needs you, Done, Working")
         XCTAssertEqual(needsRow.frame.height, 48, accuracy: 0.5)
-        XCTAssertEqual(element("agents.summary", in: first).label, "1 needs you · 1 done · 1 working")
+        XCTAssertEqual(element("agents.summary", in: first).stringValue, "1 needs you · 1 done · 1 working")
         keepScreenshot("agents section, needs you, done and working")
 
         step("A pick shows its tab, and the section stays")
@@ -100,9 +102,10 @@ extension OvviUITests {
             back.click()
         }
         XCTAssertTrue(element("agents.header", in: window).exists(within: 2))
+        // Open in one window, it is open in every window on the machine: one click closes them all.
         addTeardownBlock { @MainActor [self] in
-            if element("agents.section").exists {
-                element("sidebar.agents").click()
+            if app.descendants(matching: .any).matching(identifier: "agents.section").firstMatch.exists {
+                app.descendants(matching: .any).matching(identifier: "sidebar.agents").firstMatch.click()
             }
         }
     }
@@ -169,7 +172,7 @@ extension OvviUITests {
         openAgents()
         let header = element("agents.group.Done")
         XCTAssertTrue(header.has(\.stringValue, "11, expanded", within: 5), header.stringValue)
-        XCTAssertEqual(element("agents.summary").label, "1 needs you · 11 done")
+        XCTAssertEqual(element("agents.summary").stringValue, "1 needs you · 11 done")
 
         step("The list scrolls inside the section, which keeps its height")
         let prefix = "agents.row.\(one)."
@@ -236,7 +239,7 @@ extension OvviUITests {
         all.firstMatch.click()
         XCTAssertTrue(header.vanishes(within: 2))
         XCTAssertTrue(needsRow.exists)
-        XCTAssertEqual(element("agents.summary").label, "1 needs you · 11 idle")
+        XCTAssertEqual(element("agents.summary").stringValue, "1 needs you · 11 idle")
         keepScreenshot("agents section, cleared")
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(section.vanishes(within: 2))

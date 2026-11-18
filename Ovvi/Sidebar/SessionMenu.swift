@@ -18,6 +18,9 @@ struct SessionMenu: View {
                 withAnimation(.fade) {
                     opened = opened.withLine(pages.agentsKey, !shown).withLine(pages.archivedKey, !shown)
                 }
+                if shown {
+                    page.focusKeyboardCard()
+                }
             }
         }
         Button(page.store.onlyPinned ? "Show All Spaces" : "Show Only Pinned Spaces") {

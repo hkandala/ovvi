@@ -9,7 +9,9 @@ struct AgentsSection: View {
     let focuses: Bool
     let close: () -> Void
     @AppStorage(Page.foldsAndShelves, store: .sidebar) private var opened = ""
+    /// The user switched its views: the keys come here too.
     @State private var switched = false
+    @State private var backLit = false
     @FocusState private var focused: Bool
     private var settings = AppSettings()
 
@@ -27,7 +29,8 @@ struct AgentsSection: View {
         .background {
             RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(.primary.opacity(0.14))
         }
-        .focusable()
+        // Restored at launch, it leaves the keys to the card.
+        .focusable(focuses || switched)
         .focusEffectDisabled()
         .focused($focused)
         .onExitCommand {
@@ -48,7 +51,7 @@ struct AgentsSection: View {
     }
 
     private func show(archived: Bool) {
-        switched = archived
+        (switched, backLit) = (true, false)
         withAnimation(.fade) {
             opened = opened.withLine(pages.archivedKey, archived)
         }
@@ -64,20 +67,26 @@ struct AgentsSection: View {
     private func header(archived: Bool) -> some View {
         HStack(spacing: 0) {
             if archived {
+                // The whole title row goes back; the light is the chevron's and the words'.
                 Button(action: back) {
                     HStack(spacing: 6) {
                         Image(systemName: "chevron.left").font(.system(size: 10, weight: .semibold))
                         Text("Archived · \(pages.machine.name)")
                     }
                     .padding(.horizontal, 4).frame(height: 22)
+                    .background(.primary.opacity(backLit ? 0.05 : 0), in: .rect(cornerRadius: 6))
+                    .padding(.leading, WorkspaceRow.textInset - 4)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                     .contentShape(.rect)
                 }
-                .buttonStyle(ChromeStyle(radius: 6))
-                .padding(.leading, WorkspaceRow.textInset - 4)
+                .buttonStyle(.plain)
+                .onHover { backLit = $0 }
                 .accessibilityLabel("Back to Agents")
+                .accessibilityValue("Archived · \(pages.machine.name)")
                 .accessibilityIdentifier("agents.back")
             } else {
                 Text("Agents · \(pages.machine.name)").padding(.leading, WorkspaceRow.textInset)
+                    .accessibilityAddTraits(.isHeader)
                     .accessibilityIdentifier("agents.header")
             }
             Spacer(minLength: 8)
@@ -96,12 +105,5 @@ struct AgentsSection: View {
         }
         .font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary).lineLimit(1)
         .frame(height: 30)
-        // The whole title row goes back.
-        .contentShape(.rect)
-        .onTapGesture {
-            if archived {
-                back()
-            }
-        }
     }
 }
