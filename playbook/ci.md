@@ -25,11 +25,19 @@ How CI runs, how to run part of it, and how to keep it green and fast.
   `make build-tests` (the UI tests compile), and `make test` (HerdrKit, the acknowledgements,
   the Settings rows (`scripts/check-settings.py`), the UI tests' own launches (`scripts/check-launches.py`), the
   plugins' versions (`scripts/check-plugin-versions.sh`)). It takes about 3 minutes.
+- **Compilation cache.** CI's builds pass `XCODEFLAGS` (Xcode's compilation cache, at most 1 GB) to the Makefile and
+  keep `CompilationCache.noindex` in the Actions cache, one entry per commit: the checks restore the newest and save
+  their commit's, and a dispatch's build restores its commit's, or the newest when the checks did not build it
+  (then it saves its own). The cache keeps the compiler's outputs by their inputs, so a hit gives the same output.
+  A cold build-for-testing takes about 3.5 minutes; with the cache, about 1.3 (the package resolve, about 40 s, and
+  `make web` stay). A cold build fills about 520 MB (170 MB in the Actions cache).
 - **Full run** (a dispatch): a `build` job (`make build-tests`, its products uploaded as a tar), then five jobs
   (`test (0)` to `test (4)`), each a shard of the UI tests, which run that build (`make e2e PREBUILT=1`:
-  `test-without-building`) and reach their first test about a minute after they start, half of it the e2e helper's
-  tools (`swiftc`, 20–40 s). A chosen-tests run builds in its one job. Every test job starts CI's sshd on localhost
-  for the remote-host tests (`scripts/ci-sshd.sh`). The image has xcbeautify and node.
+  `test-without-building`) and reach their first test about 30 s after they start (`make web`, which fills npm's
+  cache for the default plugins, and xcodebuild's start). The build job also builds the e2e helper's tools
+  (`scripts/e2e-helper.py --tools`, about 40 s of `swiftc`, beside the app's build), and the test jobs run them
+  (`E2E_TOOLS`). A chosen-tests run builds the app and the tools in its one job. Every test job starts CI's sshd on
+  localhost for the remote-host tests (`scripts/ci-sshd.sh`). The image has xcbeautify and node.
 - **Shards by time.** `make e2e SHARD=i/5` runs the tests that `scripts/shard.py` gives shard i: the slowest
   test first, each to the shard with the least time so far, from `scripts/test-times.tsv` (a test not
   listed counts 15 s).
@@ -38,10 +46,10 @@ How CI runs, how to run part of it, and how to keep it green and fast.
   and after a change to what they measure.
 - **Results.** Each test job uploads `e2e-xcresult-<shard>`: the xcresult with screen recordings, also of
   green runs.
-- **Time.** A full run takes 24–30 minutes and about 100–107 runner-minutes: about 4 minutes of the build job, then
-  about a minute of setup and upload per test job and a fifth of about 6800 s of UI tests, 324 of them (the slowest
-  shard ends 4–9 minutes after the fastest: runners differ in speed, and one shard of times from before a change can
-  run 5 minutes over the others). An on-demand run takes about 17 minutes and 53 runner-minutes: the build job, then
+- **Time.** A full run takes 26–32 minutes and about 100–125 runner-minutes: about 2.5 minutes of the build job (4.5
+  cold), then about 30 s of setup and 10 s of upload per test job and a fifth of 6500–7200 s of UI tests, 324 of them
+  (the slowest shard ends 3–5 minutes after the fastest: runners differ in speed, up to a fifth, and one shard of times
+  from before a change can run 5 minutes over the others). An on-demand run takes about 17 minutes and 53 runner-minutes: the build job, then
   four jobs of 11–14 minutes for about 3000 s of on-demand tests, 22 of them. The build job does not shorten a lone run, but it saves four builds, about 12 runner-minutes a
   run. Two full runs dispatched together take about twice as long as one, since the second waits for runners, and any other run (a chosen-tests run) takes one of the 5. A test job
   stops at 30 minutes (`timeout-minutes`): a slow runner's shard can take 20 minutes after every test passed. Each test stops at 120 s, so the limit costs a green run
@@ -131,8 +139,9 @@ Round the means to whole seconds: `scripts/shard.py` reads integers.
   and one bundle id.
 - A faster quit between tests: XCUITest ends the app with a kill, and its 1 s is its own exit check (a once-a-second
   wait); a kill by the e2e helper left XCUITest's app state "running", so the next launch waited longer.
-- Caching Swift packages: libghostty's 190 MB xcframework restored in 2 s, but build and setup stayed
-  65–105 s per job.
+- Caching Swift packages (`SourcePackages`): libghostty's 190 MB xcframework restored in 2 s, but build and setup stayed
+  65–105 s per job. Beside the compilation cache, it cut the package resolve from 40–50 s to 26 s, and its restore
+  took 4 s more: not worth a second cache.
 - More shards: the 5 macOS runners are the plan's limit, so a sixth shard waits for one of them. Nested VMs on a
   runner: GitHub's Apple Silicon runners are VMs that cannot start another.
 - Build flags (`COMPILER_INDEX_STORE_ENABLE=NO`, skipped package validation, a blocked
