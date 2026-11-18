@@ -61,7 +61,9 @@ extension OvviUITests {
         let tabs = app.descendants(matching: .any).matching(NSPredicate(format: "identifier MATCHES 'tab\\.[^.]+'"))
         let count = tabs.count
         // Sampled until the card shows and 0.5 s more: a late snapshot of the temporary tab lands after the answer.
-        // Each card closes after its round, so the shell keeps its width.
+        // Each card closes after its round, and the next round waits until it is gone from the window: an open begun
+        // ahead of that resizes the shell twice after its answer (wide, then narrow), and bash 3.2 redraws its prompt
+        // over the answer's last lines.
         for round in 0 ..< 3 {
             try await send("clear; \(Self.ovviCommand) open git . --new; echo git\(round)-$((6*7))-$?\r", to: first)
             var most = count, drawn: Date?, card: String?
@@ -80,6 +82,7 @@ extension OvviUITests {
             XCTAssertEqual(most, count, "round \(round): a tab showed on the way")
             if let card {
                 _ = try await Self.call(one, "pane.close", ["pane_id": card])
+                XCTAssertTrue(element("pane.\(card)").vanishes(within: 5), "round \(round): \(card) stayed")
             }
         }
     }
