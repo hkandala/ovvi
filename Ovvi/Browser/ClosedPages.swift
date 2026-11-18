@@ -1,8 +1,6 @@
 import HerdrKit
 import SwiftUI
 
-/// The browser pages closed on a machine, newest first, in one file on that machine: every device and session of
-/// the machine shares it.
 nonisolated struct ClosedBrowserPage {
     let url: String
     let title: String
@@ -31,6 +29,8 @@ nonisolated struct ClosedBrowserPage {
     }
 }
 
+/// The browser pages closed on a machine, newest first, in one file on that machine: every device and session of
+/// the machine shares it.
 enum ClosedPages {
     static let path = ".local/state/ovvi/closed-pages.json"
     static let most = 20

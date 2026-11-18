@@ -156,5 +156,5 @@ extension CommandList {
         }
     }
 
-    @MainActor private static var logged = Set<String>()
+    private static var logged = Set<String>()
 }

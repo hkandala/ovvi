@@ -72,7 +72,7 @@ struct PluginProblem {
     var builds = false
     var updatesOvvi = false
 
-    @MainActor func toast(_ id: String) -> Toast {
+    func toast(_ id: String) -> Toast {
         Toast(
             text: "\(title): \(text.firstLine)",
             other: nil,

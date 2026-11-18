@@ -308,7 +308,7 @@ struct InstalledPlugin: Identifiable {
         return manifest.entry == nil ? nil : manifest.version.shown
     }
 
-    @MainActor var busy: String? {
+    var busy: String? {
         PluginInstalls.shared.busy[id] ?? (DefaultPlugins.shared.installing.contains(id) ? "Installing…" : nil)
     }
 
