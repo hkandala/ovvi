@@ -112,7 +112,8 @@ struct OpenSession: View {
     {
         FilterList.Item(
             id: "\(kind).\(session)",
-            symbol: ["new": "plus", "open": "checkmark"][kind] ?? "rectangle.stack",
+            symbol: kind == "new" ? "plus" : kind == "session" ? "rectangle.dashed"
+                : pages.current?.id == session ? "rectangle.stack.fill" : "rectangle.stack",
             title: title,
             section: section,
             busy: busy == session,

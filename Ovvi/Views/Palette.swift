@@ -160,8 +160,9 @@ struct Palette: View {
             }
         }
         let sessions = pages.list.map { other in
-            FilterList.Item(id: "session.\(other.id)", symbol: "rectangle.stack", title: other.id,
-                            section: Command.Group.sessions.rawValue, act: { pages.show(other) })
+            FilterList.Item(id: "session.\(other.id)",
+                            symbol: other === pages.current ? "rectangle.stack.fill" : "rectangle.stack",
+                            title: other.id, section: Command.Group.sessions.rawValue, act: { pages.show(other) })
         }
         return tabs.map { ($0, "") } + workspaces.map { ($0, $0.detail) } + sessions.map { ($0, "") }
     }
