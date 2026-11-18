@@ -4,8 +4,7 @@ extension OvviUITests {
     /// Past the errors only with no `claude` or the stand-in (CI puts it on the login shell's PATH): a new pane's shell
     /// would start a real one.
     func testAgentStartsAnAgentWithChatBesideThePane() async throws {
-        let before = try await tabIDs()
-        closeNew("tab", besides: before)
+        try await closeNew("tab", besides: tabIDs())
         let (tab, pane) = try await newTab("agent")
         element("tab.\(tab)").click()
         XCTAssertTrue(hasKeyboard("terminal.\(pane)"))

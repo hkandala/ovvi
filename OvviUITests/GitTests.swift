@@ -261,7 +261,7 @@ extension OvviUITests {
         XCTAssertTrue(far.has(\.isHittable, true, within: 3))
         try await commandClick(far, behind: tab, root: root)
         try await show(tab)
-        try await sideBySide(card, page, far)
+        sideBySide(card, page, far)
         XCTAssertTrue(far.has(\.isHittable, true, within: 3), "far \(far.frame), page \(page.frame)")
         try await commandClick(far, behind: tab, root: root)
         try await show(tab)
@@ -289,7 +289,7 @@ extension OvviUITests {
         XCTAssertTrue(until(5) { (editor.value as? String)?.contains("far290") == true })
     }
 
-    private func sideBySide(_ card: String, _ page: XCUIElement, _ far: XCUIElement) async throws {
+    private func sideBySide(_ card: String, _ page: XCUIElement, _ far: XCUIElement) {
         let wrap = element("pane.\(card).diff.wrap")
         let wide = page.staticTexts.matching(NSPredicate(format: "value BEGINSWITH 'wide292'")).firstMatch
         let next = page.staticTexts.matching(NSPredicate(format: "value BEGINSWITH 'line 293'")).firstMatch

@@ -56,8 +56,7 @@ extension OvviUITests {
     private func fill(_ pane: String, for scenario: String) async throws {
         func card(_ pane: String, _ kind: String) async throws {
             let (_, plugin, place) = try XCTUnwrap(Self.cards.first { $0.0 == kind })
-            let iid = String(UUID().uuidString.lowercased().filter(\.isHexDigit).prefix(6))
-            try await rename(pane, "ovvi:\(plugin)#\(iid) \(place)")
+            try await rename(pane, "ovvi:\(plugin)#\(Self.iid()) \(place)")
         }
         func redraw(_ pane: String) async throws {
             try await waitForPrompt(pane)

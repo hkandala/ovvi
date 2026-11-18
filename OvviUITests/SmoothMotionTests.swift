@@ -115,10 +115,6 @@ extension OvviUITests {
 
     private static let smooth = "/tmp/ovvi-e2e-smooth"
 
-    private static func iid() -> String {
-        String(UUID().uuidString.lowercased().filter(\.isHexDigit).prefix(6))
-    }
-
     /// Acts, then waits for each card's track (published 0.4 s after its last change) and 1 s more, which catches a
     /// second motion herdr's answer starts.
     private func moves(_ step: String, in tab: String, curve: Bool = true, seen: inout Seen,

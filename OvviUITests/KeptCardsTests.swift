@@ -114,9 +114,8 @@ extension OvviUITests {
                        to: shell)
         try await waitFor(shell, times: 200) { $0.contains("made-2") }
         func leaf(_ kind: String, _ arg: String) -> [String: Any] {
-            let iid = String(UUID().uuidString.lowercased().filter(\.isHexDigit).prefix(6))
-            return ["type": "pane", "cwd": folder, "label": "ovvi:\(kind)#\(iid) \(arg)",
-                    "command": ["sh", "-c", "cat", "sh"]]
+            ["type": "pane", "cwd": folder, "label": "ovvi:\(kind)#\(Self.iid()) \(arg)",
+             "command": ["sh", "-c", "cat", "sh"]]
         }
         let browser = try await split(shell)
         try await rename(browser, leaf("browser", "file://\(folder)/0.html")["label"] as? String ?? "")

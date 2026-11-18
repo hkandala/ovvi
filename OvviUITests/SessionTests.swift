@@ -253,7 +253,7 @@ extension OvviUITests {
         try await expect("the badge to count the other page") { element("app.badge").value as? String == "1" }
         XCTAssertFalse(element("workspace.w1").stringValue.contains("needs you"))
         showPage(two)
-        XCTAssertEqual(element("sidebar.header").value as? String, two)
+        XCTAssertEqual(header, two)
         try await waitForValue("workspace.w1", containing: "needs you")
         unfold("w1")
         try await waitForValue("agent.w1:p1", containing: "Needs you")

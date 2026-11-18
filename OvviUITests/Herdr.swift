@@ -58,6 +58,11 @@ extension OvviUITests {
         try await Self.call(session ?? one, "pane.rename", ["pane_id": pane, "label": label])
     }
 
+    /// A plugin label's iid: exactly 6 `[a-z0-9]` characters.
+    static func iid() -> String {
+        String(UUID().uuidString.lowercased().filter(\.isHexDigit).prefix(6))
+    }
+
     func closeAfter(_ kind: String, _ id: String, in session: String? = nil) {
         let session = session ?? one
         addTeardownBlock { _ = try? await Self.call(session, "\(kind).close", ["\(kind)_id": id]) }
