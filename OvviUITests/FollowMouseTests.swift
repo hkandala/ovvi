@@ -13,8 +13,7 @@ extension OvviUITests {
         try await waitFor(shell) { $0.contains("made-42") }
         sendAfter("rm -rf \(root)\r", to: shell)
         relaunch(one, ["-focusFollowsMouse", "YES", "-recordMotion", "YES"])
-        XCTAssertTrue(element("workspace.w2").exists(within: connect))
-        element("workspace.w2").click()
+        try await chatBesideABrowser(root)
         try await show(tab)
         let browser = try await split(shell), explorer = try await split(browser, "down")
         try await relabel(browser, "ovvi:browser#e2effb file://\(root)/page.html")
@@ -34,18 +33,19 @@ extension OvviUITests {
             XCTAssertTrue(hasKeyboard(terminal), "the keyboard is on \(keyboardOwner())")
         }
 
+        // A misspelling brings up macOS's correction panel over the page.
         field.click()
-        app.typeText("a")
+        app.typeText("teh")
         let title = element("pane.\(browser).title")
-        XCTAssertTrue(title.has(\.stringValue, "a", within: 3), title.stringValue)
+        XCTAssertTrue(title.has(\.stringValue, "teh", within: 3), title.stringValue)
         terminal.hover()
         XCTAssertTrue(hasKeyboard(terminal), "the keyboard is on \(keyboardOwner())")
         element("pane.\(browser)").hover()
         XCTAssertTrue(lostKeys(terminal), "the keyboard stayed on \(shell)")
-        app.typeText("b")
-        XCTAssertTrue(title.has(\.stringValue, "ab", within: 3), title.stringValue)
-
-        try await chatBesideABrowser(root)
+        // The field kept its focus: the key goes on its text (the correction may have changed it).
+        let typed = title.stringValue
+        app.typeText("x")
+        XCTAssertTrue(title.has(\.stringValue, typed + "x", within: 3), "\(typed) then \(title.stringValue)")
     }
 
     private func chatBesideABrowser(_ root: String) async throws {

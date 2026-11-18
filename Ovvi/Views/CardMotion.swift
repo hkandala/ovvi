@@ -82,6 +82,7 @@ final class MovingCard: NSView {
         host.layer?.cornerCurve = .continuous
         addSubview(chrome)
         addSubview(host)
+        Self.all.add(self)
         chrome.paint(look, keyboard: lit.keyboard, active: lit.active)
     }
 
@@ -259,8 +260,11 @@ extension MovingCard {
     }
 
     private static func clicked(_ event: NSEvent) {
-        guard let window = event.window, window.attachedSheet == nil else { return }
-        let card = card(at: event.locationInWindow, in: window)
+        guard let window = event.window, window.attachedSheet == nil, let content = window.contentView,
+              let hit = content.hitTest(content.superview?.convert(event.locationInWindow, from: nil)
+                  ?? event.locationInWindow)
+        else { return }
+        let card = sequence(first: hit, next: \.superview).lazy.compactMap { $0 as? MovingCard }.first
         // After AppKit's mouse-down: a view that takes keys (a field, the page, the terminal) became first responder
         // there, ahead of its own mouseDown.
         DispatchQueue.main.async {
@@ -275,16 +279,18 @@ extension MovingCard {
         }
     }
 
-    private static func card(at point: NSPoint, in window: NSWindow) -> MovingCard? {
-        guard let content = window.contentView,
-              let hit = content.hitTest(content.superview?.convert(point, from: nil) ?? point) else { return nil }
-        return sequence(first: hit, next: \.superview).lazy.compactMap { $0 as? MovingCard }.first
-    }
-
     /// Focus follows mouse: the card under the pointer takes the keyboard once the pointer rests on it 150 ms. From the
-    /// pointer's place, not SwiftUI's hover: that stops for good in the window once a text panel shows (an
-    /// autocorrection while typing in a web page).
+    /// pointer's place, not SwiftUI's hover: that stops in the window while a text panel shows (an autocorrection
+    /// while typing in a web page), which also keeps the run loop in its tracking mode.
     static func followMouse() {
+        // Not the run loop's tracking mode: an autocorrection's panel keeps it on while it shows.
+        let center = NotificationCenter.default
+        center.addObserver(forName: NSMenu.didBeginTrackingNotification, object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated { menus += 1 }
+        }
+        center.addObserver(forName: NSMenu.didEndTrackingNotification, object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated { menus = max(menus - 1, 0) }
+        }
         // Entered too: a pointer that comes from outside the window (the menu bar) brings no move.
         NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved, .mouseEntered, .mouseExited]) { event in
             MainActor.assumeIsolated { pointerMoved() }
@@ -292,7 +298,9 @@ extension MovingCard {
         }
     }
 
+    private static let all = NSHashTable<MovingCard>.weakObjects()
     private weak static var pointed: MovingCard?
+    private static var menus = 0
     private static var following: Task<Void, Never>?
 
     private static func pointerMoved() {
@@ -305,21 +313,29 @@ extension MovingCard {
             while await (try? Task.sleep(for: .milliseconds(150))) != nil {
                 guard underPointer() === card, let window = card.window else { return }
                 // No button down, no open menu, no field typed in (at its end, this card takes the keys).
-                guard NSEvent.pressedMouseButtons == 0, RunLoop.main.currentMode != .eventTracking,
-                      !typing(in: window) else { continue }
+                guard NSEvent.pressedMouseButtons == 0, menus == 0, !typing(in: window) else { continue }
                 activate(card, in: window, follow: true)
                 return
             }
         }
     }
 
-    /// The main window, as a card's `appearsActive`: a panel over it (an autocorrection's) can be the key window.
+    /// In the main window, as a card's `appearsActive`, under panels: a closed menu's fades out over it for a moment,
+    /// and an autocorrection's can be the key window. A floating pane's window over it hides its cards.
     private static func underPointer() -> MovingCard? {
         let point = NSEvent.mouseLocation
-        guard let window = NSApp.window(withWindowNumber: NSWindow.windowNumber(at: point,
-                                                                                belowWindowWithWindowNumber: 0)),
-            NSApp.isActive, window.isMainWindow, window.attachedSheet == nil else { return nil }
-        return card(at: window.convertPoint(fromScreen: point), in: window)
+        guard NSApp.isActive,
+              let window = NSApp.orderedWindows
+                  .first(where: { $0.isVisible && $0.canBecomeMain && $0.frame.contains(point) }),
+              window.isMainWindow, window.attachedSheet == nil else { return nil }
+        // By frame, not a hit test: SwiftUI's says no view takes a click over text that takes none (a card's title).
+        let inWindow = window.convertPoint(fromScreen: point)
+        let cards = all.allObjects.filter {
+            $0.window === window && !$0.isHiddenOrHasHiddenAncestor && $0.convert($0.bounds, to: nil).contains(inWindow)
+        }
+        // A zoomed card lies over the others of its tab.
+        let zoomed = WindowPages.windows.first { $0.window === window }?.current?.zoomedPaneID
+        return cards.first { $0.id == zoomed } ?? cards.first
     }
 
     /// A field typed in keeps the keys (a rename, an address, the sidebar's filter), but not a chat's reply box or a
