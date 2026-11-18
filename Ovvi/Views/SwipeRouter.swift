@@ -27,8 +27,7 @@ enum SwipeRouter {
     private static var picked = false
     private static var option = false
     private static var moved = 0.0, sideways = 0.0
-    private static var wheeled = Date.distantPast
-    private static var speed = 0.0, last = 0.0
+    private static var speed = 0.0, last = 0.0, wheeled = 0.0
 
     private static func route(_ event: NSEvent) -> Bool {
         let deltaX = event.scrollingDeltaX, deltaY = event.scrollingDeltaY
@@ -101,7 +100,7 @@ enum SwipeRouter {
         let deltaX = event.scrollingDeltaX, deltaY = event.scrollingDeltaY
         if event.modifierFlags.contains(.option) {
             let across = abs(deltaX) > abs(deltaY)
-            turn({ take(across ? .session($0) : .row($0), event) }, across ? deltaX : up(event))
+            turn({ take(across ? .session($0) : .row($0), event) }, across ? deltaX : up(event), at: event.timestamp)
             return true
         }
         // A mouse's wheel turns only up and down: over the tab strip, it scrolls the strip sideways. Not under a
@@ -123,15 +122,17 @@ enum SwipeRouter {
         }
         guard abs(deltaX) > abs(deltaY),
               let pages = anchors.allObjects.first(where: { $0.contains(event) }) else { return false }
-        turn(pages.marks.step, deltaX)
+        turn(pages.marks.step, deltaX, at: event.timestamp)
         return true
     }
 
-    private static func turn(_ step: ((Int) -> Void)?, _ delta: CGFloat) {
-        if delta != 0, Date.now.timeIntervalSince(wheeled) > 0.3 {
+    /// A wheel event within 0.3 s of the one before, by the events' own times, is the same wheel: a page shown by the
+    /// first can hold the main thread past 0.3 s before the next is handled.
+    private static func turn(_ step: ((Int) -> Void)?, _ delta: CGFloat, at time: TimeInterval) {
+        if delta != 0, time - wheeled > 0.3 {
             step?(delta > 0 ? -1 : 1)
         }
-        wheeled = .now
+        wheeled = time
     }
 }
 
