@@ -77,9 +77,9 @@ final class FrameProbe {
         let still = view.still.flatMap { $0 !== view.layer && $0.superlayer != nil && $0.contentsGravity == .resize
             ? $0 : nil
         }
+        let frame = view.convert(view.bounds, to: nil).integral
         return Sample(ink: ink, fading: view.layer?.animation(forKey: "reveal") != nil,
-                      small: still?.small(in: view) == true,
-                      topLeft: view.convert(view.bounds, to: nil).integral.topLeft)
+                      small: still?.small(in: view) == true, topLeft: CGPoint(x: frame.minX, y: frame.maxY))
     }
 
     private func finish() {
@@ -138,11 +138,5 @@ final class FrameProbe {
     private static func same(_ one: [Bool]?, _ two: [Bool]?) -> Bool {
         guard let one, let two else { return one == nil && two == nil }
         return zip(one, two).count { $0 != $1 } <= 8
-    }
-}
-
-private extension CGRect {
-    var topLeft: CGPoint {
-        CGPoint(x: minX, y: maxY)
     }
 }
