@@ -17,6 +17,8 @@ struct ArchivedShelf: View {
     @State private var attempt = 0
     @State private var search = ""
     @State private var focusSearch = 0
+    /// The list's height, which the window can make shorter.
+    @State private var room = AgentsSection.listHeight.upperBound
     private static var lists: [String: ClosedList] = [:]
 
     var body: some View {
@@ -44,7 +46,7 @@ struct ArchivedShelf: View {
                             ForEach(rows) { row($0) }
                             if rows.isEmpty {
                                 status(shown, next: next, rows: false).frame(maxWidth: .infinity)
-                                    .frame(height: Self.height)
+                                    .frame(height: room)
                                     .overlay(alignment: .bottom) { end(next, searching: searching) }
                             } else {
                                 end(next, searching: searching)
@@ -61,7 +63,8 @@ struct ArchivedShelf: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: Self.height)
+            .frame(minHeight: AgentsSection.listHeight.lowerBound, maxHeight: AgentsSection.listHeight.upperBound)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { room = $0 }
         }
         .task(id: searching ? "\(agent) \(search)" : "") {
             guard searching else { return }
@@ -75,8 +78,6 @@ struct ArchivedShelf: View {
             await readFirst()
         }
     }
-
-    static let height: CGFloat = 5 * 48 + 4 * 4
 
     @ViewBuilder private func end(_ next: [String], searching: Bool) -> some View {
         if !next.isEmpty, !searching {

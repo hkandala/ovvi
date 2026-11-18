@@ -142,7 +142,7 @@ extension OvviUITests {
         openAgents()
         let section = element("agents.section"), header = element("agents.header")
         XCTAssertEqual(section.frame.minX - window.frame.minX, 10, accuracy: 0.5, "\(section.frame)")
-        XCTAssertEqual(section.frame.height, 324, accuracy: 0.5)
+        XCTAssertEqual(section.frame.height, 408, accuracy: 0.5, "not five agents under three headers")
         XCTAssertEqual(summary.frame.minY - section.frame.maxY, 18, accuracy: 0.5, "the section over the foot")
         XCTAssertEqual(header.frame.minX - section.frame.minX, 12, accuracy: 0.5, "the title's inset")
         XCTAssertEqual(element("agents.archive").frame.minY - section.frame.minY, 6, accuracy: 0.5, "the top inset")
@@ -189,7 +189,7 @@ extension OvviUITests {
         // The lazy list builds the rows in view only.
         let built = { rows.allElementsBoundByIndex.sorted { $0.frame.minY < $1.frame.minY }.map(\.identifier) }
         XCTAssertEqual(built().first, prefix + needs)
-        XCTAssertEqual(section.frame.height, 324, accuracy: 0.5)
+        XCTAssertEqual(section.frame.height, 408, accuracy: 0.5, "not five agents under three headers")
         keepScreenshot("agents section, 12 agents")
         section.scroll(byDeltaX: 0, deltaY: -3000)
         let first = element(prefix + needs)
@@ -211,8 +211,8 @@ extension OvviUITests {
         step("A done row under the pointer shows its ×, which clears it")
         last.hover()
         XCTAssertTrue(clearLast.exists(within: 2), "no × on a done row under the pointer")
-        // Its 16 pt box 2 pt in: its ink 6 pt from the row's edge, as far in as the tile.
-        XCTAssertEqual(last.frame.maxX - clearLast.frame.maxX, 2, accuracy: 0.5)
+        // Its 16 pt box 6 pt in: its ink 10 pt from the row's edge, 4 pt more than the tile's.
+        XCTAssertEqual(last.frame.maxX - clearLast.frame.maxX, 6, accuracy: 0.5)
         keepScreenshot("agents section, a done row under the pointer")
         clearLast.click()
         XCTAssertTrue(last.vanishes(within: 2))

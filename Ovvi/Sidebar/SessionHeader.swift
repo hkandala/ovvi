@@ -123,7 +123,7 @@ struct SessionHeader: View {
 
     private func shelf(_ list: [Page]) -> some View {
         VStack(spacing: 0) {
-            // In the window's order, so a pick moves nothing: only the mark (a filled symbol, a bolder name) fades.
+            // In the window's order, so a pick moves nothing: only the mark (a filled symbol) fades.
             ForEach(list.indices, id: \.self) { index in
                 let other = list[index]
                 let detach = pages.canDetach ? { pages.close(other) } : nil
@@ -149,7 +149,7 @@ struct SessionHeader: View {
         return Button(action: action) {
             HStack(spacing: 8) {
                 Image(systemName: current ? symbol + ".fill" : symbol).foregroundStyle(.secondary).frame(width: 18)
-                Text(title).truncationMode(.middle).lineLimit(1).fontWeight(current ? .semibold : nil)
+                Text(title).truncationMode(.middle).lineLimit(1)
                 Spacer(minLength: 0)
                 Text(key).font(.system(size: 11)).foregroundStyle(.tertiary)
             }

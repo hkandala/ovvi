@@ -64,7 +64,8 @@ extension OvviUITests {
         XCTAssertTrue(hasKeyboard(element("terminal.\(shell)")))
     }
 
-    /// The archive button switches the section in place; the back chevron, the title row or Esc goes back.
+    /// The archive button switches the section in place; the back chevron and its words, or Esc, go back. The rest of
+    /// the title row does not.
     func testArchivedSwitchesInPlaceAndGoesBack() {
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
         openAgents()
@@ -75,7 +76,11 @@ extension OvviUITests {
         XCTAssertTrue(hasKeyboard(search))
         XCTAssertEqual(section.frame, frame, "the section moved")
         XCTAssertEqual(search.frame.midY, summaryMiddle, accuracy: 0.5, "the search not in the summary's row")
-        XCTAssertEqual(element("agents.back").label, "Back to Agents")
+        let back = element("agents.back"), empty = 0.8
+        XCTAssertEqual(back.label, "Back to Agents")
+        // Only the chevron and the words: lit and clicked there alone.
+        XCTAssertEqual(back.frame.height, 22, accuracy: 0.5)
+        XCTAssertLessThan(back.frame.maxX, section.frame.minX + empty * section.frame.width)
         XCTAssertFalse(element("agents.archive").exists)
         keepScreenshot("archived in the agents section")
         element("agents.back").click()
@@ -83,8 +88,10 @@ extension OvviUITests {
         element("agents.archive").click()
         XCTAssertTrue(search.exists(within: 2))
         // The title row, right of the back chevron's words.
-        section.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0)).withOffset(CGVector(dx: 0, dy: 15)).click()
-        XCTAssertTrue(element("agents.header").exists(within: 2), "the title row does not go back")
+        section.coordinate(withNormalizedOffset: CGVector(dx: empty, dy: 0)).withOffset(CGVector(dx: 0, dy: 15)).click()
+        XCTAssertFalse(element("agents.header").exists(within: 1), "the title row's empty part goes back")
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(element("agents.header").exists(within: 2), "Esc does not go back")
         XCTAssertEqual(section.frame, frame)
     }
 

@@ -11,12 +11,13 @@ struct AgentsSection: View {
     @AppStorage(Page.foldsAndShelves, store: .sidebar) private var opened = ""
     /// The user switched its views: the keys come here too.
     @State private var switched = false
-    @State private var backLit = false
     @FocusState private var focused: Bool
     /// Every lit box (a row, a group's header, the search field, the back row) from the border, on all four sides.
     static let inset: CGFloat = 6
     /// Text and glyphs inside those boxes: the section's columns sit `inset + padding` inside its border.
     static let padding: CGFloat = 6
+    /// Its lists' height: five agents under three groups' headers, down to five archived rows in a short window.
+    static let listHeight: ClosedRange<CGFloat> = 5 * 48 + 4 * 4 ... 3 * 24 + 5 * 48 + 7 * 4
 
     var body: some View {
         let archived = opened.hasLine(pages.archivedKey)
@@ -54,7 +55,7 @@ struct AgentsSection: View {
     }
 
     private func show(archived: Bool) {
-        (switched, backLit) = (true, false)
+        switched = true
         withAnimation(.fade) {
             opened = opened.withLine(pages.archivedKey, archived)
         }
@@ -70,20 +71,14 @@ struct AgentsSection: View {
     private func header(archived: Bool) -> some View {
         HStack(spacing: 0) {
             if archived {
-                // The whole title row goes back; the light is the chevron's and the words'.
                 Button(action: back) {
                     HStack(spacing: 6) {
                         Image(systemName: "chevron.left").font(.system(size: 10, weight: .semibold))
                         Text("Archived · \(pages.machine.name)")
                     }
                     .padding(.horizontal, Self.padding).frame(height: 22)
-                    .background(.primary.opacity(backLit ? 0.05 : 0), in: .rect(cornerRadius: 6))
-                    .animation(.highlight, value: backLit)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-                    .contentShape(.rect)
                 }
-                .buttonStyle(.plain)
-                .onHover { backLit = $0 }
+                .buttonStyle(ChromeStyle(radius: 6))
                 .accessibilityLabel("Back to Agents")
                 .accessibilityValue("Archived · \(pages.machine.name)")
                 .accessibilityIdentifier("agents.back")

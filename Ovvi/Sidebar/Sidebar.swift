@@ -86,6 +86,8 @@ struct Sidebar: View {
             // Empty, it would have no width either, and the section would grow out of its middle.
             .frame(maxWidth: .infinity)
             .clipped()
+            // Its lists take their full height before the spaces' list takes the rest.
+            .layoutPriority(1)
             SidebarFoot(pages: pages, panel: $panel, open: agentsOpen, toggle: toggleAgents)
                 .padding(.leading, Sidebar.rowInsets.leading).padding(.trailing, Sidebar.rowInsets.trailing)
         }

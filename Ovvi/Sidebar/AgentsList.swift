@@ -47,7 +47,7 @@ struct AgentsList: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .frame(height: ArchivedShelf.height)
+        .frame(minHeight: AgentsSection.listHeight.lowerBound, maxHeight: AgentsSection.listHeight.upperBound)
     }
 
     private func folded(_ state: AgentState) -> Bool {
@@ -126,7 +126,7 @@ private struct GroupHeader: View {
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
                     .rotationEffect(.degrees(folded ? 0 : 90))
-                    // Its ink on the section's right column, with a row's ×.
+                    // Its ink on the section's right column.
                     .frame(width: 20, height: 22).padding(.trailing, -5.5)
             }
             .foregroundStyle(.secondary)
@@ -157,6 +157,8 @@ private struct GroupHeader: View {
 
 /// Archived Sessions' row: lit under the pointer, where a done one shows its ×.
 private struct AgentRow: View {
+    /// The ×'s ink from the row's right edge: 4 pt more than the tile's inset on the left.
+    private static let clearInset = AgentsSection.padding + 4
     let store: HostStore
     let pane: HostStore.Pane
     @State private var hovering = false
@@ -179,7 +181,7 @@ private struct AgentRow: View {
                 Spacer(minLength: 0)
             }
             .padding(.leading, AgentsSection.padding)
-            .padding(.trailing, clears && hovering ? 16 + AgentsSection.padding : AgentsSection.padding)
+            .padding(.trailing, clears && hovering ? 16 + Self.clearInset : AgentsSection.padding)
             .frame(height: 48)
         }
         .buttonStyle(ChromeStyle(radius: 6))
@@ -200,8 +202,7 @@ private struct AgentRow: View {
                         .frame(width: 16, height: 16)
                 }
                 .buttonStyle(ChromeStyle(radius: 6))
-                // Its ink as far in as the tile on the left, on the section's right column.
-                .padding(.trailing, AgentsSection.padding - 4)
+                .padding(.trailing, Self.clearInset - 4)
                 .accessibilityLabel("Clear")
                 .accessibilityIdentifier("agents.clear.\(store.session).\(pane.id)")
             }
