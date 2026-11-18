@@ -161,7 +161,7 @@ extension OvviUITests {
     func testOverviewLetsGoOfItsTilePicturesAfterItCloses() async throws {
         executionTimeAllowance = 300
         // w2's terminal leaves view for the chat's tab: its snapshot.
-        let (_, chat) = try await startChat(["-recordLatency", "YES", "-tilePictureSeconds", "8"])
+        let (chatTab, chat) = try await startChat(["-recordLatency", "YES", "-tilePictureSeconds", "8"])
         addTeardownBlock { @MainActor in self.keep(self.element("app.latency").stringValue, as: "latency") }
         try await say("hello", in: chat)
         XCTAssertTrue(row(chat, "reply", "Echo: **hello**").exists(within: 5))
@@ -198,7 +198,8 @@ extension OvviUITests {
         XCTAssertGreaterThan(counts?.0 ?? 0, 0, "snapshots let go: \(latency.stringValue)")
         XCTAssertEqual(counts?.1, 1, "chat pictures let go: \(latency.stringValue)")
         app.typeKey("o", modifierFlags: [.command, .control])
-        scrollOverview(to: element("overview.card.\(chat)"), whole: true)
+        // A chat's picture waits until its whole tile is in the window.
+        scrollOverview(to: element("overview.tab.\(chatTab)"), whole: true)
         XCTAssertTrue(element("overview.card.\(chat)").has(\.stringValue, "chat", within: 30))
         XCTAssertEqual(photos(chat), 1)
         XCTAssertEqual(element("overview.card.\(browser)").stringValue, "browser")
