@@ -21,6 +21,12 @@ on:
 permissions:
   contents: read
 
+# Xcode's compilation cache (the Makefile passes XCODEFLAGS), one per commit: the checks save it, and a dispatch's
+# build restores it, or the newest one on a commit the checks did not build. It keeps the compiler's outputs by their
+# inputs, so a hit gives the same output. A cold build fills about 520 MB.
+env:
+  XCODEFLAGS: COMPILATION_CACHE_ENABLE_CACHING=YES COMPILATION_CACHE_LIMIT_SIZE=1073741824
+
 concurrency:
   group: ci-${{ github.event_name == 'workflow_dispatch' && github.run_id || github.ref }}
   cancel-in-progress: true
@@ -32,6 +38,11 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/cache@v6
+        with:
+          path: .build/DerivedData/CompilationCache.noindex
+          key: xcode-cas-${{ github.sha }}
+          restore-keys: xcode-cas-
       - run: brew update --quiet && brew bundle
       - run: scripts/ci-herdr.sh
       - run: make lint
@@ -46,6 +57,12 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+      # Saved only on a miss: the checks saved main's commits.
+      - uses: actions/cache@v6
+        with:
+          path: .build/DerivedData/CompilationCache.noindex
+          key: xcode-cas-${{ github.sha }}
+          restore-keys: xcode-cas-
       - run: make build-tests
       # A tar keeps the bundles' symlinks and modes, which the artifact's zip drops.
       - run: tar -cf products.tar .build/DerivedData/Build/Products
@@ -69,6 +86,12 @@ jobs:
         shard: ${{ fromJSON(inputs.only_testing && '[0]' || inputs.on_demand && '[0, 1, 2, 3]' || '[0, 1, 2, 3, 4]') }}
     steps:
       - uses: actions/checkout@v7
+      - if: ${{ inputs.only_testing }}
+        uses: actions/cache/restore@v6
+        with:
+          path: .build/DerivedData/CompilationCache.noindex
+          key: xcode-cas-${{ github.sha }}
+          restore-keys: xcode-cas-
       - if: ${{ !inputs.only_testing }}
         uses: actions/download-artifact@v8
         with:

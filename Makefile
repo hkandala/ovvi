@@ -2,7 +2,8 @@ SHELL := /bin/bash -eo pipefail
 .PHONY: setup format lint web build build-tests test e2e vm-e2e run app zip install icons
 
 DERIVED_DATA ?= .build/DerivedData
-XCODEBUILD := xcodebuild -project Ovvi.xcodeproj -scheme Ovvi -derivedDataPath $(DERIVED_DATA)
+# XCODEFLAGS: more build settings (CI's compilation cache).
+XCODEBUILD := xcodebuild -project Ovvi.xcodeproj -scheme Ovvi -derivedDataPath $(DERIVED_DATA) $(XCODEFLAGS)
 MAC := -destination 'platform=macOS,arch=$(shell uname -m)'
 comma := ,
 # `git rebase -x` in a worktree exports GIT_DIR: the tests' own git repos would write to this one.
