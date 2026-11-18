@@ -187,8 +187,8 @@ extension OvviUITests {
         case restored
     }
 
-    /// `pin`: the settings as they ship, whatever the user's Ovvi has (the defaults are shared); off for a test that
-    /// changes them in the Settings window, where a pinned key cannot change.
+    /// `pin`: the settings as they ship, whatever an earlier run left (Ovvi Debug's defaults are shared); off for a
+    /// test that changes them in the Settings window, where a pinned key cannot change.
     func relaunch(_ session: String? = nil, _ args: [String] = [], pin: Bool = true, windows: Windows = .ignored) {
         let config = args.contains("-configFolder") ? ["-archivedHome", Self.archivedHome] : Self.noConfig
         let shipped = ["notifyNeedsYou": "YES", "notifyFinished": "YES", "notifyFromAgents": "YES",

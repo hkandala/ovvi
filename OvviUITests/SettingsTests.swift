@@ -1,6 +1,6 @@
 import XCTest
 
-/// Settings live in the defaults the tests share with the user's Ovvi, and New Pane's switches in the tests' config
+/// Settings live in Ovvi Debug's defaults, which every test shares, and New Pane's switches in the tests' config
 /// folder, so each test puts back what it changes.
 extension OvviUITests {
     var settingsWindow: XCUIElement {

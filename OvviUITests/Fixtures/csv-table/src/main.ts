@@ -1,4 +1,4 @@
-// The building page's CSV Table (plugins/building), the fixture of PackageTests. The test edits the
+// The CSV Table of the docs' Create a plugin page, the fixture of PackageTests. The test edits the
 // caption below and presses Reload Plugin.
 import type { Ovvi } from "@ovvi/plugin-api"
 import { parse } from "./parse"

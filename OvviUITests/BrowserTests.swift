@@ -204,7 +204,7 @@ extension OvviUITests {
         let pane = try await split(shell, in: five)
         closeAfter("pane", pane, in: five)
         try await rename(pane, "ovvi:browser#e2e5ab \(page)", in: five)
-        // `.invalid`: approvals live in the defaults the tests share with the user's Ovvi.
+        // `.invalid`: approvals live in Ovvi Debug's defaults, which every test and `make run` share.
         let site = try await split(pane, "down", in: five)
         closeAfter("pane", site, in: five)
         try await rename(site, "ovvi:browser#e2e5ac https://ovvi.invalid/", in: five)

@@ -316,7 +316,7 @@ extension OvviUITests {
         element("sidebar.header").hover()
     }
 
-    /// Its id from herdr's list: after the shard's earlier tests the new tab's id did not name its space.
+    /// Its id from herdr's list: after the shard's earlier tests a new tab's id need not name its space.
     private func newSpace(_ label: String) async throws -> String {
         let before = try await workspaceIDs()
         _ = try await createWorkspace(label)

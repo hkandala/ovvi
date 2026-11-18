@@ -1,8 +1,8 @@
 import XCTest
 
-/// The size persists in the app's own defaults, so the test puts it back.
 extension OvviUITests {
-    /// No ⌘=: on CI's 1x display a 1 pt step after ⌘+ keeps the grid.
+    /// No ⌘=: on CI's 1x display a 1 pt step after ⌘+ keeps the grid. The size persists in the app's own defaults:
+    /// the teardown puts it back.
     func testFontSizeKeys() async throws {
         let terminal = element("terminal.w1:p1")
         XCTAssertTrue(terminal.exists(within: connect))
