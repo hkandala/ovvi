@@ -193,8 +193,9 @@ final class Page: Identifiable {
     }
 
     var shownTerminals: [String: String] {
-        Dictionary(store.panes.compactMap { pane in
-            pane.tabID == selectedTab?.id || floats(pane) ? pane.terminalID.map { ($0, pane.id) } : nil
+        let tabID = selectedTab?.id
+        return Dictionary(store.panes.compactMap { pane in
+            pane.tabID == tabID || floats(pane) ? pane.terminalID.map { ($0, pane.id) } : nil
         }, uniquingKeysWith: { first, _ in first })
     }
 
