@@ -25,9 +25,10 @@ extension OvviUITests {
         XCTAssertGreaterThan(apart(dimmed, full), 0.1, "\(dimmed) \(full)")
         stop.click()
         XCTAssertTrue(row(pane, "user", "later").exists(within: 5))
-        XCTAssertLessThan(apart(bubbleFill(row(pane, "user", "later")), full), 0.05)
         XCTAssertTrue(row(pane, "note", "Interrupted").exists(within: 5))
+        // Measured at rest: until herdr's idle, which comes after pi's lines, a Working row holds the rows higher.
         XCTAssertTrue(element("chat.\(pane).send").exists(within: 5))
+        XCTAssertLessThan(apart(bubbleFill(row(pane, "user", "later")), full), 0.05)
 
         app.typeText("/tree\r")
         XCTAssertTrue(element("chat.\(pane).composer").vanishes(within: 3))
