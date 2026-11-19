@@ -149,9 +149,10 @@ OWNER=<your agent name> ~/ovvi-docs/heavy.sh ~/ovvi-docs/gui-free.sh make e2e PR
   missing or the lock is held: use the VM or CI, and do not try again in a loop.
 - Build first, so the run holds the lock only for the tests. One run per hold, released by the script, also on
   failure. Agents never take the lock by hand (the orchestrator's hold for the user, below, is the one exception),
-  never hold it while they read results, edit or wait for CI, and never remove someone else's lock. A lock older
-  than 10 minutes whose owner is not `user` and whose agent is gone (`agent_list` with `scope: "all"`) is stale: the
-  orchestrator removes it.
+  never hold it while they read results, edit or wait for CI, and never remove someone else's lock. A lock whose
+  owner line names a pid that is gone (`kill -0 <pid>` fails) is stale: the orchestrator removes it.
+- Removing the switch stops no run that is going on: it ends by itself, or the orchestrator asks its agent (the owner
+  line names it) to stop it.
 - When the user tests on the Mac, the orchestrator holds the lock for them
   (`mkdir /tmp/ovvi-gui.lock && echo user > /tmp/ovvi-gui.lock/owner`; `rm -rf /tmp/ovvi-gui.lock` to
   release). UI tests in the VM go on.
