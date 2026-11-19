@@ -189,10 +189,19 @@ private struct AgentRow: View {
         .accessibilityValue(pane.state?.title ?? "")
         .accessibilityActions {
             if clears {
-                Button("Clear") { store.clear([pane]) }
+                Button("Mark as Read") { store.clear([pane]) }
             }
         }
         .accessibilityIdentifier("agents.row.\(store.session).\(pane.id)")
+        .contextMenu {
+            // As the Float Pane command, in whichever window has its session.
+            Button("Open in Floating Window") {
+                WindowPages.windows.lazy.flatMap(\.list).first { $0.store === store }?.float(pane)
+            }
+            if clears {
+                Button("Mark as Read") { store.clear([pane]) }
+            }
+        }
         .overlay(alignment: .trailing) {
             if clears, hovering {
                 Button {
@@ -203,7 +212,7 @@ private struct AgentRow: View {
                 }
                 .buttonStyle(ChromeStyle(radius: 6))
                 .padding(.trailing, Self.clearInset - 4)
-                .accessibilityLabel("Clear")
+                .accessibilityLabel("Mark as Read")
                 .accessibilityIdentifier("agents.clear.\(store.session).\(pane.id)")
             }
         }

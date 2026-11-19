@@ -167,9 +167,9 @@ struct SessionHeader: View {
         .accessibilityIdentifier(id)
         .overlay(alignment: .trailing) {
             if let detach, detaches {
-                IconButton(symbol: "rectangle.stack.badge.minus", help: "Detach Session", size: 18, action: detach)
+                IconButton(symbol: "minus.circle", help: "Detach Session", size: 18, action: detach)
                     // Its ink as far from the row's right edge as the row's symbol from its left.
-                    .padding(.trailing, 3.5)
+                    .padding(.trailing, 3)
                     .accessibilityIdentifier(id + ".detach")
             }
         }

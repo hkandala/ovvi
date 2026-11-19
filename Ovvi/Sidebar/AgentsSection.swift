@@ -88,18 +88,30 @@ struct AgentsSection: View {
             }
             Spacer(minLength: 8)
             if !archived {
-                Button { show(archived: true) } label: {
-                    // The glyph's 12 pt ink `padding` inside its box, on the section's right column.
-                    Image(systemName: "archivebox").font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.primary).frame(width: 12 + 2 * Self.padding, height: 22)
-                }
-                .buttonStyle(ChromeStyle(radius: 6))
-                .tip("Archived Sessions")
-                .accessibilityLabel("Archived Sessions")
-                .accessibilityIdentifier("agents.archive")
+                headerButton("archivebox", ink: 12, "Archived Sessions", id: "agents.archive") { show(archived: true) }
             }
+            headerButton("xmark", ink: 10, "Close", id: "agents.close", action: close)
         }
         .font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary).lineLimit(1)
         .frame(height: 22)
+        .contentShape(.rect)
+        .contextMenu {
+            Button(archived ? "Show Agents" : "Show Archived Sessions") { show(archived: !archived) }
+            Button("Close", action: close)
+        }
+    }
+
+    /// The glyph's `ink` wide ink `padding` inside its box: the last one's on the section's right column.
+    private func headerButton(_ symbol: String, ink: CGFloat, _ help: String, id: String,
+                              action: @escaping () -> Void) -> some View
+    {
+        Button(action: action) {
+            Image(systemName: symbol).font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.primary).frame(width: ink + 2 * Self.padding, height: 22)
+        }
+        .buttonStyle(ChromeStyle(radius: 6))
+        .tip(help)
+        .accessibilityLabel(help)
+        .accessibilityIdentifier(id)
     }
 }

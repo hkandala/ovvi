@@ -148,7 +148,7 @@ extension OvviUITests {
         XCTAssertEqual(element("agents.archive").frame.minY - section.frame.minY, 6, accuracy: 0.5, "the top inset")
         // The header's 22 pt row, 4 pt, then the summary's 26 pt row.
         XCTAssertEqual(element("agents.summary").frame.midY - header.frame.midY, 28, accuracy: 0.5)
-        XCTAssertEqual(element("agents.archive").frame.maxX, section.frame.maxX - 6, accuracy: 0.5)
+        XCTAssertEqual(element("agents.close").frame.maxX, section.frame.maxX - 6, accuracy: 0.5)
         XCTAssertEqual(element("sidebar.settings").frame.maxX, section.frame.maxX - 1.5, accuracy: 0.5)
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(section.vanishes(within: 2))
