@@ -98,6 +98,11 @@ How CI runs, how to run part of it, and how to keep it green and fast.
 4. A shard where every test from one point on runs out its 120 s with no assertion (the session log shows a launch
    whose pid never came, then "requesting to start screen recording" with no answer) is the runner's
    `testmanagerd`, not the tests: judge the tests before that point, and the next full run.
+   One test that runs out its 120 s with an empty screen recording, while its spindump shows WindowServer's threads
+   blocked in the AppleParavirtGPU driver (`IOGPUScheduler::scheduleWorkqueue`) and the app's main thread waiting on
+   WindowServer, is the runner's GPU: the whole screen froze for about 100 s (polish-final6 and polish-final10, once
+   each). xcodebuild then runs the rest of the shard in a new runner, so xcbeautify's last "Executed N tests" counts
+   only those: count the tests in the xcresult.
 5. Give it 20 minutes from the logs. Then simplify the test or the feature and write it down, or hand it on.
    No debug branches.
 6. Never rerun to green: run again only after a code change. A flake fix is proven by two full runs in a
