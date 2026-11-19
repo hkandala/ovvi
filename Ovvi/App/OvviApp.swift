@@ -243,6 +243,7 @@ private struct WindowContent: View {
     @State private var fullScreen = false
     @State private var lightsOff = 0
     @State private var height: CGFloat = 0
+    /// The sidebar's collapse time, tuned by eye.
     private static let collapse = 0.3
     private var settings = AppSettings()
     @Environment(\.colorScheme) private var colorScheme
@@ -287,7 +288,6 @@ private struct WindowContent: View {
                 }
             }
         }
-        // The sidebar's collapse time, tuned by eye.
         .animation(Animation.reduced ? nil : .easeInOut(duration: Self.collapse), value: sidebar)
         .hoverPanelHost()
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }

@@ -137,6 +137,7 @@ struct PaneCard: View {
         .testValue("pane.\(id).border", "Active", "", shown: SettlingHost.record && bordered)
         .overlay(alignment: .topLeading) {
             if let zone, page.dragging != nil {
+                // ponytail: a resize during a drag keeps the old size here until the zone changes.
                 let size = size.size, half = CGSize(width: size.width / 2, height: size.height / 2)
                 DropIndicator()
                     .frame(width: zone == .left || zone == .right ? half.width : size.width,

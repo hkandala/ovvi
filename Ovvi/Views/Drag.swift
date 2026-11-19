@@ -211,15 +211,15 @@ private struct DragSourceModifier: ViewModifier {
     let previewSize: Measured?
     /// Its size, not its frame in the window: the frame changes as its row scrolls, an update of every tab capsule at
     /// each layout.
-    @State private var size = CGSize.zero
+    @State private var size = Measured()
 
     func body(content: Content) -> some View {
         content
-            .onGeometryChange(for: CGSize.self, of: \.size) { size = $0 }
+            .onGeometryChange(for: CGSize.self, of: \.size) { size.size = $0 }
             .simultaneousGesture(DragGesture(minimumDistance: 4).onChanged { value in
                 // Where the mouse went down: a busy app's first change comes late.
                 DragSource.begin(item, page: page, grabbed: value.startLocation, moved: value.translation,
-                                 size: previewSize?.size ?? size)
+                                 size: previewSize?.size ?? size.size)
             })
     }
 }
