@@ -270,10 +270,11 @@ Problems that came back, and the rule that stops each. How we work is in
 - **Never make artificial load to reproduce a flake.** 150 `yes` processes at load 250, beside builds, the VM and a
   Blender render, crashed the Mac. Starve only the test process instead (`taskpolicy -c background <cmd>`, `nice`),
   and run heavy jobs through the load gate, `~/ovvi-docs/heavy.sh`.
-- **Memory, not load, panicked the Mac the second time.** The security tools check every file open and program start;
-  after a day of swap (an 8 GB VM idle for hours, browsers, ~20 agents) they answered so slowly that WindowServer
-  hung on a file open behind them and the watchdog panicked the Mac. Stop what holds memory idle (the VM stops by
-  itself) and leave room: a second heavy job runs only at normal memory pressure.
+- **A day of swap, not the load, panicked the Mac the second time.** The panic's stackshots show WindowServer waiting
+  on a file open that waited in the kernel's EndpointSecurity layer for the security tools, which check every open;
+  the restarted WindowServer waited there too, and the watchdog panicked the Mac. Those tools answer late on this Mac
+  often, and likely later still after a day of swap (an 8 GB VM idle for hours, browsers, ~20 agents). Stop what holds
+  memory idle (the VM stops by itself) and leave room: a second heavy job runs only at normal memory pressure.
 - **A track never removes a visible feature without the user's words.** A sidebar track took out the page dots
   because its new session list "named the sessions", and the user asked at once where they went. When a change seems
   to make something visible redundant, keep it and ask the orchestrator; only the user's words remove it.

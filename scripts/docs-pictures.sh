@@ -19,15 +19,14 @@ if [[ ${1:-} != --in-vm ]]; then
     cd "$(dirname "$0")/.."
     echo "${OWNER:-$USER} docs-pictures $(date +%H:%M)" >"$locks/ovvi-test.owner"
     run=$runs/docs-$$ guest="/Volumes/My Shared Files"
-    trap 'rm -rf "$run" "$locks/ovvi-test.owner"' EXIT
+    source scripts/vm-up.sh
+    trap 'vm_idle_stop; rm -rf "$run" "$locks/ovvi-test.owner"' EXIT
     mkdir -p "$run/bin" "$run/shots"
     cp -cR "$app" scripts "$run/"
     cp -c "$(command -v herdr)" "$run/bin/"
     clang -fobjc-arc -framework Foundation -framework CoreGraphics scripts/hidpi-display.m -o "$run/bin/hidpi-display"
     # As vm-test.sh: the VM up, and its shares mounted again when a resume left them stale.
-    plugins/extra/tart-vm/bin/ovvi-tart start "$vm" "--dir=xcode:$(dirname "$(dirname "$(xcode-select -p)")"):ro" \
-        "--dir=runs:$runs" >/dev/null
-    for _ in $(seq 60); do tart exec "$vm" true 2>/dev/null && break; sleep 1; done
+    vm_up
     tart exec "$vm" test -d "$guest/runs/docs-$$" || tart exec "$vm" zsh -c "sudo /sbin/umount -f '$guest' 2>/dev/null
         sudo mkdir -p '$guest' && sudo /sbin/mount_virtiofs com.apple.virtio-fs.automount '$guest'"
     status=0

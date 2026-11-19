@@ -138,18 +138,24 @@ Code with the credentials of an agent's pane on this Mac), and checks of the Mac
 works, only the VM and CI.
 
 ```sh
-OWNER=<your agent name> ~/ovvi-docs/heavy.sh ~/ovvi-docs/gui-free.sh make e2e DERIVED_DATA=/tmp/ovvi-dd-<phase>-<track> ONLY=…
+OWNER=<your agent name> ~/ovvi-docs/heavy.sh make build-tests DERIVED_DATA=/tmp/ovvi-dd-<phase>-<track>
+OWNER=<your agent name> ~/ovvi-docs/heavy.sh ~/ovvi-docs/gui-free.sh make e2e PREBUILT=1 \
+    DERIVED_DATA=/tmp/ovvi-dd-<phase>-<track> ONLY=…
 ```
 
-- `gui-free.sh` runs the command only while the screen is unlocked and no one touched a key, the trackpad or a mouse
-  for 5 minutes (or since the last away run ended), and takes the lock for it. When someone touches a device or the
-  screen locks, it stops the run at once. It exits 75 when the user is here, the screen is locked or the lock is held:
-  use the VM or CI, and do not try again in a loop. It reads the devices themselves: a run's synthetic events never
-  count as the user. The screen locks after 10 minutes without input, so away runs happen in short breaks and in a
-  chain of runs; a locked Mac runs nothing.
-- One run per hold, released by the script, also on failure. Never hold the lock while you read results, edit, build
-  or wait for CI. Never remove someone else's lock. A lock older than 10 minutes whose owner is not `user` and whose
-  agent is gone (`agent_list` with `scope: "all"`) is stale: the orchestrator removes it.
+- Build first, so the run itself holds the lock only for the tests. `DERIVED_DATA` must be an absolute path: the
+  script stops the run's test runner and app by that path.
+- `gui-free.sh` starts the run only when the user is away: the screen is unlocked, no app keeps the display on (a
+  video, a call), and the user's last key, click or touch was 5 to 10 minutes ago. After 10 minutes the Mac locks its
+  screen (the company's policy), and a locked Mac runs nothing. A run's own events do not count as the user's input,
+  so runs can follow each other until 10 minutes after the user left; the Mac locks when the run going then ends.
+- During the run, the script reads the keyboard, trackpad and mice themselves. When the user touches one, or the
+  screen locks, it stops the run at once. (Input from Universal Control or Screen Sharing does not stop a run.)
+- It exits 75 when the user is here, the Mac is locked or the lock is held: use the VM or CI, and do not try again in
+  a loop.
+- One run per hold, released by the script, also on failure or when it is killed. Never take the lock by hand, never
+  hold it while you read results, edit or wait for CI, and never remove someone else's lock. A lock whose script is
+  gone is free for the next run.
 - When the user tests on the Mac, the orchestrator holds the lock for them
   (`mkdir /tmp/ovvi-gui.lock && echo user > /tmp/ovvi-gui.lock/owner`; `rm -rf /tmp/ovvi-gui.lock` to
   release). UI tests in the VM go on.

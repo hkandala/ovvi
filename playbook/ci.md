@@ -194,7 +194,8 @@ another login session, with its own pointer, keyboard and screen.
 - **Cost.** 4 cores and 6 GB (`tart set ovvi-test --memory 6144`). The Mac holds all of it while the VM runs, idle too
   (a footprint of 6.3 GB; at 8 GB it was 8.3 GB), so the VM stops 10 minutes after the last run; a run of three UI
   tests left the guest 68% free. A boot takes about 40 s to a working `tart exec`. On a running VM, a run of two
-  short tests takes about 30 s (11 s of tests). The first run on a new clone adds about 30 s of setup. Idle, the VM takes about a quarter of a core.
+  short tests takes about 30 s (11 s of tests). The first run on a new clone adds about 30 s of setup. Idle, the VM
+  takes about a quarter of a core.
 - **Disk.** `ovvi-test` has 100 GB (about 56 GB free): the image's 50 GB left about 4 GB, and a low-space purge
   killed a test runner. To grow it: stop the VM, `tart set ovvi-test --disk-size 100`, boot, and in the guest
   `yes | sudo diskutil repairDisk disk1`, `sudo diskutil eraseVolume free free disk1s3` (the recovery container,

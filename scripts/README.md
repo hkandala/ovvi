@@ -17,7 +17,7 @@ Run them from the repository root. When a Makefile target runs a script, use the
 | Target | Scripts |
 |---|---|
 | `make test` | `check-settings.py`, `check-launches.py` (`--write` rewrites the list), `check-plugin-versions.sh` |
-| `make e2e`, `make vm-e2e` | `e2e.sh`, `e2e-helper.py`, `shard.py` with `test-times.tsv`, `vm-test.sh`, `vm-alerts.py` |
+| `make e2e`, `make vm-e2e` | `e2e.sh`, `e2e-helper.py`, `shard.py` with `test-times.tsv`, `vm-test.sh`, `vm-up.sh`, `vm-alerts.py` |
 | `make icons` | `app-icon.py`, `dev-icon.swift` |
 
 ## Used by other scripts and tests
