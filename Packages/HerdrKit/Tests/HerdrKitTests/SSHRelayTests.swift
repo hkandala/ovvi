@@ -1,5 +1,6 @@
 import Foundation
 @testable import HerdrKit
+import Synchronization
 import Testing
 
 /// An sshd of this user's own on a free port, with its own keys and config, so nothing reads or writes `~/.ssh`.
@@ -60,14 +61,10 @@ private struct TestSSHD {
     }
 }
 
-private func mode(_ path: String) -> Int? {
-    (try? FileManager.default.attributesOfItem(atPath: path))?[.posixPermissions] as? Int
-}
-
 @Test(.enabled("herdr is not on PATH", herdrInstalled), .enabled("under a sandbox", unsandboxed), .enabled("no sshd") {
     FileManager.default.isExecutableFile(atPath: "/usr/sbin/sshd")
 })
-func `a remote machine's requests go over a forwarded socket, after a server restart and a dropped connection too`()
+func `a remote machine's requests go through the relay, after a server restart and a dropped connection too`()
     async throws
 {
     let sshd = try await TestSSHD.start()
@@ -76,44 +73,52 @@ func `a remote machine's requests go over a forwarded socket, after a server res
     try #require(await shell(sessionScript, "up", session) == 0)
     defer { await shell(sessionScript, "down", session) }
     let exec = SSHExec(target: sshd.alias, local: localExec, options: sshd.options, relayTimeout: failureBound)
+    defer { exec.disconnect() }
     let client = HerdrClient(session: session, exec: exec, timeout: failureBound)
     _ = try await client.snapshot()
-    let forwards = await exec.herdrForwards
-    let local = try #require(forwards[session]?.local)
-    #expect(mode(local) == 0o600 && mode(SSHExec.folder) == 0o700)
-    // The app's pid in the name: another Ovvi on the Mac has its own.
-    #expect(local.hasPrefix(exec.socket + "-") && exec.socket.hasSuffix("-\(getpid())"))
+    #expect(await exec.herdrSockets[session] != nil)
 
-    // The forward's file goes while its master lives (a cache cleaner): the next request forwards it again. ssh
-    // answers a second forward of a path it still holds with success and binds nothing.
-    unlink(local)
-    _ = try await client.snapshot()
-    #expect(FileManager.default.fileExists(atPath: local))
-
-    // herdr's server ends and starts again: the same forward reaches the new one.
+    // herdr's server ends and starts again: a request with no answer looks for the socket again.
     try await client.stopSession()
     await #expect(throws: HerdrError.self) { try await client.snapshot() }
+    #expect(await exec.herdrSockets[session] == nil)
     try await client.deleteSession()
     try #require(await shell(sessionScript, "up", session) == 0)
     _ = try await client.snapshot()
 
-    // The master dies and leaves its sockets: a new master forwards again over the stale file.
+    // The master dies: the next request starts a new one, and its relay.
     let dropped = try #require(await exec.connection)
     kill(dropped, SIGKILL)
     #expect(await eventually { kill(dropped, 0) != 0 })
-    #expect(FileManager.default.fileExists(atPath: local))
     _ = try await client.snapshot()
-    let (connection, again) = await (exec.connection, exec.herdrForwards)
-    #expect(connection != dropped && again[session]?.pid == connection)
+    #expect(await exec.connection != dropped)
 
-    exec.disconnect()
-    #expect(!FileManager.default.fileExists(atPath: local))
+    // The events stream comes through the relay: a title arrives from its event.
+    let titled = Mutex(false)
+    let watch = Task {
+        for await update in await client.updates() {
+            if case let .pane(new) = update, new.title?.hasPrefix("relay-title") == true {
+                titled.withLock { $0 = true }
+            }
+        }
+    }
+    defer { watch.cancel() }
+    let pane = try #require(await client.newWorkspace(label: "relay", cwd: "/tmp"))
+    var turn = 0
+    #expect(await eventually {
+        turn += 1
+        // A title now and then, a new one each time: the pane must be in a snapshot first to come in place.
+        if turn % 50 == 1 {
+            try? await client.sendInput("printf '\\033]0;relay-title \(turn)\\007'", keys: ["enter"], pane: pane.id)
+        }
+        return titled.withLock { $0 }
+    })
 }
 
 @Test(.enabled("herdr is not on PATH", herdrInstalled), .enabled("under a sandbox", unsandboxed), .enabled("no sshd") {
     FileManager.default.isExecutableFile(atPath: "/usr/sbin/sshd")
 })
-func `a host that refuses to forward a socket says so`() async throws {
+func `a host that forwards no sockets still answers`() async throws {
     let sshd = try await TestSSHD.start("AllowStreamLocalForwarding no")
     defer { sshd.stop() }
     let session = "ovvi-e2e-\(UUID().uuidString.prefix(6).lowercased())"
@@ -121,7 +126,6 @@ func `a host that refuses to forward a socket says so`() async throws {
     defer { await shell(sessionScript, "down", session) }
     let exec = SSHExec(target: sshd.alias, local: localExec, options: sshd.options, relayTimeout: failureBound)
     defer { exec.disconnect() }
-    let refused = "\(sshd.alias) refuses to forward herdr's socket: Ovvi needs sshd's AllowStreamLocalForwarding"
     let client = HerdrClient(session: session, exec: exec, timeout: failureBound)
-    await #expect(throws: HerdrError.failed(refused)) { try await client.snapshot() }
+    _ = try await client.snapshot()
 }

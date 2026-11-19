@@ -78,8 +78,7 @@ public final class ProcessExec: Exec {
         }
     }
 
-    /// As a remote machine's forward: a connect that fails (herdr restarted, the session went) asks herdr for the
-    /// path again and tries once more.
+    /// A connect that fails (herdr restarted, the session went) asks herdr for the path again and tries once more.
     public func api(_ session: String) async throws -> Channel {
         let path = try await socket(session)
         if let channel = try? UnixSocket.connect(path) {

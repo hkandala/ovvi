@@ -25,12 +25,11 @@ extension Exec {
     }
 }
 
-/// A connection to a Unix socket in the app, as a `Channel`: herdr's API socket, or the local socket ssh forwards to a
-/// remote machine's. herdr answers one request per connection and then closes it; `events.subscribe` keeps it open.
+/// A connection to herdr's API socket on This Mac, as a `Channel`. herdr answers one request per connection and then
+/// closes it; `events.subscribe` keeps it open.
 enum UnixSocket {
-    /// `name`: what the errors call it.
-    static func connect(_ path: String, as name: String? = nil) throws -> Channel {
-        let name = name ?? "herdr's socket \(path)"
+    static func connect(_ path: String) throws -> Channel {
+        let name = "herdr's socket \(path)"
         let handle = socket(AF_UNIX, SOCK_STREAM, 0)
         guard handle >= 0 else { throw failure(name, errno) }
         var address = sockaddr_un()
@@ -132,8 +131,7 @@ enum UnixSocket {
     }
 
     /// Nil once all is sent or the other end has closed (the reading ends then, with what that end said), else why
-    /// not. ssh closes a forwarded connection that the machine refused, often before the request is sent. No caller
-    /// writes after its own `closeInput`, which would fail the same way.
+    /// not. No caller writes after its own `closeInput`, which would fail the same way.
     private static func send(_ bytes: [UInt8], _ handle: Int32) -> String? {
         var sent = 0
         while sent < bytes.count {

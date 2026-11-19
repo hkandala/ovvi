@@ -27,9 +27,8 @@ public actor SSHExec: Exec {
     var dynamic: (port: UInt16, pid: pid_t)?
     var forwarding: Task<UInt16, Error>?
     var ending: Task<Void, Never>?
-    /// By session: the local socket ssh forwards to herdr's on the machine, on the master with `pid`.
-    var herdrForwards: [String: Forward] = [:]
-    var herdrForwarding: [String: Task<String, Error>] = [:]
+    /// herdr's socket on the machine by session, until a request finds none there.
+    var herdrSockets: [String: String] = [:]
 
     public init(target: String, local: ProcessExec, options: [String] = [], relayTimeout: Duration = .seconds(10)) {
         self.target = target
@@ -50,6 +49,51 @@ public actor SSHExec: Exec {
     public static func isValidTarget(_ target: String) -> Bool {
         !target.isEmpty && !target.hasPrefix("-") && !target.contains(where: \.isWhitespace)
     }
+
+    /// Each request is a run on the relay that joins herdr's socket on the machine: one round trip on the session
+    /// already open, where a forwarded socket (`ssh -O forward`) would open a channel per request and answer about
+    /// 200 ms later even on a fast link, and would need sshd's AllowStreamLocalForwarding.
+    public func api(_ session: String) async throws -> Channel {
+        let path: String
+        if let known = herdrSockets[session] {
+            path = known
+        } else {
+            path = try await herdrSocket(session)
+            herdrSockets[session] = path
+        }
+        let channel = try await run(["perl", "-e", Self.bridge, path])
+        // Only a request with no answer asks for the exit: the socket may have moved (herdr's server started again).
+        return Channel(lines: channel.lines, write: channel.write, closeInput: channel.closeInput,
+                       terminate: channel.terminate,
+                       exit: { [self] in
+                           await forgetSocket(session)
+                           return await channel.exit()
+                       })
+    }
+
+    private func forgetSocket(_ session: String) {
+        herdrSockets[session] = nil
+    }
+
+    /// Lines in, lines out, until herdr closes its end. A socket it cannot join ends it at once, quietly: the same
+    /// "no answer" as a herdr that closed the connection.
+    static let bridge = #"""
+    use strict; use warnings; use IO::Select; use IO::Socket::UNIX;
+    my $s = IO::Socket::UNIX->new(Type => SOCK_STREAM(), Peer => $ARGV[0]) or exit 0;
+    sub put {
+        my ($fh, $data) = @_;
+        while (length $data) { my $n = syswrite($fh, $data); exit 0 unless $n; substr($data, 0, $n) = '' }
+    }
+    my $select = IO::Select->new(\*STDIN, $s);
+    while (my @ready = $select->can_read) {
+        for my $fh (@ready) {
+            my $n = sysread($fh, my $chunk, 65536);
+            if ($fh == $s) { exit 0 unless $n; put(\*STDOUT, $chunk) }
+            elsif ($n) { put($s, $chunk) }
+            else { $select->remove($fh); shutdown($s, 1) }
+        }
+    }
+    """#
 
     public func run(_ argv: [String]) async throws -> Channel {
         try await up(nil)
@@ -136,13 +180,6 @@ public actor SSHExec: Exec {
         process.arguments = ["-F", "/dev/null", "-S", socket, "-O", "exit", "--", target]
         process.standardError = FileHandle.nullDevice
         try? process.run()
-        // ssh leaves its forwards' socket files.
-        let prefix = (socket as NSString).lastPathComponent + "-"
-        for name in (try? FileManager.default.contentsOfDirectory(atPath: Self.folder)) ?? []
-            where name.hasPrefix(prefix)
-        {
-            unlink(Self.folder + "/" + name)
-        }
     }
 
     func up(_ ask: Ask?) async throws {
@@ -183,7 +220,7 @@ public actor SSHExec: Exec {
         var argv = ["sh", "-c", #"exec "$@" 2>&1"#, "sh", "/usr/bin/ssh", "-M", "-N", "-f",
                     "-o", "ControlPersist=10m", "-o", "ServerAliveInterval=5", "-o", "ServerAliveCountMax=3",
                     "-o", "ConnectTimeout=10", "-o", "Compression=yes", "-o", "ForwardAgent=no", "-o", "ForwardX11=no",
-                    "-o", "ClearAllForwardings=yes", "-o", "StreamLocalBindMask=0177", "-o", "LogLevel=ERROR"]
+                    "-o", "ClearAllForwardings=yes", "-o", "LogLevel=ERROR"]
         var environment = environment
         if ask == nil {
             argv += ["-o", "BatchMode=yes"]

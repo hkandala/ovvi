@@ -8,8 +8,8 @@ public protocol Exec: Sendable {
     /// Each writer goes through its own temporary file, then a rename; last writer wins. Only the user can read it.
     func write(home path: String, _ line: String) async
     func remove(home path: String) async
-    /// A connection to the session's herdr API socket: the machine's own on This Mac, a local one that ssh forwards
-    /// to it on a remote machine. Every herdr request and the events stream go through one.
+    /// A connection to the session's herdr API socket: the socket itself on This Mac, a relay run joined to it on a
+    /// remote machine. Every herdr request and the events stream go through one.
     func api(_ session: String) async throws -> Channel
     var isRemote: Bool { get }
 }
