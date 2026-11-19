@@ -91,7 +91,7 @@ struct AgentsSection: View {
             if !archived {
                 headerButton("archivebox", ink: 12, "Archived Sessions", id: "agents.archive") { show(archived: true) }
             }
-            headerButton("xmark", ink: 10, "Close", id: "agents.close", action: close)
+            headerButton("chevron.down", ink: 12, "Close", id: "agents.close", action: close)
         }
         .font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary).lineLimit(1)
         .frame(height: 22)

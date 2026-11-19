@@ -87,7 +87,7 @@ struct CommandList {
                         }
                     }),
             Command(section: .close, title: "Detach Session", key: .hotkey("session.detach"),
-                    group: .sessions, symbol: "rectangle.stack.badge.minus", enabled: pages?.canDetach == true,
+                    group: .sessions, symbol: "minus.circle", enabled: pages?.canDetach == true,
                     action: {
                         if let pages, let page = pages.current {
                             pages.close(page)
