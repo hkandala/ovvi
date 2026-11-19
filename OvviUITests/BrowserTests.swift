@@ -51,7 +51,8 @@ extension OvviUITests {
         element("terminal.\(left)").click()
         XCTAssertTrue(hasKeyboard("terminal.\(left)"))
         let (browser, made) = try await chooseBrowser(besides: left, in: tab)
-        try await waitFor(browser) { $0.contains("Browser") && $0.contains("Shown in Ovvi") }
+        // One fixed line: no name, no address.
+        try await waitFor(browser) { $0.contains("Shown in Ovvi") && !$0.contains("Browser") }
         XCTAssertTrue(element("browser.\(browser).empty").exists)
         keepScreenshot("browser card, empty")
 
@@ -60,8 +61,6 @@ extension OvviUITests {
         XCTAssertTrue(pageText("ovvi-page-one").exists(within: 5))
         XCTAssertTrue(element("browser.\(browser).icon").has(\.stringValue, "page", within: 5))
         try await expect("the typed address in the label") { try await paneLabel(browser) == "\(made) \(page)" }
-        let short = page.replacing("file://", with: "")
-        try await waitFor(browser) { $0.contains(short) && !$0.contains("file:") }
         keepScreenshot("browser card")
         app.webViews.buttons["Pop"].click()
         let popup = element("browser.\(browser).popup")

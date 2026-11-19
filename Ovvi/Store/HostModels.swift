@@ -78,7 +78,6 @@ extension HostStore {
         @ObservationIgnored var placed: Int?
         @ObservationIgnored var rechecked: String?
         @ObservationIgnored var remade = false
-        @ObservationIgnored var drawnLabel: String?
         @ObservationIgnored var asked = false
         @ObservationIgnored var asks = 0
         /// A shell's startup runs short-lived programs (`gh auth token`, `brew shellenv` in a .zshrc): no ask in a new

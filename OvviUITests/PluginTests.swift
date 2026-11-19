@@ -22,7 +22,7 @@ extension OvviUITests {
         XCTAssertTrue(diffLabel.hasPrefix("ovvi:git#") && diffLabel.hasSuffix(" \(root)/"), diffLabel)
         XCTAssertTrue(element("git.\(diff).card").exists(within: 3))
         XCTAssertTrue(element("pane.\(diff).title").has(\.stringValue, "ovvi-e2e-plugins", within: 3))
-        try await waitFor(diff) { $0.contains("Git") && $0.contains("Shown in Ovvi") }
+        try await waitFor(diff) { $0.contains("Shown in Ovvi") }
 
         element("terminal.\(left)").click()
         openPalette()
@@ -53,7 +53,7 @@ extension OvviUITests {
         let tab: String = try field(layout?["tab_id"], "layout's tab")
         let pane: String = try field((layout?["root"] as? [String: Any])?["pane_id"], "layout's pane")
         closeAfter("tab", tab)
-        try await waitFor(pane) { $0.contains("File Explorer") && $0.contains("Shown in Ovvi") }
+        try await waitFor(pane) { $0.contains("Shown in Ovvi") }
         let names = try await foreground(pane)
         XCTAssertTrue(names.contains("cat"), "\(names)")
 
@@ -103,7 +103,7 @@ extension OvviUITests {
             return card?["pane_id"] as? String
         }
         closeAfter("pane", made, in: five)
-        try await waitFor(made, in: five) { $0.contains("File Explorer") && $0.contains("Shown in Ovvi") }
+        try await waitFor(made, in: five) { $0.contains("Shown in Ovvi") }
     }
 
     private func fileCards(in repo: String, root: String) async throws {

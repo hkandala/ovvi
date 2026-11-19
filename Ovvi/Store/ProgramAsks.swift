@@ -37,7 +37,6 @@ extension HostStore {
             pane.program = nil
             pane.asked = false
             pane.asks += 1 // drops the replaced terminal's answer still in flight
-            pane.drawnLabel = new.label
         }
         let word = { (title: String?) in title?.split(separator: " ").first }
         if pane.asked,
