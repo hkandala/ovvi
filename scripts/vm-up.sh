@@ -1,12 +1,7 @@
 # Sourced by vm-test.sh and docs-pictures.sh, under the VM lock, with $vm and $locks set.
 # vm_up: boots the VM, or keeps the running one, with this Mac's Xcode and the runs folder shared (ovvi-tart keeps the
-# shares for its later starts). A boot takes the guest's whole memory from this Mac: not while macOS reports memory
-# pressure. Exit 75 sends the caller's tests to CI.
+# shares for its later starts). Exit 75 sends the caller's tests to CI.
 vm_up() {
-    if ! tart list --source local --format json | jq -e --arg vm "$vm" '.[] | select(.Name == $vm and .Running)' \
-        >/dev/null && (($(sysctl -n kern.memorystatus_vm_pressure_level || echo 4) > 1)); then
-        echo "this Mac is short of memory: the VM does not start; run the tests on CI (ci.md)" >&2; exit 75
-    fi
     plugins/extra/tart-vm/bin/ovvi-tart start "$vm" "--dir=xcode:$(dirname "$(dirname "$(xcode-select -p)")"):ro" \
         --dir=runs:/tmp/ovvi-vm/runs >/dev/null ||
         { echo "$vm did not start (after \"exceeds the system limit\", only a reboot of the Mac helps): use CI" >&2

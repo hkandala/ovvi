@@ -274,7 +274,8 @@ Problems that came back, and the rule that stops each. How we work is in
   on a file open that waited in the kernel's EndpointSecurity layer for the security tools, which check every open;
   the restarted WindowServer waited there too, and the watchdog panicked the Mac. Those tools answer late on this Mac
   often, and likely later still after a day of swap (an 8 GB VM idle for hours, browsers, ~20 agents). Stop what holds
-  memory idle (the VM stops by itself) and leave room: a second heavy job runs only at normal memory pressure.
+  memory idle (the VM stops by itself after 10 minutes) and leave room: a second heavy job runs only at normal memory
+  pressure.
 - **A track never removes a visible feature without the user's words.** A sidebar track took out the page dots
   because its new session list "named the sessions", and the user asked at once where they went. When a change seems
   to make something visible redundant, keep it and ask the orchestrator; only the user's words remove it.

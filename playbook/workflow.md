@@ -121,8 +121,7 @@ OWNER=<your agent name> make vm-e2e DERIVED_DATA=/tmp/ovvi-dd-<phase>-<track> ON
   deletes the lock file, and two holders can follow), and never a lockf that waits or a loop that tries again: that
   is a queue. The user watches a run in the VM's card with **Watch Only** on.
 - The VM holds all its memory while it runs, idle too, so it stops by itself 10 minutes after the last run; the next
-  run boots it again (about 40 s). A run does not boot it while the Mac reports memory pressure: it stops with "short
-  of memory" (exit 75): use CI. Never stop the VM by hand while another holds its lock.
+  run boots it again (about 40 s). Never stop the VM by hand while another holds its lock.
 - Never run the same tests again without a code change, in the VM or on CI.
 - Agents read a run from its xcresult (attachments and recordings) and take the VM's screen with
   `tart exec ovvi-test screencapture -x '/Volumes/My Shared Files/runs/…'`. The VM's pane (New pane ▸ Tart VM, the
