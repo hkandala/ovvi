@@ -43,6 +43,27 @@ extension OvviUITests {
         XCTAssertFalse(row(pane, "user", "later").exists)
     }
 
+    /// pi's turn ended, but it waits on its agents and a background job (pi-herd, pi-bash-bg), which herdr hears as
+    /// working: the chat says so in place of Working, keeps Send, and Esc stops nothing.
+    func testAPiChatWaitingOnItsAgentsKeepsSend() async throws {
+        let pane = try await startChat(agent: 2).pane
+        try await say("agents", in: pane)
+        let waiting = element("chat.\(pane).waiting")
+        XCTAssertTrue(waiting.has(\.stringValue, "Waiting on 2 agents and 1 background job", within: 5))
+        XCTAssertEqual(element("pane.\(pane).state").stringValue, "Working")
+        XCTAssertTrue(element("chat.\(pane).send").exists)
+        XCTAssertFalse(element("chat.\(pane).stop").exists)
+        app.typeKey(.escape, modifierFlags: [])
+        try await say("slow", in: pane)
+        XCTAssertTrue(waiting.vanishes(within: 5))
+        let stop = element("chat.\(pane).stop")
+        XCTAssertTrue(stop.exists(within: 5))
+        let screen = try await read(pane)
+        XCTAssertFalse(screen.contains("Escape pressed"))
+        stop.click()
+        XCTAssertTrue(row(pane, "note", "Interrupted").exists(within: 5))
+    }
+
     /// Its process lists no arguments, as npm's pi, whose process title overwrites them. Its session comes 8 s late:
     /// the message typed meanwhile waits for it, never "Not sent".
     func testAPiRunListsEveryKindOfTool() async throws {

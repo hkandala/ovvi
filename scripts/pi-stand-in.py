@@ -5,7 +5,8 @@ Started by the chooser with Ovvi's flags (`-e <pi-ovvi-<sha8>.ts> --ovvi <state 
 file whole (its sha256 starts with the name's sha8), writes the state lines pi-ovvi writes and a session file in pi's
 format, reports its state to herdr and answers prompts on its terminal: "wait" opens a dialog until 1 is typed, "slow"
 works until Esc and takes a message sent meanwhile after its tool, as pi steers, "/tree" moves the leaf back before
-the last user message, "tools" runs every kind of tool, a prompt of OVVI_STAND_IN_SCENE's turns plays that turn
+the last user message, "tools" runs every kind of tool, "agents" ends its turn waiting on 2 agents and 1 background
+job (herdr still hears working) until the next prompt, a prompt of OVVI_STAND_IN_SCENE's turns plays that turn
 (scripts/welcome-scene/scene.py), anything else gets one command and the reply "Echo: <prompt>".
 OVVI_STAND_IN_LATE=<s>: its state's session line comes that late, as a remote machine's can.
 """
@@ -105,6 +106,20 @@ def prompt(text):
         assistant([{"type": "text", "text": "Allowed."}], "stop")
     elif text == "tools":
         tools()
+    elif text == "agents":
+        # pi-herd's wait: the turn ends and pi-ovvi says what it waits on while herdr hears working. The next line
+        # typed is the next prompt; an Esc meanwhile would stop the wait.
+        assistant([{"type": "text", "text": "Waiting on agents."}], "stop")
+        say("Waiting on agents.")
+        line(state, {"type": "waiting", "agents": 2, "jobs": 1})
+        typed = ""
+        while "\r" not in typed:
+            data = key()
+            if "\x1b" in data:
+                say("Escape pressed")
+            typed += data.replace("\x1b", "")
+        line(state, {"type": "waiting", "agents": 0, "jobs": 0})
+        return prompt(typed.split("\r")[0].strip())
     elif text == "slow":
         call = "toolu_" + uuid.uuid4().hex[:12]
         assistant([{"type": "toolCall", "id": call, "name": "bash", "arguments": {"command": "sleep 30"}}], "toolUse")

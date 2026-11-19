@@ -34,6 +34,8 @@ final class Chat {
     /// nothing followed for a while.
     var current: Bool
     var question: ChatQuestion?
+    /// pi's own word (pi-ovvi) that its turn is over and only its agents or background jobs keep herdr's working.
+    var waiting: String?
     var problem: String?
     var outgoing: [Outgoing] = []
     var draft = ""
@@ -62,6 +64,11 @@ final class Chat {
     /// herdr's, for every agent: nil while herdr lists no agent in the pane (one starting, or gone).
     var state: AgentState? {
         store?.pane(paneID)?.state
+    }
+
+    /// Working, and not only waiting: what Stop and Esc stop.
+    var busy: Bool {
+        state == .working && waiting == nil
     }
 
     var live: Bool {
@@ -184,7 +191,7 @@ final class Chat {
     }
 
     func stop() {
-        guard state == .working, let client = store?.client else { return }
+        guard busy, let client = store?.client else { return }
         let keys = type(of: adapter).stopKeys, paneID = paneID
         Task { try? await client.sendKeys(keys, pane: paneID) }
     }

@@ -14,10 +14,23 @@ export default function (pi) {
 			appendFileSync(file, JSON.stringify(line) + "\n", { mode: 0o600 });
 		} catch {}
 	};
+	// What still wakes pi after its turn, as pi-herd (its agents' watches) and pi-bash-bg (its background jobs)
+	// count it: 0 while pi works. Ovvi's chat says "Waiting on …" then, not Working.
+	const waiting = { agents: 0, jobs: 0 };
+	const wait = (kind) => (data) => {
+		const count = data?.waiting ?? 0;
+		if (count === waiting[kind]) return;
+		waiting[kind] = count;
+		write({ type: "waiting", ...waiting });
+	};
+	pi.events.on("herd:update", wait("agents"));
+	pi.events.on("bash-bg:update", wait("jobs"));
 	pi.on("session_start", (_event, ctx) => {
 		ui = ctx.mode === "tui";
 		path = ctx.sessionManager.getSessionFile();
 		write({ type: "session", path });
+		// A count that came ahead of this (another extension's session_start ran first) was not written.
+		if (waiting.agents || waiting.jobs) write({ type: "waiting", ...waiting });
 	});
 	// /tree writes nothing to the transcript: the new leaf, and the transcript's size at the move (entries after it
 	// grow from that leaf).

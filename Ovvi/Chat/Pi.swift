@@ -78,6 +78,13 @@ struct PiAgent: ChatAdapter {
         await chat.followSessions(Self.state(token), on: exec, late: true, parser: parser) { read($0, chat) }
     }
 
+    /// pi-working's words, as its prompt box says them.
+    static func waiting(_ agents: Int, _ jobs: Int) -> String? {
+        let parts = [(agents, "agent"), (jobs, "background job")].filter { $0.0 > 0 }
+            .map { "\($0.0) \($0.1)\($0.0 == 1 ? "" : "s")" }
+        return parts.isEmpty ? nil : "Waiting on " + parts.joined(separator: " and ")
+    }
+
     @MainActor private func read(_ object: [String: Any], _ chat: Chat) -> String? {
         switch object["type"] as? String {
         case "session":
@@ -88,6 +95,13 @@ struct PiAgent: ChatAdapter {
             return source
         case "tree":
             chat.change { kept.transcript.tree(object["leaf"] as? String, at: object["at"] as? Int ?? 0, into: &$0) }
+            return nil
+        case "waiting":
+            let waiting = Self.waiting(object["agents"] as? Int ?? 0, object["jobs"] as? Int ?? 0)
+            // Only a change: Observation reports equal writes too.
+            if chat.waiting != waiting {
+                chat.waiting = waiting
+            }
             return nil
         default: return nil
         }

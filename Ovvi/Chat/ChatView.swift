@@ -97,7 +97,7 @@ struct Composer: View {
     static let inset: CGFloat = 18
 
     var body: some View {
-        let working = chat.state == .working
+        let working = chat.busy
         return VStack(alignment: .leading, spacing: 2) {
             TextField(placeholder ?? "Ask Anything", text: $chat.draft, axis: .vertical)
                 .textFieldStyle(.plain)

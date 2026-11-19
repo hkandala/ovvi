@@ -192,7 +192,10 @@ struct ChatMessages: View, Equatable {
                         ForEach(chat.outgoing) { message in
                             outgoing(message, error: error)
                         }
-                        if chat.state == .working {
+                        if let waiting = chat.waiting, chat.state == .working {
+                            Text(waiting).font(.system(size: 12)).foregroundStyle(.secondary).readableText(waiting)
+                                .accessibilityIdentifier("chat.\(chat.paneID).waiting")
+                        } else if chat.state == .working {
                             // Not the last turn's, interrupted, while the next message is on its way.
                             WorkingRow(since: chat.outgoing.isEmpty ? chat.history.turnStart : nil)
                         }

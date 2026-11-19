@@ -157,6 +157,10 @@ command there without Return. Press Return in the TUI to run it.
 While the agent works and the reply box is empty, Send becomes Stop. Click Stop, or press Esc, to stop the turn.
 Ovvi sends the agent its own stop key, never ⌃C.
 
+Pi can end its turn and still wait on the agents or the background jobs that it started. When an extension of pi
+reports this, the chat shows what pi waits on, for example "Waiting on 2 agents", in place of Working. The reply box
+keeps Send, and Esc stops nothing.
+
 ### Answer the agent
 
 When the agent asks something that the chat can answer, and herdr reports that the agent needs you, a question card
