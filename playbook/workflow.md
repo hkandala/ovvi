@@ -117,8 +117,9 @@ OWNER=<your agent name> make vm-e2e DERIVED_DATA=/tmp/ovvi-dd-<phase>-<track> ON
   takes it for the run, and stops at once with "the VM is busy" while another holds it. The kernel frees it when the
   run ends, also when it is killed. One VM only: never start a second one for tests.
 - Anything else you do in the VM that clicks, types or opens apps takes the lock too:
-  `lockf -k -t 0 ~/.config/ovvi-tart/locks/ovvi-test.lock tart exec ovvi-test …`. The user watches a run in the VM's
-  card with **Watch Only** on.
+  `lockf -k -t 0 ~/.config/ovvi-tart/locks/ovvi-test.lock tart exec ovvi-test …`. Always `-k` (without it, lockf
+  deletes the lock file, and two holders can follow), and never a lockf that waits or a loop that tries again: that
+  is a queue. The user watches a run in the VM's card with **Watch Only** on.
 - The VM holds all its memory while it runs, idle too, so it stops by itself 10 minutes after the last run; the next
   run boots it again (about 40 s). A run does not boot it while the Mac reports memory pressure: it stops with "short
   of memory" (exit 75): use CI. Never stop the VM by hand while another holds its lock.
