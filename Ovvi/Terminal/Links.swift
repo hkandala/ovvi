@@ -28,7 +28,7 @@ enum Links {
     private static func openFile(_ link: TerminalLink, how: Opening, from terminalID: String, page: Page) async {
         let store = page.store
         let path = link.target.hasPrefix("file:") ? URL(string: link.target)?.path ?? "" : link.target
-        let cwd = store.terminalPane(terminalID)?.cwd ?? "/"
+        let cwd = await store.folder(of: store.terminalPane(terminalID)) ?? "/"
         guard let found = await store.there(path, from: cwd) else {
             return store
                 .notFound(path.hasPrefix("/") || path.hasPrefix("~") ? path : MachinePath.tidy("\(cwd)/\(path)"))

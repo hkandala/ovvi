@@ -38,11 +38,12 @@ extension Page {
     func openGit(_ source: String) {
         let how = Self.how, source = source.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !source.isEmpty else { return }
-        Task { await openAsCLI("git", [keyboardPane?.cwd ?? "", source], how) }
+        Task { await openAsCLI("git", [".", source], how) }
     }
 
     func resolve(_ text: String) async -> String? {
-        await store.there(text.trimmingCharacters(in: .whitespacesAndNewlines), from: keyboardPane?.cwd ?? "")
+        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return await store.there(text, from: store.folder(of: keyboardPane) ?? "")
     }
 
     private static var how: Opening {
@@ -51,7 +52,8 @@ extension Page {
 
     private func openAsCLI(_ first: String, _ words: [String], _ how: Opening) async {
         let pane = keyboardPane
-        let call = AgentCall(store: store, pane: pane?.id ?? "", cwd: pane?.cwd ?? "/", id: "", args: [])
+        let cwd = await store.folder(of: pane) ?? "/"
+        let call = AgentCall(store: store, pane: pane?.id ?? "", cwd: cwd, id: "", args: [])
         do {
             let (plugin, arg) = try await call.opening(first, words)
             await open(plugin, arg: arg, from: pane?.terminalID ?? "", how: how)

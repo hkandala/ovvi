@@ -2,12 +2,14 @@ import Foundation
 import HerdrKit
 
 extension HostStore {
-    /// A `cd` sends no herdr event, so the snapshot's cwd may be stale.
+    /// A `cd` sends no herdr event, so the snapshot's cwd may be stale: herdr's own, else the snapshot's.
+    func folder(of pane: Pane?) async -> String? {
+        guard let pane else { return nil }
+        return await (try? client?.pane(pane.id))?.cwd ?? pane.cwd
+    }
+
     func newTab(in workspaceID: String, cwd: String?, of paneID: String?) async -> HerdrKit.Pane? {
-        var cwd = cwd
-        if let paneID, let fresh = try? await client?.pane(paneID).cwd {
-            cwd = fresh
-        }
+        let cwd = await folder(of: paneID.flatMap { pane($0) }) ?? cwd
         var created: HerdrKit.Pane?
         await write { created = try await $0.newTab(workspace: workspaceID, cwd: cwd ?? "~") }
         return created
