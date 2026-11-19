@@ -177,11 +177,12 @@ public actor SSHExec: Exec {
         // (sshd allows 10); it ends by itself 10 min after its last one.
         unlink(socket)
         // Forwarding off: a machine cannot reach the Mac's agent or ports through the long-lived connection.
-        // ssh's keepalive ends a dead link's master within 15 s; the next run starts a new one. LogLevel=ERROR:
+        // ssh's keepalive ends a dead link's master within 15 s; the next run starts a new one. Compression: snapshots,
+        // events and terminal frames are repetitive JSON, 15–25 times smaller compressed. LogLevel=ERROR:
         // a failure shows ssh's own error, not the server's login banner or ssh's notices (both INFO).
         var argv = ["sh", "-c", #"exec "$@" 2>&1"#, "sh", "/usr/bin/ssh", "-M", "-N", "-f",
                     "-o", "ControlPersist=10m", "-o", "ServerAliveInterval=5", "-o", "ServerAliveCountMax=3",
-                    "-o", "ConnectTimeout=10", "-o", "ForwardAgent=no", "-o", "ForwardX11=no",
+                    "-o", "ConnectTimeout=10", "-o", "Compression=yes", "-o", "ForwardAgent=no", "-o", "ForwardX11=no",
                     "-o", "ClearAllForwardings=yes", "-o", "StreamLocalBindMask=0177", "-o", "LogLevel=ERROR"]
         var environment = environment
         if ask == nil {
