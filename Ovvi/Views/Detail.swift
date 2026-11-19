@@ -210,6 +210,9 @@ private struct TabPages: View {
     let current: Bool
     let overview: Bool
     @State private var shown: [String] = []
+    /// The size a hidden page lays out at: the page's, once it stops changing (none: the page's at once).
+    @State private var settled: CGSize?
+    @State private var settling: Task<Void, Never>?
     /// ponytail: a constant count; a kept page costs its cards' updates while hidden. Bound by the cards' cost if a
     /// session of heavy tabs needs more.
     static let kept = 8
@@ -226,17 +229,39 @@ private struct TabPages: View {
             current && recent.contains(tab.id) || page.store.panes(in: tab.id).contains(where: page.keepsChat)
         }
         // In an order no switch, drop or move changes: a moved page would host its cards' views again.
-        ZStack {
+        ZStack(alignment: .topLeading) {
             ForEach(all.filter(made).sorted { $0.id < $1.id }) { kept in
                 let shows = current && kept === tab && !overview
-                TabPage(tab: kept, page: page)
+                // A hidden page follows a slide or a resize in one step, once it ends: at each frame its cards would
+                // lay out again, every kept chat's rows too (most of a sidebar slide's main thread).
+                Still(size: shows ? nil : settled) { TabPage(tab: kept, page: page) }
+                    .transaction {
+                        if !shows {
+                            $0.animation = nil
+                        }
+                    }
                     .opacity(shows ? 1 : 0)
                     .allowsHitTesting(shows)
                     .environment(\.pageHidden, !shows)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onGeometryChange(for: CGSize.self, of: \.size) { size in SettlingHost.settle(&settling) { settled = size } }
         // Away from the window's page, only kept chats' tabs stay; back on it, its tab, as for a page made again.
         .onChange(of: current ? tab?.id : nil, initial: true) { shown = current ? Array(recent) : [] }
+    }
+}
+
+/// Lays its view out at `size` when it has one, and takes the offer itself.
+private struct Still: Layout {
+    let size: CGSize?
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) -> CGSize {
+        size == nil ? subviews.first?.sizeThatFits(proposal) ?? .zero : proposal.replacingUnspecifiedDimensions()
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
+        subviews.first?.place(at: bounds.origin, proposal: size.map { ProposedViewSize($0) } ?? proposal)
     }
 }
 

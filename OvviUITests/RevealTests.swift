@@ -132,6 +132,26 @@ extension OvviUITests {
         XCTAssertGreaterThan(sampled, 0, "no motion sampled while it ran")
     }
 
+    /// At each frame of a slide, every kept page's cards laid out again: a hidden tab's card takes it in one step.
+    func testAHiddenTabTakesTheSidebarsSlideInOneStep() async throws {
+        relaunch(one, ["-recordMotion", "YES", "-forceMotion", "YES"])
+        let host = element("host.w1:p4"), sidebar = element("titlebar.sidebar")
+        XCTAssertTrue(element("tab.w1:t2").exists(within: connect))
+        element("tab.w1:t2").click()
+        XCTAssertTrue(host.exists(within: 5))
+        let sizes = Self.sizes(host)
+        element("tab.w1:t1").click()
+        XCTAssertTrue(host.vanishes(within: 3))
+        for _ in 0 ..< 2 {
+            sidebar.click()
+            // The slide, its settling and the hidden page's.
+            try await Task.sleep(for: .seconds(1))
+        }
+        element("tab.w1:t2").click()
+        XCTAssertTrue(host.exists(within: 3))
+        XCTAssertLessThanOrEqual(Self.sizes(host) - sizes, 2, host.label)
+    }
+
     private func motionSteps(_ pane: String, in tab: String) -> [(String, () async throws -> Void)] {
         [
             ("split left", { self.paneMenu(pane, "Split Left") }),
