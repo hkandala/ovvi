@@ -346,7 +346,8 @@ extension HostStore {
         KnownSessions.keep(listed, of: machine)
     }
 
-    /// A title from herdr's event (`Update.pane`): what a snapshot with it would change.
+    /// A title or tokens from herdr's event (`Update.pane`): what a snapshot with them would change. Only a new
+    /// terminal reads the tokens (`restore`), and `ask` already took a ring.
     func retitled(_ new: HerdrKit.Pane) {
         last?.update(new)
         if let pane = pane(new.id) {

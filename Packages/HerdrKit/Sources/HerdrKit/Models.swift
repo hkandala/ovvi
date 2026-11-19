@@ -83,7 +83,7 @@ public struct Pane: Decodable, Equatable, Sendable, Identifiable {
     /// The agent's status; `unknown` until herdr read it from the agent's screen.
     public let agentStatus: AgentStatus?
     public let agentSession: AgentSession?
-    let tokens: Tokens?
+    var tokens: Tokens?
     /// Set when herdr brings the pane back from its saved session without a program: its saved folder is gone.
     public let restoreError: String?
     /// Read only to tell a title change from other changes (`HerdrClient`): herdr's one focused pane, and the name a

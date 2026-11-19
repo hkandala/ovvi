@@ -8,7 +8,7 @@ public enum Update: Sendable {
     case snapshot(Snapshot)
     case error(HerdrError)
     case request(id: String, pane: String)
-    /// A pane whose title alone changed, from herdr's event instead of a snapshot read.
+    /// A pane whose title or tokens alone changed, from herdr's event instead of a snapshot read.
     case pane(Pane)
 }
 
@@ -229,7 +229,7 @@ public actor HerdrClient {
                     // events_lost, pane_not_found: start over.
                     guard message?.error == nil else { break }
                     ask(message?.data?.ring?.tokens?[Tokens.request], message?.data?.ring?.paneID)
-                    if let pane = message?.data?.pane, message?.event == "pane_updated", titleOnly(pane) {
+                    if let pane = message?.data?.pane, message?.event == "pane_updated", inPlace(pane) {
                         continue
                     }
                     // The first line too: subscription_started means catch up on what came ahead of it.
@@ -244,21 +244,22 @@ public actor HerdrClient {
         }
     }
 
-    /// A working agent retitles its terminal on and on: that change comes from the event itself, not from a 280 KB
-    /// snapshot read.
-    private func titleOnly(_ pane: Pane) -> Bool {
+    /// A working agent retitles its terminal on and on, and each `ovvi` command rings with a token that expires 3 s
+    /// later: those changes come from the event itself, not from a 280 KB snapshot read.
+    private func inPlace(_ pane: Pane) -> Bool {
         guard let old = known[pane.id] else { return false }
         // Older than what a read brought since.
         if let new = pane.revision, let had = old.revision, new <= had {
             return true
         }
-        var titled = old
-        titled.title = pane.title
-        titled.revision = pane.revision
-        guard titled == pane else { return false }
+        var same = old
+        same.title = pane.title
+        same.tokens = pane.tokens
+        same.revision = pane.revision
+        guard same == pane else { return false }
         known[pane.id] = pane
         arrived[pane.id] = pane
-        if pane.title != old.title {
+        if pane.title != old.title || pane.tokens != old.tokens {
             out?.yield(.pane(pane))
         }
         return true

@@ -1,9 +1,11 @@
 @testable import HerdrKit
 import Testing
 
-private func pane(title: String, cwd: String = "/tmp", tokens: String = "{}", revision: Int = 3) -> String {
+private func pane(title: String, cwd: String = "/tmp", tokens: String = "{}", status: String = "working",
+                  revision: Int = 3) -> String
+{
     #"{"pane_id":"w1:p1","tab_id":"w1:t1","terminal_id":"term_1","cwd":"\#(cwd)","focused":true,"#
-        + #""terminal_title_stripped":"\#(title)","agent_status":"working","tokens":\#(tokens),"#
+        + #""terminal_title_stripped":"\#(title)","agent_status":"\#(status)","tokens":\#(tokens),"#
         + #""revision":\#(revision)}"#
 }
 
@@ -12,7 +14,7 @@ private func updated(_ pane: String) -> String {
 }
 
 @Test(.timeLimit(.minutes(1)))
-func `a title alone comes from its event; any other change of the pane reads a snapshot`() async throws {
+func `a title or a token alone comes from its event; any other change reads a snapshot`() async throws {
     let exec = FakeExec()
     exec.state.withLock { $0.panes = [pane(title: "claude a")] }
     let client = client(exec)
@@ -36,8 +38,13 @@ func `a title alone comes from its event; any other change of the pane reads a s
     #expect(await title() == "claude c")
     #expect(exec[\.reads] == 0)
 
-    for other in [pane(title: "claude b", cwd: "/usr", revision: 7),
-                  pane(title: "claude c", tokens: #"{"ovvi-chat":"x"}"#, revision: 8)]
+    // A token alone (a ring, Ovvi's chat mark) comes in place too.
+    exec.event(updated(pane(title: "claude c", tokens: #"{"ovvi-chat":"x"}"#, revision: 7)))
+    #expect(await title() == "claude c")
+    #expect(exec[\.reads] == 0)
+
+    for other in [pane(title: "claude c", cwd: "/usr", revision: 8),
+                  pane(title: "claude c", status: "idle", revision: 9)]
     {
         let reads = exec[\.reads]
         exec.event(updated(other))
