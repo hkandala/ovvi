@@ -21,6 +21,7 @@ struct Keycap: View {
             .padding(.horizontal, 5)
             .frame(minWidth: 22, minHeight: 22)
             .background(.quaternary, in: .rect(cornerRadius: 5))
+            .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(.tertiary, lineWidth: 0.5))
     }
 }
 
