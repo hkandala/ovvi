@@ -97,8 +97,9 @@ If a folder is missing, create it. `~/ovvi-docs/brief.md` or the agent's brief n
 
 ### UI tests run in the VM or on CI
 
-XCUITest and manual runs take over the mouse and keyboard of the Mac they run on, so UI tests never run on the Mac the
-user works on. An agent has two places:
+XCUITest and manual runs take over the mouse and keyboard of the Mac they run on, so UI tests never run on the Mac
+while the user works on it. An agent has two places, and a third while the user is away
+([The GUI lock](#the-gui-lock)):
 
 - **A chosen-tests CI run** for tests that exist, of a flow that is defined: dispatch it
   ([how](ci.md#running-part-of-it)), give the run id in your report, and go on. Full runs go to CI only.
@@ -130,21 +131,25 @@ OWNER=<your agent name> make vm-e2e DERIVED_DATA=/tmp/ovvi-dd-<phase>-<track> ON
 
 ### The GUI lock
 
-Only what must run on the Mac itself takes the GUI lock, `/tmp/ovvi-gui.lock`: **the onboarding recordings** (the
-welcome film and its retakes, which run the real Claude Code with the credentials of an agent's pane on this Mac),
-and a check that the VM cannot make (the Mac's own GPU or display, a measure the user asked for on this Mac). No
-other UI test run holds it.
+Anything that uses the Mac's own screen, keyboard or pointer runs only while the user is away from the Mac, and
+holds the GUI lock, `/tmp/ovvi-gui.lock`: UI test runs and pictures (the Mac's own screen is faster than the VM and
+takes no extra memory), **the onboarding recordings** (the welcome film and its retakes, which run the real Claude
+Code with the credentials of an agent's pane on this Mac), and checks of the Mac's own GPU or display. While the user
+works, only the VM and CI.
 
 ```sh
-( mkdir /tmp/ovvi-gui.lock || exit 1; trap 'rm -rf /tmp/ovvi-gui.lock' EXIT
-  echo "<your agent name> $(date +%H:%M)" > /tmp/ovvi-gui.lock/owner
-  make e2e DERIVED_DATA=/tmp/ovvi-dd-<phase>-<track> ONLY=… )
+OWNER=<your agent name> ~/ovvi-docs/heavy.sh ~/ovvi-docs/gui-free.sh make e2e DERIVED_DATA=/tmp/ovvi-dd-<phase>-<track> ONLY=…
 ```
 
-- Take the lock only if it is free. If it is not, work on and try later. One run per hold, released by the trap,
-  also on failure. Never hold it while you read results, edit, build or wait for CI. Never remove someone else's
-  lock. A lock older than 10 minutes whose owner is not `user` and whose agent is gone (`agent_list` with
-  `scope: "all"`) is stale: the orchestrator removes it.
+- `gui-free.sh` runs the command only while the screen is unlocked and no one touched a key, the trackpad or a mouse
+  for 5 minutes (or since the last away run ended), and takes the lock for it. When someone touches a device or the
+  screen locks, it stops the run at once. It exits 75 when the user is here, the screen is locked or the lock is held:
+  use the VM or CI, and do not try again in a loop. It reads the devices themselves: a run's synthetic events never
+  count as the user. The screen locks after 10 minutes without input, so away runs happen in short breaks and in a
+  chain of runs; a locked Mac runs nothing.
+- One run per hold, released by the script, also on failure. Never hold the lock while you read results, edit, build
+  or wait for CI. Never remove someone else's lock. A lock older than 10 minutes whose owner is not `user` and whose
+  agent is gone (`agent_list` with `scope: "all"`) is stale: the orchestrator removes it.
 - When the user tests on the Mac, the orchestrator holds the lock for them
   (`mkdir /tmp/ovvi-gui.lock && echo user > /tmp/ovvi-gui.lock/owner`; `rm -rf /tmp/ovvi-gui.lock` to
   release). UI tests in the VM go on.

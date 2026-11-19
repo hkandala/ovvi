@@ -65,7 +65,7 @@ How CI runs, how to run part of it, and how to keep it green and fast.
 | Full run | `gh workflow run ci.yml --ref main` | 5 |
 | Chosen UI tests | `gh workflow run ci.yml --ref main -f only_testing=OvviUITests/OvviUITests/testA,OvviUITests/OvviUITests/testB` | 1 |
 | On-demand tests | `gh workflow run ci.yml --ref main -f on_demand=true` | 4 |
-| Same locally, to explore | `make vm-e2e ONLY=…` (in the Tart VM; busy: use CI); `make e2e ONLY=…` only under the GUI lock | the VM; this Mac |
+| Same locally, to explore | `make vm-e2e ONLY=…` (in the Tart VM; busy: use CI); `make e2e ONLY=…` only while the user is away (`gui-free.sh`, [the GUI lock](workflow.md#the-gui-lock)) | the VM; this Mac |
 
 - **Tags:** a run on a pinned head uses a tag, deleted when its round ends. The repo keeps only release tags (`v*`).
 - **Find your run:** `gh run list --workflow ci.yml --limit 5 --json databaseId,headSha,event,createdAt`,
