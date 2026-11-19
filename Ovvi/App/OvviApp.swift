@@ -243,6 +243,7 @@ private struct WindowContent: View {
     @State private var fullScreen = false
     @State private var lightsOff = 0
     @State private var height: CGFloat = 0
+    private static let collapse = 0.3
     private var settings = AppSettings()
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
@@ -287,7 +288,7 @@ private struct WindowContent: View {
             }
         }
         // The sidebar's collapse time, tuned by eye.
-        .animation(Animation.reduced ? nil : .easeInOut(duration: 0.3), value: sidebar)
+        .animation(Animation.reduced ? nil : .easeInOut(duration: Self.collapse), value: sidebar)
         .hoverPanelHost()
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
         .overlay {
@@ -341,6 +342,9 @@ private struct WindowContent: View {
         .navigationTitle(page.selectedTab.map { "\(page.titleText($0)) - \(page.store.title)" } ?? page.store.name)
         .menuBar(commands)
         .onChange(of: sidebar) {
+            if !Animation.reduced {
+                pages.window?.holdStill(for: Self.collapse)
+            }
             // The workspace menu stands in for the sidebar.
             if sidebar, panel == .workspaces {
                 panel = nil

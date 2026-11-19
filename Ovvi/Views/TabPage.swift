@@ -105,7 +105,7 @@ private struct SplitLayout: View {
         .onChange(of: tree, initial: true) {
             let views = views(tree.paneIDs), moving = placed != nil && motion != nil && !hidden
             if moving {
-                page.terminals.pages?.window?.holdStill()
+                page.terminals.pages?.window?.holdStill(for: MovingCard.slide)
             }
             placed = tree.paneIDs.map { ($0, views[$0] ?? $0) }
         }
@@ -126,14 +126,16 @@ private struct SplitLayout: View {
     }
 }
 
-private extension NSWindow {
-    /// Not movable while the cards slide: at each frame of a layout change AppKit works out a movable window's drag
-    /// region, for which SwiftUI walks every view under the title row (15–25 % of a split's frames).
-    func holdStill() {
+extension NSWindow {
+    /// Not movable while a layout moves (the cards, the sidebar): at each frame of a layout change AppKit works out a
+    /// movable window's drag region, for which SwiftUI walks every view under the title row (15–25 % of a split's
+    /// frames).
+    func holdStill(for seconds: Double) {
         guard NSEvent.pressedMouseButtons == 0 else { return }
         isMovable = false
+        // ponytail: a shorter hold inside a longer one makes the window movable early, which costs only frames.
         Task {
-            try? await Task.sleep(for: .seconds(MovingCard.slide))
+            try? await Task.sleep(for: .seconds(seconds))
             isMovable = true
         }
     }
