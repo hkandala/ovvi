@@ -1,7 +1,7 @@
 import SwiftUI
 
 extension View {
-    /// Liquid Glass: the system glass alone, as the system's menus draw it (measured beside one), or over a material,
+    /// Liquid Glass: the system glass alone, which measures as a system menu does beside one, or over a material,
     /// which keeps the page's text from competing with a small panel's own. Classic: solid, as a tip.
     func floatingGlass(in shape: some InsettableShape, material: Material? = .ultraThinMaterial) -> some View {
         modifier(FloatingGlass(shape: shape, material: material))

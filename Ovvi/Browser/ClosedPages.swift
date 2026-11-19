@@ -91,9 +91,8 @@ enum ClosedPages {
     }
 }
 
-/// A popover, not an `NSMenu`, for the floating panels' tint (the material `floatingGlass` puts under its glass): a
-/// menu's glass is too thin over a busy page. As a link: ⌘-click in the background, ⌥-click to the side, ⌘⌥-click
-/// in the Mac's browser.
+/// A popover, not an `NSMenu`. As a link: ⌘-click in the background, ⌥-click to the side, ⌘⌥-click in the Mac's
+/// browser.
 struct ClosedPagesPopover: View {
     struct Shown: Identifiable {
         let id = UUID()
