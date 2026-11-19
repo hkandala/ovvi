@@ -191,9 +191,10 @@ another login session, with its own pointer, keyboard and screen.
   answers both in the guest (the screen: approved; that alert's notifications: off) and the script closes an alert
   still open. The tests' app asks for no notifications (`-askNotifications NO`): macOS's ask, a banner over the
   window's top right, came at every launch while no one answered it.
-- **Cost.** 4 cores and 8 GB (about 4.6 GB resident while tests run). A boot takes about 40 s to a working
-  `tart exec`. On a running VM, a run of two short tests takes about 30 s (11 s of tests). The first run on a new
-  clone adds about 30 s of setup. Idle, the VM takes about a quarter of a core.
+- **Cost.** 4 cores and 6 GB (`tart set ovvi-test --memory 6144`). The Mac holds all of it while the VM runs, idle too
+  (a footprint of 6.3 GB; at 8 GB it was 8.3 GB), so the VM stops 10 minutes after the last run; a run of three UI
+  tests left the guest 68% free. A boot takes about 40 s to a working `tart exec`. On a running VM, a run of two
+  short tests takes about 30 s (11 s of tests). The first run on a new clone adds about 30 s of setup. Idle, the VM takes about a quarter of a core.
 - **Disk.** `ovvi-test` has 100 GB (about 56 GB free): the image's 50 GB left about 4 GB, and a low-space purge
   killed a test runner. To grow it: stop the VM, `tart set ovvi-test --disk-size 100`, boot, and in the guest
   `yes | sudo diskutil repairDisk disk1`, `sudo diskutil eraseVolume free free disk1s3` (the recovery container,
@@ -210,9 +211,10 @@ another login session, with its own pointer, keyboard and screen.
   (xcodebuild) are gone for it; a run that finds the shares stale mounts them again in the guest (`mount_virtiofs`),
   with no restart.
 - **Limits.** Apple allows 2 macOS VMs per host; after a few start and stop cycles the limit error can stay until
-  the host reboots (Tart #1217), so the VM stays running. The guest's macOS must not be newer than the host's: a
+  the host reboots (Tart #1217): the VM stops only after 10 idle minutes, and a start that fails with the limit
+  needs a reboot of the Mac (use CI until then). The guest's macOS must not be newer than the host's: a
   host update needs a new `golden-gate` (`tart clone ghcr.io/cirruslabs/macos-golden-gate-base:latest golden-gate`,
   about 34 GB). The guest's GPU reports an old Metal family: it renders, but timing is slower, as on CI. The
   guest's password is `admin`, on the host's private network only.
-- **More slots.** One VM is the rule: two 8 GB guests plus the agents' builds make this Mac swap. A Mac mini on the
+- **More slots.** One VM is the rule: two guests plus the agents' builds make this Mac swap. A Mac mini on the
   network with the same setup would add two.

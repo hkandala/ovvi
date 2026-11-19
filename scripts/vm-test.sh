@@ -23,6 +23,11 @@ for tool in tart herdr jq; do
     command -v $tool >/dev/null || { echo "$tool is missing (playbook/ci.md, The VM)" >&2; exit 1; }
 done
 tart list --source local --quiet | grep -qx "$vm" || { echo "no VM $vm: tart clone golden-gate $vm" >&2; exit 1; }
+# A boot takes the guest's whole memory from this Mac: not while macOS already reports memory pressure.
+if ! tart list --source local --format json | jq -e --arg vm "$vm" '.[] | select(.Name == $vm and .Running)' >/dev/null &&
+    (($(sysctl -n kern.memorystatus_vm_pressure_level) > 1)); then
+    echo "this Mac is short of memory: the VM does not start; run the tests on CI (ci.md)" >&2; exit 75
+fi
 echo "${OWNER:-$USER} $$ $(date +%H:%M)" >"$owner"
 run=$runs/runs/$$ guest="/Volumes/My Shared Files"
 # What a run leaves in the guest, also a killed one: the app and herdr servers it started, and xcodebuild's folder
@@ -31,7 +36,15 @@ tidy() {
     tart exec "$vm" zsh -c "pgrep -f '$guest/runs/|/bin/herdr --session ovvi-e2e-' | xargs kill 2>/dev/null
         rm -rf ~/Library/Developer/Xcode/DerivedData/Ovvi-*" || true
 }
-trap 'tidy; rm -rf "$run" "$owner"' EXIT
+# The VM holds all its memory while it runs, idle too: it stops 10 minutes after the last run, unless the lock is held
+# then (a run, whose end waits again, or a `tart exec`). In a session of its own, so a killed job leaves it waiting.
+last=$locks/ovvi-test.last
+idle_stop() {
+    touch "$last"
+    nohup perl -MPOSIX -e 'setsid; exec @ARGV' sh -c "sleep 610; [ -z \"\$(find '$last' -mmin -10)\" ] &&
+        lockf -k -t 0 '$lock' tart stop $vm" >/dev/null 2>&1 </dev/null &
+}
+trap 'tidy; idle_stop; rm -rf "$run" "$owner"' EXIT
 trap 'exit 143' TERM INT HUP
 
 # The shares are set when the VM boots (ovvi-tart keeps them for its later starts).
