@@ -198,8 +198,7 @@ extension OvviUITests {
         addTeardownBlock { @MainActor [self] in try? await send("rm -rf \(dir)\r", to: pane) }
         // The state ahead of the session: herdr takes no state report after it.
         try await report(pane, "working", agent: "claude")
-        try await Self.call(one, "pane.report_agent_session", ["pane_id": pane, "source": "herdr:claude",
-                                                               "agent": "claude", "agent_session_id": id])
+        try await reportSession(pane, id, agent: "claude")
         unfold("w2")
         let row = element("agent.\(pane)")
         let cut = "find why the drop indicator lands one slot to the right when a tab comes in from another "

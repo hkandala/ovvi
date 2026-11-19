@@ -53,10 +53,8 @@ extension OvviUITests {
         let busy = try await split(asking, "down")
         try await waitForPrompt(busy)
         // Reported working ahead of its session: herdr takes no state report after the session.
-        let herdr = #""$HERDR_BIN_PATH" --session "$HERDR_SESSION" pane"#
-        try await send("\(herdr) report-agent --source ovvi-e2e --agent claude --state working \"$HERDR_PANE_ID\"; "
-            + "\(herdr) report-agent-session \"$HERDR_PANE_ID\" --source herdr:claude --agent claude "
-            + "--agent-session-id \(UUID().uuidString.lowercased())\r", to: busy)
+        try await report(busy, "working", agent: "claude")
+        try await reportSession(busy, UUID().uuidString.lowercased(), agent: "claude")
         XCTAssertTrue(element("pane.\(busy).enable-chat").exists(within: 10))
         XCTAssertTrue(element("pane.\(agent).enable-chat").exists(within: 10))
         try await waitForPrompt(asking)

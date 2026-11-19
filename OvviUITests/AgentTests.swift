@@ -127,6 +127,15 @@ extension OvviUITests {
         ])
     }
 
+    /// As herdr's integration does, in a pane at its shell's prompt. herdr sends no event for it: the app reads it at
+    /// the agent's next change, so the shell retitles as an agent does, with a new title at each report: herdr sends
+    /// none for the same one. Report a state ahead of it: herdr takes none after.
+    func reportSession(_ pane: String, _ id: String, agent: String) async throws {
+        try await Self.call(one, "pane.report_agent_session", ["pane_id": pane, "source": "herdr:\(agent)",
+                                                               "agent": agent, "agent_session_id": id])
+        try await send(#"printf '\033]2;%s\007' "# + "'\(agent) \(id.prefix(8))'\r", to: pane)
+    }
+
     func finish(_ created: (tab: String, pane: String)) async throws -> String {
         try await report(created.pane, "working")
         try await waitForValue("tab.\(created.tab)", containing: "working")

@@ -49,8 +49,7 @@ extension OvviUITests {
         for (pane, agent) in [(shell, "claude"), (codex, "codex")] {
             let id = UUID().uuidString.lowercased()
             try await report(pane, "working", agent: agent)
-            try await Self.call(one, "pane.report_agent_session", ["pane_id": pane, "source": "herdr:\(agent)",
-                                                                   "agent": agent, "agent_session_id": id])
+            try await reportSession(pane, id, agent: agent)
             copies(pane, "Session ID") { $0 == id }
         }
     }

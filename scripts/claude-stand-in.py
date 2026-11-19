@@ -23,7 +23,7 @@ import time
 import uuid
 
 import stand_in
-from stand_in import folder, herdr, key, say, terminal
+from stand_in import folder, key, say, terminal
 
 args = stand_in.run_as("claude", __file__)
 settings = args[args.index("--settings") + 1] if "--settings" in args else '{"hooks":{}}'
@@ -191,7 +191,7 @@ def loop():
     # Started by hand, as herdr's integration would: herdr takes a session once the pane has its agent, and takes no
     # state report after it (so not with the flags, whose tests need the states).
     if "--settings" not in args:
-        herdr("report-agent-session", "--source", "herdr:claude", "--agent", "claude", "--agent-session-id", token)
+        stand_in.report_session(token)
     line, mute, armed = "", False, False
     while True:
         data = key()

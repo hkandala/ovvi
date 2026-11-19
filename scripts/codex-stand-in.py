@@ -85,8 +85,7 @@ def start(new):
         write("session_meta", id=thread, source="cli", cli_version="0.163.0", cwd=os.getcwd())
     started = True
     if not hook:
-        stand_in.herdr("report-agent-session", "--source", "herdr:codex", "--agent", "codex", "--agent-session-id",
-                       thread)
+        stand_in.report_session(thread)
         return
     for path in [rollouts[-1], None]:
         subprocess.run([os.environ.get("SHELL", "/bin/sh"), "-lc", hook], capture_output=True, input=json.dumps(

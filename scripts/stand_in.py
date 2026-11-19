@@ -42,6 +42,15 @@ def report(state):
     herdr("report-agent", "--source", "ovvi-e2e", "--agent", agent, "--state", state)
 
 
+def report_session(session):
+    """As herdr's integration does. herdr sends no event for it: the app reads it at the agent's next change, which
+    herdr sees on the real agent's screen. Its later state reports are dropped too, so it retitles: a pane_updated that
+    carries the session. herdr sends none for the same title, so the title names the session."""
+    herdr("report-agent-session", "--source", "herdr:" + agent, "--agent", agent, "--agent-session-id", session)
+    sys.stdout.write("\x1b]2;%s %s\x07" % (agent, session[:8]))
+    sys.stdout.flush()
+
+
 def say(text):
     sys.stdout.write(text.replace("\n", "\r\n") + "\r\n")
     sys.stdout.flush()
