@@ -26,6 +26,12 @@ struct CardMotion<Content: View>: NSViewRepresentable {
         return card
     }
 
+    /// Its frame's size. Without it, SwiftUI asks Auto Layout for the fitting size of the card's whole view tree at
+    /// every layout, each frame of a slide.
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView _: MovingCard, context _: Context) -> CGSize? {
+        proposal.replacingUnspecifiedDimensions()
+    }
+
     func updateNSView(_ card: MovingCard, context _: Context) {
         card.host.rootView = AnyView(content.environment(\.chromeLink, card.link))
         card.look = look
