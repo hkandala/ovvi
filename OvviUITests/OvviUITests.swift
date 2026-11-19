@@ -51,13 +51,29 @@ final class OvviUITests: XCTestCase {
             _ = try await createTab(in: "w1", label: "second")
             try await Self.call(one, "workspace.create", ["label": "beta", "cwd": "/tmp", "focus": false])
             try await Self.call(two, "workspace.create", ["label": "gamma", "cwd": "/tmp", "focus": false])
+        } else if !Self.cleaned {
+            try await closeLeftovers()
         }
+        Self.cleaned = true
         // The earlier test's app goes, so nothing sees what such a test sets up before its launch. The name is
         // "-[OvviUITests testName]".
         if !Self.ownLaunch.contains(String(name.split(separator: " ").last?.dropLast() ?? "")) {
             relaunch()
         } else if app.state != .notRunning {
             app.terminate()
+        }
+    }
+
+    /// False until this runner's first setUp. A test that ran out its time allowance ran no teardown blocks, and the
+    /// runner starts again after it.
+    private static var cleaned = false
+
+    /// Closes what a killed test left in the first session: every space and tab but the fixture's.
+    private func closeLeftovers() async throws {
+        for kind in ["workspace", "tab"] {
+            for id in try await Self.ids(kind, in: one) where !["w1", "w2", "w1:t1", "w1:t2", "w2:t1"].contains(id) {
+                try await Self.call(one, "\(kind).close", ["\(kind)_id": id])
+            }
         }
     }
 
