@@ -128,7 +128,7 @@ extension OvviUITests {
             }
             try await expectText([pane], step)
         }
-        // A busy main thread may look only after a motion ended: some must be seen.
+        // A track that saw no motion tests nothing: some must be seen.
         XCTAssertGreaterThan(sampled, 0, "no motion sampled while it ran")
     }
 

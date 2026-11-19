@@ -149,10 +149,8 @@ final class MovingCard: NSView {
         if SettlingHost.record {
             slides += 1
             setAccessibilityLabel("slides \(slides)")
-            track()
-            // How far each edge goes (left, top, right, bottom): a busy main thread may sample only the motion's end.
             let edges = [-offset.x, offset.y - rect.height + size.height, -offset.x + rect.width - size.width, offset.y]
-            span = zip(span, edges).map { max($0, Int(abs($1).rounded())) }
+            motionTrack.change(slides, in: window, content: host.frame.size, edges: edges)
         }
     }
 
@@ -165,80 +163,31 @@ final class MovingCard: NSView {
         content.add(clip, forKey: "motion")
     }
 
-    /// e2e: the card's place at each display frame, from a change until 0.4 s after the last one, in the window
-    /// content's layer; the frames its surface was off the card by over a point; its content's laid out sizes.
-    /// Each sample after the first is its change from the one before: an element's label holds 512 characters.
-    /// "slides N span l t r b surface K content 1420x1030 706x1030 track ms x y w h;dms dx dy dw dh;…".
-    private var samples: [[Int]] = [], sampler: CADisplayLink?, sampled = (start: 0.0, changed: 0.0)
-    private var surfaceOff = 0, contents: [String] = [], span = [0, 0, 0, 0]
-
-    private func track() {
-        let now = CACurrentMediaTime()
-        sampled.changed = now
-        guard sampler == nil else { return }
-        (samples, surfaceOff, contents, span, sampled.start) = ([], 0, [], [0, 0, 0, 0], now)
-        // The screen's, not the view's: a new card's view has no window yet.
-        sampler = (window?.screen ?? NSScreen.main)?.displayLink(target: self, selector: #selector(sample))
-        sampler?.add(to: .main, forMode: .common)
+    private lazy var motionTrack = MotionTrack(card: layer ?? CALayer(), surface: chrome.surface) { [weak self] in
+        self?.setAccessibilityLabel($0)
     }
 
-    @objc private func sample(_: CADisplayLink) {
-        let now = CACurrentMediaTime()
-        defer { stopTracking(now) }
-        guard let layer, let shown = layer.presentation(), let root = window?.contentView?.layer,
-              let rootShown = root.presentation() else { return }
-        let card = shown.convert(shown.bounds, to: rootShown), surface = chrome.shownFill(in: rootShown) ?? .zero
-        let place = [card.minX, card.minY, card.width, card.height].map { Int($0.rounded()) }
-        if samples.last.map({ Array($0.dropFirst()) }) != place {
-            samples.append([Int((now - sampled.start) * 1000)] + place)
-            sampled.changed = max(sampled.changed, now)
-        }
-        if [card.minX - surface.minX, card.minY - surface.minY, card.maxX - surface.maxX, card.maxY - surface.maxY]
-            .contains(where: { abs($0) > 1 })
-        {
-            surfaceOff += 1
-        }
-        let content = "\(Int(host.frame.width))x\(Int(host.frame.height))"
-        if contents.last != content {
-            contents.append(content)
-        }
-    }
-
-    private func stopTracking(_ now: Double) {
-        if now - sampled.changed > 0.4 {
-            sampler?.invalidate()
-            sampler = nil
-            let steps = zip([[]] + samples, samples).map { before, now in
-                (before.isEmpty ? now : zip(now, before).map { $0 - $1 }).map(String.init).joined(separator: " ")
-            }
-            setAccessibilityLabel("slides \(slides) span \(span.map(String.init).joined(separator: " ")) surface "
-                + "\(surfaceOff) content \(contents.joined(separator: " ")) "
-                + "track \(steps.joined(separator: ";"))")
-        }
-    }
-
-    /// A card that leaves its window mid-track: its display link would keep it.
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        if window == nil {
-            sampler?.invalidate()
-            sampler = nil
+        if SettlingHost.record {
+            motionTrack.moved(to: window)
         }
     }
 
     override func setFrameOrigin(_ origin: NSPoint) {
         if SettlingHost.record, origin != frame.origin {
-            track()
+            motionTrack.change(slides, in: window, content: host.frame.size)
         }
         super.setFrameOrigin(origin)
     }
 
     override func setFrameSize(_ size: NSSize) {
-        if SettlingHost.record, size != frame.size {
-            track()
-        }
+        let changed = size != frame.size
         super.setFrameSize(size)
         host.frame.size = bounds.size
+        if SettlingHost.record, changed {
+            motionTrack.change(slides, in: window, content: host.frame.size)
+        }
         if chrome.frame.size != bounds.size {
             chrome.frame = bounds
             chrome.place(bounds.size)

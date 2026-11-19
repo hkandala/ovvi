@@ -103,9 +103,9 @@ final class CardChrome: NSView {
         shadowCut.add(animation("path", cut(old), cut(new)), forKey: "motion")
     }
 
-    /// e2e: where its fill shows now, in that layer's space.
-    func shownFill(in root: CALayer) -> CGRect? {
-        fill.presentation().map { $0.convert($0.bounds, to: root) }
+    /// e2e: the fill, which a card's track checks against the card at each frame.
+    var surface: CALayer {
+        fill
     }
 
     private func frames(_ size: CGSize) -> [(CALayer, CGRect)] {

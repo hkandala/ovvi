@@ -71,7 +71,7 @@ extension OvviUITests {
             }
             element("pane.\(pane)").click()
         }
-        // Not a pass by a main thread too busy to look (most motions sampled).
+        // Not a pass by tracks that saw no motion (most motions sampled).
         if seen.sampled * 2 < seen.motions {
             problems.append("\(name): only \(seen.sampled) of \(seen.motions) motions sampled")
         }
@@ -165,8 +165,7 @@ extension OvviUITests {
     static func smoothness(_ label: String, curve: Bool = true) -> [String] {
         let words = label.components(separatedBy: " track "), samples = samples(words.count == 2 ? words[1] : "")
         guard label.count < 510 else { return ["the track was cut: \(label)"] }
-        // One sample: a busy main thread looked after the motion ended (CI's first frame comes 150–380 ms after the
-        // key); it tests nothing. `sampled` counts these.
+        // One sample: the track saw no motion; it tests nothing. `sampled` counts these.
         guard samples.count >= 2, let first = samples.first, let last = samples.last else {
             return label.contains(" track ") ? [] : ["no track: \(label)"]
         }
