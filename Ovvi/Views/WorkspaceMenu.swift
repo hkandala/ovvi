@@ -16,7 +16,7 @@ struct WorkspaceMenu: View {
                    maxHeight: 340, pinned: 2, autofocus: page.dragging == nil) { open = false }
             .padding(8)
             .frame(width: 300)
-            .floatingGlass(in: .rect(cornerRadius: 12))
+            .floatingGlass(in: .rect(cornerRadius: 12), material: nil)
             .clearsDrop(page) { open = false }
     }
 

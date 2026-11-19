@@ -30,7 +30,7 @@ struct OpenSession: View {
         }
         .padding([.horizontal, .top], 8)
         .frame(width: 420)
-        .floatingGlass(in: .panel)
+        .floatingGlass(in: .panel, material: nil)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Open Session")
         .onAppear { Latency.shared.note("open-session \(sessions.map(\.name).joined(separator: ","))") }
