@@ -590,10 +590,10 @@ preflight() {
     esac
 }
 
-# On the user's screen: only under the user's own hold (owner "user…") or one the caller took while the user is away
-# (LOCKED=1, ~/ovvi-docs/gui-free.sh; playbook/workflow.md, The GUI lock).
+# On the user's screen: only under the user's own hold (owner "user…") or gui-free.sh's, while the user said they are
+# away (LOCKED=1; playbook/workflow.md, The GUI lock).
 if [ -z "${LOCKED:-}" ] && ! grep -qs '^user' /tmp/ovvi-gui.lock/owner; then
-    echo "run it through ~/ovvi-docs/gui-free.sh while the user is away, or under the user's hold of the GUI lock" >&2
+    echo "run it through ~/ovvi-docs/gui-free.sh, or under the user's hold of the GUI lock" >&2
     exit 1
 fi
 preflight

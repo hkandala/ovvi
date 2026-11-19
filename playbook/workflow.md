@@ -98,7 +98,7 @@ If a folder is missing, create it. `~/ovvi-docs/brief.md` or the agent's brief n
 ### UI tests run in the VM or on CI
 
 XCUITest and manual runs take over the mouse and keyboard of the Mac they run on, so UI tests never run on the Mac
-while the user works on it. An agent has two places, and a third while the user is away
+while the user works on it. An agent has two places, and a third while the user said they are away
 ([The GUI lock](#the-gui-lock)):
 
 - **A chosen-tests CI run** for tests that exist, of a flow that is defined: dispatch it
@@ -131,11 +131,11 @@ OWNER=<your agent name> make vm-e2e DERIVED_DATA=/tmp/ovvi-dd-<phase>-<track> ON
 
 ### The GUI lock
 
-Anything that uses the Mac's own screen, keyboard or pointer runs only while the user is away from the Mac, and
-holds the GUI lock, `/tmp/ovvi-gui.lock`: UI test runs and pictures (the Mac's own screen is faster than the VM and
-takes no extra memory), **the onboarding recordings** (the welcome film and its retakes, which run the real Claude
-Code with the credentials of an agent's pane on this Mac), and checks of the Mac's own GPU or display. While the user
-works, only the VM and CI.
+Anything that uses the Mac's own screen, keyboard or pointer runs only while the user said they are away, and holds
+the GUI lock, `/tmp/ovvi-gui.lock`: UI test runs and pictures (the Mac's own screen is faster than the VM and takes no
+extra memory), **the onboarding recordings** (the welcome film and its retakes, which run the real Claude Code with
+the credentials of an agent's pane on this Mac), and checks of the Mac's own GPU or display. While the user works,
+only the VM and CI.
 
 ```sh
 OWNER=<your agent name> ~/ovvi-docs/heavy.sh make build-tests DERIVED_DATA=/tmp/ovvi-dd-<phase>-<track>
@@ -143,19 +143,15 @@ OWNER=<your agent name> ~/ovvi-docs/heavy.sh ~/ovvi-docs/gui-free.sh make e2e PR
     DERIVED_DATA=/tmp/ovvi-dd-<phase>-<track> ONLY=…
 ```
 
-- Build first, so the run itself holds the lock only for the tests. `DERIVED_DATA` must be an absolute path: the
-  script stops the run's test runner and app by that path.
-- `gui-free.sh` starts the run only when the user is away: the screen is unlocked, no app keeps the display on (a
-  video, a call), and the user's last key, click or touch was 5 to 10 minutes ago. After 10 minutes the Mac locks its
-  screen (the company's policy), and a locked Mac runs nothing. A run's own events do not count as the user's input,
-  so runs can follow each other until 10 minutes after the user left; the Mac locks when the run going then ends.
-- During the run, the script reads the keyboard, trackpad and mice themselves. When the user touches one, or the
-  screen locks, it stops the run at once. (Input from Universal Control or Screen Sharing does not stop a run.)
-- It exits 75 when the user is here, the Mac is locked or the lock is held: use the VM or CI, and do not try again in
-  a loop.
-- One run per hold, released by the script, also on failure or when it is killed. A lock whose script is gone is free
-  for the next run. Agents never take the lock by hand (the orchestrator's hold for the user, below, is the one
-  exception), never hold it while they read results, edit or wait for CI, and never remove someone else's lock.
+- **The switch** is the file `~/ovvi-docs/gui-away`. Only the orchestrator makes it, when the user says they are away
+  (`touch ~/ovvi-docs/gui-away`), and removes it when they say they are back (`rm ~/ovvi-docs/gui-away`).
+- `gui-free.sh` runs the command only while the file exists, and holds the lock for it. It exits 75 when the file is
+  missing or the lock is held: use the VM or CI, and do not try again in a loop.
+- Build first, so the run holds the lock only for the tests. One run per hold, released by the script, also on
+  failure. Agents never take the lock by hand (the orchestrator's hold for the user, below, is the one exception),
+  never hold it while they read results, edit or wait for CI, and never remove someone else's lock. A lock older
+  than 10 minutes whose owner is not `user` and whose agent is gone (`agent_list` with `scope: "all"`) is stale: the
+  orchestrator removes it.
 - When the user tests on the Mac, the orchestrator holds the lock for them
   (`mkdir /tmp/ovvi-gui.lock && echo user > /tmp/ovvi-gui.lock/owner`; `rm -rf /tmp/ovvi-gui.lock` to
   release). UI tests in the VM go on.
