@@ -16,7 +16,9 @@ struct PaneCard: View {
     let away: Bool
     @State private var hovering = false
     @State private var zone: Heading??
-    @State private var size = CGSize.zero
+    /// Read by a drag and a drop only: as state, each frame of a resize (the sidebar's slide) would draw the card
+    /// again.
+    @State private var size = Measured()
     @State private var keptLit = false
     @Environment(\.look) private var look
     @Environment(\.pageHidden) private var hidden
@@ -135,7 +137,7 @@ struct PaneCard: View {
         .testValue("pane.\(id).border", "Active", "", shown: SettlingHost.record && bordered)
         .overlay(alignment: .topLeading) {
             if let zone, page.dragging != nil {
-                let half = CGSize(width: size.width / 2, height: size.height / 2)
+                let size = size.size, half = CGSize(width: size.width / 2, height: size.height / 2)
                 DropIndicator()
                     .frame(width: zone == .left || zone == .right ? half.width : size.width,
                            height: zone == .up || zone == .down ? half.height : size.height)
@@ -144,7 +146,7 @@ struct PaneCard: View {
                     .transition(.opacity)
             }
         }
-        .onGeometryChange(for: CGSize.self) { $0.size } action: { size = $0 }
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { size.size = $0 }
         .background {
             // Only while the page shows: the drop target is an AppKit view of its own, which the page's opacity and
             // `allowsHitTesting` do not stop, so a kept page's, over the shown one, would take its cards' drags (files

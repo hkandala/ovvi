@@ -59,10 +59,16 @@ func dropEdge(_ point: CGPoint, in size: CGSize) -> Heading? {
     return nearest.0
 }
 
+/// A view's size that its body does not read, so a change draws nothing.
+@MainActor
+final class Measured {
+    var size = CGSize.zero
+}
+
 struct CardDrop: DropDelegate {
     let paneID: String
     let page: Page
-    let size: CGSize
+    let size: Measured
     @Binding var zone: Heading??
 
     func validateDrop(info _: DropInfo) -> Bool {
@@ -91,7 +97,7 @@ struct CardDrop: DropDelegate {
     private func target(_ point: CGPoint) -> Heading?? {
         guard let dragged = page.dragging?.paneID, dragged != paneID,
               let source = page.store.pane(dragged), let pane = page.store.pane(paneID) else { return nil }
-        let edge = dropEdge(point, in: size)
+        let edge = dropEdge(point, in: size.size)
         return edge == nil && source.tabID != pane.tabID ? nil : .some(edge)
     }
 }
@@ -194,7 +200,7 @@ extension View {
         onChange(of: page.dragging == nil) { clear() }
     }
 
-    func dragSource(_ item: Dragged, page: Page, previewSize: CGSize? = nil) -> some View {
+    func dragSource(_ item: Dragged, page: Page, previewSize: Measured? = nil) -> some View {
         modifier(DragSourceModifier(item: item, page: page, previewSize: previewSize))
     }
 }
@@ -202,7 +208,7 @@ extension View {
 private struct DragSourceModifier: ViewModifier {
     let item: Dragged
     let page: Page
-    let previewSize: CGSize?
+    let previewSize: Measured?
     /// Its size, not its frame in the window: the frame changes as its row scrolls, an update of every tab capsule at
     /// each layout.
     @State private var size = CGSize.zero
@@ -213,7 +219,7 @@ private struct DragSourceModifier: ViewModifier {
             .simultaneousGesture(DragGesture(minimumDistance: 4).onChanged { value in
                 // Where the mouse went down: a busy app's first change comes late.
                 DragSource.begin(item, page: page, grabbed: value.startLocation, moved: value.translation,
-                                 size: previewSize ?? size)
+                                 size: previewSize?.size ?? size)
             })
     }
 }
