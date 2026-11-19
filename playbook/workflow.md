@@ -147,10 +147,14 @@ OWNER=<your agent name> ~/ovvi-docs/heavy.sh ~/ovvi-docs/gui-free.sh make e2e PR
   (`touch ~/ovvi-docs/gui-away`), and removes it when they say they are back (`rm ~/ovvi-docs/gui-away`).
 - `gui-free.sh` runs the command only while the file exists, and holds the lock for it. It exits 75 when the file is
   missing or the lock is held: use the VM or CI, and do not try again in a loop.
+- The command runs outside the agent's sandbox, where XCUITest can start: LaunchServices opens
+  `~/ovvi-docs/gui-runner.app`, which runs it with the caller's folder and exported variables, and no stdin. `gui-free.sh` shows its output,
+  ends with its exit status, and stops it when it is cancelled.
 - Build first, so the run holds the lock only for the tests. One run per hold, released by the script, also on
   failure. Agents never take the lock by hand (the orchestrator's hold for the user, below, is the one exception),
-  never hold it while they read results, edit or wait for CI, and never remove someone else's lock. A lock whose
-  owner line names a pid that is gone (`kill -0 <pid>` fails) is stale: the orchestrator removes it.
+  never hold it while they read results, edit or wait for CI, and never remove someone else's lock. A lock is stale
+  when every pid in its owner file (the script's and the runner's) is gone (`kill -0 <pid>` fails): the orchestrator
+  removes it.
 - Removing the switch stops no run that is going on: it ends by itself, or the orchestrator asks its agent (the owner
   line names it) to stop it.
 - When the user tests on the Mac, the orchestrator holds the lock for them

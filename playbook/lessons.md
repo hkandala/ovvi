@@ -123,8 +123,10 @@ Problems that came back, and the rule that stops each. How we work is in
   nothing. Read the diff; make every scripted edit fail loudly when it matches nothing.
 - **An agent's shell may run in a macOS sandbox.** The agent launcher puts agents started in pi-herd in one, and
   their children inherit it: `launchctl bootstrap` exits 5 (Input/output error), sshd closes every login, `log show`
-  refuses. Check the test process with `sandbox_check` before you blame the variables; tests that need launchd or sshd
-  skip with `unsandboxed`.
+  refuses, and XCUITest's runner stops at launch with "Library not loaded: @rpath/XCTest.framework" (dyld drops
+  `DYLD_FRAMEWORK_PATH`). Check the test process with `sandbox_check` before you blame the variables; tests that need
+  launchd or sshd skip with `unsandboxed`. A process that LaunchServices opens (`open -g`) runs outside the sandbox:
+  `gui-free.sh` runs host UI tests that way.
 - **No pattern kills on the user's Mac.** macOS `pkill -f "x" -P 1` read `-P` and `1` as more patterns and sent
   SIGTERM to every process whose command line held a "1": the user's apps, other agents, two builds.
   Kill the exact pids you started; a pattern only when anchored to a full path of your own, checked with `ps` first.
