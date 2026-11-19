@@ -17,7 +17,7 @@ extension OvviUITests {
         XCTAssertTrue(element("browser.\(browser).reload").isEnabled)
         // Not over the card's own rename: it would load its address again.
         try await expect("the label follows") { try await paneLabel(browser).contains(" http://localhost:\(port)") }
-        try await relabel(browser, "\(label) https://ovvi.invalid/")
+        try await rename(browser, "\(label) https://ovvi.invalid/")
         XCTAssertTrue(element("browser.\(browser).open").exists(within: 5), message.stringValue)
         element("browser.\(browser).not-now").click()
         XCTAssertTrue(element("browser.\(browser).empty").exists(within: 3), message.stringValue)
@@ -109,7 +109,7 @@ extension OvviUITests {
         sendAfter("rm -rf \(folder)\r", to: shell)
         try await waitFor(shell) { !$0.contains("printf") }
         let pane = try await split(shell)
-        try await relabel(pane, "ovvi:browser#e2efld file://\(folder)/page/index.html")
+        try await rename(pane, "ovvi:browser#e2efld file://\(folder)/page/index.html")
         element("tab.\(tab)").click()
         XCTAssertTrue(pageText("ovvi-media-loaded").exists(within: 10))
         app.webViews.links["Other"].click()
@@ -130,7 +130,7 @@ extension OvviUITests {
         sendAfter("rm -f \(file)\r", to: shell)
         try await waitFor(shell) { !$0.contains("printf") }
         let pane = try await split(shell)
-        try await relabel(pane, "ovvi:browser#e2euag file://\(file)")
+        try await rename(pane, "ovvi:browser#e2euag file://\(file)")
         element("tab.\(tab)").click()
         let system = ProcessInfo.processInfo.operatingSystemVersion
         XCTAssertTrue(pageText("Version/\(system.majorVersion).\(system.minorVersion) Safari/605.1.15")

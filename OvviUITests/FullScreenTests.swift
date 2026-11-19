@@ -15,7 +15,7 @@ extension OvviUITests {
         sendAfter("rm -rf \(folder)\r", to: shell)
         try await waitFor(shell) { !$0.contains("printf") }
         let browser = try await split(shell)
-        try await relabel(browser, "ovvi:browser#e2efsb file://\(folder)/page.html")
+        try await rename(browser, "ovvi:browser#e2efsb file://\(folder)/page.html")
         try await show(tab)
         XCTAssertTrue(pageText("ovvi-windowed-0").exists(within: 10))
 
@@ -31,7 +31,7 @@ extension OvviUITests {
 
         step("Floating preview: the player's own button, Esc brings it back")
         let preview = try await split(browser)
-        try await relabel(preview, "ovvi:explorer#e2efsp /private\(folder)/clip.mp4")
+        try await rename(preview, "ovvi:explorer#e2efsp /private\(folder)/clip.mp4")
         let window = float(preview), player = window.webViews.firstMatch
         // The first preview card installs the plugin.
         XCTAssertTrue(player.buttons["Play"].exists(within: 30))

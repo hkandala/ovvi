@@ -78,8 +78,8 @@ extension OvviUITests {
         try await waitFor(browser) { !$0.contains("printf") }
         sendAfter("rm -rf \(folder)\r", to: browser)
         let plugin = try await split(browser, "down")
-        try await relabel(browser, "ovvi:browser#e2eunb file://\(folder)/light.html")
-        try await relabel(plugin, "ovvi:explorer#e2eunp /private\(folder)/notes0.md")
+        try await rename(browser, "ovvi:browser#e2eunb file://\(folder)/light.html")
+        try await rename(plugin, "ovvi:explorer#e2eunp /private\(folder)/notes0.md")
         return (tab, [chat, browser, plugin])
     }
 
@@ -91,7 +91,7 @@ extension OvviUITests {
             try await below.append(createTab(in: workspace(of: first)).pane)
         }
         for (index, pane) in below.enumerated() {
-            try await relabel(pane, "ovvi:explorer#e2eub\(index) /private\(folder)/notes\(index + 1).md")
+            try await rename(pane, "ovvi:explorer#e2eub\(index) /private\(folder)/notes\(index + 1).md")
         }
         return below
     }
@@ -143,7 +143,7 @@ extension OvviUITests {
         }
         for (index, pane) in panes.enumerated() {
             // An iid of exactly 6 characters.
-            try await relabel(pane, "ovvi:explorer#e2el\(index / 10)\(index % 10) /private\(folder)/notes\(index).md")
+            try await rename(pane, "ovvi:explorer#e2el\(index / 10)\(index % 10) /private\(folder)/notes\(index).md")
         }
         app.typeKey("o", modifierFlags: [.command, .control])
         XCTAssertTrue(element("overview").exists(within: 3))
@@ -171,7 +171,7 @@ extension OvviUITests {
         try await waitFor("w2:p1") { !$0.contains("printf") }
         sendAfter("rm -rf \(folder)\r", to: "w2:p1")
         let (tab, browser) = try await newTab("page")
-        try await relabel(browser, "ovvi:browser#e2etpb file://\(folder)/page.html")
+        try await rename(browser, "ovvi:browser#e2etpb file://\(folder)/page.html")
         element("tab.\(tab)").click()
         XCTAssertTrue(pageText("ovvi-kept-page").exists(within: 10))
         // No web card is kept out of view: the browser's is dropped, and its picture kept for it.

@@ -13,7 +13,7 @@ extension OvviUITests {
         sendAfter("rm -rf \(folder)\r", to: left)
         element("tab.\(tab)").click()
         let card = try await split(left)
-        try await relabel(card, "ovvi:explorer#e2efic \(file)")
+        try await rename(card, "ovvi:explorer#e2efic \(file)")
         let editor = element("file.\(card).page").textViews.firstMatch
         XCTAssertTrue(until(10) { editor.exists && editor.stringValue.contains("let x = 1") })
         let jump = element("pane.\(card).jump"), dirty = element("pane.\(card).dirty")
@@ -194,7 +194,7 @@ extension OvviUITests {
         element("tab.\(tab)").click()
         let card = try await split(left)
         let label = "ovvi:explorer#e2eprv \(folder)/"
-        try await relabel(card, label + "icon.png")
+        try await rename(card, label + "icon.png")
         let page = element("preview.\(card).page"), image = page.images["icon.png"]
         XCTAssertTrue(image.exists(within: 10))
         let crumbs = element("pane.\(card).jump")
@@ -212,7 +212,7 @@ extension OvviUITests {
         try await send("sips -z 200 300 icon.png >/dev/null\r", to: left)
         XCTAssertTrue(until(5) { abs(image.frame.width - 300) < 2 })
 
-        try await relabel(card, label + "lines.pdf")
+        try await rename(card, label + "lines.pdf")
         let pages = element("pane.\(card).page")
         XCTAssertTrue(until(10) { pages.exists && pages.stringValue.hasPrefix("1 of ") && pages.stringValue != "1 of 1"
         })
@@ -222,12 +222,12 @@ extension OvviUITests {
         keepScreenshot("preview card, PDF")
 
         for file in ["notes.bin", "broken.png"] {
-            try await relabel(card, label + file)
+            try await rename(card, label + file)
             let name = text(file, in: page)
             XCTAssertTrue(name.exists(within: 10), file)
         }
         XCTAssertFalse(pages.exists)
-        try await relabel(card, label + "hi.m4a")
+        try await rename(card, label + "hi.m4a")
         XCTAssertTrue(until(10) { page.buttons.firstMatch.exists })
         tiled(card)
     }

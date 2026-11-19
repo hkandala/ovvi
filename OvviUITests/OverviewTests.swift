@@ -276,7 +276,7 @@ extension OvviUITests {
         let light = mean(shot)
         keepScreenshot("overview, browser and chat")
         XCTAssertGreaterThan(light, 150, "the light page's picture")
-        try await relabel(browser, "ovvi:browser#\(iid) file://\(folder)/dark.html")
+        try await rename(browser, "ovvi:browser#\(iid) file://\(folder)/dark.html")
         let tile = element("overview.tab.\(tab)")
         XCTAssertTrue(until(5) { tile.label.contains("Dark") }, tile.label)
         XCTAssertGreaterThan(mean(shot), 150, "the tile's picture")

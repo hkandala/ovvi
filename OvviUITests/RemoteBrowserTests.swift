@@ -96,13 +96,13 @@ extension OvviUITests {
     /// machine's own name.
     private func asksOverTheFailure(_ browser: String, _ port: Int, in remote: XCUIElement) async throws {
         try await expect("the label follows") { try await paneLabel(browser).contains("localhost:\(port + 1)") }
-        try await relabel(browser, "ovvi:browser#e2erem https://ovvi.invalid/")
+        try await rename(browser, "ovvi:browser#e2erem https://ovvi.invalid/")
         let open = element("browser.\(browser).open", in: remote)
         XCTAssertTrue(open.exists(within: 5), shown(browser, remote))
-        try await relabel(browser, "ovvi:browser#e2erem http://localhost:\(port)/")
+        try await rename(browser, "ovvi:browser#e2erem http://localhost:\(port)/")
         XCTAssertTrue(open.vanishes(within: 5))
         XCTAssertTrue(whoText("via=sshd", in: remote).exists(within: connect))
-        try await relabel(browser, "ovvi:browser#e2erem https://ovvi.invalid/two")
+        try await rename(browser, "ovvi:browser#e2erem https://ovvi.invalid/two")
         XCTAssertTrue(open.exists(within: 5))
         element("browser.\(browser).not-now", in: remote).click()
         XCTAssertTrue(open.vanishes(within: 3))

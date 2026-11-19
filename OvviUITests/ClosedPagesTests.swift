@@ -9,13 +9,13 @@ extension OvviUITests {
         try await putClosedPagesAside(from: shell)
 
         let kept = try await split(shell)
-        try await relabel(kept, "ovvi:browser#e2ec01 \(page)")
+        try await rename(kept, "ovvi:browser#e2ec01 \(page)")
         try await show(tab)
         XCTAssertTrue(pageText("ovvi-page-one").exists(within: 5))
         expectEmptyMenu(kept)
         try await writeOldClosedPages(from: shell)
         let gone = try await split(kept, "down")
-        try await relabel(gone, "ovvi:browser#e2ec02 \(two)")
+        try await rename(gone, "ovvi:browser#e2ec02 \(two)")
         try await closeTab(showing: page, shell: shell)
 
         try await show(tab)
@@ -99,7 +99,7 @@ extension OvviUITests {
     /// A tab with one browser card, closed: its title is saved first.
     private func closeTab(showing page: String, shell: String) async throws {
         let (tab, pane) = try await newTab("closed-tab")
-        try await relabel(pane, "ovvi:browser#e2ec03 \(page)")
+        try await rename(pane, "ovvi:browser#e2ec03 \(page)")
         try await show(tab)
         XCTAssertTrue(pageText("ovvi-page-one").exists(within: 5))
         try await expectSaved("One", iid: "e2ec03", shell: shell)

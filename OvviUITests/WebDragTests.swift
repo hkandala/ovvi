@@ -9,7 +9,7 @@ extension OvviUITests {
         let browser = try await split(first), plugin = try await split(browser)
         let explorer = "ovvi:explorer#e2edrp /private/tmp/ovvi-e2e-browser/"
         for (pane, label) in [(browser, "ovvi:browser#e2edrb \(page)"), (plugin, explorer)] {
-            try await relabel(pane, label)
+            try await rename(pane, label)
         }
         restoreHerdrFocusAfter()
         XCTAssertTrue(pageText("ovvi-page-one").exists(within: 10))

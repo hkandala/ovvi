@@ -16,8 +16,8 @@ extension OvviUITests {
         try await chatBesideABrowser(root)
         try await show(tab)
         let browser = try await split(shell), explorer = try await split(browser, "down")
-        try await relabel(browser, "ovvi:browser#e2effb file://\(root)/page.html")
-        try await relabel(explorer, "ovvi:explorer#e2effe \(root)/")
+        try await rename(browser, "ovvi:browser#e2effb file://\(root)/page.html")
+        try await rename(explorer, "ovvi:explorer#e2effe \(root)/")
         try await show(tab)
         let field = element("browser.\(browser).card").textFields["ovvi-follow-field"]
         XCTAssertTrue(field.exists(within: 10))
@@ -62,7 +62,7 @@ extension OvviUITests {
     private func chatBesideABrowser(_ root: String) async throws {
         let chat = try await startChat().pane
         let side = try await split(chat)
-        try await relabel(side, "ovvi:browser#e2effc file://\(root)/page.html")
+        try await rename(side, "ovvi:browser#e2effc file://\(root)/page.html")
         XCTAssertTrue(element("browser.\(side).card").textFields["ovvi-follow-field"].exists(within: 10))
         let composer = element("chat.\(chat).composer")
         composer.click()

@@ -69,7 +69,7 @@ extension OvviUITests {
         try await waitFor(shell) { $0.contains("% half typed") }
         let title = element("pane.\(shell).title")
         XCTAssertTrue(until(10) { title.stringValue.contains("sh ") }, title.stringValue)
-        try await self.relabel(shell, "ovvi:explorer#e2epl2 /tmp/")
+        try await rename(shell, "ovvi:explorer#e2epl2 /tmp/")
         try await waitFor(shell) { $0.contains("Shown in Ovvi") }
     }
 

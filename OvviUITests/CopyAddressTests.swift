@@ -19,9 +19,9 @@ extension OvviUITests {
         try await show(tab)
         let browser = try await split(shell), explorer = try await split(browser, "down")
         let git = try await split(shell, "down"), codex = try await split(browser, "down")
-        try await relabel(browser, "ovvi:browser#e2ecpb file://\(root)/page.html")
-        try await relabel(explorer, "ovvi:explorer#e2ecpe \(root)/a.txt")
-        try await relabel(git, "ovvi:git#e2ecpg \(root)/ \(hash)")
+        try await rename(browser, "ovvi:browser#e2ecpb file://\(root)/page.html")
+        try await rename(explorer, "ovvi:explorer#e2ecpe \(root)/a.txt")
+        try await rename(git, "ovvi:git#e2ecpg \(root)/ \(hash)")
         XCTAssertTrue(pageText("ovvi-copy-page").exists(within: 10))
 
         func copies(_ card: String, _ kind: String, _ expected: (String) -> Bool) {
@@ -41,7 +41,7 @@ extension OvviUITests {
         copies(browser, "URL") { $0 == "file://\(root)/page.html" }
         copies(explorer, "Path") { $0 == "\(root)/a.txt" }
         copies(git, "Commit ID") { $0 == hash }
-        try await relabel(git, "ovvi:git#e2ecpg \(root)/ uncommitted")
+        try await rename(git, "ovvi:git#e2ecpg \(root)/ uncommitted")
         copies(git, "Path") { $0 == root }
 
         // The state ahead of the session: herdr takes no state report after it. herdr takes pi's and OpenCode's

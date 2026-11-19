@@ -48,14 +48,10 @@ extension OvviUITests {
 
     /// herdr sends no event for a rename: the metadata report makes the app read the snapshot (the app reads no token
     /// of this one).
-    func relabel(_ pane: String, _ label: String, in session: String? = nil) async throws {
-        try await rename(pane, label, in: session)
-        try await Self.call(session ?? one, "pane.report_metadata", ["pane_id": pane, "source": "ovvi-e2e-relabel",
-                                                                     "tokens": ["relabel": "1"], "ttl_ms": 1000])
-    }
-
     func rename(_ pane: String, _ label: String, in session: String? = nil) async throws {
         try await Self.call(session ?? one, "pane.rename", ["pane_id": pane, "label": label])
+        try await Self.call(session ?? one, "pane.report_metadata", ["pane_id": pane, "source": "ovvi-e2e-relabel",
+                                                                     "tokens": ["relabel": "1"], "ttl_ms": 1000])
     }
 
     /// A plugin label's iid: exactly 6 `[a-z0-9]` characters.

@@ -139,7 +139,7 @@ extension OvviUITests {
         XCTAssertTrue(retry.exists(within: 10))
         // A snapshot each, inside the 5 s.
         for label in 0 ..< 6 {
-            try await relabel(pane, "stopped \(label)")
+            try await rename(pane, "stopped \(label)")
             try await Task.sleep(for: .milliseconds(250))
             // A retry keeps its panel: no blink to the card's fill.
             XCTAssertTrue(retry.exists, "turn \(label)")
@@ -154,7 +154,7 @@ extension OvviUITests {
         XCTAssertTrue(retry.exists(within: 3))
 
         _ = try await shell(": >\(flags)/down", in: pane)
-        try await relabel(pane, "stopped down")
+        try await rename(pane, "stopped down")
         XCTAssertTrue(element("detail.reconnecting").exists(within: 10))
         XCTAssertTrue(retry.vanishes(within: 2))
         keepScreenshot("reconnecting, a failed stream")

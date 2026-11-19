@@ -102,7 +102,7 @@ extension OvviUITests {
         try await waitForPrompt(shell)
         let page = try await writePages(from: shell)
         let pane = try await split(shell)
-        try await relabel(pane, "ovvi:browser#e2e1ab \(page)")
+        try await rename(pane, "ovvi:browser#e2e1ab \(page)")
         element("tab.\(tab)").click()
         XCTAssertTrue(pageText("ovvi-page-one").exists(within: 5))
         let two = page.replacing("one.html", with: "two.html")
@@ -225,7 +225,7 @@ extension OvviUITests {
         let back = element("browser.\(pane).back").frame
         XCTAssertEqual(element("browser.\(pane)").frame.minY - back.maxY, 11, accuracy: 1, "\(back)")
         let two = page.replacing("one.html", with: "two.html")
-        try await relabel(pane, "ovvi:browser#e2e5ab \(two)", in: five)
+        try await rename(pane, "ovvi:browser#e2e5ab \(two)", in: five)
         XCTAssertTrue(pageText("ovvi-page-two").exists(within: 5))
         XCTAssertTrue(element("browser.\(pane).back").has(\.isEnabled, true, within: 3))
         XCTAssertTrue(element("tab.\(tab)").has(\.label, "Browser Two", within: 3))
