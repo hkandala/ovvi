@@ -1,5 +1,5 @@
 #!/bin/sh
-# ovvi-cli 1.3
+# ovvi-cli 1.4
 # Written by Ovvi: asks the Ovvi that follows this herdr session. Ovvi parses the arguments.
 # https://ovvi.dev/docs/reference/ovvi-command
 herdr=${HERDR_BIN_PATH:-herdr} session=${HERDR_SESSION:-default} pane=${HERDR_PANE_ID:-} timeout=10 json= j=
@@ -56,8 +56,17 @@ id=$( (cat /proc/sys/kernel/random/uuid || uuidgen) 2>/dev/null | tr A-F a-f) f=
 printf '%s\000' ovvi-req 1 "$PWD" "$@" >"$f.tmp" && mv "$f.tmp" "$f.req" || fail 5 no_herdr "cannot write $dir"
 h pane report-metadata "$pane" --source ovvi-cli --token "ovvi-req=$id" --ttl-ms 3000 >/dev/null ||
     { rm -f "$f".* && fail 5 no_herdr "herdr refused the request on pane $pane; pass --pane"; }
-# Waits until $1 holds, for $2 seconds by the clock (1 s less at worst).
-until_() { end=$(($(date +%s) + $2)) && until eval "$1"; do [ "$(date +%s)" -lt $end ] || return 1; sleep 0.05; done; }
+# Waits until $1 holds, at most $2 seconds: a background sleep keeps the time, so no turn asks the clock.
+until_() {
+    # Its own output: a caller that reads ours, as `$(ovvi …)` does, never waits for it.
+    sleep "$2" >/dev/null 2>&1 &
+    t=$!
+    until eval "$1"; do
+        kill -0 $t 2>/dev/null || return 1
+        sleep 0.05
+    done
+    { kill $t && wait $t; } 2>/dev/null || :
+}
 if ! until_ '[ ! -e "$f.req" ]' 3 && mv "$f.req" "$f.dead" 2>/dev/null; then
     rm -f "$f".* && fail 3 no_ovvi "no Ovvi shows herdr session $session"
 fi
