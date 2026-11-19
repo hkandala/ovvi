@@ -69,10 +69,16 @@ extension CommandList {
                        key: address == nil ? nil : .hotkey("pane.copy-address"), group: .panes,
                        symbol: "link", keywords: "pane address url path session id commit hash clipboard",
                        enabled: address != nil, action: {
-                           guard let page, let pane = target(), let address = page.address(pane) else { return }
-                           NSPasteboard.general.clearContents()
-                           NSPasteboard.general.setString(address.text, forType: .string)
-                           page.store.show(Notice(text: "Copied \(address.kind)", tone: .success), for: .seconds(1.5))
+                           guard let page, let pane = target() else { return }
+                           Task {
+                               let path = page.address(pane)?.kind == "Path"
+                               let folder = path ? await page.store.folder(of: pane) : nil
+                               guard let address = page.address(pane, folder: folder) else { return }
+                               NSPasteboard.general.clearContents()
+                               NSPasteboard.general.setString(address.text, forType: .string)
+                               page.store.show(Notice(text: "Copied \(address.kind)", tone: .success),
+                                               for: .seconds(1.5))
+                           }
                        })
     }
 
@@ -173,8 +179,10 @@ extension CommandList {
 
 extension Page {
     /// What Copy Address copies, and what to call it: what the card shows, as its own machine names it.
-    func address(_ pane: HostStore.Pane) -> (kind: String, text: String)? {
-        let folder: (kind: String, text: String)? = (store.chooser(pane.id)?.folder ?? pane.cwd).map { ("Path", $0) }
+    /// `folder`: herdr's own (`HostStore.folder(of:)`), when read.
+    func address(_ pane: HostStore.Pane, folder cwd: String? = nil) -> (kind: String, text: String)? {
+        let folder: (kind: String, text: String)? = (store.chooser(pane.id)?.folder ?? cwd ?? pane.cwd)
+            .map { ("Path", $0) }
         if let label = pane.browser {
             let shown = pane.terminalID.flatMap { terminals.browsers[$0]?.address } ?? ""
             return [shown, label.arg].first { !$0.isEmpty }.map { ("URL", $0) }

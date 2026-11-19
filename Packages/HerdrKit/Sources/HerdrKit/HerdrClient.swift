@@ -17,6 +17,8 @@ public actor HerdrClient {
     nonisolated let exec: any Exec
     nonisolated let timeout: Duration
     nonisolated let wait: @Sendable (ContinuousClock.Instant) async -> Void
+    /// herdr sends no event for some changes (a `cd`): a read after this long with none.
+    nonisolated let idleRead: Duration
 
     private var out: AsyncStream<Update>.Continuation?
     private var lastRead: ContinuousClock.Instant?
@@ -39,11 +41,13 @@ public actor HerdrClient {
         exec: any Exec,
         timeout: Duration = .seconds(10),
         wait: @escaping @Sendable (ContinuousClock.Instant) async -> Void = { try? await Task.sleep(until: $0) },
+        idleRead: Duration = .seconds(10),
     ) {
         self.session = session
         self.exec = exec
         self.timeout = timeout
         self.wait = wait
+        self.idleRead = idleRead
     }
 
     // MARK: Requests
@@ -278,7 +282,7 @@ public actor HerdrClient {
     private func beat() async {
         repeat {
             // A 2 s tick, so a read that fails mid-wait (the session stopped) is retried soon.
-            if lastRead.map({ ContinuousClock.now - $0 >= .seconds(30) }) ?? true {
+            if lastRead.map({ ContinuousClock.now - $0 >= idleRead }) ?? true {
                 read()
             }
         } while await (try? Task.sleep(for: .seconds(2))) != nil

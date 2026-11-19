@@ -81,7 +81,7 @@ extension AgentCommand {
                 : card?.web.bridge?.failure.map { "\($0.title): \($0.text)" }
         } else {
             json["kind"] = pane.agent == nil ? "terminal" : "agent"
-            json["arg"] = pane.cwd ?? ""
+            json["arg"] = await store.folder(of: pane) ?? ""
             json["dirty"] = false
             if let agent = pane.agent {
                 json["agent"] = agent

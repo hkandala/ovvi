@@ -142,11 +142,11 @@ final class Gate: Sendable {
     }
 }
 
-/// The timeout outlasts `eventually`: a read that timed out on a starved Mac would make the heartbeat read again at any
-/// moment, and the pacing tests count reads.
+/// The timeout and the idle read outlast `eventually`: a read that timed out, or a stall on a starved Mac, would make
+/// the heartbeat read again at any moment, and the pacing tests count reads.
 func client(_ exec: FakeExec, _ gate: Gate? = nil, timeout: Duration = failureBound * 2) -> HerdrClient {
-    guard let gate else { return HerdrClient(session: "s", exec: exec, timeout: timeout) }
-    return HerdrClient(session: "s", exec: exec, timeout: timeout, wait: gate.wait)
+    guard let gate else { return HerdrClient(session: "s", exec: exec, timeout: timeout, idleRead: failureBound * 2) }
+    return HerdrClient(session: "s", exec: exec, timeout: timeout, wait: gate.wait, idleRead: failureBound * 2)
 }
 
 /// Two opening reads: one ahead of and one after subscribing.
