@@ -14,6 +14,8 @@ public protocol Multiplexer: Sendable {
     func mark(workspace workspaceID: String, open: Bool) async throws
     /// herdr keeps it with the pane, past the app: no time limit.
     func mark(_ paneID: String, chat: String) async throws
+    /// As `chat`, and beside it: a pane token survives moves (a terminal's id does too) and goes with the pane.
+    func mark(_ paneID: String, view: String) async throws
     func program(_ paneID: String) async throws -> Program?
     func terminal(_ terminalID: String, cols: Int, rows: Int, observe: Bool, takeover: Bool) async throws
         -> TerminalStream
@@ -136,6 +138,11 @@ extension HerdrClient: Multiplexer {
     public nonisolated func mark(_ paneID: String, chat: String) async throws {
         let _: Created = try await call("pane.report_metadata", ["pane_id": paneID, "source": "ovvi-chat",
                                                                  "tokens": [Tokens.chat: chat]])
+    }
+
+    public nonisolated func mark(_ paneID: String, view: String) async throws {
+        let _: Created = try await call("pane.report_metadata", ["pane_id": paneID, "source": "ovvi-chat",
+                                                                 "tokens": [Tokens.view: view]])
     }
 
     public nonisolated func mark(workspace workspaceID: String, open: Bool) async throws {

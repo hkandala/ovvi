@@ -97,6 +97,11 @@ public struct Pane: Decodable, Equatable, Sendable, Identifiable {
         tokens?[Tokens.chat]
     }
 
+    /// Chat or TUI, as the last switch in any Ovvi left it (`mark(_:view:)`).
+    public var view: String? {
+        tokens?[Tokens.view]
+    }
+
     enum CodingKeys: String, CodingKey {
         case id = "pane_id", terminalID = "terminal_id", tabID = "tab_id", label, cwd, agent
         case title = "terminal_title_stripped", scroll, agentStatus = "agent_status", agentSession = "agent_session"
@@ -105,7 +110,7 @@ public struct Pane: Decodable, Equatable, Sendable, Identifiable {
 }
 
 struct Tokens: Decodable, Equatable {
-    static let request = "ovvi-req", chat = "ovvi-chat", open = "ovvi-open"
+    static let request = "ovvi-req", chat = "ovvi-chat", view = "ovvi-view", open = "ovvi-open"
 
     private let values: [String: String]
 

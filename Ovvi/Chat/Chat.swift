@@ -30,6 +30,9 @@ final class Chat {
         didSet { store?.keep(self) }
     }
 
+    /// The pane's token as this app last saw or wrote it.
+    @ObservationIgnored var kept: Bool?
+
     /// The history holds what the agent wrote: the chat shows a loader until then, its empty state only once it knows
     /// the conversation is new. False for a chat found running or resumed until its transcript is read, and for one
     /// nothing followed for a while.

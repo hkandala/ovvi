@@ -108,6 +108,14 @@ extension OvviUITests {
             XCTAssertTrue(element("pane.\(tui).view.tui").has(\.isSelected, true, within: 10))
             XCTAssertFalse(element("chat.\(tui).composer").exists)
         }
+        step("Another Ovvi on the session switched the chat's card to TUI: this one opens it on TUI")
+        try await Self.call(one, "pane.report_metadata", ["pane_id": chat, "source": "ovvi-chat",
+                                                          "tokens": ["ovvi-view": "tui"]])
+        relaunch(one, ["-agentView", "chat"])
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        element("workspace.w2").click()
+        try await select(chatTab)
+        XCTAssertTrue(element("pane.\(chat).view.tui").has(\.isSelected, true, within: 10))
     }
 
     /// Each look is one snapshot: none until `shown` holds the empty chat's header.

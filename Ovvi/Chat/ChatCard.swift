@@ -16,71 +16,22 @@ extension HostStore {
         let chat = Chat(adapter: adapter, paneID: pane.id, terminalID: terminalID, store: self,
                         current: launch?.fresh == true)
         chats[terminalID] = chat
-        chat.showsChat = launch?.opensChat ?? views?[terminalID].map { $0 == "chat" }
-            ?? (AppSettings().agentView == .chat)
+        // Once per chat: a scan of the panes.
+        chat.kept = last?.panes.first { $0.terminalID == terminalID }?.view.map { $0 == "chat" }
+        chat.showsChat = launch?.opensChat ?? chat.kept ?? (AppSettings().agentView == .chat)
         return chat
     }
 
-    /// On the pane's machine, beside the cards' state files: it outlives the app, and a terminal's id survives moves.
-    /// A cold restart of herdr gives new ids, but it also ends every chat (herdr starts the agents again without the
-    /// flags). ponytail: each write is the whole file as this app knows it, so two Macs on one remote session undo
-    /// each other's switches; read, change one key and write if that shows.
-    private var viewsPath: String {
-        ".local/state/ovvi/\(session)/views.json"
-    }
-
-    /// At each snapshot until it is read, after the first one's sweep of old state files (so that a file old enough
-    /// goes first): terminals gone meanwhile go from it.
-    func readViews(pruning: Bool) {
-        guard views == nil, !viewsReading else { return }
-        viewsReading = true
-        Task {
-            if pruning {
-                await machine.exec().pruneState(session: session)
-            }
-            await loadViews()
-            viewsReading = false
-        }
-    }
-
-    private func loadViews() async {
-        let exec = await machine.exec()
-        let text = await exec.read(home: viewsPath)
-        // A failed read (a remote's ssh, its timeout) is nil too: only a missing or empty file starts empty.
-        if text == nil,
-           await (try? exec.output(["sh", "-c", #"[ -s "$HOME/$1" ] || echo none"#, "sh", viewsPath])) != "none"
-        {
-            return
-        }
-        let saved = text.flatMap { try? JSONDecoder().decode([String: String].self, from: Data($0.utf8)) } ?? [:]
-        let live = Set(last?.panes.compactMap(\.terminalID) ?? [])
-        var views = saved.filter { live.contains($0.key) }
-        // Chats made ahead of the read.
-        for chat in chats.values {
-            if let view = views[chat.terminalID] {
-                chat.showsChat = view == "chat"
-            } else {
-                views[chat.terminalID] = chat.showsChat ? "chat" : "tui"
-            }
-        }
-        self.views = views
-        // Also unchanged: each write refreshes the file's age for the sweep.
-        writeViews()
-    }
-
+    /// In the pane's `ovvi-view` token: herdr keeps it past the app, and each Ovvi on the session writes only its own
+    /// switches. A cold restart of herdr drops it, but it also ends every chat (herdr starts the agents again without
+    /// the flags).
     func keep(_ chat: Chat) {
-        let view = chat.showsChat ? "chat" : "tui"
-        guard views != nil, views?[chat.terminalID] != view else { return }
-        views?[chat.terminalID] = view
-        writeViews()
-    }
-
-    func writeViews() {
-        guard let views, let data = try? JSONEncoder().encode(views) else { return }
-        let previous = viewsWrite, path = viewsPath, machine = machine
-        viewsWrite = Task {
+        guard chat.kept != chat.showsChat, let client else { return }
+        chat.kept = chat.showsChat
+        let previous = viewWrite, paneID = chat.paneID, view = chat.showsChat ? "chat" : "tui"
+        viewWrite = Task {
             await previous?.value
-            await machine.exec().write(home: path, String(decoding: data, as: UTF8.self))
+            try? await client.mark(paneID, view: view)
         }
     }
 }
