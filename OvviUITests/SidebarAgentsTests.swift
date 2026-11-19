@@ -8,6 +8,10 @@ extension OvviUITests {
         let working = try await split(idle)
         try await report(working, "working")
         try await rename(working, "fixer")
+        // Before newTab clicks beta's row: this row moves it down.
+        try await expect("the pane's name as the title") {
+            element("agent.\(working)").label.hasPrefix("fixer, alpha · ")
+        }
         let blocked = try await newTab("deploy").pane
         try await report(blocked, "blocked", agent: "claude")
         let done = try await finish(newTab("docs"))
@@ -21,7 +25,6 @@ extension OvviUITests {
         }
         try await expectOrder([element("workspace.w1"), rows[3], rows[2], element("workspace.w2"), rows[1], rows[0]],
                               "by tab, then left to right, under each workspace")
-        try await expect("the pane's name as the title") { rows[2].label.hasPrefix("fixer, alpha · ") }
         XCTAssertTrue(rows[3].label.hasPrefix("Untitled, alpha · "), rows[3].label)
         XCTAssertEqual(rows[0].frame.height, 28, accuracy: 0.5)
         XCTAssertEqual(rows[0].frame.minX - 4, element("workspace.w2").frame.minX, accuracy: 0.5)
