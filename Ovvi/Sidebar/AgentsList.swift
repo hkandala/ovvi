@@ -155,7 +155,7 @@ private struct GroupHeader: View {
     }
 }
 
-/// Archived Sessions' row: lit under the pointer, where a done one shows its ×.
+/// Archived Sessions' row's look: lit under the pointer, where a done one shows its ×.
 private struct AgentRow: View {
     /// The ×'s ink from the row's right edge: 4 pt more than the tile's inset on the left.
     private static let clearInset = AgentsSection.padding + 4

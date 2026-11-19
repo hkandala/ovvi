@@ -52,6 +52,7 @@ extension OvviUITests {
         step("The header's menu switches the view and closes the section")
         let header = element("agents.header")
         header.rightClick()
+        XCTAssertTrue(menu["Show Archived Sessions"].exists(within: 2))
         menu["Show Archived Sessions"].click()
         XCTAssertTrue(element("agents.back").exists(within: 2))
         element("agents.back").rightClick()
@@ -59,6 +60,7 @@ extension OvviUITests {
         menu["Show Agents"].click()
         XCTAssertTrue(header.exists(within: 2))
         header.rightClick()
+        XCTAssertTrue(menu["Close"].exists(within: 2))
         menu["Close"].click()
         XCTAssertTrue(section.vanishes(within: 2))
 

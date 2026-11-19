@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// Over the foot, opened by its agents' box: the machine's agents, or in its place, by the archive button, the
-/// archived sessions. The foot's box or Esc closes it; in the archived sessions Esc goes back first.
+/// archived sessions. The foot's box, its header's × or menu, or Esc close it; in the archived sessions Esc goes back
+/// first.
 struct AgentsSection: View {
     let pages: WindowPages
     let page: Page
