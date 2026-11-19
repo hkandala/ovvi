@@ -29,8 +29,9 @@ export default function (pi) {
 		ui = ctx.mode === "tui";
 		path = ctx.sessionManager.getSessionFile();
 		write({ type: "session", path });
-		// A count that came ahead of this (another extension's session_start ran first) was not written.
-		if (waiting.agents || waiting.jobs) write({ type: "waiting", ...waiting });
+		// Always: a count that came ahead of this (another extension's session_start ran first) was not written,
+		// and a reload (/new, /resume, /fork, /reload) starts again at 0, over a count the file still holds.
+		write({ type: "waiting", ...waiting });
 	});
 	// /tree writes nothing to the transcript: the new leaf, and the transcript's size at the move (entries after it
 	// grow from that leaf).

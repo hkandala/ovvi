@@ -192,12 +192,14 @@ struct ChatMessages: View, Equatable {
                         ForEach(chat.outgoing) { message in
                             outgoing(message, error: error)
                         }
-                        if let waiting = chat.waiting, chat.state == .working {
-                            Text(waiting).font(.system(size: 12)).foregroundStyle(.secondary).readableText(waiting)
-                                .accessibilityIdentifier("chat.\(chat.paneID).waiting")
-                        } else if chat.state == .working {
-                            // Not the last turn's, interrupted, while the next message is on its way.
-                            WorkingRow(since: chat.outgoing.isEmpty ? chat.history.turnStart : nil)
+                        if chat.state == .working {
+                            if let waiting = chat.waiting {
+                                Text(waiting).font(.system(size: 12)).foregroundStyle(.secondary).readableText(waiting)
+                                    .accessibilityIdentifier("chat.\(chat.paneID).waiting")
+                            } else {
+                                // Not the last turn's, interrupted, while the next message is on its way.
+                                WorkingRow(since: chat.outgoing.isEmpty ? chat.history.turnStart : nil)
+                            }
                         }
                         if let problem = chat.problem {
                             problemCard(problem, error: error)
