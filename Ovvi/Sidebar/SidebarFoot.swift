@@ -70,10 +70,10 @@ private struct AgentsBox: View {
     @ViewBuilder private func label(_ state: AgentState?) -> some View {
         let shape = RoundedRectangle(cornerRadius: 6, style: .continuous)
         if let state {
-            let color = state.color(look)
+            let color = state.color(look), words = state.words(counts[state, default: 0])
             HStack(spacing: 5) {
                 StateIcon(state: state)
-                Text(state.words(counts[state, default: 0]))
+                Text(words)
             }
             .lineLimit(1)
             .font(.system(size: 11, weight: .semibold)).foregroundStyle(color)
@@ -81,6 +81,10 @@ private struct AgentsBox: View {
             .frame(maxHeight: .infinity)
             .background(color.opacity(open ? 0.24 : 0.14), in: shape)
             .overlay(shape.strokeBorder(color.opacity(0.45)))
+            // ponytail: a workaround. Once, updated in place, its text kept the last value's drawing (the done words
+            // in green) while its ring, border and width showed the new one; not reproduced. A new view per value
+            // draws every part afresh. Drop it if a cause turns up.
+            .id(words)
         } else {
             HStack(spacing: 5) {
                 Image(systemName: "sparkles")
