@@ -77,3 +77,39 @@ func `a title or a token alone comes from its event; any other change reads a sn
     }
     #expect(titles == ["claude b", "claude b"])
 }
+
+@Test(.timeLimit(.minutes(1))) func `an agent's title reads until a read brings its session`() async throws {
+    let exec = FakeExec()
+    let agent = #"{"pane_id":"w1:p1","tab_id":"w1:t1","terminal_id":"term_1","agent":"codex","#
+        + #""terminal_title_stripped":"codex","revision":3}"#
+    exec.state.withLock { $0.panes = [agent] }
+    let client = client(exec)
+    let updates = try await started(client, exec)
+    // herdr took a session meanwhile, with no event: a title event reads.
+    let titled = agent.replacingOccurrences(of: "\"codex\",\"revision\":3", with: "\"codex x\",\"revision\":4")
+    exec.event(updated(titled))
+    #expect(await eventually { await !client.reading && exec[\.reads] == 1 })
+    // Once a read brings the session, titles come in place again.
+    exec.state.withLock {
+        $0.panes = [titled.replacingOccurrences(
+            of: "\"codex x\"",
+            with: #""codex x","agent_session":{"agent":"codex","value":"s1"}"#,
+        )]
+    }
+    await client.refresh()
+    #expect(await eventually { await !client.reading && exec[\.reads] == 2 })
+    exec.event(updated(exec.state.withLock { $0.panes[0] }.replacingOccurrences(
+        of: "\"codex x\",",
+        with: "\"codex y\",",
+    )
+    .replacingOccurrences(of: "\"revision\":4", with: "\"revision\":5")))
+    var title: String?
+    var iterator = updates.makeAsyncIterator()
+    while let update = await iterator.next() {
+        if case let .pane(new) = update {
+            title = new.title
+            break
+        }
+    }
+    #expect(title == "codex y" && exec[\.reads] == 2)
+}

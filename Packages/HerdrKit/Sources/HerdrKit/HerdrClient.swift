@@ -247,7 +247,9 @@ public actor HerdrClient {
     /// A working agent retitles its terminal on and on, and each `ovvi` command rings with a token that expires 3 s
     /// later: those changes come from the event itself, not from a 280 KB snapshot read.
     private func inPlace(_ pane: Pane) -> Bool {
-        guard let old = known[pane.id] else { return false }
+        // herdr sends no event when an agent reports its session: until a read brought one, a title event of an
+        // agent's pane reads, as the snapshot may have the session by then.
+        guard let old = known[pane.id], old.agent == nil || old.agentSession?.agent == old.agent else { return false }
         // Older than what a read brought since.
         if let new = pane.revision, let had = old.revision, new <= had {
             return true
