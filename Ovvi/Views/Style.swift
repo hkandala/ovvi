@@ -95,8 +95,9 @@ struct Look: Equatable {
         dark ? .white.opacity(contrast ? 0.3 : 0.17) : .black.opacity(contrast ? 0.28 : 0.14)
     }
 
-    /// A list's selected row: the accent, muted, under the rows' own ink.
-    static let selectedRow = Color.accentColor.opacity(0.3)
+    /// A list's selected row: gray, under the rows' own ink. ⌘K's RowView fills 12 % of its own ink, which looks
+    /// the same.
+    static let selectedRow = Color.primary.opacity(0.12)
 
     var selected: Color {
         (dark ? Color.white : .black).opacity(contrast ? 1 : 0.9)

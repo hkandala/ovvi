@@ -96,7 +96,7 @@ final class RowView: NSView {
         }
         let row = rowRect
         if lit || hovered || pressed {
-            (lit ? NSColor(Look.selectedRow) : RowInk.primary.withAlphaComponent(pressed ? 0.08 : 0.05)).setFill()
+            RowInk.primary.withAlphaComponent(lit ? 0.12 : pressed ? 0.08 : 0.05).setFill()
             NSBezierPath(cgPath: Path(roundedRect: row, cornerRadius: 8, style: .continuous).cgPath).fill()
         }
         // Read as it draws: a row is made ahead of joining a window.
