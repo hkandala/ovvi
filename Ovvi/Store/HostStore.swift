@@ -91,6 +91,8 @@ final class HostStore {
         }
     }
 
+    /// The panes and their calling states at the last sweep of delivered notifications (`Notifications.post`).
+    @ObservationIgnored var notified: Int?
     @ObservationIgnored var marked: Set<String> = []
     @ObservationIgnored var openMarked: Set<String> = []
     @ObservationIgnored var marking: Task<Void, Never>?

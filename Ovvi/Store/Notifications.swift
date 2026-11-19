@@ -7,18 +7,25 @@ enum Notifications {
 
     static func post(_ changes: [Seen.Change], _ page: Page) {
         let store = page.store
-        Task {
-            let center = UNUserNotificationCenter.current()
-            let delivered = await center.deliveredNotifications().map(\.request.identifier)
-            // After the wait: a later snapshot's new one must not go.
-            let holding = Set(store.panes.filter { $0.state?.calls == true }
-                .map { id($0, of: store) })
-            let prefix = Self.prefix(store)
-            let panes = Set(store.panes.map { agent + id($0, of: store) })
-            let gone = delivered.filter {
-                $0.hasPrefix(prefix) && !holding.contains($0) || $0.hasPrefix(agent + prefix) && !panes.contains($0)
+        // Only when a pane comes, goes, or starts or stops calling: each sweep asks the notification server for every
+        // delivered notification, and a busy session snapshots four times a second.
+        let key = Self.key(store)
+        if key != store.notified {
+            store.notified = key
+            Task {
+                let center = UNUserNotificationCenter.current()
+                let delivered = await center.deliveredNotifications().map(\.request.identifier)
+                // After the wait: a later snapshot's new one must not go.
+                store.notified = Self.key(store)
+                let holding = Set(store.panes.filter { $0.state?.calls == true }
+                    .map { id($0, of: store) })
+                let prefix = Self.prefix(store)
+                let panes = Set(store.panes.map { agent + id($0, of: store) })
+                let gone = delivered.filter {
+                    $0.hasPrefix(prefix) && !holding.contains($0) || $0.hasPrefix(agent + prefix) && !panes.contains($0)
+                }
+                center.removeDeliveredNotifications(withIdentifiers: gone)
             }
-            center.removeDeliveredNotifications(withIdentifiers: gone)
         }
         let settings = AppSettings()
         for change in changes where change.state.calls
@@ -33,6 +40,15 @@ enum Notifications {
             UNUserNotificationCenter.current()
                 .add(UNNotificationRequest(identifier: id(pane, of: store), content: content, trigger: nil))
         }
+    }
+
+    private static func key(_ store: HostStore) -> Int {
+        var hasher = Hasher()
+        for pane in store.panes {
+            hasher.combine(pane.terminalID ?? pane.id)
+            hasher.combine(pane.state?.calls == true)
+        }
+        return hasher.finalize()
     }
 
     static func post(_ title: String, _ body: String, from agent: String, for pane: HostStore.Pane,
