@@ -32,7 +32,8 @@ Run them from the repository root. When a Makefile target runs a script, use the
 
 ## CI and releases
 
-- `ci-herdr.sh`, `ci-sshd.sh`: the herdr of CI, and its sshd for the remote tests.
+- `ci-herdr.sh`, `ci-sshd.sh`, `ci-display.m`: the herdr of CI, its sshd for the remote tests, and the test jobs'
+  1024 × 768 screen at 1x.
 - `install.sh`: the curl installer, published with each release.
 - `release-notes.sh`, `appcast.sh`: the notes of a release and its update feed ([RELEASING.md](../RELEASING.md)).
 

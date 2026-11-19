@@ -96,6 +96,9 @@ jobs:
           name: products
       - if: ${{ !inputs.only_testing }}
         run: tar -xf products.tar && rm products.tar
+      # The tests are tuned to a 1024 x 768 pt screen at 1x; the macOS 27.2 image boots at 1920 x 1080.
+      - run: clang -fobjc-arc -framework Foundation -framework CoreGraphics scripts/ci-display.m -o /tmp/ci-display &&
+          /tmp/ci-display 1024 768
       # The image has xcbeautify and node.
       - run: scripts/ci-herdr.sh
       - run: scripts/ci-sshd.sh

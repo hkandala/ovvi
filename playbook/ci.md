@@ -15,12 +15,13 @@ How CI runs, how to run part of it, and how to keep it green and fast.
 - **Docs site.** `.github/workflows/docs-deploy.yml` builds the docs and deploys them to the Vercel project
   `ovvi` when `docs/` changes; Vercel's own git deploys are off. Run the `vercel` CLI only from the repo
   root: in another folder `vercel pull --yes` creates and links a new project.
-- **Machines.** `runs-on: xcode-27`: a VM with a 1x display (a 1024 × 674 pt screen), the US keyboard layout
-  and Reduce Motion on; 3 cores and 7 GB, and one runner can be half as fast as the next. The account has 5 macOS
-  runners: GitHub's limit for every plan below Enterprise, shared by all of the account's runs. herdr is downloaded
-  and checked by its SHA-256 (`scripts/ci-herdr.sh`). At 1x, cell sizes round: `stty size` can be one column
-  narrower than the card's grid, and a 1 pt font step can leave the column count the same, so grid tests allow one
-  column. A second ⌃⌘F during the full-screen animation is lost.
+- **Machines.** `runs-on: xcode-27`: a VM with a 1x display of 1024 × 768 pt (1024 × 674 under the menu bar and above
+  the Dock), set by each test job with `scripts/ci-display.m` (the macOS 27.2 image boots at 1920 × 1080); the US
+  keyboard layout and Reduce Motion on; 3 cores and 7 GB, and one runner can be half as fast as the next. The account
+  has 5 macOS runners: GitHub's limit for every plan below Enterprise, shared by all of the account's runs. herdr is
+  downloaded and checked by its SHA-256 (`scripts/ci-herdr.sh`). At 1x, cell sizes round: `stty size` can be one
+  column narrower than the card's grid, and a 1 pt font step can leave the column count the same, so grid tests allow
+  one column. A second ⌃⌘F during the full-screen animation is lost.
 - **Checks** (a push or a pull request): one job, `checks`, runs `make lint`, `make build`,
   `make build-tests` (the UI tests compile), and `make test` (HerdrKit, the acknowledgements,
   the Settings rows (`scripts/check-settings.py`), the UI tests' own launches (`scripts/check-launches.py`), the
