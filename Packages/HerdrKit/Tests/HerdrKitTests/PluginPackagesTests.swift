@@ -121,6 +121,57 @@ private func package(_ folder: URL, version: String, extra: [String: Any] = [:])
     #expect(!PluginPackages.newer("0.9.0", than: "1.0.0"))
 }
 
+private struct PackOutput: Exec {
+    let output: String
+
+    func herdr() async -> String? {
+        nil
+    }
+
+    func run(_ argv: [String]) async throws -> Channel {
+        if argv.starts(with: ["npm", "pack"]), argv.contains("--dry-run") {
+            return try await offline.run(["printf", "%s", output])
+        }
+        if argv.starts(with: ["npm", "pack"]), let destination = argv.firstIndex(of: "--pack-destination") {
+            try package(URL(filePath: argv[destination + 1]).appending(path: "package"), version: "1.0.0")
+            return try await offline.run(["printf", "%s", output])
+        }
+        if argv.first == "tar" {
+            #expect(argv == ["tar", "-xzf", argv[4] + "/csv-table-1.0.0.tgz", "-C", argv[4]])
+            return try await offline.run(["true"])
+        }
+        return try await offline.run(argv)
+    }
+}
+
+@Test(arguments: [
+    #"[{"filename":"csv-table-1.0.0.tgz"}]"#,
+    #"{"csv-table":{"filename":"csv-table-1.0.0.tgz"}}"#,
+])
+func `npm pack accepts array and package keyed output`(_ output: String) async throws {
+    let scratch = try scratchFolder()
+    defer { try? FileManager.default.removeItem(at: scratch) }
+    let staged = try await PluginPackages.fetch(.npm("csv-table"), into: scratch, exec: PackOutput(output: output))
+    defer { PluginPackages.discard(staged) }
+    #expect(staged.manifest.id == "csv-table")
+}
+
+@Test(arguments: [#"[{"version":"1.0.0"}]"#, #"{"csv-table":{"version":"1.0.0"}}"#])
+func `npm says the newest version in array and package keyed output`(_ output: String) async throws {
+    #expect(try await PluginPackages.latest("csv-table", exec: PackOutput(output: output)) == "1.0.0")
+}
+
+@Test(arguments: ["not json", "[]", "{}", "[{}]", #"{"csv-table":{}}"#,
+                  #"[{"filename":42}]"#, #"{"csv-table":{"filename":42}}"#])
+func `npm pack rejects output without a package filename`(_ output: String) async throws {
+    let scratch = try scratchFolder()
+    defer { try? FileManager.default.removeItem(at: scratch) }
+    await #expect(throws: HerdrError.failed("npm pack printed no package")) {
+        try await PluginPackages.fetch(.npm("csv-table"), into: scratch, exec: PackOutput(output: output))
+    }
+    #expect(try FileManager.default.contentsOfDirectory(atPath: scratch.path).isEmpty)
+}
+
 @Test func `a package that is not a plugin is left out of the plugins folder`() async throws {
     let scratch = try scratchFolder()
     defer { try? FileManager.default.removeItem(at: scratch) }

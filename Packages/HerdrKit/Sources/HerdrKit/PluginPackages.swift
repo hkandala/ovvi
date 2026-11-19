@@ -121,7 +121,9 @@ public enum PluginPackages {
     private static func pack(_ spec: String, _ options: [String], exec: any Exec) async throws -> [String: Any] {
         let packed = try await exec.checkedOutput(["npm", "pack", spec, "--json", "--ignore-scripts"] + options,
                                                   timeout: .seconds(300))
-        return (try? JSONSerialization.jsonObject(with: Data(packed.utf8)) as? [[String: Any]])?.first ?? [:]
+        let json = try? JSONSerialization.jsonObject(with: Data(packed.utf8))
+        // npm 12 keys the result by package name; earlier versions return an array.
+        return (json as? [[String: Any]])?.first ?? (json as? [String: [String: Any]])?.values.first ?? [:]
     }
 
     /// An npm package that ships its build needs nothing more: an npm install never builds again. Any other builds
