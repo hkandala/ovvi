@@ -72,6 +72,10 @@ struct ArchivedShelf: View {
             await searchOlder(shown)
         }
         .task(id: attempt) {
+            // The open agents' sessions leave the list; herdr sends no event for a session's report.
+            for store in HostStore.all where store.machine.id == page.store.machine.id {
+                await store.client?.refresh()
+            }
             let machine = page.store.machine.id
             (list, loading) = (Self.lists[machine] ?? ClosedList(), Self.lists[machine] == nil)
             (reading, failed, generation) = ([], [], generation + 1)

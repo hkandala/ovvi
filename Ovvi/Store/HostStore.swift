@@ -102,6 +102,8 @@ final class HostStore {
     @ObservationIgnored private var connecting = false
     @ObservationIgnored private var connects = 0
     @ObservationIgnored private(set) var client: (any Multiplexer)?
+    /// The client's reads that came, and who waits for which (`fresh`).
+    @ObservationIgnored private var reads: (came: Int, waiting: [(Int, CheckedContinuation<Void, Never>)]) = (0, [])
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored var gitReads: Set<String> = []
     /// By root, while a window follows the session's git (`followGit`).
@@ -180,7 +182,7 @@ final class HostStore {
     private func run() async {
         let client: any Multiplexer = await HerdrClient(session: session, exec: machine.exec())
         self.client = client
-        defer { self.client = nil }
+        defer { ended() }
         var loadedSessions = false
         for await update in await client.updates() {
             switch update {
@@ -193,6 +195,7 @@ final class HostStore {
                 starting = false
                 startStopped = false
                 snapshotted(changes)
+                came()
                 Latency.shared.applied(since: start)
                 Telemetry.saw(snapshot, remote: machine.isRemote)
                 // After the first snapshot, so the session list never delays the layout.
@@ -212,6 +215,7 @@ final class HostStore {
                 // ponytail: not cancelled with the store; its runs' timeouts and the float's 8 s wait end it.
                 Task { await answer(request: id, from: pane) }
             case let .error(error):
+                came()
                 await failed(error)
             }
         }
@@ -342,6 +346,28 @@ extension HostStore {
         guard let client, let listed = try? await client.sessions() else { return }
         sessions = listed
         KnownSessions.keep(listed, of: machine)
+    }
+
+    /// herdr sends no event for an agent's session report: an action that needs the session reads first, once.
+    func fresh() async {
+        guard let client else { return }
+        let read = await client.refresh()
+        if reads.came < read, self.client != nil {
+            await withCheckedContinuation { reads.waiting.append((read, $0)) }
+        }
+    }
+
+    private func came() {
+        reads.came += 1
+        let came = reads.came, done = reads.waiting.filter { $0.0 <= came }
+        reads.waiting.removeAll { $0.0 <= came }
+        done.forEach { $0.1.resume() }
+    }
+
+    private func ended() {
+        client = nil
+        reads.waiting.forEach { $0.1.resume() }
+        reads.waiting = []
     }
 
     /// A title or tokens from herdr's event (`Update.pane`): what a snapshot with them would change. Only a new

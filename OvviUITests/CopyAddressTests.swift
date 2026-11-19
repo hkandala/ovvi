@@ -46,11 +46,19 @@ extension OvviUITests {
 
         // The state ahead of the session: herdr takes no state report after it. herdr takes pi's and OpenCode's
         // sessions only from their own plugins: DecodingTests checks pi's file.
-        for (pane, agent) in [(shell, "claude"), (codex, "codex")] {
-            let id = UUID().uuidString.lowercased()
-            try await report(pane, "working", agent: agent)
-            try await reportSession(pane, id, agent: agent)
-            copies(pane, "Session ID") { $0 == id }
-        }
+        let id = UUID().uuidString.lowercased(), codexID = UUID().uuidString.lowercased()
+        try await report(shell, "working", agent: "claude")
+        try await waitForValue("tab.\(tab)", containing: "working")
+        element("terminal.\(shell)").click()
+        // With no event after it, nor a title: one press reads herdr before it decides.
+        try await Self.call(one, "pane.report_agent_session", ["pane_id": shell, "source": "herdr:claude",
+                                                               "agent": "claude", "agent_session_id": id])
+        app.typeKey("c", modifierFlags: [.command, .shift])
+        XCTAssertTrue(until(3) { NSPasteboard.general.string(forType: .string) == id },
+                      NSPasteboard.general.string(forType: .string) ?? "nothing copied")
+        XCTAssertTrue(text("Copied Session ID", in: element("detail.notice")).exists(within: 2))
+        try await report(codex, "working", agent: "codex")
+        try await reportSession(codex, codexID, agent: "codex")
+        copies(codex, "Session ID") { $0 == codexID }
     }
 }

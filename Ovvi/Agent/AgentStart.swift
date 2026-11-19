@@ -85,6 +85,9 @@ extension AgentCommand {
             throw AgentError(code: "self", message: "pane \(target.id) is the asking one: its agent would end first")
         }
         let (store, pane) = try call.found(target)
+        if pane.agent != nil, pane.session == nil {
+            await store.fresh()
+        }
         let name = pane.agentLabel ?? "the agent"
         let busy = AgentError(
             code: "busy",

@@ -5,7 +5,8 @@ public protocol Multiplexer: Sendable {
     func snapshot() async throws -> Snapshot
     /// Called once.
     func updates() async -> AsyncStream<Update>
-    func refresh() async
+    @discardableResult
+    func refresh() async -> Int
     @discardableResult
     func startServer(within timeout: Duration) async throws -> Bool
 

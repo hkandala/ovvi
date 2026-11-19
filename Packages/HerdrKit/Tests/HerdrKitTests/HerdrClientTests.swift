@@ -228,6 +228,27 @@ private func snapshot(version: String) -> String {
     withExtendedLifetime(updates) {}
 }
 
+@Test func `refresh names the read that starts after it, not one in flight`() async throws {
+    let exec = FakeExec(readDelay: .milliseconds(300))
+    let client = client(exec)
+    let updates = try await started(client, exec), came = Mutex(0)
+    let counting = Task {
+        for await _ in updates {
+            came.withLock { $0 += 1 }
+        }
+    }
+    defer { counting.cancel() }
+    let idle = await client.refresh()
+    #expect(await eventually { came.withLock { $0 } == idle && exec[\.inFlight] == 0 })
+    exec.event()
+    #expect(await eventually { exec[\.inFlight] == 1 })
+    let busy = await client.refresh()
+    #expect(busy == idle + 2)
+    #expect(await eventually { came.withLock { $0 } == busy && exec[\.inFlight] == 0 })
+    try? await Task.sleep(for: .milliseconds(100))
+    #expect(came.withLock { $0 } == busy && exec[\.reads] == 3)
+}
+
 private func keepComing(_ exec: FakeExec) -> Task<Void, Never> {
     Task {
         while !Task.isCancelled {

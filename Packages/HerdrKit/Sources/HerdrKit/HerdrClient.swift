@@ -35,6 +35,8 @@ public actor HerdrClient {
     /// The titles events brought during the read that runs: only these may stand over its snapshot, as herdr counts
     /// revisions again from 0 when it restarts.
     private var arrived: [String: Pane] = [:]
+    /// Reads started; each yields one update.
+    private var started = 0
 
     public init(
         session: String,
@@ -143,10 +145,15 @@ public actor HerdrClient {
         return stream
     }
 
-    public func refresh() {
+    /// The number of the read that answers this call: it has come once the stream brought that many `.snapshot`s and
+    /// `.error`s.
+    @discardableResult
+    public func refresh() -> Int {
         hurry = true
         pause?.cancel()
         read()
+        // Reads run one after the other, and a read in progress may have started before the change asked for.
+        return started + 1
     }
 
     private func read() {
@@ -161,6 +168,7 @@ public actor HerdrClient {
                 readAgain = false
                 hurry = false
                 let started = ContinuousClock.now
+                self.started += 1
                 arrived = [:]
                 do {
                     var snapshot = try await snapshot()

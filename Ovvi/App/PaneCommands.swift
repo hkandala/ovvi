@@ -71,6 +71,10 @@ extension CommandList {
                        enabled: address != nil, action: {
                            guard let page, let pane = target() else { return }
                            Task {
+                               if pane.agent != nil, pane.session == nil {
+                                   await page.store.fresh()
+                               }
+                               // The pane asked for, though the keyboard may move during the reads.
                                let path = page.address(pane)?.kind == "Path"
                                let folder = path ? await page.store.folder(of: pane) : nil
                                guard let address = page.address(pane, folder: folder) else { return }
