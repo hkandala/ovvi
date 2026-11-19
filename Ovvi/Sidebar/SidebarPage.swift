@@ -243,7 +243,7 @@ private extension SidebarPage {
                 .accessibilityAddTraits(.isStaticText)
                 .accessibilityLabel("Pin Space")
                 .accessibilityValue(drop.region ? "lit" : "")
-                .accessibilityIdentifier("sidebar.pin-region")
+                .accessibilityIdentifier(PinRegion.id)
         } else {
             Color.clear.frame(height: 0).overlay {
                 Rectangle().fill(.primary.opacity(0.14)).frame(height: 1)
