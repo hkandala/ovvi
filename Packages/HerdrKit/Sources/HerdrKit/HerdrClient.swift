@@ -1,4 +1,6 @@
 import Foundation
+import os
+import Synchronization
 
 let herdrVersion = "0.9.3"
 
@@ -115,6 +117,10 @@ public actor HerdrClient {
             if let tree = SplitNode(layout) {
                 snapshot.trees[layout.tabID] = tree
             } else {
+                // The split ids no longer parse (herdr changed their form): one call per tab from now on.
+                if !Self.exported.exchange(true, ordering: .relaxed) {
+                    Self.log.warning("herdr's split ids did not parse: each tab's tree comes from layout.export")
+                }
                 let export: ExportResult = try await call("layout.export", ["tab_id": layout.tabID])
                 snapshot.trees[layout.tabID] = export.layout.root
             }
@@ -186,6 +192,8 @@ public actor HerdrClient {
     }
 
     static let spacing = Duration.milliseconds(500)
+    private static let log = Logger(ovvi: "herdr")
+    private static let exported = Atomic(false)
 
     private func stop() {
         out = nil
