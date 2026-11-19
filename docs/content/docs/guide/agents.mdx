@@ -167,11 +167,13 @@ option to answer.
 
 If you answer in the TUI first, the question card goes away.
 
-The agent can also ask something that the chat cannot answer: a tool approval, a picker, an extension dialog or a
-question with several answers. Then the bottom of the card shows the agent's live terminal in place of the reply
-box. Its header says
-"Claude Code is asking in the terminal". Answer there, or click Open TUI to switch the whole card. When the agent
-goes on, the reply box comes back.
+The agent can also ask something that the chat cannot answer, such as a tool approval or a question with several
+answers. When herdr reports that the agent needs you, the bottom of the card shows the agent's live terminal in place
+of the reply box. Its header says "Claude Code is asking in the terminal". Answer there, or click Open TUI to switch
+the whole card. When the agent goes on, the reply box comes back.
+
+The chat uses only the state that herdr reports. If herdr reports a waiting agent as idle, for example while a Codex
+picker or a pi extension dialog is open, the reply box stays. Click TUI to answer there.
 
 ### When the chat cannot read the session
 
@@ -191,8 +193,8 @@ The agent still runs. Use the TUI.
 | Agent | In the chat | Notes |
 |---|---|---|
 | Claude Code | Messages, tool calls, questions | A tool approval shows the live terminal. |
-| Codex | Messages, tool calls, subagents | Pickers and questions show the live terminal. |
-| Pi | Messages, tool calls, `/tree` moves | Extension dialogs show the live terminal. Needs pi 0.80.4 or later. |
+| Codex | Messages, tool calls, subagents | Approvals and questions show the live terminal. |
+| Pi | Messages, tool calls, `/tree` moves | Needs pi 0.80.4 or later. |
 | OpenCode | Messages, tool calls, permissions, questions | Needs a build that loads plugins. A remote machine needs `curl`. |
 
 A new session in the TUI (`/clear`, `/new`, a fork or a resume) starts the chat again with that session.

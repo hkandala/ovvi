@@ -54,9 +54,9 @@ struct ChatView: View {
         })
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
         .task(id: ObjectIdentifier(chat)) { await chat.viewed() }
-        .onChange(of: chat.phase) { old, new in
-            if old == .waiting, new != .waiting {
-                chat.question = nil
+        .onChange(of: chat.state) { old, new in
+            if old == .needsYou, new != .needsYou {
+                chat.unask()
             }
         }
         .onAppear {
@@ -96,7 +96,7 @@ struct Composer: View {
     static let inset: CGFloat = 18
 
     var body: some View {
-        let working = chat.phase == .working
+        let working = chat.state == .working
         return VStack(alignment: .leading, spacing: 2) {
             TextField(placeholder ?? "Ask Anything", text: $chat.draft, axis: .vertical)
                 .textFieldStyle(.plain)

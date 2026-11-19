@@ -14,18 +14,9 @@ extension OvviUITests {
         XCTAssertTrue(row(pane, "note", "Interrupted").exists(within: 5))
         XCTAssertTrue(element("chat.\(pane).send").exists(within: 5))
 
-        // A picker: herdr says idle, the screen has no input box: the terminal, with the keyboard, until Esc.
-        try await say("model", in: pane)
-        let drawer = element("chat.\(pane).drawer")
-        XCTAssertTrue(drawer.exists(within: 5))
-        XCTAssertFalse(element("chat.\(pane).composer").exists)
-        XCTAssertTrue(hasKeyboard("terminal.\(pane)"))
-        app.typeKey(.escape, modifierFlags: [])
-        XCTAssertTrue(drawer.vanishes(within: 5))
-        XCTAssertTrue(element("chat.\(pane).composer").exists(within: 3))
-
         // An approval: herdr says blocked.
         try await say("wait", in: pane)
+        let drawer = element("chat.\(pane).drawer")
         XCTAssertTrue(drawer.exists(within: 5))
         app.typeText("1")
         XCTAssertTrue(drawer.vanishes(within: 5))
@@ -74,9 +65,5 @@ extension OvviUITests {
         let pane = try await startChat(agent: 1).pane
         try await say("hello", in: pane)
         XCTAssertTrue(row(pane, "reply", "Echo: **hello**").exists(within: 5))
-        try await say("model", in: pane)
-        XCTAssertTrue(element("chat.\(pane).drawer").exists(within: 5))
-        app.typeKey(.escape, modifierFlags: [])
-        XCTAssertTrue(element("chat.\(pane).drawer").vanishes(within: 5))
     }
 }

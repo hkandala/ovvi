@@ -6,9 +6,9 @@ hash as Codex does (else it shows Codex's "Hooks need review" picker and runs no
 prompt, writes a rollout in Codex's format under $CODEX_HOME/sessions (else under its own folder), reports its state to
 herdr and draws Codex's input box above its status row. Started without flags it reports its session to herdr at the
 first prompt (as herdr's Codex integration does) and keeps its rollout, which `resume <session>` goes on with.
-Prompts: "wait" shows an approval until 1 is typed, "model" opens a picker (herdr still says idle) until Esc, "slow"
-works until Esc, "new" starts a new session (as `/new` and a prompt do), a prompt of OVVI_STAND_IN_SCENE's
-turns plays that turn (scripts/welcome-scene/scene.py), anything else gets one command and the reply "Echo: <prompt>".
+Prompts: "wait" shows an approval until 1 is typed, "slow" works until Esc, "new" starts a new session (as `/new` and
+a prompt do), a prompt of OVVI_STAND_IN_SCENE's turns plays that turn (scripts/welcome-scene/scene.py), anything else
+gets one command and the reply "Echo: <prompt>".
 """
 import hashlib
 import json
@@ -111,13 +111,6 @@ def prompt(text, started_at):
             pass
         stand_in.report("working")
         item("AgentMessage", content=[{"type": "Text", "text": "Allowed."}], phase="final_answer")
-    elif text == "model":
-        stand_in.report("idle")
-        say("  Select Model and Effort\n› 1. stand-in (current)\n  2. other\n  enter select · esc back")
-        while "\x1b" not in key():
-            pass
-        box()
-        return
     elif text == "slow":
         box()
         deadline = time.time() + 30

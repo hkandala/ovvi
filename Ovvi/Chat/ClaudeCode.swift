@@ -1,12 +1,9 @@
 import Foundation
 import HerdrKit
 
-/// Its status is its session record, `~/.claude/sessions/<pid>.json` (undocumented).
 struct ClaudeCode: ChatAdapter {
     static let command = "claude"
     let token: String
-    /// One of them has the session record.
-    let pids: [Int]
     static let stopKeys = ["escape"]
     static let quit = "/exit"
 
@@ -38,19 +35,11 @@ struct ClaudeCode: ChatAdapter {
         self.init(token: token, pids: pids)
     }
 
-    init(token: String, pids: [Int]) {
+    init(token: String, pids _: [Int]) {
         self.token = token
-        self.pids = pids
     }
 
     @MainActor func follow(_ chat: Chat, on exec: any Exec) async {
-        await withDiscardingTaskGroup { group in
-            group.addTask { await hooks(chat, exec) }
-            group.addTask { await phases(chat, exec) }
-        }
-    }
-
-    @MainActor private func hooks(_ chat: Chat, _ exec: any Exec) async {
         let sideFile = folder + "/hooks.jsonl", skip = ClaudeTranscript.unread
         await chat.followSessions(sideFile, on: exec, late: true, skip: skip, read: ClaudeTranscript.read) { object in
             if object["hook_event_name"] as? String == "SessionStart" {
@@ -69,30 +58,15 @@ struct ClaudeCode: ChatAdapter {
         }
     }
 
-    /// `status`: idle and `shell` (a background command) are ready, waiting is a dialog, a question or a picker. A
-    /// question answered in the terminal ends the wait: its hook may go.
-    @MainActor private func phases(_ chat: Chat, _ exec: any Exec) async {
-        guard let records = try? await exec.watch(pids.map { ".claude/sessions/\($0).json" }) else { return }
-        for await text in records where !Task.isCancelled {
-            let status = (try? JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any])?["status"]
-            let waited = chat.phase == .waiting
-            chat.recorded = switch status as? String {
-            case "idle", "shell": .ready
-            case "busy": .working
-            case "waiting": .waiting
-            default: nil
-            }
-            if waited, chat.phase != .waiting, chat.question != nil {
-                chat.question = nil
-                await exec.succeeds(#"rm -f "$HOME/$1/ask""#, [folder])
-            }
-        }
-    }
-
     private static func question(_ questions: [[String: Any]]) -> ChatQuestion? {
         guard let items = ChatQuestion.items(questions, several: "multiSelect"),
               let raw = try? JSONSerialization.data(withJSONObject: questions) else { return nil }
         return ChatQuestion(items: items, raw: raw)
+    }
+
+    /// A question answered in the terminal: its hook may go.
+    func unask(on exec: any Exec) async {
+        await exec.succeeds(#"rm -f "$HOME/$1/ask""#, [folder])
     }
 
     /// Written whole (a temporary file, then a rename): the hook polls for it. Only while the hook waits, else false.

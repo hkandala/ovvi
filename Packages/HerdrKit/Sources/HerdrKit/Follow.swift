@@ -69,13 +69,6 @@ public extension Exec {
         return ready.map { pending.withLock { lines in defer { lines = [] }; return lines } }.filter { !$0.isEmpty }
     }
 
-    /// The first of the files that exists, its line breaks taken out, at once and after each change, checked every
-    /// 0.3 s in one long-lived run of the machine's `perl` (the relay's): no process per check. It ends when its
-    /// stdin closes.
-    func watch(_ paths: [String]) async throws -> AsyncStream<String> {
-        try await lines(["perl", "-e", Self.watchScript] + paths)
-    }
-
     /// Closing stdin makes the wrapper end the script (neither the script nor `tail` reads stdin). No kill: one that
     /// comes ahead of the wrapper's watcher leaves the script running.
     internal func lines(_ script: String, _ arguments: [String]) async throws -> AsyncStream<String> {
@@ -121,31 +114,6 @@ public extension Exec {
         a=awk; command -v mawk >/dev/null && a="mawk -W interactive"
         LC_ALL=C $a "$4"' { print "ovvi-skip " length($0) + 1; fflush(); next } { print; fflush() }' <&6 5>&- 6<&- &
         exec 6<&-; r >&5; exec tail -c +$((s + 1)) -F "$f" 2>/dev/null >&5 5>&-
-        """#
-    }
-
-    /// A path may be relative to the home folder. An unreadable file is passed over, as a missing one.
-    static var watchScript: String {
-        #"""
-        use strict; use warnings;
-        $| = 1;
-        my $last;
-        while (1) {
-            my $now = '';
-            for (@ARGV) {
-                my $file = m{^/} ? $_ : "$ENV{HOME}/$_";
-                next unless -f $file;
-                open(my $in, '<', $file) or next;
-                local $/;
-                $now = <$in> // '';
-                $now =~ tr/\n//d;
-                last;
-            }
-            print "$now\n" if !defined $last || $now ne $last;
-            $last = $now;
-            my $wait = ''; vec($wait, 0, 1) = 1;
-            exit 0 if select($wait, undef, undef, 0.3) > 0 && !sysread(STDIN, my $byte, 1);
-        }
         """#
     }
 }

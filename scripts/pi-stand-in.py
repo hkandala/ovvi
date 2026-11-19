@@ -5,10 +5,9 @@ Started by the chooser with Ovvi's flags (`-e <pi-ovvi-<sha8>.ts> --ovvi <state 
 file whole (its sha256 starts with the name's sha8), writes the state lines pi-ovvi writes and a session file in pi's
 format, reports its state to herdr and answers prompts on its terminal: "wait" opens a dialog until 1 is typed, "slow"
 works until Esc and takes a message sent meanwhile after its tool, as pi steers, "/tree" moves the leaf back before
-the last user message, "tools" runs every kind of tool, "agents" ends its turn while herdr hears working until 1 is
-typed, a prompt of OVVI_STAND_IN_SCENE's turns plays that turn (scripts/welcome-scene/scene.py), anything else gets one
-command and the reply "Echo: <prompt>". OVVI_STAND_IN_LATE=<s>: its state's session line comes that late, as a
-remote machine's can.
+the last user message, "tools" runs every kind of tool, a prompt of OVVI_STAND_IN_SCENE's turns plays that turn
+(scripts/welcome-scene/scene.py), anything else gets one command and the reply "Echo: <prompt>".
+OVVI_STAND_IN_LATE=<s>: its state's session line comes that late, as a remote machine's can.
 """
 import hashlib
 import json
@@ -58,7 +57,6 @@ def play(text, turn):
     """A scripted turn of the welcome pictures, dated as if it took `secs`: ends idle, or works on in its last tool."""
     at = time.time() - turn["secs"]
     entry("user", at=at, content=[{"type": "text", "text": text}])
-    line(state, {"type": "working"})
     stand_in.report("working")
     for index, step in enumerate(turn["steps"]):
         started, at = at, at + step.get("secs", 2)
@@ -75,7 +73,6 @@ def play(text, turn):
             entry("toolResult", at=at, toolCallId=call, toolName=step["tool"],
                   content=[{"type": "text", "text": step["output"]}], details=step.get("details", {}), isError=False)
     if not turn.get("working"):
-        line(state, {"type": "idle"})
         stand_in.report("idle")
 
 
@@ -98,26 +95,16 @@ def prompt(text):
         say("Navigated to selected point")
         return
     entry("user", content=[{"type": "text", "text": text}])
-    line(state, {"type": "working"})
     stand_in.report("working")
     if text == "wait":
-        line(state, {"type": "blocked"})
         stand_in.report("blocked")
         say("Allow this command?\n  1. Yes\n  2. No")
         while "1" not in key():
             pass
-        line(state, {"type": "unblocked"})
         stand_in.report("working")
         assistant([{"type": "text", "text": "Allowed."}], "stop")
     elif text == "tools":
         tools()
-    elif text == "agents":
-        # pi-herd's wait on agents: the turn ends (idle in the state file) while herdr hears working, until 1 is typed.
-        assistant([{"type": "text", "text": "Waiting on agents."}], "stop")
-        say("Waiting on agents.")
-        line(state, {"type": "idle"})
-        while "1" not in key():
-            pass
     elif text == "slow":
         call = "toolu_" + uuid.uuid4().hex[:12]
         assistant([{"type": "toolCall", "id": call, "name": "bash", "arguments": {"command": "sleep 30"}}], "toolUse")
@@ -141,7 +128,6 @@ def prompt(text):
         entry("toolResult", toolCallId=call, toolName="bash", content=[{"type": "text", "text": text}], isError=False)
         assistant([{"type": "text", "text": "Echo: **" + text + "**"}], "stop")
         say("Echo: **" + text + "**")
-    line(state, {"type": "idle"})
     stand_in.report("idle")
 
 
@@ -166,7 +152,6 @@ def tools():
 
 
 def cleanup():
-    line(state, {"type": "shutdown"})
     if os.path.exists(transcript):
         os.remove(transcript)
     shutil.rmtree(os.path.dirname(state), ignore_errors=True)

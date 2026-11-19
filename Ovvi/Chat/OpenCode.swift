@@ -82,13 +82,11 @@ struct OpenCode: ChatAdapter {
             if chat.problem == Self.unreported {
                 chat.problem = nil
             }
-            waits.dialog = state["dialog"] as? Bool == true
             let source = url + " " + (session ?? "")
             if followed != source {
                 followed = source
                 server?.cancel()
                 waits.requests = []
-                waits.busy = nil
                 if chat.source != source {
                     chat.history = ChatHistory()
                     chat.source = source
@@ -147,7 +145,7 @@ struct OpenCode: ChatAdapter {
                 chat.history = changed.history
             }
             // Read again here: its JSON objects are not Sendable.
-            if waited, let event = Self.event(line), waits.take(event, session: id, url: url) {
+            if waited, let event = Self.event(line), waits.take(event, url: url) {
                 waits.publish(chat)
             }
         }
@@ -212,9 +210,8 @@ struct OpenCode: ChatAdapter {
     }
 }
 
+/// The open permission and question requests: the first shows as the question card.
 private final class Waits {
-    var dialog = false
-    var busy: Bool?
     var fresh = false
     var requests: [(id: String, question: ChatQuestion?)] = []
 
@@ -238,10 +235,9 @@ private final class Waits {
         requests.sort { $0.id.dropFirst(4) < $1.id.dropFirst(4) }
     }
 
-    /// All at once, so that a publish meanwhile keeps the listed ones. A status from a dropped stream may be stale; a
-    /// card answered then (the answer may be lost) shows again.
+    /// All at once, so that a publish meanwhile keeps the listed ones. A card answered while the stream was down (the
+    /// answer may be lost) shows again.
     func load(_ url: String, _ folder: String, _ exec: any Exec, _ chat: Chat) async {
-        busy = nil
         defer {
             fresh = true
             if !Task.isCancelled {
@@ -262,17 +258,12 @@ private final class Waits {
     }
 
     nonisolated static func reads(_ type: String) -> Bool {
-        type.hasPrefix("permission.") || type.hasPrefix("question.") || ["session.status", "session.idle"]
-            .contains(type)
+        type.hasPrefix("permission.") || type.hasPrefix("question.")
     }
 
-    func take(_ event: [String: Any], session id: String, url: String) -> Bool {
+    func take(_ event: [String: Any], url: String) -> Bool {
         let properties = event["properties"] as? [String: Any] ?? [:]
-        let own = properties["sessionID"] as? String == id
         switch event["type"] as? String {
-        case "session.status" where own:
-            busy = (properties["status"] as? [String: Any])?["type"] as? String != "idle"
-        case "session.idle" where own: busy = false
         case "permission.asked": add("permission", properties, url)
         case "question.asked": add("question", properties, url)
         case "permission.replied", "question.replied", "question.rejected":
@@ -283,12 +274,7 @@ private final class Waits {
     }
 
     func publish(_ chat: Chat) {
-        let phase: Chat.Phase? = dialog || !requests.isEmpty ? .waiting : busy == true ? .working : nil
-        // Only a change: Observation reports equal writes too.
-        if chat.recorded != phase {
-            chat.recorded = phase
-        }
-        let question = dialog ? nil : requests.first?.question
+        let question = requests.first?.question
         if fresh || chat.question?.raw != question?.raw {
             chat.question = question
             fresh = false

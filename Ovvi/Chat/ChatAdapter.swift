@@ -17,6 +17,8 @@ protocol ChatAdapter: Sendable {
     var token: String { get }
     @MainActor func follow(_ chat: Chat, on exec: any Exec) async
     func answer(_ question: ChatQuestion, _ answers: [String: String], on exec: any Exec) async -> Bool
+    /// The question went from the chat without its answer.
+    func unask(on exec: any Exec) async
 }
 
 extension ChatAdapter {
@@ -40,6 +42,8 @@ extension ChatAdapter {
     func answer(_: ChatQuestion, _: [String: String], on _: any Exec) async -> Bool {
         false
     }
+
+    func unask(on _: any Exec) async {}
 }
 
 extension Chat {

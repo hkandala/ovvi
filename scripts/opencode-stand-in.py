@@ -5,9 +5,9 @@ Started by the chooser with Ovvi's line (`--port 0 --hostname 127.0.0.1 -- ovvi-
 in the environment), it runs opencode 1.x's server shapes on 127.0.0.1 behind Basic auth (the history, `/event`, the
 permission and question requests and their replies), appends the state lines Ovvi's TUI plugin would (only when
 the config names the plugin file), reports its state to herdr and answers prompts on its terminal: "allow" asks a
-permission, "ask" a question, "pick" opens a dialog until 1 is typed, "slow" works until Esc Esc, anything else
-gets one command and the reply "Echo: <prompt>". With OVVI_STAND_IN_REFUSE=1 it refuses the flags, as a build
-without them may, and runs plain (no server) when started without them.
+permission, "ask" a question, "slow" works until Esc Esc, anything else gets one command and the reply
+"Echo: <prompt>". With OVVI_STAND_IN_REFUSE=1 it refuses the flags, as a build without them may, and runs plain (no
+server) when started without them.
 """
 import base64
 import http.server
@@ -88,9 +88,9 @@ def status(kind):
         publish("session.idle", sessionID=session)
 
 
-def write_state(dialog=False):
+def write_state():
     if state_file and plugged:
-        line = {"pid": os.getpid(), "url": url, "session": session, "dialog": dialog}
+        line = {"pid": os.getpid(), "url": url, "session": session}
         with open(state_file, "a") as file:
             file.write(json.dumps(line) + "\n")
 
@@ -226,13 +226,6 @@ def prompt(text):
             {"label": "Red", "description": ""}, {"label": "Blue", "description": ""}]}]})["answers"][0][0]
         stand_in.report("working")
         answer(entry, "You chose " + chosen + ".")
-    elif text == "pick":
-        write_state(dialog=True)
-        say("Select model  1. Stand-in")
-        while "1" not in key():
-            pass
-        write_state()
-        answer(entry, "Picked.")
     elif text == "slow":
         command(entry, "sleep 30", None)
         deadline, escapes = time.time() + 30, 0

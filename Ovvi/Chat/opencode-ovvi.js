@@ -10,7 +10,7 @@ export default {
       // The server's address comes from the SDK client's protected `client`: check it on each opencode release.
       const config = api.client?.client?.getConfig?.()
       const line = JSON.stringify({ pid: process.pid, url: config?.baseUrl ?? null,
-        session: route?.name === "session" ? route.params?.sessionID ?? null : null, dialog: api.ui.dialog.open })
+        session: route?.name === "session" ? route.params?.sessionID ?? null : null })
       // A plugin must never break its host: a removed folder only ends the reports.
       if (line !== last) { last = line; try { appendFileSync(file, line + "\n") } catch {} }
     }

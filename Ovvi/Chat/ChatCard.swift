@@ -92,19 +92,10 @@ struct CardState: View {
         }
     }
 
+    /// Only while the chat shows: the error is the chat view's, and a chat never shown follows nothing that would
+    /// clear it.
     private var label: StateLabel? {
-        guard let chat else { return state?.label(look) }
-        // Only while the chat shows: the error is the chat view's, and a chat never shown follows nothing that would
-        // clear it.
-        if chat.problem != nil, chat.showsChat {
-            return StateLabel(text: "Error", icon: .needsYou, color: look.error)
-        }
-        switch chat.phase {
-        case .working: return AgentState.working.label(look)
-        case .waiting: return AgentState.needsYou.label(look)
-        // herdr's, as the TUI's header: pi idles at its prompt while it waits on agents or background jobs, which
-        // herdr hears as working.
-        case .ready, .starting: return state?.label(look)
-        }
+        guard let chat, chat.problem != nil, chat.showsChat else { return state?.label(look) }
+        return StateLabel(text: "Error", icon: .needsYou, color: look.error)
     }
 }

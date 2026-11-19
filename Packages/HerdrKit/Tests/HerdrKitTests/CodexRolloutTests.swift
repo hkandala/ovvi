@@ -51,22 +51,6 @@ private func history() throws -> ChatHistory {
     #expect(!CodexRollout.read(#"{"type":"event_msg","payload""#, into: &history))
 }
 
-@Test func `codex is ready only with its input box above its status row`() {
-    let idle = "• done\n\n› Ask Codex to do anything\n\n  GPT-6.1 Sol high · /private/tmp\n"
-        + "  ? for shortcuts                       ⚠ 1 warning · f2 to view\n\n"
-    #expect(CodexRollout.ready(idle))
-    let working = "• Working (8s • esc to interrupt) · 1 background terminal running\n› Ask Codex to do anything\n"
-        + "  GPT-6.1 Sol high · /private/tmp · Run echo spike-ok\n  ? for shortcuts\n"
-    #expect(CodexRollout.ready(working))
-    let picker = "  Select Model and Effort\n› 1. GPT-6.1 Sol (current)  Near-Astra\n  2. GPT-6.1 Sol (1M)  Near\n"
-        + "  3. GPT-5.6-Sol  Older\n  enter select · esc back\n"
-    #expect(!CodexRollout.ready(picker))
-    let approval = "  Would you like to run the following command?\n  $ rm -rf g1\n› 1. Yes, proceed (y)\n"
-        + "  2. No, and tell Codex what to do differently (esc)\n  Press enter to confirm or esc to cancel\n"
-    #expect(!CodexRollout.ready(approval))
-    #expect(!CodexRollout.ready(""))
-}
-
 @Test func `codex trust hash matches what Codex trusted`() {
     let command = "umask 077;mkdir -p $HOME/.cache/ovvi/chat/11111111-2222-4333-8444-555555555555;"
         + "cat>>$HOME/.cache/ovvi/chat/11111111-2222-4333-8444-555555555555/hooks.jsonl;"

@@ -26,16 +26,4 @@ export default function (pi) {
 		try { at = statSync(path).size; } catch {}
 		write({ type: "tree", leaf: event.newLeafId ?? null, at });
 	});
-	// Every extension's dialog; herdr's pi integration (when installed) then refuses agent.prompt meanwhile.
-	pi.on("ui_prompt_start", (event) => {
-		pi.events.emit("herdr:blocked", { active: true, label: event.title ?? event.kind });
-		write({ type: "blocked" });
-	});
-	pi.on("ui_prompt_end", () => {
-		pi.events.emit("herdr:blocked", { active: false });
-		write({ type: "unblocked" });
-	});
-	pi.on("agent_start", () => write({ type: "working" }));
-	pi.on("agent_settled", (_event, ctx) => ctx.isIdle() && write({ type: "idle" }));
-	pi.on("session_shutdown", () => write({ type: "shutdown" }));
 }

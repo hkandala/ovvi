@@ -4,10 +4,6 @@ import Observation
 
 @Observable
 final class Chat {
-    enum Phase: Equatable {
-        case starting, ready, working, waiting
-    }
-
     struct Outgoing: Identifiable, Equatable {
         static let dimmed = 0.7
         let id = UUID()
@@ -37,7 +33,6 @@ final class Chat {
     /// the conversation is new. False for a chat found running or resumed until its transcript is read, and for one
     /// nothing followed for a while.
     var current: Bool
-    var recorded: Phase?
     var question: ChatQuestion?
     var problem: String?
     var outgoing: [Outgoing] = []
@@ -64,16 +59,9 @@ final class Chat {
         self.store = store
     }
 
-    var phase: Phase {
-        if let recorded {
-            return recorded
-        }
-        switch store?.pane(paneID)?.state {
-        case .needsYou: return .waiting
-        case .working: return .working
-        case .idle, .finishedUnseen: return .ready
-        case nil: return .starting
-        }
+    /// herdr's, for every agent: nil while it reports none (the agent starts).
+    var state: AgentState? {
+        store?.pane(paneID)?.state
     }
 
     var live: Bool {
@@ -81,7 +69,7 @@ final class Chat {
     }
 
     var drawer: Bool {
-        phase == .waiting && question == nil
+        state == .needsYou && question == nil
     }
 
     func viewed() async {
@@ -99,7 +87,6 @@ final class Chat {
                 }
                 // Reset once the adapter returns, so that none of its tasks writes after.
                 if viewers == 0 {
-                    recorded = nil
                     current = current && history.entries.isEmpty
                 }
             }
@@ -124,17 +111,17 @@ final class Chat {
             return
         }
         // A dialog takes no message: its answers go first.
-        guard phase != .waiting else { return }
+        guard state != .needsYou else { return }
         let message = Outgoing(text: text)
         outgoing.removeAll(where: \.notSent)
         outgoing.append(message)
         draft = ""
-        // Typed while the agent starts (pi's session is read from its machine), it waits, dimmed, as one on its way
-        // does, and goes once the agent is ready, at most 30 s. One wait after another: messages go in their order.
+        // Typed while the agent starts, it waits, dimmed, as one on its way does, and goes once herdr reports the
+        // agent, at most 30 s. One wait after another: messages go in their order.
         let previous = starting
         let ready = Task {
             await previous?.value
-            for _ in 0 ..< 150 where phase == .starting {
+            for _ in 0 ..< 150 where state == nil {
                 try? await Task.sleep(for: .milliseconds(200))
             }
         }
@@ -142,7 +129,7 @@ final class Chat {
         Task {
             await ready.value
             // Not to an agent started again in the pane: that one has a chat of its own.
-            guard live, phase == .ready || phase == .working else { return notSent(message.id) }
+            guard live, state != nil, state != .needsYou else { return notSent(message.id) }
             let sent = await (try? client.prompt(text, pane: paneID)) != nil
             if !sent {
                 notSent(message.id)
@@ -151,7 +138,7 @@ final class Chat {
             // Claude Code's company hooks can take a few seconds to log a prompt; pi logs one sent while it works
             // when it takes it, after the running tool (or its dialog).
             try? await Task.sleep(for: .seconds(5))
-            while phase == .working || phase == .waiting {
+            while state == .working || state == .needsYou {
                 try? await Task.sleep(for: .seconds(1))
             }
             notSent(message.id)
@@ -163,6 +150,10 @@ final class Chat {
         outgoing[index].notSent = true
         if draft.isEmpty {
             draft = outgoing[index].text
+        }
+        // Codex's hook did not run (a trust hash it rejects, hooks turned off): it names no session until it does.
+        if source == nil, problem == nil {
+            problem = "\(adapter.name) has not started a session"
         }
     }
 
@@ -185,9 +176,16 @@ final class Chat {
     }
 
     func stop() {
-        guard phase == .working, let client = store?.client else { return }
+        guard state == .working, let client = store?.client else { return }
         let keys = type(of: adapter).stopKeys, paneID = paneID
         Task { try? await client.sendKeys(keys, pane: paneID) }
+    }
+
+    /// herdr's needs you ended: a question answered in the terminal, whose hook may go.
+    func unask() {
+        guard question != nil, let store else { return }
+        question = nil
+        Task { await adapter.unask(on: store.machine.exec()) }
     }
 
     func answer(_ answers: [String: String]) {

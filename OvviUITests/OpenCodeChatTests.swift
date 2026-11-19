@@ -20,14 +20,6 @@ extension OvviUITests {
         blue.click()
         XCTAssertTrue(row(pane, "reply", "You chose Blue.").exists(within: 5))
 
-        try await say("pick", in: pane)
-        let drawer = element("chat.\(pane).drawer")
-        XCTAssertTrue(drawer.exists(within: 5))
-        XCTAssertTrue(hasKeyboard("terminal.\(pane)"))
-        app.typeText("1")
-        XCTAssertTrue(drawer.vanishes(within: 5))
-        XCTAssertTrue(row(pane, "reply", "Picked.").exists(within: 5))
-
         try await say("slow", in: pane)
         let stop = element("chat.\(pane).stop")
         XCTAssertTrue(stop.exists(within: 5))

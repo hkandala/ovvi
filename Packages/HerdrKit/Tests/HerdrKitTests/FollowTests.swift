@@ -1,6 +1,5 @@
 import Foundation
 @testable import HerdrKit
-import Synchronization
 import Testing
 
 private func lineByLine(_ path: String, from mark: FileMark,
@@ -205,17 +204,6 @@ func `a dropped follow leaves no process`(awk: Bool) async throws {
     #expect(lines == 601 && count <= 2)
 }
 
-@Test func `watch prints a file each time it changes`() async throws {
-    let file = FileManager.default.temporaryDirectory.appending(path: "ovvi-watch-\(UUID().uuidString).json")
-    defer { try? FileManager.default.removeItem(at: file) }
-    var lines = try await localExec.watch(["/nonexistent/x.json", file.path]).makeAsyncIterator()
-    #expect(await lines.next() == "")
-    try Data("{\"status\":\n\"idle\"}".utf8).write(to: file)
-    #expect(await lines.next() == #"{"status":"idle"}"#)
-    try Data(#"{"status":"busy"}"#.utf8).write(to: file)
-    #expect(await lines.next() == #"{"status":"busy"}"#)
-}
-
 @Test(arguments: [
     ("claude-transcript", ClaudeTranscript.unread, [
         #"{"type":"api-request-blob","sessionId":"s","hash":"h","blob":"x"}"#,
@@ -245,49 +233,4 @@ func `follow drops only what the parser skips`(name: String, unread: String, ext
     }
     #expect(followed.entries.map(\.kind) == whole.entries.map(\.kind) && followed.model == whole.model)
     #expect(count <= lines.count - extra.count)
-}
-
-/// A shell loop (`tr` and `sleep 0.3`, two processes every 0.3 s): the reference for when a change shows.
-private let shellWatch = #"""
-o=x
-while :; do
-  n=; for f; do
-    case $f in /*) ;; *) f=$HOME/$f ;; esac
-    [ -f "$f" ] && n=$(tr -d '\n' <"$f") && break
-  done
-  [ "$n" != "$o" ] && printf '%s\n' "$n" && o=$n
-  sleep 0.3
-done
-"""#
-
-/// The same lines as the shell loop, here and through the relay, and no later: both watch at once (a reference timed
-/// with it, lessons.md), and in all the watch is at most one 0.3 s check per change behind.
-@Test func `watch shows each state as the shell loop does, as soon`() async throws {
-    let file = FileManager.default.temporaryDirectory.appending(path: "ovvi-watch-\(UUID().uuidString).json")
-    defer { try? FileManager.default.removeItem(at: file) }
-    let paths = ["/nonexistent/x.json", file.path]
-    for exec in try await [localExec as any Exec, RelayExec.start()] {
-        try? FileManager.default.removeItem(at: file)
-        let seen = Mutex<[String: [(String, ContinuousClock.Instant)]]>([:])
-        let readers = try await [("watch", exec.watch(paths)), ("shell", exec.lines(shellWatch, paths))]
-            .map { name, lines in
-                Task {
-                    for await line in lines {
-                        seen.withLock { $0[name, default: []].append((line, .now)) }
-                    }
-                }
-            }
-        defer { readers.forEach { $0.cancel() } }
-        let states = ["idle", "busy", "waiting", "idle", "shell"]
-        let count = { (name: String) in seen.withLock { $0[name]?.count ?? 0 } }
-        #expect(await eventually { count("watch") == 1 && count("shell") == 1 })
-        for (index, state) in states.enumerated() {
-            try Data("{\"status\":\n\"\(state)\"}".utf8).write(to: file, options: .atomic)
-            #expect(await eventually { count("watch") == index + 2 && count("shell") == index + 2 })
-        }
-        let (watch, shell) = seen.withLock { ($0["watch"] ?? [], $0["shell"] ?? []) }
-        #expect(watch.map(\.0) == shell.map(\.0) && watch.map(\.0) == [""] + states.map { "{\"status\":\"\($0)\"}" })
-        let behind = zip(watch, shell).dropFirst().reduce(Duration.zero) { $0 + ($1.0.1 - $1.1.1) }
-        #expect(behind <= .milliseconds(300) * states.count, "\(behind) behind the shell loop")
-    }
 }

@@ -126,16 +126,6 @@ public enum CodexRollout {
         await exec.succeeds(script, [sideFile, session, home ?? ""])
     }
 
-    /// Codex's input box (`› …`) directly above its status row (`<model> <effort> · <folder>`), among the screen's
-    /// last rows: no picker, dialog or question is open. A picker's selected row is `› 1. …`.
-    public static func ready(_ screen: String) -> Bool {
-        let rows = screen.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
-            .suffix(4)
-        return zip(rows, rows.dropFirst()).contains { box, status in
-            box.hasPrefix("› ") && box.dropFirst(2).firstMatch(of: /^\d+\./) == nil && status.contains(" · ")
-        }
-    }
-
     /// The trust hash Codex keeps for a SessionStart command hook in `hooks.state` (`codex-rs/hooks`): sha256 of the
     /// hook's sorted compact JSON, with Codex's defaults filled in. The command holds no quote and no backslash.
     public static func trust(_ command: String) -> String {

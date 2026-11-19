@@ -12,8 +12,6 @@ struct PiAgent: ChatAdapter {
 
     @MainActor private final class Kept {
         var transcript = PiTranscript()
-        var phase = Chat.Phase.starting
-        var beforeDialog = Chat.Phase.ready
 
         nonisolated init() {}
     }
@@ -71,7 +69,6 @@ struct PiAgent: ChatAdapter {
     }
 
     @MainActor func follow(_ chat: Chat, on exec: any Exec) async {
-        chat.recorded = kept.phase
         let parser = Chat.Parser(take: { [kept] in
             defer { kept.transcript = PiTranscript() }
             return kept.transcript
@@ -82,30 +79,17 @@ struct PiAgent: ChatAdapter {
     }
 
     @MainActor private func read(_ object: [String: Any], _ chat: Chat) -> String? {
-        var session: String?
         switch object["type"] as? String {
         case "session":
             guard let source = object["path"] as? String else { return nil }
-            kept.phase = .ready
             if source != chat.source {
                 kept.transcript = PiTranscript()
             }
-            session = source
+            return source
         case "tree":
             chat.change { kept.transcript.tree(object["leaf"] as? String, at: object["at"] as? Int ?? 0, into: &$0) }
-        case "blocked":
-            kept.beforeDialog = kept.phase == .waiting ? kept.beforeDialog : kept.phase
-            kept.phase = .waiting
-        case "unblocked": kept.phase = kept.beforeDialog
-        case let type?:
-            // `shutdown`: between sessions (`/new`) or gone, nothing is sent.
-            guard let phase = ["working": Chat.Phase.working, "idle": .ready, "shutdown": .starting][type] else {
-                return nil
-            }
-            kept.phase = phase
-        case nil: return nil
+            return nil
+        default: return nil
         }
-        chat.recorded = kept.phase
-        return session
     }
 }

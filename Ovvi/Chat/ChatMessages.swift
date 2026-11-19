@@ -96,7 +96,7 @@ struct ChatMessages: View, Equatable {
                         if welcome {
                             header.padding(.bottom, 14).transition(.opacity)
                         }
-                        if let question = chat.question, chat.phase == .waiting {
+                        if let question = chat.question, chat.state == .needsYou {
                             QuestionCard(question: question, paneID: chat.paneID) { chat.answer($0) }
                                 .disabled(question.answered)
                                 .id(question.raw)
@@ -192,7 +192,7 @@ struct ChatMessages: View, Equatable {
                         ForEach(chat.outgoing) { message in
                             outgoing(message, error: error)
                         }
-                        if chat.phase == .working {
+                        if chat.state == .working {
                             // Not the last turn's, interrupted, while the next message is on its way.
                             WorkingRow(since: chat.outgoing.isEmpty ? chat.history.turnStart : nil)
                         }
