@@ -22,9 +22,11 @@ final class SettlingHost: NSView {
             setAccessibilityLabel("\(sizes) \(Int((now - start) * 1000))")
         }
         fitting?.cancel()
-        let moving = sequence(first: self) { $0.superview }.lazy.compactMap { $0 as? MovingCard }.first?.moving == true
+        // A hidden page resizes once, after a slide or a resize (`TabPages`).
+        let atOnce = isHiddenOrHasHiddenAncestor
+            || sequence(first: self) { $0.superview }.lazy.compactMap { $0 as? MovingCard }.first?.moving == true
         let surface = view as? PaneSurfaceView
-        guard let view, surface == nil || surface?.terminal?.grid != nil, !view.frame.isEmpty, old != .zero, !moving
+        guard let view, surface == nil || surface?.terminal?.grid != nil, !view.frame.isEmpty, old != .zero, !atOnce
         else {
             fit()
             return

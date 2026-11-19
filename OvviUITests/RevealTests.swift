@@ -149,7 +149,8 @@ extension OvviUITests {
         }
         element("tab.w1:t2").click()
         XCTAssertTrue(host.exists(within: 3))
-        XCTAssertLessThanOrEqual(Self.sizes(host) - sizes, 2, host.label)
+        // One step per toggle; none would mean the page never took the size.
+        XCTAssertEqual(Self.sizes(host) - sizes, 2, host.label)
     }
 
     private func motionSteps(_ pane: String, in tab: String) -> [(String, () async throws -> Void)] {

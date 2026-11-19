@@ -212,7 +212,8 @@ private struct TabPages: View {
     @State private var shown: [String] = []
     /// The size a hidden page lays out at: the page's, once it stops changing (none: the page's at once).
     @State private var settled: CGSize?
-    @State private var settling: Task<Void, Never>?
+    /// Not observed: it changes at each frame of a slide.
+    @State private var settling = Settling()
     /// ponytail: a constant count; a kept page costs its cards' updates while hidden. Bound by the cards' cost if a
     /// session of heavy tabs needs more.
     static let kept = 8
@@ -246,10 +247,16 @@ private struct TabPages: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onGeometryChange(for: CGSize.self, of: \.size) { size in SettlingHost.settle(&settling) { settled = size } }
+        .onGeometryChange(for: CGSize.self, of: \.size) { size in
+            SettlingHost.settle(&settling.task) { settled = size }
+        }
         // Away from the window's page, only kept chats' tabs stay; back on it, its tab, as for a page made again.
         .onChange(of: current ? tab?.id : nil, initial: true) { shown = current ? Array(recent) : [] }
     }
+}
+
+private final class Settling {
+    var task: Task<Void, Never>?
 }
 
 /// Lays its view out at `size` when it has one, and takes the offer itself.
