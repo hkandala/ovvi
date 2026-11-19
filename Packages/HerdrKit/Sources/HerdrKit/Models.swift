@@ -8,7 +8,7 @@ public struct Snapshot: Decodable, Sendable {
     public let focusedWorkspaceID: String?
     public let workspaces: [Workspace]
     public let tabs: [Tab]
-    public let panes: [Pane]
+    public internal(set) var panes: [Pane]
     public let agents: [Agent]
     let layouts: [Layout]
     public internal(set) var trees: [String: SplitNode] = [:]
@@ -20,6 +20,13 @@ public struct Snapshot: Decodable, Sendable {
     enum CodingKeys: String, CodingKey {
         case focusedWorkspaceID = "focused_workspace_id"
         case version, workspaces, tabs, panes, agents, layouts
+    }
+
+    /// A pane's own event (`Update.pane`).
+    public mutating func update(_ pane: Pane) {
+        if let index = panes.firstIndex(where: { $0.id == pane.id }) {
+            panes[index] = pane
+        }
     }
 }
 
@@ -62,7 +69,7 @@ public struct Tab: Decodable, Sendable, Identifiable {
     }
 }
 
-public struct Pane: Decodable, Sendable, Identifiable {
+public struct Pane: Decodable, Equatable, Sendable, Identifiable {
     public let id: String
     public let terminalID: String?
     public let tabID: String
@@ -70,7 +77,7 @@ public struct Pane: Decodable, Sendable, Identifiable {
     public let cwd: String?
     public let agent: String?
     /// The terminal title without the status glyphs herdr strips (`✳`, spinners).
-    public let title: String?
+    public internal(set) var title: String?
     /// herdr's viewport, which every client of the pane shares.
     public let scroll: PaneScroll?
     /// The agent's status; `unknown` until herdr read it from the agent's screen.
@@ -79,6 +86,12 @@ public struct Pane: Decodable, Sendable, Identifiable {
     let tokens: Tokens?
     /// Set when herdr brings the pane back from its saved session without a program: its saved folder is gone.
     public let restoreError: String?
+    /// Read only to tell a title change from other changes (`HerdrClient`): herdr's one focused pane, and the name a
+    /// `report_metadata` gives the agent (the snapshot's `agents` carry it).
+    let focused: Bool?
+    let displayAgent: String?
+    /// Counts the pane's changes: the larger of two is the newer.
+    var revision: Int?
 
     public var chat: String? {
         tokens?[Tokens.chat]
@@ -87,11 +100,11 @@ public struct Pane: Decodable, Sendable, Identifiable {
     enum CodingKeys: String, CodingKey {
         case id = "pane_id", terminalID = "terminal_id", tabID = "tab_id", label, cwd, agent
         case title = "terminal_title_stripped", scroll, agentStatus = "agent_status", agentSession = "agent_session"
-        case tokens, restoreError = "restore_error"
+        case tokens, restoreError = "restore_error", focused, displayAgent = "display_agent", revision
     }
 }
 
-struct Tokens: Decodable {
+struct Tokens: Decodable, Equatable {
     static let request = "ovvi-req", chat = "ovvi-chat", shown = "ovvi-shown", open = "ovvi-open"
 
     private let values: [String: String]
@@ -107,7 +120,7 @@ struct Tokens: Decodable {
 
 /// herdr's `agent_session`: `value` is the session's id (Claude Code, Codex, OpenCode) or its file (pi). It can be an
 /// earlier agent's: check `agent`.
-public struct AgentSession: Decodable, Sendable {
+public struct AgentSession: Decodable, Equatable, Sendable {
     public let agent: String?
     public let value: String?
 
@@ -122,7 +135,7 @@ public struct AgentSession: Decodable, Sendable {
     }
 }
 
-public struct PaneScroll: Decodable, Sendable {
+public struct PaneScroll: Decodable, Equatable, Sendable {
     public let offsetFromBottom: Int?
     public let maxOffsetFromBottom: Int?
     public let viewportRows: Int?

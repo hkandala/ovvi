@@ -6,6 +6,8 @@ public enum Update: Sendable {
     case snapshot(Snapshot)
     case error(HerdrError)
     case request(id: String, pane: String)
+    /// A pane whose title alone changed, from herdr's event instead of a snapshot read.
+    case pane(Pane)
 }
 
 public actor HerdrClient {
@@ -24,6 +26,11 @@ public actor HerdrClient {
     private var events: Task<Void, Never>?
     private var subscribed: [String]?
     private var asked: [String] = []
+    /// The panes of the last snapshot, with the titles events brought since.
+    private var known: [String: Pane] = [:]
+    /// The titles events brought during the read that runs: only these may stand over its snapshot, as herdr counts
+    /// revisions again from 0 when it restarts.
+    private var arrived: [String: Pane] = [:]
 
     public init(
         session: String,
@@ -144,9 +151,17 @@ public actor HerdrClient {
                 readAgain = false
                 hurry = false
                 let started = ContinuousClock.now
+                arrived = [:]
                 do {
-                    let snapshot = try await snapshot()
+                    var snapshot = try await snapshot()
                     lastRead = .now
+                    // A title that came during the read can be newer than the snapshot's.
+                    for (index, pane) in snapshot.panes.enumerated() {
+                        if let new = arrived[pane.id], new.revision ?? 0 > pane.revision ?? 0 {
+                            snapshot.panes[index] = new
+                        }
+                    }
+                    known = Dictionary(snapshot.panes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
                     out?.yield(.snapshot(snapshot))
                     // A ring made while the stream reopens sends no event.
                     snapshot.panes.forEach { ask($0.tokens?[Tokens.request], $0.id) }
@@ -205,7 +220,10 @@ public actor HerdrClient {
                     let message = try? JSONDecoder().decode(EventLine.self, from: Data(line.utf8))
                     // events_lost, pane_not_found: start over.
                     guard message?.error == nil else { break }
-                    ask(message?.data?.pane?.tokens?[Tokens.request], message?.data?.pane?.paneID)
+                    ask(message?.data?.ring?.tokens?[Tokens.request], message?.data?.ring?.paneID)
+                    if let pane = message?.data?.pane, message?.event == "pane_updated", titleOnly(pane) {
+                        continue
+                    }
                     // The first line too: subscription_started means catch up on what came ahead of it.
                     read()
                 }
@@ -216,6 +234,26 @@ public actor HerdrClient {
             subscribed = nil
             read()
         }
+    }
+
+    /// A working agent retitles its terminal on and on: that change comes from the event itself, not from a 280 KB
+    /// snapshot read.
+    private func titleOnly(_ pane: Pane) -> Bool {
+        guard let old = known[pane.id] else { return false }
+        // Older than what a read brought since.
+        if let new = pane.revision, let had = old.revision, new <= had {
+            return true
+        }
+        var titled = old
+        titled.title = pane.title
+        titled.revision = pane.revision
+        guard titled == pane else { return false }
+        known[pane.id] = pane
+        arrived[pane.id] = pane
+        if pane.title != old.title {
+            out?.yield(.pane(pane))
+        }
+        return true
     }
 
     /// herdr sends the token again on each change of the pane until it expires.
@@ -260,12 +298,26 @@ struct ReplyError: Decodable {
 }
 
 private struct EventLine: Decodable {
-    struct Payload: Decodable {
-        let pane: EventPane?
+    let event: String?
+    let error: ReplyError?
+    let data: EventData?
+}
+
+/// The ring's two fields alone, so a pane that does not decode whole still rings; and the whole pane, as a snapshot
+/// has it.
+private struct EventData: Decodable {
+    let ring: EventPane?
+    let pane: Pane?
+
+    enum CodingKeys: String, CodingKey {
+        case pane
     }
 
-    let error: ReplyError?
-    let data: Payload?
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        ring = try? container.decode(EventPane.self, forKey: .pane)
+        pane = try? container.decode(Pane.self, forKey: .pane)
+    }
 }
 
 private struct EventPane: Decodable {

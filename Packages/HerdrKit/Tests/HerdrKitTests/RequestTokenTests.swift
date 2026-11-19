@@ -32,7 +32,7 @@ import Testing
     let exec = FakeExec()
     let (id, other) = ("7f9c2b1e-4d0a-4c55-9a51-0b6c3e2d8f10", "8f9c2b1e-4d0a-4c55-9a51-0b6c3e2d8f10")
     exec.state.withLock {
-        $0.panes = [#"{"pane_id":"w1:p2","tab_id":"w1:t1","tokens":{"ovvi-req":"\#(id)","ovvi-shown":"1"}}"#]
+        $0.panes = [#"{"pane_id":"w1:p2","tab_id":"w1:t1","tokens":{"ovvi-req":"\#(id)"}}"#]
     }
     let updates = try await started(client(exec), exec)
     exec.event(#"{"event":"pane_updated","data":{"pane":{"pane_id":"w1:p3","tokens":{"ovvi-req":"\#(id)"}}}}"#)

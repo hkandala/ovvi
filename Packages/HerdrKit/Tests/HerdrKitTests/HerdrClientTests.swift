@@ -16,6 +16,8 @@ final class FakeExec: Exec {
         var panes: [String] = []
         var subscribes: [String] = []
         var events: AsyncStream<String>.Continuation?
+        /// A snapshot read waits while it is set.
+        var hold = false
     }
 
     let state = Mutex(State())
@@ -77,6 +79,9 @@ final class FakeExec: Exec {
                     return ($0.agents, $0.panes)
                 }
                 try? await Task.sleep(for: readDelay)
+                while state.withLock({ $0.hold }) {
+                    try? await Task.sleep(for: .milliseconds(5))
+                }
                 state.withLock { $0.inFlight -= 1 }
                 let entries = agents.map { #"{"pane_id":"\#($0)","agent_status":"idle"}"# }
                 reply.yield(#"{"id":"1","result":{"snapshot":{"workspaces":[],"tabs":[],"layouts":[],"#

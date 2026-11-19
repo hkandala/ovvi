@@ -208,6 +208,8 @@ final class HostStore {
                     }
                     await loadSessions()
                 }
+            case let .pane(new):
+                retitled(new)
             case let .request(id, pane):
                 // ponytail: not cancelled with the store; its runs' timeouts and the float's 8 s wait end it.
                 Task { await answer(request: id, from: pane) }
@@ -342,6 +344,15 @@ extension HostStore {
         guard let client, let listed = try? await client.sessions() else { return }
         sessions = listed
         KnownSessions.keep(listed, of: machine)
+    }
+
+    /// A title from herdr's event (`Update.pane`): what a snapshot with it would change.
+    func retitled(_ new: HerdrKit.Pane) {
+        last?.update(new)
+        if let pane = pane(new.id) {
+            watchProgram(pane, new)
+            pane.terminalTitle = new.title
+        }
     }
 
     func redraw() {
