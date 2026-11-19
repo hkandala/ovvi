@@ -5,7 +5,7 @@ description: |
   file, a folder, a Git diff or any plugin card beside you, float a pane in its own window, point the user at
   a pane, send a Mac notification, copy to the Mac's clipboard, start an agent with Ovvi's chat view, or list,
   make and reload Ovvi plugins. Use it to show the user something (a report, a dev server, a diff) without
-  asking them to open it, or to learn whether Ovvi shows your pane. Needs herdr ($HERDR_PANE_ID is set).
+  asking them to open it, or to learn whether Ovvi shows your session. Needs herdr ($HERDR_PANE_ID is set).
   Works on This Mac and on the remote machines that Ovvi connects to.
 ---
 
@@ -24,8 +24,7 @@ is not on `PATH`, so run it by its full path. In these files, `ovvi` means that 
 ~/.cache/ovvi/bin/ovvi status
 ```
 
-- `Shown in Ovvi`: a person sees your pane now.
-- `Open in Ovvi, not shown`: an Ovvi follows your session, but your pane is out of view. Commands work.
+- `Open in Ovvi`: an Ovvi shows your session. Commands work.
 - `Not in Ovvi` (exit 3), or no file at that path: no Ovvi follows your session. Use herdr alone, and tell
   the user where to look.
 

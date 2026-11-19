@@ -291,40 +291,31 @@ extension OvviUITests {
         XCTAssertFalse(left.isEmpty)
     }
 
-    func testShownPanesAreMarkedAndOvviFloatFloats() async throws {
+    func testOpenSessionsAreMarkedAndOvviFloatFloats() async throws {
         XCTAssertTrue(element("workspace.w1").exists(within: connect))
         try await markAndFloat()
         XCTAssertFalse(pageList().contains(two))
         // Within the 1 s the quit waits, not the mark's 30 s.
-        try await expectShown(one, "w1:p1")
+        try await expectOpen()
         app.typeKey("q", modifierFlags: .command)
         XCTAssertTrue(app.wait(for: .notRunning, timeout: 5))
-        try await expectShown(one, "w1:p1", false)
+        try await expectOpen(false)
     }
 
     func markAndFloat() async throws {
         let (tab, pane) = try await newTab("float-request")
         app.typeKey("2", modifierFlags: .command)
         XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, true, within: 2))
-        try await expectShown(one, pane)
+        try await expectOpen()
         try await waitForPrompt(pane)
         try await run("\(Self.ovviCommand) float \(two)/w1:p1", in: pane, "float", 0, "floating: true")
         let window = app.windows.containing(.any, identifier: "float.w1:p1").firstMatch
         XCTAssertTrue(window.exists(within: connect))
         XCTAssertTrue(until(3) { element("float.w1:p1.place", in: window).stringValue.hasPrefix("\(two) › gamma › ") })
-        try await expectShown(two, "w1:p1")
+        try await expectOpen(in: two)
         element("float.w1:p1.detach", in: window).click()
         XCTAssertTrue(window.vanishes(within: 3))
-        try await expectShown(two, "w1:p1", false)
-        element("workspace.w1").click()
-        try await expectShown(one, pane, false)
-    }
-
-    func expectShown(_ session: String, _ pane: String, _ shown: Bool = true) async throws {
-        try await expect("\(session)'s \(pane) \(shown ? "" : "not ")marked shown") {
-            let info = try await Self.call(session, "pane.get", ["pane_id": pane])["pane"] as? [String: Any]
-            return ((info?["tokens"] as? [String: String])?["ovvi-shown"] != nil) == shown
-        }
+        try await expectOpen(false, in: two)
     }
 
     /// Through the helper: XCUIApplication.open(_:) leaves the app not foreground for XCUITest, on CI.

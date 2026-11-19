@@ -5,7 +5,7 @@ extension HostStore {
     private static var quitting = false
     private static let refresh = Task { @MainActor in
         while await (try? Task.sleep(for: .seconds(10))) != nil {
-            all.forEach { $0.markShown(refresh: true) }
+            all.forEach { $0.markOpen(refresh: true) }
         }
     }
 
@@ -33,50 +33,32 @@ extension HostStore {
             .flatMap { page in panes.filter(page.floats).map(\.id) })
     }
 
-    /// A mark lasts 30 s, so an app that crashed stops claiming its panes. One batch after the other, so a quick hide
-    /// and show of a pane cannot land out of order.
-    func markShown(refresh: Bool = false) {
+    /// The session's one open mark while a window of this app shows it: on its first space, as herdr keeps no
+    /// metadata for a session. A mark lasts 30 s, so an app that crashed stops claiming the session. One write after
+    /// the other, so a quick close and open cannot land out of order.
+    func markOpen(refresh: Bool = false) {
         _ = (Self.refresh, Self.inputs, Self.input) // starts the lazy statics; the idle clock from the first page shown
         guard let client else { return }
-        let shown = Self.quitting ? [] : inView
-        let changes = (refresh ? shown : shown.subtracting(marked)).map { ($0, true) }
-            + marked.subtracting(shown).map { ($0, false) }
-        marked = shown
-        let open = Self.quitting || windows.isEmpty ? [] : Set(workspaces.map(\.id))
-        let opens = (refresh ? open : open.subtracting(openMarked)).map { ($0, true) }
-            + openMarked.subtracting(open).map { ($0, false) }
+        let open = Self.quitting || windows.isEmpty ? nil : workspaces.first?.id
+        let old = openMarked
+        guard open != old || refresh && open != nil else { return }
         openMarked = open
-        guard !changes.isEmpty || !opens.isEmpty else { return }
-        // Panes first: a tool reads `ovvi-shown` at each click, and each workspace's mark is one herdr call (an ssh
-        // trip remote). At quit all at once, or the 1 s wait cuts the rest; at the quit, an earlier batch sends
-        // only its unmarks, and the quit's batch unmarks the rest after it.
-        let quitting = Self.quitting
+        // The new space first, so the session never shows none; none queued ahead of the quit.
         marking = Task { [marking] in
             await marking?.value
-            guard quitting else {
-                for (pane, shown) in changes where !shown || !Self.quitting {
-                    try? await client.mark(pane, shown: shown)
-                }
-                for (workspace, open) in opens where !open || !Self.quitting {
-                    try? await client.mark(workspace: workspace, open: open)
-                }
-                return
+            if let open, !Self.quitting {
+                try? await client.mark(workspace: open, open: true)
             }
-            await withTaskGroup { group in
-                for (workspace, open) in opens {
-                    group.addTask { try? await client.mark(workspace: workspace, open: open) }
-                }
-                for (pane, shown) in changes {
-                    group.addTask { try? await client.mark(pane, shown: shown) }
-                }
+            if let old, old != open {
+                try? await client.mark(workspace: old, open: false)
             }
         }
     }
 
-    /// At most 1 s. A click in a marked pane after the quit would ask an app that is gone, and nothing would open.
+    /// At most 1 s. A tool that sees the mark after the quit would ask an app that is gone.
     static func unmarkAll() async {
         quitting = true
-        all.forEach { $0.markShown() }
+        all.forEach { $0.markOpen() }
         let marks = all.compactMap(\.marking)
         let (done, finish) = AsyncStream<Void>.makeStream()
         Task {
@@ -96,7 +78,7 @@ extension HostStore {
 }
 
 extension WindowPages {
-    func markShown() {
-        withFloats.forEach { $0.store.markShown() }
+    func markOpen() {
+        withFloats.forEach { $0.store.markOpen() }
     }
 }

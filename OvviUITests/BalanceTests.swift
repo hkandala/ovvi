@@ -52,7 +52,7 @@ extension OvviUITests {
         element("tab.\(tab)").click()
         XCTAssertTrue(element("terminal.\(second)").exists(within: 3))
         try await waitForPrompt(second)
-        try await expectOpen("w2")
+        try await expectOpen()
         return (tab, [first, second])
     }
 

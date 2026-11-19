@@ -105,7 +105,7 @@ public struct Pane: Decodable, Equatable, Sendable, Identifiable {
 }
 
 struct Tokens: Decodable, Equatable {
-    static let request = "ovvi-req", chat = "ovvi-chat", shown = "ovvi-shown", open = "ovvi-open"
+    static let request = "ovvi-req", chat = "ovvi-chat", open = "ovvi-open"
 
     private let values: [String: String]
 

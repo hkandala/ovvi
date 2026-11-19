@@ -11,7 +11,6 @@ public protocol Multiplexer: Sendable {
 
     /// Its cwd follows a `cd` that no event reports.
     func pane(_ paneID: String) async throws -> Pane
-    func mark(_ paneID: String, shown: Bool) async throws
     func mark(workspace workspaceID: String, open: Bool) async throws
     /// herdr keeps it with the pane, past the app: no time limit.
     func mark(_ paneID: String, chat: String) async throws
@@ -133,13 +132,6 @@ extension HerdrClient: Multiplexer {
 
     /// The app marks again every 10 s, so a mark goes 30 s after the app that made it stopped.
     private static let markLife = 30000
-
-    public nonisolated func mark(_ paneID: String, shown: Bool) async throws {
-        // "remote": the pane is on another machine than this Mac, so its programs' own copy (pbcopy) misses this Mac.
-        let tokens: [String: any Sendable] = [Tokens.shown: shown ? (exec.isRemote ? "remote" : "1") : NSNull()]
-        let _: Created = try await call("pane.report_metadata", ["pane_id": paneID, "source": "ovvi",
-                                                                 "tokens": tokens, "ttl_ms": Self.markLife])
-    }
 
     public nonisolated func mark(_ paneID: String, chat: String) async throws {
         let _: Created = try await call("pane.report_metadata", ["pane_id": paneID, "source": "ovvi-chat",

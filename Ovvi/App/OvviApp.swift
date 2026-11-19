@@ -142,7 +142,6 @@ struct ContentView: View {
         .onChange(of: selection) { savedSelection = $1 }
         .task(id: scenePhase == .active ? pages.current?.id : nil) {
             pages.visible = scenePhase == .active
-            pages.markShown()
             guard pages.visible, let store = pages.current?.store else { return }
             await store.followGit()
         }
@@ -348,7 +347,6 @@ private struct WindowContent: View {
             }
         }
         .onChange(of: page.shownTerminals) { pages.showTerminals() }
-        .onChange(of: page.zoomedPaneID) { pages.markShown() }
     }
 
     private func open(_ which: WindowPanel) -> Binding<Bool> {

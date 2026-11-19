@@ -104,7 +104,7 @@ extension OvviUITests {
         relaunch(one, Self.onKeyHost)
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         try await waitForPrompt("w1:p1")
-        try await expectOpen("w1")
+        try await expectOpen()
         let ovvi = Self.ovviCommand
         try await run("until \(ovvi) status >/dev/null; do sleep 0.1; done", in: "w1:p1", "ready", 0)
         try await run("\(ovvi) plugins | head -1", in: "w1:p1", "list", 0, "browser")
@@ -136,7 +136,7 @@ extension OvviUITests {
         relaunch(one, ["-configFolder", config])
         XCTAssertTrue(element("workspace.w2").exists(within: connect))
         try await waitForPrompt(pane)
-        try await expectOpen("w2")
+        try await expectOpen()
         return (tab, pane)
     }
 }

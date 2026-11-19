@@ -9,7 +9,7 @@ extension OvviUITests {
         element("tab.\(tab)").click()
         XCTAssertTrue(hasKeyboard("terminal.\(pane)"))
         try await waitForPrompt(pane)
-        try await expectOpen("w2")
+        try await expectOpen()
         let ovvi = Self.ovviCommand
         try await run("\(ovvi) agent nobody --beside w9:p9", in: pane, "nobody", 1,
                       "ovvi: no agent nobody; there are claude")
@@ -34,7 +34,7 @@ extension OvviUITests {
     func testNotifyIsOncePerPaneEveryTenSecondsAndFollowsItsSwitch() async throws {
         let (_, pane) = try await newTab("notify")
         try await waitForPrompt(pane)
-        try await expectOpen("w2")
+        try await expectOpen()
         let ovvi = Self.ovviCommand
         try await run("\(ovvi) notify", in: pane, "usage", 2, "ovvi: missing <title>")
         try await run("\(ovvi) notify Done --pane w9:p9", in: pane, "none", 1, "ovvi: pane w9:p9 is not in")
@@ -93,7 +93,7 @@ extension OvviUITests {
         try await waitForPrompt(pane)
         let (otherTab, far) = try await newTab("balance-other")
         try await split(far)
-        try await expectOpen("w2")
+        try await expectOpen()
         let ovvi = Self.ovviCommand
         for (marker, target, ratioTab) in [("own", "", tab), ("other", " \(far)", otherTab)] {
             try await Self.call(one, "layout.set_split_ratio", ["tab_id": ratioTab, "path": [Bool](), "ratio": 0.3])

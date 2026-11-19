@@ -1,5 +1,5 @@
 #!/bin/sh
-# ovvi-cli 1.2
+# ovvi-cli 1.3
 # Written by Ovvi: asks the Ovvi that follows this herdr session. Ovvi parses the arguments.
 # https://ovvi.dev/docs/reference/ovvi-command
 herdr=${HERDR_BIN_PATH:-herdr} session=${HERDR_SESSION:-default} pane=${HERDR_PANE_ID:-} timeout=10 json= j=
@@ -29,12 +29,11 @@ h() { "$herdr" --session "$session" "$@" 2>/dev/null; }
 # status: herdr's tokens only, so it answers with no Ovvi.
 token() { printf %s "$1" | sed -n "s/.*\"$2\":\"\\([^\"]*\\)\".*/\\1/p"; }
 status() {
-    p=$(h pane get "$pane") || fail 5 no_herdr "herdr has no pane $pane in session $session; pass --pane"
-    w=$(h workspace get "$(token "$p" workspace_id)")
-    shown=$(token "$p" ovvi-shown) open=$(token "$w" ovvi-open)
-    printf '{"session":"%s","pane":"%s","open":%s,"shown":%s,"remote":%s,"protocol":%s}\n' "$session" "$pane" \
-        "$([ -n "$open" ] && echo true || echo false)" "$([ -n "$shown" ] && echo true || echo false)" \
-        "$([ "$shown" = remote ] && echo true || echo false)" "${open:-null}"
+    h pane get "$pane" >/dev/null || fail 5 no_herdr "herdr has no pane $pane in session $session; pass --pane"
+    # Ovvi marks one space of each session it shows: herdr keeps no metadata for a session.
+    open=$(token "$(h workspace list)" ovvi-open)
+    printf '{"session":"%s","pane":"%s","open":%s,"protocol":%s}\n' "$session" "$pane" \
+        "$([ -n "$open" ] && echo true || echo false)" "${open:-null}"
     [ -n "$open" ] || return 3
 }
 if [ "${1:-}" = status ]; then
@@ -43,7 +42,7 @@ if [ "${1:-}" = status ]; then
     --watch) last= && while s=$(status); c=$?; [ $c -le 3 ]; do
         [ "$s" = "$last" ] || echo "$s"; last=$s; sleep 2; done ;;
     *) s=$(status); c=$?; case $s in
-        *'"shown":true'*) echo "Shown in Ovvi" ;; *'"open":true'*) echo "Open in Ovvi, not shown" ;;
+        *'"open":true'*) echo "Open in Ovvi" ;;
         ?*) echo "Not in Ovvi" ;; esac; exit $c ;;
     esac
     exit

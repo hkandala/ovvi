@@ -3,8 +3,7 @@
 Your pane can be on a remote machine that Ovvi connects to over SSH. The command, its files and herdr are
 all on your machine, and the command works the same as on Ovvi's Mac.
 
-- While Ovvi shows your pane, `ovvi status --json` says `"remote": true`. Your own `pbcopy` does not
-  reach the user's Mac, so use `ovvi copy`.
+- Your own `pbcopy` does not reach the user's Mac: use `ovvi copy`.
 - Paths are your machine's. `ovvi open ./notes.md` opens your file.
 - `localhost` in a browser card is your machine. A `file:` URL, and so `ovvi open browser ./page.html`, is
   `bad_argument` (cards.md, Browser addresses).

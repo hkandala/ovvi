@@ -9,10 +9,9 @@ extension OvviUITests {
         element("tab.\(tab)").click()
         XCTAssertTrue(element("terminal.\(second)").exists(within: 3))
         try await waitForPrompt(first)
-        try await expectOpen("w2")
-        try await expectShown(one, first)
+        try await expectOpen()
         let ovvi = Self.ovviCommand
-        try await run("\(ovvi) status", in: first, "status", 0, "Shown in Ovvi")
+        try await run("\(ovvi) status", in: first, "status", 0, "Open in Ovvi")
         XCTAssertTrue(hasKeyboard("terminal.\(first)"))
 
         try await run("\(ovvi) float \(second) --on-top", in: first, "float", 0, "existing: false", "onTop: true")
@@ -32,11 +31,11 @@ extension OvviUITests {
         try await run("j=$(\(ovvi) --json unfloat \(second)); s=$?; echo \"$j\" | tr , '\\n'; (exit $s)", in: first,
                       "json", 1, #"{"error":{"code":"not_floating""#)
         try await run("\(ovvi) float \(two)/w1:p1 --focus", in: first, "other", 0, "floating: true")
-        try await expectOpen("w1", in: two)
+        try await expectOpen(in: two)
         let other = app.windows.containing(.any, identifier: "float.w1:p1").firstMatch
         XCTAssertTrue(hasKeyboard("terminal.w1:p1", in: other))
         try await run("\(ovvi) unfloat \(two)/w1:p1", in: first, "back", 0, "floating: false")
-        try await expectOpen("w1", false, in: two)
+        try await expectOpen(false, in: two)
         try await run("\(ovvi) float", in: first, "usage", 2, "ovvi: missing <pane>")
 
         keepClipboard()
@@ -46,7 +45,7 @@ extension OvviUITests {
 
         app.typeKey("q", modifierFlags: .command)
         XCTAssertTrue(app.wait(for: .notRunning, timeout: 5))
-        try await expectOpen("w2", false)
+        try await expectOpen(false)
         try await run("\(ovvi) status", in: first, "gone", 3, "Not in Ovvi")
         try await run("\(ovvi) --json info", in: first, "none", 3, "ovvi: no Ovvi shows",
                       #"{"error":{"code":"no_ovvi""#)
@@ -60,7 +59,7 @@ extension OvviUITests {
         relaunch()
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         try await waitForPrompt("w1:p1")
-        try await expectShown(one, "w1:p1")
+        try await expectOpen()
         let ovvi = Self.ovviCommand
         try await run("until [ -x \(ovvi) ]; do sleep 0.1; done", in: "w1:p1", "script", 0)
         // Ovvi takes requests in order, after its first snapshot's list.
@@ -83,11 +82,10 @@ extension OvviUITests {
         relaunch(one, Self.onKeyHost)
         XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
         try await waitForPrompt("w1:p1")
-        try await expectOpen("w1")
-        try await expectShown(one, "w1:p1")
+        try await expectOpen()
         let ovvi = Self.ovviCommand
         try await run("until ! grep -qx '# ovvi-cli 0' \(ovvi); do sleep 0.1; done", in: "w1:p1", "new", 0)
-        try await run("\(ovvi) status --json | tr , '\\n'", in: "w1:p1", "status", 0, "\"remote\":true")
+        try await run("\(ovvi) status --json | tr , '\\n'", in: "w1:p1", "status", 0, "\"open\":true")
         try await run("\(ovvi) info", in: "w1:p1", "info", 0, "machine: Key Host")
         try await run("\(ovvi) float w1:p2", in: "w1:p1", "float", 0, "floating: true")
         let window = app.windows.containing(.any, identifier: "float.w1:p2").firstMatch
@@ -108,10 +106,11 @@ extension OvviUITests {
         }
     }
 
-    func expectOpen(_ workspace: String, _ open: Bool = true, in session: String? = nil) async throws {
-        try await expect("\(workspace) marked \(open ? "" : "not ")open") {
-            let info = try await Self.call(session ?? one, "workspace.get", ["workspace_id": workspace])["workspace"]
-            return ((info as? [String: Any])?["tokens"] as? [String: String])?["ovvi-open"] == (open ? "1" : nil)
+    /// The session's one open mark, on one of its spaces.
+    func expectOpen(_ open: Bool = true, in session: String? = nil) async throws {
+        try await expect("\(session ?? one) marked \(open ? "" : "not ")open") {
+            let spaces = try await Self.call(session ?? one, "workspace.list", [:])["workspaces"] as? [[String: Any]]
+            return spaces?.contains { ($0["tokens"] as? [String: String])?["ovvi-open"] == "1" } == open
         }
     }
 

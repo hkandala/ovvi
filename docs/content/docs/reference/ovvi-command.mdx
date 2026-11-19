@@ -100,26 +100,23 @@ The skill points to the herdr skill (`herdr --skill`) for everything that herdr 
 
 ## status
 
-Says whether Ovvi shows the asking pane. It reads only herdr, so it answers fast, also when no Ovvi runs.
+Says whether an Ovvi follows the asking pane's session. It reads only herdr, so it answers fast, also when no Ovvi
+runs.
 
 ```sh
 $ ovvi status
-Shown in Ovvi
+Open in Ovvi
 $ ovvi status --json
-{"session":"default","pane":"w1:p2","open":true,"shown":true,"remote":false,"protocol":1}
+{"session":"default","pane":"w1:p2","open":true,"protocol":1}
 $ ovvi status --watch
 ```
 
 | Text | Means |
 |---|---|
-| Shown in Ovvi | A window on a Mac shows the pane now. |
-| Open in Ovvi, not shown | An Ovvi follows the session, but the pane is out of view. Commands work. |
+| Open in Ovvi | A window of an Ovvi shows the session. Commands work. |
 | Not in Ovvi | No Ovvi follows the session (exit 3). |
 
 - `open` is true when an Ovvi follows the session and takes requests.
-- `shown` is true when a window of any Ovvi shows the pane, or the pane floats.
-- `remote` is true when the Ovvi that shows the pane runs on another machine. The agent's own `pbcopy` then does
-  not reach your Mac, so it uses `ovvi copy`.
 - `--watch` prints the JSON line again each time it changes.
 
 ## help

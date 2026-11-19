@@ -93,8 +93,8 @@ final class HostStore {
 
     /// The panes and their calling states at the last sweep of delivered notifications (`Notifications.post`).
     @ObservationIgnored var notified: Int?
-    @ObservationIgnored var marked: Set<String> = []
-    @ObservationIgnored var openMarked: Set<String> = []
+    /// The space that carries the session's open mark (`markOpen`).
+    @ObservationIgnored var openMarked: String?
     @ObservationIgnored var marking: Task<Void, Never>?
     var onScreen: Bool {
         windows.contains { $0.visible && $0.current?.store === self }

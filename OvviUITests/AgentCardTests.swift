@@ -8,7 +8,7 @@ extension OvviUITests {
         element("tab.\(tab)").click()
         XCTAssertTrue(element("terminal.\(first)").exists(within: 3))
         try await waitForPrompt(first)
-        try await expectOpen("w2")
+        try await expectOpen()
         let folder = try await cardsFolder(in: first)
         let focus = try await snapshot()["focused_pane_id"] as? String
 
@@ -93,7 +93,7 @@ extension OvviUITests {
         element("tab.\(tab)").click()
         XCTAssertTrue(element("terminal.\(first)").exists(within: 3))
         try await waitForPrompt(first)
-        try await expectOpen("w2")
+        try await expectOpen()
         let folder = try await cardsFolder(in: first), ovvi = Self.ovviCommand
 
         let browser = try await open("browser ./one.html", from: first, "web", ["kind: browser"])
@@ -151,7 +151,7 @@ extension OvviUITests {
         element("tab.\(other)").click()
         XCTAssertTrue(element("terminal.\(beside)").exists(within: 3))
         try await waitForPrompt(beside)
-        try await expectOpen("w2")
+        try await expectOpen()
         // Hovered at once: with no hold the notice goes after 6 s.
         try await send("clear; \(Self.ovviCommand) reveal \(first)\r", to: beside)
         let notice = element("detail.notice")

@@ -209,7 +209,8 @@ extension AgentCommand {
 
     /// Only for `help`: the script answers `status` itself and never sends it.
     static let status = AgentCommand(
-        name: "status", usage: "status [--json | --watch]", summary: "Says if Ovvi shows this pane, from herdr alone",
+        name: "status", usage: "status [--json | --watch]",
+        summary: "Says if an Ovvi follows this session, from herdr alone",
         help: "Exit 0 when an Ovvi follows the session, 3 when none does. --watch prints a line on each change.",
     ) { _ in throw AgentError.usage("the script answers status") }
 

@@ -212,7 +212,7 @@ final class WindowPages {
     func leave(_ store: HostStore) {
         let controlled = store.windows.first === self
         store.windows.removeAll { $0 === self }
-        store.markShown()
+        store.markOpen()
         // Unless another key window that shows the store sets them first.
         if key, !store.windows.contains(where: \.key) {
             store.lookingTabID = nil
@@ -298,7 +298,7 @@ final class WindowPages {
         if !overview, !panelOpen, !snapshot || !(window?.firstResponder is NSText) {
             current.shown(alive: alive)
         }
-        markShown()
+        markOpen()
         // Also at a snapshot: a card may become a chat or a plugin.
         photographNext()
     }
