@@ -4,7 +4,7 @@
 Started by the chooser with Ovvi's flags (`-c hooks.SessionStart=… -c hooks.state=…`), it checks the hook's trust
 hash as Codex does (else it shows Codex's "Hooks need review" picker and runs no hook), runs the hook at the first
 prompt, writes a rollout in Codex's format under $CODEX_HOME/sessions (else under its own folder), reports its state to
-herdr and draws Codex's input box above its status row. Started without flags it reports its session to herdr at the
+herdr and draws Codex's input box. Started without flags it reports its session to herdr at the
 first prompt (as herdr's Codex integration does) and keeps its rollout, which `resume <session>` goes on with.
 Prompts: "wait" shows an approval until 1 is typed, "slow" works until Esc, "new" starts a new session (as `/new` and
 a prompt do), a prompt of OVVI_STAND_IN_SCENE's turns plays that turn (scripts/welcome-scene/scene.py), anything else

@@ -159,8 +159,8 @@ Ovvi sends the agent its own stop key, never ⌃C.
 
 ### Answer the agent
 
-When the agent asks something that the chat can answer, a question card shows above the reply box. Click an
-option to answer.
+When the agent asks something that the chat can answer, and herdr reports that the agent needs you, a question card
+shows above the reply box. Click an option to answer.
 
 - Claude Code: questions with one answer.
 - OpenCode: permissions (Allow once, Allow always, Reject) and questions with one answer.
@@ -173,14 +173,15 @@ of the reply box. Its header says "Claude Code is asking in the terminal". Answe
 the whole card. When the agent goes on, the reply box comes back.
 
 The chat uses only the state that herdr reports. If herdr reports a waiting agent as idle, for example while a Codex
-picker or a pi extension dialog is open, the reply box stays. Click TUI to answer there.
+or OpenCode picker is open, the reply box stays. A message sent then goes into the picker. Click TUI to answer there.
 
 ### When the chat cannot read the session
 
 If the chat cannot read the agent's session, a red card says why, with Show TUI, and the header says Error. The
 reasons are:
 
-- "Claude Code has not started a session": the agent did not start a session in time.
+- "Claude Code has not started a session": the agent did not start a session in time, or it named no session for a
+  message that you sent.
 - "OpenCode has not reported its session": the OpenCode build ignores plugins. After a few seconds the card
   switches to its terminal.
 - "OpenCode's server did not answer".
@@ -194,7 +195,7 @@ The agent still runs. Use the TUI.
 |---|---|---|
 | Claude Code | Messages, tool calls, questions | A tool approval shows the live terminal. |
 | Codex | Messages, tool calls, subagents | Approvals and questions show the live terminal. |
-| Pi | Messages, tool calls, `/tree` moves | Needs pi 0.80.4 or later. |
+| Pi | Messages, tool calls, `/tree` moves | Extension dialogs show the live terminal. Needs pi 0.80.4 or later. |
 | OpenCode | Messages, tool calls, permissions, questions | Needs a build that loads plugins. A remote machine needs `curl`. |
 
 A new session in the TUI (`/clear`, `/new`, a fork or a resume) starts the chat again with that session.

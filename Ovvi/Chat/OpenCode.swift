@@ -104,8 +104,8 @@ struct OpenCode: ChatAdapter {
                         }
                     }
                 }
+                waits.publish(chat)
             }
-            waits.publish(chat)
         }
     }
 

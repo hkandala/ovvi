@@ -82,12 +82,6 @@ def finish(entry, **fields):
     publish("message.updated", sessionID=session, info=entry["info"])
 
 
-def status(kind):
-    publish("session.status", sessionID=session, status={"type": kind})
-    if kind == "idle":
-        publish("session.idle", sessionID=session)
-
-
 def write_state():
     if state_file and plugged:
         line = {"pid": os.getpid(), "url": url, "session": session}
@@ -191,7 +185,6 @@ def command(entry, text, output):
 def answer(entry, text):
     part(entry, "text", text=text, time={"start": now(), "end": now()})
     finish(entry, finish="stop")
-    status("idle")
     stand_in.report("idle")
     say(text)
 
@@ -203,7 +196,6 @@ def prompt(text):
         write_state()
     user = message("user")
     part(user, "text", text=text)
-    status("busy")
     stand_in.report("working")
     entry = message("assistant", parentID=user["info"]["id"])
     if text == "allow":
@@ -232,7 +224,6 @@ def prompt(text):
         while time.time() < deadline and escapes < 2:
             escapes += key(deadline - time.time()).count("\x1b")
         finish(entry, error={"name": "MessageAbortedError", "data": {"message": "Aborted"}})
-        status("idle")
         stand_in.report("idle")
         say("interrupted")
     else:

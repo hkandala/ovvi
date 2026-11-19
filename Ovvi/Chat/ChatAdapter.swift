@@ -74,7 +74,7 @@ extension Chat {
         let timer = Task {
             try? await Task.sleep(for: .seconds(10))
             if late, !Task.isCancelled, source == nil {
-                problem = "\(adapter.name) has not started a session"
+                problem = noSession
             }
         }
         defer { timer.cancel() }

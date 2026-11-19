@@ -55,7 +55,8 @@ struct ChatView: View {
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
         .task(id: ObjectIdentifier(chat)) { await chat.viewed() }
         .onChange(of: chat.state) { old, new in
-            if old == .needsYou, new != .needsYou {
+            // Not nil: a snapshot without the agent (herdr restarting, a reconnect) answered nothing.
+            if old == .needsYou, new != nil, new != .needsYou {
                 chat.unask()
             }
         }

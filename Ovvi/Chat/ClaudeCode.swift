@@ -30,9 +30,10 @@ struct ClaudeCode: ChatAdapter {
 
     /// The launcher's `claude`, its `dotslash` and the native binary all carry the `--settings` value.
     init?(_ foreground: [Program.Foreground]) {
-        let marked = ChatAdapters.marked(foreground) { $0.after("--settings").flatMap(ChatAdapters.token(in:)) }
-        guard let (token, pids) = marked else { return nil }
-        self.init(token: token, pids: pids)
+        guard let token = ChatAdapters.marked(foreground, {
+            $0.after("--settings").flatMap(ChatAdapters.token(in:))
+        })?.token else { return nil }
+        self.init(token: token, pids: [])
     }
 
     init(token: String, pids _: [Int]) {

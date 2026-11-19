@@ -70,14 +70,9 @@ public extension Exec {
     }
 
     /// Closing stdin makes the wrapper end the script (neither the script nor `tail` reads stdin). No kill: one that
-    /// comes ahead of the wrapper's watcher leaves the script running.
+    /// comes ahead of the wrapper's watcher leaves the script running. The stream ends the run by closing its stdin.
     internal func lines(_ script: String, _ arguments: [String]) async throws -> AsyncStream<String> {
-        try await lines(["sh", "-c", observeWrapper, "sh", "sh", "-c", script, "sh"] + arguments)
-    }
-
-    /// The stream ends the run by closing its stdin.
-    private func lines(_ argv: [String]) async throws -> AsyncStream<String> {
-        let channel = try await run(argv)
+        let channel = try await run(["sh", "-c", observeWrapper, "sh", "sh", "-c", script, "sh"] + arguments)
         let (stream, continuation) = AsyncStream<String>.makeStream()
         Task {
             for await line in channel.lines {

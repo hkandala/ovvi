@@ -26,4 +26,10 @@ export default function (pi) {
 		try { at = statSync(path).size; } catch {}
 		write({ type: "tree", leaf: event.newLeafId ?? null, at });
 	});
+	// herdr's pi integration hears another extension's dialog only from this event: its state is then blocked, and it
+	// refuses agent.prompt meanwhile.
+	pi.on("ui_prompt_start", (event) => {
+		pi.events.emit("herdr:blocked", { active: true, label: event.title ?? event.kind });
+	});
+	pi.on("ui_prompt_end", () => pi.events.emit("herdr:blocked", { active: false }));
 }

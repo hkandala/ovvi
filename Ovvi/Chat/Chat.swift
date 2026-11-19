@@ -59,7 +59,7 @@ final class Chat {
         self.store = store
     }
 
-    /// herdr's, for every agent: nil while it reports none (the agent starts).
+    /// herdr's, for every agent: nil while herdr lists no agent in the pane (one starting, or gone).
     var state: AgentState? {
         store?.pane(paneID)?.state
     }
@@ -116,8 +116,8 @@ final class Chat {
         outgoing.removeAll(where: \.notSent)
         outgoing.append(message)
         draft = ""
-        // Typed while the agent starts, it waits, dimmed, as one on its way does, and goes once herdr reports the
-        // agent, at most 30 s. One wait after another: messages go in their order.
+        // Typed before herdr lists the agent, it waits, dimmed, as one on its way does, and goes once herdr does, at
+        // most 30 s. One wait after another: messages go in their order.
         let previous = starting
         let ready = Task {
             await previous?.value
@@ -138,8 +138,16 @@ final class Chat {
             // Claude Code's company hooks can take a few seconds to log a prompt; pi logs one sent while it works
             // when it takes it, after the running tool (or its dialog).
             try? await Task.sleep(for: .seconds(5))
+            // No session read yet (a side file's line comes late from a remote machine): nothing can confirm it.
+            for _ in 0 ..< 25 where source == nil {
+                try? await Task.sleep(for: .seconds(1))
+            }
             while state == .working || state == .needsYou {
                 try? await Task.sleep(for: .seconds(1))
+            }
+            // Codex names its session only once its hook runs at the first prompt.
+            if source == nil, problem == nil {
+                problem = noSession
             }
             notSent(message.id)
         }
@@ -151,10 +159,10 @@ final class Chat {
         if draft.isEmpty {
             draft = outgoing[index].text
         }
-        // Codex's hook did not run (a trust hash it rejects, hooks turned off): it names no session until it does.
-        if source == nil, problem == nil {
-            problem = "\(adapter.name) has not started a session"
-        }
+    }
+
+    var noSession: String {
+        "\(adapter.name) has not started a session"
     }
 
     /// All the new entries, not only the last: a burst brings the user's message with the reply after it.
@@ -181,11 +189,14 @@ final class Chat {
         Task { try? await client.sendKeys(keys, pane: paneID) }
     }
 
-    /// herdr's needs you ended: a question answered in the terminal, whose hook may go.
+    /// herdr's needs you ended: a question answered in the terminal, whose hook may go. One answered in the chat has
+    /// a hook that ends by itself, and may not have read its answer yet.
     func unask() {
-        guard question != nil, let store else { return }
-        question = nil
-        Task { await adapter.unask(on: store.machine.exec()) }
+        guard let question, let store else { return }
+        self.question = nil
+        if !question.answered {
+            Task { await adapter.unask(on: store.machine.exec()) }
+        }
     }
 
     func answer(_ answers: [String: String]) {

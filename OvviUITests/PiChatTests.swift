@@ -44,10 +44,11 @@ extension OvviUITests {
     }
 
     /// Its process lists no arguments, as npm's pi, whose process title overwrites them. Its session comes 8 s late:
-    /// the message typed meanwhile goes once pi is ready.
+    /// the message typed meanwhile waits for it, never "Not sent".
     func testAPiRunListsEveryKindOfTool() async throws {
         let (tab, pane) = try await startChat(agent: 2, environment: "OVVI_STAND_IN_TITLE=1 OVVI_STAND_IN_LATE=8 ")
-        try await say("tools", in: pane)
+        app.typeText("tools\r")
+        XCTAssertFalse(element("chat.\(pane).not-sent").exists(within: 10))
         XCTAssertTrue(row(pane, "reply", "All tools.").exists(within: 5))
         let stack = element("chat.\(pane).stack")
         XCTAssertEqual(stack.label, "Read 2 files, searched 2 patterns, ran 2 commands, +4 more")
