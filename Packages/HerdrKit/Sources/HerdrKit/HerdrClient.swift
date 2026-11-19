@@ -185,7 +185,7 @@ public actor HerdrClient {
         }
     }
 
-    static let spacing = Duration.milliseconds(250)
+    static let spacing = Duration.milliseconds(500)
 
     private func stop() {
         out = nil
