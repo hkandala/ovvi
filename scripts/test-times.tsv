@@ -1,5 +1,7 @@
 # Seconds per UI test on CI, for scripts/shard.py: the mean of the passed tries of full runs 44290937193 and
 # 44290950666, and for the on-demand tests of on-demand runs 44290964162 and 44240948841.
+# testGitDiffStepsWithBracketsAndFilters, after its scroll fix: full runs 44422237710, 44441991146, 44449091065 and
+# 44449218704.
 # Refresh: playbook/ci.md, Refresh the test times.
 389	testHundredsOfPanesStayQuick
 383	testSplitsMoveEachCardOnceToItsPlace
@@ -55,7 +57,6 @@
 36	testPinnedSpacesStayOnTopAboveALine
 35	testACardNeverShowsTheOverviewsSmallSnapshot
 35	testFocusFollowsTheMouseOntoEveryCard
-34	testGitDiffStepsWithBracketsAndFilters
 33	testAChatSendsStopsAndFoldsItsToolCalls
 33	testAPluginsHeaderDrawsItsManifestsControls
 33	testFloatingWindowInEachLook
@@ -220,6 +221,7 @@
 15	testSecondWindowWatchesUntilItsUserTypes
 15	testSelectPaneKeysPickTheLastUsedElseTheTopNeighbor
 15	testTheOvviCommandFloatsCopiesAndSaysWhereItIs
+15	testGitDiffStepsWithBracketsAndFilters
 14	testAFailedInstallOnARemoteMachineSaysWhy
 14	testAFirstLaunchShowsOnlyTheWelcomeOverSavedWindows
 14	testAFixedPicksMenuItemsAndSetting

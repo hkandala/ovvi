@@ -116,6 +116,13 @@ How CI runs, how to run part of it, and how to keep it green and fast.
   (`scripts/check-launches.py`).
 - A test may walk several flows that share their setup. Start each part with `step("…")`: the part is an activity in
   the result, and its name comes before each failure's message.
+- XCUITest plays a `scroll(byDeltaX:deltaY:)` out at its own pace: 100 000 pt took 20 s on CI. Scroll only as far as
+  the test needs.
+- On CI's runners `Thread.sleep`, `usleep` and `mach_wait_until` in the e2e helper's tools wake about 40 ms late
+  (56 ms for 16 ms; a strict dispatch timer keeps 16–20 ms). So the posting tools run slower than their code says:
+  a swipe takes about 4.3 s, not 1.3 s, and a drag's glide about 1.1 s, not 0.3 s. The tests on CI are tuned to that
+  pace. At the true pace (a strict timer), testALongChatLoadsEarlierRowsAsItScrollsUp's swipes moved up to 1329 pt,
+  over its 1200 pt jump check, and one drag session did not end at its release (one run each, in 4 runs).
 - An element query takes 0.1–0.2 s and a click about 1 s: check the outcome through one herdr call or one
   accessibility value, not a walk over many elements.
 - Keep a test under about a minute: one long test sets its shard's time.
