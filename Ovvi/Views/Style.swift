@@ -95,6 +95,9 @@ struct Look: Equatable {
         dark ? .white.opacity(contrast ? 0.3 : 0.17) : .black.opacity(contrast ? 0.28 : 0.14)
     }
 
+    /// A list's selected row: the accent, muted, under the rows' own ink.
+    static let selectedRow = Color.accentColor.opacity(0.3)
+
     var selected: Color {
         (dark ? Color.white : .black).opacity(contrast ? 1 : 0.9)
     }
@@ -249,13 +252,12 @@ struct Pill: View {
 
 struct MenuRow: View {
     let item: FilterList.Item
-    let selected: Bool
     let height: CGFloat
 
     var body: some View {
         HStack(spacing: 8) {
             if let state = item.state {
-                StateIcon(state: state, color: selected ? .white : nil).frame(width: 22)
+                StateIcon(state: state).frame(width: 22)
             } else {
                 Image(symbol: item.symbol ?? "circle").opacity(item.symbol == nil ? 0 : 1).frame(width: 22)
                     .accessibilityHidden(true)
@@ -266,11 +268,10 @@ struct MenuRow: View {
                 ProgressView().controlSize(.small)
             } else {
                 Text(item.detail)
-                    .foregroundStyle(selected ? Color.white.opacity(0.75) : .secondary).lineLimit(1)
+                    .foregroundStyle(.secondary).lineLimit(1)
                     .truncationMode(.middle)
             }
         }
-        .foregroundStyle(selected ? Color.white : .primary)
         .padding(.horizontal, 8)
         .frame(height: height)
     }
@@ -286,11 +287,12 @@ struct RowButtonStyle: ButtonStyle {
         @Environment(\.look) private var look
 
         var body: some View {
-            let pressed = configuration.isPressed
-            configuration.label.font(.system(size: 11, weight: .medium)).foregroundStyle(.white)
+            let pressed = configuration.isPressed, destructive = configuration.role == .destructive
+            let fill = destructive ? look.error.opacity(pressed ? 0.75 : 1) : .primary.opacity(pressed ? 0.18 : 0.1)
+            configuration.label.font(.system(size: 11, weight: .medium))
+                .foregroundStyle(destructive ? Color.white : .primary)
                 .padding(.horizontal, 8).padding(.vertical, 2)
-                .background(configuration.role == .destructive ? look.error.opacity(pressed ? 0.75 : 1)
-                    : .white.opacity(pressed ? 0.35 : 0.2), in: .capsule)
+                .background(fill, in: .capsule)
         }
     }
 }
@@ -361,8 +363,8 @@ enum RowInk {
 
     struct Cap { let fill: NSColor, rim: [CGFloat], sides: CGFloat; var outline: NSColor? }
 
-    static func cap(dark: Bool, lit: Bool) -> Cap {
-        let fill = NSColor.white.withAlphaComponent(lit ? dark ? 0.07 : 0.4 : dark ? 0.13 : 0)
+    static func cap(dark: Bool) -> Cap {
+        let fill = NSColor.white.withAlphaComponent(dark ? 0.13 : 0)
         return dark ? Cap(fill: fill, rim: [0.42, 0.2, 0.07], sides: 0)
             : Cap(fill: fill, rim: [1, 1, 0.6], sides: 0.3, outline: .black.withAlphaComponent(0.09))
     }

@@ -176,9 +176,9 @@ struct FilterList: View {
                 }
             }
             Button { act(item) } label: {
-                MenuRow(item: item, selected: offset == index, height: rowHeight)
+                MenuRow(item: item, height: rowHeight)
             }
-            .buttonStyle(ChromeStyle(selected: offset == index, tint: .accentColor))
+            .buttonStyle(ChromeStyle(selected: offset == index, tint: Look.selectedRow))
             .accessibilityIdentifier("\(name).\(item.id)")
             .accessibilityValue(item.state?.word ?? "")
             .accessibilityAddTraits(offset == index ? .isSelected : [])

@@ -52,10 +52,9 @@ final class RowView: NSView {
             .map { image in
                 let image = image.withSymbolConfiguration(.init(pointSize: 13, weight: .regular, scale: .medium))
                     ?? image
-                let tint = lit ? RowInk.white(1) : RowInk.primary
                 return NSImage(size: image.size, flipped: false) { bounds in
                     image.draw(in: bounds)
-                    tint.set()
+                    RowInk.primary.set()
                     bounds.fill(using: .sourceAtop)
                     return true
                 }
@@ -97,7 +96,7 @@ final class RowView: NSView {
         }
         let row = rowRect
         if lit || hovered || pressed {
-            (lit ? NSColor(Color.accentColor) : RowInk.primary.withAlphaComponent(pressed ? 0.08 : 0.05)).setFill()
+            (lit ? NSColor(Look.selectedRow) : RowInk.primary.withAlphaComponent(pressed ? 0.08 : 0.05)).setFill()
             NSBezierPath(cgPath: Path(roundedRect: row, cornerRadius: 8, style: .continuous).cgPath).fill()
         }
         // Read as it draws: a row is made ahead of joining a window.
@@ -124,23 +123,21 @@ final class RowView: NSView {
         let start = row.minX + 8 + 22 + 8
         let detail = [item.detail, item.opens ? "›" : ""].filter { !$0.isEmpty }.joined(separator: " ")
         let title: [NSAttributedString.Key: Any] = [.font: Self.title,
-                                                    .foregroundColor: lit ? RowInk.white(1) : RowInk.primary]
+                                                    .foregroundColor: RowInk.primary]
         let titleRoom = min(width(item.title, title),
                             end - start - 4 - (item.note == nil ? 0 : 8) - (detail.isEmpty ? 0 : 8))
         draw(item.title, title, left: start, room: titleRoom, in: row)
         var left = start + max(0, titleRoom)
         if let note = item.note {
             let attributes: [NSAttributedString.Key: Any] = [.font: Self.note,
-                                                             .foregroundColor: lit ? RowInk.white(0.6) : RowInk
-                                                                 .tertiary]
+                                                             .foregroundColor: RowInk.tertiary]
             let room = min(width(note, attributes), end - left - 8 - 4)
             draw(note, attributes, left: left + 8, room: room, in: row)
             left += 8 + max(0, room)
         }
         if !detail.isEmpty {
             let attributes: [NSAttributedString.Key: Any] = [.font: Self.title,
-                                                             .foregroundColor: lit ? RowInk.white(0.75) : RowInk
-                                                                 .secondary]
+                                                             .foregroundColor: RowInk.secondary]
             let room = min(width(detail, attributes), end - left - 4)
             draw(detail, attributes, left: end - max(0, room), room: room, in: row)
         }
@@ -168,7 +165,7 @@ final class RowView: NSView {
             NSBezierPath(cgPath: Path(roundedRect: rect.insetBy(dx: inset, dy: inset), cornerRadius: 4 - inset,
                                       style: .continuous).cgPath)
         }
-        let cap = RowInk.cap(dark: dark, lit: lit)
+        let cap = RowInk.cap(dark: dark)
         cap.fill.setFill()
         shape(0).fill()
         for (band, alpha) in cap.rim.enumerated() {
@@ -188,7 +185,7 @@ final class RowView: NSView {
             edge.stroke()
         }
         let attributes: [NSAttributedString.Key: Any] = [.font: Self.cap,
-                                                         .foregroundColor: lit ? RowInk.white(1) : RowInk.primary]
+                                                         .foregroundColor: RowInk.primary]
         let size = (key as NSString).size(withAttributes: attributes)
         (key as NSString).draw(at: NSPoint(x: rect.midX - size.width / 2, y: rect.midY - size.height / 2),
                                withAttributes: attributes)
