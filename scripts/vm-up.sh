@@ -15,11 +15,12 @@ vm_up() {
     tart exec "$vm" true || { echo "$vm: tart exec does not answer" >&2; exit 1; }
 }
 # vm_idle_stop, when the caller is done: the VM holds all its memory while it runs, idle too, so it stops 10 minutes
-# later, unless a later use armed its own stop or the lock is held then. In a session of its own: a killed caller
-# leaves it waiting.
+# later, unless a later use armed its own stop; while the lock is held then, it tries each minute. In a session of its
+# own: a killed caller leaves it waiting.
 vm_idle_stop() {
     touch "$locks/ovvi-test.last"
-    perl -MPOSIX -e 'setsid; exec @ARGV' sh -c "sleep 600; [ \$(stat -f %m '$locks/ovvi-test.last') = \
-        $(stat -f %m "$locks/ovvi-test.last") ] && lockf -k -t 0 '$locks/ovvi-test.lock' tart stop $vm" \
-        >/dev/null 2>&1 </dev/null &
+    perl -MPOSIX -e 'setsid; exec @ARGV' sh -c "sleep 600
+        while [ \$(stat -f %m '$locks/ovvi-test.last') = $(stat -f %m "$locks/ovvi-test.last") ]; do
+            lockf -k -t 0 '$locks/ovvi-test.lock' tart stop $vm; [ \$? = 75 ] || break; sleep 60
+        done" >/dev/null 2>&1 </dev/null &
 }

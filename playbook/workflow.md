@@ -154,9 +154,9 @@ OWNER=<your agent name> ~/ovvi-docs/heavy.sh ~/ovvi-docs/gui-free.sh make e2e PR
   screen locks, it stops the run at once. (Input from Universal Control or Screen Sharing does not stop a run.)
 - It exits 75 when the user is here, the Mac is locked or the lock is held: use the VM or CI, and do not try again in
   a loop.
-- One run per hold, released by the script, also on failure or when it is killed. Never take the lock by hand, never
-  hold it while you read results, edit or wait for CI, and never remove someone else's lock. A lock whose script is
-  gone is free for the next run.
+- One run per hold, released by the script, also on failure or when it is killed. A lock whose script is gone is free
+  for the next run. Agents never take the lock by hand (the orchestrator's hold for the user, below, is the one
+  exception), never hold it while they read results, edit or wait for CI, and never remove someone else's lock.
 - When the user tests on the Mac, the orchestrator holds the lock for them
   (`mkdir /tmp/ovvi-gui.lock && echo user > /tmp/ovvi-gui.lock/owner`; `rm -rf /tmp/ovvi-gui.lock` to
   release). UI tests in the VM go on.

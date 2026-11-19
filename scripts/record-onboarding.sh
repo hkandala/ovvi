@@ -7,7 +7,7 @@
 # everything to .build/onboarding/. Everything films on a 4K display made for the run (scripts/hidpi-display.m),
 # the main display while it runs, so the films are 2x on any Mac.
 # Usage: scripts/record-onboarding.sh [clips|encode|films|all] [dark|light|both]   (default: all both)
-# Takes the GUI lock (or runs under the user's own hold); Ctrl-C stops it and cleans up what it started.
+# Runs under gui-free.sh's hold of the GUI lock, or the user's own; Ctrl-C stops it and cleans up what it started.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 REPO=$PWD WORLD=onboarding S=workbench SIZE=1200x800
@@ -18,7 +18,7 @@ STEPS=${1:-all} LOOKS=${2:-both} PAGES=${PAGES:-running layout agents plugins ma
 [ "$LOOKS" = both ] && LOOKS="dark light"
 unset "${!HERDR_@}"
 HERDR=$(command -v herdr) CLAUDE=$(command -v claude || true)
-started=$SECONDS lock= REC= up= BACKDROP= FILM= SCREEN=
+started=$SECONDS REC= up= BACKDROP= FILM= SCREEN=
 say() { printf '\n[%s +%dm%02ds] %s\n' "$(date +%H:%M:%S)" $(((SECONDS - started) / 60)) $(((SECONDS - started) % 60)) "$*"; }
 
 cleanup() {
@@ -32,7 +32,6 @@ cleanup() {
         kill "$SCREEN"
         wait "$SCREEN" 2>/dev/null || true
     fi
-    [ -n "$lock" ] && rm -rf /tmp/ovvi-gui.lock
     return 0
 }
 trap cleanup EXIT
@@ -591,14 +590,11 @@ preflight() {
     esac
 }
 
-# The user's own hold (owner "user…"), or one the caller took for this run (LOCKED=1), else this run takes it.
-if [ -n "${LOCKED:-}" ]; then
-    :
-elif [ -d /tmp/ovvi-gui.lock ]; then
-    grep -qs '^user' /tmp/ovvi-gui.lock/owner || { echo "the GUI lock is held by $(cat /tmp/ovvi-gui.lock/owner)" \
-        && exit 1; }
-else
-    mkdir /tmp/ovvi-gui.lock && echo "record-onboarding $(date +%H:%M)" >/tmp/ovvi-gui.lock/owner && lock=1
+# On the user's screen: only under the user's own hold (owner "user…") or one the caller took while the user is away
+# (LOCKED=1, ~/ovvi-docs/gui-free.sh; playbook/workflow.md, The GUI lock).
+if [ -z "${LOCKED:-}" ] && ! grep -qs '^user' /tmp/ovvi-gui.lock/owner; then
+    echo "run it through ~/ovvi-docs/gui-free.sh while the user is away, or under the user's hold of the GUI lock" >&2
+    exit 1
 fi
 preflight
 echo "Recording the welcome: about 25-30 minutes (build 4, clips 8, encoding 4, films 10). Quit Ovvi Debug if it runs."

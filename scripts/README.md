@@ -51,8 +51,10 @@ Before you record:
    stops and names the one that is missing.
 4. Quit Ovvi Debug.
 
-Then run `scripts/record-onboarding.sh`. It takes the GUI lock (`/tmp/ovvi-gui.lock`) and frees it at the end. The
-clips go into `Ovvi/Onboarding/Clips`. The films, and a copy of the clips with a still of each, go into
+Then run it on this Mac's screen while the user is away (playbook/workflow.md, The GUI lock):
+`HEAVY_TIMEOUT=2400 ~/ovvi-docs/heavy.sh ~/ovvi-docs/gui-free.sh env DERIVED_DATA=/tmp/ovvi-dd-onboarding
+scripts/record-onboarding.sh`, or, when the user records it, under their own hold of the GUI lock. The clips go into
+`Ovvi/Onboarding/Clips`. The films, and a copy of the clips with a still of each, go into
 `.build/onboarding/`. Commit the clips.
 
 The pictures are sharp on a 4K screen because the script films at 2x on any Mac:
