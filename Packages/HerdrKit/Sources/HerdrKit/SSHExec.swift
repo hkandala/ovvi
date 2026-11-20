@@ -3,7 +3,8 @@ import Foundation
 
 /// A run starts the master when none lives, never with a prompt; only `connect(ask:)` may ask.
 public actor SSHExec: Exec {
-    public typealias Ask = @Sendable (String) async -> String?
+    /// A question and whether the ssh that asks it gave up waiting for the answer.
+    public typealias Ask = @Sendable (String, _ gaveUp: @escaping @Sendable () -> Bool) async -> String?
 
     nonisolated let target: String
     nonisolated let environment: [String: String]
@@ -230,7 +231,9 @@ public actor SSHExec: Exec {
             environment["SSH_ASKPASS"] = Self.askpass
             environment["SSH_ASKPASS_REQUIRE"] = "force"
         }
+        // `exec`: the channel's pid is ssh's.
         let channel = try ProcessExec.spawn(argv + options + ["-S", socket, "--", target], environment)
+        let gaveUp = { @Sendable in channel.pid.map(Self.gaveUp) ?? false }
         // ConnectTimeout covers only the TCP connect and the banner: a login that hangs (a jump host, a security
         // key under BatchMode) must not hold every run. One that asks has no limit: the user answers.
         let began = ContinuousClock.now
@@ -244,10 +247,12 @@ public actor SSHExec: Exec {
             if line.hasPrefix(Self.question), let ask {
                 let prompt = Data(base64Encoded: String(line.dropFirst(Self.question.count)))
                     .map { String(decoding: $0, as: UTF8.self) } ?? ""
-                guard let answer = await ask(prompt) else {
+                let answer = await ask(prompt, gaveUp)
+                let gone = gaveUp()
+                guard let answer, !gone else {
                     channel.closeInput()
                     channel.terminate()
-                    let error = HerdrError.disconnected("Canceled")
+                    let error = HerdrError.disconnected(gone ? "The server stopped waiting for an answer" : "Canceled")
                     blocked = error
                     throw error
                 }

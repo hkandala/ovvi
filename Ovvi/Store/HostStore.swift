@@ -165,7 +165,7 @@ final class HostStore {
         }
         var failure: Error?
         do {
-            try await (machine.exec() as? SSHExec)?.connect { question in await pages.ask(question) }
+            try await (machine.exec() as? SSHExec)?.connect { await pages.ask($0, gaveUp: $1) }
         } catch HerdrError.disconnected {
         } catch {
             failure = error

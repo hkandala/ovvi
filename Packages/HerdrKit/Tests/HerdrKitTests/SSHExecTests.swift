@@ -96,3 +96,21 @@ struct RelayExec: Exec {
     #expect(lines.first == "a\0b c\0")
     #expect(lines.count == 2 && lines[1] == String(repeating: "x/y z\0", count: 20000))
 }
+
+/// As ssh while it waits for an answer: it holds its connection and does not read it.
+@Test(arguments: ["socketpair($in, $out, AF_UNIX, SOCK_STREAM, 0)", "pipe($in, $out)"])
+func `an ssh whose connection closed gave up`(_ open: String) async throws {
+    let script = "my ($in, $out); \(open) or die; $| = 1; print qq(open\\n); <STDIN>; close $out; print qq(closed\\n); "
+        + "sleep 100"
+    let channel = try ProcessExec.spawn(["perl", "-MSocket", "-e", script], localExec.environment)
+    let pid = try #require(channel.pid)
+    var lines = channel.lines.makeAsyncIterator()
+    #expect(await lines.next() == "open")
+    #expect(!SSHExec.gaveUp(pid))
+    channel.write("")
+    #expect(await lines.next() == "closed")
+    #expect(SSHExec.gaveUp(pid))
+    channel.terminate()
+    _ = await channel.exit()
+    #expect(SSHExec.gaveUp(pid))
+}

@@ -77,6 +77,7 @@ extension OvviUITests {
         XCTAssertTrue(element("ask.answer").exists(within: connect))
         XCTAssertFalse(element("detail.connecting").exists)
         XCTAssertFalse(element("detail.connect").exists)
+        try await expectGaveUpQuestionsGo(other: first)
         typePassword()
         XCTAssertTrue(element("detail.connecting").exists(within: 2))
         XCTAssertFalse(element("detail.connect").exists)
@@ -296,6 +297,28 @@ extension OvviUITests {
         XCTAssertTrue(element("open-session.open.\(one)").exists(within: 2))
         XCTAssertTrue(element("open-session.open.\(two)").exists)
         app.typeKey(.escape, modifierFlags: [])
+    }
+
+    private func expectGaveUpQuestionsGo(other: XCUIElement) async throws {
+        step("A question whose ssh gave up goes once its window is key again, and on OK")
+        let remote = app.windows[app.windows.firstMatch.identifier]
+        try await expectGaveUp {
+            raise(other)
+            raise(remote)
+        }
+        try await expectGaveUp { typePassword() }
+    }
+
+    /// ssh ends while it asks, as one whose server stopped waiting would give up.
+    private func expectGaveUp(_ back: () -> Void) async throws {
+        let dropped = try await Self.post("\(one)/ssh-drop", Data("ovvi-pw".utf8))
+        XCTAssertFalse(dropped.isEmpty)
+        back()
+        XCTAssertTrue(element("detail.connect").exists(within: connect))
+        XCTAssertFalse(element("ask.answer").exists)
+        XCTAssertEqual(element("detail.text").value as? String, "The server stopped waiting for an answer")
+        element("detail.connect").click()
+        XCTAssertTrue(element("ask.answer").exists(within: connect))
     }
 
     private func expectNoRetryAfterADrop() async throws {

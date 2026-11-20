@@ -189,26 +189,6 @@ final class WindowPages {
         current = nil
     }
 
-    func ask(_ text: String) async -> String? {
-        question?.answer(nil)
-        let id = UUID()
-        return await withCheckedContinuation { continuation in
-            // Once: a second click, or a late answer to a question a newer one replaces, does nothing.
-            question = Question(id: id, text: text) { [weak self] answer in
-                guard self?.question?.id == id else { return }
-                self?.question = nil
-                continuation.resume(returning: answer)
-            }
-        }
-    }
-
-    struct Question: Identifiable {
-        let id: UUID
-        let text: String
-        /// Called once.
-        let answer: (String?) -> Void
-    }
-
     func leave(_ store: HostStore) {
         let controlled = store.windows.first === self
         store.windows.removeAll { $0 === self }
@@ -239,6 +219,10 @@ final class WindowPages {
     /// either order.
     func look(key: Bool) {
         self.key = key
+        // The user is back: a question whose ssh stopped waiting goes, and the window shows Connect.
+        if key, question?.gaveUp() == true {
+            question?.answer(nil)
+        }
         if key {
             Self.windows.removeAll { $0 === self }
             Self.windows.insert(self, at: 0)
@@ -374,6 +358,27 @@ extension WindowPages {
         self.early = nil
         asked = nil
         early()
+    }
+
+    func ask(_ text: String, gaveUp: @escaping () -> Bool) async -> String? {
+        question?.answer(nil)
+        let id = UUID()
+        return await withCheckedContinuation { continuation in
+            // Once: a second click, or a late answer to a question a newer one replaces, does nothing.
+            question = Question(id: id, text: text, gaveUp: gaveUp) { [weak self] answer in
+                guard self?.question?.id == id else { return }
+                self?.question = nil
+                continuation.resume(returning: answer)
+            }
+        }
+    }
+
+    struct Question: Identifiable {
+        let id: UUID
+        let text: String
+        let gaveUp: () -> Bool
+        /// Called once.
+        let answer: (String?) -> Void
     }
 }
 

@@ -299,6 +299,7 @@ public final class ProcessExec: Exec {
             closeInput: { writes.async { try? input.close() } },
             terminate: terminate,
             exit: { await (status.value, errors.value) },
+            pid: pid,
         )
     }
 }
