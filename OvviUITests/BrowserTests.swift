@@ -186,6 +186,8 @@ extension OvviUITests {
         openPalette()
         app.typeText("open")
         XCTAssertTrue(element("palette.command.Open Terminal").exists(within: 2))
+        app.typeText(" browser")
+        XCTAssertTrue(element("palette.command.Open Terminal").vanishes(within: 2))
         XCTAssertFalse(element("palette.command.Open Browser").exists)
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(hasKeyboard("browser.\(other).address"), "the keyboard is on \(keyboardOwner())")

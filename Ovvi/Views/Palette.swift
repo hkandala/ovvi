@@ -56,7 +56,7 @@ struct Palette: View {
             name: "palette",
             items: command.map(subItems) ?? { rootItems($0, made) },
             start: command.map(start) ?? made.start,
-            maxHeight: min(460, max(84, height - 154 - PaletteFooter.height)),
+            maxHeight: min(460, max(84, height - 154 - PaletteFooter.height - RowTable.spacing)),
             // Only a preview page reads it: on the others each new light draws the whole palette again.
             lit: command?.previews == true ? $lit : nil,
             text: command?.name?.current ?? "",
@@ -103,7 +103,7 @@ struct Palette: View {
 
     /// One row for each kind, whose keys say where it opens: the menus' "… Here" is this pane's.
     private static func here(_ command: Command) -> String {
-        places(command) ? command.title.replacing(" Here", with: "") : command.title
+        places(command) && command.title.hasSuffix(" Here") ? String(command.title.dropLast(5)) : command.title
     }
 
     private static func places(_ command: Command) -> Bool {
@@ -149,14 +149,14 @@ struct Palette: View {
             .flatMap { section in list.filter { $0.section == section } }
             .filter { $0.enabled && $0.id != "app.palette" }.map { command in
                 let opens = !command.menu.isEmpty || command.name != nil || command.field != nil
-                let places = Self.places(command)
                 let title = command.checked
                     .flatMap { command.setting ? "Turn \($0 ? "Off" : "On") \(command.title)" : nil }
                     ?? (opens ? Self.pageTitle(command) : Self.here(command))
                 let item = FilterList.Item(id: "command.\(Self.here(command))", symbol: command.symbol, title: title,
                                            keys: command.key?.caps ?? [],
                                            section: (command.group ?? command.section.group).rawValue,
-                                           hints: places ? self.places : nil, opens: opens,
+                                           // A row with a page opens the page whatever the key: its page says where.
+                                           hints: command.place == nil ? nil : places, opens: opens,
                                            act: {
                                                if let place = command.place {
                                                    place.open(.held)
@@ -254,35 +254,44 @@ struct Palette: View {
 struct PaletteFooter: View {
     typealias Hint = (keys: [String], word: String)
     let hints: [Hint]
-    static let height: CGFloat = 34
+    /// The list's: the divider runs to the palette's edges.
+    let inset: CGFloat
+    static let height: CGFloat = 35
+    private static let spoken = ["↩": "Return", "⌘": "Command", "⌥": "Option", "↑": "Up", "↓": "Down", "esc": "Escape"]
 
     var body: some View {
-        let words = hints.map { $0.keys.joined() + " " + $0.word }.joined(separator: ", ")
-        HStack(spacing: 14) {
-            ForEach(hints, id: \.word) { hint in
-                HStack(spacing: 5) {
-                    HStack(spacing: 2) {
-                        ForEach(hint.keys, id: \.self) { key in
-                            Text(key).font(.system(size: 10, weight: .semibold))
-                                .padding(.horizontal, key.count > 1 ? 4 : 0)
-                                .frame(minWidth: 18, minHeight: 18)
-                                .background(.quaternary, in: .rect(cornerRadius: 4, style: .continuous))
+        VStack(spacing: 0) {
+            Divider().padding(.horizontal, -inset)
+            HStack(spacing: 14) {
+                ForEach(hints, id: \.word) { hint in
+                    HStack(spacing: 5) {
+                        HStack(spacing: 2) {
+                            ForEach(hint.keys, id: \.self) { key in
+                                Text(key).font(.system(size: 10, weight: .semibold))
+                                    .padding(.horizontal, key.count > 1 ? 4 : 0)
+                                    .frame(minWidth: 18, minHeight: 18)
+                                    .background(.quaternary, in: .rect(cornerRadius: 4, style: .continuous))
+                            }
                         }
+                        Text(hint.word)
                     }
-                    Text(hint.word)
                 }
+                Spacer(minLength: 0)
             }
-            Spacer(minLength: 0)
+            .font(.system(size: 12))
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            // The first key's middle on the rows' icons' (`RowView`).
+            .padding(.horizontal, 10)
+            .frame(maxHeight: .infinity)
+            .accessibilityElement(children: .ignore)
+            .accessibilityAddTraits(.isStaticText)
+            .accessibilityLabel(hints.map { hint in
+                (hint.keys.map { Self.spoken[$0] ?? $0 } + [hint.word]).joined(separator: " ")
+            }.joined(separator: ", "))
+            .accessibilityValue(hints.map { $0.keys.joined() + " " + $0.word }.joined(separator: ", "))
+            .accessibilityIdentifier("palette.footer")
         }
-        .font(.system(size: 12))
-        .foregroundStyle(.secondary)
-        .lineLimit(1)
-        .padding(.horizontal, 8)
         .frame(height: Self.height)
-        .accessibilityElement(children: .ignore)
-        .accessibilityAddTraits(.isStaticText)
-        .accessibilityLabel(words)
-        .accessibilityValue(words)
-        .accessibilityIdentifier("palette.footer")
     }
 }

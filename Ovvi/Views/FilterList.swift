@@ -138,8 +138,11 @@ struct FilterList: View {
                 }
             }
             if let footer {
-                Divider().padding(.horizontal, -inset).padding(.top, submit == nil ? 0 : inset - 2)
-                PaletteFooter(hints: items.indices.contains(index) ? items[index].hints ?? footer : footer)
+                PaletteFooter(
+                    hints: items.indices.contains(index) ? items[index].hints ?? footer : footer,
+                    inset: inset,
+                )
+                .padding(.top, submit == nil ? 0 : inset - RowTable.spacing)
             }
         }
         .padding(.bottom, submit == nil || footer != nil ? 0 : inset)

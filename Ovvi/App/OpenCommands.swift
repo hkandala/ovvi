@@ -10,7 +10,7 @@ extension CommandList {
                     field: ("Path", { page?.open(path: $0) })),
             Command(section: .palette, title: "Open Working Tree", group: .panes, symbol: "plusminus",
                     keywords: "git diff uncommitted changes status", enabled: folder,
-                    place: .init { page?.openGit("uncommitted", $0) }) { page?.openGit("uncommitted", .here) },
+                    place: .init { page?.openGit("uncommitted", $0) }),
             Command(section: .palette, title: "Open Commit…", group: .panes, symbol: "circle.and.line.horizontal",
                     keywords: "git sha hash ref show", enabled: folder,
                     field: ("Hash or ref", { page?.openGit($0) })),

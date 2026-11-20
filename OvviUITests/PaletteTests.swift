@@ -363,14 +363,17 @@ extension OvviUITests {
         openPalette()
         XCTAssertTrue(footer.has(\.stringValue, run, within: 2))
         app.typeText("open")
-        var seen: [String: CGFloat] = [:]
-        for _ in 0 ..< 4 {
-            _ = steady(1) { footer.stringValue }
-            seen[footer.stringValue] = footer.frame.minY
+        // A row that opens at once has the places; one with a page (Open File) the default, as its page says them.
+        var tops: [CGFloat] = []
+        for (row, words) in [("Open Session…", run), ("Open Browser", Self.places), ("Open File Explorer", Self.places),
+                             ("Open Git", Self.places), ("Open File…", run)]
+        {
+            XCTAssertTrue(element("palette.command.\(row)").has(\.isSelected, true, within: 2), row)
+            XCTAssertTrue(footer.has(\.stringValue, words, within: 2), "\(row): \(footer.stringValue)")
+            tops.append(footer.frame.minY)
             app.typeKey(.downArrow, modifierFlags: [])
         }
-        XCTAssertEqual(Set(seen.keys), [run, Self.places])
-        XCTAssertEqual(Set(seen.values).count, 1, "the line moved: \(seen)")
+        XCTAssertEqual(Set(tops).count, 1, "the line moved: \(tops)")
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(element("palette.filter").vanishes(within: 2))
 
