@@ -25,6 +25,8 @@ final class PaneTerminal {
     @ObservationIgnored var revealed = false
     @ObservationIgnored var settling: Task<Void, Never>?
     @ObservationIgnored var deadline: Task<Void, Never>?
+    /// The grid libghostty took that herdr has not drawn at yet (`awaitAnswer`).
+    @ObservationIgnored var unanswered: (columns: Int, rows: Int)?
     @ObservationIgnored private(set) var grid: InMemoryTerminalViewport?
     /// `grid` takes it in `resized`'s task, which a task for a stale grid must not replace.
     @ObservationIgnored private var latest: InMemoryTerminalViewport?
@@ -114,10 +116,6 @@ final class PaneTerminal {
         }
     }
 
-    func takeBack() {
-        open(takeover: true)
-    }
-
     func control(_ controls: Bool) {
         guard shown, observing == controls else { return }
         guard inView else { return pause() }
@@ -163,7 +161,7 @@ final class PaneTerminal {
                     }
                     // Ahead of libghostty's frame: drawing pauses.
                     if !ready {
-                        settle()
+                        settle(after: frame)
                     }
                     session.receive(frame.bytes)
                     lastFrame = .now
@@ -311,6 +309,10 @@ final class PaneTerminal {
 }
 
 extension PaneTerminal {
+    func takeBack() {
+        open(takeover: true)
+    }
+
     func pause() {
         guard shown else { return }
         (shown, own, confirming) = (false, false, false)

@@ -112,6 +112,7 @@ final class PaneSurfaceView: AppTerminalView {
 
     override func viewDidMoveToSuperview() {
         super.viewDidMoveToSuperview()
+        lowerStill()
         dropSmallStill()
         if inMiniature, claimed, window != nil, window?.firstResponder !== self {
             claimKeyboard()
@@ -332,6 +333,7 @@ extension PaneSurfaceView: TerminalSurfaceGridResizeDelegate, TerminalSurfaceLif
     func terminalDidResize(_ size: TerminalGridMetrics) {
         if let metrics, metrics.columns != size.columns || metrics.rows != size.rows {
             terminal?.hold()
+            terminal?.awaitAnswer(columns: Int(size.columns), rows: Int(size.rows))
         }
         metrics = size
         hover(nil)

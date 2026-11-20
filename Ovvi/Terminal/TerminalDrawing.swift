@@ -1,5 +1,6 @@
 import CoreImage
 import GhosttyTerminal
+import HerdrKit
 import IOSurface
 import SwiftUI
 
@@ -13,7 +14,7 @@ extension PaneTerminal {
         guard ready, !observing else { return }
         ready = false
         // libghostty can draw during the hold.
-        view.keepPicture()
+        view.holdPicture()
         settle()
     }
 
@@ -36,6 +37,39 @@ extension PaneTerminal {
         settling?.cancel()
         settling = Task {
             try? await Task.sleep(for: .milliseconds(100))
+            if !Task.isCancelled {
+                reveal()
+            }
+        }
+    }
+
+    /// libghostty took a new grid: until herdr's frame at that size replaces it, the surface holds libghostty's own
+    /// reflow of the old screen (rows joined or cut at the new width), which a settle timed from the hold showed when
+    /// herdr answered late (a busy Mac, a remote machine). At most 1 s: herdr answers every resize.
+    func awaitAnswer(columns: Int, rows: Int) {
+        guard !ready, !observing else { return }
+        unanswered = (columns, rows)
+        deadline?.cancel()
+        deadline = nil
+        settling?.cancel()
+        settling = Task {
+            try? await Task.sleep(for: .seconds(1))
+            if !Task.isCancelled {
+                reveal()
+            }
+        }
+    }
+
+    /// herdr's answer is the old screen at the new size; the program's redraw follows in later frames (in one for a
+    /// program that synchronizes its output), so the answer only starts the deadline. Other sizes' frames do not
+    /// count.
+    func settle(after frame: TerminalStream.Frame) {
+        guard let size = unanswered else { return settle() }
+        guard frame.width == size.columns, frame.height == size.rows else { return }
+        unanswered = nil
+        settling?.cancel()
+        deadline = Task {
+            try? await Task.sleep(for: .milliseconds(400))
             if !Task.isCancelled {
                 reveal()
             }
@@ -79,7 +113,7 @@ extension PaneTerminal {
             redrawing = nil
             guard generation == self.generation, state == .live, let grid = self.grid else { return }
             resize(columns: Int(grid.columns), rows: Int(grid.rows))
-            settle()
+            awaitAnswer(columns: Int(grid.columns), rows: Int(grid.rows))
         }
     }
 
@@ -89,6 +123,7 @@ extension PaneTerminal {
         deadline?.cancel()
         deadline = nil
         guard redrawing == nil else { return }
+        unanswered = nil
         ready = true
         Latency.shared.step("ready")
         draw()
@@ -169,6 +204,7 @@ extension PaneSurfaceView {
     }
 
     func dropPicture() {
+        lowerStill()
         if still !== layer {
             still?.removeFromSuperlayer()
         }
@@ -214,12 +250,18 @@ extension PaneSurfaceView {
 
     private func drop(_ id: ObjectIdentifier) {
         guard let old = still, ObjectIdentifier(old) == id else { return }
+        // At once, in the new picture's transaction: no fade of the old over it.
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
         old.removeFromSuperlayer()
+        layer?.opacity = 1
+        CATransaction.commit()
         still = nil
         stillWatch = nil
     }
 
     func coverNewSurface() {
+        lowerStill()
         dropSmallStill()
         if let still, let layer, still !== layer {
             still.frame = layer.bounds
@@ -285,6 +327,36 @@ extension PaneSurfaceView {
         layer.addSublayer(still)
         CATransaction.commit()
         self.still = still
+    }
+
+    /// `hold`'s still goes over the view, in its host, and the view's own layer hides until the new picture drops the
+    /// still: both have a clear background, so a still in the layer showed both screens at once while libghostty drew
+    /// the new one under it.
+    func holdPicture() {
+        guard still == nil else { return }
+        keepPicture()
+        guard let still, let layer, let host = superview?.layer else { return }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        still.frame = host.convert(layer.bounds, from: layer)
+        still.autoresizingMask = []
+        host.addSublayer(still)
+        layer.opacity = 0
+        CATransaction.commit()
+    }
+
+    /// A held still back in the view's own layer, shown with it: the view moved to another host, or its surface goes.
+    func lowerStill() {
+        guard let layer, layer.opacity == 0 else { return }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        if let still, still !== layer, still.superlayer !== layer {
+            still.frame = layer.bounds
+            still.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
+            layer.addSublayer(still)
+        }
+        layer.opacity = 1
+        CATransaction.commit()
     }
 
     private static func copy(_ surface: IOSurface) -> IOSurface? {
