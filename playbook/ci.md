@@ -57,8 +57,9 @@ How CI runs, how to run part of it, and how to keep it green and fast.
   from before a change can run 5 minutes over the others). An on-demand run took about 17 minutes and 53 runner-minutes before the compilation cache: the build job, then
   four jobs of 11–14 minutes for about 3000 s of on-demand tests, 22 of them. The build job does not shorten a lone run, but it saves four builds, about 8 runner-minutes a
   run (12 cold). Two full runs dispatched together take about twice as long as one, since the second waits for runners, and any other run (a chosen-tests run) takes one of the 5. A test job
-  stops at 30 minutes (`timeout-minutes`): a slow runner's shard can take 20 minutes after every test passed. Each test stops at 120 s, so the limit costs a green run
-  nothing. Refresh the test times when tests are added, or the shards stop balancing.
+  stops at 35 minutes (`timeout-minutes`): a fifth of about 7550 s of tests is 25 minutes, plus about a minute of
+  setup and a slow runner's 15–20 %, and in 2026-11 shards took up to 29 minutes. Each test stops at 120 s, so the
+  limit costs a green run nothing. Refresh the test times when tests are added, or the shards stop balancing.
 
 ## Running part of it
 

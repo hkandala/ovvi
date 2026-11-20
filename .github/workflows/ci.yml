@@ -80,7 +80,7 @@ jobs:
     # A chosen-tests run skips build.
     if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && (needs.build.result == 'success' || inputs.only_testing) }}
     runs-on: xcode-27
-    timeout-minutes: 30
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
