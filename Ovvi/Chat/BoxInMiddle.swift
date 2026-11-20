@@ -18,7 +18,11 @@ struct BoxInMiddle: Layout {
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) -> CGSize {
         let size = subviews.first?.sizeThatFits(ProposedViewSize(width: proposal.width, height: nil)) ?? .zero
-        return fills ? CGSize(width: size.width, height: max(size.height, proposal.height ?? 0)) : size
+        // Whole points: the messages' scroll view takes this as its bottom inset, and rounds the rest (its rows'
+        // height) to whole points. A fraction (a question card is 100.08 pt at 1x) makes the rows overflow the view by
+        // it, and a legacy scroll bar shows.
+        let height = size.height.rounded(.up)
+        return CGSize(width: size.width, height: fills ? max(height, proposal.height ?? 0) : height)
     }
 
     func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout ()) {

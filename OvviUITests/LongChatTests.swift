@@ -251,13 +251,23 @@ extension OvviUITests {
         }, "\(send.frame) \(card.frame)")
     }
 
-    /// A shown legacy scroll bar narrows the rows: the reply box and Scroll to Bottom give up its width too.
+    /// A shown legacy scroll bar narrows the rows: the reply box, the question card, the waiting drawer and Scroll to
+    /// Bottom give up its width too.
     func testTheReplyBoxKeepsTheBubblesEdgesBesideAScrollBar() async throws {
         let (tab, pane) = try await startChat(["-AppleShowScrollBars", "Always"])
         let composer = element("chat.\(pane).composer"), box = { composer.frame.insetBy(dx: -17, dy: 0) }
         try await say("hello", in: pane)
         XCTAssertTrue(row(pane, "reply", "Echo: **hello**").exists(within: 5))
         onBubbles(box(), pane, reply: "Echo: **hello**", user: "hello")
+        // A question card that fits brings no scroll bar: the rows stay where they are.
+        let hello = row(pane, "user", "hello"), place = hello.frame.maxX
+        try await say("ask", in: pane)
+        let question = element("chat.\(pane).question")
+        XCTAssertTrue(question.exists(within: 5))
+        XCTAssertFalse(until(1) { hello.frame.maxX != place }, "\(hello.frame) \(place)")
+        onBubbles(question.frame, pane, reply: "Echo: **hello**", user: "ask")
+        element("chat.\(pane).option.Pear").click()
+        XCTAssertTrue(question.vanishes(within: 5))
         app.typeText("many 25\r")
         XCTAssertTrue(row(pane, "reply", "Last.").exists(within: 10))
         let sent = row(pane, "user", "Question 25")
@@ -272,6 +282,13 @@ extension OvviUITests {
         keepScreenshot("scroll bar")
         bottom.click()
         XCTAssertTrue(bottom.vanishes(within: 3))
+        try await say("wait", in: pane)
+        let drawer = element("chat.\(pane).drawer")
+        XCTAssertTrue(drawer.exists(within: 5))
+        onBubbles(drawer.frame, pane, user: "wait")
+        XCTAssertTrue(hasKeyboard("terminal.\(pane)"))
+        app.typeText("1")
+        XCTAssertTrue(drawer.vanishes(within: 5))
         _ = try await splitByButton(pane, in: tab)
         XCTAssertTrue(until(3) { chat.frame.width < 600 }, "\(chat.frame)")
         XCTAssertNotNil(steady(3) { [box(), sent.frame] })
