@@ -17,7 +17,7 @@ app (`open -a`), as a drop on the Dock icon does; a launch gets `-session <sessi
 POST /<session>/open-url with the built app's path, a newline and an ovvi:// URL opens the URL with that app (`open -g -a`;
 a launch gets the tests' config folder).
 POST /<session>/file-drag with "x y tx ty" (screen points) as the body makes a file whose name needs shell escaping in
-a new folder in /tmp (its one line: ovvi-e2e-dropped), shows its icon at x y in a window of scripts/file-drag.swift
+a new folder in /tmp (its one line: ovvi-e2e-dropped), shows it at x y in a window of scripts/file-drag.swift
 and drags it to tx ty (both points in an Ovvi window). The file's path comes back once a drop took it.
 POST /<session>/temporary-file-drag does the same from a new NSIRD_ folder in $TMPDIR/TemporaryItems, as a
 screenshot's floating thumbnail drops one. POST /<session>/text-drag drags the text after the points instead.

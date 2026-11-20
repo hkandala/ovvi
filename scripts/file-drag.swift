@@ -1,4 +1,4 @@
-// A file's icon in a window of its own, dragged from x y to tx ty (screen points, top left): a drag from Finder
+// A file in a window of its own, dragged from x y to tx ty (screen points, top left): a drag from Finder
 // sometimes starts nothing on CI. Exits 0 when a drop took the file, 1 when the drop is refused, 2 when its window
 // never shows, or no drag begins within 5 s or ends within 10 s. A path `text:<text>` drags that text instead.
 // Usage: file-drag <path> <x> <y> <tx> <ty>
@@ -55,8 +55,14 @@ let panel = NSPanel(
 panel.level = .floating
 let source = Source()
 source.wantsLayer = true
-source.layer?.contents = text == nil ? NSWorkspace.shared.icon(forFile: url.path)
-    : NSWorkspace.shared.icon(for: .plainText)
+// Drawn: a file's icon comes from iconservicesagent, and the panel shows only once the agent answers, seconds late
+// on a busy runner.
+source.layer?.contents = NSImage(size: NSSize(width: size, height: size), flipped: false) { rect in
+    NSColor.white.setFill()
+    rect.insetBy(dx: 12, dy: 4).fill()
+    return true
+}
+
 panel.contentView = source
 panel.orderFrontRegardless()
 
