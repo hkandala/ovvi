@@ -122,7 +122,7 @@ BUILD ?= $(shell git rev-list --count HEAD)
 # quarantine, so install.sh skips that), and notifications need a real signing identity. Only zip gets the released
 # app's bundle id and update feed: macOS keys saved windows and defaults by bundle id, so a measure's `make app` keeps
 # its own. install builds Ovvi Dev, which runs beside a released Ovvi: its own name, bundle id, scheme and folders
-# (Registry.name), the blueprint icon (AppIconDev, `make icons`), and no feed.
+# (Registry.name), the blueprint icon (AppIconDev, `make icons`), no feed, and this repo's path for Settings' Rebuild.
 NAME = Ovvi
 BUNDLE_ID = dev.ovvi.app.release
 URL_SCHEME = ovvi-release
@@ -137,11 +137,12 @@ install: BUNDLE_ID = dev.ovvi.app.dev
 install: URL_SCHEME = ovvi-dev
 install: CONDITIONS = DEV
 install: ICON = AppIconDev
+install: REPO = $(CURDIR)
 APP = $(DERIVED_DATA)/Build/Products/Release/$(NAME).app
 app: web
 	$(XCODEBUILD) $(MAC) -configuration Release PRODUCT_BUNDLE_IDENTIFIER=$(BUNDLE_ID) OVVI_URL_SCHEME=$(URL_SCHEME) \
 		OVVI_APP_NAME='$(NAME)' OVVI_CONDITIONS=$(CONDITIONS) OVVI_APP_ICON=$(ICON) OVVI_FEED_URL=$(FEED) \
-		OVVI_POSTHOG_KEY=$(POSTHOG_KEY) MARKETING_VERSION=$(VERSION) CURRENT_PROJECT_VERSION=$(BUILD) build $(NOWARN) $(BEAUTIFY)
+		OVVI_POSTHOG_KEY=$(POSTHOG_KEY) OVVI_REPO='$(REPO)' MARKETING_VERSION=$(VERSION) CURRENT_PROJECT_VERSION=$(BUILD) build $(NOWARN) $(BEAUTIFY)
 	@echo "$(APP)"
 
 # ~/.agents/skills: pi, Codex and OpenCode; ~/.claude/skills: Claude Code. -f replaces a dangling link, for which -e is false.

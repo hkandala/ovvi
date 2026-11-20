@@ -29,6 +29,7 @@ Run them from the repository root. When a Makefile target runs a script, use the
 - `welcome-scene.sh`, `welcome-scene/` and `onboarding/` build the scene that `record-onboarding.sh` films and
   `docs-pictures.sh` takes, on the 2x display of `hidpi-display.m`. `vm-test.sh` runs the VM's tests on one too
   (`mirror`, so the VM's own screen shows them).
+- Ovvi Dev's Settings ▸ General ▸ Rebuild runs `rebuild.swift`: the window with make install's log.
 
 ## CI and releases
 

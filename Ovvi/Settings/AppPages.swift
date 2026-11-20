@@ -52,6 +52,9 @@ struct GeneralPage: View {
                     }
                 }
             }
+            if !RebuildRow.repo.isEmpty {
+                Section("Updates") { RebuildRow() }
+            }
             Section("Help") {
                 LabeledContent("Keyboard shortcuts") {
                     Button("Show Shortcuts") { CommandList.runInMainWindow("app.shortcuts") }
