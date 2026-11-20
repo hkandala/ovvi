@@ -3,7 +3,10 @@ import HerdrKit
 
 extension PaneViewRegistry {
     /// Each kept web card keeps a WebKit process.
-    static let spareWeb = UserDefaults.standard.string(forKey: "spareWebCards").flatMap { Int($0) } ?? 25
+    static var spareWeb: Int {
+        UserDefaults.standard.string(forKey: "spareWebCards").flatMap { Int($0) } ?? 25
+    }
+
     static var recentWeb: [Kept] = []
     /// The web and chat cards' pictures: 4 bytes a point of the card at any scale (1.5 MB for a 680 × 546 pt card), so
     /// about 200 full-window cards on a 14-inch screen, 60 on a 3440-point one.

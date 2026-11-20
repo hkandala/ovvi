@@ -38,6 +38,19 @@ struct GeneralPage: View {
                 }
                 .settingsRow("general.balance-splits")
             }
+            Section {
+                kept("Terminals kept in memory", settings.$spareTerminals, id: "kept-terminals")
+                    .settingsRow("general.kept-terminals")
+                kept("Browser and plugin cards kept in memory", settings.$spareWebCards, id: "kept-web")
+                    .settingsRow("general.kept-web")
+            } header: {
+                Text("Memory")
+            } footer: {
+                Text("Higher numbers keep more cards ready and use more memory.").settingsFooter()
+            }
+            .onChange(of: [settings.spareTerminals, settings.spareWebCards]) {
+                PaneViewRegistry.trim(terminals: PaneViewRegistry.spare, web: PaneViewRegistry.spareWeb)
+            }
             if Updates.checks {
                 Section("Updates") {
                     @Bindable var updates = Updates.shared
@@ -64,6 +77,16 @@ struct GeneralPage: View {
                     Button("Show Welcome") { Welcome.show() }.accessibilityIdentifier("settings.general.welcome")
                 }
                 .settingsRow("general.welcome")
+            }
+        }
+    }
+
+    private func kept(_ title: String, _ value: Binding<Int>, id: String) -> some View {
+        LabeledContent(title) {
+            HStack(spacing: 6) {
+                Text("\(value.wrappedValue)").monospacedDigit()
+                Stepper(title, value: value, in: 0 ... 100, step: 5).labelsHidden()
+                    .accessibilityIdentifier("settings.general." + id)
             }
         }
     }
@@ -192,7 +215,7 @@ private struct LookTile: View {
         .buttonStyle(.plain)
         .accessibilityLabel(title)
         .accessibilityAddTraits(selected ? .isSelected : [])
-        .accessibilityIdentifier(id)
+        .accessibilityIdentifier("settings.general." + id)
     }
 }
 

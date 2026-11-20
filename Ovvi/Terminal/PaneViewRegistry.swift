@@ -9,8 +9,11 @@ final class PaneViewRegistry {
     /// Each terminal kept out of view keeps its surface, about 6 MB (libghostty frees the swap chain while it does not
     /// draw and makes it again in under a millisecond when shown), a copy of its last picture (17 MB for a full-window
     /// card on Retina) and a herdr run of 7 MB. On Retina: 405 MB with 16 terminals in splits, 653 MB with 33
-    /// full-window tabs.
-    static let spare = UserDefaults.standard.string(forKey: "spareTerminals").flatMap { Int($0) } ?? 25
+    /// full-window tabs. Settings ▸ General ▸ Memory sets it; a test's launch argument passes a string.
+    static var spare: Int {
+        UserDefaults.standard.string(forKey: "spareTerminals").flatMap { Int($0) } ?? 25
+    }
+
     /// On critical memory pressure the kept cards out of view and the pictures go down to half the bounds. Not on a
     /// warning: macOS sends one about every 30 minutes even at normal pressure, and each would drop web cards that the
     /// next switch makes again (100–200 ms each).

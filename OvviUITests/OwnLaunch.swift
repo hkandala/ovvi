@@ -37,6 +37,7 @@ extension OvviUITests {
         "testEditingARemoteHostRenamesItAndRemoveTakesItOff",
         "testEmptySessionScenes",
         "testEveryReorderOfTheSpacesMoves",
+        "testFewerKeptCardsInSettingsDropAPageAtOnce",
         "testFloatingWindowsHaveTheirOwnCommandsAndComeBackAfterRelaunch",
         "testInstallingHerdrOnThisMacShowsItsProgressAndConnects",
         "testKeyboardShortcutsScenes",

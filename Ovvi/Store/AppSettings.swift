@@ -21,6 +21,9 @@ struct AppSettings: DynamicProperty {
     @AppStorage("copyOnSelect") var copyOnSelect = false
     @AppStorage("agentView") var agentView = AgentView.terminal
     @AppStorage("spaceOrder") var spaceOrder = SpaceOrder.manual
+    /// Read by `PaneViewRegistry.spare` and `spareWeb`, which default to 25 too.
+    @AppStorage("spareTerminals") var spareTerminals = 25
+    @AppStorage("spareWebCards") var spareWebCards = 25
     /// Read by `Usage`.
     @AppStorage("usageData") var usageData = true
 

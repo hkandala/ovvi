@@ -212,7 +212,8 @@ extension OvviUITests {
                        "copyOnSelect": "NO", "agentView": "terminal", "agentArguments.claude": "",
                        "agentArguments.codex": "", "agentArguments.pi": "", "agentArguments.opencode": "",
                        "newPaneOpens": "", "spaceOrder": "manual",
-                       "balanceSplits": "YES", "animations": "YES", "usageData": "YES"]
+                       "balanceSplits": "YES", "animations": "YES", "usageData": "YES",
+                       "spareTerminals": "25", "spareWebCards": "25"]
         let pinned = pin ? shipped.sorted { $0.key < $1.key }.filter { !args.contains("-\($0.key)") }
             .flatMap { ["-\($0.key)", $0.value] } : []
         let start = switch windows {

@@ -249,16 +249,7 @@ extension OvviUITests {
     func testADroppedBrowserKeepsItsPictureAndComesBack() async throws {
         relaunch(one, ["-spareWebCards", "0"])
         let (tab, pane) = try await newTab("dropped")
-        try await waitForPrompt(pane)
-        let folder = "/tmp/ovvi-e2e-dropped"
-        try await send("mkdir -p \(folder) && printf '<script>document.title = \\x27Light \\x27 + Date.now()</script>' "
-            + ">\(folder)/light.html && clear\r", to: pane)
-        try await waitFor(pane) { !$0.contains("printf") }
-        let iid = String(format: "e2e%03x", Int.random(in: 0 ..< 4096)), title = element("pane.\(pane).title")
-        try await rename(pane, "ovvi:browser#\(iid) file://\(folder)/light.html")
-        try await show(tab)
-        XCTAssertTrue(until(connect) { title.stringValue.hasPrefix("Light ") }, title.stringValue)
-        let first = title.stringValue
+        let first = try await stampedPage(tab, pane), title = element("pane.\(pane).title")
         app.typeKey("1", modifierFlags: .command)
         XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, false, within: 3))
         app.typeKey("o", modifierFlags: [.command, .control])
@@ -271,5 +262,43 @@ extension OvviUITests {
         try await show(tab)
         XCTAssertTrue(until(connect) { title.stringValue.hasPrefix("Light ") && title.stringValue != first },
                       "\(first) then \(title.stringValue)")
+    }
+
+    func testFewerKeptCardsInSettingsDropAPageAtOnce() async throws {
+        // Every other launch pins the kept cards to 25, which Settings could not change.
+        relaunch(one, pin: false)
+        let (tab, pane) = try await newTab("kept")
+        let first = try await stampedPage(tab, pane), title = element("pane.\(pane).title")
+        app.typeKey("1", modifierFlags: .command)
+        XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, false, within: 3))
+        openSettings("general")
+        let stepper = element("settings.general.kept-web", in: settingsWindow)
+        XCTAssertTrue(stepper.exists(within: 3))
+        // Down to 0 from any value, which drops the page out of view at once, then back to the default.
+        for _ in 0 ..< 21 {
+            stepper.decrementArrows.firstMatch.click()
+        }
+        for _ in 0 ..< 5 {
+            stepper.incrementArrows.firstMatch.click()
+        }
+        settingsWindow.typeKey("w", modifierFlags: .command)
+        XCTAssertTrue(settingsWindow.vanishes(within: 2))
+        try await show(tab)
+        XCTAssertTrue(until(connect) { title.stringValue.hasPrefix("Light ") && title.stringValue != first },
+                      "\(first) then \(title.stringValue)")
+    }
+
+    /// A browser card whose title changes each time its page loads; its first title.
+    private func stampedPage(_ tab: String, _ pane: String) async throws -> String {
+        try await waitForPrompt(pane)
+        let folder = "/tmp/ovvi-e2e-dropped"
+        try await send("mkdir -p \(folder) && printf '<script>document.title = \\x27Light \\x27 + Date.now()</script>' "
+            + ">\(folder)/light.html && clear\r", to: pane)
+        try await waitFor(pane) { !$0.contains("printf") }
+        let iid = String(format: "e2e%03x", Int.random(in: 0 ..< 4096)), title = element("pane.\(pane).title")
+        try await rename(pane, "ovvi:browser#\(iid) file://\(folder)/light.html")
+        try await show(tab)
+        XCTAssertTrue(until(connect) { title.stringValue.hasPrefix("Light ") }, title.stringValue)
+        return title.stringValue
     }
 }
