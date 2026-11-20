@@ -56,7 +56,7 @@ struct Palette: View {
             name: "palette",
             items: command.map(subItems) ?? { rootItems($0, made) },
             start: command.map(start) ?? made.start,
-            maxHeight: min(460, max(84, height - 154)),
+            maxHeight: min(460, max(84, height - 154 - PaletteFooter.height)),
             // Only a preview page reads it: on the others each new light draws the whole palette again.
             lit: command?.previews == true ? $lit : nil,
             text: command?.name?.current ?? "",
@@ -66,9 +66,31 @@ struct Palette: View {
             rowHeight: 32,
             table: true,
             inset: 10,
+            footer: footer(command),
         ) { open = false }
             .controlSize(.large)
             .id(sub?.title)
+    }
+
+    /// The page's line; a row that opens something has its own (`places`).
+    private func footer(_ command: Command?) -> [PaletteFooter.Hint] {
+        if command?.field != nil {
+            return places
+        }
+        if command?.previews == true {
+            return [(["↑", "↓"], "Preview"), (["↩"], "Keep"), (["esc"], "Undo")]
+        }
+        if command?.name != nil {
+            return [(["↩"], "Save"), (["esc"], "Back")]
+        }
+        return [(["↑", "↓"], "Move"), command == nil ? (["↩"], "Run") : (["↩"], "Pick"),
+                command == nil ? (["esc"], "Close") : (["esc"], "Back")]
+    }
+
+    /// A floating window's card opens anything new in a window of its own (`Page.open`).
+    private var places: [PaletteFooter.Hint] {
+        commands.floating != nil ? [(["↩"], "This Pane"), (["⌘", "↩"], "Floating Window")]
+            : [(["↩"], "This Pane"), (["⌘", "↩"], "New Tab"), (["⌥", "↩"], "To the Side")]
     }
 
     static func choiceID(_ choice: Command) -> String {
@@ -76,7 +98,16 @@ struct Palette: View {
     }
 
     static func pageTitle(_ command: Command) -> String {
-        command.title.replacing("…", with: "")
+        here(command).replacing("…", with: "")
+    }
+
+    /// One row for each kind, whose keys say where it opens: the menus' "… Here" is this pane's.
+    private static func here(_ command: Command) -> String {
+        places(command) ? command.title.replacing(" Here", with: "") : command.title
+    }
+
+    private static func places(_ command: Command) -> Bool {
+        command.place != nil || command.field != nil || command.menu.contains { $0.place != nil }
     }
 
     private func rootItems(_ filter: String, _ made: Made) -> [FilterList.Item] {
@@ -87,7 +118,8 @@ struct Palette: View {
         }
         let open = pasted.flatMap { pasted in
             pasted.filter == filter ? FilterList.Item(id: "open-path", symbol: "doc", title: "Open \(pasted.path)",
-                                                      act: { page.open(resolved: pasted.path) }) : nil
+                                                      hints: self.places,
+                                                      act: { page.open(resolved: pasted.path, .held) }) : nil
         }
         return [open].compactMap(\.self) + (commands + places).enumerated().compactMap { index, row in
             [row.item.title.fuzzyScore(filter), row.keywords.fuzzyScore(filter).map { $0 + 3 }].compactMap(\.self)
@@ -117,14 +149,18 @@ struct Palette: View {
             .flatMap { section in list.filter { $0.section == section } }
             .filter { $0.enabled && $0.id != "app.palette" }.map { command in
                 let opens = !command.menu.isEmpty || command.name != nil || command.field != nil
+                let places = Self.places(command)
                 let title = command.checked
                     .flatMap { command.setting ? "Turn \($0 ? "Off" : "On") \(command.title)" : nil }
-                    ?? (opens ? Self.pageTitle(command) : command.title)
-                let item = FilterList.Item(id: "command.\(command.title)", symbol: command.symbol, title: title,
+                    ?? (opens ? Self.pageTitle(command) : Self.here(command))
+                let item = FilterList.Item(id: "command.\(Self.here(command))", symbol: command.symbol, title: title,
                                            keys: command.key?.caps ?? [],
-                                           section: (command.group ?? command.section.group).rawValue, opens: opens,
+                                           section: (command.group ?? command.section.group).rawValue,
+                                           hints: places ? self.places : nil, opens: opens,
                                            act: {
-                                               if opens {
+                                               if let place = command.place {
+                                                   place.open(.held)
+                                               } else if opens {
                                                    sub = command
                                                    kept = command.previews
                                                        ? command.menu.first { $0.checked == true }?.title : nil
@@ -173,10 +209,14 @@ struct Palette: View {
                 let current = command.previews ? choice.title == kept : choice.checked == true
                 let symbol = current ? "checkmark" : choice.symbol
                 return FilterList.Item(id: Self.choiceID(choice), symbol: symbol, program: choice.program,
-                                       title: choice.title,
-                                       section: choice.heading, act: {
+                                       title: choice.title, section: choice.heading,
+                                       hints: choice.place == nil ? nil : places, act: {
                                            kept = nil
-                                           choice.action()
+                                           if let place = choice.place {
+                                               place.open(.held)
+                                           } else {
+                                               choice.action()
+                                           }
                                        })
             }
         }
@@ -207,5 +247,42 @@ struct Palette: View {
             sub?.menu.first { $0.title == kept }?.action()
         }
         kept = nil
+    }
+}
+
+/// One line under the list, always there so the palette keeps its height: what the lit row's keys do.
+struct PaletteFooter: View {
+    typealias Hint = (keys: [String], word: String)
+    let hints: [Hint]
+    static let height: CGFloat = 34
+
+    var body: some View {
+        let words = hints.map { $0.keys.joined() + " " + $0.word }.joined(separator: ", ")
+        HStack(spacing: 14) {
+            ForEach(hints, id: \.word) { hint in
+                HStack(spacing: 5) {
+                    HStack(spacing: 2) {
+                        ForEach(hint.keys, id: \.self) { key in
+                            Text(key).font(.system(size: 10, weight: .semibold))
+                                .padding(.horizontal, key.count > 1 ? 4 : 0)
+                                .frame(minWidth: 18, minHeight: 18)
+                                .background(.quaternary, in: .rect(cornerRadius: 4, style: .continuous))
+                        }
+                    }
+                    Text(hint.word)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .font(.system(size: 12))
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+        .padding(.horizontal, 8)
+        .frame(height: Self.height)
+        .accessibilityElement(children: .ignore)
+        .accessibilityAddTraits(.isStaticText)
+        .accessibilityLabel(words)
+        .accessibilityValue(words)
+        .accessibilityIdentifier("palette.footer")
     }
 }

@@ -14,6 +14,8 @@ struct FilterList: View {
         var section: String?
         var note: String?
         var busy = false
+        /// What its keys do, when not the list's `footer`.
+        var hints: [PaletteFooter.Hint]?
         var opens = false
         var button: (title: String, act: () -> Void)?
         var buttonRole: ButtonRole?
@@ -41,6 +43,8 @@ struct FilterList: View {
     var pinned = 0
     var inset: CGFloat = 0
     var autofocus = true
+    /// A line under the list, always there: what the lit row's keys do (`Item.hints`), else this.
+    var footer: [PaletteFooter.Hint]?
     let done: () -> Void
     @State private var filter = ""
     /// By id: a row that moves or goes must not hand the light, and the row's button, to the row that takes its place.
@@ -133,8 +137,12 @@ struct FilterList: View {
                     row(items, offset, index)
                 }
             }
+            if let footer {
+                Divider().padding(.horizontal, -inset).padding(.top, submit == nil ? 0 : inset - 2)
+                PaletteFooter(hints: items.indices.contains(index) ? items[index].hints ?? footer : footer)
+            }
         }
-        .padding(.bottom, submit == nil ? 0 : inset)
+        .padding(.bottom, submit == nil || footer != nil ? 0 : inset)
         .onAppear {
             filter = text
             scrolls.map(NSEvent.removeMonitor)

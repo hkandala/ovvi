@@ -4,6 +4,12 @@ import SwiftUI
 enum Opening {
     /// `mac`: the Mac's default app for it, outside Ovvi (a terminal link's ⌘⌥-click).
     case here, tab, side, mac
+
+    /// A palette row's: ↩ this pane, ⌘↩ a new tab, ⌥↩ beside. Read as the key or click comes in.
+    @MainActor static var held: Opening {
+        let flags = NSApp.currentEvent?.modifierFlags ?? []
+        return flags.contains(.option) ? .side : flags.contains(.command) ? .tab : .here
+    }
 }
 
 extension Page {
@@ -60,16 +66,29 @@ extension Page {
         await open(plugin, arg: arg, at: place, from: source, how: how, background: background)
     }
 
-    func open(_ plugin: PluginManifest, arg: String, at place: String? = nil, from source: String,
-              how: Opening, background: Bool = false) async
+    /// A kind in a new tab or beside the pane, from the palette. No plugin: a shell, or `agent`.
+    func open(_ plugin: PluginManifest?, agent: Chooser.Agent? = nil, near pane: HostStore.Pane, how: Opening) {
+        Task {
+            let arg = if let plugin {
+                await store.arg(plugin, in: store.folder(of: pane) ?? "~")
+            } else {
+                ""
+            }
+            await open(plugin, arg: arg, agent: agent, from: pane.terminalID ?? "", how: how)
+        }
+    }
+
+    /// No plugin: a shell, or `agent`.
+    func open(_ plugin: PluginManifest?, arg: String, agent: Chooser.Agent? = nil, at place: String? = nil,
+              from source: String, how: Opening, background: Bool = false) async
     {
-        if how == .here, let shown = terminals.plugins[source], shown.manifest.id == plugin.id {
+        if how == .here, let plugin, let shown = terminals.plugins[source], shown.manifest.id == plugin.id {
             return shown.go(arg, at: place)
         }
         let card = store.terminalPane(source)
         guard let tabID = card?.tabID ?? selectedTab?.id, let workspace = store.workspace(of: tabID) else { return }
-        let label = store.newLabel(plugin, arg: arg), cwd = card?.cwd ?? keyboardPane?.cwd ?? "~"
-        guard label.fits else { return }
+        let label = plugin.map { store.newLabel($0, arg: arg) }, cwd = card?.cwd ?? keyboardPane?.cwd ?? "~"
+        guard label?.fits != false else { return }
         // From a floating card, any gesture opens in a floating window of its own.
         let floats = floating[source] != nil
         var made: HerdrKit.Pane?
@@ -81,6 +100,9 @@ extension Page {
             }
             let pane = try await store.newPane(client, in: workspace.id, cwd: cwd, label: label, spot)
             made = pane
+            if let agent {
+                store.choose(pane, starting: agent)
+            }
             // ponytail: a card made from a snapshot ahead of this line misses its landing; hand it over in the label
             // if that shows.
             if let place, let terminalID = pane.terminalID {

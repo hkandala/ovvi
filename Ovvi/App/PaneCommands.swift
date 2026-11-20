@@ -102,29 +102,38 @@ extension CommandList {
                         }
                     }),
         ]
+        // This pane's in the menus; the palette's keys give a new tab or the side too.
+        func place(_ here: @escaping (Page, HostStore.Pane) -> Void, plugin: PluginManifest? = nil,
+                   agent: Chooser.Agent? = nil) -> (Opening) -> Void
+        {
+            { how in
+                guard let page, let pane = target() else { return }
+                if how == .here {
+                    here(page, pane)
+                } else {
+                    page.open(plugin, agent: agent, near: pane, how: how)
+                }
+            }
+        }
+        let shell = place { $0.replacePane($1, Replacement(button: "Open Terminal")) }
         let terminal = pane?.agent == nil && pane?.plugin == nil ? [] : [
             Command(section: .close, title: "Open Terminal Here", group: .panes, symbol: "terminal",
-                    keywords: "pane shell kind") { page?.replacePane(target(), Replacement(button: "Open Terminal")) },
+                    keywords: "pane shell kind", place: .init(shell)) { shell(.here) },
         ]
         let plugins = Registry.all.filter { $0.chooser != nil && pane?.plugin?.manifest?.id != $0.id }.map { plugin in
             let keywords = ["pane kind", plugin.description.lowercased()] + plugin.keywords
+            let open = place({ $0.open(plugin, in: $1) }, plugin: plugin)
             return Command(section: .close, title: "Open \(plugin.chooser ?? plugin.name) Here", group: .panes,
                            symbol: plugin.icon, keywords: keywords.joined(separator: " "), enabled: pane != nil,
-                           action: {
-                               if let page, let pane = target() {
-                                   page.open(plugin, in: pane)
-                               }
-                           })
+                           place: .init(open)) { open(.here) }
         }
         let agent = Command(section: .close, title: "Start Agent Here", group: .panes, symbol: "sparkles",
                             keywords: "pane kind " + Chooser.agents.map(\.name).joined(separator: " ").lowercased(),
                             enabled: pane != nil,
                             menu: Chooser.agents.map { agent in
-                                Command(section: .close, title: agent.name, program: agent.command) {
-                                    if let page, let pane = target() {
-                                        page.start(agent, in: pane)
-                                    }
-                                }
+                                let start = place({ $0.start(agent, in: $1) }, agent: agent)
+                                return Command(section: .close, title: agent.name, program: agent.command,
+                                               place: .init(start)) { start(.here) }
                             })
         return [copyAddress(page, target)] + redraw + [replace] + terminal + [agent] + plugins + [
             Command(section: .close, title: "Close Pane", id: "pane.close", key: .hotkey("pane.close"), group: .panes,

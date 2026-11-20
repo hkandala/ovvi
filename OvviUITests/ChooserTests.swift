@@ -186,9 +186,9 @@ extension OvviUITests {
         XCTAssertTrue(hasKeyboard("terminal.\(pane)"))
         func commands(here terminal: Bool) {
             openPalette()
-            app.typeText("here")
-            XCTAssertTrue(element("palette.command.Start Agent Here").exists(within: 2))
-            XCTAssertEqual(element("palette.command.Open Terminal Here").exists, terminal)
+            app.typeText("open")
+            XCTAssertTrue(element("palette.command.Start Agent").exists(within: 2))
+            XCTAssertEqual(element("palette.command.Open Terminal").exists, terminal)
             app.typeKey(.escape, modifierFlags: [])
             XCTAssertTrue(element("palette.filter").vanishes(within: 2))
         }

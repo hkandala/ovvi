@@ -353,4 +353,40 @@ extension OvviUITests {
         let header = element("palette.title")
         return until(2) { header.exists && [header.label, header.stringValue].contains(title) }
     }
+
+    /// The line under the list says what the lit row's keys do, and is always there: the palette keeps its height.
+    func testPaletteFooterFollowsTheLitRowAndThePage() async throws {
+        XCTAssertTrue(element("terminal.w1:p1").exists(within: connect))
+        try await waitForPrompt("w1:p1")
+        element("terminal.w1:p1").click()
+        let footer = element("palette.footer"), run = "↑↓ Move, ↩ Run, esc Close"
+        openPalette()
+        XCTAssertTrue(footer.has(\.stringValue, run, within: 2))
+        app.typeText("open")
+        var seen: [String: CGFloat] = [:]
+        for _ in 0 ..< 4 {
+            _ = steady(1) { footer.stringValue }
+            seen[footer.stringValue] = footer.frame.minY
+            app.typeKey(.downArrow, modifierFlags: [])
+        }
+        XCTAssertEqual(Set(seen.keys), [run, Self.places])
+        XCTAssertEqual(Set(seen.values).count, 1, "the line moved: \(seen)")
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(element("palette.filter").vanishes(within: 2))
+
+        for (command, words) in [("dark", "↑↓ Preview, ↩ Keep, esc Undo"), ("rename tab", "↩ Save, esc Back"),
+                                 ("move pane to tab", "↑↓ Move, ↩ Pick, esc Back"), ("open file", Self.places),
+                                 ("start agent", Self.places)]
+        {
+            step(command)
+            openPalette()
+            app.typeText(command)
+            app.typeKey(.return, modifierFlags: [])
+            XCTAssertTrue(element("palette.title").exists(within: 2))
+            XCTAssertTrue(footer.has(\.stringValue, words, within: 2), footer.stringValue)
+            app.typeKey(.escape, modifierFlags: [])
+            app.typeKey(.escape, modifierFlags: [])
+            XCTAssertTrue(element("palette.filter").vanishes(within: 2))
+        }
+    }
 }

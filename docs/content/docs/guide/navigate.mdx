@@ -50,20 +50,34 @@ To run a command:
 A row with › opens a page of its own. Press Esc or ⌫ in an empty field to go back one page. Press Esc on the first
 page to close the palette.
 
+The line under the list says what the keys do for the selected row, for example `↑↓ Move  ↩ Run  esc Close`.
+
 | Command | What it does |
 |---|---|
 | Rename Tab, Rename Space, Rename Pane | Shows the current name in the field. Press Return to save. |
 | Move Pane to Tab | Moves the active pane to a new tab, a new space or another tab of the session. |
 | Appearance | Shows each choice on the window as you select it. Press Return to keep it or Esc to go back. |
 | Font Size | Sets the terminal's text size. |
-| Start Agent Here | Replaces the active pane with Claude Code, Codex, Pi or OpenCode. |
-| Open File | Opens a file or folder by its path, in a new tab. `~` is the home folder, and a relative path starts at the active pane's folder. |
+| Start Agent | Starts Claude Code, Codex, Pi or OpenCode. |
+| Open Terminal, Open Browser, Open File Explorer, Open Git | Opens a pane of that kind. Open Terminal shows on an agent or plugin pane. |
+| Open File | Opens a file or folder by its path. `~` is the home folder, and a relative path starts at the active pane's folder. |
 | Open Working Tree | Opens Git on the uncommitted changes of the active pane's repository. |
 | Open Commit | Opens Git on a commit. Type its hash or a ref such as `main` or `HEAD~2`. |
 | Go to Directory… (⇧⌘G) | Opens a folder panel. The folder that you pick goes into the shell as a `cd` command. |
 | Insert Path… (⇧⌘I) | Opens a file panel. The path that you pick is typed at the cursor. |
 
-Open File, Open Working Tree and Open Commit open to the side of the active pane when you press ⌥Return.
+### Where it opens
+
+The rows that open something (Open File, Open Working Tree, Open Commit, Start Agent, the Open rows of each kind and a
+typed path) can open in three places. The line under the list shows the keys:
+
+| Key | Opens it |
+|---|---|
+| Return | In the active pane, in its place. Ovvi asks first if a program other than the shell runs there. |
+| ⌘Return | In a new tab after the current one. In a floating window, in a new floating window. |
+| ⌥Return | In a new pane beside the active pane. |
+
+A file that the active card can show, for example a file in File Explorer, opens in that card.
 
 If you type a path that starts with `/`, `~`, `./` or `../` and the file is there, the first row opens it.
 

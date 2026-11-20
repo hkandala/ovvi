@@ -185,7 +185,18 @@ struct Command {
     var field: (prompt: String, open: (String) -> Void)?
     /// ⌥ is read as the pane is made, so both items run the same action.
     var alternate: String?
+    var place: Place?
     var action: () -> Void = {}
+
+    /// An open row's: the palette gives it this pane, a new tab or the side (↩, ⌘↩, ⌥↩); `action` is this pane's. A
+    /// type of its own, so a trailing closure stays the action.
+    struct Place {
+        let open: (Opening) -> Void
+
+        init(_ open: @escaping (Opening) -> Void) {
+            self.open = open
+        }
+    }
 
     var shown: String {
         "\(title) \(enabled) \(String(describing: checked)) \(key?.glyphs ?? "") \(menu.map(\.shown))"

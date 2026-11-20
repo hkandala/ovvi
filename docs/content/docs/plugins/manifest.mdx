@@ -39,7 +39,7 @@ From the package itself:
 |---|---|---|
 | `version` | yes | The plugin's version. It shows on the Plugins page and in the confirmation. |
 | `description` | no | One line. It shows in New Pane and in the confirmation. |
-| `keywords` | no | With `chooser`: more words for the command palette to find Open ‹chooser› Here. |
+| `keywords` | no | With `chooser`: more words for the command palette to find Open ‹chooser›. |
 
 In the `ovvi` key:
 
@@ -51,7 +51,7 @@ In the `ovvi` key:
 | `entry` | yes | The built entry, a `.js` file in the package, such as `dist/main.js`. Its chunks, its CSS and its assets go in the same folder. |
 | `icon` | yes | An SF Symbol name, or one of the app's own symbols, `source.branch` or `text.wrap`. It shows on the card, the tab and New Pane. |
 | `opens` | no | What the card shows ([What a plugin opens](#what-a-plugin-opens)). With no `opens`, the card uses the pane's folder. |
-| `chooser` | no | The plugin's row title in New Pane, and the command "Open ‹chooser› Here" ([How it shows](#how-it-shows)). |
+| `chooser` | no | The plugin's row title in New Pane, and the command "Open ‹chooser› Here" ("Open ‹chooser›" in the command palette) ([How it shows](#how-it-shows)). |
 | `header` | no | The controls of the card's header ([Header](#header)). |
 | `history` | no | `true` shows Back and Forward at the start of the header, for the places the card went to ([One plugin, many places](/docs/plugins/api#one-plugin-many-places)). |
 | `commands` | no | The card's commands in the menu bar and the command palette, with keys ([Commands](#commands)). |
@@ -105,7 +105,8 @@ ends in `/` opens in the first plugin with `folders`.
 | Place | What shows | From |
 |---|---|---|
 | New Pane | a row with the icon, the `chooser` title and the `description` | `chooser` |
-| The command palette, the File menu, the card's menu | "Open ‹chooser› Here" | `chooser`, `keywords` |
+| The File menu, the card's menu | "Open ‹chooser› Here" | `chooser` |
+| The command palette | "Open ‹chooser›" | `chooser`, `keywords` |
 | Open With (an `openWith` control in the header) | after the Mac's apps, every other plugin whose patterns match the file, `option` ones too. A pick turns the card into that plugin's card (a new pane in its place) | `opens.files` |
 | The card's title, the tab, a floating window | "‹name› ‹title›" and the icon | `name`, `icon`, `opens` |
 | The pane in herdr's own interface | "‹name› shown in Ovvi" | `name` |
