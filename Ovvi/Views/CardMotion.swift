@@ -133,6 +133,8 @@ final class MovingCard: NSView {
         motions += 1
         let motion = motions
         CATransaction.begin()
+        // The card's motion and its surface's in one commit, as in setFrameSize.
+        CATransaction.lock()
         CATransaction.setCompletionBlock { [weak self] in
             guard let self, motion == motions else { return }
             host.layer?.masksToBounds = false
@@ -146,6 +148,7 @@ final class MovingCard: NSView {
         chrome.animate(from: size, to: rect.size) { self.animation($0, $1, $2) }
         clip(from: size, to: rect.size)
         CATransaction.commit()
+        CATransaction.unlock()
         if SettlingHost.record {
             slides += 1
             setAccessibilityLabel("slides \(slides)")
@@ -183,14 +186,19 @@ final class MovingCard: NSView {
 
     override func setFrameSize(_ size: NSSize) {
         let changed = size != frame.size
+        // The card and its surface in one commit: a commit on any thread (e2e: a card's track) takes what the main
+        // thread has changed so far, and waits for Core Animation's lock. The content's layout, after, can take a
+        // frame or more.
+        CATransaction.lock()
         super.setFrameSize(size)
-        host.frame.size = bounds.size
-        if SettlingHost.record, changed {
-            motionTrack.change(slides, in: window, content: host.frame.size)
-        }
         if chrome.frame.size != bounds.size {
             chrome.frame = bounds
             chrome.place(bounds.size)
+        }
+        CATransaction.unlock()
+        host.frame.size = bounds.size
+        if SettlingHost.record, changed {
+            motionTrack.change(slides, in: window, content: host.frame.size)
         }
     }
 

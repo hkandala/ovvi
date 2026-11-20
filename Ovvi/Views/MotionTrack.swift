@@ -72,13 +72,16 @@ final nonisolated class MotionTrack: NSObject, @unchecked Sendable {
     }()
 
     /// Core Animation's lock is taken outside this one: the main thread changes the card inside its transactions.
+    /// A read here opens a transaction that this thread's run loop commits, and that commit takes what the main thread
+    /// has changed so far: what must show together changes under Core Animation's lock (`MovingCard`).
     @objc private func sample(_: CADisplayLink) {
         let now = CACurrentMediaTime(), root = lock.withLock { self.root }
         var place: [Int]?, off = false
         // Values that hold together across the card, its fill and the window's layer.
         CATransaction.lock()
         // Not in a motion's first frame: until its commit its begin is 0 and the card shows its end place, and in the
-        // 1/60 s from it a read saw the motion on the card's old place, which a 60 fps film of the screen never showed.
+        // 1/60 s from it a read saw the motion on the card's old place, committed by this thread before SwiftUI set the
+        // card's frame: a 60 fps film of the screen never showed it.
         // `bounds.size` is the first of a motion's keys that arm adds.
         let begin = card.animation(forKey: "motion.bounds.size").map {
             $0.beginTime == 0 ? now : card.convertTime($0.beginTime, to: nil)

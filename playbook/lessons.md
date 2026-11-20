@@ -156,6 +156,10 @@ Problems that came back, and the rule that stops each. How we work is in
 
 ## SwiftUI and AppKit
 
+- **A commit on any thread takes every layer change the main thread has made so far.** A card's track (e2e) reads
+  presentation layers on its own thread, and its run loop commits that read: it caught a card at its new size with
+  its surface at the old one, in the middle of the content's layout, and a motion before its frame. The screen never
+  showed either (60 fps films). Change what must show together under `CATransaction.lock()`, which a commit waits for.
 - **A motion has one target, known when it starts, and nothing moves a card after it lands.** Split fixes made one new
   artifact after another because four parts moved cards: SwiftUI's layout, Core Animation, herdr's later
   snapshot (applied after a 0.13 s hold, so a stale one moved every card again at landing) and the content's relayout
