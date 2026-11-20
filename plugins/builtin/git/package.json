@@ -1,7 +1,7 @@
 {
   "name": "@ovvi/git",
   "license": "AGPL-3.0-only",
-  "version": "1.10.17",
+  "version": "1.10.18",
   "repository": { "type": "git", "url": "git+https://github.com/hkandala/ovvi.git", "directory": "plugins/builtin/git" },
   "publishConfig": { "access": "public" },
   "files": ["dist"],

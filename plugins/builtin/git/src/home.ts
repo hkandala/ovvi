@@ -99,8 +99,7 @@ export async function make(place: Page, root: string) {
       : [{ status: "fulfilled", value: branches } as const, { status: "fulfilled", value: history } as const]
     read = changes.status === "fulfilled" && list.status === "fulfilled" && commits.status === "fulfilled"
       ? { head: key, asked } : undefined
-    // ponytail: any failure of `git.root` (a folder gone, a repository git refuses) reads as none; match git's message
-    // if those must show it.
+    // A folder gone reads as none too; a repository git refuses shows git's message.
     const bare = changes.status === "rejected" && (await ovvi.git.root(root).catch(() => "")) === null
     failure = changes.status === "rejected" ? (changes.reason as Error).message : undefined
     branches = list.status === "fulfilled" ? list.value : []

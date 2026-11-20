@@ -69,12 +69,16 @@ extension Page {
     /// A kind in a new tab or beside the pane, from the palette. No plugin: a shell, or `agent`.
     func open(_ plugin: PluginManifest?, agent: Chooser.Agent? = nil, near pane: HostStore.Pane, how: Opening) {
         Task {
-            let arg = if let plugin {
-                await store.arg(plugin, in: store.folder(of: pane) ?? "~")
-            } else {
-                ""
+            do {
+                let arg = if let plugin {
+                    try await store.arg(plugin, in: store.folder(of: pane) ?? "~")
+                } else {
+                    ""
+                }
+                await open(plugin, arg: arg, agent: agent, from: pane.terminalID ?? "", how: how)
+            } catch {
+                store.show(Notice(text: error.localizedDescription, tone: .warning))
             }
-            await open(plugin, arg: arg, agent: agent, from: pane.terminalID ?? "", how: how)
         }
     }
 
@@ -119,11 +123,18 @@ extension Page {
 }
 
 extension HostStore {
-    func arg(_ plugin: PluginManifest, in folder: String) async -> String {
+    /// Throws only for a git plugin: a folder plugin opens the folder itself when git fails.
+    func arg(_ plugin: PluginManifest, in folder: String) async throws -> String {
         guard plugin.opens.folders || plugin.opens.git else { return "" }
         var root = folder
-        if await gitRuns(), let repo = await Git.root(folder, exec: machine.exec()) {
-            root = repo
+        if await gitRuns() {
+            let exec = await machine.exec()
+            let repo = if plugin.opens.git {
+                try await Git.root(folder, exec: exec)
+            } else {
+                try? await Git.root(folder, exec: exec)
+            }
+            root = repo ?? folder
         }
         return root.hasSuffix("/") ? root : root + "/"
     }

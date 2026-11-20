@@ -35,13 +35,13 @@ public extension GitStatus {
     static func of(_ root: String, exec: any Exec) async -> GitStatus? {
         let argv = ["git", "--no-optional-locks", "-C", root, "status", "--porcelain=v2", "--branch",
                     "--untracked-files=no"]
-        return await (try? exec.output(argv, timeout: .seconds(5))).flatMap(GitStatus.init(porcelain:))
+        return await (try? exec.output(argv, timeout: .seconds(30))).flatMap(GitStatus.init(porcelain:))
     }
 
     /// Git's own files that the head and the counts come from: the work tree's `HEAD`, and its repository's refs
     /// (loose, packed or a reftable) and `config` (the upstream). A linked worktree's `HEAD` is in its own git folder.
     /// Nil outside a repository.
-    static func files(_ root: String, exec: any Exec, timeout: Duration = .seconds(5)) async -> [String]? {
+    static func files(_ root: String, exec: any Exec, timeout: Duration = .seconds(30)) async -> [String]? {
         let lines = await (try? exec.output(["git", "-C", root, "rev-parse", "--absolute-git-dir", "--git-common-dir"],
                                             timeout: timeout))?.split(separator: "\n").map(String.init) ?? []
         guard lines.count == 2, lines[0].hasPrefix("/") else { return nil }
@@ -88,17 +88,32 @@ public extension GitStatus {
 /// Callers check `GitStatus.usable` first: on a Mac without the developer tools, any git run opens the install
 /// dialog.
 public enum Git {
-    public static func root(_ folder: String, exec: any Exec) async -> String? {
-        let root = await (try? exec.output(["git", "-C", folder, "rev-parse", "--show-toplevel"],
-                                           timeout: .seconds(5))) ?? ""
-        return root.isEmpty ? nil : root
+    /// Nil only when git answers that `folder` is in no work tree or is no folder (`~` included); a timeout or another
+    /// failure throws.
+    public static func root(_ folder: String, exec: any Exec, timeout: Duration = .seconds(30)) async throws
+        -> String?
+    {
+        do {
+            // In English, for the answers below.
+            let root = try await exec.checkedOutput(
+                ["env", "LC_ALL=C", "git", "-C", folder, "rev-parse", "--show-toplevel"], timeout: timeout,
+            )
+            return root.isEmpty ? nil : root
+        } catch let HerdrError.failed(text) where Self.noRoot.contains(where: text.contains) {
+            return nil
+        }
     }
 
-    public static func commit(_ ref: String, in root: String, exec: any Exec) async -> String? {
+    private static let noRoot = ["not a git repository", "must be run in a work tree", "cannot change to"]
+
+    /// Nil when git prints no commit; a timeout throws.
+    public static func commit(_ ref: String, in root: String, exec: any Exec,
+                              timeout: Duration = .seconds(30)) async throws -> String?
+    {
         // Never an option.
         guard !ref.isEmpty, !ref.hasPrefix("-") else { return nil }
-        let hash = await (try? exec.output(["git", "-C", root, "rev-parse", "--verify", "--quiet", "\(ref)^{commit}"],
-                                           timeout: .seconds(5))) ?? ""
+        let hash = try await exec.output(["git", "-C", root, "rev-parse", "--verify", "--quiet", "\(ref)^{commit}"],
+                                         timeout: timeout)
         return hash.isEmpty ? nil : hash
     }
 

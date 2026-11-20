@@ -213,12 +213,12 @@ extension AgentCall {
     private func arg(_ plugin: PluginManifest, path: String, folder: Bool, source: String?) async throws -> String {
         let name = (path as NSString).lastPathComponent
         if plugin.opens.git {
-            guard folder, await store.gitRuns(), let root = await Git.root(path, exec: store.machine.exec()) else {
+            guard folder, await store.gitRuns(), let root = try await Git.root(path, exec: store.machine.exec()) else {
                 throw AgentError.badArgument("\(path) is no folder of a git repository")
             }
             guard let source else { return root + "/" }
             let hash = source == "uncommitted" ? source
-                : await Git.commit(source, in: root, exec: store.machine.exec())
+                : try await Git.commit(source, in: root, exec: store.machine.exec())
             guard let hash else {
                 throw AgentError.badArgument("\(source) is not uncommitted or a commit")
             }
@@ -231,7 +231,7 @@ extension AgentCall {
             guard plugin.opens.folders else {
                 throw AgentError.badArgument("\(plugin.id) does not open folders")
             }
-            return await store.arg(plugin, in: path)
+            return try await store.arg(plugin, in: path)
         }
         guard plugin.rank(file: path) != nil else {
             throw AgentError.badArgument("\(plugin.id) does not open \(name)")

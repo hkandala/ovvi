@@ -93,7 +93,7 @@ public struct PluginCalls: Sendable {
             return try await Files.list(path, git: gitRuns, exec: exec)
                 .map { ["name": $0.name, "folder": $0.isFolder, "ignored": $0.ignored] }
         case "files.paths":
-            let git = gitRuns ? await Git.root(path, exec: exec) != nil : false
+            let git = try await gitRuns ? Git.root(path, exec: exec) != nil : false
             return try await Files.paths(path, git: git, exec: exec)
         case "files.write":
             return try await ["hash": Files.save(args.data(), to: path, replacing: args.over, exec: exec)]
@@ -137,7 +137,7 @@ public struct PluginCalls: Sendable {
 
     private func read(_ name: String, _ root: String, _ args: Args) async throws -> Any? {
         switch name {
-        case "git.root": return await Git.root(root, exec: exec)
+        case "git.root": return try await Git.root(root, exec: exec)
         case "git.status": return try await Git.status(root, exec: exec).map(Self.json)
         case "git.changes":
             let changes = try await Git.changes(root, exec: exec)

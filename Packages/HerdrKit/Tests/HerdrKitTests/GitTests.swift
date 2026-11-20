@@ -53,8 +53,10 @@ import Testing
 @Test func `root, status, log and graph of a repository, here and remote`() async throws {
     let repo = try await scratchRepo.value
     for exec in try await [localExec, RelayExec.start()] as [any Exec] {
-        #expect(await Git.root(repo.path + "/sub", exec: exec) == repo.path)
-        #expect(await Git.root("/", exec: exec) == nil)
+        #expect(try await Git.root(repo.path + "/sub", exec: exec) == repo.path)
+        #expect(try await Git.root("/", exec: exec) == nil)
+        #expect(try await Git.root(repo.path + "/.git", exec: exec) == nil)
+        #expect(try await Git.root(repo.path + "/none", exec: exec) == nil)
         #expect(try await Git.status(repo.path, exec: exec).map { "\($0.letter) \($0.path)" } == [
             "M crlf.txt", "M sub/a.txt", "R sub/moved/sp ace.txt", "U bin.dat", "U link", "U sub/line\nbreak",
             "U sub/new/f.txt",
@@ -66,10 +68,10 @@ import Testing
         #expect(log[4] == Git.Commit(hash: log[4].hash, parents: [], author: "t",
                                      date: Date(timeIntervalSince1970: 1_000_000_000), subject: "init"))
         #expect(log.map(\.refs) == [["HEAD -> refs/heads/main"], ["refs/heads/side"], [], [], []])
-        #expect(await Git.commit("side", in: repo.path, exec: exec) == log[1].hash)
-        #expect(await Git.commit(String(log[4].hash.prefix(7)), in: repo.path, exec: exec) == log[4].hash)
-        #expect(await Git.commit("nope", in: repo.path, exec: exec) == nil)
-        #expect(await Git.commit("--all", in: repo.path, exec: exec) == nil)
+        #expect(try await Git.commit("side", in: repo.path, exec: exec) == log[1].hash)
+        #expect(try await Git.commit(String(log[4].hash.prefix(7)), in: repo.path, exec: exec) == log[4].hash)
+        #expect(try await Git.commit("nope", in: repo.path, exec: exec) == nil)
+        #expect(try await Git.commit("--all", in: repo.path, exec: exec) == nil)
         #expect(Git.graph(log) == [
             Git.GraphRow(lane: 0, children: [], parents: [0, 1], through: []),
             Git.GraphRow(lane: 1, children: [1], parents: [1], through: [0]),
@@ -78,6 +80,35 @@ import Testing
             Git.GraphRow(lane: 0, children: [0], parents: [], through: []),
         ])
     }
+}
+
+/// git that never answers, or fails with another error than "not a git repository".
+private struct Stuck: Exec {
+    let stderr: String?
+
+    func run(_: [String]) -> Channel {
+        let (lines, end) = AsyncStream<String>.makeStream()
+        if stderr != nil {
+            end.finish()
+        }
+        return Channel(lines: lines, write: { _ in }, closeInput: {}, terminate: { end.finish() },
+                       exit: { (128, stderr ?? "") })
+    }
+
+    func herdr() -> String? {
+        nil
+    }
+}
+
+@Test func `a git that times out or fails otherwise is no answer that the folder is in no repository`() async {
+    await #expect(throws: HerdrError.timeout) {
+        try await Git.root("/", exec: Stuck(stderr: nil), timeout: .milliseconds(50))
+    }
+    await #expect(throws: HerdrError.timeout) {
+        try await Git.commit("main", in: "/", exec: Stuck(stderr: nil), timeout: .milliseconds(50))
+    }
+    let dubious = "fatal: detected dubious ownership in repository at '/r'"
+    await #expect(throws: HerdrError.failed(dubious)) { try await Git.root("/r", exec: Stuck(stderr: dubious)) }
 }
 
 @Test func `two branch tips and a parent two lanes wait for`() {

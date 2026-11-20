@@ -47,7 +47,7 @@ extension HostStore {
                 } else {
                     try await client.pane(paneID).cwd ?? old.cwd ?? "~"
                 }
-                label = await newLabel(plugin, arg: arg(plugin, in: cwd))
+                label = try await newLabel(plugin, arg: arg(plugin, in: cwd))
             }
             if let label {
                 ahead.replacing[paneID]?.label = label.text
