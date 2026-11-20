@@ -26,7 +26,7 @@ final class PaneTerminal {
     @ObservationIgnored var settling: Task<Void, Never>?
     @ObservationIgnored var deadline: Task<Void, Never>?
     /// The grid libghostty took that herdr has not drawn at yet (`awaitAnswer`).
-    @ObservationIgnored var unanswered: (columns: Int, rows: Int)?
+    @ObservationIgnored var unanswered: (grid: [Int], at: ContinuousClock.Instant)?
     @ObservationIgnored private(set) var grid: InMemoryTerminalViewport?
     /// `grid` takes it in `resized`'s task, which a task for a stale grid must not replace.
     @ObservationIgnored private var latest: InMemoryTerminalViewport?

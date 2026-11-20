@@ -13,6 +13,8 @@ extension PaneTerminal {
     func hold() {
         guard ready, !observing else { return }
         ready = false
+        // The last reveal's watch would drop the new still at libghostty's first frame inside this hold.
+        view.stillWatch = nil
         // libghostty can draw during the hold.
         view.holdPicture()
         settle()
@@ -27,49 +29,47 @@ extension PaneTerminal {
             return reveal()
         }
         view.setSurfaceVisible(false)
-        // A program that redraws all the time never settles. Under the waiting spinner's 0.5 s.
-        deadline = deadline ?? Task {
-            try? await Task.sleep(for: .milliseconds(400))
-            if !Task.isCancelled {
-                reveal()
-            }
+        // herdr's answer to a grid change starts the wait (`settle(after:)`).
+        guard unanswered == nil else {
+            deadline = deadline ?? revealing(after: .seconds(1))
+            return
         }
+        // A program that redraws all the time never settles. Under the waiting spinner's 0.5 s, unless herdr answers a
+        // grid change later than 0.4 s.
+        deadline = deadline ?? revealing(after: .milliseconds(400))
         settling?.cancel()
-        settling = Task {
-            try? await Task.sleep(for: .milliseconds(100))
-            if !Task.isCancelled {
-                reveal()
-            }
-        }
+        settling = revealing(after: .milliseconds(100))
     }
 
     /// libghostty took a new grid: until herdr's frame at that size replaces it, the surface holds libghostty's own
     /// reflow of the old screen (rows joined or cut at the new width), which a settle timed from the hold showed when
-    /// herdr answered late (a busy Mac, a remote machine). At most 1 s: herdr answers every resize.
+    /// herdr answered late (a busy Mac, a remote machine). At most 1 s: herdr answers every resize. A watcher cannot
+    /// resize.
     func awaitAnswer(columns: Int, rows: Int) {
-        guard !ready, !observing else { return }
-        unanswered = (columns, rows)
-        deadline?.cancel()
-        deadline = nil
+        guard !observing else { return }
+        unanswered = ([columns, rows], .now)
         settling?.cancel()
-        settling = Task {
-            try? await Task.sleep(for: .seconds(1))
-            if !Task.isCancelled {
-                reveal()
-            }
-        }
+        deadline?.cancel()
+        deadline = revealing(after: .seconds(1))
     }
 
     /// herdr's answer is the old screen at the new size; the program's redraw follows in later frames (in one for a
-    /// program that synchronizes its output), so the answer only starts the deadline. Other sizes' frames do not
-    /// count.
+    /// program that synchronizes its output), so the answer starts no quiet wait, only the rest of the 400 ms from the
+    /// grid change (at least 100 ms for the redraw). Other sizes' frames do not count.
     func settle(after frame: TerminalStream.Frame) {
-        guard let size = unanswered else { return settle() }
-        guard frame.width == size.columns, frame.height == size.rows else { return }
+        guard !observing, let wait = unanswered else {
+            unanswered = nil
+            return settle()
+        }
+        guard [frame.width, frame.height] == wait.grid else { return }
         unanswered = nil
-        settling?.cancel()
-        deadline = Task {
-            try? await Task.sleep(for: .milliseconds(400))
+        deadline?.cancel()
+        deadline = revealing(after: max(.milliseconds(100), .milliseconds(400) - wait.at.duration(to: .now)))
+    }
+
+    private func revealing(after delay: Duration) -> Task<Void, Never> {
+        Task {
+            try? await Task.sleep(for: delay)
             if !Task.isCancelled {
                 reveal()
             }
@@ -129,7 +129,8 @@ extension PaneTerminal {
         draw()
         let first = !revealed
         revealed = true
-        if first, !(view.superview is MiniTerminal.Mini),
+        // Not over a held still, which goes at once (`drop`).
+        if first, !(view.superview is MiniTerminal.Mini), view.layer?.opacity != 0,
            !Animation.reduced
         {
             let fade = CABasicAnimation(keyPath: "opacity")
