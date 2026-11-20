@@ -15,7 +15,8 @@ extension OvviUITests {
         try await waitForPrompt(pane)
         try await send("mkdir -p \(repo)/scripts && cp \(Self.scripts.path)/rebuild.swift \(repo)/scripts/ && "
             + "printf 'install:\\n\\t@echo making the stand-in\\n\\t@touch ran\\n\\t@exit 3\\n' >\(repo)/Makefile && "
-            + "s=$SECONDS; swift \(script) 2>/dev/null; echo compiled in $((SECONDS-s)) s, made-$((6*7))\r", to: pane)
+            + "s=$SECONDS; /usr/bin/swift \(script) 2>/dev/null; "
+            + "echo compiled in $((SECONDS-s)) s, made-$((6*7))\r", to: pane)
         try await waitFor(pane, toShow: "made-42", times: 1200)
         relaunch(one, ["-OvviRepo", repo])
         openSettings("general")

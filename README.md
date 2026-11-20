@@ -50,7 +50,8 @@ make lint build test   # the checks, the build, the unit tests and the repositor
 make vm-e2e ONLY=…     # UI tests in the Tart VM ovvi-test, which you make first (playbook/ci.md#the-vm)
 ```
 
-Ovvi Dev has its own name, settings and icon, and it gets no updates: run `git pull && make install` again.
+Ovvi Dev has its own name, settings and icon, and it gets no updates: run `git pull && make install` again (or
+`git pull`, then Rebuild in Ovvi Dev's Settings ▸ General).
 `make install` also links the `ovvi` skill to the checkout's `skills/ovvi`, unless a skill is already there.
 Pass `DERIVED_DATA=/tmp/ovvi-dd-<name>` when several checkouts build at once. Releases:
 [RELEASING.md](RELEASING.md).

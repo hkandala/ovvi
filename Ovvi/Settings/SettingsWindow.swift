@@ -213,7 +213,10 @@ struct SettingsSearch: Identifiable {
     ] + (Updates.checks ? [
         SettingsSearch(id: "general.updates", title: "Check for updates automatically", page: .general,
                        words: "update version release new sparkle"),
-    ] : []) + [
+    ] : []) + (RebuildRow.repo.isEmpty ? [] : [
+        SettingsSearch(id: "general.rebuild", title: "Rebuild from source", page: .general,
+                       words: "make install build dev source update"),
+    ]) + [
         SettingsSearch(id: "appearance.appearance", title: "Appearance", page: .appearance,
                        words: "auto light dark theme mode"),
         SettingsSearch(id: "appearance.liquid-glass", title: "Liquid Glass", page: .appearance,

@@ -7,7 +7,9 @@ struct RebuildRow: View {
     static let repo = UserDefaults.standard.string(forKey: "OvviRepo")
         ?? Bundle.main.object(forInfoDictionaryKey: "OvviRepo") as? String ?? ""
 
-    @State private var starting = false
+    /// One script at a time, also after Settings closed and opened again: a cold interpreter takes up to 30 s.
+    private static var started = false
+    @State private var starting = Self.started
     @State private var problem: String?
     @Environment(\.look) private var look
 
@@ -17,26 +19,34 @@ struct RebuildRow: View {
         } label: {
             Text("Rebuild from source")
             if let problem {
-                Text(problem).foregroundStyle(look.error).accessibilityIdentifier("settings.general.rebuild.problem")
+                Text(problem).foregroundStyle(look.error)
             } else {
-                Text("Runs make install in \(Self.repo), then opens the new build.")
+                Text(starting ? "Starting the rebuild…" :
+                    "Runs make install in \(Self.repo), then opens the new build.")
             }
         }
+        .settingsRow("general.rebuild")
     }
 
     /// The script prints a line once its window shows; this app quits then, so make install can replace it.
     private func start() {
+        guard !Self.started else { return }
+        Self.started = true
         starting = true
         problem = nil
-        let script = Process(), shown = Pipe()
+        let script = Process(), shown = Pipe(), errors = Pipe()
         script.executableURL = URL(filePath: "/usr/bin/swift")
         script.arguments = [Self.repo + "/scripts/rebuild.swift", String(getpid()), Bundle.main.bundlePath]
         script.currentDirectoryURL = URL(filePath: Self.repo)
         script.standardOutput = shown
+        script.standardError = errors
         shown.fileHandleForReading.readabilityHandler = { handle in
             handle.readabilityHandler = nil
             if handle.availableData.isEmpty {
-                Task { @MainActor in failed("The rebuild did not start.") }
+                // The script ended: its first line of errors says why (a compile error, no developer tools).
+                let reason = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+                    .split(separator: "\n").first.map(String.init) ?? "The rebuild did not start."
+                Task { @MainActor in failed(reason) }
             } else {
                 // A block of the run loop, not of the main queue: the quit waits for HostStore.unmarkAll on the main
                 // queue.
@@ -52,6 +62,7 @@ struct RebuildRow: View {
 
     private func failed(_ text: String) {
         problem = text
+        Self.started = false
         starting = false
     }
 }
