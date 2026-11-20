@@ -76,8 +76,8 @@ extension OvviUITests {
             keepScreen("open with, \(floating ? "floating" : "docked")")
             if let window {
                 openPalette()
-                app.typeText("open terminal here")
-                XCTAssertTrue(element("palette.command.Open Terminal Here").has(\.isSelected, true, within: 2))
+                app.typeText("open terminal")
+                XCTAssertTrue(element("palette.command.Open Terminal").has(\.isSelected, true, within: 2))
                 app.typeKey(.return, modifierFlags: [])
                 let terminal = try await replaced(made, in: tab, besides: [])
                 XCTAssertTrue(element("float.\(terminal)", in: window).exists(within: 5))
