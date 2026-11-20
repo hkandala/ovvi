@@ -141,7 +141,7 @@ struct NewPane: View {
             case .start: ProgramTile(icon: row.id)
             }
         }
-        .foregroundStyle(selected ? AnyShapeStyle(Look.onAccent.opacity(0.75))
+        .foregroundStyle(selected ? AnyShapeStyle(Look.onAccent)
             : row == .agent && chooser.open ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
         .frame(width: 22)
     }
