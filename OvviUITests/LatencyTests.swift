@@ -116,8 +116,8 @@ extension OvviUITests {
         openPage(two)
         showPage(one)
         XCTAssertTrue(until(3) { header == one })
-        let sidebar = element("sidebar"), width = sidebar.frame.width
-        let center = "\(sidebar.frame.midX) \(sidebar.frame.midY)"
+        let sidebar = restingSidebar(), width = sidebar.width
+        let center = "\(sidebar.midX) \(sidebar.midY)"
         // The other way if natural scrolling is off. Past half a page: a lift CI posts over 100 ms late counts as a
         // rest.
         let moves = Int(width / 20) + 1
@@ -207,10 +207,10 @@ extension OvviUITests {
         XCTAssertTrue(element("pane.w1:p1").exists(within: 20))
         openPage(one)
         XCTAssertTrue(until(3) { header == one })
-        let sidebar = element("sidebar"), center = "\(sidebar.frame.midX) \(sidebar.frame.midY)"
+        let sidebar = restingSidebar(), center = "\(sidebar.midX) \(sidebar.midY)"
         // Which sign goes back follows natural scrolling. 10 pt past half the sidebar's width: a lift CI posts over 100
         // ms late counts as a rest, and short of half the pages spring back.
-        let moves = Int(sidebar.frame.width / 20) + 1
+        let moves = Int(sidebar.width / 20) + 1
         var back = 10.0
         for target in [eight, one, eight] {
             for _ in 0 ..< 2 {
@@ -230,6 +230,19 @@ extension OvviUITests {
         XCTAssertEqual(shows.count, 3, "\(shows)")
         // The better of the two: CI's first show of a page after a launch is sometimes twice as slow.
         XCTAssertLessThan(min(shows[0], shows[2]), 600, "\(shows)")
+    }
+
+    /// While its pages move (a page's slide), the sidebar's frame takes in every page laid out past the clip, and a
+    /// swipe of half that width took the pages all the way before its lift.
+    private func restingSidebar() -> CGRect {
+        let sidebar = element("sidebar"), handle = element("sidebar.resize").frame
+        let window = app.windows.firstMatch.frame
+        var frame = CGRect.zero
+        XCTAssertTrue(until(3) {
+            frame = sidebar.frame
+            return frame.minX >= window.minX && frame.maxX <= handle.maxX + 1
+        }, "\(frame) \(handle)")
+        return frame
     }
 
     private func swipes() -> [(String, [[Double]], Double)] { // swiftlint:disable:this large_tuple
