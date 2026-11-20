@@ -182,6 +182,9 @@ Problems that came back, and the rule that stops each. How we work is in
   windows. Anything built per tab costs at 300 tabs: build lists when a menu opens, no `@State` writes per
   frame, test hooks read once into a `static let`.
 - **Never hide and fade to mask a flicker.** Keep the old frame shown until the new one has drawn.
+- **A picture held over a clear surface covers nothing.** The terminal's still and libghostty's layer both have a
+  clear background: as libghostty drew under it, both screens read at once. Hide what is under a held picture, and time
+  its end from herdr's answer (a frame at the new size), not from the ask: a busy Mac or a network made the answer late.
 - **View identity cuts both ways.** A view shared by all spaces carries stale scroll and lazy state; an
   `.id` per page makes a fresh view that flickers at offset 0.
 - **WebKit scrolls on its own thread: a scroll listener runs a frame or more behind.** A clip or a cover set from one
