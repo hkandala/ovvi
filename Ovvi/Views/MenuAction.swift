@@ -13,6 +13,12 @@ final class MenuAction: NSObject {
     }
 }
 
+/// Runs a call that can block (a synchronous XPC call) on a dispatch thread: it holds neither the main thread nor a
+/// thread of Swift's cooperative pool.
+nonisolated func blocking<T: Sendable>(_ run: @escaping @Sendable () -> T) async -> T {
+    await withCheckedContinuation { done in DispatchQueue.global().async { done.resume(returning: run()) } }
+}
+
 /// For a nested run loop (a menu, a modal alert) in async code: no other main actor job runs inside a job, so it runs
 /// from a run-loop block instead, in the default mode so it waits out another menu's tracking. Returns its result once
 /// it ended.

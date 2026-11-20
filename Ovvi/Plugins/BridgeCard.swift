@@ -36,11 +36,16 @@ extension Bridge {
     func info(_ args: [String: Any]) async throws -> Any {
         var info = try await JSONSerialization.jsonObject(with: calls("files.info", args)) as? [String: Any] ?? [:]
         let type = (info.removeValue(forKey: "type") as? String).flatMap { UTType($0) } ?? .data
-        var rect = CGRect(x: 0, y: 0, width: 192, height: 192)
-        let png = NSWorkspace.shared.icon(for: type).cgImage(forProposedRect: &rect, context: nil, hints: nil)
-            .flatMap { NSBitmapImageRep(cgImage: $0).representation(using: .png, properties: [:]) }
+        let png = await blocking { Self.icon(type) }
         info["icon"] = "data:image/png;base64,\(png?.base64EncodedString() ?? "")"
         return info
+    }
+
+    /// Off the main thread: an icon that iconservices has not cached waits for iconservicesagent (OpenWithItems.icons).
+    private nonisolated static func icon(_ type: UTType) -> Data? {
+        var rect = CGRect(x: 0, y: 0, width: 192, height: 192)
+        return NSWorkspace.shared.icon(for: type).cgImage(forProposedRect: &rect, context: nil, hints: nil)
+            .flatMap { NSBitmapImageRep(cgImage: $0).representation(using: .png, properties: [:]) }
     }
 
     private func open(_ args: [String: Any], _ plugin: Plugin) throws {

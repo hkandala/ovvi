@@ -282,16 +282,17 @@ private struct OpenWith: View {
     let apps: Bool
     let plugins: [PluginManifest]
     let pick: (PluginManifest) -> Void
+    @State private var icons: [URL: NSImage] = [:]
 
     var body: some View {
         let url = URL(filePath: path)
         Group {
             if apps, let main = NSWorkspace.shared.urlForApplication(toOpen: url) {
                 Menu {
-                    OpenWithItems(url: url, plugins: plugins, pick: pick)
+                    OpenWithItems(url: url, icons: icons, plugins: plugins, pick: pick)
                 } label: {
                     HStack(spacing: 4) {
-                        Image(nsImage: OpenWithItems.icon(main))
+                        OpenWithItems.image(icons[main])
                         Text(FileManager.default.displayName(atPath: main.path)).lineLimit(1)
                     }
                 } primaryAction: {
@@ -300,7 +301,14 @@ private struct OpenWith: View {
                 }
                 .tip("Open with \(FileManager.default.displayName(atPath: main.path))")
             } else {
-                Menu("Open With") { OpenWithItems(url: apps ? url : nil, plugins: plugins, pick: pick) }
+                Menu("Open With") { OpenWithItems(url: apps ? url : nil, icons: icons, plugins: plugins, pick: pick) }
+            }
+        }
+        .task(id: path) {
+            if apps {
+                let found = await blocking { OpenWithItems.icons(url) }
+                // Merged: a late answer for an earlier path only adds that path's apps.
+                icons.merge(found.mapValues { NSImage(cgImage: $0, size: NSSize(width: 16, height: 16)) }) { $1 }
             }
         }
         .menuStyle(.button)
@@ -312,6 +320,7 @@ private struct OpenWith: View {
 /// A view of its own: SwiftUI asks LaunchServices again only when the path changes, not at every render of the card.
 private struct OpenWithItems: View {
     let url: URL?
+    let icons: [URL: NSImage]
     let plugins: [PluginManifest]
     let pick: (PluginManifest) -> Void
 
@@ -340,15 +349,27 @@ private struct OpenWithItems: View {
             Label {
                 Text(FileManager.default.displayName(atPath: app.path))
             } icon: {
-                Image(nsImage: Self.icon(app))
+                Self.image(icons[app])
             }
         }
     }
 
-    /// LaunchServices gives it at 32 pt.
-    static func icon(_ app: URL) -> NSImage {
-        let icon = NSWorkspace.shared.icon(forFile: app.path)
-        icon.size = NSSize(width: 16, height: 16)
-        return icon
+    /// Blank, at its size, until the icon comes.
+    static func image(_ icon: NSImage?) -> Image {
+        Image(nsImage: icon ?? NSImage(size: NSSize(width: 16, height: 16)))
+    }
+
+    /// The apps' icons, the default app's too (a symlink's is not in the list), drawn at twice their 16 pt. Off the
+    /// main thread: an icon that iconservices has not cached waits for iconservicesagent, seconds while it is busy,
+    /// and forever while it does not answer.
+    nonisolated static func icons(_ url: URL) -> [URL: CGImage] {
+        let workspace = NSWorkspace.shared
+        let apps = Set(workspace.urlsForApplications(toOpen: url) + [workspace.urlForApplication(toOpen: url)]
+            .compactMap(\.self))
+        return apps.reduce(into: [:]) { icons, app in
+            var rect = CGRect(x: 0, y: 0, width: 32, height: 32)
+            icons[app] = NSWorkspace.shared.icon(forFile: app.path).cgImage(forProposedRect: &rect, context: nil,
+                                                                            hints: nil)
+        }
     }
 }
