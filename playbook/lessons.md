@@ -230,6 +230,9 @@ Problems that came back, and the rule that stops each. How we work is in
 - **Take a hit frame outside any offset that moves a view for a while** (a slide, a landing). `onGeometryChange` inside an
   `.offset` saw the offset set but not always its return to 0, and the sidebar lit the row 50 pt under the pointer:
   measure in the view's own space and place it by a frame taken outside the offset.
+- **SwiftUI's geometry has an animated layout's end value at its start.** `onGeometryChange` and `GeometryReader`
+  report the end size once; only AppKit views get the frames in between. A 150 ms settle on it fired in the middle of
+  the sidebar's 0.3 s slide and laid every kept page out there. Settle on an NSView's `setFrameSize` (`TabPages`).
 - **A view that leaves its window gets no `resignFirstResponder`:** a hidden tab's page keeps its focus flag. Clear
   it in `viewDidMoveToWindow`.
 - **On macOS 27, a SwiftUI drop target made after a drag entered the window never gets the drop.** Make every target
