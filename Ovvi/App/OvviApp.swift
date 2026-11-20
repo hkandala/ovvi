@@ -159,7 +159,7 @@ struct ContentView: View {
     private var selection: String {
         let pages = Dictionary(uniqueKeysWithValues: pages.list.map { page in
             (page.id, Selection(workspace: page.selectedWorkspaceID, tabs: page.selectedTabIDs,
-                                floating: page.floating))
+                                floating: page.floating, zoomed: page.zoomedPanes))
         })
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
@@ -172,6 +172,7 @@ struct ContentView: View {
         for page in pages.list {
             guard let saved = selection[page.id] else { continue }
             page.floating = saved.floating
+            page.zoomedPanes = saved.zoomed ?? [:]
             page.selectedWorkspaceID = saved.workspace
             page.selectedTabIDs = saved.tabs
             if page.store.state == .live {
@@ -184,6 +185,7 @@ struct ContentView: View {
         var workspace: String?
         var tabs: [String: String]
         var floating: [String: Bool]
+        var zoomed: [String: String]?
     }
 
     /// Whether it opened the window's saved pages.

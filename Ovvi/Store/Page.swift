@@ -154,8 +154,11 @@ final class Page: Identifiable {
             self.find = nil
         }
         zoomReplaced()
-        // Gone, alone in its tab, or moved to another tab, by any window or client.
-        let zoomed = zoomedPanes.filter { tab, id in !alone(id) && store.pane(id)?.tabID == tab }
+        // Gone, alone in its tab, or moved to another tab, by any window or client; kept until herdr's first read,
+        // which a relaunch's zoom waits for.
+        let zoomed = zoomedPanes.filter { tab, id in
+            store.last == nil || (!alone(id) && store.pane(id)?.tabID == tab)
+        }
         if zoomed != zoomedPanes {
             zoomedPanes = zoomed
         }

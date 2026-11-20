@@ -196,6 +196,29 @@ extension OvviUITests {
         XCTAssertTrue(hasKeyboard("terminal.\(two)"))
     }
 
+    /// The user's steps: zoom a pane, quit Ovvi and open it again: the pane is still zoomed.
+    func testZoomStaysAfterARelaunch() async throws {
+        try await forgetWindows()
+        relaunch(windows: .saved)
+        let (tab, pane) = try await newTab("zoom-keep")
+        let hidden = try await split(pane)
+        element("tab.\(tab)").click()
+        XCTAssertTrue(element("pane.\(hidden)").has(\.isHittable, true, within: 3))
+        hoverHeader(pane)
+        element("pane.\(pane).zoom").click()
+        XCTAssertTrue(element("pane.\(hidden)").vanishes(within: 2))
+        XCTAssertTrue(element("pane.\(pane).zoom").has(\.label, "Restore Pane ⇧⌘↩", within: 3))
+
+        app.typeKey("q", modifierFlags: .command)
+        XCTAssertTrue(app.wait(for: .notRunning, timeout: 5))
+        relaunch(windows: .restored)
+        XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, true, within: connect))
+        XCTAssertTrue(element("pane.\(pane).zoom").has(\.label, "Restore Pane ⇧⌘↩", within: 3))
+        XCTAssertFalse(element("pane.\(hidden)").exists)
+        XCTAssertEqual(element("pane.\(pane)").frame.width, element("page.\(tab)").frame.width, accuracy: 2)
+        XCTAssertTrue(hasKeyboard("terminal.\(pane)"))
+    }
+
     func testPaletteFiltersAndJumps() {
         step("Palette: keys typed right after ⌘K from a terminal reach the filter")
         XCTAssertTrue(element("tab.w1:t2").exists(within: connect))

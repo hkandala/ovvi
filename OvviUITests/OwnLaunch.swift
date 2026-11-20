@@ -70,5 +70,6 @@ extension OvviUITests {
         "testTheWelcomeTurnsItsPagesAndClosesForGood",
         "testTrafficLightsStayStillWhenWorkspacesSwitch",
         "testWelcomeFilm",
+        "testZoomStaysAfterARelaunch",
     ]
 }
