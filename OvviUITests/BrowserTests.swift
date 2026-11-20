@@ -51,8 +51,8 @@ extension OvviUITests {
         element("terminal.\(left)").click()
         XCTAssertTrue(hasKeyboard("terminal.\(left)"))
         let (browser, made) = try await chooseBrowser(besides: left, in: tab)
-        // One fixed line: no name, no address.
-        try await waitFor(browser) { $0.contains("Shown in Ovvi") && !$0.contains("Browser") }
+        // One fixed line: the plugin's name.
+        try await waitFor(browser) { $0.contains("Browser shown in Ovvi") }
         XCTAssertTrue(element("browser.\(browser).empty").exists)
         keepScreenshot("browser card, empty")
 

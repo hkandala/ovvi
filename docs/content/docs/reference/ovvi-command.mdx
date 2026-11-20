@@ -241,7 +241,7 @@ ovvi open <path-or-url> [<place>] [--new]
 | `--beside <pane>` | A split to the right of that pane. Add `--down` for below. |
 | `--tab` | A new tab after the asking pane's tab. Ovvi does not select it. |
 | `--float` | A new tab, then a floating window. |
-| `--replace <pane>` | That browser or plugin card shows the new kind and argument. |
+| `--replace <pane>` | That browser or plugin card shows the new argument; another kind takes its place as a new pane. |
 
 ```sh
 ovvi open git . uncommitted                    # the uncommitted changes of this repository
@@ -269,7 +269,8 @@ ovvi open explorer . --float                   # a file tree in a floating windo
 - A new or reused card out of view shows a notice in each window that shows the session, for example
   "Claude Code opened Git main.swift", with Show.
 - `--replace` takes only a browser or plugin card. A browser card loads the new address as a new history entry,
-  so Back returns. A terminal or agent pane is `bad_argument`. A card with unsaved edits is `dirty`.
+  so Back returns. Another kind is a new pane in the card's place: the answer's `pane` is its id. A terminal or
+  agent pane is `bad_argument`. A card with unsaved edits is `dirty`.
 - `shown` says whether the new card is in view.
 
 Do not put secrets in an argument, for example a `?token=` address. Every device that follows the session sees

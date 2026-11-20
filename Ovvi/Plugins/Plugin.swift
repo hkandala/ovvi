@@ -176,11 +176,11 @@ final class Plugin {
         }
     }
 
-    func reopen(as other: PluginManifest) {
+    /// A new pane, as Open ‹plugin› Here: herdr's own interface shows the new plugin's name.
+    func reopen(as other: PluginManifest, in page: Page) {
         leave { plugin in
-            let text = PaneLabel(plugin: other.id, iid: plugin.label.iid, arg: plugin.web.arg).text
-            guard let store = plugin.web.store else { return }
-            Task { [paneID = plugin.paneID] in await store.write { try await $0.rename(pane: paneID, label: text) } }
+            let label = PaneLabel(plugin: other.id, iid: plugin.label.iid, arg: plugin.web.arg)
+            page.replacePane(page.store.pane(plugin.paneID), Replacement(button: "Open \(other.name)", label: label))
         }
     }
 

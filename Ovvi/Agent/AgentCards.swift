@@ -11,7 +11,7 @@ extension AgentCommand {
         Mac.
         <place>: --beside <pane> [--down] (a split, right or below; this pane by default), --tab (a new tab right \
         after this pane's tab, not selected), --float (as --tab, then floats it), --replace <pane> (that \
-        browser or plugin card shows it).
+        browser or plugin card shows it; another kind is a new pane in its place).
         A card of the same kind and argument in the session is the answer ("reused": true) unless --new, which \
         --replace does not take.
         """,
@@ -145,9 +145,17 @@ extension AgentCall {
         if old.plugin == Registry.browser.id {
             await store.machine.exec().remove(home: old.statePath(session: store.session))
         }
-        try await store.request { try await $0.rename(pane: pane.id, label: label.text) }
-        try await settle { store.pane(pane.id)?.label == label.text }
-        return opened(pane.id, label, in: store, reused: false)
+        guard old.plugin != plugin.id else {
+            try await store.request { try await $0.rename(pane: pane.id, label: label.text) }
+            try await settle { store.pane(pane.id)?.label == label.text }
+            return opened(pane.id, label, in: store, reused: false)
+        }
+        // Another plugin is a new pane, as Open ‹plugin› Here: herdr's own interface shows its name.
+        var made: HerdrKit.Pane?
+        await store.replace(pane.id, label: label) { made = $0 }
+        guard let made else { throw AgentError.failed("herdr made no pane for \(plugin.id)") }
+        try await settle { store.pane(made.id)?.tabID == made.tabID }
+        return opened(made.id, label, in: store, reused: false)
     }
 
     func opening(_ first: String, _ words: [String]) async throws -> (PluginManifest, String) {

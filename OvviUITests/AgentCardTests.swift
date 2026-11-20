@@ -107,17 +107,19 @@ extension OvviUITests {
         XCTAssertTrue(element("browser.\(browser).back").has(\.isEnabled, true, within: 5))
         try await run("\(ovvi) open git . --replace \(first)", in: first, "terminal", 1,
                       "ovvi: pane \(first) is no")
-        _ = try await open("git . --replace \(browser)", from: first, "replace", ["kind: git"])
-        let label = try await paneLabel(browser)
+        let diff = try await open("git . --replace \(browser)", from: first, "replace", ["kind: git"])
+        XCTAssertNotEqual(diff, browser, "another plugin is a new pane")
+        let label = try await paneLabel(diff)
         XCTAssertEqual(label, "ovvi:git\(iid) /private\(folder)/")
-        try await run("clear; \(ovvi) card \(browser)", in: first, "card", 0, "kind: git", "shown: true")
+        try await waitFor(diff) { $0.contains("Git shown in Ovvi") }
+        try await run("clear; \(ovvi) card \(diff)", in: first, "card", 0, "kind: git", "shown: true")
         try await run("clear; \(ovvi) card \(first)", in: first, "terminal-card", 0, "kind: terminal")
         try await run("clear; \(ovvi) shown", in: first, "shown", 0, "windows: 1")
         let shown = try await read(first).split(separator: "\n").first { $0.hasPrefix("shown: ") } ?? ""
-        XCTAssertTrue(shown.contains(first) && shown.contains(browser), String(shown))
+        XCTAssertTrue(shown.contains(first) && shown.contains(diff), String(shown))
 
-        try await run("clear; \(ovvi) reveal \(browser)", in: first, "flash", 0, "shown: true")
-        XCTAssertTrue(element("pane.\(browser).flash").exists(within: 3))
+        try await run("clear; \(ovvi) reveal \(diff)", in: first, "flash", 0, "shown: true")
+        XCTAssertTrue(element("pane.\(diff).flash").exists(within: 3))
 
         // Split, and off balance: the Balance Splits below makes a write that herdr shows.
         let (other, beside) = try await createTab(in: "w2")
@@ -127,7 +129,7 @@ extension OvviUITests {
         XCTAssertTrue(element("tab.\(other)").exists(within: 5))
         element("tab.\(other)").click()
         XCTAssertTrue(element("tab.\(other)").has(\.isSelected, true, within: 3))
-        try await run("clear; \(ovvi) reveal \(browser)", in: first, "notice", 0, "shown: false")
+        try await run("clear; \(ovvi) reveal \(diff)", in: first, "notice", 0, "shown: false")
         let notice = element("detail.notice")
         XCTAssertTrue(notice.staticTexts.matching(NSPredicate(format: "value CONTAINS 'points to ovvi-e2e-cards'"))
             .firstMatch.exists(within: 3))

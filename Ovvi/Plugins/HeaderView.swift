@@ -189,8 +189,9 @@ private struct HeaderItem: View {
     private var openWith: some View {
         if let path = control.value?.text, !path.isEmpty {
             let others = Registry.openers(path, options: true).filter { $0.id != plugin.manifest.id }
-            if !page.store.machine.isRemote || !others.isEmpty {
-                OpenWith(path: path, apps: !page.store.machine.isRemote, plugins: others, pick: plugin.reopen(as:))
+            let apps = !page.store.machine.isRemote
+            if apps || !others.isEmpty {
+                OpenWith(path: path, apps: apps, plugins: others) { plugin.reopen(as: $0, in: page) }
             }
         }
     }

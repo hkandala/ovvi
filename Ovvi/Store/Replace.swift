@@ -91,6 +91,7 @@ struct Replacement {
     var agent: Chooser.Agent?
     var plugin: PluginManifest?
     var folder: String?
+    var label: PaneLabel?
 }
 
 extension Page {
@@ -114,8 +115,8 @@ extension Page {
     }
 
     func replace(_ paneID: String, _ replacement: Replacement) async {
-        let old = store.pane(paneID)?.terminalID
-        await store.replace(paneID, plugin: replacement.plugin, folder: replacement.folder) { new in
+        let old = store.pane(paneID)?.terminalID, label = replacement.label
+        await store.replace(paneID, plugin: replacement.plugin, label: label, folder: replacement.folder) { new in
             if replacement.chooser {
                 store.choose(new, starting: replacement.agent)
             }

@@ -39,10 +39,10 @@ ovvi open csv-table ./data.csv            # an installed plugin
 | `--beside <pane>` | a split of that pane (add `--down` for below) |
 | `--tab` | a new tab right after your tab. Ovvi does not show it, but offers a notice with Show |
 | `--float` | a new tab, in its own window |
-| `--replace <pane>` | that browser or plugin card shows the new kind and argument |
+| `--replace <pane>` | that browser or plugin card shows the new argument; another kind is a new pane in its place |
 
-With `--replace`, a browser card adds a history entry, so Back returns. A terminal or an agent pane is
-`bad_argument`, a card with unsaved edits is `dirty`, and `--new` is `usage`.
+With `--replace`, a browser card adds a history entry, so Back returns. Another kind answers the new pane's id.
+A terminal or an agent pane is `bad_argument`, a card with unsaved edits is `dirty`, and `--new` is `usage`.
 
 ## Browser addresses
 

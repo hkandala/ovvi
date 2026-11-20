@@ -184,7 +184,7 @@ extension HostStore {
     {
         // The label's path's folder survives a restart better than the folder it is asked from.
         guard let id = try await client.newTab(workspace: workspaceID, cwd: label.folder ?? cwd, label: label.text,
-                                               command: PaneLabel.placeholder)
+                                               command: label.placeholder)
         else { throw HerdrError.failed("herdr named no pane") }
         return id
     }

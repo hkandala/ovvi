@@ -22,7 +22,7 @@ extension OvviUITests {
         XCTAssertTrue(diffLabel.hasPrefix("ovvi:git#") && diffLabel.hasSuffix(" \(root)/"), diffLabel)
         XCTAssertTrue(element("git.\(diff).card").exists(within: 3))
         XCTAssertTrue(element("pane.\(diff).title").has(\.stringValue, "ovvi-e2e-plugins", within: 3))
-        try await waitFor(diff) { $0.contains("Shown in Ovvi") }
+        try await waitFor(diff) { $0.contains("Git shown in Ovvi") }
 
         element("terminal.\(left)").click()
         openPalette()
@@ -32,6 +32,7 @@ extension OvviUITests {
         let files = try await replaced(left, in: tab, besides: [diff])
         let filesLabel = try await paneLabel(files)
         XCTAssertTrue(filesLabel.hasPrefix("ovvi:explorer#") && filesLabel.hasSuffix(" \(root)/"), filesLabel)
+        try await waitFor(files) { $0.contains("File Explorer shown in Ovvi") }
         XCTAssertTrue(element("pane.\(files).title").has(\.stringValue, "ovvi-e2e-plugins", within: 3))
         keepScreenshot("file explorer and git cards")
 
@@ -53,7 +54,7 @@ extension OvviUITests {
         let tab: String = try field(layout?["tab_id"], "layout's tab")
         let pane: String = try field((layout?["root"] as? [String: Any])?["pane_id"], "layout's pane")
         closeAfter("tab", tab)
-        try await waitFor(pane) { $0.contains("Shown in Ovvi") }
+        try await waitFor(pane) { $0.contains("File Explorer shown in Ovvi") }
         let names = try await foreground(pane)
         XCTAssertTrue(names.contains("cat"), "\(names)")
 
@@ -70,7 +71,7 @@ extension OvviUITests {
         let title = element("pane.\(shell).title")
         XCTAssertTrue(until(10) { title.stringValue.contains("sh ") }, title.stringValue)
         try await rename(shell, "ovvi:explorer#e2epl2 /tmp/")
-        try await waitFor(shell) { $0.contains("Shown in Ovvi") }
+        try await waitFor(shell) { $0.contains("File Explorer shown in Ovvi") }
     }
 
     func testACardWhoseFolderWentComesBackWithItsPlaceholder() async throws {
@@ -103,7 +104,7 @@ extension OvviUITests {
             return card?["pane_id"] as? String
         }
         closeAfter("pane", made, in: five)
-        try await waitFor(made, in: five) { $0.contains("Shown in Ovvi") }
+        try await waitFor(made, in: five) { $0.contains("File Explorer shown in Ovvi") }
     }
 
     private func fileCards(in repo: String, root: String) async throws {

@@ -51,6 +51,33 @@ extension OvviUITests {
         try await send("rm -rf \(config) /tmp/notes.md\r", to: shell)
     }
 
+    /// Another plugin is a new pane, docked and floating, so herdr's own interface shows its name.
+    func testOpenWithAnotherPluginMakesANewPane() async throws {
+        let (_, shell) = try await newTab("open with")
+        try await waitForPrompt(shell)
+        // No Mac app opens the file: the control is a plain Open With menu.
+        let config = "/tmp/ovvi-e2e-openwith", file = "/tmp/ovvi-e2e-openwith.e2e"
+        try await send(fixture(in: config, opens: file) + "\r", to: shell)
+        try await waitFor(shell) { $0.contains("made-42") }
+        relaunch(one, ["-configFolder", config])
+        XCTAssertTrue(element("workspace.w2").exists(within: connect))
+        element("workspace.w2").click()
+        for floating in [false, true] {
+            let (tab, card) = try await newCard("ovvi:fixture#e2eow\(floating ? 2 : 1) \(file)")
+            let window: XCUIElement? = floating ? float(card) : nil
+            let openWith = element("pane.\(card).open-with", in: window)
+            XCTAssertTrue(openWith.exists(within: 5))
+            openWith.click()
+            openWith.menuItems["File Explorer"].click()
+            let made = try await replaced(card, in: tab, besides: [])
+            let shown = floating ? app.windows.containing(.any, identifier: "float.\(made)").firstMatch : window
+            XCTAssertTrue(element("explorer.\(made).card", in: shown).exists(within: 5))
+            try await waitFor(made) { $0.contains("File Explorer shown in Ovvi") }
+            keepScreen("open with, \(floating ? "floating" : "docked")")
+        }
+        try await send("rm -rf \(config) \(file)\r", to: shell)
+    }
+
     private func floatsTheSameRow(_ card: String) {
         let window = float(card)
         let floating = { (id: String) in self.element("pane.\(card).\(id)", in: window) }
@@ -67,7 +94,7 @@ extension OvviUITests {
         XCTAssertTrue(window.vanishes(within: 3))
     }
 
-    private func fixture(in config: String) -> String {
+    private func fixture(in config: String, opens file: String = "/tmp/notes.md") -> String {
         let header = [
             #"{"id":"root","type":"menu","symbol":"folder","title":"ovvi","items":[{"title":"Places"},"#
                 + #"{"value":"/tmp","title":"tmp","symbol":"folder"},"-",{"value":"choose","title":"Choose…"}]}"#,
@@ -80,12 +107,12 @@ extension OvviUITests {
             #"{"id":"outline","type":"toggle","symbol":"sidebar.left","title":"Outline","value":true}"#,
             #"{"id":"push","type":"button","symbol":"arrow.up","title":"Push","badge":"2","gap":0}"#,
             #"{"id":"gone","type":"button","symbol":"trash","title":"Gone","hidden":true}"#,
-            #"{"id":"open-with","type":"openWith","value":"/tmp/notes.md"}"#,
+            #"{"id":"open-with","type":"openWith","value":"\#(file)"}"#,
         ].joined(separator: ",")
         let json = #"{"version":"1.0.0","ovvi":{"id":"fixture","name":"Fixture","api":1,"entry":"main.js","#
             + #""icon":"testtube.2","history":true,"header":[\#(header)]}}"#
         let bare = #"{"version":"1.0.0","ovvi":{"id":"bare","name":"Bare","api":1,"entry":"main.js","icon":"leaf"}}"#
-        return "rm -rf \(config) && mkdir -p \(config)/plugins/fixture \(config)/plugins/bare && touch /tmp/notes.md"
+        return "rm -rf \(config) && mkdir -p \(config)/plugins/fixture \(config)/plugins/bare && touch \(file)"
             + " && echo '\(json)' > \(config)/plugins/fixture/package.json"
             + " && echo '\(bare)' > \(config)/plugins/bare/package.json && clear && echo made-$((6*7))"
     }
