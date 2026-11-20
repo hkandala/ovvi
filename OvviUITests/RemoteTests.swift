@@ -316,7 +316,7 @@ extension OvviUITests {
         back()
         XCTAssertTrue(element("detail.connect").exists(within: connect))
         XCTAssertFalse(element("ask.answer").exists)
-        XCTAssertEqual(element("detail.text").value as? String, "The server stopped waiting for an answer")
+        XCTAssertEqual(element("detail.text").value as? String, "The machine stopped waiting for an answer")
         element("detail.connect").click()
         XCTAssertTrue(element("ask.answer").exists(within: connect))
     }

@@ -219,11 +219,11 @@ final class WindowPages {
     /// either order.
     func look(key: Bool) {
         self.key = key
-        // The user is back: a question whose ssh stopped waiting goes, and the window shows Connect.
-        if key, question?.gaveUp() == true {
-            question?.answer(nil)
-        }
         if key {
+            // The user is back: a question whose ssh stopped waiting goes, and the window shows Connect.
+            if question?.gaveUp() == true {
+                question?.answer(nil)
+            }
             Self.windows.removeAll { $0 === self }
             Self.windows.insert(self, at: 0)
         }

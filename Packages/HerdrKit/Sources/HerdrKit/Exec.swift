@@ -84,6 +84,6 @@ public struct Channel: Sendable {
     public let closeInput: @Sendable () -> Void
     public let terminate: @Sendable () -> Void
     public let exit: @Sendable () async -> (status: Int32, stderr: String)
-    /// A local process's own.
+    /// The process's, for one started on This Mac (`ProcessExec.spawn`).
     var pid: pid_t?
 }

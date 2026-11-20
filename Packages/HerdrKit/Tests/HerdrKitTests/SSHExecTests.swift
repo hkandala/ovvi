@@ -97,19 +97,25 @@ struct RelayExec: Exec {
     #expect(lines.count == 2 && lines[1] == String(repeating: "x/y z\0", count: 20000))
 }
 
-/// As ssh while it waits for an answer: it holds its connection and does not read it.
-@Test(arguments: ["socketpair($in, $out, AF_UNIX, SOCK_STREAM, 0)", "pipe($in, $out)"])
-func `an ssh whose connection closed gave up`(_ open: String) async throws {
-    let script = "my ($in, $out); \(open) or die; $| = 1; print qq(open\\n); <STDIN>; close $out; print qq(closed\\n); "
-        + "sleep 100"
-    let channel = try ProcessExec.spawn(["perl", "-MSocket", "-e", script], localExec.environment)
+/// As ssh while it waits for an answer: it holds its connection and does not read it. A Unix socket is its agent's.
+@Test(arguments: [
+    ("my $l = IO::Socket::INET->new(Listen => 1, LocalAddr => '127.0.0.1:0') or die; "
+        + "$in = IO::Socket::INET->new(PeerAddr => '127.0.0.1', PeerPort => $l->sockport) or die; $out = $l->accept",
+        true),
+    ("pipe($in, $out) or die", true),
+    ("socketpair($in, $out, AF_UNIX, SOCK_STREAM, 0) or die", false),
+])
+func `an ssh whose connection closed gave up`(_ open: String, _ gives: Bool) async throws {
+    let script = "my ($in, $out); \(open); $| = 1; print qq(open\\n); <STDIN>; close $out; sysread($in, my $x, 1); "
+        + "print qq(closed\\n); sleep 100"
+    let channel = try ProcessExec.spawn(["perl", "-MSocket", "-MIO::Socket::INET", "-e", script], localExec.environment)
     let pid = try #require(channel.pid)
     var lines = channel.lines.makeAsyncIterator()
     #expect(await lines.next() == "open")
     #expect(!SSHExec.gaveUp(pid))
     channel.write("")
     #expect(await lines.next() == "closed")
-    #expect(SSHExec.gaveUp(pid))
+    #expect(SSHExec.gaveUp(pid) == gives)
     channel.terminate()
     _ = await channel.exit()
     #expect(SSHExec.gaveUp(pid))

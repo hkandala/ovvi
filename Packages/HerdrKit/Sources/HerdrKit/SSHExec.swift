@@ -252,7 +252,7 @@ public actor SSHExec: Exec {
                 guard let answer, !gone else {
                     channel.closeInput()
                     channel.terminate()
-                    let error = HerdrError.disconnected(gone ? "The server stopped waiting for an answer" : "Canceled")
+                    let error = HerdrError.disconnected(gone ? "The machine stopped waiting for an answer" : "Canceled")
                     blocked = error
                     throw error
                 }
