@@ -2,13 +2,19 @@ import HerdrKit
 import SwiftUI
 
 struct FloatingWindow: View {
-    let floating: Floating
+    let opened: Floating
+    /// A replaced pane's new one, which keeps the window.
+    @State private var moved: Floating?
     @State private var palette = false
     private var settings = AppSettings()
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
     @Environment(\.dismissWindow) private var dismissWindow
     @Environment(\.appearsActive) private var appearsActive
+
+    private var floating: Floating {
+        moved ?? opened
+    }
 
     private var look: Look {
         Look(style: settings.style, dark: colorScheme == .dark, contrast: colorSchemeContrast == .increased)
@@ -20,7 +26,8 @@ struct FloatingWindow: View {
         let pane = page?.store.terminalPane(floating.terminalID)
         Group {
             if let pages, let page {
-                content(pages, page, pane)
+                // Made again for a replaced pane's new one: its terminal takes the keyboard as it appears.
+                content(pages, page, pane).id(floating.terminalID)
             }
         }
         .frame(minHeight: 200)
@@ -39,9 +46,13 @@ struct FloatingWindow: View {
                 HostStore.look(pane, in: page.store)
             }
         }
+        .onChange(of: floating.terminalID, initial: true) { _, new in
+            FloatFrames.moves[new] = { moved = $0 }
+        }
+        .onDisappear { FloatFrames.moves[floating.terminalID] = nil }
         .onChange(of: page == nil, initial: true) { _, gone in
             if gone {
-                dismissWindow(id: WindowPages.floatScene, value: floating)
+                dismissWindow(id: WindowPages.floatScene, value: opened)
             }
         }
     }

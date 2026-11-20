@@ -5,18 +5,17 @@ import SwiftUI
 /// window shows can lose to SwiftUI's default size, which sometimes comes after it (46 pt short on CI).
 enum FloatFrames {
     static let windows = NSMapTable<NSString, NSWindow>.strongToWeakObjects()
+    static var moves: [String: (Floating) -> Void] = [:]
     private static var next: NSRect?
 
-    static func open(_ floating: Floating, over main: NSWindow?, frame: NSRect? = nil, agent: Bool = false,
+    static func open(_ floating: Floating, over main: NSWindow?, agent: Bool = false,
                      with open: OpenWindowAction?)
     {
-        let window = windows.object(forKey: floating.terminalID as NSString)
-        if agent, let window {
-            return window.orderFrontRegardless()
+        // Not SwiftUI's: a window a replaced pane's new one took presents the old one's value.
+        if let window = windows.object(forKey: floating.terminalID as NSString) {
+            return agent ? window.orderFrontRegardless() : window.makeKeyAndOrderFront(nil)
         }
-        if window == nil {
-            next = frame ?? saved(floating.terminalID) ?? main.map(frame(over:))
-        }
+        next = saved(floating.terminalID) ?? main.map(frame(over:))
         if agent {
             quiet[floating.terminalID] = .some(NSApp.keyWindow)
         }

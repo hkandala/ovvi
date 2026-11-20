@@ -51,7 +51,7 @@ extension OvviUITests {
         try await send("rm -rf \(config) /tmp/notes.md\r", to: shell)
     }
 
-    /// Another plugin is a new pane, docked and floating, so herdr's own interface shows its name.
+    /// Another plugin is a new pane, so herdr's own interface shows its name; a floating card keeps its window.
     func testOpenWithAnotherPluginMakesANewPane() async throws {
         let (_, shell) = try await newTab("open with")
         try await waitForPrompt(shell)
@@ -64,16 +64,31 @@ extension OvviUITests {
         element("workspace.w2").click()
         for floating in [false, true] {
             let (tab, card) = try await newCard("ovvi:fixture#e2eow\(floating ? 2 : 1) \(file)")
-            let window: XCUIElement? = floating ? float(card) : nil
+            // By the window's own id, which a new window would not have.
+            let window = floating ? app.windows[float(card).identifier] : nil
             let openWith = element("pane.\(card).open-with", in: window)
             XCTAssertTrue(openWith.exists(within: 5))
             openWith.click()
             openWith.menuItems["File Explorer"].click()
             let made = try await replaced(card, in: tab, besides: [])
-            let shown = floating ? app.windows.containing(.any, identifier: "float.\(made)").firstMatch : window
-            XCTAssertTrue(element("explorer.\(made).card", in: shown).exists(within: 5))
+            XCTAssertTrue(element("explorer.\(made).card", in: window).exists(within: 5))
             try await waitFor(made) { $0.contains("File Explorer shown in Ovvi") }
             keepScreen("open with, \(floating ? "floating" : "docked")")
+            if let window {
+                openPalette()
+                app.typeText("open terminal here")
+                XCTAssertTrue(element("palette.command.Open Terminal Here").has(\.isSelected, true, within: 2))
+                app.typeKey(.return, modifierFlags: [])
+                let terminal = try await replaced(made, in: tab, besides: [])
+                XCTAssertTrue(element("float.\(terminal)", in: window).exists(within: 5))
+                XCTAssertTrue(hasKeyboard("terminal.\(terminal)"), "the keyboard is on \(keyboardOwner())")
+                // Terminal to terminal: the same window, and the new one takes the keyboard.
+                try await waitForPrompt(terminal)
+                app.typeKey("r", modifierFlags: [.command, .shift])
+                let again = try await replaced(terminal, in: tab, besides: [])
+                XCTAssertTrue(element("float.\(again)", in: window).exists(within: 5))
+                XCTAssertTrue(hasKeyboard("terminal.\(again)"), "the keyboard is on \(keyboardOwner())")
+            }
         }
         try await send("rm -rf \(config) \(file)\r", to: shell)
     }

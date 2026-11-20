@@ -52,7 +52,7 @@ struct OvviApp: App {
         // Its main window saves and opens it, so SwiftUI must not restore it.
         WindowGroup(id: WindowPages.floatScene, for: Floating.self) { $floating in
             if let floating {
-                FloatingWindow(floating: floating)
+                FloatingWindow(opened: floating)
             }
         }
         .windowToolbarStyle(.unifiedCompact)

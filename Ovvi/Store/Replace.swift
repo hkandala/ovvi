@@ -133,22 +133,19 @@ extension Page {
         }
     }
 
-    /// In the snapshot that shows it, ahead of the replaced pane's window closing: it opens with its terminal drawn,
-    /// and a float-only page keeps a float.
+    /// In the snapshot that shows it, ahead of the replaced pane's window closing: the new pane takes its window, and a
+    /// float-only page keeps a float.
     func floatReplaced() {
         for replaced in store.ahead.replaced.values {
             guard let old = replaced.terminal, let pinned = floating[old], let new = replaced.made?.terminalID
             else { continue }
             floating[new] = pinned
-            // Out of the way first: a new window over one of its group at the same place is cascaded 29 pt off.
-            let window = FloatFrames.windows.object(forKey: old as NSString)
-            window?.orderOut(nil)
-            FloatFrames.open(
-                Floating(session: id, terminalID: new),
-                over: terminals.pages?.window,
-                frame: window?.frame,
-                with: WindowPages.openWindow,
-            )
+            let moved = Floating(session: id, terminalID: new)
+            if let move = FloatFrames.moves.removeValue(forKey: old) {
+                move(moved)
+            } else {
+                FloatFrames.open(moved, over: terminals.pages?.window, with: WindowPages.openWindow)
+            }
         }
     }
 }
