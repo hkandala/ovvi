@@ -52,10 +52,10 @@ How CI runs, how to run part of it, and how to keep it green and fast.
 - **Results.** Each test job uploads `e2e-xcresult-<shard>`: the xcresult with screen recordings, also of
   green runs.
 - **Time.** A lone full run takes about 29–32 minutes and about 115–130 runner-minutes: about 2.5 minutes of the build
-  job (4.5 cold), then about 40 s of setup and 10 s of upload per test job and a fifth of 6500–7200 s of UI tests, 327 of them
+  job (4.5 cold), then about 40 s of setup and 10 s of upload per test job and a fifth of 7000–7600 s of UI tests, 334 of them
   (the slowest shard ends 3–5 minutes after the fastest: runners differ in speed, up to a fifth, and one shard of times
   from before a change can run 5 minutes over the others). An on-demand run took about 17 minutes and 53 runner-minutes before the compilation cache: the build job, then
-  four jobs of 11–14 minutes for about 2700 s of on-demand tests, 22 of them. The build job does not shorten a lone run, but it saves four builds, about 8 runner-minutes a
+  four jobs of 11–14 minutes for about 3000 s of on-demand tests, 22 of them. The build job does not shorten a lone run, but it saves four builds, about 8 runner-minutes a
   run (12 cold). Two full runs dispatched together take about twice as long as one, since the second waits for runners, and any other run (a chosen-tests run) takes one of the 5. A test job
   stops at 30 minutes (`timeout-minutes`): a slow runner's shard can take 20 minutes after every test passed. Each test stops at 120 s, so the limit costs a green run
   nothing. Refresh the test times when tests are added, or the shards stop balancing.
