@@ -1,10 +1,11 @@
 name: plugins
 
-# Publishes the default plugins and the API's types to npm when main has a version npm does not, apart from app
-# releases. npm's trusted publishing: no token, provenance from this workflow (RELEASING.md, Plugins).
+# Publishes the default plugins and the API's types to npm when main or a release tag has a version npm does not.
+# npm's trusted publishing: no token, provenance from this workflow (RELEASING.md, Plugins).
 on:
   push:
     branches: [main]
+    tags: ['v*'] # GitHub ignores paths for tags
     paths: [plugins/builtin/**, web/ovvi/package.json, web/ovvi/ovvi.d.ts, .github/workflows/plugins.yml]
   workflow_dispatch:
 

@@ -81,31 +81,27 @@ Add `-s -- --version 0.2.0` after `sh` for one release, a pre-release too. What 
 | `@ovvi/explorer` | `plugins/builtin/explorer/` (`dist/` and `places.json`) |
 | `@ovvi/git` | `plugins/builtin/git/` (`dist/`) |
 
-It runs on a push to main that touches `plugins/builtin/**` or the types, and on a dispatch. For each package whose
-`version` npm does not have, it runs `npm ci` and `npm run build`, then `npm publish` through npm's trusted publishing:
-no token, and npm adds provenance. A package that is not on npm at all is skipped with a warning.
+It runs on a push to main that touches `plugins/builtin/**` or the types, on every release tag (`v*`), and on a
+dispatch. For each package whose `version` npm does not have, it runs `npm ci` and `npm run build`, then `npm publish`
+through npm's trusted publishing: no token, and npm adds provenance. A package that is not on npm at all is skipped
+with a warning. So plugins publish on their own, and an app release also publishes any plugin version npm lacks.
 
 **Release a plugin:** bump its `version` in its `package.json` (every change to a plugin's source does) and push to
 main. Users see "Update to ‹version›" on the plugin's page in Settings ▸ Plugins, and an app built with the newer
 version installs it from its own copy at launch. A version for a newer plugin API (`ovvi.api`) is refused by older
 apps, so bump `api` only with the app release that brings it.
 
-**Set up once.** Trusted publishing cannot make a package, and `npm trust` needs the package to exist, so each name gets
-one placeholder by hand:
+**Set up once.** Trusted publishing cannot make a package, so each package's first version is published by hand:
 
-1. On npmjs.com, sign in, turn on two-factor authentication (Account ▸ Two-Factor Authentication), then avatar ▸
-   **Add Organization**: name `ovvi`, the free plan (unlimited public packages). It owns the `@ovvi` scope.
-2. On the Mac, with npm 11.15 or later (`npm install -g npm@latest`): `npm login`, then publish the placeholders:
+1. On npmjs.com, turn on two-factor authentication and create the organization `ovvi` (free plan). It owns `@ovvi`.
+2. On the Mac (npm 11.15 or later), `npm login`, then publish the current versions (npm asks for 2FA):
 
    ```sh
-   for name in @ovvi/plugin-api @ovvi/explorer @ovvi/git; do
-     dir=$(mktemp -d)
-     printf '{"name":"%s","version":"0.0.0","description":"Placeholder"}' "$name" > "$dir/package.json"
-     npm publish "$dir" --access public
-   done
+   cd plugins/builtin/explorer && npm ci && npm run build && cd ../git && npm ci && npm run build && cd ../../..
+   for dir in web/ovvi plugins/builtin/explorer plugins/builtin/git; do (cd "$dir" && npm publish --access public); done
    ```
 
-3. Trust the workflow for each (2FA asks once):
+3. Trust the workflow for each package (2FA asks once):
 
    ```sh
    for name in @ovvi/plugin-api @ovvi/explorer @ovvi/git; do
@@ -114,7 +110,5 @@ one placeholder by hand:
    done
    ```
 
-4. Within 2 days (an unused trusted publisher expires): `gh workflow run plugins.yml --ref main`. It publishes the
-   current versions with provenance.
-5. Then, for each name: `npm deprecate <name>@0.0.0 "placeholder"`, and on npmjs.com the package's Settings ▸
-   Publishing access ▸ **Require two-factor authentication and disallow tokens**.
+4. On npmjs.com, each package's Settings ▸ Publishing access ▸ **Require two-factor authentication and disallow
+   tokens**. From then on only the workflow publishes.
