@@ -264,28 +264,36 @@ extension OvviUITests {
                       "\(first) then \(title.stringValue)")
     }
 
-    func testFewerKeptCardsInSettingsDropAPageAtOnce() async throws {
+    func testFewerKeptCardsInSettingsDropAPage() async throws {
         // Every other launch pins the kept cards to 25, which Settings could not change.
         relaunch(one, pin: false)
+        addTeardownBlock { @MainActor [self] in
+            openSettings("general")
+            keptWebCards(steps: 5)
+        }
         let (tab, pane) = try await newTab("kept")
         let first = try await stampedPage(tab, pane), title = element("pane.\(pane).title")
         app.typeKey("1", modifierFlags: .command)
         XCTAssertTrue(element("tab.\(tab)").has(\.isSelected, false, within: 3))
         openSettings("general")
-        let stepper = element("settings.general.kept-web", in: settingsWindow)
-        XCTAssertTrue(stepper.exists(within: 3))
-        // Down to 0 from any value, which drops the page out of view at once, then back to the default.
-        for _ in 0 ..< 21 {
-            stepper.decrementArrows.firstMatch.click()
-        }
-        for _ in 0 ..< 5 {
-            stepper.incrementArrows.firstMatch.click()
-        }
+        keptWebCards(steps: 0)
         settingsWindow.typeKey("w", modifierFlags: .command)
         XCTAssertTrue(settingsWindow.vanishes(within: 2))
         try await show(tab)
         XCTAssertTrue(until(connect) { title.stringValue.hasPrefix("Light ") && title.stringValue != first },
                       "\(first) then \(title.stringValue)")
+    }
+
+    /// Down to 0 from any value, then `steps` steps of 5 up (5 for the default, 25).
+    private func keptWebCards(steps: Int) {
+        let stepper = element("settings.general.kept-web", in: settingsWindow)
+        XCTAssertTrue(stepper.exists(within: 3))
+        for _ in 0 ..< 21 {
+            stepper.decrementArrows.firstMatch.click()
+        }
+        for _ in 0 ..< steps {
+            stepper.incrementArrows.firstMatch.click()
+        }
     }
 
     /// A browser card whose title changes each time its page loads; its first title.

@@ -215,7 +215,7 @@ private struct LookTile: View {
         .buttonStyle(.plain)
         .accessibilityLabel(title)
         .accessibilityAddTraits(selected ? .isSelected : [])
-        .accessibilityIdentifier("settings.general." + id)
+        .accessibilityIdentifier(id)
     }
 }
 
