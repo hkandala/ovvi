@@ -38,15 +38,15 @@ final class PaneViewRegistry {
     var landings: [String: String] = [:]
     var webInView: Set<String> = []
     var pictures: [(id: String, picture: CGImage)] = []
+    /// The tab pages' size once it settles (`TabPages`).
     var pageSize = CGSize.zero {
         didSet {
-            guard pageSize != oldValue else { return }
-            // Once the size settles: a sidebar's motion gives a size at every frame.
-            SettlingHost.settle(&hiddenFitting) { [weak self] in self?.fitHidden() }
+            if pageSize != oldValue {
+                fitHidden()
+            }
         }
     }
 
-    private var hiddenFitting: Task<Void, Never>?
     var chatViews: [String: () -> CGImage?] = [:]
     private var shownIDs: Set<String> = []
 
@@ -247,7 +247,7 @@ final class PaneViewRegistry {
 extension PaneViewRegistry {
     /// Hidden kept terminals take their card's size, so that their programs hear of a new window size at once and a
     /// switch to the tab shows no reflow.
-    func fitHidden() {
+    private func fitHidden() {
         guard let pages, let page = pages.current, let workspace = page.selectedWorkspace, pageSize != .zero
         else { return }
         let area = TabPage.area(pageSize)

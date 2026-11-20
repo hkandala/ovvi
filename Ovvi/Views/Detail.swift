@@ -212,8 +212,6 @@ private struct TabPages: View {
     @State private var shown: [String] = []
     /// The size a hidden page lays out at: the page's, once it stops changing (none: the page's at once).
     @State private var settled: CGSize?
-    /// Not observed: it changes at each frame of a slide.
-    @State private var settling = Settling()
     /// ponytail: a constant count; a kept page costs its cards' updates while hidden. Bound by the cards' cost if a
     /// session of heavy tabs needs more.
     static let kept = 8
@@ -247,16 +245,44 @@ private struct TabPages: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onGeometryChange(for: CGSize.self, of: \.size) { size in
-            SettlingHost.settle(&settling.task) { settled = size }
-        }
+        .background(Settled { size in
+            settled = size
+            page.terminals.pageSize = size
+        })
         // Away from the window's page, only kept chats' tabs stay; back on it, its tab, as for a page made again.
         .onChange(of: current ? tab?.id : nil, initial: true) { shown = current ? Array(recent) : [] }
     }
 }
 
-private final class Settling {
-    var task: Task<Void, Never>?
+/// Calls `settled` 150 ms after the pages' size last changed. AppKit gives the size at each frame of a slide;
+/// SwiftUI's geometry has the slide's end size at its start, and a settle on it lands in the slide's middle.
+private struct Settled: NSViewRepresentable {
+    let settled: (CGSize) -> Void
+
+    func makeNSView(context _: Context) -> Watch {
+        Watch()
+    }
+
+    func updateNSView(_ view: Watch, context _: Context) {
+        view.settled = settled
+    }
+
+    final class Watch: NSView {
+        var settled: ((CGSize) -> Void)?
+        private var task: Task<Void, Never>?
+
+        override func setFrameSize(_ size: NSSize) {
+            let new = size != frame.size
+            super.setFrameSize(size)
+            if new {
+                SettlingHost.settle(&task) { [weak self] in self?.settled?(size) }
+            }
+        }
+
+        override func hitTest(_: NSPoint) -> NSView? {
+            nil
+        }
+    }
 }
 
 /// Lays its view out at `size` when it has one, and takes the offer itself.

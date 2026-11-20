@@ -19,7 +19,6 @@ struct TabPage: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onGeometryChange(for: CGSize.self, of: \.size) { page.terminals.pageSize = $0 }
         .accessibilityElement(children: hidden ? .ignore : .contain)
         .accessibilityIdentifier(hidden ? "" : "page.\(tab.id)")
     }

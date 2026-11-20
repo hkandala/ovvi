@@ -7,6 +7,9 @@ final class SettlingHost: NSView {
     private var fitting: Task<Void, Never>?
     static let record = UserDefaults.standard.bool(forKey: "recordMotion")
     private var sizes = 0, motion: (start: TimeInterval, last: TimeInterval)?
+    /// e2e: every host's sizes in one count, so a test can order two hosts' last sizes.
+    private static var allSizes = 0
+    private var lastSize = 0
 
     override var isFlipped: Bool {
         true
@@ -16,10 +19,12 @@ final class SettlingHost: NSView {
         guard frame.size != old else { return }
         if Self.record {
             sizes += 1
+            Self.allSizes += 1
+            lastSize = Self.allSizes
             let now = ProcessInfo.processInfo.systemUptime
             let start = motion.map { now - $0.last < 0.1 ? $0.start : now } ?? now
             motion = (start, now)
-            setAccessibilityLabel("\(sizes) \(Int((now - start) * 1000))")
+            setAccessibilityLabel("\(sizes) \(Int((now - start) * 1000)) #\(lastSize)")
         }
         fitting?.cancel()
         // A hidden page resizes once, after a slide or a resize (`TabPages`).
@@ -47,10 +52,10 @@ final class SettlingHost: NSView {
     func fit() {
         guard let view, !bounds.isEmpty, view.frame.size != bounds.size else { return }
         Self.place(view, bounds)
-        // e2e: "sizes ms fit ms", the fit's time from the first size of its run.
+        // e2e: "sizes ms #last fit ms", the fit's time from the first size of its run.
         if Self.record, let motion {
             let fitted = Int((ProcessInfo.processInfo.systemUptime - motion.start) * 1000)
-            setAccessibilityLabel("\(sizes) \(Int((motion.last - motion.start) * 1000)) fit \(fitted)")
+            setAccessibilityLabel("\(sizes) \(Int((motion.last - motion.start) * 1000)) #\(lastSize) fit \(fitted)")
         }
     }
 
