@@ -100,7 +100,9 @@ How CI runs, how to run part of it, and how to keep it green and fast.
 3. Think of CI's machine ([Layout](#layout)); Option sends Alt there.
 4. A shard where every test from one point on runs out its 120 s with no assertion (the session log shows a launch
    whose pid never came, then "requesting to start screen recording" with no answer) is the runner's
-   `testmanagerd`, not the tests: judge the tests before that point, and the next full run.
+   `testmanagerd` or its GPU, not the tests: judge the tests before that point, and the next full run. The GPU when a
+   test's spindump shows WindowServer's threads in AppleParavirtGPU with a "last ran" that keeps growing: the stall
+   can last to the job's end (polish-final16).
    One test that runs out its 120 s with an empty screen recording, while its spindump shows WindowServer's threads
    blocked in the AppleParavirtGPU driver (`IOGPUScheduler::scheduleWorkqueue`) and the app's main thread waiting on
    WindowServer, is the runner's GPU: the whole screen froze for about 100 s (polish-final6 and polish-final10, once
