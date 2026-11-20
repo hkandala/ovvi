@@ -21,7 +21,9 @@ How CI runs, how to run part of it, and how to keep it green and fast.
   has 5 macOS runners: GitHub's limit for every plan below Enterprise, shared by all of the account's runs. herdr is
   downloaded and checked by its SHA-256 (`scripts/ci-herdr.sh`). At 1x, cell sizes round: `stty size` can be one
   column narrower than the card's grid, and a 1 pt font step can leave the column count the same, so grid tests allow
-  one column. A second ⌃⌘F during the full-screen animation is lost.
+  one column. A second ⌃⌘F during the full-screen animation is lost. A key typed into a text field hides the pointer
+  until the mouse moves. On macOS 27.2 neither XCUITest's moves and clicks nor events posted to the HID system show it
+  again, so SwiftUI gives no hover after such a key (on 27.0.1 it did): a test hovers before it types into a field.
 - **Checks** (a push or a pull request): one job, `checks`, runs `make lint`, `make build`,
   `make build-tests` (the UI tests compile), and `make test` (HerdrKit, the acknowledgements,
   the Settings rows (`scripts/check-settings.py`), the UI tests' own launches (`scripts/check-launches.py`), the

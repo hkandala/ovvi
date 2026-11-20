@@ -44,9 +44,11 @@ extension OvviUITests {
         XCTAssertNotNil(steady(2) { filter.frame })
         XCTAssertEqual(row.frame.minY - filter.frame.maxY, listTop, accuracy: 0.01, "the list is scrolled")
 
+        // Hovers before any key in a text field (playbook/ci.md, Machines).
+        expectARowDetachesItsSession()
+        openPage(two)
         expectTheShelfStaysOpen()
         try await expectOnlyTheSpacesSlide()
-        expectARowDetachesItsSession()
     }
 
     /// Open after a pick, Open Session, a click in the filter, typing and a click on a space; folded by the title.
@@ -135,6 +137,9 @@ extension OvviUITests {
         let detach = element("sidebar.session.\(two).detach")
         let any = app.buttons.matching(NSPredicate(format: "identifier ENDSWITH '.detach'")).firstMatch
         element("sidebar.header").click()
+        // Another page in view: the one detached is not the one shown.
+        mine.click()
+        XCTAssertTrue(element("sidebar.header").has(\.stringValue, one, within: 3))
         XCTAssertNotNil(steady(2) { theirs.exists ? theirs.frame : nil })
         element("sidebar.open-session").hover()
         XCTAssertFalse(until(1) { any.exists })
