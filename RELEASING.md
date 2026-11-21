@@ -37,7 +37,8 @@ A tag with a suffix (`v0.2.0-rc.1`) makes a pre-release, which `install.sh` and 
   ([ci.md](playbook/ci.md#running-part-of-it)).
 - [ ] **Notes written** (below) and read once more as a user would.
 - [ ] **Tagged:** `git tag -a v0.1.2 -F notes.md && git push origin v0.1.2`.
-- [ ] **Run watched:** `gh run watch $(gh run list --workflow release.yml --limit 1 --json databaseId --jq '.[0].databaseId')`.
+- [ ] **Run watched:**
+  `gh run watch $(gh run list --workflow release.yml --limit 1 --json databaseId --jq '.[0].databaseId')`.
 - [ ] **Release checked:** it is GitHub's latest; the zip, `SHA256SUMS`, `install.sh` and `appcast.xml` are there; the
   zip's checksum matches; `appcast.xml` names the new version.
 - [ ] **Installed:** the install line in the Tart VM opens the app with no Gatekeeper dialog, and an older app offers
@@ -119,7 +120,8 @@ publishes each version npm does not have yet, through npm's trusted publishing: 
 - [ ] **README** still true (what it does, how to install).
 - [ ] **Pushed to main;** the `plugins` run is green and lists `+ <name>@<version>`.
 - [ ] **On npm:** `npm view <name> version` shows it, with provenance.
-- [ ] **In Ovvi:** the plugin's page in Settings ▸ Plugins shows Update to ‹version› on an app that has the old one.
+- [ ] **In Ovvi:** on an app with the old version, the plugin's page in Settings ▸ Plugins shows Update to
+  ‹version›.
 
 Users get it two ways:
 
