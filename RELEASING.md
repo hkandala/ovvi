@@ -2,6 +2,20 @@
 
 Two things ship, each on its own: the app (a version tag) and the plugins on npm (a version bump on main).
 
+## What Ovvi connects to
+
+| System | What for | Where it is set |
+|---|---|---|
+| GitHub Releases | the zip, `install.sh` and Sparkle's `appcast.xml` | `release.yml`; the feed URL in the `Makefile` (`zip`) |
+| Sparkle | the released app's updates | `SUFeedURL` and `SUPublicEDKey` in `Ovvi/Info.plist`; the private key in the `release` environment |
+| PostHog (EU), through `e.ovvi.dev` | anonymous usage counts from the released app | the key in the `Makefile` (`zip`); the endpoint in `HerdrKit/Usage.swift` |
+| npm | publishing `@ovvi/*`; installing and updating plugins (the user's npm) | `plugins.yml` (trusted publishing); the app runs the user's npm, pnpm or bun |
+| herdr.dev | herdr's install script, offered by `install.sh` and the app | `install.sh`; `Ovvi/Store/HerdrInstall.swift` |
+| Vercel | the docs site, ovvi.dev | `docs-deploy.yml` on a push to main; secrets `VERCEL_*` |
+| skills.sh | lists the `ovvi` skill from this repo | nothing to set: it reads GitHub |
+
+The browser card's search goes to Google. Nothing else leaves the Mac except the user's own SSH to remote machines.
+
 ## The app
 
 ### What a tag does
@@ -43,6 +57,23 @@ A tag with a suffix (`v0.2.0-rc.1`) makes a pre-release, which `install.sh` and 
 - **Updates (Sparkle):** the app reads `releases/latest/download/appcast.xml` once a day (Settings ▸ General) or on
   Ovvi ▸ Check for Updates…, shows a notice, and installs on Update…. Sparkle installs only a zip signed with the
   release key (below).
+
+### Dev builds
+
+`make install` builds **Ovvi Dev** (`dev.ovvi.app.dev`) from the checkout into `~/Applications`. It has no update
+feed and no PostHog key, and it records the checkout's path, so Settings ▸ General ▸ Rebuild runs `make install`
+from it again (a log window, then Ovvi Dev reopens). Debug builds and `make app` have neither feed, key nor
+Rebuild.
+
+### PostHog
+
+- **Key:** the project key (`phc_…`) is in the `Makefile`'s `zip` target, so only the released app has it. A project
+  key can only send events, never read them, so it is not a secret.
+- **Where it goes:** `https://e.ovvi.dev/batch/`, a DNS name for PostHog's managed proxy (EU). No server of ours.
+- **What:** one `app_day` event a day: the version, macOS and which features were used. No IP, no person profile,
+  no names or paths.
+- **Off:** Settings ▸ Privacy, or `OVVI_TELEMETRY=0` or `DO_NOT_TRACK=1` in the login shell. Help ▸ Usage Data Log
+  shows what was sent.
 
 ### The Sparkle key
 
