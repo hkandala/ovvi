@@ -1,6 +1,6 @@
 # How we work
 
-The one way of working for Ovvi, for every agent. Read it with [lessons.md](lessons.md) before you start.
+The one way of working for Ovvi: the orchestrator follows it and briefs each agent with the parts its job needs.
 The docs in `docs/content/docs/` say what the app does. They win on behavior. Finer detail (sizes, timings,
 identifiers, herdr calls) lives in the code and its tests.
 

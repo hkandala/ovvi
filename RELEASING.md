@@ -41,8 +41,7 @@ A tag with a suffix (`v0.2.0-rc.1`) makes a pre-release, which `install.sh` and 
   `gh run watch $(gh run list --workflow release.yml --limit 1 --json databaseId --jq '.[0].databaseId')`.
 - [ ] **Release checked:** it is GitHub's latest; the zip, `SHA256SUMS`, `install.sh` and `appcast.xml` are there; the
   zip's checksum matches; `appcast.xml` names the new version.
-- [ ] **Installed:** the install line in the Tart VM opens the app with no Gatekeeper dialog, and an older app offers
-  the update (Ovvi ▸ Check for Updates…).
+- [ ] **Update offered:** an older app finds the new version (Ovvi ▸ Check for Updates…).
 
 ### Release notes
 
