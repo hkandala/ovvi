@@ -6,6 +6,7 @@ Ovvi: a native SwiftUI client for herdr on macOS.
 
 - `playbook/workflow.md`: how we work. Follow it without being told.
 - `playbook/lessons.md`: problems that came back.
+- `RELEASING.md`: for any release (an app tag or a plugin version), follow its checklist and verify each item.
 - The docs in `docs/content/docs/` (published at ovvi.dev/docs) say what the app does. They win on behavior.
 - `~/ovvi-docs/`: everything outside the repo. `brief.md` there gives this Mac's facts, `phases/<name>/`
   holds the phases (read the ones your change touches), and `scratch/<agent>/` takes your temporary files

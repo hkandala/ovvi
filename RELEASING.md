@@ -29,22 +29,30 @@ A tag `vX.Y.Z` on main runs `.github/workflows/release.yml`:
 
 A tag with a suffix (`v0.2.0-rc.1`) makes a pre-release, which `install.sh` and the apps' update checks skip.
 
-### Cut a release
+### App release checklist
 
-1. **Pick the number.** Patch (`0.1.1` to `0.1.2`) for most releases, minor (`0.1` to `0.2`) for a big change. Never
-   reuse a number, even one whose release was deleted.
-2. **Check main:** a full CI run and the on-demand tests, both green on the commit
-   ([ci.md](playbook/ci.md#running-part-of-it)).
-3. **Tag it.** The tag's message opens the release notes (the highlights); `scripts/release-notes.sh` adds the `feat`,
-   `fix` and `perf` subjects since the last release.
+- [ ] **Number:** patch (`0.1.1` to `0.1.2`) for most releases, minor (`0.1` to `0.2`) for a big change. Never reuse
+  a number, even one whose release was deleted.
+- [ ] **Main is green:** a full CI run and the on-demand tests on the commit
+  ([ci.md](playbook/ci.md#running-part-of-it)).
+- [ ] **Notes written** (below) and read once more as a user would.
+- [ ] **Tagged:** `git tag -a v0.1.2 -F notes.md && git push origin v0.1.2`.
+- [ ] **Run watched:** `gh run watch $(gh run list --workflow release.yml --limit 1 --json databaseId --jq '.[0].databaseId')`.
+- [ ] **Release checked:** it is GitHub's latest; the zip, `SHA256SUMS`, `install.sh` and `appcast.xml` are there; the
+  zip's checksum matches; `appcast.xml` names the new version.
+- [ ] **Installed:** the install line in the Tart VM opens the app with no Gatekeeper dialog, and an older app offers
+  the update (Ovvi ▸ Check for Updates…).
 
-   ```sh
-   git tag -a v0.1.2 -m "The highlights" && git push origin v0.1.2
-   ```
+### Release notes
 
-4. **Watch it:** `gh run watch $(gh run list --workflow release.yml --limit 1 --json databaseId --jq '.[0].databaseId')`.
-   Then check the release page's assets and notes, and install it in the Tart VM (below): it must open with no
-   Gatekeeper dialog.
+The tag's message is the notes: its first line is the title line, the rest the body. `scripts/release-notes.sh`
+then adds the `feat` subjects and, folded, the `fix` and `perf` subjects since the last release.
+
+- Write for users: what they can do now or what works better, not how it was built.
+- One summary sentence, then 3–8 bullets, most important first. One change per bullet.
+- Name things as the app does: menu items, settings and keys (Settings ▸ General, ⌘K).
+- Say what a user must do, if anything (a setting that moved, a one-time reset).
+- No internal names: no commit scopes, file names, symbols or track names.
 
 **A failed run** publishes nothing: fix main, then move the tag (`git tag -f -a … && git push -f origin <tag>`).
 **A broken release** that is out: fix main and cut the next patch.
@@ -103,11 +111,15 @@ So a skill change ships with the next app release, and to `npx` users as soon as
 (`plugins/builtin/`). It runs on a push to main that touches them, on every release tag, and on a dispatch. It
 publishes each version npm does not have yet, through npm's trusted publishing: no token, with provenance.
 
-### Update a default plugin
+### Plugin release checklist
 
-1. Change it and bump its `version` in `package.json` and `package-lock.json` (`make lint` checks that a changed
-   plugin has a new version).
-2. Push to main. The workflow publishes it in a few minutes.
+- [ ] **Version bumped** in `package.json` and `package-lock.json`: patch for fixes, minor for new features, major
+  when settings or behaviour change incompatibly (`make lint` checks that a changed plugin has a new version).
+- [ ] **`ovvi.api`** raised only together with the app release that brings that API.
+- [ ] **README** still true (what it does, how to install).
+- [ ] **Pushed to main;** the `plugins` run is green and lists `+ <name>@<version>`.
+- [ ] **On npm:** `npm view <name> version` shows it, with provenance.
+- [ ] **In Ovvi:** the plugin's page in Settings ▸ Plugins shows Update to ‹version› on an app that has the old one.
 
 Users get it two ways:
 
