@@ -1,114 +1,104 @@
 # Releasing Ovvi
 
-## What a release is
+Two things ship, each on its own: the app (a version tag) and the plugins on npm (a version bump on main).
 
-A release is a version tag on main, such as `v0.2.0`. When the tag is pushed, `.github/workflows/release.yml`:
+## The app
 
-1. Checks that the tagged commit is on main, then runs `make lint test`.
-2. Builds `make zip`: the Release app, ad-hoc signed, with Hardened Runtime off. The tag is the version people see
-   (`v0.2.0` is 0.2.0). The build number is main's commit count (`git rev-list --count`), so it only grows.
-3. Publishes a GitHub Release with `Ovvi-<version>.zip`, `SHA256SUMS`, `install.sh` and `appcast.xml`, the update feed
-   of Sparkle (the app's updater). Its notes come from `scripts/release-notes.sh`.
+### What a tag does
 
-The build job holds no secret. The publish job (Ubuntu, the `release` environment) signs the zip with the Sparkle key
-(`scripts/appcast.sh`) and runs only the tag's own scripts. A tag with a suffix (`v0.2.0-rc.1`) makes a pre-release:
-GitHub's "latest" skips it, so neither `install.sh` nor the apps' update checks see it.
+A tag `vX.Y.Z` on main runs `.github/workflows/release.yml`:
 
-A local `make zip` builds the same app, stamped with the nearest `v*` tag behind HEAD.
+1. Checks that the commit is on main, then runs `make lint test`.
+2. Builds `make zip`: the Release app, ad-hoc signed. The tag is the version people see; the build number is main's
+   commit count (`git rev-list --count`), so it only grows.
+3. Publishes a GitHub Release with `Ovvi-<version>.zip`, `SHA256SUMS`, `install.sh` and `appcast.xml`.
 
-## Cut a release
+A tag with a suffix (`v0.2.0-rc.1`) makes a pre-release, which `install.sh` and the apps' update checks skip.
 
-1. **Pick the version.** Before 1.0: a release with a `feat` commit since the last one raises the minor number
-   (`v0.2.0` to `v0.3.0`); a release of fixes only raises the patch number (`v0.3.0` to `v0.3.1`). Never publish a
-   version number twice.
-2. **Check main.** A full run and the on-demand tests on the commit, both green ([ci.md](playbook/ci.md#running-part-of-it)):
-   `gh workflow run ci.yml --ref main` and `gh workflow run ci.yml --ref main -f on_demand=true`.
-3. **Write the notes and tag.** Use an annotated tag. Its message opens the notes: the highlights, in your words. The
-   script adds the `feat` subjects since the last release, then the `fix` and `perf` subjects, folded.
+### Cut a release
+
+1. **Pick the number.** Patch (`0.1.1` to `0.1.2`) for most releases, minor (`0.1` to `0.2`) for a big change. Never
+   reuse a number, even one whose release was deleted.
+2. **Check main:** a full CI run and the on-demand tests, both green on the commit
+   ([ci.md](playbook/ci.md#running-part-of-it)).
+3. **Tag it.** The tag's message opens the release notes (the highlights); `scripts/release-notes.sh` adds the `feat`,
+   `fix` and `perf` subjects since the last release.
 
    ```sh
-   git tag -a v0.2.0 -m "The highlights" && git push origin v0.2.0
+   git tag -a v0.1.2 -m "The highlights" && git push origin v0.1.2
    ```
 
-   A lightweight tag (GitHub's web form makes one) opens the notes with its commit's subject instead.
-4. **Watch the run.**
-   `gh run watch $(gh run list --workflow release.yml --limit 1 --json databaseId --jq '.[0].databaseId')`.
-   Then open the release page and check the zip, `SHA256SUMS`, `appcast.xml` and the notes.
-5. **Check the install.** In the Tart VM (a clean Mac), run the curl line below (with `-s -- --version <version>` for a
-   pre-release). The app must open with no Gatekeeper dialog.
+4. **Watch it:** `gh run watch $(gh run list --workflow release.yml --limit 1 --json databaseId --jq '.[0].databaseId')`.
+   Then check the release page's assets and notes, and install it in the Tart VM (below): it must open with no
+   Gatekeeper dialog.
 
-## Fix a failed release
+**A failed run** publishes nothing: fix main, then move the tag (`git tag -f -a … && git push -f origin <tag>`).
+**A broken release** that is out: fix main and cut the next patch.
 
-- **The run failed.** A failed run publishes nothing. Fix the cause on main, move the tag to the fixed commit and push
-  it again. The workflow runs again:
+### How users get it
 
-  ```sh
-  git tag -f -a v0.2.0 -m "The highlights" && git push -f origin v0.2.0
-  ```
+- **New install:** `curl -fsSL https://github.com/hkandala/ovvi/releases/latest/download/install.sh | sh` (add
+  `-s -- --version <version>` for one release). It checks `SHA256SUMS`, replaces `Ovvi.app` and offers herdr and the
+  skill.
+- **Updates (Sparkle):** the app reads `releases/latest/download/appcast.xml` once a day (Settings ▸ General) or on
+  Ovvi ▸ Check for Updates…, shows a notice, and installs on Update…. Sparkle installs only a zip signed with the
+  release key (below).
 
-- **The release is out, but broken.** People may have installed it, so do not reuse its number. Fix it on main and cut
-  the next patch version (`v0.2.1`).
-- **A test release.** Delete it with its tag: `gh release delete <tag> --cleanup-tag --yes`.
+### The Sparkle key
 
-## The Sparkle key
+Ad-hoc apps have no stable code signature, so Sparkle trusts an EdDSA key instead.
 
-Sparkle checks each update's EdDSA signature before it installs it. Ad-hoc apps have no stable code signature, so
-this key is what the app trusts.
+- **Private:** the secret `SPARKLE_PRIVATE_KEY` of the `release` environment (only the publish job reads it), with a
+  copy in the maintainer's password manager.
+- **Public:** `SUPublicEDKey` in `Ovvi/Info.plist`.
+- If the private key is lost, installed apps take no more updates: make a new pair, put the public key in
+  `Info.plist`, and tell users to run the install line again.
 
-- **Private key:** the GitHub secret `SPARKLE_PRIVATE_KEY` of the `release` environment, and a copy in the maintainer's
-  password manager. Only the publish job reads it.
-- **Public key:** `SUPublicEDKey` in `Ovvi/Info.plist`.
-- If the private key is lost, installed apps can take no more updates. Make a new key pair, put the new public key in
-  `Info.plist`, and tell users to install again with the curl line.
+## The skill
 
-## Install a release
+The `ovvi` skill lives in `skills/ovvi/` and ships inside the app (`Ovvi.app/Contents/Resources/skills/ovvi`).
 
-```sh
-curl -fsSL https://github.com/hkandala/ovvi/releases/latest/download/install.sh | sh
-```
+- **Installed by `install.sh`:** `~/.agents/skills/ovvi` and `~/.claude/skills/ovvi` are links into `Ovvi.app`, so
+  each app update replaces the skill with the release's copy. Edits there are lost. The script links only when no
+  `ovvi` skill is there, so it never replaces one you installed another way.
+- **Installed with `npx skills add hkandala/ovvi -g`** (other agents, remote machines): a copy from main.
+  `npx skills update` brings the newest; app updates do not touch it.
 
-Add `-s -- --version 0.2.0` after `sh` for one release, a pre-release too. What the script does:
-[Install](https://ovvi.dev/docs#install). Dev builds (`make install`, Ovvi Dev):
-[README.md](README.md#build-from-source).
+So a skill change ships with the next app release, and to `npx` users as soon as it is on main.
 
-## Plugins
+## Plugins on npm
 
-`.github/workflows/plugins.yml` publishes three packages to npm, apart from app releases:
+`.github/workflows/plugins.yml` publishes `@ovvi/plugin-api` (`web/ovvi/`), `@ovvi/explorer` and `@ovvi/git`
+(`plugins/builtin/`). It runs on a push to main that touches them, on every release tag, and on a dispatch. It
+publishes each version npm does not have yet, through npm's trusted publishing: no token, with provenance.
 
-| Package | Folder |
-|---|---|
-| `@ovvi/plugin-api` | `web/ovvi/` (only `ovvi.d.ts`) |
-| `@ovvi/explorer` | `plugins/builtin/explorer/` (`dist/` and `places.json`) |
-| `@ovvi/git` | `plugins/builtin/git/` (`dist/`) |
+### Update a default plugin
 
-It runs on a push to main that touches `plugins/builtin/**` or the types, on every release tag (`v*`), and on a
-dispatch. For each package whose `version` npm does not have, it runs `npm ci` and `npm run build`, then `npm publish`
-through npm's trusted publishing: no token, and npm adds provenance. A package that is not on npm at all is skipped
-with a warning. So plugins publish on their own, and an app release also publishes any plugin version npm lacks.
+1. Change it and bump its `version` in `package.json` and `package-lock.json` (`make lint` checks that a changed
+   plugin has a new version).
+2. Push to main. The workflow publishes it in a few minutes.
 
-**Release a plugin:** bump its `version` in its `package.json` (every change to a plugin's source does) and push to
-main. Users see "Update to ‹version›" on the plugin's page in Settings ▸ Plugins, and an app built with the newer
-version installs it from its own copy at launch. A version for a newer plugin API (`ovvi.api`) is refused by older
-apps, so bump `api` only with the app release that brings it.
+Users get it two ways:
 
-**Set up once.** Trusted publishing cannot make a package, so each package's first version is published by hand:
+- **From npm:** the plugin's page in Settings ▸ Plugins shows Update to ‹version›.
+- **With the app:** at launch, an app whose bundled copy is newer than the installed one replaces it, edits included.
 
-1. On npmjs.com, turn on two-factor authentication and create the organization `ovvi` (free plan). It owns `@ovvi`.
-2. On the Mac (npm 11.15 or later), `npm login`, then publish the current versions (npm asks for 2FA):
+Bump the plugin's `ovvi.api` only with the app release that brings that API: older apps refuse the plugin.
+
+### A new package under `@ovvi`
+
+1. Add its folder to the loop in `plugins.yml`.
+2. Publish its first version by hand (trusted publishing cannot create a package): `npm publish --access public`
+   in its folder, with your npm 2FA.
+3. Trust the workflow, then require 2FA and disallow tokens on its npm page (Settings ▸ Publishing access):
 
    ```sh
-   cd plugins/builtin/explorer && npm ci && npm run build && cd ../git && npm ci && npm run build && cd ../../..
-   for dir in web/ovvi plugins/builtin/explorer plugins/builtin/git; do (cd "$dir" && npm publish --access public); done
+   npm trust github @ovvi/<name> --file plugins.yml --repo hkandala/ovvi --allow-publish --yes
    ```
 
-3. Trust the workflow for each package (2FA asks once):
+### Anyone's plugin
 
-   ```sh
-   for name in @ovvi/plugin-api @ovvi/explorer @ovvi/git; do
-     npm trust github "$name" --file plugins.yml --repo hkandala/ovvi --allow-publish --yes
-     sleep 2
-   done
-   ```
-
-4. On npmjs.com, each package's Settings ▸ Publishing access ▸ **Require two-factor authentication and disallow
-   tokens**. From then on only the workflow publishes.
+A plugin is an npm package with an `ovvi` manifest in its `package.json`
+([Create a plugin](https://ovvi.dev/docs/plugins/create)). Publish it with `npm publish --access public`, with the
+keyword `ovvi-plugin`. Users install it in Settings ▸ Plugins with `npm:<package>`, and see Update to ‹version›
+when you publish a newer one.

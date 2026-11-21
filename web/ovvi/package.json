@@ -1,10 +1,12 @@
 {
   "name": "@ovvi/plugin-api",
   "license": "MIT",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "repository": { "type": "git", "url": "git+https://github.com/hkandala/ovvi.git", "directory": "web/ovvi" },
   "publishConfig": { "access": "public" },
   "files": ["ovvi.d.ts"],
   "description": "The types of the ovvi object a plugin's entry gets (API version 3).",
-  "types": "ovvi.d.ts"
+  "types": "ovvi.d.ts",
+  "keywords": ["ovvi", "ovvi-plugin", "plugin", "types", "typescript", "herdr"],
+  "homepage": "https://ovvi.dev/docs/plugins/api"
 }

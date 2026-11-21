@@ -1,12 +1,12 @@
 {
   "name": "@ovvi/git",
   "license": "AGPL-3.0-only",
-  "version": "1.10.19",
+  "version": "1.10.20",
   "repository": { "type": "git", "url": "git+https://github.com/hkandala/ovvi.git", "directory": "plugins/builtin/git" },
   "publishConfig": { "access": "public" },
   "files": ["dist"],
   "description": "Changes and history",
-  "keywords": ["diff", "changes", "commit", "uncommitted", "history"],
+  "keywords": ["ovvi", "ovvi-plugin", "diff", "changes", "commit", "uncommitted", "history"],
   "scripts": {
     "build": "esbuild src/main.ts --bundle --splitting --format=esm --minify --sourcemap --target=safari18 --log-level=warning --outdir=dist",
     "dev": "npm run build -- --watch",
